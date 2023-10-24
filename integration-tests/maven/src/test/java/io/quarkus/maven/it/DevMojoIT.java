@@ -310,7 +310,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
@@ -322,7 +323,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "carambar"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("carambar"));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains("carambar"));
     }
 
     @Test
@@ -359,7 +361,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "hello"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("hello"));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains("hello"));
     }
 
     @Test
@@ -381,7 +384,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
 
         //verify that this was an instrumentation based reload
         Assertions.assertEquals(firstUuid, devModeClient.getHttpResponse("/app/uuid"));
@@ -392,7 +396,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "Stuart Douglas"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/name").contains("Stuart Douglas"));
 
         //this bean observes startup event, so it should be different UUID
@@ -408,7 +412,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "hello"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("hello"));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains("hello"));
 
         //verify that this was not instrumentation based reload
         Assertions.assertNotEquals(secondUUid, devModeClient.getHttpResponse("/app/uuid"));
@@ -423,7 +428,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get uuid
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
 
         //verify that this was an instrumentation based reload
         Assertions.assertEquals(secondUUid, devModeClient.getHttpResponse("/app/uuid"));
@@ -440,7 +446,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "hello"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("hello"));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains("hello"));
 
         //verify that this was not instrumentation based reload
         Assertions.assertNotEquals(secondUUid, devModeClient.getHttpResponse("/app/uuid"));
@@ -473,7 +480,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get the updated responses
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> {
                     System.out.println(devModeClient.getHttpResponse("/app/hello"));
                     return devModeClient.getHttpResponse("/app/hello").contains("hello " + uuid);
@@ -481,7 +488,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/hello/greeting").contains(uuid));
 
     }
@@ -531,7 +538,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/q/openapi").contains("hello"));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/q/openapi").contains("hello"));
     }
 
     @Test
@@ -606,7 +614,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
@@ -633,7 +642,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "carambar"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("carambar"));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains("carambar"));
 
         // Create a new resource
         source = new File(testDir, "html/src/main/resources/META-INF/resources/lorem.txt");
@@ -642,21 +652,21 @@ public class DevMojoIT extends LaunchMojoTestBase {
                 "UTF-8");
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/lorem.txt").contains("Lorem ipsum"));
 
         // Update the resource
         FileUtils.write(source, uuid, "UTF-8");
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/lorem.txt").contains(uuid));
 
         // Delete the resource
         source.delete();
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/lorem.txt", 404));
     }
 
@@ -680,7 +690,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/hello/greeting").contains(uuid));
 
         greeting = devModeClient.getHttpResponse("/app/hello");
@@ -702,7 +712,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
@@ -747,7 +758,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "bar"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/foo").contains("bar"));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/foo").contains("bar"));
     }
 
     @Test
@@ -782,7 +794,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until source file is compiled
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/deletion").contains("to be deleted"));
 
         // Remove InnerClass
@@ -795,7 +807,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Make sure that other class files have not been deleted.
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/hello/package", 200));
 
         // Verify that only ClassDeletionResource$InnerClass.class to be deleted
@@ -809,7 +821,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "404 Not Found" because ClassDeletionResource.class have been deleted.
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/deletion", 404));
 
         // Make sure that class files for the deleted source file have also been deleted
@@ -862,7 +874,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/hello/greeting").contains(uuid));
     }
 
@@ -941,7 +953,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
                 "UTF-8");
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/lorem.txt"), containsString("Lorem ipsum"));
 
         // Update the resource
@@ -949,14 +961,14 @@ public class DevMojoIT extends LaunchMojoTestBase {
         FileUtils.write(source, uuid, "UTF-8");
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/lorem.txt"), equalTo(uuid));
 
         // Delete the resource
         source.delete();
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/lorem.txt", 404));
     }
 
@@ -967,7 +979,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/hello/greetings").contains("Bonjour"));
 
         File source = new File(testDir, "src/main/resources/application.properties");
@@ -975,7 +987,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/hello/greetings").contains("Guten Morgen"));
     }
 
@@ -995,7 +1007,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         runAndCheck();
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/hello/greetings").contains("Bonjour/Other"));
 
         // Update the application.properties
@@ -1003,7 +1015,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         FileUtils.write(source, "greeting=Salut", "UTF-8");
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/hello/greetings").contains("Salut/Other"));
 
         // Add the application.yaml
@@ -1012,7 +1024,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
                 "  greeting: Buenos dias", "UTF-8");
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/hello/greetings").contains("Salut/Buenos dias"));
 
         // Update the application.yaml
@@ -1020,7 +1032,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
                 "  greeting: Hola", "UTF-8");
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/hello/greetings").contains("Salut/Hola"));
     }
 
@@ -1038,7 +1050,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         AtomicReference<String> last = new AtomicReference<>();
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> {
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES).until(() -> {
                     String content = devModeClient.getHttpResponse("/app/hello", true);
                     last.set(content);
                     return content.contains(uuid);
@@ -1057,7 +1069,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("carambar"));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains("carambar"));
     }
 
     @Test
@@ -1073,7 +1086,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         AtomicReference<String> last = new AtomicReference<>();
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> {
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES).until(() -> {
                     String content = devModeClient.getHttpResponse("/app/hello", true);
                     last.set(content);
                     return content.contains("Error restarting Quarkus");
@@ -1085,7 +1098,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> {
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES).until(() -> {
                     String content = devModeClient.getHttpResponse("/app/hello", true);
                     last.set(content);
                     return content.equals("hello");
@@ -1122,7 +1135,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("message"));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains("message"));
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
@@ -1133,7 +1147,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("foobarbaz"));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains("foobarbaz"));
     }
 
     @Test
@@ -1184,7 +1199,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/hello/otherGreeting").contains(uuid));
     }
 
@@ -1235,7 +1250,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // make sure the application starts
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/cp/hello").equals("hello"));
 
         // test that we don't get multiple instances of a resource when loading from the ClassLoader
@@ -1278,7 +1293,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         await()
                 .pollDelay(300, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/hello").contains("hello world"));
     }
 
@@ -1315,7 +1330,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         filter(resource, Collections.singletonMap("return \"mock-service\";", "return \"mock-service!\";"));
         await()
                 .pollDelay(300, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/hello").contains("acme other mock-service!"));
 
         // Update AcmeBean
@@ -1323,7 +1338,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         filter(resource, Collections.singletonMap("return \"acme\";", "return \"acme!\";"));
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/hello").contains("acme! other mock-service!"));
 
         // Update Other bean
@@ -1331,7 +1346,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         filter(resource, Collections.singletonMap("return \"other\";", "return \"other!\";"));
         await()
                 .pollDelay(300, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/hello").contains("acme! other! mock-service!"));
     }
 
@@ -1348,7 +1363,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         filter(resource, Collections.singletonMap("return \"acme-service\";", "return \"acme-service!\";"));
         await()
                 .pollDelay(300, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/hello").contains("acme other acme-service!"));
 
         // Update AcmeBean
@@ -1356,7 +1371,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         filter(resource, Collections.singletonMap("return \"acme\";", "return \"acme!\";"));
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/hello").contains("acme! other acme-service!"));
 
         // Update Other bean
@@ -1364,7 +1379,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         filter(resource, Collections.singletonMap("return \"other\";", "return \"other!\";"));
         await()
                 .pollDelay(300, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/hello").contains("acme! other! acme-service!"));
     }
 
@@ -1377,7 +1392,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/hello").contains("Servus"));
 
         // Update the .env
@@ -1388,7 +1403,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/hello").contains("Hallo"));
 
         assertTrue(source.exists());
@@ -1412,7 +1427,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/hello").contains("Hello"));
 
         final File greetingJava = externalJarDir.toPath().resolve("src").resolve("main")
@@ -1435,7 +1450,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/hello").contains("Bonjour"));
 
         // Change bonjour() method content in Greeting.java
@@ -1447,7 +1462,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/hello").contains("BONJOUR!"));
     }
 }

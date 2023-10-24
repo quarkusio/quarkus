@@ -149,9 +149,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <redis.url>localhost:6379</redis.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

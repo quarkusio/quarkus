@@ -37,7 +37,9 @@ public class HttpContentCompressorSubstitutions {
             try {
                 Class.forName("com.github.luben.zstd.Zstd");
                 zstdAbsent = false;
-            } catch (ClassNotFoundException e) {
+            } catch (Exception e) {
+                // It can be a classloading issue (the library is not available), or a native issue
+                // (the library for the current OS/arch is not available)
                 zstdAbsent = true;
             }
         }

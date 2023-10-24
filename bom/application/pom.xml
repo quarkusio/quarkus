@@ -4258,6 +4258,11 @@
             </dependency>
             <dependency>
                 <groupId>io.strimzi</groupId>
+                <artifactId>kafka-oauth-common</artifactId>
+                <version>${strimzi-oauth.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.strimzi</groupId>
                 <artifactId>strimzi-test-container</artifactId>
                 <version>${strimzi-test-container.version}</version>
                 <exclusions>

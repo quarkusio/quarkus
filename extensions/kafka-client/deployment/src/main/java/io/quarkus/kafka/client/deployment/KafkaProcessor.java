@@ -277,7 +277,6 @@ public class KafkaProcessor {
 
         handleAvro(reflectiveClass, proxies, serviceProviders, sslNativeSupport, capabilities);
         handleOpenTracing(reflectiveClass, capabilities);
-        handleStrimziOAuth(curateOutcomeBuildItem, reflectiveClass);
 
     }
 
@@ -328,31 +327,6 @@ public class KafkaProcessor {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.opentracing.contrib.kafka.TracingProducerInterceptor",
                 "io.opentracing.contrib.kafka.TracingConsumerInterceptor").methods()
                 .build());
-    }
-
-    private void handleStrimziOAuth(CurateOutcomeBuildItem curateOutcomeBuildItem,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        if (!QuarkusClassLoader.isClassPresentAtRuntime("io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler")) {
-            return;
-        }
-
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder("io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler")
-                        .methods().fields().build());
-
-        if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream().anyMatch(
-                x -> x.getGroupId().equals("org.keycloak") && x.getArtifactId().equals("keycloak-core"))) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder("org.keycloak.jose.jws.JWSHeader",
-                    "org.keycloak.representations.AccessToken",
-                    "org.keycloak.representations.AccessToken$Access",
-                    "org.keycloak.representations.AccessTokenResponse",
-                    "org.keycloak.representations.IDToken",
-                    "org.keycloak.representations.JsonWebToken",
-                    "org.keycloak.jose.jwk.JSONWebKeySet",
-                    "org.keycloak.jose.jwk.JWK",
-                    "org.keycloak.json.StringOrArrayDeserializer",
-                    "org.keycloak.json.StringListMapDeserializer").methods().fields().build());
-        }
     }
 
     private void handleAvro(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,

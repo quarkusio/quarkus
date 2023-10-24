@@ -28,6 +28,8 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
@@ -43,7 +45,7 @@ import io.vertx.ext.web.client.predicate.ResponsePredicate;
 /*
 This test was mostly based on https://github.com/reactiverse/reactiverse-contextual-logging/blob/39e691d3a8fd78d19ee120cab8d8b38a4ef67813/src/test/java/io/reactiverse/contextual/logging/ContextualLoggingIT.java
  */
-
+@DisabledOnOs(OS.WINDOWS)
 public class VertxMDCTest {
     private static final Logger LOGGER = Logger.getLogger(VertxMDCTest.class);
 

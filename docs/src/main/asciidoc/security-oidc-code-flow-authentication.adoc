@@ -1235,7 +1235,7 @@ Future<void> callQuarkusService() async {
 === Cross-origin resource sharing
 
 If you plan to consume this application from a single-page application running on a different domain, you need to configure cross-origin resource sharing (CORS).
-For more information, see the xref:http-reference.adoc#cors-filter[CORS filter] section of the "HTTP reference" guide.
+For more information, see the xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide.
 
 === Calling Cloud provider services
 

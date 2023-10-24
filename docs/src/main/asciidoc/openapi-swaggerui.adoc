@@ -529,7 +529,7 @@ For more information on styling, read this blog entry: https://quarkus.io/blog/s
 
 === Cross Origin Resource Sharing
 
-If you plan to consume this application from a Single Page Application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the xref:http-reference.adoc#cors-filter[HTTP CORS documentation] for more details.
+If you plan to consume this application from a Single Page Application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide for more details.
 
 == Configuration Reference
 

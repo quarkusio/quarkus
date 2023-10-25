@@ -9,15 +9,15 @@
     <version>1.0.0-SNAPSHOT</version>
 
     <properties>
-        <surefire-plugin.version>3.1.2</surefire-plugin.version>
+        <surefire-plugin.version>${version.surefire.plugin}</surefire-plugin.version>
         <quarkus-plugin.version>@project.version@</quarkus-plugin.version>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
         <quarkus.platform.version>@project.version@</quarkus.platform.version>
-        <maven.compiler.source>11</maven.compiler.source>
+        <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
+        <maven.compiler.source>${maven.compiler.source}</maven.compiler.source>
+        <maven.compiler.target>${maven.compiler.target}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.target>11</maven.compiler.target>
-        <awaitility.version>3.0.0</awaitility.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -56,12 +56,20 @@
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
-            <version>\${awaitility.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
     <build>
         <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>\${compiler-plugin.version}</version>
+                <configuration>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>

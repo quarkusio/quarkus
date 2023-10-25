@@ -21,7 +21,6 @@ Initialization steps that used to happen when an EAR file was deployed on a Jaka
 CDI beans added after augmentation won't work (because of the missing proxy classes) as well as build time properties (e.g. `quarkus.datasource.db-kind`) changed after augmentation will be ignored.
 Build time properties are marked with a lock icon (icon:lock[]) in the xref:all-config.adoc[list of all configuration options].
 It doesn't matter if you use profiles or any other way to override the properties.
-The build time properties that were active during augmentation are baked into the build.
 
 > Re-augmentation is the process of recreating the augmentation output for a different build time configuration
 
@@ -33,7 +32,7 @@ If there are only two or three build time properties that depend on the user env
 Please notice that you won't be able to use native images with the package type `mutable-jar`.
 Think of the consequences and what other options you have!
 
-It is not a good idea to do re-augmentation at runtime unless you miss the good old times when starting up a server took several minutes and you could enjoy a cup of coffee until it was ready.
+It is not a good idea to do re-augmentation at runtime unless you miss the good old times when starting up a server took several minutes, and you could enjoy a cup of coffee until it was ready.
 
 == How to re-augment a Quarkus application
 
@@ -45,6 +44,11 @@ which contains the deployment JARs and their dependencies (and some class-loader
 TIP: By default, you'll get a warning if a build time property has been changed at runtime.
 You may set the `quarkus.configuration.build-time-mismatch-at-runtime=fail` property to make sure your application does not start up if there is a mismatch.
 However, as of this writing changing `quarkus.datasource.db-kind` at runtime did neither fail nor produce a warning but was silently ignored.
+
+WARNING: Build time configuration provided by build tools (`properties` in Maven `pom.xml` or `gradle.properties`
+in Gradle) in the `quarkus` namespace will be part of the `mutable-jar` distribution, including configuration from
+`quarkus` that reference secrets or passwords. Please, do not include sensitive information in the build tool
+configuration files.
 
 === 1. Build your application as `mutable-jar`
 

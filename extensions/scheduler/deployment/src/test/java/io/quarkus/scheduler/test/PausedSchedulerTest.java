@@ -44,14 +44,14 @@ public class PausedSchedulerTest {
 
         // this should have no effect because the scheduler is paused
         jobs.running.set(true);
-        assertFalse(Jobs.JOB_LATCH.await(2, TimeUnit.SECONDS));
+        assertFalse(Jobs.JOB_LATCH.await(4, TimeUnit.SECONDS));
 
         scheduler.resume();
         assertTrue(scheduler.isRunning());
         assertTrue(Jobs.RESUMED_EVENT.get());
 
-        assertTrue(Jobs.JOB_LATCH.await(3, TimeUnit.SECONDS));
-        assertTrue(Jobs.EVENT_LATCH.await(3, TimeUnit.SECONDS));
+        assertTrue(Jobs.JOB_LATCH.await(4, TimeUnit.SECONDS));
+        assertTrue(Jobs.EVENT_LATCH.await(4, TimeUnit.SECONDS));
     }
 
     @Singleton

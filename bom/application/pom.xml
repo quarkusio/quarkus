@@ -64,7 +64,7 @@
         <smallrye-reactive-types-converter.version>3.0.1</smallrye-reactive-types-converter.version>
         <smallrye-mutiny-vertx-binding.version>3.7.2</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>4.10.1</smallrye-reactive-messaging.version>
-        <smallrye-stork.version>2.3.1</smallrye-stork.version>
+        <smallrye-stork.version>2.4.0</smallrye-stork.version>
         <jakarta.activation.version>2.1.2</jakarta.activation.version>
         <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
         <jakarta.authentication-api>3.0.0</jakarta.authentication-api>
@@ -119,7 +119,7 @@
         <wildfly-common.version>1.5.4.Final-format-001</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>2.2.2.Final</wildfly-elytron.version>
-        <jboss-threads.version>3.5.0.Final</jboss-threads.version>
+        <jboss-threads.version>3.5.1.Final</jboss-threads.version>
         <vertx.version>4.4.6</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
@@ -218,7 +218,7 @@
         <jansi.version>2.4.0</jansi.version> <!-- Keep in sync with aesh-readline and dekorate -->
         <jgit.version>6.6.1.202309021850-r</jgit.version>
         <!-- these two artifacts needs to be compatible together -->
-        <strimzi-oauth.version>0.14.0</strimzi-oauth.version>
+        <strimzi-oauth.version>0.12.0</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>9.34</strimzi-oauth.nimbus.version>
         <java-buildpack-client.version>0.0.6</java-buildpack-client.version>
         <org-crac.version>0.1.3</org-crac.version>
@@ -6046,6 +6046,20 @@
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protoc</artifactId>
+                <classifier>linux-ppcle_64</classifier>
+                <type>exe</type>
+                <version>${protoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protoc</artifactId>
+                <classifier>linux-s390_64</classifier>
+                <type>exe</type>
+                <version>${protoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protoc</artifactId>
                 <classifier>linux-x86_32</classifier>
                 <type>exe</type>
                 <version>${protoc.version}</version>
@@ -6060,14 +6074,14 @@
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protoc</artifactId>
-                <classifier>osx-x86_64</classifier>
+                <classifier>osx-aarch_64</classifier>
                 <type>exe</type>
                 <version>${protoc.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protoc</artifactId>
-                <classifier>osx-aarch_64</classifier>
+                <classifier>osx-x86_64</classifier>
                 <type>exe</type>
                 <version>${protoc.version}</version>
             </dependency>
@@ -6096,6 +6110,20 @@
                 <groupId>io.grpc</groupId>
                 <artifactId>protoc-gen-grpc-java</artifactId>
                 <type>exe</type>
+                <classifier>linux-ppcle_64</classifier>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>protoc-gen-grpc-java</artifactId>
+                <type>exe</type>
+                <classifier>linux-s390_64</classifier>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>protoc-gen-grpc-java</artifactId>
+                <type>exe</type>
                 <classifier>linux-x86_32</classifier>
                 <version>${grpc.version}</version>
             </dependency>
@@ -6110,14 +6138,14 @@
                 <groupId>io.grpc</groupId>
                 <artifactId>protoc-gen-grpc-java</artifactId>
                 <type>exe</type>
-                <classifier>osx-x86_64</classifier>
+                <classifier>osx-aarch_64</classifier>
                 <version>${grpc.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>protoc-gen-grpc-java</artifactId>
                 <type>exe</type>
-                <classifier>osx-aarch_64</classifier>
+                <classifier>osx-x86_64</classifier>
                 <version>${grpc.version}</version>
             </dependency>
             <dependency>

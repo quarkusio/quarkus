@@ -32,7 +32,7 @@
     <name>Quarkus - Reactive MySQL Client - Deployment</name>
 
     <properties>
-        <reactive-mysql.url>vertx-reactive:mysql://localhost:3306/hibernate_orm_test</reactive-mysql.url>
+        <reactive-mysql.url>vertx-reactive:mysql://localhost:3308/hibernate_orm_test</reactive-mysql.url>
     </properties>
 
     <dependencies>
@@ -153,9 +153,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <reactive-mysql.url>vertx-reactive:mysql://localhost:3308/hibernate_orm_test</reactive-mysql.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

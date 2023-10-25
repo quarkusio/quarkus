@@ -37,6 +37,9 @@ public class LiquibaseMongodbFactory {
                 Thread.currentThread().getContextClassLoader())) {
             String connectionString = this.mongoClientConfig.connectionString.orElse("mongodb://localhost:27017");
 
+            // Every MongoDB client configuration must be added to the connection string, we didn't add all as it would be too much to support.
+            // For reference, all connections string options can be found here: https://www.mongodb.com/docs/manual/reference/connection-string/#connection-string-options.
+
             Matcher matcher = HAS_DB.matcher(connectionString);
             if (!matcher.matches() || matcher.group("db") == null || matcher.group("db").isEmpty()) {
                 connectionString = matcher.replaceFirst(
@@ -50,6 +53,17 @@ public class LiquibaseMongodbFactory {
                 boolean alreadyHasQueryParams = connectionString.contains("?");
                 connectionString += (alreadyHasQueryParams ? "&" : "?") + "authSource="
                         + mongoClientConfig.credentials.authSource.get();
+            }
+            if (mongoClientConfig.credentials.authMechanism.isPresent()) {
+                boolean alreadyHasQueryParams = connectionString.contains("?");
+                connectionString += (alreadyHasQueryParams ? "&" : "?") + "authMechanism="
+                        + mongoClientConfig.credentials.authMechanism.get();
+            }
+            if (!mongoClientConfig.credentials.authMechanismProperties.isEmpty()) {
+                boolean alreadyHasQueryParams = connectionString.contains("?");
+                connectionString += (alreadyHasQueryParams ? "&" : "?") + "authMechanismProperties="
+                        + mongoClientConfig.credentials.authMechanismProperties.entrySet().stream()
+                                .map(prop -> prop.getKey() + ":" + prop.getValue()).collect(Collectors.joining(","));
             }
 
             Database database = DatabaseFactory.getInstance().openDatabase(connectionString,
@@ -92,9 +106,7 @@ public class LiquibaseMongodbFactory {
      * @return the label expression
      */
     public LabelExpression createLabels() {
-        // need to join because of https://github.com/liquibase/liquibase/issues/4763
-        return new LabelExpression(
-                liquibaseMongodbConfig.labels.map(labels -> labels.stream().collect(Collectors.joining(","))).orElse(null));
+        return new LabelExpression(liquibaseMongodbConfig.labels.orElse(null));
     }
 
     /**

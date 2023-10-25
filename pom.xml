@@ -68,13 +68,13 @@
         <owasp-dependency-check-plugin.version>8.3.1</owasp-dependency-check-plugin.version>
 
         <!-- Dependency versions -->
-        <jacoco.version>0.8.10</jacoco.version>
+        <jacoco.version>0.8.11</jacoco.version>
         <kubernetes-client.version>6.8.1</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.57.2</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <grpc.version>1.59.0</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <grpc-jprotoc.version>1.2.1</grpc-jprotoc.version>
-        <protoc.version>3.22.0</protoc.version>
+        <protoc.version>3.24.4</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
         <proto-google-common-protos.version>2.27.0</proto-google-common-protos.version>
 

@@ -57,7 +57,7 @@ Guidance for testing Quarkus Security features and ensuring that your Quarkus ap
 === Cross-origin resource sharing
 
 To make your Quarkus application accessible to another application running on a different domain, you need to configure cross-origin resource sharing (CORS).
-For more information about the CORS filter that Quarkus provides, see the Quarkus xref:http-reference.adoc#cors-filter[CORS filter] section of the "HTTP reference" guide.
+For more information about the CORS filter that Quarkus provides, see the Quarkus xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide.
 
 [[csrf-prevention]]
 === Cross-Site Request Forgery (CSRF) prevention

@@ -708,6 +708,7 @@ Refer to the xref:./management-interface-reference.adoc[management interface ref
 ** JMS
 ** MQTT
 ** Camel Messaging
+* https://quarkus.io/guides/stork-reference[`quarkus-smallrye-stork`]
 * https://quarkus.io/guides/vertx[`quarkus-vertx`] (http requests)
 
 == Configuration Reference

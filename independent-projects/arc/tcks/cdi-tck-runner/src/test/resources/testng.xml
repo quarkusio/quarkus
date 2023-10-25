@@ -28,6 +28,13 @@
                     <exclude name="testDestroyForSameCreationalContextOnly"/>
                 </methods>
             </class>
+
+            <!-- https://github.com/jakartaee/cdi-tck/issues/485 -->
+            <class name="org.jboss.cdi.tck.tests.definition.bean.types.ManagedBeanTypesTest">
+                <methods>
+                    <exclude name=".*"/>
+                </methods>
+            </class>
         </classes>
     </test>
 </suite>

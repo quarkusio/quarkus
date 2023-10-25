@@ -17,3 +17,4 @@ guides:
   - src/main/asciidoc/security-openid-connect-client-reference.adoc
   - src/main/asciidoc/security-overview.adoc
   - src/main/asciidoc/security-proactive-authentication.adoc
+  - src/main/asciidoc/security-cors.adoc

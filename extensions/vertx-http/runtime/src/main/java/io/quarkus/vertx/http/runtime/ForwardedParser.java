@@ -27,6 +27,7 @@ import org.jboss.logging.Logger;
 import io.netty.util.AsciiString;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.net.impl.SocketAddressImpl;
 
@@ -60,6 +61,8 @@ class ForwardedParser {
     private String absoluteURI;
     private SocketAddress remoteAddress;
 
+    private HostAndPort authority;
+
     ForwardedParser(HttpServerRequest delegate, ForwardingProxyOptions forwardingProxyOptions,
             TrustedProxyCheck trustedProxyCheck) {
         this.delegate = delegate;
@@ -84,6 +87,13 @@ class ForwardedParser {
             calculate();
 
         return scheme.equals(HTTPS_SCHEME);
+    }
+
+    HostAndPort authority() {
+        if (!calculated) {
+            calculate();
+        }
+        return authority;
     }
 
     String absoluteURI() {
@@ -111,7 +121,7 @@ class ForwardedParser {
         calculated = true;
         remoteAddress = delegate.remoteAddress();
         scheme = delegate.scheme();
-        setHostAndPort(delegate.host(), port);
+        setHostAndPort(delegate.getHeader(HttpHeaders.HOST), port);
         uri = delegate.uri();
 
         if (trustedProxyCheck.isProxyAllowed()) {
@@ -176,6 +186,7 @@ class ForwardedParser {
             port = -1;
         }
 
+        authority = HostAndPort.create(host, port >= 0 ? port : -1);
         host = host + (port >= 0 ? ":" + port : "");
         delegate.headers().set(HttpHeaders.HOST, host);
         absoluteURI = scheme + "://" + host + uri;
@@ -267,4 +278,5 @@ class ForwardedParser {
 
         return result;
     }
+
 }

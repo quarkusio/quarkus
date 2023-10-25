@@ -12,6 +12,7 @@ import io.vertx.core.http.HttpFrame;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.StreamPriority;
+import io.vertx.core.net.HostAndPort;
 import io.vertx.core.streams.ReadStream;
 
 class AbstractResponseWrapper implements HttpServerResponse {
@@ -323,6 +324,7 @@ class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
+    @Deprecated
     public void close() {
         delegate.close();
     }
@@ -376,7 +378,7 @@ class AbstractResponseWrapper implements HttpServerResponse {
 
     @Override
     public Future<HttpServerResponse> push(HttpMethod method, String host, String path) {
-        return null;
+        return delegate.push(method, host, path);
     }
 
     @Override
@@ -389,7 +391,7 @@ class AbstractResponseWrapper implements HttpServerResponse {
 
     @Override
     public Future<HttpServerResponse> push(HttpMethod method, String path, MultiMap headers) {
-        return null;
+        return delegate.push(method, path);
     }
 
     @Override
@@ -414,7 +416,12 @@ class AbstractResponseWrapper implements HttpServerResponse {
 
     @Override
     public Future<HttpServerResponse> push(HttpMethod method, String host, String path, MultiMap headers) {
-        return null;
+        return delegate.push(method, host, path, headers);
+    }
+
+    @Override
+    public Future<HttpServerResponse> push(HttpMethod method, HostAndPort authority, String path, MultiMap headers) {
+        return delegate.push(method, authority, path, headers);
     }
 
     @Override

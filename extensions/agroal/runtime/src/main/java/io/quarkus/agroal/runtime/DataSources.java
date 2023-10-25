@@ -144,12 +144,6 @@ public class DataSources {
                 .getDataSourceJdbcRuntimeConfig(dataSourceName);
 
         DataSourceSupport.Entry matchingSupportEntry = dataSourceSupport.entries.get(dataSourceName);
-        if (!dataSourceJdbcRuntimeConfig.url().isPresent()) {
-            //this is not an error situation, because we want to allow the situation where a JDBC extension
-            //is installed but has not been configured
-            return new UnconfiguredDataSource(
-                    DataSourceUtil.dataSourcePropertyKey(dataSourceName, "jdbc.url") + " has not been defined");
-        }
 
         // we first make sure that all available JDBC drivers are loaded in the current TCCL
         loadDriversInTCCL();

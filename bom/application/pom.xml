@@ -229,6 +229,7 @@
         <async-http-client.version>2.12.3</async-http-client.version>
         <!-- Dev UI -->
         <importmap.version>1.0.10</importmap.version>
+        <cloudevents.version>2.5.0</cloudevents.version>
     </properties>
 
     <dependencyManagement>
@@ -276,6 +277,15 @@
                 <groupId>com.aayushatharva.brotli4j</groupId>
                 <artifactId>native-linux-x86_64</artifactId>
                 <version>${brotli4j.version}</version>
+            </dependency>
+
+            <!-- CloudEvents dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>io.cloudevents</groupId>
+                <artifactId>cloudevents-bom</artifactId>
+                <version>${cloudevents.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <!-- Jackson dependencies, imported as a BOM -->

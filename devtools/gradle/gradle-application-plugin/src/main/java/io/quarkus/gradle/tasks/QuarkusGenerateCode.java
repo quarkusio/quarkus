@@ -116,6 +116,7 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
             params.getBaseName().set(extension().finalName());
             params.getTargetDirectory().set(buildDir);
             params.getAppModel().set(appModel);
+            params.getProjectDirectory().set(projectDir);
             params
                     .getSourceDirectories()
                     .setFrom(sourcesDirectories.stream().map(Path::toFile).collect(Collectors.toList()));

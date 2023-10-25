@@ -11,6 +11,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
  */
 public class CodeGenContext {
     private final ApplicationModel model;
+    private final Path projectDir;
     private final Path outDir;
     private final Path workDir;
     private final Path inputDir;
@@ -22,6 +23,7 @@ public class CodeGenContext {
      * Creates a code generation context
      *
      * @param model application model
+     * @param projectDir project directory
      * @param outDir target directory for the generated output
      * @param workDir working directory, typically the main build directory of the project
      * @param inputDir directory containing input content for a code generator
@@ -29,9 +31,10 @@ public class CodeGenContext {
      * @param config application build time configuration
      * @param test indicates whether the code generation is being triggered for tests
      */
-    public CodeGenContext(ApplicationModel model, Path outDir, Path workDir, Path inputDir, boolean redirectIO,
-            Config config, boolean test) {
+    public CodeGenContext(ApplicationModel model, Path projectDir, Path outDir, Path workDir, Path inputDir,
+            boolean redirectIO, Config config, boolean test) {
         this.model = model;
+        this.projectDir = projectDir;
         this.outDir = outDir;
         this.workDir = workDir;
         this.inputDir = inputDir;
@@ -47,6 +50,16 @@ public class CodeGenContext {
      */
     public ApplicationModel applicationModel() {
         return model;
+    }
+
+    /**
+     * Current project directory.
+     * The directory would typically be resolved as {@code <project.basedir>}.
+     *
+     * @return project directory
+     */
+    public Path projectDir() {
+        return projectDir;
     }
 
     /**

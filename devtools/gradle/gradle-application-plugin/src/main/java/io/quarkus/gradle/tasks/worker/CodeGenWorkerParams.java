@@ -8,6 +8,8 @@ import io.quarkus.runtime.LaunchMode;
 
 public interface CodeGenWorkerParams extends QuarkusParams {
 
+    DirectoryProperty getProjectDirectory();
+
     ConfigurableFileCollection getSourceDirectories();
 
     DirectoryProperty getOutputPath();

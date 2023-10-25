@@ -45,17 +45,17 @@ Your user will also be in the middle of something: define the starting-point tha
 
 == Resources
 
-- xref:{doc-guides}/doc-create-howto-tutorial.adoc[Tutorial: Create a How-To]
-- xref:{doc-guides}/doc-concept.adoc#howto-guide[Quarkus documentation content types: How-to guides]
-- xref:{doc-guides}/doc-reference.adoc[Quarkus style and content guidelines]
+- xref:../doc-create-howto-tutorial.adoc[Tutorial: Create a How-To]
+- xref:../doc-concept.adoc#howto-guide[Quarkus documentation content types: How-to guides]
+- xref:../doc-reference.adoc[Quarkus style and content guidelines]
 
 === Create cross-references
 
 To create anchors for in-file and cross-file navigation, see the following detailed instructions in the Quarkus style and content guidelines.
 
-* xref:{doc-guides}doc-contribute-docs-howto.adoc#anchors-howto[Cross-reference in-file and cross-file content by using anchors]
+* xref:../doc-contribute-docs-howto.adoc#anchors-howto[Cross-reference in-file and cross-file content by using anchors]
 
-* xref:{doc-guides}doc-reference.adoc#cross-references[Cross-references]
+* xref:../doc-reference.adoc#cross-references[Cross-references]
 
 == Guidelines for good How-To guides
 

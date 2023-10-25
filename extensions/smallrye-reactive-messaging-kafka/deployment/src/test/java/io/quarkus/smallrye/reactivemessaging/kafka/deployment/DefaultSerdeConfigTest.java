@@ -26,7 +26,6 @@ import org.apache.kafka.common.serialization.Serializer;
 import org.assertj.core.api.Assert;
 import org.assertj.core.groups.Tuple;
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -47,6 +46,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.common.MapBackedConfigSource;
@@ -126,9 +126,9 @@ public class DefaultSerdeConfigTest {
                     .flatExtracting(ReflectiveClassBuildItem::getClassNames)
                     .allSatisfy(s -> assertThat(reflectiveNames).satisfiesOnlyOnce(c -> c.apply(s)));
         } finally {
-            // must not leak the Config instance associated to the system classloader
+            // must not leak the lazily-initialized Config instance associated to the system classloader
             if (customConfig == null) {
-                ConfigProviderResolver.instance().releaseConfig(discovery.getConfig());
+                QuarkusConfigFactory.setConfig(null);
             }
         }
     }

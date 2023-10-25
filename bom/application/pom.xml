@@ -109,7 +109,7 @@
         <narayana.version>7.0.0.Final</narayana.version>
         <agroal.version>2.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>8.10.2</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>8.10.4</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.Final</wildfly.openssl-linux.version>

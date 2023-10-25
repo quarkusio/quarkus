@@ -228,6 +228,7 @@ public class QuarkusDevModeTest
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
+        ConfigUtil.cleanUp();
         GroovyClassValue.disable();
         //set the right launch mode in the outer CL, used by the HTTP host config source
         ProfileManager.setLaunchMode(LaunchMode.DEVELOPMENT);
@@ -324,6 +325,7 @@ public class QuarkusDevModeTest
         inMemoryLogHandler.clearRecords();
         inMemoryLogHandler.setFilter(null);
         ClearCache.clearAnnotationCache();
+        ConfigUtil.cleanUp();
     }
 
     @Override

@@ -365,6 +365,7 @@ public class QuarkusProdModeTest
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        ConfigUtil.cleanUp();
         ensureNoInjectAnnotationIsUsed(extensionContext.getRequiredTestClass());
         ExclusivityChecker.checkTestType(extensionContext, QuarkusProdModeTest.class);
 
@@ -757,6 +758,8 @@ public class QuarkusProdModeTest
             if ((outputDir != null) && !preventOutputDirCleanup) {
                 FileUtil.deleteDirectory(outputDir);
             }
+
+            ConfigUtil.cleanUp();
         }
     }
 

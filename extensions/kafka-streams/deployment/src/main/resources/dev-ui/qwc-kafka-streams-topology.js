@@ -2,7 +2,7 @@ import { QwcHotReloadElement, html, css } from 'qwc-hot-reload-element';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { JsonRpc } from 'jsonrpc';
 
-import { Graphviz } from "@hpcc-js/wasm/graphviz";
+import { Graphviz } from "@hpcc-js/wasm/graphviz.js";
 
 import '@vaadin/details';
 import '@vaadin/tabs';

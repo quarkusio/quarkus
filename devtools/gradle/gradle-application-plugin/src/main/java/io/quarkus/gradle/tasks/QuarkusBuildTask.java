@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -205,14 +206,20 @@ abstract class QuarkusBuildTask extends QuarkusTask {
         });
 
         ApplicationModel appModel = resolveAppModelForBuild();
-        Map<String, String> configMap = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).configMap();
+        Map<String, String> configMap = new HashMap<>();
+        for (Map.Entry<String, String> entry : extension().buildEffectiveConfiguration(appModel.getAppArtifact()).configMap()
+                .entrySet()) {
+            if (entry.getKey().startsWith("quarkus.")) {
+                configMap.put(entry.getKey(), entry.getValue());
+            }
+        }
 
         getLogger().info("Starting Quarkus application build for package type {}", packageType);
 
         if (getLogger().isEnabled(LogLevel.INFO)) {
             getLogger().info("Effective properties: {}",
                     configMap.entrySet().stream()
-                            .filter(e -> e.getKey().startsWith("quarkus.")).map(Object::toString)
+                            .map(Object::toString)
                             .sorted()
                             .collect(Collectors.joining("\n    ", "\n    ", "")));
         }
@@ -220,7 +227,7 @@ abstract class QuarkusBuildTask extends QuarkusTask {
         WorkQueue workQueue = workQueue(configMap, () -> extension().buildForkOptions);
 
         workQueue.submit(BuildWorker.class, params -> {
-            params.getBuildSystemProperties().putAll(configMap);
+            params.getBuildSystemProperties().putAll(extension().buildSystemProperties(appModel.getAppArtifact()));
             params.getBaseName().set(extension().finalName());
             params.getTargetDirectory().set(buildDir.toFile());
             params.getAppModel().set(appModel);

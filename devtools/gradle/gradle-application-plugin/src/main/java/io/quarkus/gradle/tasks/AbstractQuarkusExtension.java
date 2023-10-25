@@ -130,6 +130,37 @@ public abstract class AbstractQuarkusExtension {
                 .build();
     }
 
+    /**
+     * Filters resolved Gradle configuration for properties in the Quarkus namespace
+     * (as in start with <code>quarkus.</code>). This avoids exposing configuration that may contain secrets or
+     * passwords not related to Quarkus (for instance environment variables storing sensitive data for other systems).
+     *
+     * @param appArtifact the application dependency to retrive the quarkus application name and version.
+     * @return a filtered view of the configuration only with <code>quarkus.</code> names.
+     */
+    protected Map<String, String> buildSystemProperties(ResolvedDependency appArtifact) {
+        Map<String, String> buildSystemProperties = new HashMap<>();
+        buildSystemProperties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
+        buildSystemProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
+
+        for (Map.Entry<String, String> entry : forcedPropertiesProperty.get().entrySet()) {
+            if (entry.getKey().startsWith("quarkus.")) {
+                buildSystemProperties.put(entry.getKey(), entry.getValue());
+            }
+        }
+        for (Map.Entry<String, String> entry : quarkusBuildProperties.get().entrySet()) {
+            if (entry.getKey().startsWith("quarkus.")) {
+                buildSystemProperties.put(entry.getKey(), entry.getValue());
+            }
+        }
+        for (Map.Entry<String, ?> entry : project.getProperties().entrySet()) {
+            if (entry.getKey().startsWith("quarkus.") && entry.getValue() != null) {
+                buildSystemProperties.put(entry.getKey(), entry.getValue().toString());
+            }
+        }
+        return buildSystemProperties;
+    }
+
     private String quarkusProfile() {
         String profile = System.getProperty(QUARKUS_PROFILE);
         if (profile == null) {

@@ -5,12 +5,14 @@ import static org.hamcrest.Matchers.equalTo;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -254,6 +256,34 @@ public class BearerTokenAuthorizationTest {
                 .then()
                 .statusCode(401)
                 .header("WWW-Authenticate", equalTo("Bearer"));
+    }
+
+    @Test
+    public void testAcquiringIdentityOutsideOfHttpRequest() {
+        String tenant = "bearer";
+        String user = "alice";
+        String role = "user";
+        assertSecurityIdentityAcquired(tenant, user, role);
+
+        tenant = "bearer-role-claim-path";
+        user = "admin";
+        role = "admin";
+        assertSecurityIdentityAcquired(tenant, user, role);
+
+        // test with event bus
+        RestAssured.given().auth().oauth2(getAccessToken("alice", Set.of("customer"))).body("ProductXYZ").post("order/bearer")
+                .then().statusCode(204);
+        Awaitility
+                .await()
+                .atMost(Duration.ofSeconds(10))
+                .ignoreExceptions()
+                .untilAsserted(() -> RestAssured.given().get("order/bearer").then().statusCode(200).body(Matchers.is("alice")));
+    }
+
+    private static void assertSecurityIdentityAcquired(String tenant, String user, String role) {
+        String jsonPath = tenant + "." + user + ".findAll{ it == \"" + role + "\"}.size()";
+        RestAssured.given().when().get("/startup-service").then().statusCode(200)
+                .body(jsonPath, Matchers.is(1));
     }
 
     @Test

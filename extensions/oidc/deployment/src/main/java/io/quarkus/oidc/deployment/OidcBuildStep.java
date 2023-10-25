@@ -1,11 +1,15 @@
 package io.quarkus.oidc.deployment;
 
+import static io.quarkus.arc.processor.BuiltinScope.APPLICATION;
+import static io.quarkus.arc.processor.DotNames.DEFAULT;
+import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
 import static io.quarkus.vertx.http.deployment.EagerSecurityInterceptorCandidateBuildItem.hasProperEndpointModifiers;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -21,8 +25,12 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.QualifierRegistrarBuildItem;
 import io.quarkus.arc.deployment.SynthesisFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -38,6 +46,8 @@ import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.Tenant;
+import io.quarkus.oidc.TenantFeature;
+import io.quarkus.oidc.TenantIdentityProvider;
 import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.UserInfoCache;
 import io.quarkus.oidc.runtime.BackChannelLogoutHandler;
@@ -69,6 +79,8 @@ import io.vertx.ext.web.RoutingContext;
 public class OidcBuildStep {
     public static final DotName DOTNAME_SECURITY_EVENT = DotName.createSimple(SecurityEvent.class.getName());
     private static final DotName TENANT_NAME = DotName.createSimple(Tenant.class);
+    private static final DotName TENANT_FEATURE_NAME = DotName.createSimple(TenantFeature.class);
+    private static final DotName TENANT_IDENTITY_PROVIDER_NAME = DotName.createSimple(TenantIdentityProvider.class);
     private static final Logger LOG = Logger.getLogger(OidcBuildStep.class);
 
     @BuildStep
@@ -127,6 +139,74 @@ public class OidcBuildStep {
     @BuildStep
     ExtensionSslNativeSupportBuildItem enableSslInNative() {
         return new ExtensionSslNativeSupportBuildItem(Feature.OIDC);
+    }
+
+    @BuildStep
+    QualifierRegistrarBuildItem addQualifiers() {
+        // this seems to be necessary; I think it's because sometimes we only access beans
+        // annotated with @TenantFeature programmatically and no injection point is annotated with it
+        return new QualifierRegistrarBuildItem(new QualifierRegistrar() {
+            @Override
+            public Map<DotName, Set<String>> getAdditionalQualifiers() {
+                return Map.of(TENANT_FEATURE_NAME, Set.of());
+            }
+        });
+    }
+
+    /**
+     * Produce {@link OidcIdentityProvider} with already selected tenant for each {@link OidcIdentityProvider}
+     * injection point annotated with {@link TenantFeature} annotation.
+     * For example, we produce {@link OidcIdentityProvider} with pre-selected tenant 'my-tenant' for injection point:
+     *
+     * <code>
+     *  &#064;Inject
+     *  &#064;TenantFeature("my-tenant")
+     *  OidcIdentityProvider identityProvider;
+     * </code>
+     */
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    void produceTenantIdentityProviders(BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
+            OidcRecorder recorder, BeanDiscoveryFinishedBuildItem beans, CombinedIndexBuildItem combinedIndex) {
+        // create TenantIdentityProviders for tenants selected with @TenantFeature like: @TenantFeature("my-tenant")
+        if (!combinedIndex.getIndex().getAnnotations(TENANT_FEATURE_NAME).isEmpty()) {
+            // create TenantIdentityProviders for tenants selected with @TenantFeature like: @TenantFeature("my-tenant")
+            beans
+                    .getInjectionPoints()
+                    .stream()
+                    .filter(ip -> ip.getRequiredQualifier(TENANT_FEATURE_NAME) != null)
+                    .filter(OidcBuildStep::isTenantIdentityProviderType)
+                    .map(ip -> ip.getRequiredQualifier(TENANT_FEATURE_NAME).value().asString())
+                    .distinct()
+                    .forEach(tenantName -> syntheticBeanProducer.produce(
+                            SyntheticBeanBuildItem
+                                    .configure(TenantIdentityProvider.class)
+                                    .addQualifier().annotation(TENANT_FEATURE_NAME).addValue("value", tenantName).done()
+                                    .scope(APPLICATION.getInfo())
+                                    .supplier(recorder.createTenantIdentityProvider(tenantName))
+                                    .unremovable()
+                                    .done()));
+        }
+        // create TenantIdentityProvider for default tenant when tenant is not explicitly selected via @TenantFeature
+        boolean createTenantIdentityProviderForDefaultTenant = beans
+                .getInjectionPoints()
+                .stream()
+                .filter(InjectionPointInfo::hasDefaultedQualifier)
+                .anyMatch(OidcBuildStep::isTenantIdentityProviderType);
+        if (createTenantIdentityProviderForDefaultTenant) {
+            syntheticBeanProducer.produce(
+                    SyntheticBeanBuildItem
+                            .configure(TenantIdentityProvider.class)
+                            .addQualifier(DEFAULT)
+                            .scope(APPLICATION.getInfo())
+                            .supplier(recorder.createTenantIdentityProvider(DEFAULT_TENANT_ID))
+                            .unremovable()
+                            .done());
+        }
+    }
+
+    private static boolean isTenantIdentityProviderType(InjectionPointInfo ip) {
+        return TENANT_IDENTITY_PROVIDER_NAME.equals(ip.getRequiredType().name());
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

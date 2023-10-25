@@ -11,9 +11,6 @@ import java.util.Set;
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.Pattern;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -88,19 +85,12 @@ public class ConfigMappingStartupValidatorTest {
                     }
                 });
         QuarkusConfigFactory.setConfig(smallryeConfig = builder.build());
-        Config conf = ConfigProvider.getConfig();
-        if (conf != smallryeConfig) {
-            ConfigProviderResolver cpr = ConfigProviderResolver.instance();
-            cpr.releaseConfig(conf);
-            ConfigProvider.getConfig();
-        }
         suppressedConfigValidatorExceptions = new HashMap<>();
     }
 
     @AfterAll
     public static void doAfter() {
-        ConfigProviderResolver cpr = ConfigProviderResolver.instance();
-        cpr.releaseConfig(smallryeConfig);
+        QuarkusConfigFactory.setConfig(null);
         smallryeConfig = null;
         suppressedConfigValidatorExceptions = null;
     }

@@ -16,12 +16,9 @@ import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -42,7 +39,6 @@ public class RestClientCDIDelegateBuilderTest {
     static File tempDir;
     private static File truststoreFile;
     private static File keystoreFile;
-    private static Config createdConfig;
 
     @BeforeAll
     public static void beforeAll() throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
@@ -58,14 +54,6 @@ public class RestClientCDIDelegateBuilderTest {
         KeyStore keystore = KeyStore.getInstance("JKS");
         keystore.load(null, KEYSTORE_PASSWORD.toCharArray());
         keystore.store(new FileOutputStream(keystoreFile), KEYSTORE_PASSWORD.toCharArray());
-    }
-
-    @AfterEach
-    public void afterEach() {
-        if (createdConfig != null) {
-            ConfigProviderResolver.instance().releaseConfig(createdConfig);
-            createdConfig = null;
-        }
     }
 
     @Test

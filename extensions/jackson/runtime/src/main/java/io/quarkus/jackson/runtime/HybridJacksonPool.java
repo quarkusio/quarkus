@@ -1,14 +1,14 @@
 package io.quarkus.jackson.runtime;
 
-import com.fasterxml.jackson.core.util.BufferRecycler;
-import com.fasterxml.jackson.core.util.JsonBufferRecyclers;
-import com.fasterxml.jackson.core.util.RecyclerPool;
-
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Predicate;
+
+import com.fasterxml.jackson.core.util.BufferRecycler;
+import com.fasterxml.jackson.core.util.JsonBufferRecyclers;
+import com.fasterxml.jackson.core.util.RecyclerPool;
 
 /**
  * This is a custom implementation of the Jackson's {@link RecyclerPool} intended to work equally well with both
@@ -44,9 +44,8 @@ public class HybridJacksonPool implements RecyclerPool<BufferRecycler> {
 
     @Override
     public BufferRecycler acquirePooled() {
-        return isVirtual.test(Thread.currentThread()) ?
-                VirtualPoolHolder.virtualPool.acquirePooled() :
-                nativePool.acquirePooled();
+        return isVirtual.test(Thread.currentThread()) ? VirtualPoolHolder.virtualPool.acquirePooled()
+                : nativePool.acquirePooled();
     }
 
     @Override
@@ -140,7 +139,8 @@ public class HybridJacksonPool implements RecyclerPool<BufferRecycler> {
 
         private static MethodHandle findVirtualMH() {
             try {
-                return MethodHandles.publicLookup().findVirtual(Thread.class, "isVirtual", MethodType.methodType(boolean.class));
+                return MethodHandles.publicLookup().findVirtual(Thread.class, "isVirtual",
+                        MethodType.methodType(boolean.class));
             } catch (Exception e) {
                 return null;
             }
@@ -173,7 +173,6 @@ public class HybridJacksonPool implements RecyclerPool<BufferRecycler> {
 
         private final int mask;
 
-
         XorShiftThreadProbe(int mask) {
             this.mask = mask;
         }
@@ -183,6 +182,9 @@ public class HybridJacksonPool implements RecyclerPool<BufferRecycler> {
         }
 
         private int probe() {
+            // Multiplicative Fibonacci hashing implementation
+            // 0x9e3779b9 is the integral part of the Golden Ratio's fractional part 0.61803398875… (sqrt(5)-1)/2
+            // multiplied by 2^32, which has the best possible scattering properties.
             int probe = (int) ((Thread.currentThread().getId() * 0x9e3779b9) & Integer.MAX_VALUE);
             // xorshift
             probe ^= probe << 13;
@@ -196,10 +198,11 @@ public class HybridJacksonPool implements RecyclerPool<BufferRecycler> {
 
     private static int roundToPowerOfTwo(final int value) {
         if (value > MAX_POW2) {
-            throw new IllegalArgumentException("There is no larger power of 2 int for value:"+value+" since it exceeds 2^31.");
+            throw new IllegalArgumentException(
+                    "There is no larger power of 2 int for value:" + value + " since it exceeds 2^31.");
         }
         if (value < 0) {
-            throw new IllegalArgumentException("Given value:"+value+". Expecting value >= 0.");
+            throw new IllegalArgumentException("Given value:" + value + ". Expecting value >= 0.");
         }
         final int nextPow2 = 1 << (32 - Integer.numberOfLeadingZeros(value - 1));
         return nextPow2;

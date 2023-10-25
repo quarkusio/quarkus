@@ -37,6 +37,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.bootstrap.model.CapabilityErrors;
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
@@ -1410,6 +1412,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Installing the library again is failing on Windows, probably because the jar is accessed by the dev mode process")
     public void testExternalReloadableArtifacts() throws Exception {
         final String rootProjectPath = "projects/external-reloadable-artifacts";
 

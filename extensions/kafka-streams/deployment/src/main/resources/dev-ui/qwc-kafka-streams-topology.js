@@ -2,10 +2,9 @@ import { QwcHotReloadElement, html, css } from 'qwc-hot-reload-element';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { JsonRpc } from 'jsonrpc';
 
-import { Graphviz } from "https://cdn.jsdelivr.net/npm/@hpcc-js/wasm/dist/graphviz.js";
+import { Graphviz } from "@hpcc-js/wasm/graphviz";
 
 import '@vaadin/details';
-import '@vaadin/tabsheet';
 import '@vaadin/tabs';
 import '@vaadin/vertical-layout';
 import 'qui-badge';

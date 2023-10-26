@@ -207,6 +207,8 @@ public class PgPoolRecorder {
                 }
             }
 
+            pgConnectOptions.setUseLayer7Proxy(dataSourceReactivePostgreSQLConfig.useLayer7Proxy());
+
             pgConnectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll());
 
             configurePemTrustOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePem());

@@ -82,8 +82,8 @@ class QuarkusCodestartCatalogTest {
                 .isEqualTo("java");
         assertThat(projectDefinition.getBaseCodestarts()).hasSize(4);
         assertThat(projectDefinition.getExtraCodestarts()).extracting(Codestart::getName)
-                .containsExactlyInAnyOrder("dockerfiles",
-                        "maven-wrapper");
+                .containsExactlyInAnyOrder("tooling-dockerfiles",
+                        "tooling-maven-wrapper");
     }
 
     @Test
@@ -136,8 +136,8 @@ class QuarkusCodestartCatalogTest {
                 .contains("config-properties");
         assertThat(projectDefinition.getExtraCodestarts()).extracting(Codestart::getName)
                 .containsExactlyInAnyOrder(
-                        "dockerfiles",
-                        "maven-wrapper",
+                        "tooling-dockerfiles",
+                        "tooling-maven-wrapper",
                         "resteasy-codestart");
     }
 

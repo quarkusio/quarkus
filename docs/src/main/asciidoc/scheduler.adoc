@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: miscellaneous
 :summary: Modern applications often need to run specific tasks periodically. In this guide, you learn how to schedule periodic tasks.
+:topics: scheduling,cronjob
+:extensions: io.quarkus:quarkus-scheduler
 
 Modern applications often need to run specific tasks periodically.
 In this guide, you learn how to schedule periodic tasks.

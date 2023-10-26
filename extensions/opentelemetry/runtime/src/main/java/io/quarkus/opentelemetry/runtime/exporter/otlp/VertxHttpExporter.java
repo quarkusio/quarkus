@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.runtime.exporter.otlp;
 
-import static io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpExporterUtil.getPort;
+import static io.quarkus.opentelemetry.runtime.exporter.otlp.OTelExporterUtil.getPort;
 
 import java.io.IOException;
 import java.io.OutputStream;

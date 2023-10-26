@@ -11,7 +11,8 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-
+:topics: tooling,testing,coverage,jacoco
+:extensions: io.quarkus:quarkus-jacoco
 
 Learn how to measure the test coverage of your application. This guide covers:
 
@@ -173,7 +174,7 @@ already being instrumented. The configuration needed is detailed below.
 == Working with multi-module projects
 
 Up until `3.2`, `data-file` and `report-location` were always relative to the module's build output directory, which prevented from
-working with multi-module projects where you want to aggregate all coverages into a single parent directory. Starting in `3.3`, 
+working with multi-module projects where you want to aggregate all coverages into a single parent directory. Starting in `3.3`,
 specifying a `data-file` or `report-location` will assume the path as is. Here is an example on how to set up the `surefire` plugin:
 
 [source, xml]
@@ -445,7 +446,7 @@ jacocoTestCoverageVerification {
 check.dependsOn jacocoTestCoverageVerification
 ----
 
-Excluding classes from the verification task can be configured as following: 
+Excluding classes from the verification task can be configured as following:
 
 [source,gradle]
 ----

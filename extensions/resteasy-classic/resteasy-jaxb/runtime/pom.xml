@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-jaxb</artifactId>
-    <name>Quarkus - RESTEasy - JAXB - Runtime</name>
+    <name>Quarkus - RESTEasy Classic - JAXB - Runtime</name>
     <description>XML serialization support for RESTEasy Classic</description>
     <dependencies>
         <dependency>

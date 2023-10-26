@@ -6,6 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Build analytics
 :categories: analytics
 :summary: This guide presents what build analytics is and how to configure it.
+:extensions: io.quarkus:quarkus-core
 
 The Quarkus team has limited knowledge, from Maven download numbers, of the remarkable growth of Quarkus and the number of users reporting issues/concerns. Still, we need more insight into the platforms, operating system, Java combinations, and build tools our users employ.
 The build analytics tool aims to provide us with this information.

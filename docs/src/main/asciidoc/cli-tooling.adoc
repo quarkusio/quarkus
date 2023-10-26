@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: tooling
 :summary: Use the Quarkus CLI to create, build, run, and manage extensions for Quarkus projects.
+:topics: cli,tooling
 
 The `quarkus` command lets you create projects, manage extensions and
 do essential build and development tasks using the underlying project build tool.

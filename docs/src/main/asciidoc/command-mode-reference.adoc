@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: core, command-line
 :summary: This reference guide explains how to develop command line applications with Quarkus.
+:topics: command-line,cli
+:extensions: io.quarkus:quarkus-core
 
 This reference covers how to write applications that run and then exit.
 
@@ -163,7 +165,7 @@ quarkus dev '--help'
 ./gradlew quarkusDev --quarkus-args='--help'
 ----
 
-You should see the following down the bottom of the screen after the application is stopped: 
+You should see the following down the bottom of the screen after the application is stopped:
 
 [source]
 ----

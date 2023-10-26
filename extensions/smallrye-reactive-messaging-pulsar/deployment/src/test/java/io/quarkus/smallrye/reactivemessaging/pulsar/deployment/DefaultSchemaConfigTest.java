@@ -54,6 +54,8 @@ import io.smallrye.config.common.MapBackedConfigSource;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.smallrye.reactive.messaging.Targeted;
+import io.smallrye.reactive.messaging.TargetedMessages;
 import io.smallrye.reactive.messaging.pulsar.OutgoingMessage;
 import io.smallrye.reactive.messaging.pulsar.PulsarBatchMessage;
 import io.smallrye.reactive.messaging.pulsar.PulsarMessage;
@@ -77,6 +79,7 @@ public class DefaultSchemaConfigTest {
 
         List<Class<?>> classes = new ArrayList<>(Arrays.asList(classesToIndex));
         classes.add(Incoming.class);
+        classes.add(Outgoing.class);
         DefaultSchemaDiscoveryState discovery = new DefaultSchemaDiscoveryState(index(classes)) {
             @Override
             Config getConfig() {
@@ -2035,6 +2038,34 @@ public class DefaultSchemaConfigTest {
         @Incoming("channel2")
         void method2(String msg) {
 
+        }
+
+    }
+
+    @Test
+    void targetedOutgoings() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.incoming.channel1.schema", "STRING"),
+                tuple("mp.messaging.incoming.channel2.schema", "STRING"),
+        };
+        doTest(expectations, TargetedOutgoings.class);
+    }
+
+
+    private static class TargetedOutgoings {
+
+        @Incoming("channel1")
+        @Outgoing("out1")
+        @Outgoing("out2")
+        Targeted method1(String msg) {
+            return null;
+        }
+
+        @Incoming("channel2")
+        @Outgoing("out3")
+        @Outgoing("out4")
+        TargetedMessages method2(String msg) {
+            return null;
         }
 
     }

@@ -14,7 +14,7 @@
     <description>Hibernate Reactive related tests running with the MariaDB database</description>
 
     <properties>
-        <reactive-mariadb.url>vertx-reactive:mysql://localhost:3306/hibernate_orm_test</reactive-mariadb.url>
+        <reactive-mariadb.url>vertx-reactive:mysql://localhost:3308/hibernate_orm_test</reactive-mariadb.url>
     </properties>
 
     <dependencies>
@@ -158,9 +158,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <reactive-mariadb.url>vertx-reactive:mysql://localhost:3308/hibernate_orm_test</reactive-mariadb.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: compatibility
 :summary: Use Spring Boot's `@ConfigurationProperties` in place of MicroProfile Config annotations
+:topics: spring,configuration,compatibility
+:extensions: io.quarkus:quarkus-spring-boot-properties
 
 If you prefer to use Spring Boot `@ConfigurationProperties` annotated class to access application properties instead of
 <<config-mappings.adoc#config-mappings,`@ConfigMapping`>> or a MicroProfile `@ConfigProperty` approach, you can do that with this extension.

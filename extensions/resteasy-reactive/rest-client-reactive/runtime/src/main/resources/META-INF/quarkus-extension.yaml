@@ -1,4 +1,4 @@
-name: "REST Client Reactive"
+name: "RESTEasy Reactive's REST Client"
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   keywords:

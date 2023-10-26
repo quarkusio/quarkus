@@ -10,6 +10,8 @@ include::_attributes.adoc[]
 :summary: This guide explains how your application can utilize SmallRye JWT to provide secured access to the Jakarta REST endpoints.
 :extension-name: SmallRye JWT
 :mp-jwt: MicroProfile JWT RBAC
+:topics: security,jwt
+:extensions: io.quarkus:quarkus-smallrye-jwt
 
 This guide explains how your Quarkus application can utilize https://github.com/smallrye/smallrye-jwt/[SmallRye JWT]
 to verify https://tools.ietf.org/html/rfc7519[JSON Web Token]s, represent them as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`

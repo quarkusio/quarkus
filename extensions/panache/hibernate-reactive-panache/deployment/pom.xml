@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <postgres.reactive.url>vertx-reactive:postgresql://localhost:5432/hibernate_orm_test</postgres.reactive.url>
+        <postgres.reactive.url>vertx-reactive:postgresql://localhost:5431/hibernate_orm_test</postgres.reactive.url>
     </properties>
 
     <artifactId>quarkus-hibernate-reactive-panache-deployment</artifactId>
@@ -141,9 +141,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <postgres.reactive.url>vertx-reactive:postgresql://localhost:5431/hibernate_orm_test</postgres.reactive.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

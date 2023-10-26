@@ -2,10 +2,12 @@ package io.quarkus.deployment;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 import org.eclipse.microprofile.config.Config;
 import org.wildfly.common.annotation.NotNull;
 
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 
 /**
@@ -13,7 +15,6 @@ import io.quarkus.bootstrap.prebuild.CodeGenException;
  */
 public interface CodeGenProvider {
     /**
-     *
      * @return unique name of the code gen provider, will correspond to the directory in <code>generated-sources</code>
      */
     @NotNull
@@ -37,6 +38,32 @@ public interface CodeGenProvider {
      */
     @NotNull
     String inputDirectory();
+
+    /**
+     * Provides the possibility for the provider to override the default input directory.
+     * This method is called after {@link #init(ApplicationModel, Map)}.
+     * Returning {@code null} will result in the {@code inputDirectory} method being called to retrieve the default input
+     * directory.
+     * <p>
+     * The returned path must be an absolute path. However, pointing to a directory outside of the project structure should
+     * be avoided for security purposes.
+     *
+     * @return the input directory, must be an absolute path. {@code null} would result in the default input directory being
+     *         used.
+     */
+    default Path getInputDirectory() {
+        return null;
+    }
+
+    /**
+     * Provides the possibility for the provider to initialize itself using the application model and properties.
+     *
+     * @param model the application model
+     * @param properties the build time properties defined in the application build file (pom.xml or gradle.build)
+     */
+    default void init(ApplicationModel model, Map<String, String> properties) {
+        // No-op
+    }
 
     /**
      * Trigger code generation

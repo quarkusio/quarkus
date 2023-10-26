@@ -5,7 +5,7 @@ import java.util.Map;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Build item that contains the final results of all
+ * Build item that contains the final results of all configuration.
  */
 public final class DevServicesLauncherConfigResultBuildItem extends SimpleBuildItem {
 

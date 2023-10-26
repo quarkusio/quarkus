@@ -67,7 +67,7 @@ final class VertxGrpcExporter implements SpanExporter {
             Vertx vertx) {
         this.type = type;
         this.exporterMetrics = ExporterMetrics.createGrpcOkHttp(exporterName, type, meterProviderSupplier);
-        this.server = SocketAddress.inetSocketAddress(OtlpExporterUtil.getPort(grpcBaseUri), grpcBaseUri.getHost());
+        this.server = SocketAddress.inetSocketAddress(OTelExporterUtil.getPort(grpcBaseUri), grpcBaseUri.getHost());
         this.compressionEnabled = compressionEnabled;
         this.headers = headersMap;
         var httpClientOptions = new HttpClientOptions()

@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: getting-started
 :summary: Learn more about Quarkus integrations in IDEs.
+:topics: ide,tooling
 
 The following IDEs have support for the community developed Quarkus Tools:
 

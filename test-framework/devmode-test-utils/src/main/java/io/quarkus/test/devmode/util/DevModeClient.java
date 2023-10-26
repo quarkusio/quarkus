@@ -20,7 +20,15 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
+import io.smallrye.common.os.OS;
+
 public class DevModeClient {
+
+    private static final long DEFAULT_TIMEOUT = OS.current() == OS.WINDOWS ? 3L : 1L;
+
+    static long getDefaultTimeout() {
+        return DEFAULT_TIMEOUT;
+    }
 
     private final int port;
 
@@ -62,7 +70,7 @@ public class DevModeClient {
     }
 
     public void awaitUntilServerDown() {
-        await().atMost(1, TimeUnit.MINUTES).until(() -> {
+        await().atMost(DEFAULT_TIMEOUT, TimeUnit.MINUTES).until(() -> {
             try {
                 get(); // Ignore result on purpose
                 return false;
@@ -82,7 +90,7 @@ public class DevModeClient {
                 .pollDelay(1, TimeUnit.SECONDS)
                 //Allow for a long maximum time as the first hit to a build might require to download dependencies from Maven repositories;
                 //some, such as org.jetbrains.kotlin:kotlin-compiler, are huge and will take more than a minute.
-                .atMost(3, TimeUnit.MINUTES).until(() -> {
+                .atMost(2L + DEFAULT_TIMEOUT, TimeUnit.MINUTES).until(() -> {
                     try {
                         String broken = brokenReason.get();
                         if (broken != null) {

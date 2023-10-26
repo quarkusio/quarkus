@@ -13,6 +13,13 @@ export class QwcRestClientClients extends LitElement {
 
     // Component style
     static styles = css`
+        :host {
+          display: block;
+          height: 100%;
+        }
+        .datatable {
+          height: 100%;
+        }
         code {
             font-size: 85%;
         }`;

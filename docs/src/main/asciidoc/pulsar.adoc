@@ -10,6 +10,8 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: messaging,reactive-messaging,pulsar
+:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-pulsar
 
 This reference guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with Apache Pulsar.
 

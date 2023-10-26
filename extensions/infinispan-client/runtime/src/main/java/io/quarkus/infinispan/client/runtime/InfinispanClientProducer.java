@@ -224,6 +224,15 @@ public class InfinispanClientProducer {
                     infinispanClientRuntimeConfig.sslCiphers.get().stream().collect(Collectors.joining(" ")));
         }
 
+        if (infinispanClientRuntimeConfig.sslHostNameValidation.isPresent()) {
+            properties.put(ConfigurationProperties.SSL_HOSTNAME_VALIDATION,
+                    infinispanClientRuntimeConfig.sslHostNameValidation.get());
+        }
+
+        if (infinispanClientRuntimeConfig.sniHostName.isPresent()) {
+            properties.put(ConfigurationProperties.SNI_HOST_NAME, infinispanClientRuntimeConfig.sniHostName.get());
+        }
+
         builder.withProperties(properties);
 
         if (infinispanClientRuntimeConfig.tracingPropagationEnabled.isPresent()) {

@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>quarkus-resteasy-mutiny-common-deployment</artifactId>
-    <name>Quarkus - RESTEasy - Mutiny - Common - Deployment</name>
+    <name>Quarkus - RESTEasy Classic - Mutiny - Common - Deployment</name>
 
     <dependencies>
         <dependency>

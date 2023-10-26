@@ -1,7 +1,6 @@
 package io.quarkus.grpc.runtime.supports.blocking;
 
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -12,6 +11,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import org.jboss.logging.Logger;
 
 import io.grpc.Context;
 import io.grpc.Metadata;
@@ -31,6 +32,7 @@ import io.vertx.core.Vertx;
  * For non-annotated methods, the interceptor acts as a pass-through.
  */
 public class BlockingServerInterceptor implements ServerInterceptor, Function<String, Boolean> {
+    private static final Logger log = Logger.getLogger(BlockingServerInterceptor.class);
 
     private final Vertx vertx;
     private final Set<String> blockingMethods;
@@ -140,14 +142,16 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
      */
     private class ReplayListener<ReqT> extends ServerCall.Listener<ReqT> {
         private final InjectableContext.ContextState requestContextState;
+        private final Context grpcContext;
 
         // exclusive to event loop context
-        private ServerCall.Listener<ReqT> delegate;
-        private final Queue<Consumer<ServerCall.Listener<ReqT>>> incomingEvents = new LinkedList<>();
-        private boolean isConsumingFromIncomingEvents = false;
+        private volatile ServerCall.Listener<ReqT> delegate;
+        private final Queue<Consumer<ServerCall.Listener<ReqT>>> incomingEvents = new ConcurrentLinkedQueue<>();
+        private volatile boolean isConsumingFromIncomingEvents;
 
         private ReplayListener(InjectableContext.ContextState requestContextState) {
             this.requestContextState = requestContextState;
+            this.grpcContext = Context.current();
         }
 
         /**
@@ -185,6 +189,12 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             final Context grpcContext = Context.current();
             Callable<Void> blockingHandler = new BlockingExecutionHandler<>(consumer, grpcContext, delegate,
                     requestContextState, getRequestContext(), this);
+
+            if (!isExecutable()) {
+                log.warn("Not executable, already shutdown? Ignoring execution ...");
+                return;
+            }
+
             if (devMode) {
                 blockingHandler = new DevModeBlockingExecutionHandler(Thread.currentThread().getContextClassLoader(),
                         blockingHandler);
@@ -323,6 +333,11 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
     }
 
     // protected for tests
+
+    protected boolean isExecutable() {
+        return Arc.container() != null;
+    }
+
     protected ManagedContext getRequestContext() {
         return Arc.container().requestContext();
     }

@@ -156,7 +156,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             return;
         }
         if (currentState.getExtensions().isEmpty()) {
-            log.info("Quarkus extension were not found among the project dependencies");
+            log.info("No Quarkus extensions were found among the project dependencies");
             return;
         }
         if (currentState == recommendedState) {

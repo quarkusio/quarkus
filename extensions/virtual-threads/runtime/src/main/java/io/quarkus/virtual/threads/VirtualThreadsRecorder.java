@@ -4,20 +4,16 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Optional;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
-import io.smallrye.mutiny.infrastructure.Infrastructure;
-import io.vertx.core.Vertx;
-import io.vertx.core.impl.ContextInternal;
 
 @Recorder
 public class VirtualThreadsRecorder {
@@ -26,8 +22,15 @@ public class VirtualThreadsRecorder {
 
     static VirtualThreadsConfig config = new VirtualThreadsConfig();
 
-    private static volatile Executor current;
+    private static volatile ExecutorService current;
     private static final Object lock = new Object();
+
+    public static Supplier<ExecutorService> VIRTUAL_THREADS_EXECUTOR_SUPPLIER = new Supplier<ExecutorService>() {
+        @Override
+        public ExecutorService get() {
+            return new DelegatingExecutorService(VirtualThreadsRecorder.getCurrent());
+        }
+    };
 
     public void setupVirtualThreads(VirtualThreadsConfig c, ShutdownContext shutdownContext, LaunchMode launchMode) {
         config = c;
@@ -36,9 +39,9 @@ public class VirtualThreadsRecorder {
                 shutdownContext.addLastShutdownTask(new Runnable() {
                     @Override
                     public void run() {
-                        Executor executor = current;
-                        if (executor instanceof ExecutorService) {
-                            ((ExecutorService) executor).shutdownNow();
+                        ExecutorService service = current;
+                        if (service != null) {
+                            service.shutdownNow();
                         }
                         current = null;
                     }
@@ -47,10 +50,9 @@ public class VirtualThreadsRecorder {
                 shutdownContext.addLastShutdownTask(new Runnable() {
                     @Override
                     public void run() {
-                        Executor executor = current;
+                        ExecutorService service = current;
                         current = null;
-                        if (executor instanceof ExecutorService) {
-                            ExecutorService service = (ExecutorService) executor;
+                        if (service != null) {
                             service.shutdown();
 
                             final long timeout = config.shutdownTimeout.toNanos();
@@ -82,8 +84,12 @@ public class VirtualThreadsRecorder {
         }
     }
 
-    public static Executor getCurrent() {
-        Executor executor = current;
+    public Supplier<ExecutorService> getCurrentSupplier() {
+        return VIRTUAL_THREADS_EXECUTOR_SUPPLIER;
+    }
+
+    public static ExecutorService getCurrent() {
+        ExecutorService executor = current;
         if (executor != null) {
             return executor;
         }
@@ -100,32 +106,25 @@ public class VirtualThreadsRecorder {
         Method ofVirtual = Thread.class.getMethod("ofVirtual");
         Object vtb = ofVirtual.invoke(VirtualThreadsRecorder.class);
         Class<?> vtbClass = Class.forName("java.lang.Thread$Builder$OfVirtual");
-        Method name = vtbClass.getMethod("name", String.class, long.class);
-        vtb = name.invoke(vtb, prefix, 0);
+        // .name()
+        if (prefix != null) {
+            Method name = vtbClass.getMethod("name", String.class, long.class);
+            vtb = name.invoke(vtb, prefix, 0);
+        }
+        // .uncaughtExceptionHandler()
+        Method uncaughtHandler = vtbClass.getMethod("uncaughtExceptionHandler", Thread.UncaughtExceptionHandler.class);
+        vtb = uncaughtHandler.invoke(vtb, new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                logger.errorf(e, "Thread %s threw an uncaught exception:", t);
+            }
+        });
+        // .factory()
         Method factory = vtbClass.getMethod("factory");
         ThreadFactory tf = (ThreadFactory) factory.invoke(vtb);
 
         return (ExecutorService) Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class)
                 .invoke(VirtualThreadsRecorder.class, tf);
-    }
-
-    static ExecutorService newVirtualThreadPerTaskExecutor()
-            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        return (ExecutorService) Executors.class.getMethod("newVirtualThreadPerTaskExecutor")
-                .invoke(VirtualThreadsRecorder.class);
-    }
-
-    static ExecutorService newVirtualThreadExecutor()
-            throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        try {
-            Optional<String> namePrefix = config.namePrefix;
-            return namePrefix.isPresent() ? newVirtualThreadPerTaskExecutorWithName(namePrefix.get())
-                    : newVirtualThreadPerTaskExecutor();
-        } catch (ClassNotFoundException e) {
-            logger.warn("Unable to invoke java.util.concurrent.Executors#newThreadPerTaskExecutor" +
-                    " with VirtualThreadFactory, falling back to unnamed virtual threads", e);
-            return newVirtualThreadPerTaskExecutor();
-        }
     }
 
     /**
@@ -134,11 +133,12 @@ public class VirtualThreadsRecorder {
      * Since we try to load the "Loom-preview" classes/methods at runtime, the application can even be compiled
      * using java 11 and executed with a loom-compliant JDK.
      */
-    private static Executor createExecutor() {
+    private static ExecutorService createExecutor() {
         if (config.enabled) {
             try {
-                return new ContextPreservingExecutorService(newVirtualThreadExecutor());
-            } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+                String prefix = config.namePrefix.orElse(null);
+                return new ContextPreservingExecutorService(newVirtualThreadPerTaskExecutorWithName(prefix));
+            } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException e) {
                 logger.debug("Unable to invoke java.util.concurrent.Executors#newVirtualThreadPerTaskExecutor", e);
                 //quite ugly but works
                 logger.warn("You weren't able to create an executor that spawns virtual threads, the default" +
@@ -149,19 +149,6 @@ public class VirtualThreadsRecorder {
             }
         }
         // Fallback to regular worker threads
-        return new Executor() {
-            @Override
-            public void execute(Runnable command) {
-                var context = Vertx.currentContext();
-                if (!(context instanceof ContextInternal)) {
-                    Infrastructure.getDefaultWorkerPool().execute(command);
-                } else {
-                    context.executeBlocking(() -> {
-                        command.run();
-                        return null;
-                    }, false);
-                }
-            }
-        };
+        return new FallbackVirtualThreadsExecutorService();
     }
 }

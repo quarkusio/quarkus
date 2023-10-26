@@ -8,6 +8,8 @@ include::_attributes.adoc[]
 :categories: data
 :summary: Hibernate ORM is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. It makes complex mappings possible, but it does not make simple and common mappings trivial. Panache focuses on making your entities trivial and fun to write.
 :config-file: application.properties
+:topics: data,hibernate-orm,panache,sql,jdbc
+:extensions: io.quarkus:quarkus-hibernate-orm-panache,io.quarkus:quarkus-hibernate-orm
 
 Hibernate ORM is the de facto Jakarta Persistence (formerly known as JPA) implementation and offers you the full breadth of an Object Relational Mapper.
 It makes complex mappings possible, but it does not make simple and common mappings trivial.
@@ -944,7 +946,7 @@ matching the values returned by the select clause:
 ----
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
-@RegisterForReflection 
+@RegisterForReflection
 public class RaceWeight {
     public final String race;
     public final Double weight;
@@ -1198,7 +1200,7 @@ public class PanacheFunctionalityTest {
         // We can even mock your custom methods
         Mockito.when(Person.findOrdered()).thenReturn(Collections.emptyList());
         Assertions.assertTrue(Person.findOrdered().isEmpty());
-        
+
         // Mocking a void method
         Person.voidMethod();
 

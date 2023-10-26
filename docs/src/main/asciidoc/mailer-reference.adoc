@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: miscellaneous
 :summary: This reference guide explains in more details the configuration and usage of the Quarkus Mailer.
+:topics: mail,mailer
+:extensions: io.quarkus:quarkus-mailer
 
 This guide is the companion from the xref:mailer.adoc[Mailer Getting Started Guide].
 It explains in more details the configuration and usage of the Quarkus Mailer.

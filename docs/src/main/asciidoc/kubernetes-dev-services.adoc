@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: Start a Kubernetes API server automatically in dev and test modes.
+:topics: devservices,kubernetes,tooling,testing,devmode
+:extensions: io.quarkus:quarkus-kubernetes-client
 
 Dev Services for Kubernetes automatically starts a Kubernetes API server in dev mode and when running tests.
 So you don't have to start a Kubernetes cluster manually.
@@ -19,7 +21,7 @@ Dev Services for Kubernetes is automatically enabled unless:
 - `quarkus.kubernetes-client.devservices.enabled` is set to `false`
 - the `api-server-url` is configured
 - a valid Kube config file is found and `quarkus.kubernetes-client.devservices.override-kubeconfig` is not set to `true`
-- you include the `quarkus-test-kubernetes-client` dependency 
+- you include the `quarkus-test-kubernetes-client` dependency
 
 Dev Services for Kubernetes relies on Docker to start the API server.
 If your environment does not support Docker, you will need to start the Kubernetes cluster manually, or connect to an already running Kubernetes cluster.

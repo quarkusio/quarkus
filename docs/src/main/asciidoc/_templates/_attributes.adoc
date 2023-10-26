@@ -4,7 +4,6 @@
 :idseparator: -
 :icons: font
 :code-examples: ../../../../../target/asciidoc/generated/examples
-:doc-guides: ..
 :doc-examples: ../_examples
 :imagesdir: ../images
 :includes: ../includes

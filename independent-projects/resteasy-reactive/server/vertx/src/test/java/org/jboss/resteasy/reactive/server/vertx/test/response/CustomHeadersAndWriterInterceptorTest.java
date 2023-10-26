@@ -7,9 +7,11 @@ import static org.hamcrest.Matchers.is;
 import java.io.IOException;
 import java.util.Date;
 
+import jakarta.ws.rs.ConstrainedTo;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -28,7 +30,7 @@ public class CustomHeadersAndWriterInterceptorTest {
     @RegisterExtension
     static ResteasyReactiveUnitTest runner = new ResteasyReactiveUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(TestResource.class, DummyWriterInterceptor.class));
+                    .addClasses(TestResource.class, DummyWriterInterceptor.class, FailingWriterInterceptor.class));
 
     @Test
     void testResponseHeaders() {
@@ -58,6 +60,16 @@ public class CustomHeadersAndWriterInterceptorTest {
         @Override
         public void aroundWriteTo(WriterInterceptorContext context) throws IOException, WebApplicationException {
             context.proceed();
+        }
+    }
+
+    @Provider
+    @ConstrainedTo(RuntimeType.CLIENT)
+    public static class FailingWriterInterceptor implements WriterInterceptor {
+
+        @Override
+        public void aroundWriteTo(WriterInterceptorContext context) throws WebApplicationException {
+            throw new RuntimeException("this is never called");
         }
     }
 

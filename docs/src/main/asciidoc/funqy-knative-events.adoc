@@ -8,6 +8,8 @@ include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains Funqy's Knative Events binding.
 :devtools-no-gradle:
+:topics: serverless,function,cloud,funqy
+:extensions: io.quarkus:quarkus-funqy-knative-events
 
 Quarkus Funqy link:https://knative.dev/docs/eventing[Knative Events] builds off of the xref:funqy-http.adoc[Funqy HTTP] extension to allow you to
 route and process Knative Events within a Funqy function.

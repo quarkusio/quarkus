@@ -69,9 +69,10 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     }
 
     public enum Tooling implements DataKey {
-        GRADLE_WRAPPER,
-        MAVEN_WRAPPER,
-        DOCKERFILES
+        TOOLING_GRADLE_WRAPPER,
+        TOOLING_MAVEN_WRAPPER,
+        TOOLING_DOCKERFILES,
+        TOOLING_GITHUB_ACTION
     }
 
     public enum ExtensionCodestart implements DataKey {
@@ -244,17 +245,17 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
             switch (projectInput.getBuildTool()) {
                 case GRADLE:
                 case GRADLE_KOTLIN_DSL:
-                    codestarts.add(QuarkusCodestartCatalog.Tooling.GRADLE_WRAPPER.key());
+                    codestarts.add(Tooling.TOOLING_GRADLE_WRAPPER.key());
                     break;
                 case MAVEN:
-                    codestarts.add(QuarkusCodestartCatalog.Tooling.MAVEN_WRAPPER.key());
+                    codestarts.add(Tooling.TOOLING_MAVEN_WRAPPER.key());
                     break;
                 default:
                     throw new IllegalArgumentException("Unsupported build tool wrapper: " + projectInput.getBuildTool());
             }
         }
         if (projectInput.getAppContent().contains(AppContent.DOCKERFILES)) {
-            codestarts.add(QuarkusCodestartCatalog.Tooling.DOCKERFILES.key());
+            codestarts.add(QuarkusCodestartCatalog.Tooling.TOOLING_DOCKERFILES.key());
         }
         return codestarts;
     }

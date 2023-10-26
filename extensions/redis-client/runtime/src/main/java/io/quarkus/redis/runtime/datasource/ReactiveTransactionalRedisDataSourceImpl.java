@@ -177,7 +177,7 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
     @Override
     public Uni<Void> execute(String command, String... args) {
         nonNull(command, "command");
-        return execute(Command.create(command), args);
+        return execute(CommandMap.normalize(Command.create(command)), args);
     }
 
     @Override
@@ -185,6 +185,7 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
         nonNull(command, "command");
         tx.enqueue(r -> r); // identity
 
+        command = CommandMap.normalize(command);
         RedisCommand c = RedisCommand.of(command).putAll(Arrays.asList(args));
 
         return reactive.execute(c.toRequest())
@@ -201,6 +202,7 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
     @Override
     public Uni<Void> execute(io.vertx.redis.client.Command command, String... args) {
         nonNull(command, "command");
+        command = CommandMap.normalize(command);
         return execute(new Command(command), args);
     }
 }

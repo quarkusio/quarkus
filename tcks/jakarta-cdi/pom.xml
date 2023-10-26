@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - Jakarta CDI</name>
 
     <properties>
-        <cdi-tck.version>4.0.10</cdi-tck.version>
+        <cdi-tck.version>4.0.12</cdi-tck.version>
     </properties>
 
     <dependencies>

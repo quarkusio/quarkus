@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: observability
 :summary: This guide explains how your Quarkus application can utilize OpenTelemetry to provide distributed tracing for interactive web applications.
+:topics: observability,opentelemetry
+:extensions: io.quarkus:quarkus-opentelemetry
 
 This guide explains how your Quarkus application can utilize https://opentelemetry.io/[OpenTelemetry] (OTel) to provide
 distributed tracing for interactive web applications.

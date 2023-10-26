@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>quarkus-resteasy-links-deployment</artifactId>
-    <name>Quarkus - RESTEasy - Links - Deployment</name>
+    <name>Quarkus - RESTEasy Classic - Links - Deployment</name>
 
     <dependencies>
         <dependency>

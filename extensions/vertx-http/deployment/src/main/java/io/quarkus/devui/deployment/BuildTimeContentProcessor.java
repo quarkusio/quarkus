@@ -80,6 +80,7 @@ public class BuildTimeContentProcessor {
     private static final String SLASH = "/";
     private static final String DEV_UI = "dev-ui";
     private static final String BUILD_TIME_PATH = "dev-ui-templates/build-time";
+    private static final String ES_MODULE_SHIMS = "es-module-shims";
 
     final Config config = ConfigProvider.getConfig();
 
@@ -294,11 +295,11 @@ public class BuildTimeContentProcessor {
                 QuteTemplateBuildItem.DEV_UI);
 
         Aggregator aggregator = new Aggregator(mvnpmBuildItem.getMvnpmJars());
-
         for (InternalImportMapBuildItem importMapBuildItem : internalImportMapBuildItems) {
             Map<String, String> importMap = importMapBuildItem.getImportMap();
             aggregator.addMappings(importMap);
         }
+        String esModuleShimsVersion = extractEsModuleShimsVersion(mvnpmBuildItem.getMvnpmJars());
         String importmap = aggregator.aggregateAsJson(nonApplicationRootPathBuildItem.getNonApplicationRootPath());
         aggregator.reset();
 
@@ -310,7 +311,8 @@ public class BuildTimeContentProcessor {
                 "nonApplicationRoot", nonApplicationRoot,
                 "contextRoot", contextRoot,
                 "importmap", importmap,
-                "themeVars", themeVars);
+                "themeVars", themeVars,
+                "esModuleShimsVersion", esModuleShimsVersion);
 
         quteTemplateBuildItem.add("index.html", data);
 
@@ -374,6 +376,18 @@ public class BuildTimeContentProcessor {
         addVersionInfoBuildTimeData(internalBuildTimeData, nonApplicationRootPathBuildItem);
         addIdeBuildTimeData(internalBuildTimeData, effectiveIdeBuildItem, launchModeBuildItem);
         buildTimeConstProducer.produce(internalBuildTimeData);
+    }
+
+    private String extractEsModuleShimsVersion(Set<URL> urls) {
+        for (URL u : urls) {
+            if (u.getPath().contains(ES_MODULE_SHIMS)) {
+                int i = u.getPath().indexOf(ES_MODULE_SHIMS) + ES_MODULE_SHIMS.length() + 1;
+                String versionOnward = u.getPath().substring(i);
+                String[] parts = versionOnward.split(SLASH);
+                return parts[0];
+            }
+        }
+        return "";
     }
 
     private void addThemeBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,

@@ -9,7 +9,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
- * A build item for adding the dev stream log
+ * A build item for adding the dev stream log.
  */
 public final class WebSocketLogHandlerBuildItem extends SimpleBuildItem {
     private final RuntimeValue<Optional<Handler>> handlerValue;

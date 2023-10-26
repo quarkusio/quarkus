@@ -386,9 +386,9 @@
         "gradle-plugin-id": "io.quarkus",
         "gradle-plugin-version": "999-FAKE",
         "supported-maven-versions": "[3.6.2,)",
-        "proposed-maven-version": "3.8.8",
+        "proposed-maven-version": "3.9.5",
         "maven-wrapper-version": "3.2.0",
-        "gradle-wrapper-version": "8.3"
+        "gradle-wrapper-version": "8.4"
       }
     },
     "codestarts-artifacts": [

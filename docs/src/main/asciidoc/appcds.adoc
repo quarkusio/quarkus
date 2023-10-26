@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: core, cloud
 :summary: This reference guide explains how to enable AppCDS with Quarkus.
+:topics: appcds,serverless
+:extensions: io.quarkus:quarkus-core
 
 This reference guide explains how to enable Application Class Data Sharing in your Quarkus applications.
 

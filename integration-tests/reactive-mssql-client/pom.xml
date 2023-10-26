@@ -15,7 +15,7 @@
     <name>Quarkus - Integration Tests - Reactive MS SQL Client</name>
 
     <properties>
-        <reactive-mssql.url>vertx-reactive:sqlserver://localhost:1433</reactive-mssql.url>
+        <reactive-mssql.url>vertx-reactive:sqlserver://localhost:1435</reactive-mssql.url>
     </properties>
 
     <dependencies>
@@ -151,9 +151,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <reactive-mssql.url>vertx-reactive:sqlserver://localhost:1435</reactive-mssql.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

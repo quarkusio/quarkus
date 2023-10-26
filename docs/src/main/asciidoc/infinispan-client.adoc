@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: data
 :summary: This guide covers how to use Infinispan with Quarkus.
+:topics: data,infinispan
+:extensions: io.quarkus:quarkus-infinispan-client
 
 This guide demonstrates how your Quarkus application can connect to an Infinispan server using the Infinispan Client extension.
 

@@ -8,6 +8,8 @@ include::_attributes.adoc[]
 :categories: security
 :keywords: sso oidc oauth2 security
 :summary: This guide demonstrates how your OpenID Connect application can support multi-tenancy so that you can serve multiple tenants from a single application.
+:topics: security,oidc,multitenancy
+:extensions: io.quarkus:quarkus-oidc
 
 This guide demonstrates how your OpenID Connect (OIDC) application can support multi-tenancy so that you can serve multiple tenants from a single application. Tenants can be distinct realms or security domains within the same OpenID Provider or even distinct OpenID Providers.
 

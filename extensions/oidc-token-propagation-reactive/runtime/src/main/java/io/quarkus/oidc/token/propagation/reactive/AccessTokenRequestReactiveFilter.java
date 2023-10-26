@@ -59,12 +59,13 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
 
     @PostConstruct
     public void initExchangeTokenClient() {
-        if (exchangeToken) {
+        if (isExchangeToken()) {
             OidcClients clients = Arc.container().instance(OidcClients.class).get();
-            exchangeTokenClient = oidcClientName.isPresent() ? clients.getClient(oidcClientName.get()) : clients.getClient();
+            String clientName = getClientName();
+            exchangeTokenClient = clientName != null ? clients.getClient(clientName) : clients.getClient();
             Grant.Type exchangeTokenGrantType = ConfigProvider.getConfig()
                     .getValue(
-                            "quarkus.oidc-client." + (oidcClientName.isPresent() ? oidcClientName.get() + "." : "")
+                            "quarkus.oidc-client." + (clientName != null ? clientName + "." : "")
                                     + "grant.type",
                             Grant.Type.class);
             if (exchangeTokenGrantType == Grant.Type.EXCHANGE) {
@@ -76,6 +77,10 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
                         + "to use the " + exchangeTokenGrantType.getGrantType() + " grantType");
             }
         }
+    }
+
+    protected boolean isExchangeToken() {
+        return exchangeToken;
     }
 
     @Override
@@ -111,6 +116,10 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
         } else {
             abortRequest(requestContext);
         }
+    }
+
+    protected String getClientName() {
+        return oidcClientName.orElse(null);
     }
 
     public void propagateToken(ResteasyReactiveClientRequestContext requestContext, String accessToken) {

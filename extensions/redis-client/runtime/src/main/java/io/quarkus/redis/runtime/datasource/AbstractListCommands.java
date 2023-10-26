@@ -26,9 +26,6 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
 
     protected static final LPosArgs DEFAULT_INSTANCE = new LPosArgs();
 
-    public static final Command LMPOP = Command.create("lmpop");
-    public static final Command BLMPOP = Command.create("blmpop");
-
     AbstractListCommands(RedisCommandExecutor redis, Type k, Type v) {
         super(redis, new Marshaller(k, v), v);
         this.typeOfKey = k;
@@ -59,7 +56,7 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         validate(timeout, "timeout");
-        RedisCommand cmd = RedisCommand.of(BLMPOP);
+        RedisCommand cmd = RedisCommand.of(Command.BLMPOP);
         cmd.put(timeout.toSeconds());
         cmd.put(keys.length);
         cmd.putAll(marshaller.encode(keys));
@@ -97,7 +94,7 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
         validate(timeout, "timeout");
         positive(count, "count");
 
-        RedisCommand cmd = RedisCommand.of(BLMPOP);
+        RedisCommand cmd = RedisCommand.of(Command.BLMPOP);
         cmd.put(timeout.toSeconds());
         cmd.put(keys.length);
         cmd.putAll(marshaller.encode(keys));
@@ -203,7 +200,7 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
 
-        RedisCommand cmd = RedisCommand.of(LMPOP);
+        RedisCommand cmd = RedisCommand.of(Command.LMPOP);
         cmd.put(keys.length);
         cmd.putAll(marshaller.encode(keys));
         cmd.put(position.name());
@@ -216,7 +213,7 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
         doesNotContainNull(keys, "keys");
         positive(count, "count");
 
-        RedisCommand cmd = RedisCommand.of(LMPOP);
+        RedisCommand cmd = RedisCommand.of(Command.LMPOP);
         cmd.put(keys.length);
         cmd.putAll(marshaller.encode(keys));
         cmd.put(position.name());

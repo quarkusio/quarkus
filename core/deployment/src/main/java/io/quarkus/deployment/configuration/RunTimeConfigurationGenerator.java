@@ -23,7 +23,6 @@ import java.util.regex.Pattern;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.Converter;
 import org.objectweb.asm.Opcodes;
 import org.wildfly.common.Assert;
@@ -66,7 +65,6 @@ import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.PropertiesUtil;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
-import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
 import io.smallrye.config.ConfigMappings;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.Converters;
@@ -191,8 +189,6 @@ public final class RunTimeConfigurationGenerator {
 
     static final MethodDescriptor SRCB_WITH_CONVERTER = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
             "withConverter", ConfigBuilder.class, Class.class, int.class, Converter.class);
-    static final MethodDescriptor SRCB_WITH_SOURCES = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
-            "withSources", ConfigBuilder.class, ConfigSource[].class);
     static final MethodDescriptor SRCB_WITH_CUSTOMIZER = MethodDescriptor.ofMethod(AbstractConfigBuilder.class,
             "withCustomizer", void.class, SmallRyeConfigBuilder.class, String.class);
     static final MethodDescriptor SRCB_BUILD = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "build",
@@ -390,14 +386,6 @@ public final class RunTimeConfigurationGenerator {
 
             // runtime config builder
             readConfig.invokeStaticMethod(SRCB_WITH_CUSTOMIZER, runTimeBuilder, readConfig.load(CONFIG_RUNTIME_NAME));
-
-            // add in our custom sources
-            if (launchMode.isDevOrTest()) {
-                MethodDescriptor registerRuntimeOverrideConfigSource = MethodDescriptor.ofMethod(
-                        RuntimeOverrideConfigSource.class, "registerRuntimeOverrideConfigSource", void.class,
-                        SmallRyeConfigBuilder.class);
-                readConfig.invokeStaticMethod(registerRuntimeOverrideConfigSource, runTimeBuilder);
-            }
 
             final ResultHandle runTimeConfig = readConfig.invokeVirtualMethod(SRCB_BUILD, runTimeBuilder);
             installConfiguration(runTimeConfig, readConfig);

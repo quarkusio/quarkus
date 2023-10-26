@@ -6,7 +6,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.Feature;
 
 /**
- * Represents a functionality provided by an extension. The name of the feature gets displayed in the log during application
+ * Represents functionality provided by an extension. The name of the feature gets displayed in the log during application
  * bootstrap.
  * <p>
  * An extension should provide at most one feature. The name must be unique. If multiple extensions register a feature of the

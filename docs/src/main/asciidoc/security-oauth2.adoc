@@ -9,6 +9,8 @@ include::_attributes.adoc[]
 :keywords: oauth
 :summary: This guide explains how your Quarkus application can utilize OAuth2 tokens to provide secured access to the Jakarta REST endpoints.
 :extension-name: Elytron Security OAuth2
+:topics: security,oauth2,identity-providers
+:extensions: io.quarkus:quarkus-elytron-security-oauth2
 
 This guide explains how your Quarkus application can utilize OAuth2 tokens to provide secured access to the Jakarta REST (formerly known as JAX-RS) endpoints.
 

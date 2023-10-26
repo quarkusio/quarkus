@@ -124,6 +124,7 @@ public class AssembleDownstreamDocumentation {
             Files.createDirectories(TARGET_ROOT_DIRECTORY);
 
             for (Path guide : guides) {
+                System.out.println("[INFO] Processing guide " + guide.getFileName());
                 copyAsciidoc(guide, TARGET_ROOT_DIRECTORY.resolve(guide.getFileName()), downstreamGuides);
             }
             for (Path simpleInclude : simpleIncludes) {

@@ -4,6 +4,7 @@ buildscript {
         mavenLocal {
             content {
                 includeGroupByRegex("io.quarkus.*")
+                includeGroup("org.hibernate.orm")
             }
         }
         mavenCentral()
@@ -42,6 +43,7 @@ subprojects {
         mavenLocal {
             content {
                 includeGroupByRegex("io.quarkus.*")
+                includeGroup("org.hibernate.orm")
             }
         }
         mavenCentral()

@@ -1,11 +1,14 @@
 package io.quarkus.maven;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.maven.model.Dependency;
 import org.apache.maven.project.MavenProject;
 
 import io.quarkus.deployment.util.DeploymentUtil;
@@ -76,10 +79,23 @@ public enum Deployer {
      * @return A set with the discovered extenions.
      */
     public static Set<String> getProjecDeployer(MavenProject project) {
-        return project.getDependencies().stream()
+        return getProjecDeployers(project.getDependencies());
+    }
+
+    /**
+     * Get the deployer extensions found in the project.
+     *
+     * @param dependencies the dependencies for extensions
+     * @return A set with the discovered extenions.
+     */
+    public static Set<String> getProjecDeployers(List<Dependency> dependencies) {
+        if (dependencies == null) {
+            return Collections.emptySet();
+        }
+        return dependencies.stream()
                 .filter(d -> QUARKUS_GROUP_ID.equals(d.getGroupId()))
                 .map(d -> strip(d.getArtifactId()))
-                .filter(n -> Arrays.stream(Deployer.values()).anyMatch(e -> e.equals(n)))
+                .filter(n -> Arrays.stream(Deployer.values()).anyMatch(e -> e.name().equals(n)))
                 .collect(Collectors.toSet());
     }
 

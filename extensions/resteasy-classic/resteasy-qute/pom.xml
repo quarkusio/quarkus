@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>quarkus-resteasy-qute-parent</artifactId>
-    <name>Quarkus - RESTEasy - Qute</name>
+    <name>Quarkus - RESTEasy Classic - Qute</name>
     <packaging>pom</packaging>
 
     <modules>

@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: data
 :summary: Use Redis as the Quarkus cache backend
+:topics: redis,cache,data
+:extensions: io.quarkus:quarkus-redis-cache,io.quarkus:quarkus-redis-client
 
 By default, Quarkus Cache uses Caffeine as backend.
 It's possible to use Redis instead.

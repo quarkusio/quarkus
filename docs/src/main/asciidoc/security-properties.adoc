@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: security
 :summary: This guide demonstrates how your Quarkus application can use a .properties file to store your user identities.
+:topics: security,identity-providers
+:extensions: io.quarkus:quarkus-elytron-security-properties-file
 
 Quarkus provides support for properties file-based authentication intended for development and testing purposes.
 It is not recommended to use this authentication in production as, at present, only plain-text and MD5 hashed passwords are used, and properties files are generally too limited.

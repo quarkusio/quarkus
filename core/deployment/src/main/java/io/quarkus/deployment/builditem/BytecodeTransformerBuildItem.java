@@ -21,8 +21,8 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
     final BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction;
 
     /**
-     * Function that can be applied to the inout bytes before it is passed into ASM. This should only be used
-     * in very specific circumstances. At the moment the only known valid use case is jacoco, which needs
+     * Function that can be applied to the input bytes before it is passed into ASM. This should only be used
+     * in very specific circumstances. At the moment the only known valid use case is JaCoCo, which needs
      * access to the unmodified class file bytes.
      */
     final BiFunction<String, byte[], byte[]> inputTransformer;
@@ -31,7 +31,7 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
      * A set of class names that need to be present in the const pool for the transformation to happen. These
      * need to be in JVM internal format.
      * <p>
-     * The transformation is only applied if at least one of the entries in the const pool is present
+     * The transformation is only applied if at least one of the entries in the const pool is present.
      * <p>
      * Note that this is an optimisation, and if another transformer is transforming the class anyway then
      * this transformer will always be applied.

@@ -2,9 +2,9 @@ package io.quarkus.it.resteasy.reactive.kotlin
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.quarkus.jackson.ObjectMapperCustomizer
+import io.quarkus.runtime.annotations.StaticInitSafe
 import jakarta.inject.Singleton
 import org.eclipse.microprofile.config.inject.ConfigProperty
-import io.quarkus.runtime.annotations.StaticInitSafe
 
 @Singleton
 class RegisterCustomModuleCustomizer : ObjectMapperCustomizer {

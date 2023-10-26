@@ -6,6 +6,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Dev Services for Databases
 :categories: data, tooling
 include::_attributes.adoc[]
+:topics: devservices,data,database,datasource,tooling,testing,devmode
+:extensions: io.quarkus:quarkus-agroal,io.quarkus:quarkus-reactive-mysql-client,io.quarkus:quarkus-reactive-oracle-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-jdbc-db2,io.quarkus:quarkus-jdbc-derby,io.quarkus:quarkus-jdbc-h2,io.quarkus:quarkus-jdbc-mariadb,io.quarkus:quarkus-jdbc-mssql,io.quarkus:quarkus-jdbc-mysql,io.quarkus:quarkus-jdbc-oracle,io.quarkus:quarkus-jdbc-postgresql
 
 When testing or running in dev mode Quarkus can provide you with a zero-config database out of the box, a feature we refer to as Dev Services.
 Depending on your database type you may need Docker installed in order to use this feature.

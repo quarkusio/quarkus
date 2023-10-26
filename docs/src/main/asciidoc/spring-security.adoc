@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: compatibility
 :summary: While you are encouraged to use the Quarkus Security layer to secure your applications, Quarkus provides a compatibility layer for Spring Security in the form of the spring-security extension.
+:topics: spring,security,compatibility
+:extensions: io.quarkus:quarkus-spring-security
 
 While users are encouraged to use Java standard annotations for security authorizations, Quarkus provides a compatibility layer for Spring Security in the form of the `spring-security` extension.
 

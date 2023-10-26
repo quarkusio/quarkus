@@ -9,7 +9,7 @@
     <properties>
         <quarkus.version>1.6.0.Final</quarkus.version>
         <rest-assured.version>3.3.0</rest-assured.version>
-        <compiler-plugin.version>3.8.1</compiler-plugin.version>
+        <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
     </properties>
 
     <modules>

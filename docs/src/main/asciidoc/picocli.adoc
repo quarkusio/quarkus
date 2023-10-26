@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: command-line
 :summary: Simplify command line applications creation with the Picocli extension.
+:topics: command-line,cli,picocli
+:extensions: io.quarkus:quarkus-picocli
 
 https://picocli.info/[Picocli] is an open source tool for creating rich command line applications.
 
@@ -14,7 +16,7 @@ Quarkus provides support for using Picocli. This guide contains examples of `pic
 
 IMPORTANT: If you are not familiar with the Quarkus Command Mode, consider reading the xref:command-mode-reference.adoc[Command Mode reference guide] first.
 
-== Configuration
+== Extension
 
 Once you have your Quarkus project configured you can add the `picocli` extension
 to your project by running the following command in your project base directory.
@@ -22,14 +24,21 @@ to your project by running the following command in your project base directory.
 :add-extension-extensions: picocli
 include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-picocli</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-picocli")
 ----
 
 == Simple command line application
@@ -202,7 +211,7 @@ This event will be generated in `QuarkusApplication` class created by this exten
 ----
 @CommandLine.Command
 public class EntryCommand implements Runnable {
-    
+
     @CommandLine.Option(names = "-c", description = "JDBC connection string")
     String connectionString;
 

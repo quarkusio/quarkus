@@ -10,6 +10,8 @@ include::_attributes.adoc[]
 :categories: security,web
 :keywords: oidc github twitter google facebook mastodon microsoft apple spotify twitch
 :toclevels: 3
+:topics: security,oidc,github,twitter,google,facebook,mastodon,microsoft,apple,spotify,twitch
+:extensions: io.quarkus:quarkus-oidc
 
 This document explains how to configure well-known social OIDC and OAuth2 providers.
 
@@ -119,7 +121,7 @@ TIP: You can also send access tokens issued by `Google` to `quarkus.oidc.applica
 === Mastodon
 
 Create a https://joinmastodon.org/[Mastodon account]. You must https://joinmastodon.org/servers[pick a server], for example, `mastodon.social`.
-Select a `Development` option in you account and register an application, for example:
+Select a `Development` option in your account and register an application, for example:
 
 image::oidc-mastodon-register-app.png[role="thumb"]
 
@@ -641,6 +643,26 @@ The pattern of authenticating with a given provider, where the endpoint uses eit
 == HTTPS Redirect URL
 
 Some providers will only accept HTTPS-based redirect URLs. Tools such as https://ngrok.com/[ngrok] https://linuxhint.com/set-up-use-ngrok/[can be set up] to help testing such providers with Quarkus endpoints running on localhost in devmode.
+
+== Rate Limiting
+
+Depending on your developer API subscription level, some providers may enforce a rather strict request rate limiting policy.
+
+It may not be a problem when Quarkus fetches public verification keys from OIDC-compliant providers like the <<google>> provider and keeps verifying the user session with these keys locally. However, for pure OAuth2 providers where only an access token is available and which has to be verified indirectly by requesting UserInfo from the provider endpoint on every request done by an already authenticated user, it can become a problem.
+
+In such cases consider xref:security-oidc-bearer-token-authentication#token-introspection-userinfo-cache[caching UserInfo], using either a default or custom cache implementation or even embedding UserInfo in an internally generated ID token which is encrypted by default, for example:
+
+[source,properties]
+----
+quarkus.oidc.provider=x
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Secret>
+quarkus.oidc.authentication.extra-params.scope=tweet.write
+quarkus.rest-client.twitter-client.url=https://api.twitter.com/2
+
+quarkus.oidc.cache-user-info-in-idtoken=true <1>
+----
+<1> Cache UserInfo by embedding it in the internally generated ID token
 
 == References
 

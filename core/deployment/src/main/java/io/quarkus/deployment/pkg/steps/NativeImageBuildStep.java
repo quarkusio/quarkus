@@ -299,7 +299,7 @@ public class NativeImageBuildStep {
             return new NativeImageBuildItem(finalExecutablePath,
                     new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
                             graalVMVersion.getVersionAsString(),
-                            graalVMVersion.javaFeatureVersion,
+                            graalVMVersion.javaVersion.feature(),
                             graalVMVersion.distribution.name()));
         } catch (ImageGenerationFailureException e) {
             throw e;
@@ -477,7 +477,7 @@ public class NativeImageBuildStep {
 
     private void checkGraalVMVersion(GraalVM.Version version) {
         log.info("Running Quarkus native-image plugin on " + version.distribution.name() + " " + version.getVersionAsString()
-                + " JDK " + version.javaFeatureVersion + "." + version.javaUpdateVersion);
+                + " JDK " + version.javaVersion);
         if (version.isObsolete()) {
             throw new IllegalStateException("Out of date version of GraalVM detected: " + version.getVersionAsString() + "."
                     + " Quarkus currently supports " + GraalVM.Version.CURRENT.getVersionAsString()
@@ -749,22 +749,6 @@ public class NativeImageBuildStep {
                 }
                 nativeImageArgs.add("--features=" + String.join(",", featuresList));
 
-                if (graalVMVersion.isOlderThan(GraalVM.Version.VERSION_22_2_0)) {
-                    /*
-                     * Instruct GraalVM / Mandrel parse compiler graphs twice, once for the static analysis and once again
-                     * for the AOT compilation.
-                     *
-                     * We do this because single parsing significantly increases memory usage at build time
-                     * see https://github.com/oracle/graal/issues/3435 and
-                     * https://github.com/graalvm/mandrel/issues/304#issuecomment-952070568 for more details.
-                     *
-                     * Note: This option must come before the invocation of
-                     * {@code handleAdditionalProperties(nativeImageArgs)} to ensure that devs and advanced users can
-                     * override it by passing -Dquarkus.native.additional-build-args=-H:+ParseOnce
-                     */
-                    addExperimentalVMOption(nativeImageArgs, "-H:-ParseOnce");
-                }
-
                 if (nativeConfig.debug().enabled() && graalVMVersion.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
                     /*
                      * Instruct GraalVM / Mandrel to keep more accurate information about source locations when generating
@@ -814,9 +798,12 @@ public class NativeImageBuildStep {
                             "-H:BuildOutputJSONFile=" + nativeImageName + "-build-output-stats.json");
                 }
 
-                // only available in GraalVM 23.1.0+. Expected to become the default in GraalVM 24.0.0.
+                // only available in GraalVM 23.1.0+
                 if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) >= 0) {
-                    nativeImageArgs.add("--strict-image-heap");
+                    if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_0_0) < 0) {
+                        // Enabled by default in GraalVM 24.0.0.
+                        nativeImageArgs.add("--strict-image-heap");
+                    }
                 }
 
                 /*
@@ -968,17 +955,10 @@ public class NativeImageBuildStep {
                 }
 
                 if (nativeMinimalJavaVersions != null && !nativeMinimalJavaVersions.isEmpty()) {
-                    if (graalVMVersion.javaUpdateVersion == GraalVM.Version.UNDEFINED) {
-                        log.warnf(
-                                "Unable to parse used Java version from native-image version string `%s'. Java version checks will be skipped.",
-                                graalVMVersion.fullVersion);
-                    } else {
-                        nativeMinimalJavaVersions.stream()
-                                .filter(a -> !graalVMVersion.jdkVersionGreaterOrEqualTo(a.minFeature, a.minUpdate))
-                                .forEach(a -> log.warnf("Expected: Java %d, update %d, Actual: Java %d, update %d. %s",
-                                        a.minFeature, a.minUpdate, graalVMVersion.javaFeatureVersion,
-                                        graalVMVersion.javaUpdateVersion, a.warning));
-                    }
+                    nativeMinimalJavaVersions.stream()
+                            .filter(a -> !graalVMVersion.jdkVersionGreaterOrEqualTo(a))
+                            .forEach(a -> log.warnf("Expected: Java %s, Actual: Java %s. %s",
+                                    a.minVersion, graalVMVersion.javaVersion, a.warning));
                 }
 
                 if (unsupportedOSes != null && !unsupportedOSes.isEmpty()) {

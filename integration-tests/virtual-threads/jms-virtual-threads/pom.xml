@@ -78,10 +78,10 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Use the "compile" scope because we need to include the VirtualThreadsAssertions in the app -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-vertx</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

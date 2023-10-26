@@ -4,6 +4,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 
+import io.quarkus.test.vertx.VirtualThreadsAssertions;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Multi;
@@ -21,13 +22,13 @@ public class MyResourceWithVTOnClass {
 
     @GET
     public String testGet() {
-        AssertHelper.assertEverything();
+        VirtualThreadsAssertions.assertEverything();
         return "hello-" + counter.increment();
     }
 
     @POST
     public String testPost(String body) {
-        AssertHelper.assertEverything();
+        VirtualThreadsAssertions.assertEverything();
         return body + "-" + counter.increment();
     }
 
@@ -42,7 +43,7 @@ public class MyResourceWithVTOnClass {
     @Path("/multi")
     @Blocking // Mandatory, because it's really a weird case
     public Multi<String> testMulti() {
-        AssertHelper.assertEverything();
+        VirtualThreadsAssertions.assertEverything();
         return Multi.createFrom().items("o", "k");
     }
 

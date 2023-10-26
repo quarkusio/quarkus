@@ -275,6 +275,18 @@ public class HttpServerOptionsUtils {
                 settings.setMaxHeaderListSize(httpConfiguration.limits.maxHeaderListSize.getAsLong());
             }
             httpServerOptions.setInitialSettings(settings);
+
+            // RST attack protection - https://github.com/netty/netty/security/advisories/GHSA-xpw8-rcwv-8f8p
+            if (httpConfiguration.limits.rstFloodMaxRstFramePerWindow.isPresent()) {
+                httpServerOptions
+                        .setHttp2RstFloodMaxRstFramePerWindow(httpConfiguration.limits.rstFloodMaxRstFramePerWindow.getAsInt());
+            }
+            if (httpConfiguration.limits.rstFloodWindowDuration.isPresent()) {
+                httpServerOptions.setHttp2RstFloodWindowDuration(
+                        (int) httpConfiguration.limits.rstFloodWindowDuration.get().toSeconds());
+                httpServerOptions.setHttp2RstFloodWindowDurationTimeUnit(TimeUnit.SECONDS);
+            }
+
         }
 
         httpServerOptions.setUseProxyProtocol(httpConfiguration.proxy.useProxyProtocol);

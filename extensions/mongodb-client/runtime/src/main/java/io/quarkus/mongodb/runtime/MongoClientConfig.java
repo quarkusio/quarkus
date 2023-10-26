@@ -205,4 +205,5 @@ public class MongoClientConfig {
      */
     @ConfigItem
     public Optional<UuidRepresentation> uuidRepresentation;
+
 }

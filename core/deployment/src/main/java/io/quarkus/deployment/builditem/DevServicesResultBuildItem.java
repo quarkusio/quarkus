@@ -9,13 +9,13 @@ import java.util.Map;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * BuildItem for running dev services
+ * BuildItem for running dev services.
  * Combines injected configs to the application with container id (if it exists).
  *
  * Processors are expected to return this build item not only when the dev service first starts,
  * but also if a running dev service already exists.
  *
- * {@link RunningDevService} helps to manage the lifecycle of the running dev service
+ * {@link RunningDevService} helps to manage the lifecycle of the running dev service.
  */
 public final class DevServicesResultBuildItem extends MultiBuildItem {
 

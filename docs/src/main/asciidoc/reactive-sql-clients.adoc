@@ -8,6 +8,8 @@ include::_attributes.adoc[]
 :categories: data
 :summary: This guide covers how to use the Reactive SQL Clients in Quarkus.
 :config-file: application.properties
+:topics: data,database,reactive,sql
+:extensions: io.quarkus:quarkus-reactive-mysql-client,io.quarkus:quarkus-reactive-oracle-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-db2-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-mssql-client
 
 The Reactive SQL Clients have a straightforward API focusing on scalability and low-overhead.
 Currently, the following database servers are supported:

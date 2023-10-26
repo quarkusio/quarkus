@@ -10,8 +10,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-common</artifactId>
-    <name>Quarkus - RESTEasy - Common - Runtime</name>
-    <description>Components common to the RESTEasy server and the REST Client</description>
+    <name>Quarkus - RESTEasy Classic - Common - Runtime</name>
+    <description>Components common to the RESTEasy Classic server and REST Client</description>
     <dependencies>
         <dependency>
             <groupId>org.graalvm.sdk</groupId>

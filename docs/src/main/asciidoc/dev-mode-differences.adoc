@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: architecture
 :summary: How dev mode differs from a production application
+:topics: internals,devmode
+:extensions: io.quarkus:quarkus-core
 
 This document explains how the dev mode in Quarkus differs from a production application.
 

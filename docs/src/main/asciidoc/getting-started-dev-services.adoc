@@ -9,6 +9,7 @@ include::_attributes.adoc[]
 :diataxis-type: tutorial
 :categories: getting-started, data, core
 :summary: Discover some of the features that make developing with Quarkus a joyful experience.
+:topics: getting-started,devservices
 
 This tutorial shows you how to create an application which writes to and reads from a database.
 You will use Dev Services, so you will not actually download, configure, or even start the database yourself.
@@ -26,7 +27,7 @@ This guide helps you:
 :prerequisites-no-graalvm:
 include::{includes}/prerequisites.adoc[]
 
-This tutorial builds on what you learned writing xref:{doc-guides}/getting-started.adoc[your first Quarkus application].
+This tutorial builds on what you learned writing xref:getting-started.adoc[your first Quarkus application].
 You will not need the code from that application, but make sure you understand the concepts.
 
 == Solution
@@ -78,7 +79,7 @@ Once the application is up, visit http://localhost:8080/hello. It should show a 
 === Accepting user input
 
 Let's make the application a bit more interactive.
-Open the project in your IDE and navigate to `src/main/java/org/acme/GreetingResource.java'
+Open the project in your IDE and navigate to `src/main/java/org/acme/GreetingResource.java`
 Add a query param in the `hello` method.
 (The `org.jboss.resteasy.reactive.RestQuery` annotation is like the Jakarta REST `@QueryParam`
 annotation, except you don't need to duplicate the parameter name.)
@@ -141,7 +142,7 @@ public class Greeting extends PanacheEntity {
 }
 ----
 
-The entity makes use of xref:{doc-guides}hibernate-orm-panache.adoc[Panache], a layer on top of Hibernate ORM.
+The entity makes use of xref:hibernate-orm-panache.adoc[Panache], a layer on top of Hibernate ORM.
 Extending `PanacheEntity` brings in a range of methods for reading, writing, and finding data.
 Because all the data access methods are on the `Greeting` entity, rather than on a separate data access class,
 this is an example of the active record pattern.
@@ -198,7 +199,7 @@ public String names() {
 }
 ----
 
-To try it out, visit http://localhost:8080/hello?name=Bloom, and then http://localhost/hello/names.
+To try it out, visit http://localhost:8080/hello?name=Bloom, and then http://localhost:8080/hello/names.
 
 You should see the following message: "I've said hello to Bloom".
 
@@ -214,11 +215,11 @@ you will start seeing failures in the Quarkus logs at this point.
 Reading and writing to the database seems to be working well, but that's a bit unexpected.
 Where did a PostgreSQL database come from? You didn't set anything up.
 
-The database is being managed using xref:{docfile}/dev-services.adoc[Dev Services].
+The database is being managed using xref:dev-services.adoc[Dev Services].
 Dev Services take care of stopping and starting services needed by your application.
 Because you
 included the `jdbc-postgresql` dependency, the database is a containerised PostgreSQL database.
-If you'd added `jdbc-mysql` insead, you would have gotten a containerised MySQL database.
+If you'd added `jdbc-mysql` instead, you would have gotten a containerised MySQL database.
 
 If you like, use your container tool to see what containers are running.
 For example, if you're using Docker, run `docker ps`, and for podman, run `podman ps`.
@@ -234,10 +235,10 @@ Quarkus will automatically stop the container when your application stops.
 
 === Initialising services
 
-If you play with your code some more, you may notice that sometimes, after making an application change, http://localhost/hello/names doesn't list any names.
+If you play with your code some more, you may notice that sometimes, after making an application change, http://localhost:8080/hello/names doesn't list any names.
 What's going on? By default, in dev mode, with a Dev Services database,
  Quarkus configures Hibernate ORM database generation to be `drop-and-create`.
- See the xref:{docfile}/hibernate-orm.adoc#quarkus-hibernate-orm_quarkus.hibernate-orm.database-database-related-configuration[Hibernate configuration reference] for more details.
+ See the xref:hibernate-orm.adoc#quarkus-hibernate-orm_quarkus.hibernate-orm.database-database-related-configuration[Hibernate configuration reference] for more details.
  If a code change triggers an application restart, the database tables
  will be dropped (deleted) and then re-created.
 
@@ -281,7 +282,7 @@ This tells Quarkus that you don't want it to start a Dev Service,
 because you have your own database. You don't need to worry about starting
 the database, because you're just seeing how to change the configuration.
 
-Visit `http://localhost:8080/hello/names`. Instead of a list of names,
+Visit http://localhost:8080/hello/names. Instead of a list of names,
 you'll get a red error screen. In the terminal where Quarkus is running.
 you'll see the following stack error message:
 
@@ -309,7 +310,7 @@ but have it *only* used in production, so you could still use dev services the r
 
 Add a `%prod.`
 prefix to the database configuration. This means the configuration
-only applies to the xref:{docfile}/config-reference#profiles[prod profile]
+only applies to the xref:config-reference.adoc#profiles[prod profile]
 
 The configuration should look like this:
 
@@ -340,6 +341,6 @@ a 'real' database, without you having to configure anything.
 
 == References
 
-* xref:{doc-guides}dev-services.adoc[Dev Services]
+* xref:dev-services.adoc[Dev Services]
 
-* xref:{doc-guides}hibernate-orm-panache.adoc[Hibernate ORM with Panache]
+* xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache]

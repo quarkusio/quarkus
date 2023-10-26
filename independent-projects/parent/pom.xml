@@ -420,6 +420,11 @@
                                         <ignore>maven.settings</ignore>
                                     </ignoredKeys>
                                 </systemProperties>
+                                <runtimeClassPath>
+                                    <ignoredFiles>
+                                        <ignoredFile>**/quarkus-ide-launcher-*.jar</ignoredFile>
+                                    </ignoredFiles>
+                                </runtimeClassPath>
                             </normalization>
                             <plugins>
                                 <plugin>
@@ -552,6 +557,9 @@
                                                 <name>baseDir</name>
                                                 <excludes>
                                                     <exclude>.idea/*</exclude>
+                                                    <exclude>.classpath</exclude>
+                                                    <exclude>.project</exclude>
+                                                    <exclude>.settings/*</exclude>
                                                     <exclude>target/*</exclude>
                                                 </excludes>
                                                 <normalization>

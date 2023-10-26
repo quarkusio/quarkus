@@ -18,6 +18,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
@@ -271,6 +272,14 @@ public class VertxInputStream extends InputStream {
         @Override
         public void handle(Buffer event) {
             synchronized (request.connection()) {
+                if (event.length() == 0 && request.version() == HttpVersion.HTTP_2) {
+                    // When using HTTP/2 H2, this indicates that we won't receive anymore data.
+                    eof = true;
+                    if (waiting) {
+                        request.connection().notifyAll();
+                    }
+                    return;
+                }
                 if (input1 == null) {
                     input1 = event;
                 } else {

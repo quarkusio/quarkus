@@ -16,7 +16,7 @@ Additionally, you can generate a native image and run the tests for this native 
 mvn clean install -Dtest-containers -Dstart-containers -Dnative
 ```
 
-If you don't want to run PostgreSQL as a Docker container, you can start your own PostgreSQL server. It needs to listen on the default port and have a database called `hibernate_orm_test` accessible to the user `hibernate_orm_test` with the password `hibernate_orm_test`.
+If you don't want to run PostgreSQL as a Docker container, you can start your own PostgreSQL server. It needs to listen on port 5431 and have a database called `hibernate_orm_test` accessible to the user `hibernate_orm_test` with the password `hibernate_orm_test`.
 
 You can then run the tests as follows (either with `-Dnative` or not):
 

@@ -37,6 +37,11 @@ class BlockingServerInterceptorTest {
         blockingServerInterceptor = new BlockingServerInterceptor(vertx, Collections.singletonList("blocking"),
                 Collections.emptyList(), null, false) {
             @Override
+            protected boolean isExecutable() {
+                return true;
+            }
+
+            @Override
             protected ManagedContext getRequestContext() {
                 return requestContext;
             }
@@ -54,21 +59,25 @@ class BlockingServerInterceptorTest {
 
         // setting grpc context
         final Context context = Context.current().withValue(USERNAME, "my-user");
+        Context previous = context.attach();
+        try {
+            final ServerCall.Listener listener = blockingServerInterceptor.interceptCall(serverCall, null, serverCallHandler);
+            serverCallHandler.awaitSetup();
 
-        final ServerCall.Listener listener = blockingServerInterceptor.interceptCall(serverCall, null, serverCallHandler);
-        serverCallHandler.awaitSetup();
+            // simulate GRPC call
+            context.wrap(() -> listener.onMessage("hello")).run();
 
-        // simulate GRPC call
-        context.wrap(() -> listener.onMessage("hello")).run();
+            // await for the message to be received
+            serverCallHandler.await();
 
-        // await for the message to be received
-        serverCallHandler.await();
+            // check that the thread is a worker thread
+            assertThat(serverCallHandler.threadName).contains("vert.x").contains("worker");
 
-        // check that the thread is a worker thread
-        assertThat(serverCallHandler.threadName).contains("vert.x").contains("worker");
-
-        // check that the context was propagated correctly
-        assertThat(serverCallHandler.contextUserName).isEqualTo("my-user");
+            // check that the context was propagated correctly
+            assertThat(serverCallHandler.contextUserName).isEqualTo("my-user");
+        } finally {
+            context.detach(previous);
+        }
     }
 
     static class BlockingServerCallHandler implements ServerCallHandler {

@@ -1783,7 +1783,7 @@ public class QuteProcessor {
         Expression.Part firstPart = expression.getParts().get(0);
         if (firstPart.isVirtualMethod()) {
             incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                    "The inject: namespace must be followed by a bean name",
+                    "The " + expression.getNamespace() + ": namespace must be followed by a bean name",
                     expression.getOrigin()));
             return null;
         }
@@ -1793,8 +1793,12 @@ public class QuteProcessor {
             return bean;
         } else {
             // User is injecting a non-existing bean
-            incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                    beanName, null, expression.getOrigin()));
+            if (!expression.toOriginalString().endsWith("or(null)")) {
+                // Fail unless a safe expression
+                // Note that foo.val?? becomes foo.val.or(null) during parsing
+                incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                        beanName, null, expression.getOrigin()));
+            }
             return null;
         }
     }

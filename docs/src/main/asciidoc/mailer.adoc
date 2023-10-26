@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: miscellaneous
 :summary: Learn more about how you can send email from a Quarkus application with our reactive email client.
+:topics: mail,mailer
+:extensions: io.quarkus:quarkus-mailer
 
 This guide demonstrates how your Quarkus application can send emails using an SMTP server.
 This is a getting started guide.
@@ -38,19 +40,45 @@ Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {q
 
 The solution is located in the `mailer-quickstart` link:{quickstarts-tree-url}/mailer-quickstart[directory].
 
-== Creating the Maven Project
+== Create the Maven Project
 
-First, we need a project.
-Open your browser to https://code.quarkus.io and select the following extensions:
+First, we need a new project. Create a new project with the following command:
 
-1. RESTEasy Reactive - we use it to expose our HTTP endpoint
-2. Mailer - which offer the possibility to send emails
-3. Qute - the Quarkus template engine
+:create-app-artifact-id: mailer-quickstart
+:create-app-extensions: resteasy-reactive,mailer,qute
+include::{includes}/devtools/create-app.adoc[]
 
-Alternatively, this https://code.quarkus.io/?a=quarkus-mailer-getting-started&nc=true&e=resteasy-reactive&e=qute&e=mailer&extension-search=mail[link] pre-configures the application.
-Click on "Generate your application", download the zip file and unzip it on your file system.
+This command generates a Maven structure including the following extensions:
+
+ * RESTEasy Reactive used to expose REST endpoints
+ * Mailer so that we can send emails
+ * Qute, our template engine
+
+If you already have your Quarkus project configured, you can add the `mailer` extension
+to your project by running the following command in your project base directory:
+
+:add-extension-extensions: mailer
+include::{includes}/devtools/extension-add.adoc[]
+
+This will add the following to your `pom.xml`:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-mailer</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-mailer")
+----
+
 Open the generated project in your IDE.
-In a terminal, navigate to the project and start dev mode:
+In a terminal, navigate to the project and start your application in dev mode:
 
 include::{includes}/devtools/dev.adoc[]
 

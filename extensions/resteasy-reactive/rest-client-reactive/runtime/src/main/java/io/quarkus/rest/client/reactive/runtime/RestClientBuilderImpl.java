@@ -70,6 +70,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private String nonProxyHosts;
 
     private ClientLogger clientLogger;
+    private LoggingScope loggingScope;
+    private Integer loggingBodyLimit;
 
     @Override
     public RestClientBuilderImpl baseUrl(URL url) {
@@ -164,6 +166,16 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     public RestClientBuilderImpl clientLogger(ClientLogger clientLogger) {
         this.clientLogger = clientLogger;
+        return this;
+    }
+
+    public RestClientBuilderImpl loggingScope(LoggingScope loggingScope) {
+        this.loggingScope = loggingScope;
+        return this;
+    }
+
+    public RestClientBuilderImpl loggingBodyLimit(Integer limit) {
+        this.loggingBodyLimit = limit;
         return this;
     }
 
@@ -333,11 +345,19 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         RestClientsConfig restClientsConfig = arcContainer.instance(RestClientsConfig.class).get();
 
         RestClientLoggingConfig logging = restClientsConfig.logging;
-        LoggingScope loggingScope = logging != null ? logging.scope.map(LoggingScope::forName).orElse(LoggingScope.NONE)
-                : LoggingScope.NONE;
-        Integer loggingBodySize = logging != null ? logging.bodyLimit : 100;
-        clientBuilder.loggingScope(loggingScope);
-        clientBuilder.loggingBodySize(loggingBodySize);
+
+        LoggingScope effectiveLoggingScope = loggingScope; // if a scope was specified programmatically, it takes precedence
+        if (effectiveLoggingScope == null) {
+            effectiveLoggingScope = logging != null ? logging.scope.map(LoggingScope::forName).orElse(LoggingScope.NONE)
+                    : LoggingScope.NONE;
+        }
+
+        Integer effectiveLoggingBodyLimit = loggingBodyLimit; // if a limit was specified programmatically, it takes precedence
+        if (effectiveLoggingBodyLimit == null) {
+            effectiveLoggingBodyLimit = logging != null ? logging.bodyLimit : 100;
+        }
+        clientBuilder.loggingScope(effectiveLoggingScope);
+        clientBuilder.loggingBodySize(effectiveLoggingBodyLimit);
         if (clientLogger != null) {
             clientBuilder.clientLogger(clientLogger);
         } else {
@@ -427,4 +447,5 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         }
         return null;
     }
+
 }

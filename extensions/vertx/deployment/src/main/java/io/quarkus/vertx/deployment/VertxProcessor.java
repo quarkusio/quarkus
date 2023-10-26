@@ -4,6 +4,7 @@ import static io.quarkus.vertx.deployment.VertxConstants.CONSUME_EVENT;
 import static io.quarkus.vertx.deployment.VertxConstants.isMessage;
 import static io.quarkus.vertx.deployment.VertxConstants.isMessageHeaders;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +46,6 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
@@ -74,7 +74,7 @@ class VertxProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
             BuildProducer<ServiceStartBuildItem> serviceStart, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            List<MessageCodecBuildItem> codecs, RecorderContext recorderContext) {
+            List<MessageCodecBuildItem> codecs, LocalCodecSelectorTypesBuildItem localCodecSelectorTypes) {
         Map<String, ConsumeEvent> messageConsumerConfigurations = new HashMap<>();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
         for (EventConsumerBusinessMethodItem businessMethod : messageConsumerBusinessMethods) {
@@ -87,15 +87,20 @@ class VertxProcessor {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(invokerClass).build());
         }
 
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         Map<Class<?>, Class<?>> codecByClass = new HashMap<>();
         for (MessageCodecBuildItem messageCodecItem : codecs) {
-            codecByClass.put(recorderContext.classProxy(messageCodecItem.getType()),
-                    recorderContext.classProxy(messageCodecItem.getCodec()));
+            codecByClass.put(tryLoad(messageCodecItem.getType(), tccl), tryLoad(messageCodecItem.getCodec(), tccl));
+        }
+
+        List<Class<?>> selectorTypes = new ArrayList<>();
+        for (String name : localCodecSelectorTypes.getTypes()) {
+            selectorTypes.add(tryLoad(name, tccl));
         }
 
         recorder.configureVertx(vertx.getVertx(), messageConsumerConfigurations,
                 launchMode.getLaunchMode(),
-                shutdown, codecByClass);
+                shutdown, codecByClass, selectorTypes);
         serviceStart.produce(new ServiceStartBuildItem("vertx"));
         return new VertxBuildItem(recorder.forceStart(vertx.getVertx()));
     }
@@ -188,6 +193,14 @@ class VertxProcessor {
             serviceProvider.produce(new ServiceProviderBuildItem(
                     "io.smallrye.faulttolerance.core.event.loop.EventLoop",
                     "io.smallrye.faulttolerance.vertx.VertxEventLoop"));
+        }
+    }
+
+    private Class<?> tryLoad(String name, ClassLoader tccl) {
+        try {
+            return tccl.loadClass(name);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Unable to load type: " + name, e);
         }
     }
 }

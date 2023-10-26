@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-multipart</artifactId>
-    <name>Quarkus - RESTEasy - Multipart - Runtime</name>
+    <name>Quarkus - RESTEasy Classic - Multipart - Runtime</name>
     <description>Multipart support for RESTEasy Classic</description>
     <dependencies>
         <dependency>

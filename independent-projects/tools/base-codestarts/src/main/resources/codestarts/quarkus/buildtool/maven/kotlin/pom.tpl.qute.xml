@@ -51,9 +51,11 @@
                         {#if quarkus.platform.version.startsWith("2.") or quarkus.platform.version.startsWith("1.")}
                         <option>all-open:annotation=javax.ws.rs.Path</option>
                         <option>all-open:annotation=javax.enterprise.context.ApplicationScoped</option>
+                        <option>all-open:annotation=javax.persistence.Entity</option>
                         {#else}
                         <option>all-open:annotation=jakarta.ws.rs.Path</option>
                         <option>all-open:annotation=jakarta.enterprise.context.ApplicationScoped</option>
+                        <option>all-open:annotation=jakarta.persistence.Entity</option>
                         {/if}
                         <option>all-open:annotation=io.quarkus.test.junit.QuarkusTest</option>
                     </pluginOptions>

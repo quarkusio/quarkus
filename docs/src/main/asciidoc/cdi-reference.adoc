@@ -11,6 +11,8 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: cdi,arc,injection,interceptor,observer
+:extensions: io.quarkus:quarkus-arc
 
 Quarkus DI solution (also called ArC) is based on the https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html[Jakarta Contexts and Dependency Injection 4.0, window="_blank"] specification.
 It implements the CDI Lite specification, with selected improvements on top, and passes the CDI Lite TCK.

@@ -652,6 +652,16 @@ public class SmallRyeGraphQLProcessor {
         }
     }
 
+    @BuildStep
+    void activateFederationBatchResolving(SmallRyeGraphQLConfig graphQLConfig,
+            BuildProducer<SystemPropertyBuildItem> systemProperties) {
+        if (graphQLConfig.federationBatchResolvingEnabled.isPresent()) {
+            String value = graphQLConfig.federationBatchResolvingEnabled.get().toString();
+            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_FEDERATION_BATCH_RESOLVING, value));
+            System.setProperty(ConfigKey.ENABLE_FEDERATION_BATCH_RESOLVING, value);
+        }
+    }
+
     /*
      * Decides whether we want to activate GraphQL federation and updates system properties accordingly.
      * If quarkus.smallrye-graphql.federation.enabled is unspecified, enable federation automatically if we see

@@ -29,7 +29,7 @@ public class QuarkusAsyncHealthCheckFactory extends AsyncHealthCheckFactory {
     public Uni<HealthCheckResponse> callSync(HealthCheck healthCheck) {
         Uni<HealthCheckResponse> healthCheckResponseUni = super.callSync(healthCheck);
         return BlockingOperationControl.isBlockingAllowed() ? healthCheckResponseUni
-                : healthCheckResponseUni.runSubscriptionOn(MutinyHelper.blockingExecutor(vertx));
+                : healthCheckResponseUni.runSubscriptionOn(MutinyHelper.blockingExecutor(vertx, false));
     }
 
     @Override

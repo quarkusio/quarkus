@@ -23,38 +23,26 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
 
     @Override
     public void afterEach(QuarkusTestMethodContext context) {
-        CDI.current().select(TestAuthController.class).get().setEnabled(true);
-        CDI.current().select(TestIdentityAssociation.class).get().setTestIdentity(null);
+        try {
+            if (getAnnotationContainer(context).isPresent()) {
+                CDI.current().select(TestAuthController.class).get().setEnabled(true);
+                CDI.current().select(TestIdentityAssociation.class).get().setTestIdentity(null);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to reset TestAuthController and TestIdentityAssociation", e);
+        }
+
     }
 
     @Override
     public void beforeEach(QuarkusTestMethodContext context) {
         try {
-            //the usual ClassLoader hacks to get our copy of the TestSecurity annotation
-            ClassLoader cl = Thread.currentThread().getContextClassLoader();
-            Class<?> original = cl.loadClass(context.getTestMethod().getDeclaringClass().getName());
-            Method method = original.getDeclaredMethod(context.getTestMethod().getName(),
-                    Arrays.stream(context.getTestMethod().getParameterTypes()).map(s -> {
-                        if (s.isPrimitive()) {
-                            return s;
-                        }
-                        try {
-                            return Class.forName(s.getName(), false, cl);
-                        } catch (ClassNotFoundException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }).toArray(Class<?>[]::new));
-            Annotation[] allAnnotations;
-            Optional<AnnotationContainer<TestSecurity>> annotationContainerOptional = AnnotationUtils.findAnnotation(method,
-                    TestSecurity.class);
-            if (annotationContainerOptional.isEmpty()) {
-                annotationContainerOptional = AnnotationUtils.findAnnotation(original, TestSecurity.class);
-            }
+            Optional<AnnotationContainer<TestSecurity>> annotationContainerOptional = getAnnotationContainer(context);
             if (annotationContainerOptional.isEmpty()) {
                 return;
             }
             var annotationContainer = annotationContainerOptional.get();
-            allAnnotations = annotationContainer.getElement().getAnnotations();
+            Annotation[] allAnnotations = annotationContainer.getElement().getAnnotations();
             TestSecurity testSecurity = annotationContainer.getAnnotation();
             CDI.current().select(TestAuthController.class).get().setEnabled(testSecurity.authorizationEnabled());
             if (testSecurity.user().isEmpty()) {
@@ -78,6 +66,30 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
             throw new RuntimeException("Unable to setup @TestSecurity", e);
         }
 
+    }
+
+    private Optional<AnnotationContainer<TestSecurity>> getAnnotationContainer(QuarkusTestMethodContext context)
+            throws Exception {
+        //the usual ClassLoader hacks to get our copy of the TestSecurity annotation
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        Class<?> original = cl.loadClass(context.getTestMethod().getDeclaringClass().getName());
+        Method method = original.getDeclaredMethod(context.getTestMethod().getName(),
+                Arrays.stream(context.getTestMethod().getParameterTypes()).map(s -> {
+                    if (s.isPrimitive()) {
+                        return s;
+                    }
+                    try {
+                        return Class.forName(s.getName(), false, cl);
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).toArray(Class<?>[]::new));
+        Optional<AnnotationContainer<TestSecurity>> annotationContainerOptional = AnnotationUtils.findAnnotation(method,
+                TestSecurity.class);
+        if (annotationContainerOptional.isEmpty()) {
+            annotationContainerOptional = AnnotationUtils.findAnnotation(original, TestSecurity.class);
+        }
+        return annotationContainerOptional;
     }
 
     private SecurityIdentity augment(SecurityIdentity identity, Annotation[] annotations) {

@@ -47,7 +47,7 @@ public class MongoWithReplicasTestBase {
 
         // This switch allow testing against a running mongo database.
         if (uri == null) {
-            startedServers = startReplicaSet(Version.Main.V4_0, 27018, "test001");
+            startedServers = startReplicaSet(Version.Main.V4_4, 27018, "test001");
         } else {
             LOGGER.infof("Using existing Mongo %s", uri);
         }

@@ -83,6 +83,7 @@ import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassBeanBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
+import io.quarkus.deployment.builditem.TestProfileBuildItem;
 import io.quarkus.dev.testing.ExceptionReporting;
 import io.quarkus.dev.testing.TracingHandler;
 import io.quarkus.runtime.ApplicationLifecycleManager;
@@ -582,8 +583,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     }
 
     private QuarkusTestExtensionState ensureStarted(ExtensionContext extensionContext) {
-        ExtensionContext.Store store = getStoreFromContext(extensionContext);
-
         QuarkusTestExtensionState state = getState(extensionContext);
         Class<? extends QuarkusTestProfile> selectedProfile = getQuarkusTestProfile(extensionContext);
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
@@ -1355,6 +1354,16 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                         }).produces(TestClassBeanBuildItem.class)
                                 .build();
                     }
+
+                    buildChainBuilder.addBuildStep(new BuildStep() {
+                        @Override
+                        public void execute(BuildContext context) {
+                            Object testProfile = stringObjectMap.get(TEST_PROFILE);
+                            if (testProfile != null) {
+                                context.produce(new TestProfileBuildItem(testProfile.toString()));
+                            }
+                        }
+                    }).produces(TestProfileBuildItem.class).build();
 
                 }
             };

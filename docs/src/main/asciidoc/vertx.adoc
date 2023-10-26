@@ -274,6 +274,7 @@ workbag.”
 ...
 ----
 
+[[event-bus]]
 == Using the event bus
 
 One of the core features of Vert.x is the https://vertx.io/docs/vertx-core/java/#event_bus[event bus].

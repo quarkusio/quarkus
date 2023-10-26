@@ -240,6 +240,7 @@
                     <pluginOptions>
                         <option>all-open:annotation=jakarta.ws.rs.Path</option>
                         <option>all-open:annotation=jakarta.enterprise.context.ApplicationScoped</option>
+                        <option>all-open:annotation=jakarta.persistence.Entity</option>
                         <option>all-open:annotation=io.quarkus.test.junit.QuarkusTest</option>
                     </pluginOptions>
                 </configuration>

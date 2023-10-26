@@ -10,7 +10,10 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 /**
  * Defines a 'test profile'. Tests run under a test profile
  * will have different configuration options to other tests.
- *
+ * <p>
+ * If an implementation of this interface declares CDI beans, via producer methods/fields and nested static classes, then those
+ * beans are only taken into account if this test profile is used. In other words, the beans are ignored for any other test
+ * profile.
  */
 public interface QuarkusTestProfile {
 

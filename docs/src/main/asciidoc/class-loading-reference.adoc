@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: architecture
 :summary: Learn more about Quarkus class loading infrastructure.
+:topics: internals,extensions
+:extensions: io.quarkus:quarkus-core
 
 This document explains the Quarkus class loading architecture. It is intended for extension
 authors and advanced users who want to understand exactly how Quarkus works.
@@ -70,7 +72,7 @@ image::classloader-hierarchy.png[alt=Quarkus ClassLoader hierarchy,role="center"
 
 Here are the roles of each ClassLoader:
 
-Base ClassLoader:: 
+Base ClassLoader::
 
 This is usually the normal JVM System ClassLoader. In some environments such as Maven it may be different. This ClassLoader
 is used to load the bootstrap classes, and other ClassLoader instances will delegate the loading of JDK classes to it.

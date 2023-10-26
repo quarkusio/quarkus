@@ -5,6 +5,10 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Reactive Messaging RabbitMQ Connector Reference Documentation
 include::_attributes.adoc[]
+:extension-status: preview
+:categories: messaging
+:topics: messaging,reactive-messaging,rabbitmq,devservices,tooling,testing,devmode
+:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-rabbitmq
 
 This guide is the companion from the xref:rabbitmq.adoc[Getting Started with RabbitMQ].
 It explains in more details the configuration and usage of the RabbitMQ connector for reactive messaging.
@@ -18,6 +22,8 @@ More details about the protocol can be found in https://www.rabbitmq.com/amqp-0-
 IMPORTANT: The RabbitMQ connector supports AMQP 0-9-1, which is very different from the AMQP 1.0 protocol used by the
 AMQP 1.0 connector. You can use the AMQP 1.0 connector with RabbitMQ as described in the
 xref:amqp-reference.adoc[AMQP 1.0 connector reference], albeit with *reduced functionality*.
+
+include::{includes}/extension-status.adoc[]
 
 == RabbitMQ connector extension
 

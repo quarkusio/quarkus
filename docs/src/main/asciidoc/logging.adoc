@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: core,getting-started,observability
 :diataxis-type: reference
+:topics: logging,observability
+:extensions: io.quarkus:quarkus-core
 
 Read about the use of logging API in Quarkus, configuring logging output, and using logging adapters to unify the output from other logging APIs.
 
@@ -441,7 +443,7 @@ For details about its configuration, see the xref:#quarkus-log-logging-log-confi
 To log events to a file on the application's host, use the Quarkus file log handler.
 The file log handler is disabled by default, so you must first enable it.
 
-The Quarkus file log handler supports log file rotation. 
+The Quarkus file log handler supports log file rotation.
 Log file rotation ensures effective log file management over time by maintaining a specified number of backup log files, while also keeping the primary log file up-to-date and manageable.
 
 Log file rotation ensures effective log file management over time by maintaining a specified number of backup log files, while keeping the primary log file up-to-date and manageable.

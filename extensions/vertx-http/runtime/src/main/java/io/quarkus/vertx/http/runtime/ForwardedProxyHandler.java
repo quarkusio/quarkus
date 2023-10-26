@@ -79,7 +79,7 @@ public class ForwardedProxyHandler implements Handler<HttpServerRequest> {
                     new Handler<AsyncResult<String>>() {
                         @Override
                         public void handle(AsyncResult<String> stringAsyncResult) {
-                            if (stringAsyncResult.succeeded()) {
+                            if (stringAsyncResult.succeeded() && stringAsyncResult.result() != null) {
                                 var trustedIP = Inet.parseInetAddress(stringAsyncResult.result());
                                 if (trustedIP != null) {
                                     // create proxy check for resolved IP and proceed with the lookup

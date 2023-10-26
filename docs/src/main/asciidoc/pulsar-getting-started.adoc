@@ -6,6 +6,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Getting Started to SmallRye Reactive Messaging with Apache Pulsar
 include::_attributes.adoc[]
 :categories: messaging
+:topics: messaging,reactive-messaging,pulsar
+:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-pulsar
 :summary: This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with Apache Pulsar.
 
 This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with Apache Pulsar.

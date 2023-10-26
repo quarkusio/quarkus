@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: observability
 :summary: This guide explains how to centralize your logs with Logstash or Fluentd using the Graylog Extended Log Format (GELF).
+:topics: observability,logging
+:extensions: io.quarkus:quarkus-logging-gelf
 
 This guide explains how you can send your logs to a centralized log management system like Graylog, Logstash (inside the Elastic Stack or ELK - Elasticsearch, Logstash, Kibana) or
 Fluentd (inside EFK - Elasticsearch, Fluentd, Kibana).

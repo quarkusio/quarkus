@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: This document explains how to optimize your AWS Lambda application for SnapStart
+:topics: aws,lambda,serverless,function,snapstart,cloud
 
 https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html[SnapStart] is a snapshotting and restore mechanism reducing drastically the cold startup time of Java functions on AWS.
 This document explains the various settings you can use to leverage this feature.

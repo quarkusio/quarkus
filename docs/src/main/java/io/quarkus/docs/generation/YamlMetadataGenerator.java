@@ -5,14 +5,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -183,6 +186,8 @@ public class YamlMetadataGenerator {
                             Object keywords = doc.getAttribute("keywords");
                             Object summary = doc.getAttribute("summary");
                             Object type = doc.getAttribute("diataxis-type");
+                            Object topics = doc.getAttribute("topics");
+                            Object extensions = doc.getAttribute("extensions");
 
                             Optional<StructuralNode> preambleNode = doc.getBlocks().stream()
                                     .filter(b -> "preamble".equals(b.getNodeName()))
@@ -199,15 +204,18 @@ public class YamlMetadataGenerator {
                                 summaryString = getSummary(summary, content);
 
                                 if (content.isPresent()) {
-                                    index.add(new DocMetadata(title, path, summaryString, categories, keywords, type, id));
+                                    index.add(new DocMetadata(title, path, summaryString, categories, keywords, topics,
+                                            extensions, type, id));
                                 } else {
                                     messages.record("empty-preamble", path);
-                                    index.add(new DocMetadata(title, path, summaryString, categories, keywords, type, id));
+                                    index.add(new DocMetadata(title, path, summaryString, categories, keywords, topics,
+                                            extensions, type, id));
                                 }
                             } else {
                                 messages.record("missing-preamble", path);
                                 summaryString = getSummary(summary, Optional.empty());
-                                index.add(new DocMetadata(title, path, summaryString, categories, keywords, type, id));
+                                index.add(new DocMetadata(title, path, summaryString, categories, keywords, topics, extensions,
+                                        type, id));
                             }
 
                             long spaceCount = summaryString.chars().filter(c -> c == (int) ' ').count();
@@ -479,18 +487,22 @@ public class YamlMetadataGenerator {
         String title;
         String filename;
         String summary;
-        List<String> keywords;
-        Set<Category> categories = new HashSet<>();
+        Set<String> keywords = new LinkedHashSet<>();
+        Set<Category> categories = new TreeSet<>();
+        Set<String> topics = new LinkedHashSet<>();
+        Set<String> extensions = new LinkedHashSet<>();
         String id;
         Type type;
 
-        DocMetadata(String title, Path path, String summary, Object categories, Object keywords, Object diataxisType,
-                String id) {
+        DocMetadata(String title, Path path, String summary, Object categories, Object keywords,
+                Object topics, Object extensions, Object diataxisType, String id) {
             this.id = id;
             this.title = title == null ? "" : title;
             this.filename = path.getFileName().toString();
             this.summary = summary;
-            this.keywords = keywords == null ? List.of() : List.of(keywords.toString().split("\\s*,\\s*"));
+            this.keywords = toSet(keywords);
+            this.topics = toSet(topics);
+            this.extensions = toSet(extensions);
 
             Category.addAll(this.categories, categories, path);
 
@@ -546,8 +558,31 @@ public class YamlMetadataGenerator {
                     .collect(Collectors.joining(", "));
         }
 
+        public Set<String> toSet(Object value) {
+            if (value == null) {
+                return Set.of();
+            }
+
+            String valueString = value.toString().trim();
+            if (valueString.isEmpty()) {
+                return Set.of();
+            }
+
+            return Arrays.stream(valueString.split(","))
+                    .map(String::trim)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+        }
+
         public String getKeywords() {
             return String.join(", ", keywords);
+        }
+
+        public Set<String> getExtensions() {
+            return extensions;
+        }
+
+        public Set<String> getTopics() {
+            return topics;
         }
 
         public String getType() {

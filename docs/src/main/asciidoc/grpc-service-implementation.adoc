@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: serialization
 :summary: This guide explains how to implement gRPC services in your Quarkus application.
+:topics: grpc
+:extensions: io.quarkus:quarkus-grpc
 
 gRPC service implementations exposed as CDI beans are automatically registered and served by quarkus-grpc.
 

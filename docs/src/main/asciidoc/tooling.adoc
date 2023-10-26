@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: getting-started
 :summary: Explore the Quarkus developer toolchain which makes Quarkus development so fast and enjoyable.
+:topics: tooling
 
 Quarkus comes with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application. In addition, there are plugins and extensions to all major IDEs.
 
@@ -27,7 +28,7 @@ In this guide, we will explore:
 
 Quarkus comes with a toolchain to help you at all development stages.
 You can use Maven or Gradle as build tool.
-And we offer a CLI that is convenient to use (coming soon).
+And we offer a CLI that is convenient to use.
 
 * xref:maven-tooling.adoc[Maven]
 * xref:gradle-tooling.adoc[Gradle]

@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: Deploy your Quarkus applications on Heroku.
+:topics: devops,heroku,cloud,deployment
 
 In this guide you will learn how to deploy a Quarkus based web application as a web-dyno to Heroku.
 
@@ -152,7 +153,7 @@ git add pom.xml
 git commit -am "Add container-image-docker extension."
 ----
 
-The image we are going to build needs to be named accordingly to work with Heroku's registry and deployment. 
+The image we are going to build needs to be named accordingly to work with Heroku's registry and deployment.
 We get the generated name via `heroku info` and pass it on to the (local) build:
 
 [source,bash]

@@ -9,6 +9,7 @@ include::_attributes.adoc[]
 :categories: core
 :extension-status: "experimental"
 :summary: Learn how to upgrade your projects to the latest version of {project-name}
+:topics: tooling
 
 You can update or upgrade your {project-name} projects to the latest version of {project-name} by using an update command.
 

@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
@@ -85,5 +86,21 @@ public class ServerLimitsConfig {
      */
     @ConfigItem
     public OptionalLong maxHeaderListSize;
+
+    /**
+     * Set the max number of RST frame allowed per time window, this is used to prevent
+     * <a href="https://github.com/netty/netty/security/advisories/GHSA-xpw8-rcwv-8f8p">HTTP/2 RST frame flood DDOS
+     * attacks</a>. The default value is {@code 200}, setting zero or a negative value, disables flood protection.
+     */
+    @ConfigItem
+    public OptionalInt rstFloodMaxRstFramePerWindow;
+
+    /**
+     * Set the duration of the time window when checking the max number of RST frames, this is used to prevent
+     * <a href="https://github.com/netty/netty/security/advisories/GHSA-xpw8-rcwv-8f8p">HTTP/2 RST frame flood DDOS
+     * attacks</a>.. The default value is {@code 30 s}, setting zero or a negative value, disables flood protection.
+     */
+    @ConfigItem
+    public Optional<Duration> rstFloodWindowDuration;
 
 }

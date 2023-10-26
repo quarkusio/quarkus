@@ -57,7 +57,7 @@ public class RegisterForReflectionTestCase {
         final String resourceLambda = BASE_PKG + ".ResourceLambda";
 
         assertRegistration("ResourceLambda", resourceLambda);
-        RestAssured.given().when().get("/reflection/lambda").then().body(startsWith("Comparator$$Lambda$"));
+        RestAssured.given().when().get("/reflection/lambda").then().body(startsWith("Comparator$$Lambda"));
     }
 
     private void assertRegistration(String expected, String queryParam) {

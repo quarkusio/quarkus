@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.util.List;
 import java.util.Map;
 
 import org.jboss.logging.Logger;
@@ -14,6 +15,7 @@ import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.common.OidcClientRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.OidcEndpointAccessException;
@@ -43,16 +45,19 @@ public class OidcProviderClient implements Closeable {
     private final String clientSecretBasicAuthScheme;
     private final String introspectionBasicAuthScheme;
     private final Key clientJwtKey;
+    private final List<OidcClientRequestFilter> filters;
 
     public OidcProviderClient(WebClient client,
             OidcConfigurationMetadata metadata,
-            OidcTenantConfig oidcConfig) {
+            OidcTenantConfig oidcConfig,
+            List<OidcClientRequestFilter> filters) {
         this.client = client;
         this.metadata = metadata;
         this.oidcConfig = oidcConfig;
         this.clientSecretBasicAuthScheme = OidcCommonUtils.initClientSecretBasicAuth(oidcConfig);
         this.clientJwtKey = OidcCommonUtils.initClientJwtKey(oidcConfig);
         this.introspectionBasicAuthScheme = initIntrospectionBasicAuthScheme(oidcConfig);
+        this.filters = filters;
     }
 
     private static String initIntrospectionBasicAuthScheme(OidcTenantConfig oidcConfig) {
@@ -70,13 +75,13 @@ public class OidcProviderClient implements Closeable {
     }
 
     public Uni<JsonWebKeySet> getJsonWebKeySet() {
-        return client.getAbs(metadata.getJsonWebKeySetUri()).send().onItem()
+        return filter(client.getAbs(metadata.getJsonWebKeySetUri()), null).send().onItem()
                 .transform(resp -> getJsonWebKeySet(resp));
     }
 
     public Uni<UserInfo> getUserInfo(String token) {
         LOG.debugf("Get UserInfo on: %s auth: %s", metadata.getUserInfoUri(), OidcConstants.BEARER_SCHEME + " " + token);
-        return client.getAbs(metadata.getUserInfoUri())
+        return filter(client.getAbs(metadata.getUserInfoUri()), null)
                 .putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + token)
                 .send().onItem().transform(resp -> getUserInfo(resp));
     }
@@ -157,7 +162,8 @@ public class OidcProviderClient implements Closeable {
         }
         LOG.debugf("Get token on: %s params: %s headers: %s", metadata.getTokenUri(), formBody, request.headers());
         // Retry up to three times with a one-second delay between the retries if the connection is closed.
-        Uni<HttpResponse<Buffer>> response = request.sendBuffer(OidcCommonUtils.encodeForm(formBody))
+        Buffer buffer = OidcCommonUtils.encodeForm(formBody);
+        Uni<HttpResponse<Buffer>> response = filter(request, buffer).sendBuffer(buffer)
                 .onFailure(ConnectException.class)
                 .retry()
                 .atMost(oidcConfig.connectionRetryCount).onFailure().transform(t -> t.getCause());
@@ -211,5 +217,12 @@ public class OidcProviderClient implements Closeable {
 
     public Key getClientJwtKey() {
         return clientJwtKey;
+    }
+
+    private HttpRequest<Buffer> filter(HttpRequest<Buffer> request, Buffer body) {
+        for (OidcClientRequestFilter filter : filters) {
+            filter.filter(request, body);
+        }
+        return request;
     }
 }

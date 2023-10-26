@@ -8,6 +8,8 @@ include::_attributes.adoc[]
 :categories: security
 :keywords: sso oidc security keycloak
 :summary: Start Keycloak or other providers automatically in dev and test modes.
+:topics: security,oidc,keycloak,devservices,tooling,testing,devmode
+:extensions: io.quarkus:quarkus-oidc
 
 This guide covers the Dev Services and UI for OpenID Connect (OIDC) Keycloak provider and explains how to support Dev Services and UI for other OpenID Connect providers.
 It also describes Dev UI for all OpenID Connect providers which have already been started before Quarkus is launched in a dev mode.
@@ -223,7 +225,7 @@ For more information, see xref:security-oidc-bearer-token-authentication.adoc#in
 [[keycloak-initialization]]
 === Keycloak Initialization
 
-The `quay.io/keycloak/keycloak:22.0.3` image which contains a Keycloak distribution powered by Quarkus is used to start a container by default.
+The `quay.io/keycloak/keycloak:22.0.5` image which contains a Keycloak distribution powered by Quarkus is used to start a container by default.
 `quarkus.keycloak.devservices.image-name` can be used to change the Keycloak image name. For example, set it to `quay.io/keycloak/keycloak:19.0.3-legacy` to use a Keycloak distribution powered by WildFly.
 Note that only a Quarkus based Keycloak distribution is available starting from Keycloak `20.0.0`.
 

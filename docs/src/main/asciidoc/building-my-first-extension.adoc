@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: writing-extensions
 :summary: Learn step by step how to build a simple extension.
+:topics: extensions
 
 Quarkus extensions enhance your application just as projects dependencies do.
 The role of the extensions is to leverage Quarkus paradigms to integrate seamlessly a library into Quarkus architecture - e.g. do more things at build time.

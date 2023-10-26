@@ -1,0 +1,16 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "OpenID Connect Client integration for GraphQL client"
+metadata:
+  keywords:
+  - "oauth2"
+  - "openid-connect"
+  - "oidc"
+  - "oidc-client"
+  - "graphql-client"
+  guide: "https://quarkus.io/guides/security-openid-connect-client"
+  categories:
+  - "security"
+  status: "experimental"
+  config:
+  - "quarkus.oidc-client."

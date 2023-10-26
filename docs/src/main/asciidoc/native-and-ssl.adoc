@@ -8,6 +8,7 @@ include::_attributes.adoc[]
 :categories: core, native, security
 :summary: In this guide, we will discuss how you can get your native images to support SSL, as native images don't support it out of the box.
 :devtools-no-gradle:
+:topics: native,ssl
 
 We are quickly moving to an SSL-everywhere world so being able to use SSL is crucial.
 

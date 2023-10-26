@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-server-common</artifactId>
-    <name>Quarkus - RESTEasy - Server common - Runtime</name>
+    <name>Quarkus - RESTEasy Classic - Server common - Runtime</name>
     <description>RESTEasy Server common</description>
     <dependencies>
         <dependency>

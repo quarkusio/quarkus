@@ -11,6 +11,8 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: cdi,arc,injection,interceptor,observer
+:extensions: io.quarkus:quarkus-arc
 
 In this guide we're going to describe the basic principles of the Quarkus programming model that is based on the https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html[Jakarta Contexts and Dependency Injection 4.0, window="_blank"] specification.
 
@@ -79,7 +81,7 @@ This is very useful because your application fails fast whenever the container i
 
 [TIP]
 ====
-Your can use programmatic lookup via  `jakarta.enterprise.inject.Instance` to resolve ambiguities at runtime and even iterate over all beans implementing a given type:
+You can use programmatic lookup via  `jakarta.enterprise.inject.Instance` to resolve ambiguities at runtime and even iterate over all beans implementing a given type:
 
 [source,java]
 ----
@@ -202,7 +204,7 @@ when a method is invoked upon an injected instance for the first time.
 Furthermore, client proxies only delegate method invocations and thus you should never read/write fields of an injected `@ApplicationScoped` bean directly.
 You can read/write fields of an injected `@Singleton` safely.
 
-`@Singleton` should have a slightly better performance because the is no indirection (no proxy that delegates to the current instance from the context).
+`@Singleton` should have a slightly better performance because there is no indirection (no proxy that delegates to the current instance from the context).
 
 On the other hand, you cannot mock `@Singleton` beans using <<getting-started-testing.adoc#quarkus_mock,QuarkusMock>>.
 

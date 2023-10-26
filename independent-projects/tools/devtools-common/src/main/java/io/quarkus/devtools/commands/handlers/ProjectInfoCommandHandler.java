@@ -123,7 +123,7 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
 
         if (projectState.getExtensions().isEmpty()) {
             log.info("");
-            log.info("No Quarkus extensions found among the project dependencies");
+            log.info("No Quarkus extensions were found among the project dependencies");
             return recommendationsAvailable;
         }
 

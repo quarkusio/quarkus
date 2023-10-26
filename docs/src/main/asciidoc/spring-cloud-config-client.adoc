@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: compatibility
 :summary: Quarkus provides a compatibility layer for Spring Cloud Config in the form of the spring-cloud-config-client extension.
+:topics: spring,cloud,configuration,compatibility
+:extensions: io.quarkus:quarkus-spring-cloud-config-client
 
 This guide explains how your Quarkus application can read configuration properties at runtime from the https://cloud.spring.io/spring-cloud-config[Spring Cloud Config Server].
 

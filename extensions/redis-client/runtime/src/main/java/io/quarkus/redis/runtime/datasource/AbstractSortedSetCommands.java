@@ -39,10 +39,6 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
     protected static final ZAggregateArgs DEFAULT_INSTANCE_AGG = new ZAggregateArgs();
     protected static final ZRangeArgs DEFAULT_INSTANCE_RANGE = new ZRangeArgs();
 
-    public static final Command ZINTERCARD = Command.create("zintercard");
-    public static final Command ZMPOP = Command.create("zmpop");
-    public static final Command BZMPOP = Command.create("bzmpop");
-
     AbstractSortedSetCommands(RedisCommandExecutor redis, Type k, Type v) {
         super(redis, new Marshaller(k, v), v);
         this.typeOfValue = v;
@@ -237,7 +233,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         if (keys.length < 2) {
             throw new IllegalArgumentException("Need at least two keys");
         }
-        RedisCommand cmd = RedisCommand.of(ZINTERCARD)
+        RedisCommand cmd = RedisCommand.of(Command.ZINTERCARD)
                 .put(keys.length);
 
         for (K key : keys) {
@@ -254,7 +250,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
             throw new IllegalArgumentException("Need at least two keys");
         }
         positive(limit, "limit");
-        RedisCommand cmd = RedisCommand.of(ZINTERCARD)
+        RedisCommand cmd = RedisCommand.of(Command.ZINTERCARD)
                 .put(keys.length);
 
         for (K key : keys) {
@@ -301,7 +297,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
     Uni<Response> _zmpopMin(K... keys) {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
-        RedisCommand cmd = RedisCommand.of(ZMPOP).put(keys.length).putAll(marshaller.encode(keys)).put("MIN");
+        RedisCommand cmd = RedisCommand.of(Command.ZMPOP).put(keys.length).putAll(marshaller.encode(keys)).put("MIN");
         return execute(cmd);
     }
 
@@ -309,15 +305,15 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         positive(count, "count");
-        RedisCommand cmd = RedisCommand.of(ZMPOP).put(keys.length).putAll(marshaller.encode(keys)).put("MIN").put("COUNT")
-                .put(count);
+        RedisCommand cmd = RedisCommand.of(Command.ZMPOP).put(keys.length).putAll(marshaller.encode(keys)).put("MIN")
+                .put("COUNT").put(count);
         return execute(cmd);
     }
 
     Uni<Response> _zmpopMax(K... keys) {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
-        RedisCommand cmd = RedisCommand.of(ZMPOP).put(keys.length).putAll(marshaller.encode(keys)).put("MAX");
+        RedisCommand cmd = RedisCommand.of(Command.ZMPOP).put(keys.length).putAll(marshaller.encode(keys)).put("MAX");
         return execute(cmd);
     }
 
@@ -325,8 +321,8 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
         positive(count, "count");
-        RedisCommand cmd = RedisCommand.of(ZMPOP).put(keys.length).putAll(marshaller.encode(keys)).put("MAX").put("COUNT")
-                .put(count);
+        RedisCommand cmd = RedisCommand.of(Command.ZMPOP).put(keys.length).putAll(marshaller.encode(keys)).put("MAX")
+                .put("COUNT").put(count);
         return execute(cmd);
     }
 
@@ -335,7 +331,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         doesNotContainNull(keys, "keys");
         validate(timeout, "timeout");
 
-        RedisCommand cmd = RedisCommand.of(BZMPOP).put(timeout.toSeconds())
+        RedisCommand cmd = RedisCommand.of(Command.BZMPOP).put(timeout.toSeconds())
                 .put(keys.length).putAll(marshaller.encode(keys)).put("MIN");
         return execute(cmd);
     }
@@ -345,7 +341,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         doesNotContainNull(keys, "keys");
         validate(timeout, "timeout");
 
-        RedisCommand cmd = RedisCommand.of(BZMPOP).put(timeout.toSeconds())
+        RedisCommand cmd = RedisCommand.of(Command.BZMPOP).put(timeout.toSeconds())
                 .put(keys.length).putAll(marshaller.encode(keys)).put("MIN").put("COUNT").put(count);
         return execute(cmd);
     }
@@ -355,7 +351,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         doesNotContainNull(keys, "keys");
         validate(timeout, "timeout");
 
-        RedisCommand cmd = RedisCommand.of(BZMPOP).put(timeout.toSeconds())
+        RedisCommand cmd = RedisCommand.of(Command.BZMPOP).put(timeout.toSeconds())
                 .put(keys.length).putAll(marshaller.encode(keys)).put("MAX");
         return execute(cmd);
     }
@@ -365,7 +361,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
         doesNotContainNull(keys, "keys");
         validate(timeout, "timeout");
 
-        RedisCommand cmd = RedisCommand.of(BZMPOP).put(timeout.toSeconds())
+        RedisCommand cmd = RedisCommand.of(Command.BZMPOP).put(timeout.toSeconds())
                 .put(keys.length).putAll(marshaller.encode(keys)).put("MAX").put("COUNT").put(count);
         return execute(cmd);
     }

@@ -14,7 +14,7 @@
     <description>Module that contains JPA related tests running with the DB2 database</description>
 
     <properties>
-        <jdbc-db2.url>jdbc:db2://localhost:50000/hreact</jdbc-db2.url>
+        <jdbc-db2.url>jdbc:db2://localhost:50005/hreact</jdbc-db2.url>
     </properties>
 
     <dependencies>
@@ -161,9 +161,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <jdbc-db2.url>jdbc:db2://localhost:50005/hreact</jdbc-db2.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

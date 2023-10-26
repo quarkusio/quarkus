@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: serialization
 :summary: This guide explains how to consume gRPC services in your Quarkus application.
+:topics: grpc
+:extensions: io.quarkus:quarkus-grpc
 
 gRPC clients can be injected in your application code.
 
@@ -247,7 +249,7 @@ quarkus.grpc.clients.hello.ssl.trust-store=tls/ca.pem
 === Client Stub Deadlines
 
 If you need to configure a deadline for a gRPC stub, i.e. to specify a duration of time after which the stub will always return the status error `DEADLINE_EXCEEDED`.
-You can specify the deadline via the `quarkus.grpc.clients."service-name".deadline` configuration property, e.g.: 
+You can specify the deadline via the `quarkus.grpc.clients."service-name".deadline` configuration property, e.g.:
 
 [source,properties]
 ----

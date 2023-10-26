@@ -14,7 +14,7 @@
     <description>Module that contains JPA related tests running with the MariaDB database</description>
 
     <properties>
-        <mariadb.url>jdbc:mariadb://localhost:3306/hibernate_orm_test</mariadb.url>
+        <mariadb.url>jdbc:mariadb://localhost:3308/hibernate_orm_test</mariadb.url>
     </properties>
 
     <dependencies>
@@ -162,9 +162,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <mariadb.url>jdbc:mariadb://localhost:3308/hibernate_orm_test</mariadb.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

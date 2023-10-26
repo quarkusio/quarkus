@@ -9,6 +9,7 @@ include::_attributes.adoc[]
 :categories: tooling, native
 :summary: Develop and build your Quarkus application with Maven
 :devtools-no-gradle:
+:topics: maven,tooling
 
 Use Maven to create a new project, add or remove extensions, launch development mode, debug your application, and build your application into a jar, native executable, or container-friendly executable. Import your project into your favorite IDE using Maven project metadata.
 
@@ -1063,23 +1064,23 @@ Here is an example `info` output for a simple project:
 ----
 [aloubyansky@localhost code-with-quarkus]$ mvn quarkus:info
 [INFO] Scanning for projects...
-[INFO] 
+[INFO]
 [INFO] ---------------------< org.acme:code-with-quarkus >---------------------
 [INFO] Building code-with-quarkus 1.0.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
-[INFO] 
+[INFO]
 [INFO] --- quarkus-maven-plugin:{quarkus-version}:info (default-cli) @ code-with-quarkus ---
 [WARNING] quarkus:info goal is experimental, its options and output may change in future versions
 [INFO] Quarkus platform BOMs: <1>
 [INFO]   {quarkus-platform-groupid}:quarkus-bom:pom:{quarkus-version}
 [INFO]   {quarkus-platform-groupid}:quarkus-camel-bom:pom:{quarkus-version}
-[INFO] 
+[INFO]
 [INFO] Extensions from {quarkus-platform-groupid}:quarkus-bom: <2>
 [INFO]   io.quarkus:quarkus-resteasy-reactive
-[INFO] 
+[INFO]
 [INFO] Extensions from {quarkus-platform-groupid}:quarkus-camel-bom: <3>
 [INFO]   org.apache.camel.quarkus:camel-quarkus-rabbitmq
-[INFO] 
+[INFO]
 [INFO] Extensions from registry.quarkus.io: <4>
 [INFO]   io.quarkiverse.prettytime:quarkus-prettytime:0.2.1
 ----
@@ -1103,13 +1104,13 @@ NOTE: `quarkus:info` will also report Quarkus extensions that aren't found in th
 [INFO] Quarkus platform BOMs:
 [INFO]   {quarkus-platform-groupid}:quarkus-bom:pom:{quarkus-version}
 [INFO]   {quarkus-platform-groupid}:quarkus-camel-bom:pom:{quarkus-version} | unnecessary <1>
-[INFO] 
+[INFO]
 [INFO] Extensions from {quarkus-platform-groupid}:quarkus-bom:
 [INFO]   io.quarkus:quarkus-resteasy-reactive:2.6.3.Final | misaligned <2>
-[INFO] 
+[INFO]
 [INFO] Extensions from {quarkus-platform-groupid}:quarkus-camel-bom:
 [INFO]   org.apache.camel.quarkus:camel-quarkus-rabbitmq
-[INFO] 
+[INFO]
 [INFO] Extensions from registry.quarkus.io:
 [INFO]   io.quarkiverse.prettytime:quarkus-prettytime:0.2.1
 [INFO]
@@ -1136,14 +1137,14 @@ Assuming we have a project including Kogito, Camel and core Quarkus extensions a
 ----
 [aloubyansky@localhost code-with-quarkus]$ mvn quarkus:update
 [INFO] Scanning for projects...
-[INFO] 
+[INFO]
 [INFO] ---------------------< org.acme:code-with-quarkus >---------------------
 [INFO] Building code-with-quarkus 1.0.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
-[INFO] 
+[INFO]
 [INFO] --- quarkus-maven-plugin:{quarkus-version}:update (default-cli) @ code-with-quarkus ---
 [WARNING] quarkus:update goal is experimental, its options and output might change in future versions
-[INFO] 
+[INFO]
 [INFO] Recommended Quarkus platform BOM updates: <1>
 [INFO] Update: {quarkus-platform-groupid}:quarkus-bom:pom:2.7.1.Final -> {quarkus-version}
 [INFO] Update: {quarkus-platform-groupid}:quarkus-camel-bom:pom:2.7.1.Final -> {quarkus-version}
@@ -1160,10 +1161,10 @@ If we modify the project to remove all the Camel Quarkus extensions from the pro
 [INFO] Recommended Quarkus platform BOM updates: <1>
 [INFO] Update: {quarkus-platform-groupid}:quarkus-bom:pom:2.7.1.Final -> {quarkus-version}
 [INFO] Remove: {quarkus-platform-groupid}:quarkus-camel-bom:pom:2.7.1.Final <2>
-[INFO] 
+[INFO]
 [INFO] Extensions from {quarkus-platform-groupid}:quarkus-bom:
 [INFO] Update: io.quarkus:quarkus-resteasy-reactive:2.6.3.Final -> remove version (managed) <3>
-[INFO] 
+[INFO]
 [INFO] Extensions from registry.quarkus.io:
 [INFO] Update: io.quarkiverse.prettytime:quarkus-prettytime:0.2.0 -> 0.2.1 <4>
 ----

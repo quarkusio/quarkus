@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.quarkus.deployment.builditem.nativeimage.NativeMinimalJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.steps.GraalVM.Distribution;
 import io.quarkus.deployment.pkg.steps.GraalVM.Version;
 
@@ -100,8 +101,9 @@ public class GraalVMTest {
                 + "Substrate VM GraalVM CE 21+35.1 (build 21+35, serial gc)").split("\\n")));
         assertThat(graalVM21Dev.distribution.name()).isEqualTo("GRAALVM");
         assertThat(graalVM21Dev.getVersionAsString()).isEqualTo("23.1");
-        assertThat(graalVM21Dev.javaFeatureVersion).isEqualTo(21);
-        assertThat(graalVM21Dev.javaUpdateVersion).isEqualTo(0);
+        assertThat(graalVM21Dev.javaVersion.toString()).isEqualTo("21+35-jvmci-23.1-b15");
+        assertThat(graalVM21Dev.javaVersion.feature()).isEqualTo(21);
+        assertThat(graalVM21Dev.javaVersion.update()).isEqualTo(0);
     }
 
     @Test
@@ -111,8 +113,9 @@ public class GraalVMTest {
                 "Substrate VM GraalVM CE 21-dev+35.1 (build 21+35, serial gc)").split("\\n")));
         assertThat(graalVM21Dev.distribution.name()).isEqualTo("GRAALVM");
         assertThat(graalVM21Dev.getVersionAsString()).isEqualTo("23.1-dev");
-        assertThat(graalVM21Dev.javaFeatureVersion).isEqualTo(21);
-        assertThat(graalVM21Dev.javaUpdateVersion).isEqualTo(0);
+        assertThat(graalVM21Dev.javaVersion.toString()).isEqualTo("21+35-jvmci-23.1-b14");
+        assertThat(graalVM21Dev.javaVersion.feature()).isEqualTo(21);
+        assertThat(graalVM21Dev.javaVersion.update()).isEqualTo(0);
     }
 
     @Test
@@ -122,8 +125,9 @@ public class GraalVMTest {
                 + "Substrate VM GraalVM CE 22-dev+16.1 (build 22+16, serial gc)").split("\\n")));
         assertThat(graalVM22Dev.distribution.name()).isEqualTo("GRAALVM");
         assertThat(graalVM22Dev.getVersionAsString()).isEqualTo("24.0-dev");
-        assertThat(graalVM22Dev.javaFeatureVersion).isEqualTo(22);
-        assertThat(graalVM22Dev.javaUpdateVersion).isEqualTo(0);
+        assertThat(graalVM22Dev.javaVersion.toString()).isEqualTo("22+16-jvmci-b01");
+        assertThat(graalVM22Dev.javaVersion.feature()).isEqualTo(22);
+        assertThat(graalVM22Dev.javaVersion.update()).isEqualTo(0);
     }
 
     @Test
@@ -231,13 +235,13 @@ public class GraalVMTest {
     "GraalVM 21.3.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)                              |11|13|",
     "GraalVM 21.3.0 Java 17 CE (Java Version 17.0.1+12-jvmci-21.3-b05)                              |17| 1|",
     "GraalVM 22.0.0-dev Java 11 CE (Java Version 11.0.13+8-jvmci-22.0-b02)                          |11|13|",
-    "GraalVM Version 19.3.0 CE                                                                      |11|-1|",
+    "GraalVM Version 19.3.0 CE                                                                      |11|0|",
     "GraalVM Version 20.1.0.4.Final (Mandrel Distribution) (Java Version 11.0.10+9)                 |11|10|",
     "GraalVM Version 20.3.3.0-0b1 (Mandrel Distribution) (Java Version 11.0.12+7-LTS)               |11|12|",
     "native-image 21.1.0.0-Final (Mandrel Distribution) (Java Version 11.0.11+9)                    |11|11|",
     "native-image 21.2.0.2-0b3 Mandrel Distribution (Java Version 11.0.13+8-LTS)                    |11|13|",
     "native-image 21.3.0.0-Final Mandrel Distribution (Java Version 11.0.13+8)                      |11|13|",
-    "native-image 21.3.0.0-Final Mandrel Distribution (Java Version 17-internal+0-adhoc.karm.jdk17u)|17|-1|",
+    "native-image 21.3.0.0-Final Mandrel Distribution (Java Version 17-internal+0-adhoc.karm.jdk17u)|17|0|",
     "native-image 21.3.0.0-Final Mandrel Distribution (Java Version 17.0.1+12)                      |17| 1|",
     })
     // @formatter:on
@@ -246,8 +250,8 @@ public class GraalVMTest {
         final Version v = Version.of(Stream.of(versions[0].trim()));
         final int expectedJdkFeature = Integer.parseInt(versions[1].trim());
         final int expectedJdkUpdate = Integer.parseInt(versions[2].trim());
-        Assertions.assertEquals(expectedJdkFeature, v.javaFeatureVersion, "JDK feature version mismatch.");
-        Assertions.assertEquals(expectedJdkUpdate, v.javaUpdateVersion, "JDK feature version mismatch.");
+        Assertions.assertEquals(expectedJdkFeature, v.javaVersion.feature(), "JDK feature version mismatch.");
+        Assertions.assertEquals(expectedJdkUpdate, v.javaVersion.update(), "JDK update version mismatch.");
     }
 
     @ParameterizedTest
@@ -255,32 +259,44 @@ public class GraalVMTest {
     @ValueSource(strings = {
     "GraalVM 21.3.0 Java 17 CE (Java Version 17.0.1+12-jvmci-21.3-b05)                               |> | GraalVM 21.3.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)",
     "GraalVM 22.0.0-dev Java 11 CE (Java Version 11.0.13+8-jvmci-22.0-b02)                           |< | GraalVM 22.0.0-dev Java 11 CE (Java Version 11.0.14+3-jvmci-22.0-b02)",
+    "GraalVM 22.0.0-dev Java 11 CE (Java Version 11.0.13+8-jvmci-22.0-b02)                           |==| GraalVM 22.0.0-dev Java 11 CE (Java Version 11.0.13+8-jvmci-22.0-b04)",
+    "GraalVM 22.0.0-dev Java 11 CE (Java Version 11.0.13+8-jvmci-22.0-b02)                           |==| GraalVM 22.0.0-dev Java 11 CE (Java Version 11.0.13+8-jvmci-21.0-b04)",
     "GraalVM Version 19.3.0 CE                                                                       |==| GraalVM Version 19.0.0 CE",
     "native-image 21.3.0.0-Final Mandrel Distribution (Java Version 17-internal+0-adhoc.karm.jdk17u) |< | native-image 21.3.0.0-Final Mandrel Distribution (Java Version 17.0.1+12)",
-    "GraalVM 20.3.3 Java 11 (Java Version 11.0.12+6-jvmci-20.3-b20)                                  |==| GraalVM Version 20.3.3.0-0b1 (Mandrel Distribution) (Java Version 11.0.12+7-LTS)",
+    "GraalVM 20.3.3 Java 11 (Java Version 11.0.12+6-jvmci-20.3-b20)                                  |< | GraalVM Version 20.3.3.0-0b1 (Mandrel Distribution) (Java Version 11.0.12+7-LTS)",
     })
     // @formatter:on
     public void testJDKVersionCompare(String s) {
         final String[] versions = s.split("\\|");
         final Version a = Version.of(Stream.of(versions[0].trim()));
         final Version b = Version.of(Stream.of(versions[2].trim()));
+        final NativeMinimalJavaVersionBuildItem aMinimal = new NativeMinimalJavaVersionBuildItem(a.javaVersion.toString(), "");
+        final NativeMinimalJavaVersionBuildItem bMinimal = new NativeMinimalJavaVersionBuildItem(b.javaVersion.toString(), "");
         final String cmp = versions[1].trim();
         switch (cmp) {
             case "<":
-                Assertions.assertTrue(b.jdkVersionGreaterOrEqualTo(a.javaFeatureVersion, a.javaUpdateVersion),
-                        String.format("JDK %d.0.%d greater or equal to JDK %d.0.%d.",
-                                b.javaFeatureVersion, b.javaUpdateVersion, a.javaFeatureVersion, a.javaUpdateVersion));
+                Assertions.assertTrue(b.jdkVersionGreaterOrEqualTo(aMinimal),
+                        String.format("JDK %s greater or equal to JDK %s.",
+                                b.javaVersion, a.javaVersion));
+                Assertions.assertFalse(a.jdkVersionGreaterOrEqualTo(bMinimal),
+                        String.format("JDK %s smaller than JDK %s.",
+                                a.javaVersion, b.javaVersion));
                 break;
             case ">":
-                Assertions.assertTrue(a.jdkVersionGreaterOrEqualTo(b.javaFeatureVersion, b.javaUpdateVersion),
-                        String.format("JDK %d.0.%d greater or equal to JDK %d.0.%d.",
-                                a.javaFeatureVersion, a.javaUpdateVersion, b.javaFeatureVersion, b.javaUpdateVersion));
+                Assertions.assertTrue(a.jdkVersionGreaterOrEqualTo(bMinimal),
+                        String.format("JDK %s greater or equal to JDK %s.",
+                                a.javaVersion, b.javaVersion));
+                Assertions.assertFalse(b.jdkVersionGreaterOrEqualTo(aMinimal),
+                        String.format("JDK %s smaller than JDK %s.",
+                                b.javaVersion, a.javaVersion));
                 break;
             case "==":
-                Assertions.assertTrue(
-                        a.javaFeatureVersion == b.javaFeatureVersion && a.javaUpdateVersion == b.javaUpdateVersion,
-                        String.format("JDK %d.0.%d equal to JDK %d.0.%d.",
-                                a.javaFeatureVersion, a.javaUpdateVersion, b.javaFeatureVersion, b.javaUpdateVersion));
+                Assertions.assertEquals(0, a.javaVersion.compareToIgnoreOptional(b.javaVersion),
+                        String.format("JDK %s equal to JDK %s.",
+                                b.javaVersion, a.javaVersion));
+                Assertions.assertTrue(a.jdkVersionGreaterOrEqualTo(bMinimal),
+                        String.format("JDK %s greater or equal to JDK %s.",
+                                a.javaVersion, b.javaVersion));
                 break;
             default:
                 throw new IllegalArgumentException("Fix the test data. Symbol " + cmp + " is unknown.");

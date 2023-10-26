@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: security
 :summary: This guide explains how to use OpenID Connect and OAuth2 Client and Filters to acquire, refresh and propagate access tokens.
+:topics: security,oidc,client
+:extensions: io.quarkus:quarkus-oidc-client
 
 This quickstart demonstrates how to use `OpenID Connect Client Reactive Filter` to acquire and propagate access tokens as `HTTP Authorization Bearer` access tokens, alongside `OpenID Token Propagation Reactive Filter` which propagates the incoming `HTTP Authorization Bearer` access tokens.
 

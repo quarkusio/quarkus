@@ -8,6 +8,8 @@ include::_attributes.adoc[]
 :config-file: application.properties
 :reactive-doc-url-prefix: https://hibernate.org/reactive/documentation/1.1/reference/html_single/#getting-started
 :extension-status: preview
+:topics: data,hibernate-reactive,sql
+:extensions: io.quarkus:quarkus-hibernate-reactive-panache,io.quarkus:quarkus-hibernate-reactive
 
 link:https://hibernate.org/reactive/[Hibernate Reactive] is a reactive API for Hibernate ORM, supporting non-blocking database drivers
 and a reactive style of interaction with the database.

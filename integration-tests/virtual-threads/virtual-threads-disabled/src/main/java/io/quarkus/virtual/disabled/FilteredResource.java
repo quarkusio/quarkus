@@ -7,6 +7,7 @@ import jakarta.ws.rs.core.Response;
 
 import org.jboss.logmanager.MDC;
 
+import io.quarkus.test.vertx.VirtualThreadsAssertions;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.vertx.core.Vertx;
 
@@ -19,7 +20,7 @@ public class FilteredResource {
     @GET
     @RunOnVirtualThread
     public Response filtered() {
-        AssertHelper.assertWorkerOrEventLoopThread();
+        VirtualThreadsAssertions.assertWorkerOrEventLoopThread();
 
         // Request scope
         assert counter.increment() == 2;

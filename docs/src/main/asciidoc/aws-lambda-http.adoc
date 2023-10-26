@@ -9,6 +9,8 @@ include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains how you can deploy Vert.x Web, Servlet, or RESTEasy microservices as an AWS Lambda.
 :devtools-no-gradle:
+:topics: aws,lambda,serverless,function,cloud
+:extensions: io.quarkus:quarkus-amazon-lambda,io.quarkus:quarkus-amazon-lambda-http
 
 With Quarkus you can deploy your favorite Java HTTP frameworks as AWS Lambda's using either the https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api.html[AWS Gateway HTTP API]
 or https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-rest-api.html[AWS Gateway REST API].  This means that you can deploy your microservices written with RESTEasy Reactive (our Jakarta REST implementation),

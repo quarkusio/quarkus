@@ -2,6 +2,7 @@ package io.quarkus.opentelemetry.deployment.exporter.otlp;
 
 import static io.quarkus.opentelemetry.runtime.config.build.ExporterType.Constants.CDI_VALUE;
 
+import java.util.List;
 import java.util.function.BooleanSupplier;
 
 import jakarta.enterprise.inject.Instance;
@@ -27,7 +28,7 @@ import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.EndUserSpanProcessor;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.LateBoundBatchSpanProcessor;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpRecorder;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.OTelExporterRecorder;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
@@ -60,12 +61,18 @@ public class OtlpExporterProcessor {
     @SuppressWarnings("deprecation")
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    SyntheticBeanBuildItem createBatchSpanProcessor(OtlpRecorder recorder,
+    void createBatchSpanProcessor(OTelExporterRecorder recorder,
             OTelRuntimeConfig otelRuntimeConfig,
             OtlpExporterRuntimeConfig exporterRuntimeConfig,
             TlsConfig tlsConfig,
-            CoreVertxBuildItem vertxBuildItem) {
-        return SyntheticBeanBuildItem
+            CoreVertxBuildItem vertxBuildItem,
+            List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
+        if (!externalOtelExporterBuildItem.isEmpty()) {
+            // if there is an external exporter, we don't want to create the default one
+            return;
+        }
+        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
                 .configure(LateBoundBatchSpanProcessor.class)
                 .types(SpanProcessor.class)
                 .setRuntimeInit()
@@ -75,7 +82,6 @@ public class OtlpExporterProcessor {
                         new Type[] { ClassType.create(DotName.createSimple(SpanExporter.class.getName())) }, null))
                 .createWith(recorder.batchSpanProcessorForOtlp(otelRuntimeConfig, exporterRuntimeConfig, tlsConfig,
                         vertxBuildItem.getVertx()))
-                .done();
-
+                .done());
     }
 }

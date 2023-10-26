@@ -141,7 +141,7 @@ public class BeanInfo implements InjectionTargetInfo {
         this.removable = isRemovable;
         this.params = params;
         // Identifier must be unique for a specific deployment
-        this.identifier = Hashes.sha1((identifier != null ? identifier : "") + toString() + beanDeployment.toString());
+        this.identifier = Hashes.sha1_base64((identifier != null ? identifier : "") + toString() + beanDeployment.toString());
         this.interceptedMethods = Collections.emptyMap();
         this.decoratedMethods = Collections.emptyMap();
         this.lifecycleInterceptors = Collections.emptyMap();
@@ -417,7 +417,7 @@ public class BeanInfo implements InjectionTargetInfo {
      * @return {@code true} if the bean requires some customized destroy logic
      */
     public boolean hasDestroyLogic() {
-        if (isInterceptor() || isDecorator()) {
+        if (isInterceptor()) {
             return false;
         }
         if (disposer != null || destroyerConsumer != null) {

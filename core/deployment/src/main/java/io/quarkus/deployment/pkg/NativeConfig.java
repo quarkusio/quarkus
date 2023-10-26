@@ -20,8 +20,8 @@ import io.smallrye.config.WithParentName;
 @ConfigMapping(prefix = "quarkus.native")
 public interface NativeConfig {
 
-    String DEFAULT_GRAALVM_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:jdk-17";
-    String DEFAULT_MANDREL_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-17";
+    String DEFAULT_GRAALVM_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:jdk-21";
+    String DEFAULT_MANDREL_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21";
 
     /**
      * Comma-separated, additional arguments to pass to the build process.
@@ -225,7 +225,7 @@ public interface NativeConfig {
     interface BuilderImageConfig {
         /**
          * The docker image to use to do the image build. It can be one of `graalvm`, `mandrel`, or the full image path, e.g.
-         * {@code quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-17}.
+         * {@code quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21}.
          */
         @WithParentName
         @WithDefault("${platform.quarkus.native.builder-image}")

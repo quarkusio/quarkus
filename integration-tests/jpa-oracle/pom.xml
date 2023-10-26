@@ -186,9 +186,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <oracledb.url>jdbc:oracle:thin:@localhost:1521/FREEPDB1</oracledb.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

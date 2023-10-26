@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 ////
-TODO: 
+TODO:
 - Title: https://quarkus.io/guides/doc-reference#titles-headings
 - Use the file name as the ID
 - Choose appropriate categories: https://quarkus.io/guides/doc-reference#categories
@@ -16,7 +16,7 @@ include::_attributes.adoc[]
 :categories: ...
 ////
 :extension-status: preview
-TODO: uncomment the above for experimental or tech-preview content. 
+TODO: uncomment the above for experimental or tech-preview content.
 The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
 ////
 
@@ -43,9 +43,9 @@ This file offers a few different variables that can be used to tweak what is sho
 :sectnumlevels: 3
 == Outline steps
 
-- xref:{doc-guides}/doc-create-tutorial.adoc[Tutorial: Create a tutorial]
-- xref:{doc-guides}/doc-concept.adoc#tutorial[Quarkus documentation content types: Tutorials]
-- xref:{doc-guides}/doc-reference.adoc[Quarkus style and content guidelines]
+- xref:../doc-create-tutorial.adoc[Tutorial: Create a tutorial]
+- xref:../doc-concept.adoc#tutorial[Quarkus documentation content types: Tutorials]
+- xref:../doc-reference.adoc[Quarkus style and content guidelines]
 
 Each step should conclude with a comprehensible/observable result.
 
@@ -71,6 +71,6 @@ To help direct the reader to more information about the content topic, optionall
 
 To create anchors for in-file and cross-file navigation, see the following detailed instructions in the Quarkus style and content guidelines.
 
-* xref:{doc-guides}doc-contribute-docs-howto.adoc#anchors-howto[Cross-reference in-file and cross-file content by using anchors]
+* xref:../doc-contribute-docs-howto.adoc#anchors-howto[Cross-reference in-file and cross-file content by using anchors]
 
-* xref:{doc-guides}doc-reference.adoc#cross-references[Cross-references]
+* xref:../doc-reference.adoc#cross-references[Cross-references]

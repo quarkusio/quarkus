@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains how you can deploy Quarkus-based Google Cloud Functions.
+:topics: google,gcp,serverless,function,cloud
+:extensions: io.quarkus:quarkus-google-cloud-functions
 
 The `quarkus-google-cloud-functions` extension allows you to use Quarkus to build your Google Cloud Functions.
 Your functions can use injection annotations from CDI or Spring and other Quarkus facilities as you need them.

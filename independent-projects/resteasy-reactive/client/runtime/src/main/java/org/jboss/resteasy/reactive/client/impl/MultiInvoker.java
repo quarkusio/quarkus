@@ -125,7 +125,9 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                     if (!emitter.isCancelled()) {
                         if (response.getStatus() == 200
                                 && MediaType.SERVER_SENT_EVENTS_TYPE.isCompatible(response.getMediaType())) {
-                            registerForSse(multiRequest, responseType, response, vertxResponse);
+                            registerForSse(multiRequest, responseType, response, vertxResponse,
+                                    (String) restClientRequestContext.getProperties()
+                                            .get(RestClientRequestContext.DEFAULT_CONTENT_TYPE_PROP));
                         } else if (response.getStatus() == 200
                                 && RestMediaType.APPLICATION_STREAM_JSON_TYPE.isCompatible(response.getMediaType())) {
                             registerForJsonStream(multiRequest, restClientRequestContext, responseType, response,
@@ -152,18 +154,21 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
     private <R> void registerForSse(MultiRequest<? super R> multiRequest,
             GenericType<R> responseType,
             Response response,
-            HttpClientResponse vertxResponse) {
+            HttpClientResponse vertxResponse, String defaultContentType) {
         // honestly, isn't reconnect contradictory with completion?
         // FIXME: Reconnect settings?
         // For now we don't want multi to reconnect
         SseEventSourceImpl sseSource = new SseEventSourceImpl(invocationBuilder.getTarget(),
-                invocationBuilder, Integer.MAX_VALUE, TimeUnit.SECONDS);
+                invocationBuilder, Integer.MAX_VALUE, TimeUnit.SECONDS, defaultContentType);
 
         multiRequest.onCancel(sseSource::close);
         sseSource.register(event -> {
             // DO NOT pass the response mime type because it's SSE: let the event pick between the X-SSE-Content-Type header or
             // the content-type SSE field
-            multiRequest.emit(event.readData(responseType));
+            R item = event.readData(responseType);
+            if (item != null) { // we don't emit null because it breaks Multi (by design)
+                multiRequest.emit(item);
+            }
         }, multiRequest::fail, multiRequest::complete);
         // watch for user cancelling
         sseSource.registerAfterRequest(vertxResponse);

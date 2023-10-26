@@ -445,7 +445,7 @@ class ReactiveRoutesProcessor {
                 if (routeHandler == null) {
                     String handlerClass = generateHandler(
                             new HandlerDescriptor(businessMethod.getMethod(), beanValidationAnnotations.orElse(null),
-                                    handlerType, produces),
+                                    handlerType == HandlerType.FAILURE, produces),
                             businessMethod.getBean(), businessMethod.getMethod(), classOutput, transformedAnnotations,
                             routeString, reflectiveHierarchy, produces.length > 0 ? produces[0] : null,
                             validatorAvailable, index);
@@ -458,6 +458,13 @@ class ReactiveRoutesProcessor {
                 // Wrap the route handler if necessary
                 // Note that route annotations with the same values share a single handler implementation
                 routeHandler = recorder.compressRouteHandler(routeHandler, businessMethod.getCompression());
+                if (businessMethod.getMethod().hasDeclaredAnnotation(DotNames.RUN_ON_VIRTUAL_THREAD)) {
+                    LOGGER.debugf("Route %s#%s() will be executed on a virtual thread",
+                            businessMethod.getMethod().declaringClass().name(), businessMethod.getMethod().name());
+                    routeHandler = recorder.runOnVirtualThread(routeHandler);
+                    // The handler must be executed on the event loop
+                    handlerType = HandlerType.NORMAL;
+                }
 
                 RouteMatcher matcher = new RouteMatcher(path, regex, produces, consumes, methods, order);
                 matchers.put(matcher, businessMethod.getMethod());
@@ -489,7 +496,7 @@ class ReactiveRoutesProcessor {
 
         for (AnnotatedRouteFilterBuildItem filterMethod : routeFilterBusinessMethods) {
             String handlerClass = generateHandler(
-                    new HandlerDescriptor(filterMethod.getMethod(), beanValidationAnnotations.orElse(null), HandlerType.NORMAL,
+                    new HandlerDescriptor(filterMethod.getMethod(), beanValidationAnnotations.orElse(null), false,
                             new String[0]),
                     filterMethod.getBean(), filterMethod.getMethod(), classOutput, transformedAnnotations,
                     filterMethod.getRouteFilter().toString(true), reflectiveHierarchy, null, validatorAvailable, index);
@@ -785,7 +792,7 @@ class ReactiveRoutesProcessor {
                 defaultProduces == null ? invoke.loadNull() : invoke.load(defaultProduces));
 
         // For failure handlers attempt to match the failure type
-        if (descriptor.getHandlerType() == HandlerType.FAILURE) {
+        if (descriptor.isFailureHandler()) {
             Type failureType = getFailureType(parameters, index);
             if (failureType != null) {
                 ResultHandle failure = invoke.invokeInterfaceMethod(Methods.FAILURE, routingContext);

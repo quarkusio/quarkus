@@ -13,13 +13,12 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.mongodb.health.MongoHealthCheck;
 import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.mongodb.MongoTestResource;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-@QuarkusTestResource(value = MongoTestResource.class, initArgs = @ResourceArg(name = "version", value = "V4_2"))
+@QuarkusTestResource(value = MongoTestResource.class)
 public class BookResourceTest {
     private static Jsonb jsonb;
 

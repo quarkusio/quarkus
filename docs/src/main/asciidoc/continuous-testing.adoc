@@ -10,6 +10,8 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: testing,dev-ui,tooling,devmode
+:extensions: io.quarkus:quarkus-core
 
 Learn how to use continuous testing in your Quarkus Application.
 

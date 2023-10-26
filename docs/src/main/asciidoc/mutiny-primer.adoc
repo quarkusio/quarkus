@@ -5,6 +5,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Mutiny - Async for bare mortal
 include::_attributes.adoc[]
+:categories: reactive
+:topics: mutiny,reactive
+:extensions: io.quarkus:quarkus-mutiny
 
 https://smallrye.io/smallrye-mutiny[Mutiny] is an intuitive, reactive programming library.
 It is the primary model to write reactive applications with Quarkus.

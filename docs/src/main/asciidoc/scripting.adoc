@@ -8,6 +8,7 @@ include::_attributes.adoc[]
 :categories: command-line
 :summary: Easy Quarkus-based scripting with jbang.
 :extension-status: preview
+:topics: scripting,jbang
 
 Quarkus provides integration with https://jbang.dev[jbang] which allows you to write Java scripts/applications requiring no Maven nor Gradle to get running.
 

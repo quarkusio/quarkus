@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-rest-client-jsonb</artifactId>
-    <name>Quarkus - REST Client - JSON-B - Runtime</name>
+    <name>Quarkus - RESTEasy Classic's REST Client - JSON-B - Runtime</name>
     <description>JSON-B serialization support for the REST client</description>
 
     <dependencies>

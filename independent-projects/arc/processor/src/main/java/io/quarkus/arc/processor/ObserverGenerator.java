@@ -139,7 +139,7 @@ public class ObserverGenerator extends AbstractGenerator {
         } else {
             baseNameBuilder.append(observer.getObserverMethod().name());
         }
-        baseNameBuilder.append(UNDERSCORE).append(Hashes.sha1(sigBuilder.toString()));
+        baseNameBuilder.append(UNDERSCORE).append(Hashes.sha1_base64(sigBuilder.toString()));
         String baseName = baseNameBuilder.toString();
         this.observerToGeneratedBaseName.put(observer, baseName);
 

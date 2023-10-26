@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: Learn how to build and push container images with Jib, OpenShift or Docker as part of the Quarkus build.
+:topics: devops,cloud
+:extensions: io.quarkus:quarkus-container-image-openshift,io.quarkus:quarkus-container-image-jib,io.quarkus:quarkus-container-image-docker,io.quarkus:quarkus-container-image-buildpack
 
 Quarkus provides extensions for building (and pushing) container images. Currently, it supports:
 
@@ -138,7 +140,7 @@ The creation of such objects is being taken care of by the Quarkus Kubernetes ex
 [#buildpack]
 === Buildpack
 
-The extension `quarkus-container-image-buildpack` is using buildpacks in order to perform container image builds. 
+The extension `quarkus-container-image-buildpack` is using buildpacks in order to perform container image builds.
 Under the hood buildpacks will use a Docker daemon for the actual build.
 While buildpacks support alternatives to Docker, this extension will only work with Docker.
 

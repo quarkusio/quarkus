@@ -4,6 +4,8 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Podman with Quarkus
+:categories: tooling
+:topics: podman,devops,tooling
 include::_attributes.adoc[]
 
 https://podman.io/[Podman] is a daemonless and rootless container engine for developing, managing, and running OCI Containers on your Linux system or other OS.

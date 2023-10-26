@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: reference
 :categories: data,getting-started,reactive
+:topics: data,database,datasource,sql,jdbc,reactive
+:extensions: io.quarkus:quarkus-agroal,io.quarkus:quarkus-reactive-mysql-client,io.quarkus:quarkus-reactive-oracle-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-db2-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-mssql-client,io.quarkus:quarkus-jdbc-db2,io.quarkus:quarkus-jdbc-derby,io.quarkus:quarkus-jdbc-h2,io.quarkus:quarkus-jdbc-mariadb,io.quarkus:quarkus-jdbc-mssql,io.quarkus:quarkus-jdbc-mysql,io.quarkus:quarkus-jdbc-oracle,io.quarkus:quarkus-jdbc-postgresql
 
 Use a unified configuration model to define data sources for Java Database Connectivity (JDBC) and Reactive drivers.
 
@@ -300,22 +302,6 @@ Quarkus offers several reactive clients for use with a reactive datasource.
 * PostgreSQL: `quarkus-reactive-pg-client`
 +
 The installed extension must be consistent with the `quarkus.datasource.db-kind` you define in your datasource configuration.
-
-[WARNING]
-====
-The Reactive Oracle datasource depends on the https://docs.oracle.com/en/database/oracle/oracle-database/23/jjdbc/jdbc-reactive-extensions.html[Reactive Extensions] provided by Oracle in its JDBC driver.
-
-There is a bug in versions 23.2 and 21.11 of the Oracle JDBC driver that prevents from getting any response if:
-
-* Reactive Extensions are used to execute an update/insert query that ends with an error (e.g. constraint violation), and
-* https://vertx.io/docs/vertx-oracle-client/java/#_retrieving_generated_key_values[generated keys retrieval] is enabled.
-
-It is not known yet when the bug will be fixed.
-In the meantime, you can either:
-
-* change the version of the driver in your project to `com.oracle.database.jdbc:ojdbc11:21.10.0.0`, or
-* avoid executing queries with generated keys retrieval (e.g. load sequence value before inserting)
-====
 
 . After adding the driver, configure the connection URL and define a proper size for your connection pool.
 +

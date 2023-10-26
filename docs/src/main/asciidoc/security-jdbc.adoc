@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: security
 :summary: This guide demonstrates how your Quarkus application can use a database to store your user identities.
+:topics: security,identity-providers,jdbc,sql,database
+:extensions: io.quarkus:quarkus-elytron-security-jdbc
 
 This guide demonstrates how your Quarkus application can use a database to store your user identities.
 

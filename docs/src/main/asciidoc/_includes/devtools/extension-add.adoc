@@ -1,7 +1,7 @@
 [source,bash,subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
 .CLI
 ----
-quarkus extension add '{add-extension-extensions}'
+quarkus extension add {add-extension-extensions}
 ----
 ifndef::devtools-no-maven[]
 ifdef::devtools-wrapped[+]

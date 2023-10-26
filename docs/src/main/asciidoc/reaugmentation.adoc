@@ -7,10 +7,11 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: tooling
 :summary: Use mutable jars to rebuild your application with different build time configurations.
+:topics: mutable-jars,tooling
 
 == What is augmentation?
 
-Quarkus application configuration may include two types of configuration options: 
+Quarkus application configuration may include two types of configuration options:
 
 - Build time options, handled during the application build time;
 - Runtime options, that may be adjusted after the application has been built but before it has been launched.

@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains Funqy's Google Cloud Platform Functions binding.
+:topics: google,gcp,serverless,function,cloud,funqy
+:extensions: io.quarkus:quarkus-funqy-http,io.quarkus:quarkus-funqy-google-cloud-functions
 
 The guide walks through quickstart code to show you how you can deploy Funqy functions to Google Cloud Functions.
 

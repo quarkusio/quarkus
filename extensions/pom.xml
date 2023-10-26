@@ -139,6 +139,7 @@
         <module>oidc-client</module>
         <module>oidc-client-filter</module>
         <module>oidc-client-reactive-filter</module>
+        <module>oidc-client-graphql</module>
         <module>oidc-token-propagation</module>
         <module>oidc-token-propagation-reactive</module>
         <module>oidc-db-token-state-manager</module>

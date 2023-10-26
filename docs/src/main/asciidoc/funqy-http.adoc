@@ -8,6 +8,8 @@ include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains Funqy's HTTP binding.
 :extension-status: preview
+:topics: serverless,function,cloud,funqy
+:extensions: io.quarkus:quarkus-funqy-http
 
 The guide walks through quickstart code to show you how you can deploy Funqy as a
 standalone service and invoke on Funqy functions using HTTP.

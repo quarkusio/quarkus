@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: architecture
 :summary: Learn more about the notion of extension registry and how you can use your own.
+:topics: internals,extensions
 
 The Quarkus dev tools, such as the xref:cli-tooling.adoc[Quarkus CLI], the xref:maven-tooling.adoc[Maven] and the xref:gradle-tooling.adoc[Gradle] plugins, or https://code.quarkus.io[code.quarkus.io] can be used to list and search the Quarkus ecosystem for extensions that match a certain criteria. That includes the xref:platform.adoc[Quarkus platform] extensions and various other extensions contributed by the community, many of which are hosted on the https://github.com/quarkiverse[Quarkiverse Hub].
 

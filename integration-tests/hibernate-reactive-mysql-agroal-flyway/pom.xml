@@ -14,8 +14,8 @@
     <description>Hibernate Reactive related tests running with the MySQL database and also using Agroal and Flyway</description>
 
     <properties>
-        <reactive-mysql.url>vertx-reactive:mysql://localhost:3306/hibernate_orm_test</reactive-mysql.url>
-        <mysql.jdbc.url>jdbc:mysql://localhost:3306/hibernate_orm_test</mysql.jdbc.url>
+        <reactive-mysql.url>vertx-reactive:mysql://localhost:3308/hibernate_orm_test?allowPublicKeyRetrieval=true</reactive-mysql.url>
+        <mysql.jdbc.url>jdbc:mysql://localhost:3308/hibernate_orm_test</mysql.jdbc.url>
     </properties>
 
     <dependencies>
@@ -214,10 +214,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <reactive-mysql.url>vertx-reactive:mysql://localhost:3308/hibernate_orm_test?allowPublicKeyRetrieval=true</reactive-mysql.url>
-                <mysql.jdbc.url>jdbc:mysql://localhost:3308/hibernate_orm_test</mysql.jdbc.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web
 :summary: This guide explains how to leverage SmallRye GraphQL Client to consume GraphQL services.
+:topics: graphql
+:extensions: io.quarkus:quarkus-smallrye-graphql-client
 
 This guide demonstrates how your Quarkus application can use the GraphQL client library.
 The client is implemented by the https://github.com/smallrye/smallrye-graphql/[SmallRye GraphQL] project.
@@ -346,3 +348,9 @@ formats it for better readability by humans, for example by piping the output th
 
 This example showed how to use both the dynamic and typesafe GraphQL clients to call an external
 GraphQL service and explained the difference between the client types.
+
+== References
+
+* xref:security-openid-connect-client-reference.adoc#oidc-client-graphql-client[Integrating OIDC clients into GraphQL clients]
+* https://smallrye.io/smallrye-graphql/latest/[Upstream SmallRye GraphQL Client documentation]
+

@@ -17,8 +17,6 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
 
     protected final Type typeOfValue;
 
-    public static final Command SINTERCARD = Command.create("sintercard");
-
     AbstractSetCommands(RedisCommandExecutor redis, Type k, Type v) {
         super(redis, new Marshaller(k, v), v);
         this.typeOfValue = v;
@@ -80,7 +78,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
             throw new IllegalArgumentException("`keys` must contain at least 2 keys");
         }
 
-        RedisCommand cmd = RedisCommand.of(SINTERCARD).put(keys.length).putAll(marshaller.encode(keys));
+        RedisCommand cmd = RedisCommand.of(Command.SINTERCARD).put(keys.length).putAll(marshaller.encode(keys));
         return execute(cmd);
     }
 
@@ -94,7 +92,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
             throw new IllegalArgumentException("`keys` must contain at least 2 keys");
         }
 
-        RedisCommand cmd = RedisCommand.of(SINTERCARD).put(keys.length).putAll(marshaller.encode(keys))
+        RedisCommand cmd = RedisCommand.of(Command.SINTERCARD).put(keys.length).putAll(marshaller.encode(keys))
                 .put("LIMIT").put(limit);
         return execute(cmd);
     }

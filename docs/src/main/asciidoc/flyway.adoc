@@ -9,6 +9,8 @@ include::_attributes.adoc[]
 :summary: This guide covers how to use the Flyway extension to manage your schema migrations.
 :migrations-path: src/main/resources/db/migration
 :config-file: application.properties
+:topics: flyway,data,schema-migration,database
+:extensions: io.quarkus:quarkus-flyway
 
 https://flywaydb.org/[Flyway] is a popular database migration tool that is commonly used in JVM environments.
 

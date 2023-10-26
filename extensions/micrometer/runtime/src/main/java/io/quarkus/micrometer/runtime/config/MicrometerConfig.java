@@ -99,6 +99,7 @@ public final class MicrometerConfig {
         public KafkaConfigGroup kafka;
 
         public RedisConfigGroup redis;
+        public StorkConfigGroup stork;
 
         public GrpcServerConfigGroup grpcServer;
 

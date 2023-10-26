@@ -8,7 +8,8 @@ include::_attributes.adoc[]
 :categories: messaging
 :summary: This guide demonstrates how your Quarkus application can use JMS messaging with AMQP 1.0 using Apache Qpid JMS, or using Apache ActiveMQ Artemis JMS.
 :extension-status: preview
-
+:topics: messaging,jms,artemis,qpid,activemq
+:extensions: org.amqphub.quarkus:quarkus-qpid-jms,io.quarkiverse.artemis:quarkus-artemis-jms
 
 This guide demonstrates how your Quarkus application can use JMS messaging via the
 Apache Qpid JMS AMQP client, or alternatively the Apache ActiveMQ Artemis JMS client.

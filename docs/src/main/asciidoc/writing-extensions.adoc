@@ -10,6 +10,7 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: extensions
 
 Quarkus extensions add a new developer focused behavior to the core offering, and consist of two distinct parts, buildtime augmentation and runtime container. The augmentation part is responsible for all metadata processing, such as reading annotations, XML descriptors etc. The output of this augmentation phase is recorded bytecode which is responsible for directly instantiating the relevant runtime services.
 
@@ -104,7 +105,7 @@ public class Echo {
    }
 }
 ----
-<1> If a bean registered by an `AdditionalBeanBuildItem` does not specify a scope then `@Dependent` is assumed. 
+<1> If a bean registered by an `AdditionalBeanBuildItem` does not specify a scope then `@Dependent` is assumed.
 
 All other beans can inject such a bean:
 
@@ -138,7 +139,7 @@ public class Echo {
 
     @Inject
     Instance<List<String>> listsOfStrings; <2>
-    
+
     //...
 }
 ----
@@ -152,7 +153,7 @@ Some components may require additional initialization based on information colle
 The most straightforward solution is to obtain a bean instance and call a method directly from a build step.
 However, it is _illegal_ to obtain a bean instance during the augmentation phase.
 The reason is that the CDI container is not started yet.
-It's started during the <<bootstrap-three-phases,Static init bootstrap phase>>. 
+It's started during the <<bootstrap-three-phases,Static init bootstrap phase>>.
 
 TIP: `BUILD_AND_RUN_TIME_FIXED` and `RUN_TIME` config roots can be injected in any bean. `RUN_TIME` config roots should only be injected after the bootstrap though.
 
@@ -164,14 +165,14 @@ You can obtain a reference to the container via `CDI.current()` or Quarkus-speci
 
 IMPORTANT: Don't forget to make sure the bean state guarantees the visibility, e.g. via the `volatile` keyword.
 
-NOTE: There is one significant drawback of this "late initialization" approach. 
-An _uninitialized_ bean may be accessed by other extensions or application components that are instantiated during bootstrap. 
+NOTE: There is one significant drawback of this "late initialization" approach.
+An _uninitialized_ bean may be accessed by other extensions or application components that are instantiated during bootstrap.
 We'll cover a more robust solution in the <<synthetic_beans>>.
 
 ==== Default beans
 
 A very useful pattern of creating such beans but also giving application code the ability to easily override some beans with custom implementations, is to use
-the `@DefaultBean` that Quarkus provides. 
+the `@DefaultBean` that Quarkus provides.
 This is best explained with an example.
 
 Let us assume that the Quarkus extension needs to provide a `Tracer` bean which application code is meant to inject into its own beans.
@@ -272,16 +273,16 @@ Sometimes it is very useful to be able to register a synthetic bean.
 Bean attributes of a synthetic bean are not derived from a java class, method or field.
 Instead, the attributes are specified by an extension.
 
-NOTE: Since the CDI container does not control the instantiation of a synthetic bean the dependency injection and other services (such as interceptors) are not supported. 
+NOTE: Since the CDI container does not control the instantiation of a synthetic bean the dependency injection and other services (such as interceptors) are not supported.
 In other words, it's up to the extension to provide all required services to a synthetic bean instance.
 
 There are several ways to register a <<cdi-reference.adoc#synthetic_beans,synthetic bean>> in Quarkus.
-In this chapter, we will cover a use case that can be used to initialize extension beans in a safe manner (compared to <<bean_init>>). 
+In this chapter, we will cover a use case that can be used to initialize extension beans in a safe manner (compared to <<bean_init>>).
 
 The `SyntheticBeanBuildItem` can be used to register a synthetic bean:
 
-* whose instance can be easily produced through a <<bytecode-recording,recorder>>, 
-* to provide a "context" bean that holds all the information collected during augmentation so that the real components do not need any "late initialization" because they can inject the context bean directly. 
+* whose instance can be easily produced through a <<bytecode-recording,recorder>>,
+* to provide a "context" bean that holds all the information collected during augmentation so that the real components do not need any "late initialization" because they can inject the context bean directly.
 
 .Instance Produced Through Recorder
 [source%nowrap,java]
@@ -586,7 +587,7 @@ to produce the final build artifact(s).
 
 ==== Build steps
 
-A _build step_ is a non-static method which is annotated with the `@io.quarkus.deployment.annotations.BuildStep` annotation.  
+A _build step_ is a non-static method which is annotated with the `@io.quarkus.deployment.annotations.BuildStep` annotation.
 Each build step may <<consuming-values,consume>> items that are produced by earlier stages, and <<producing-values,produce>> items that can be consumed by later stages. Build steps are normally only run when they produce a build item that is
 ultimately consumed by another step.
 
@@ -815,7 +816,7 @@ SomeOtherBuildItem secondBuildStep() {
 [id='validation-error-build-item']
 ===== Validation Error build items
 
-They represent build items with validation errors that make the build fail. These build items are consumed during the initialization of the CDI container. 
+They represent build items with validation errors that make the build fail. These build items are consumed during the initialization of the CDI container.
 
 .Example of usage of an validation error build item in a "pseudo-target" style
 [source%nowrap,java]
@@ -833,7 +834,7 @@ void checkCompatibility(Capabilities capabilities, BuildProducer<ValidationError
 [id='artifact-result-build-item']
 ===== Artifact Result build items
 
-They represent build items containing the runnable artifact generated by the build, such as an uberjar or thin jar. 
+They represent build items containing the runnable artifact generated by the build, such as an uberjar or thin jar.
 These build items can also be used to always execute a build step without needing to produce anything.
 
 .Example of build step that is always executed in a "pseudo-target" style
@@ -1598,7 +1599,7 @@ You can make your extension support the xref:dev-ui-v2.adoc[Quarkus Dev UI] for 
 === Extension-defined endpoints
 
 Your extension can add additional, non-application endpoints to be served alongside endpoints
-for Health, Metrics, OpenAPI, Swagger UI, etc. 
+for Health, Metrics, OpenAPI, Swagger UI, etc.
 
 Use a `NonApplicationRootPathBuildItem` to define an endpoint:
 
@@ -1616,9 +1617,9 @@ RouteBuildItem myExtensionRoute(NonApplicationRootPathBuildItem nonApplicationRo
 
 Note that the path above does not start with a '/', indicating it is a relative path. The above
 endpoint will be served relative to the configured non-application endpoint root. The non-application
-endpoint root is `/q` by default, which means the resulting endpoint will be found at `/q/custom-endpoint`. 
+endpoint root is `/q` by default, which means the resulting endpoint will be found at `/q/custom-endpoint`.
 
-Absolute paths are handled differently. If the above called `route("/custom-endpoint")`, the resulting 
+Absolute paths are handled differently. If the above called `route("/custom-endpoint")`, the resulting
 endpoint will be found at `/custom-endpoint`.
 
 If an extension needs nested non-application endpoints:
@@ -1637,7 +1638,7 @@ RouteBuildItem myNestedExtensionRoute(NonApplicationRootPathBuildItem nonApplica
 
 Given a default non-application endpoint root of `/q`, this will create an endpoint at `/q/custom-endpoint/deep`.
 
-Absolute paths also have an impact on nested endpoints. If the above called `nestedRoute("custom-endpoint", "/deep")`, 
+Absolute paths also have an impact on nested endpoints. If the above called `nestedRoute("custom-endpoint", "/deep")`,
 the resulting endpoint will be found at `/deep`.
 
 Refer to the xref:all-config.adoc#quarkus-vertx-http_quarkus.http.non-application-root-path[Quarkus Vertx HTTP configuration reference]
@@ -1682,9 +1683,9 @@ There are two broad patterns that extensions can use to interact with an optiona
 
 * Consumer pattern: An extension declares a `MetricsFactoryConsumerBuildItem` and uses that to provide a bytecode recorder to the metrics extension. When the metrics extension has initialized, it will iterate over registered consumers to initialize them with a `MetricsFactory`. This factory can be used to declare API-agnostic metrics, which can be a good fit for extensions that provide an instrumentable object for gathering statistics (e.g. Hibernate's `Statistics` class).
 
-* Binder pattern: An extension can opt to use completely different gathering implementations depending on the metrics system. An `Optional<MetricsCapabilityBuildItem> metricsCapability` build step parameter can be used to declare or otherwise initialize API-specific metrics based on the active metrics extension (e.g. "smallrye-metrics" or "micrometer"). This pattern can be combined with the consumer pattern by using `MetricsFactory::metricsSystemSupported()` to test the active metrics extension within the recorder. 
+* Binder pattern: An extension can opt to use completely different gathering implementations depending on the metrics system. An `Optional<MetricsCapabilityBuildItem> metricsCapability` build step parameter can be used to declare or otherwise initialize API-specific metrics based on the active metrics extension (e.g. "smallrye-metrics" or "micrometer"). This pattern can be combined with the consumer pattern by using `MetricsFactory::metricsSystemSupported()` to test the active metrics extension within the recorder.
 
-Remember that support for metrics is optional. Extensions can use an `Optional<MetricsCapabilityBuildItem> metricsCapability` parameter in their build step to test for the presence of an enabled metrics extension. Consider using additional configuration to control behavior of metrics. Datasource metrics can be expensive, for example, so additional configuration flags are used enable metrics collection on individual datasources. 
+Remember that support for metrics is optional. Extensions can use an `Optional<MetricsCapabilityBuildItem> metricsCapability` parameter in their build step to test for the presence of an enabled metrics extension. Consider using additional configuration to control behavior of metrics. Datasource metrics can be expensive, for example, so additional configuration flags are used enable metrics collection on individual datasources.
 
 When adding metrics for your extension, you may find yourself in one of the following situations:
 
@@ -1979,9 +1980,9 @@ to initiate a scan for changed files.
 
 === Testing Extensions
 
-Testing of Quarkus extensions should be done with the `io.quarkus.test.QuarkusUnitTest` JUnit 5 extension. 
-This extension allows for Arquillian-style tests that test specific functionalities. 
-It is not intended for testing user applications, as this should be done via `io.quarkus.test.junit.QuarkusTest`. 
+Testing of Quarkus extensions should be done with the `io.quarkus.test.QuarkusUnitTest` JUnit 5 extension.
+This extension allows for Arquillian-style tests that test specific functionalities.
+It is not intended for testing user applications, as this should be done via `io.quarkus.test.junit.QuarkusTest`.
 The main difference is that `QuarkusTest` simply boots the application once at the start of the run, while `QuarkusUnitTest` deploys a custom
 Quarkus application for each test class.
 
@@ -2311,7 +2312,7 @@ author will typically need to perform using the test-extension code to illustrat
 
 ===== Features
 
-A _feature_ represents a functionality provided by an extension. 
+A _feature_ represents a functionality provided by an extension.
 The name of the feature gets displayed in the log during application bootstrap.
 
 .Example Startup Lines
@@ -2355,7 +2356,7 @@ cd rest-json
 ===== Capabilities
 
 A _capability_ represents a technical capability that can be queried by other extensions.
-An extension may provide multiple capabilities and multiple extensions can provide the same capability. 
+An extension may provide multiple capabilities and multiple extensions can provide the same capability.
 By default, capabilities are not displayed to users.
 Capabilities should be used when checking for the presence of an extension rather than class path based checks.
 
@@ -2384,7 +2385,7 @@ Extensions can consume registered capabilities using the `Capabilities` build it
     }
 ----
 
-Capabilities should follow the naming conventions of Java packages; e.g. `io.quarkus.security.jpa`. 
+Capabilities should follow the naming conventions of Java packages; e.g. `io.quarkus.security.jpa`.
 Capabilities provided by core extensions should be listed in the `io.quarkus.deployment.Capability` enum and their name should always start with the `io.quarkus` prefix.
 
 ==== Bean Defining Annotations

@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: data
 :summary: Hibernate Search allows you to index your entities in an Elasticsearch cluster and easily offer full text search in all your Hibernate ORM-based applications.
+:topics: data,hibernate-search,elasticsearch,search,nosql
+:extensions: io.quarkus:quarkus-hibernate-search-orm-elasticsearch
 
 You have a Hibernate ORM-based application? You want to provide a full-featured full-text search to your users? You're at the right place.
 

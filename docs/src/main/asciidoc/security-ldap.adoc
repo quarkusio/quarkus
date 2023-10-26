@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: security
 :summary: This guide demonstrates how your Quarkus application can use a LDAP directory to store your user identities.
+:topics: security,identity-providers,ldap
+:extensions: io.quarkus:quarkus-elytron-security-ldap
 
 This guide demonstrates how your Quarkus application can use an LDAP server to authenticate and authorize your user identities.
 

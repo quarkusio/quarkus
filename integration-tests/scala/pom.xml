@@ -101,7 +101,7 @@
             </plugin>
         </plugins>
     </build>
-    
+
     <profiles>
         <profile>
             <id>basic-test-suite</id>
@@ -125,6 +125,16 @@
             </activation>
             <properties>
                 <scala-maven-plugin.phase>none</scala-maven-plugin.phase>
+            </properties>
+        </profile>
+        <profile>
+            <id>java21</id>
+            <activation>
+                <jdk>[21,)</jdk>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
             </properties>
         </profile>
     </profiles>

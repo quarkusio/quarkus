@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-jsonb</artifactId>
-    <name>Quarkus - RESTEasy - JSON-B - Runtime</name>
+    <name>Quarkus - RESTEasy Classic - JSON-B - Runtime</name>
     <description>JSON-B serialization support for RESTEasy Classic</description>
 
     <dependencies>

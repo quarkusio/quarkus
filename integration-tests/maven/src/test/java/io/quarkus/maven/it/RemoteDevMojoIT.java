@@ -40,7 +40,8 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
 
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
@@ -52,7 +53,8 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         // Wait until we get "carambar"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("carambar"));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains("carambar"));
 
         //also verify that the dev ui console is disabled
         devModeClient.getHttpResponse("/q/dev-v1", 404, 10, TimeUnit.SECONDS);
@@ -87,7 +89,8 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         // Wait until we get "bar"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/foo").contains("bar"));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/foo").contains("bar"));
     }
 
     @Test
@@ -119,7 +122,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/hello/greeting").contains(uuid));
     }
 
@@ -137,7 +140,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
                 "UTF-8");
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/lorem.txt").contains("Lorem ipsum"));
 
         // Update the resource
@@ -145,7 +148,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         FileUtils.write(source, uuid, "UTF-8");
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/lorem.txt").contains(uuid));
 
         // Delete the resource
@@ -153,7 +156,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         //        source.delete();
         //        await()
         //                .pollDelay(1, TimeUnit.SECONDS)
-        //                .atMost(1, TimeUnit.MINUTES)
+        //                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
         //                .until(() -> getHttpResponse("/lorem.txt", 404));
     }
 
@@ -172,7 +175,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         AtomicReference<String> last = new AtomicReference<>();
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> {
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES).until(() -> {
                     String content = devModeClient.getHttpResponse("/app/hello", true);
                     last.set(content);
                     return content.contains(uuid);
@@ -191,7 +194,8 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("carambar"));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains("carambar"));
     }
 
     @Test
@@ -224,7 +228,8 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("message"));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains("message"));
 
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
@@ -235,7 +240,8 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
 
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("foobarbaz"));
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains("foobarbaz"));
     }
 
 }

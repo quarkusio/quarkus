@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 :categories: observability
 :diataxis-type: tutorial
 include::_attributes.adoc[]
+:topics: observability,micrometer,prometheus
+:extensions: io.quarkus:quarkus-micrometer-registry-prometheus,io.quarkus:quarkus-micrometer
 
 Create an application that uses the Micrometer metrics library to collect runtime, extension and application metrics and expose them as a Prometheus (OpenMetrics) endpoint.
 

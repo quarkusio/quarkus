@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 :extension-status: preview
 include::_attributes.adoc[]
 :categories: data
+:topics: data,redis,nosql
+:extensions: io.quarkus:quarkus-redis-client
 :summary: This guide covers how to use a Redis datastore in Quarkus.
 
 This guide demonstrates how your Quarkus application can connect to a Redis server using the Redis Client extension.

@@ -11,6 +11,7 @@ import jakarta.persistence.ValidationMode;
 import jakarta.persistence.spi.PersistenceUnitTransactionType;
 
 import org.hibernate.bytecode.enhance.spi.EnhancementContext;
+import org.hibernate.bytecode.spi.ClassTransformer;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 
 import io.quarkus.runtime.annotations.RecordableConstructor;
@@ -192,5 +193,11 @@ public final class RuntimePersistenceUnitDescriptor implements PersistenceUnitDe
                 + '\'' + ", useQuotedIdentifiers=" + useQuotedIdentifiers + ", transactionType=" + transactionType
                 + ", validationMode=" + validationMode + ", sharedCachemode=" + sharedCacheMode + ", managedClassNames="
                 + managedClassNames + ", properties=" + properties + '}';
+    }
+
+    @Override
+    public ClassTransformer getClassTransformer() {
+        // We transform classes during the build, not on bootstrap.
+        return null;
     }
 }

@@ -1386,4 +1386,44 @@ public class TransactionScopedSession implements Session {
             }
         }
     }
+
+    @Override
+    public <T> RootGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.createEntityGraph(rootType, graphName);
+        }
+    }
+
+    @Override
+    public SessionFactory getFactory() {
+        return sessionFactory;
+    }
+
+    @Override
+    public int getFetchBatchSize() {
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.getFetchBatchSize();
+        }
+    }
+
+    @Override
+    public void setFetchBatchSize(int batchSize) {
+        try (SessionResult emr = acquireSession()) {
+            emr.session.setFetchBatchSize(batchSize);
+        }
+    }
+
+    @Override
+    public boolean isSubselectFetchingEnabled() {
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.isSubselectFetchingEnabled();
+        }
+    }
+
+    @Override
+    public void setSubselectFetchingEnabled(boolean enabled) {
+        try (SessionResult emr = acquireSession()) {
+            emr.session.setSubselectFetchingEnabled(enabled);
+        }
+    }
 }

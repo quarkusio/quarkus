@@ -1,4 +1,10 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
 = gRPC code generation reference guide
+include::_attributes.adoc[]
 :categories: Serialization
 :diataxis-type: Reference
 :summary: Learn how to configure gRPC code generation.
@@ -15,7 +21,7 @@ By default, `\*.proto` files located in the `src/main/proto` directory are compi
 
 To enable gRPC code generation, add the following dependency to your project:
 
-[source,xml,subs="attributes"]
+[source,xml,subs=attributes+]
 ----
 <dependency>
   <groupId>io.quarkus</groupId>
@@ -25,7 +31,7 @@ To enable gRPC code generation, add the following dependency to your project:
 
 Next, ensure that the `generate-code` phase is enabled in the Quarkus Maven plugin:
 
-[source,xml,subs="attributes"]
+[source,xml,subs=attributes+]
 ----
 <plugin>
     <groupId>${quarkus.platform.group-id}</groupId>
@@ -48,7 +54,7 @@ Next, ensure that the `generate-code` phase is enabled in the Quarkus Maven plug
 
 For Gradle, add the following dependency to your project:
 
-[source,gradle,subs="attributes"]
+[source,gradle,subs=attributes+]
 ----
 implementation 'io.quarkus:quarkus-grpc'
 ----
@@ -60,7 +66,7 @@ You can configure this location using the `quarkus.grpc.codegen.proto-directory`
 
 With Maven, add the following configuration:
 
-[source,xml,subs="attributes"]
+[source,xml,subs=attributes+]
 ----
 <plugin>
     <groupId>${quarkus.platform.group-id}</groupId>
@@ -86,7 +92,7 @@ With Maven, add the following configuration:
 
 With Gradle, use the following configuration:
 
-[source,gradle,subs="attributes"]
+[source,gradle,subs=attributes+]
 ----
 quarkus {
     quarkusBuildProperties.put("quarkus.grpc.codegen.proto-directory", "${project.projectDir}/ext/proto")
@@ -159,7 +165,7 @@ However, it's recommended to use Quarkus support unless you have a specific need
 
 To do this, define the following properties in the `<properties>` section:
 
-[source,xml,subs="attributes"]
+[source,xml,subs=attributes+]
 ----
 <grpc.version>{grpc-version}</grpc.version>
 <protoc.version>{protoc-version}</protoc.version>
@@ -235,7 +241,7 @@ When gRPC classes, which are classes generated from `proto` files, are in a depe
 You can create a Jandex index using the `jandex-maven-plugin`.
 More information on this topic can be found in the xref:cdi-reference.adoc#bean_discovery[Bean Discovery] section of the CDI guide.
 
-[source,xml,subs="attributes+"]
+[source,xml,subs=attributes+]
 ----
 <build>
     <plugins>
@@ -258,7 +264,7 @@ More information on this topic can be found in the xref:cdi-reference.adoc#bean_
 
 If you are using Gradle, you can use the following configuration:
 
-[source, gradle, subs="attributes+"]
+[source, gradle, subs=attributes+]
 ----
 plugins {
     id 'org.kordamp.gradle.jandex' version '1.1.0'

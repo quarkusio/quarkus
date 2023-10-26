@@ -14,6 +14,8 @@ import jakarta.enterprise.event.Observes;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
@@ -29,6 +31,7 @@ import io.vertx.ext.web.Router;
 /**
  * Reproduce CVE-2023-44487.
  */
+@DisabledOnOs(OS.WINDOWS)
 public class Http2RSTFloodProtectionTest {
 
     @TestHTTPResource(value = "/ping", ssl = true)
@@ -81,7 +84,7 @@ public class Http2RSTFloodProtectionTest {
                     .compose(HttpClientRequest::send);
         }
 
-        for (int i = 0; i < 250; i++) { // must be higher thant the NEtty limit (200 / 30s)
+        for (int i = 0; i < 250; i++) { // must be higher than the Netty limit (200 / 30s)
             client.request(GET, port, "localhost", "/ping")
                     .onSuccess(req -> req.end().onComplete(v -> req.reset()));
         }

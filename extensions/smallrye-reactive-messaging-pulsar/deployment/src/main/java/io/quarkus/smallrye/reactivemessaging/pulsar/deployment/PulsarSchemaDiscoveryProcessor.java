@@ -69,7 +69,7 @@ public class PulsarSchemaDiscoveryProcessor {
             processIncomingType(discovery, config, incomingType, channelName, syntheticBean);
         }
 
-        for (AnnotationInstance annotation : discovery.findAnnotationsOnMethods(DotNames.OUTGOING)) {
+        for (AnnotationInstance annotation : discovery.findRepeatableAnnotationsOnMethods(DotNames.OUTGOING)) {
             String channelName = annotation.value().asString();
             if (!discovery.isPulsarConnector(channelsManagedByConnectors, false, channelName)) {
                 continue;
@@ -189,7 +189,7 @@ public class PulsarSchemaDiscoveryProcessor {
         }
 
         // @Incoming @Outgoing
-        if (method.hasAnnotation(DotNames.OUTGOING)) {
+        if (method.hasAnnotation(DotNames.OUTGOING) || method.hasAnnotation(DotNames.OUTGOINGS)) {
             if ((isCompletionStage(returnType) && parametersCount >= 1)
                     || (isUni(returnType) && parametersCount >= 1)
                     || (isPublisher(returnType) && parametersCount == 1)
@@ -251,7 +251,7 @@ public class PulsarSchemaDiscoveryProcessor {
         }
 
         // @Incoming @Outgoing
-        if (method.hasAnnotation(DotNames.INCOMING)) {
+        if (method.hasAnnotation(DotNames.INCOMING) || method.hasAnnotation(DotNames.INCOMINGS)) {
             if ((isCompletionStage(returnType) && parametersCount == 1)
                     || (isUni(returnType) && parametersCount == 1)
                     || (isPublisher(returnType) && parametersCount == 1)
@@ -262,10 +262,10 @@ public class PulsarSchemaDiscoveryProcessor {
             } else if ((isProcessor(returnType) && parametersCount == 0)
                     || (isProcessorBuilder(returnType) && parametersCount == 0)) {
                 outgoingType = returnType.asParameterizedType().arguments().get(1);
-            } else if (parametersCount == 1) {
-                outgoingType = returnType;
             } else if (KotlinUtils.isKotlinSuspendMethod(method)) {
                 outgoingType = getReturnTypeFromKotlinSuspendMethod(method);
+            } else {
+                outgoingType = returnType;
             }
 
             // @Incoming @Outgoing stream manipulation
@@ -324,6 +324,10 @@ public class PulsarSchemaDiscoveryProcessor {
             return;
         }
 
+        if (isTargeted(type)) {
+            return;
+        }
+
         if (isMessage(type)) {
             List<Type> typeArguments = type.asParameterizedType().arguments();
             Type messageTypeParameter = typeArguments.get(0);
@@ -375,6 +379,11 @@ public class PulsarSchemaDiscoveryProcessor {
         return DotNames.MULTI.equals(type.name())
                 && type.kind() == Type.Kind.PARAMETERIZED_TYPE
                 && type.asParameterizedType().arguments().size() == 1;
+    }
+
+    private static boolean isTargeted(Type type) {
+        return DotNames.TARGETED.equals(type.name())
+                || DotNames.TARGETED_MESSAGES.equals(type.name());
     }
 
     private static boolean isFlowPublisher(Type type) {

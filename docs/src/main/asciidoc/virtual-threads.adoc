@@ -321,21 +321,20 @@ If would not fail the tests, but at least dump start traces if the code pins the
         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
         <maven.home>${maven.home}</maven.home>
       </systemPropertyVariables>
-      <argLine>--enable-preview -Djdk.tracePinnedThreads</argLine>
+      <argLine>-Djdk.tracePinnedThreads</argLine>
   </configuration>
 </plugin>
 ----
 
-NOTE: The `--enable-preview` flag is not necessary with Java 21.
-
 == Run application using virtual threads
 
-Prior to Java 21, virtual threads are still an experimental feature, you need to start your application with the `--enable-preview` flag:
 
 [source, bash]
 ----
-java --enable-preview -jar target/quarkus-app/quarkus-run.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
+
+TIP: Prior to Java 21, virtual threads were still an experimental feature, you need to start your application with the `--enable-preview` flag.
 
 == Build containers for application using virtual threads
 
@@ -351,13 +350,11 @@ To containerize your Quarkus application that use `@RunOnVirtualThread`, add the
 quarkus.container-image.build=true
 quarkus.container-image.group=<your-group-name>
 quarkus.container-image.name=<you-container-name>
-quarkus.jib.base-jvm-image=eclipse-temurin:20.0.1_9-jre-ubi9-minimal <1>
+quarkus.jib.base-jvm-image=eclipse-temurin:21-ubi9-minimal <1>
 quarkus.jib.platforms=linux/amd64,linux/arm64 <2>
-quarkus.jib.jvm-arguments=--enable-preview <3>
 ----
-<1> Make sure you use a base image supporting virtual threads. Here we use an image providing Java 20.
+<1> Make sure you use a base image supporting virtual threads. Here we use an image providing Java 21.
 <2> Select the target architecture. You can select more than one to build multi-archs images.
-<3> Don't forget to use the `--enable-preview` flag if you are not using Java 21+.
 
 Then, build your container as you would do usually.
 For example, if you are using Maven, run:

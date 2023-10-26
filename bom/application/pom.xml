@@ -204,6 +204,7 @@
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.10.0</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>9.24.4</strimzi-oauth.nimbus.version>
+        <jose4j.version>0.9.3</jose4j.version>
         <java-buildpack-client.version>0.0.6</java-buildpack-client.version>
         <org-crac.version>0.1.1</org-crac.version>
         <sshd-common.version>2.10.0</sshd-common.version>
@@ -4068,6 +4069,11 @@
                 <groupId>com.nimbusds</groupId>
                 <artifactId>nimbus-jose-jwt</artifactId>
                 <version>${strimzi-oauth.nimbus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bitbucket.b_c</groupId>
+                <artifactId>jose4j</artifactId>
+                <version>${jose4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>

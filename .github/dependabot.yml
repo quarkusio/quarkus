@@ -184,6 +184,7 @@ updates:
       - dependency-name: com.sun.xml.bind:jaxb-impl
       - dependency-name: jakarta.xml.bind:jakarta.xml.bind-api
       - dependency-name: org.eclipse.parsson:*
+      - dependency-name: org.bitbucket.b_c:jose4j
     ignore:
       # this one cannot be upgraded due to the usage of proxies in new versions
       # the proxy implements interfaces in a random order which causes issues

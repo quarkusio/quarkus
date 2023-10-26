@@ -33,6 +33,7 @@ import org.hibernate.boot.jaxb.mapping.ManagedType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.Declaration;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
@@ -317,10 +318,12 @@ public final class JpaJandexScavenger {
 
                 switch (target.kind()) {
                     case FIELD:
-                        collectEmbeddedType(embeddedTypes, target.asField().type(), true);
+                        var field = target.asField();
+                        collectEmbeddedType(embeddedTypes, field.declaringClass(), field, field.type(), true);
                         break;
                     case METHOD:
-                        collectEmbeddedType(embeddedTypes, target.asMethod().returnType(), true);
+                        var method = target.asMethod();
+                        collectEmbeddedType(embeddedTypes, method.declaringClass(), method, method.returnType(), true);
                         break;
                     default:
                         throw new IllegalStateException(
@@ -335,10 +338,12 @@ public final class JpaJandexScavenger {
 
             switch (target.kind()) {
                 case FIELD:
-                    collectElementCollectionTypes(embeddedTypes, target.asField().type());
+                    var field = target.asField();
+                    collectElementCollectionTypes(embeddedTypes, field.declaringClass(), field, field.type());
                     break;
                 case METHOD:
-                    collectElementCollectionTypes(embeddedTypes, target.asMethod().returnType());
+                    var method = target.asMethod();
+                    collectElementCollectionTypes(embeddedTypes, method.declaringClass(), method, method.returnType());
                     break;
                 default:
                     throw new IllegalStateException(
@@ -495,15 +500,16 @@ public final class JpaJandexScavenger {
         }
     }
 
-    private void collectEmbeddedType(Set<DotName> embeddedTypes, Type embeddedType, boolean validate)
+    private void collectEmbeddedType(Set<DotName> embeddedTypes, ClassInfo declaringClass,
+            Declaration attribute, Type attributeType, boolean validate)
             throws BuildException {
         DotName className;
-        switch (embeddedType.kind()) {
+        switch (attributeType.kind()) {
             case CLASS:
-                className = embeddedType.asClassType().name();
+                className = attributeType.asClassType().name();
                 break;
             case PARAMETERIZED_TYPE:
-                className = embeddedType.name();
+                className = attributeType.name();
                 break;
             default:
                 // do nothing
@@ -511,28 +517,31 @@ public final class JpaJandexScavenger {
         }
         if (validate && !index.getClassByName(className).hasAnnotation(ClassNames.EMBEDDABLE)) {
             throw new BuildException(
-                    className + " is used as an embeddable but does not have an @Embeddable annotation.");
+                    "Type " + className + " must be annotated with @Embeddable, because it is used as an embeddable."
+                            + " This type is used in class " + declaringClass
+                            + " for attribute " + attribute + ".");
         }
-        embeddedTypes.add(embeddedType.name());
+        embeddedTypes.add(attributeType.name());
     }
 
-    private void collectElementCollectionTypes(Set<DotName> embeddedTypes, Type indexType)
+    private void collectElementCollectionTypes(Set<DotName> embeddedTypes, ClassInfo declaringClass,
+            Declaration attribute, Type attributeType)
             throws BuildException {
-        switch (indexType.kind()) {
+        switch (attributeType.kind()) {
             case CLASS:
                 // Raw collection type, nothing we can do
                 break;
             case PARAMETERIZED_TYPE:
-                embeddedTypes.add(indexType.name());
-                var typeArguments = indexType.asParameterizedType().arguments();
+                embeddedTypes.add(attributeType.name());
+                var typeArguments = attributeType.asParameterizedType().arguments();
                 for (Type typeArgument : typeArguments) {
                     // We don't validate @Embeddable annotations on element collections at the moment
                     // See https://github.com/quarkusio/quarkus/pull/35822
-                    collectEmbeddedType(embeddedTypes, typeArgument, false);
+                    collectEmbeddedType(embeddedTypes, declaringClass, attribute, typeArgument, false);
                 }
                 break;
             case ARRAY:
-                collectEmbeddedType(embeddedTypes, indexType.asArrayType().constituent(), true);
+                collectEmbeddedType(embeddedTypes, declaringClass, attribute, attributeType.asArrayType().constituent(), true);
                 break;
             default:
                 // do nothing

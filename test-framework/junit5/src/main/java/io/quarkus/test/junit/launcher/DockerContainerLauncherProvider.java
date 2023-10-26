@@ -17,6 +17,7 @@ import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DefaultDockerContainerLauncher;
 import io.quarkus.test.common.DockerContainerArtifactLauncher;
 import io.quarkus.test.common.LauncherUtil;
+import io.quarkus.test.common.TestConfigUtil;
 import io.smallrye.config.SmallRyeConfig;
 
 public class DockerContainerLauncherProvider implements ArtifactLauncherProvider {
@@ -44,10 +45,10 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
             launcher.init(new DefaultDockerInitContext(
                     config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
-                    ConfigUtil.waitTimeValue(config),
-                    ConfigUtil.integrationTestProfile(config),
-                    ConfigUtil.argLineValue(config),
-                    ConfigUtil.env(config),
+                    TestConfigUtil.waitTimeValue(config),
+                    TestConfigUtil.integrationTestProfile(config),
+                    TestConfigUtil.argLineValue(config),
+                    TestConfigUtil.env(config),
                     context.devServicesLaunchResult(),
                     containerImage,
                     pullRequired,

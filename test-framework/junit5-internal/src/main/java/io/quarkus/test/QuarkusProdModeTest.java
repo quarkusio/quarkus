@@ -63,6 +63,7 @@ import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.utilities.JavaBinFinder;
 
@@ -365,7 +366,7 @@ public class QuarkusProdModeTest
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
-        ConfigUtil.cleanUp();
+        TestConfigUtil.cleanUp();
         ensureNoInjectAnnotationIsUsed(extensionContext.getRequiredTestClass());
         ExclusivityChecker.checkTestType(extensionContext, QuarkusProdModeTest.class);
 
@@ -759,7 +760,7 @@ public class QuarkusProdModeTest
                 FileUtil.deleteDirectory(outputDir);
             }
 
-            ConfigUtil.cleanUp();
+            TestConfigUtil.cleanUp();
         }
     }
 

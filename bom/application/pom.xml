@@ -96,12 +96,14 @@
         <commons-lang3.version>3.13.0</commons-lang3.version>
         <commons-codec.version>1.16.0</commons-codec.version>
         <classmate.version>1.5.1</classmate.version>
-        <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below),
-             as well as hibernate-orm.version-for-documentation in docs/pom.xml -->
-        <hibernate-orm.version>6.2.13.Final</hibernate-orm.version>
+        <!-- WARNING: When updating, also align other properties on this version:
+             bytebuddy.version (just below), hibernate-orm.version-for-documentation (in docs/pom.xml)
+             and antlr.version.version in build-parent/pom.xml
+             WARNING again for diffs that don't provide enough context: when updating, see above -->
+        <hibernate-orm.version>6.3.1.Final</hibernate-orm.version>
         <bytebuddy.version>1.14.7</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-commons-annotations.version>6.0.6.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM -->
-        <hibernate-reactive.version>2.0.6.Final</hibernate-reactive.version>
+        <hibernate-reactive.version>2.1.0.Final</hibernate-reactive.version>
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
         <!-- When updating, align hibernate-search.version-for-documentation in docs/pom.xml -->
         <hibernate-search.version>6.2.2.Final</hibernate-search.version>

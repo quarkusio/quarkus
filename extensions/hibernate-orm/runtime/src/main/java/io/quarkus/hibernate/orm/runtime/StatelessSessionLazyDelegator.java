@@ -1,15 +1,20 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import java.util.List;
 import java.util.function.Supplier;
 
+import jakarta.persistence.EntityGraph;
 import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.CriteriaUpdate;
 
 import org.hibernate.HibernateException;
 import org.hibernate.LockMode;
+import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
 import org.hibernate.Transaction;
+import org.hibernate.graph.GraphSemantic;
+import org.hibernate.graph.RootGraph;
 import org.hibernate.jdbc.ReturningWork;
 import org.hibernate.jdbc.Work;
 import org.hibernate.procedure.ProcedureCall;
@@ -348,5 +353,55 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     @Deprecated(since = "6.0")
     public NativeQuery getNamedNativeQuery(String name, String resultSetMapping) {
         return delegate.get().getNamedNativeQuery(name, resultSetMapping);
+    }
+
+    @Override
+    public <T> RootGraph<T> createEntityGraph(Class<T> rootType) {
+        return delegate.get().createEntityGraph(rootType);
+    }
+
+    @Override
+    public RootGraph<?> createEntityGraph(String graphName) {
+        return delegate.get().createEntityGraph(graphName);
+    }
+
+    @Override
+    public <T> RootGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
+        return delegate.get().createEntityGraph(rootType, graphName);
+    }
+
+    @Override
+    public RootGraph<?> getEntityGraph(String graphName) {
+        return delegate.get().getEntityGraph(graphName);
+    }
+
+    @Override
+    public <T> List<EntityGraph<? super T>> getEntityGraphs(Class<T> entityClass) {
+        return delegate.get().getEntityGraphs(entityClass);
+    }
+
+    @Override
+    public SessionFactory getFactory() {
+        return delegate.get().getFactory();
+    }
+
+    @Override
+    public void upsert(Object entity) {
+        delegate.get().upsert(entity);
+    }
+
+    @Override
+    public void upsert(String entityName, Object entity) {
+        delegate.get().upsert(entityName, entity);
+    }
+
+    @Override
+    public <T> T get(EntityGraph<T> graph, GraphSemantic graphSemantic, Object id) {
+        return delegate.get().get(graph, graphSemantic, id);
+    }
+
+    @Override
+    public <T> T get(EntityGraph<T> graph, GraphSemantic graphSemantic, Object id, LockMode lockMode) {
+        return delegate.get().get(graph, graphSemantic, id, lockMode);
     }
 }

@@ -88,7 +88,7 @@ public class HibernateOrmDevInfoServiceTestResource {
                         + TypeWithUnsupportedSqlCode.UNSUPPORTED_SQL_CODE + "))");
         // Drop script generation doesn't involve column types, so it didn't fail
         assertThat(pu.getDropDDL())
-                .contains("drop table MyEntityTable if exists");
+                .contains("drop table if exists MyEntityTable");
 
         return "OK";
     }

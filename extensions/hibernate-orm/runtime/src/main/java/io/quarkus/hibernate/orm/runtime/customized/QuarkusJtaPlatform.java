@@ -6,17 +6,15 @@ import jakarta.transaction.Transaction;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.UserTransaction;
 
-import org.hibernate.engine.transaction.jta.platform.internal.JtaSynchronizationStrategy;
+import org.hibernate.engine.transaction.internal.jta.JtaStatusHelper;
 import org.hibernate.engine.transaction.jta.platform.internal.TransactionManagerAccess;
-import org.hibernate.engine.transaction.jta.platform.internal.TransactionManagerBasedSynchronizationStrategy;
 import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
+import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatformException;
 
 public final class QuarkusJtaPlatform implements JtaPlatform, TransactionManagerAccess {
 
     public static final QuarkusJtaPlatform INSTANCE = new QuarkusJtaPlatform();
 
-    private final JtaSynchronizationStrategy tmSynchronizationStrategy = new TransactionManagerBasedSynchronizationStrategy(
-            this);
     private volatile TransactionManager transactionManager;
     private volatile UserTransaction userTransaction;
 
@@ -42,7 +40,7 @@ public final class QuarkusJtaPlatform implements JtaPlatform, TransactionManager
     @Override
     public UserTransaction retrieveUserTransaction() {
         UserTransaction userTransaction = this.userTransaction;
-        if (this.userTransaction == null) {
+        if (userTransaction == null) {
             userTransaction = com.arjuna.ats.jta.UserTransaction.userTransaction();
             this.userTransaction = userTransaction;
         }
@@ -56,12 +54,16 @@ public final class QuarkusJtaPlatform implements JtaPlatform, TransactionManager
 
     @Override
     public void registerSynchronization(Synchronization synchronization) {
-        this.tmSynchronizationStrategy.registerSynchronization(synchronization);
+        try {
+            getTransactionManager().getTransaction().registerSynchronization(synchronization);
+        } catch (Exception e) {
+            throw new JtaPlatformException("Could not access JTA Transaction to register synchronization", e);
+        }
     }
 
     @Override
     public boolean canRegisterSynchronization() {
-        return this.tmSynchronizationStrategy.canRegisterSynchronization();
+        return JtaStatusHelper.isActive(getTransactionManager());
     }
 
     @Override

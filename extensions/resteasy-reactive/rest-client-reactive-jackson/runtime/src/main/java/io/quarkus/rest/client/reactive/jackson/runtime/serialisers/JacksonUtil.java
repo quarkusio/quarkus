@@ -31,11 +31,11 @@ final class JacksonUtil {
         }
         if (contextResolver != null) {
             var cr = contextResolver;
-            var key = new ResolverMapKey(type, context.getConfiguration(), context.getInvokedMethod().getDeclaringClass());
+            var key = new ResolverMapKey(context.getConfiguration(), context.getInvokedMethod().getDeclaringClass());
             return contextResolverMap.computeIfAbsent(key, new Function<>() {
                 @Override
                 public ObjectMapper apply(ResolverMapKey resolverMapKey) {
-                    return cr.getContext(resolverMapKey.getType());
+                    return cr.getContext(resolverMapKey.getRestClientClass());
                 }
             });
         }

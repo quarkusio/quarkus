@@ -513,31 +513,22 @@ public class BeanProcessor {
     }
 
     private Set<DotName> findSingleContextNormalScopes() {
-        Set<DotName> ret = new HashSet<>();
-        Set<DotName> builtinScopes = Set.of(BuiltinScope.REQUEST.getName());
-        Set<DotName> customScopes = beanDeployment.getCustomContexts().keySet().stream().filter(ScopeInfo::isNormal)
+        Map<DotName, Integer> contextsForScope = new HashMap<>();
+        // built-in contexts
+        contextsForScope.put(BuiltinScope.REQUEST.getName(), 1);
+        // custom contexts
+        beanDeployment.getCustomContexts()
+                .keySet()
+                .stream()
+                .filter(ScopeInfo::isNormal)
                 .map(ScopeInfo::getDotName)
+                .forEach(scope -> contextsForScope.merge(scope, 1, Integer::sum));
+
+        return contextsForScope.entrySet()
+                .stream()
+                .filter(entry -> entry.getValue() == 1)
+                .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
-        Set<DotName> alterableScopes = customAlterableContexts.getRegistered().stream()
-                .filter(cac -> Boolean.TRUE.equals(cac.isNormal)).map(cac -> cac.scopeAnnotation)
-                .map(DotName::createSimple)
-                .collect(Collectors.toSet());
-        for (DotName s : builtinScopes) {
-            if (!customScopes.contains(s) && !alterableScopes.contains(s)) {
-                ret.add(s);
-            }
-        }
-        for (DotName s : customScopes) {
-            if (!builtinScopes.contains(s) && !alterableScopes.contains(s)) {
-                ret.add(s);
-            }
-        }
-        for (DotName s : alterableScopes) {
-            if (!builtinScopes.contains(s) && !customScopes.contains(s)) {
-                ret.add(s);
-            }
-        }
-        return ret;
     }
 
     public static class Builder {

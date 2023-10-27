@@ -133,6 +133,25 @@ public String hello() {
 TIP: Use `@io.smallrye.config.ConfigMapping` annotation to group multiple configurations in a single interface. Please,
 check the https://smallrye.io/smallrye-config/Main/config/mappings/[Config Mappings] documentation.
 
+[[secrets-in-environment-properties]]
+== Store secrets in an environment properties file
+
+A secret (such as a password, a personal access token or an API key) must not end up in version control
+for security reasons. One way is to store them in a local environment properties (`.env`) file:
+
+. Store the secret in the `.env` file in the project root directory.
++
+.The .env file
+[source,properties]
+----
+foo.api-key=ThisIsSecret
+----
+
+. Add the `.env` file to `.gitignore`.
+
+`mvn quarkus:dev` automatically picks up the properties in the `.env` file,
+similar to those in the `application.properties` file.
+
 == Update the test
 
 We also need to update the functional test to reflect the changes made to the endpoint.

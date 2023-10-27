@@ -185,6 +185,8 @@ For applications running in a production environment, do not store passwords as 
 However, it is possible to store passwords as plain text with the `@Password(PasswordType.CLEAR)` annotation when operating in a test environment.
 ====
 
+include::{generated-dir}/config/quarkus-security-jpa.adoc[opts=optional, leveloffset=+2]
+
 == References
 
 * xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence]

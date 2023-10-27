@@ -1,5 +1,6 @@
 package io.quarkus.security.jpa.deployment;
 
+import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 import static io.quarkus.security.jpa.common.deployment.JpaSecurityIdentityUtil.buildIdentity;
 import static io.quarkus.security.jpa.common.deployment.JpaSecurityIdentityUtil.buildTrustedIdentity;
 
@@ -8,21 +9,27 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 
 import jakarta.inject.Singleton;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Query;
 
 import org.hibernate.Session;
 import org.hibernate.SimpleNaturalIdLoadAccess;
 import org.hibernate.annotations.NaturalId;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.InjectionPointTransformerBuildItem;
+import io.quarkus.arc.processor.InjectionPointsTransformer;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -34,6 +41,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
@@ -48,6 +56,11 @@ import io.quarkus.security.jpa.runtime.JpaTrustedIdentityProvider;
 class QuarkusSecurityJpaProcessor {
 
     private static final DotName DOTNAME_NATURAL_ID = DotName.createSimple(NaturalId.class.getName());
+    private static final DotName ENTITY_MANAGER_FACTORY_FACTORY = DotName.createSimple(EntityManagerFactory.class.getName());
+    private static final DotName JPA_IDENTITY_PROVIDER_NAME = DotName.createSimple(JpaIdentityProvider.class.getName());
+    private static final DotName JPA_TRUSTED_IDENTITY_PROVIDER_NAME = DotName
+            .createSimple(JpaTrustedIdentityProvider.class.getName());
+    private static final DotName PERSISTENCE_UNIT_NAME = DotName.createSimple(PersistenceUnit.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -69,6 +82,30 @@ class QuarkusSecurityJpaProcessor {
             generateTrustedIdentityProvider(index.getIndex(), jpaSecurityDefinition,
                     beanProducer, panacheEntityPredicate);
         }
+    }
+
+    @BuildStep(onlyIf = EnabledIfNonDefaultPersistenceUnit.class)
+    InjectionPointTransformerBuildItem transformer(SecurityJpaBuildTimeConfig config) {
+        return new InjectionPointTransformerBuildItem(new InjectionPointsTransformer() {
+
+            @Override
+            public boolean appliesTo(Type requiredType) {
+                return requiredType.name().equals(ENTITY_MANAGER_FACTORY_FACTORY);
+            }
+
+            public void transform(TransformationContext context) {
+                if (context.getTarget().kind() == AnnotationTarget.Kind.FIELD) {
+                    var declaringClassName = context.getTarget().asField().declaringClass().name();
+                    if (JPA_IDENTITY_PROVIDER_NAME.equals(declaringClassName)
+                            || JPA_TRUSTED_IDENTITY_PROVIDER_NAME.equals(declaringClassName)) {
+                        context.transform()
+                                .add(PERSISTENCE_UNIT_NAME,
+                                        AnnotationValue.createStringValue("value", config.persistenceUnitName()))
+                                .done();
+                    }
+                }
+            }
+        });
     }
 
     @BuildStep
@@ -195,6 +232,20 @@ class QuarkusSecurityJpaProcessor {
                     methodCreator.getThis(), query2);
         }
         return user;
+    }
+
+    static final class EnabledIfNonDefaultPersistenceUnit implements BooleanSupplier {
+
+        private final boolean useNonDefaultPersistenceUnit;
+
+        public EnabledIfNonDefaultPersistenceUnit(SecurityJpaBuildTimeConfig config) {
+            this.useNonDefaultPersistenceUnit = !DEFAULT_PERSISTENCE_UNIT_NAME.equals(config.persistenceUnitName());
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            return useNonDefaultPersistenceUnit;
+        }
     }
 
 }

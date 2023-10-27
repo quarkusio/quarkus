@@ -162,6 +162,10 @@ public class SmallRyeOpenApiProcessor {
     private static final String VERT_X = "Vert.x";
 
     static {
+        System.setProperty(io.smallrye.openapi.api.constants.OpenApiConstants.DEFAULT_PRODUCES_STREAMING,
+                "application/octet-stream");
+        System.setProperty(io.smallrye.openapi.api.constants.OpenApiConstants.DEFAULT_CONSUMES_STREAMING,
+                "application/octet-stream");
         System.setProperty(io.smallrye.openapi.api.constants.OpenApiConstants.DEFAULT_PRODUCES, "application/json");
         System.setProperty(io.smallrye.openapi.api.constants.OpenApiConstants.DEFAULT_CONSUMES, "application/json");
         System.setProperty(io.smallrye.openapi.api.constants.OpenApiConstants.DEFAULT_PRODUCES_PRIMITIVES, "text/plain");

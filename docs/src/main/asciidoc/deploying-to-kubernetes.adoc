@@ -315,7 +315,7 @@ type: kubernetes.io/dockerconfigjson
 
 ----
 
-And also `test-quarkus-app-pull-secret is added to the `imagePullSecrets` list.
+And also `test-quarkus-app-pull-secret` is added to the `imagePullSecrets` list.
 
 
 === Labels and Annotations
@@ -791,7 +791,7 @@ quarkus.kubernetes.ingress.rules.1.path=/dev
 quarkus.kubernetes.ingress.rules.1.path-type=ImplementationSpecific
 # by default, path type is Prefix
 
-# Exmple to add a new rule that use another service binding
+# Example to add a new rule that use another service binding
 quarkus.kubernetes.ingress.rules.2.host=alt.svc.url
 quarkus.kubernetes.ingress.rules.2.path=/ea
 quarkus.kubernetes.ingress.rules.2.service-name=updated-service

@@ -103,7 +103,7 @@
                             <maven.home>${maven.home}</maven.home>
                         </systemPropertyVariables>
                         <!-- gradle scan capture test logging disabled: System.out in virtual threads cause pinning when enabled. -->
-                        <argLine>-Djdk.tracePinnedThreads -Dgradle.scan.captureTestLogging=false</argLine>
+                        <argLine>--enable-preview -Djdk.tracePinnedThreads -Dgradle.scan.captureTestLogging=false</argLine>
                         <skipTests>${skipTests}</skipTests>
                     </configuration>
                 </plugin>
@@ -130,6 +130,7 @@
                     <version>${version.compiler.plugin}</version>
                     <configuration>
                         <compilerArgs>
+                            <arg>--enable-preview</arg>
                             <arg>-parameters</arg>
                         </compilerArgs>
                     </configuration>

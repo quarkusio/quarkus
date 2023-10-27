@@ -16,7 +16,7 @@ include::_attributes.adoc[]
 :httpspec: https://tools.ietf.org/html/rfc7231
 :jsonpapi: https://javadoc.io/doc/jakarta.json/jakarta.json-api/2.1.2/jakarta.json
 :injectapi: https://javadoc.io/static/jakarta.inject/jakarta.inject-api/2.0.1/jakarta.inject
-:vertxapi: https://javadoc.io/static/io.vertx/vertx-core/4.4.5
+:vertxapi: https://javadoc.io/static/io.vertx/vertx-core/4.4.6
 :resteasy-reactive-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive/{quarkus-version}
 :resteasy-reactive-common-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-common/{quarkus-version}
 

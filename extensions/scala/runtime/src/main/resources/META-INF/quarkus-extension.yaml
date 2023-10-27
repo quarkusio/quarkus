@@ -5,7 +5,7 @@ metadata:
   - "scala"
   categories:
   - "alt-languages"
-  status: "preview"
+  status: "deprecated"
   codestart:
     name: "scala"
     kind: "core"

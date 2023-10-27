@@ -11,6 +11,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Embedded;
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.GeneratedValue;
@@ -31,6 +32,9 @@ import io.quarkus.test.QuarkusUnitTest;
  * Checks that the missing @Embeddable check doesn't mistakely report
  * types that are annotated with @Embeddable (https://github.com/quarkusio/quarkus/issues/35598)
  * or generic type parameters on @Embedded field types (https://github.com/quarkusio/quarkus/issues/36065)
+ * or overriden getters annotated with @EmbeddedId/@Embedded where the supertype getter returns a type not annotated
+ * with @Embeddable
+ * (https://github.com/quarkusio/quarkus/issues/36421).
  */
 public class HibernateEntityEnhancerPresentEmbeddableTest {
 
@@ -41,7 +45,9 @@ public class HibernateEntityEnhancerPresentEmbeddableTest {
                     .addClasses(EntityWithEmbedded.class, EmbeddableWithAnnotation.class,
                             ExtendedEmbeddableWithAnnotation.class,
                             NestingEmbeddableWithAnnotation.class,
-                            GenericEmbeddableWithAnnotation.class))
+                            GenericEmbeddableWithAnnotation.class,
+                            EntityWithEmbeddedId.class, EntityWithEmbeddedIdAndOverriddenGetter.class,
+                            EmbeddableIdWithAnnotation.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.implicit-naming-strategy", "component-path");
 
@@ -50,7 +56,7 @@ public class HibernateEntityEnhancerPresentEmbeddableTest {
 
     // Just test that the generic embeddeds work correctly over a persist/retrieve cycle
     @Test
-    public void smokeTest() {
+    public void embedded_smokeTest() {
         Long id = QuarkusTransaction.requiringNew().call(() -> {
             EntityWithEmbedded entity = new EntityWithEmbedded();
             entity.setName("name");
@@ -94,6 +100,36 @@ public class HibernateEntityEnhancerPresentEmbeddableTest {
                     .asInstanceOf(InstanceOfAssertFactories.map(String.class, EmbeddableWithAnnotation.class))
                     .extractingFromEntries(e -> e.getValue().getText())
                     .containsExactly("map1", "map2");
+        });
+    }
+
+    // Just test that the embeddedIds work correctly over a persist/retrieve cycle
+    @Test
+    public void embeddedId_smokeTest() {
+        QuarkusTransaction.requiringNew().run(() -> {
+            EntityWithEmbeddedId entity1 = new EntityWithEmbeddedId();
+            entity1.setId(new EmbeddableIdWithAnnotation("1"));
+            em.persist(entity1);
+        });
+
+        QuarkusTransaction.requiringNew().run(() -> {
+            EntityWithEmbeddedId entity = em.find(EntityWithEmbeddedId.class, new EmbeddableIdWithAnnotation("1"));
+            assertThat(entity).isNotNull();
+        });
+    }
+
+    @Test
+    public void embeddedIdAndOverriddenGetter_smokeTest() {
+        QuarkusTransaction.requiringNew().run(() -> {
+            EntityWithEmbeddedIdAndOverriddenGetter entity1 = new EntityWithEmbeddedIdAndOverriddenGetter();
+            entity1.setId(new EmbeddableIdWithAnnotation("2"));
+            em.persist(entity1);
+        });
+
+        QuarkusTransaction.requiringNew().run(() -> {
+            EntityWithEmbeddedIdAndOverriddenGetter entity = em.find(EntityWithEmbeddedIdAndOverriddenGetter.class,
+                    new EmbeddableIdWithAnnotation("2"));
+            assertThat(entity).isNotNull();
         });
     }
 
@@ -287,6 +323,57 @@ public class HibernateEntityEnhancerPresentEmbeddableTest {
 
         public void setValue(T value) {
             this.value = value;
+        }
+    }
+
+    @Entity
+    public static class EntityWithEmbeddedId {
+        @EmbeddedId
+        private EmbeddableIdWithAnnotation id;
+
+        public EmbeddableIdWithAnnotation getId() {
+            return id;
+        }
+
+        public void setId(EmbeddableIdWithAnnotation id) {
+            this.id = id;
+        }
+    }
+
+    @MappedSuperclass
+    public interface Identifiable {
+        Object getId();
+    }
+
+    @Entity
+    public static class EntityWithEmbeddedIdAndOverriddenGetter implements Identifiable {
+        private EmbeddableIdWithAnnotation id;
+
+        @Override
+        @EmbeddedId
+        public EmbeddableIdWithAnnotation getId() {
+            return id;
+        }
+
+        public void setId(EmbeddableIdWithAnnotation id) {
+            this.id = id;
+        }
+    }
+
+    @Embeddable
+    public static class EmbeddableIdWithAnnotation {
+        private String text;
+
+        protected EmbeddableIdWithAnnotation() {
+            // For Hibernate ORM only - it will change the property value through reflection
+        }
+
+        public EmbeddableIdWithAnnotation(String text) {
+            this.text = text;
+        }
+
+        public String getText() {
+            return text;
         }
     }
 

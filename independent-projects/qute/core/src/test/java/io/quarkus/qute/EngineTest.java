@@ -1,6 +1,7 @@
 package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -11,6 +12,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.qute.TemplateInstance.Initializer;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
 import io.quarkus.qute.TemplateNode.Origin;
 
@@ -72,6 +74,46 @@ public class EngineTest {
         } catch (IOException e) {
             fail(e);
         }
+    }
+
+    @Test
+    public void testNewBuilder() {
+        Engine engine1 = Engine.builder()
+                .addNamespaceResolver(NamespaceResolver.builder("foo").resolve(ec -> "baz").build())
+                .addDefaults()
+                .strictRendering(false)
+                .useAsyncTimeout(false)
+                .timeout(20_000)
+                .addParserHook(new ParserHook() {
+                    @Override
+                    public void beforeParsing(ParserHelper parserHelper) {
+                        parserHelper.addContentFilter(s -> s + "::{cool}");
+                    }
+                })
+                .addTemplateInstanceInitializer(new Initializer() {
+                    @Override
+                    public void accept(TemplateInstance templateInstance) {
+                        templateInstance.data("cool", true);
+                    }
+                })
+                .build();
+        assertEquals("foo::baz::true", engine1.parse("{ping}::{foo:whatever}").data("ping", "foo").render());
+        assertFalse(engine1.getEvaluator().strictRendering());
+        assertFalse(engine1.useAsyncTimeout());
+        assertEquals(20_000, engine1.getTimeout());
+
+        Engine engine2 = engine1.newBuilder()
+                .useAsyncTimeout(true)
+                .addValueResolver(
+                        // This value resolver has the highest priority
+                        ValueResolver.builder().applyToName("ping").priority(Integer.MAX_VALUE).resolveWith("pong").build())
+                .build();
+
+        assertEquals("pong::baz::true", engine2.parse("{ping}::{foo:whatever}").data("ping", "foo").render());
+        assertEquals(20_000, engine2.getTimeout());
+        assertFalse(engine2.getEvaluator().strictRendering());
+        assertTrue(engine2.useAsyncTimeout());
+        assertEquals(engine1.getSectionHelperFactories().size(), engine2.getSectionHelperFactories().size());
     }
 
 }

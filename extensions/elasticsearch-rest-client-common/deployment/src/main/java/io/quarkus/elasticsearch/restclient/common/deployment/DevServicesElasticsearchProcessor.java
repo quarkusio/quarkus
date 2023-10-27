@@ -268,7 +268,11 @@ public class DevServicesElasticsearchProcessor {
 
         container.addEnv("bootstrap.memory_lock", "true");
         container.addEnv("plugins.index_state_management.enabled", "false");
-
+        // Disable disk-based shard allocation thresholds: on large, relatively full disks (>90% used),
+        // it will lead to index creation to get stuck waiting for other nodes to join the cluster,
+        // which will never happen since we only have one node.
+        // See https://opensearch.org/docs/latest/api-reference/cluster-api/cluster-settings/
+        container.addEnv("cluster.routing.allocation.disk.threshold_enabled", "false");
         container.addEnv("OPENSEARCH_JAVA_OPTS", config.javaOpts);
         return container;
     }

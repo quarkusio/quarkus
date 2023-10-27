@@ -111,7 +111,7 @@ To test the runner, run
 
 Once you're happy the runner is processing builds correctly, it's time to create it as a daemon. 
 
-### Start the service on reboot
+### Start the service on reboot /
 
 Note that GitHub have scripts for this, but theirs run as LaunchAgents, not LaunchDaemons. 
 LaunchAgents run when a user logs in, and LaunchDaemons run on boot, so the daemon option seems preferable.

@@ -28,7 +28,6 @@ public class ClientJacksonMessageBodyWriter implements MessageBodyWriter<Object>
 
     protected final ObjectMapper originalMapper;
     protected final ObjectWriter defaultWriter;
-    private final ConcurrentMap<ResolverMapKey, ObjectMapper> contextResolverMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<ObjectMapper, ObjectWriter> objectWriterMap = new ConcurrentHashMap<>();
     private RestClientRequestContext context;
 
@@ -46,7 +45,7 @@ public class ClientJacksonMessageBodyWriter implements MessageBodyWriter<Object>
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-        doLegacyWrite(o, annotations, httpHeaders, entityStream, getEffectiveWriter(type, mediaType));
+        doLegacyWrite(o, annotations, httpHeaders, entityStream, getEffectiveWriter(mediaType));
     }
 
     @Override
@@ -54,8 +53,8 @@ public class ClientJacksonMessageBodyWriter implements MessageBodyWriter<Object>
         this.context = requestContext;
     }
 
-    protected ObjectWriter getEffectiveWriter(Class<?> type, MediaType responseMediaType) {
-        ObjectMapper objectMapper = getObjectMapperFromContext(type, responseMediaType, context, contextResolverMap);
+    protected ObjectWriter getEffectiveWriter(MediaType responseMediaType) {
+        ObjectMapper objectMapper = getObjectMapperFromContext(responseMediaType, context);
         if (objectMapper == null) {
             return defaultWriter;
         }

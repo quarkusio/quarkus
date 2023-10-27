@@ -3330,8 +3330,11 @@ public class QuteProcessor {
         String fullPath = basePath + filePath;
         LOGGER.debugf("Produce template build items [filePath: %s, fullPath: %s, originalPath: %s", filePath, fullPath,
                 originalPath);
-        // NOTE: we cannot just drop the template because a template param can be added
-        watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(fullPath, true));
+        boolean restartNeeded = true;
+        if (config.devMode.noRestartTemplates.isPresent()) {
+            restartNeeded = !config.devMode.noRestartTemplates.get().matcher(fullPath).matches();
+        }
+        watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(fullPath, restartNeeded));
         nativeImageResources.produce(new NativeImageResourceBuildItem(fullPath));
         templatePaths.produce(
                 new TemplatePathBuildItem(filePath, originalPath, readTemplateContent(originalPath, config.defaultCharset)));

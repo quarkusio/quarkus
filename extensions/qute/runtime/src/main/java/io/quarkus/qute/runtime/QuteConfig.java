@@ -88,4 +88,10 @@ public class QuteConfig {
     @ConfigItem(defaultValue = "UTF-8")
     public Charset defaultCharset;
 
+    /**
+     * Dev mode configuration.
+     */
+    @ConfigItem
+    public QuteDevModeConfig devMode;
+
 }

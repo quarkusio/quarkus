@@ -263,6 +263,7 @@
                 <module>oidc-client-wiremock</module>
                 <module>oidc-token-propagation</module>
                 <module>oidc-token-propagation-reactive</module>
+                <module>openapi</module>
                 <module>smallrye-jwt-oidc-webapp</module>
                 <module>smallrye-jwt-token-propagation</module>
                 <module>oidc-code-flow</module>

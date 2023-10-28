@@ -33,7 +33,6 @@ public class ClientJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
 
     private static final Logger log = Logger.getLogger(ClientJacksonMessageBodyReader.class);
 
-    private final ConcurrentMap<ResolverMapKey, ObjectMapper> contextResolverMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<ObjectMapper, ObjectReader> objectReaderMap = new ConcurrentHashMap<>();
     private RestClientRequestContext context;
 
@@ -49,7 +48,7 @@ public class ClientJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
             if (entityStream instanceof EmptyInputStream) {
                 return null;
             }
-            ObjectReader reader = getEffectiveReader(type, mediaType);
+            ObjectReader reader = getEffectiveReader(mediaType);
             return reader.forType(reader.getTypeFactory().constructType(genericType != null ? genericType : type))
                     .readValue(entityStream);
 
@@ -66,8 +65,8 @@ public class ClientJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
         this.context = requestContext;
     }
 
-    private ObjectReader getEffectiveReader(Class<Object> type, MediaType responseMediaType) {
-        ObjectMapper effectiveMapper = getObjectMapperFromContext(type, responseMediaType, context, contextResolverMap);
+    private ObjectReader getEffectiveReader(MediaType responseMediaType) {
+        ObjectMapper effectiveMapper = getObjectMapperFromContext(responseMediaType, context);
         if (effectiveMapper == null) {
             return getEffectiveReader();
         }

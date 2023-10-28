@@ -786,3 +786,6 @@ This project is an open source project, please act responsibly, be nice, polite 
   [WARNING] Rule 0: ... failed with message:
   ...
   ```
+* Tests fail with `Caused by: io.quarkus.runtime.QuarkusBindException: Port(s) already bound: 8080: Address already in use`
+    
+    Check that you do not have other Quarkus dev environments, apps or other web servers running on this default 8080 port.

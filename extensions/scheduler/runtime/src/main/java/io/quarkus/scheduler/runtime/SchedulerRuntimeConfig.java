@@ -38,17 +38,15 @@ public class SchedulerRuntimeConfig {
         NORMAL,
 
         /**
-         * The scheduler will be started even if no scheduled business methods are found.
-         * <p>
-         * This is necessary for "pure" programmatic scheduling.
+         * The scheduler will be started even if no scheduled business methods are found. This is necessary for "pure"
+         * programmatic scheduling.
          */
         FORCED,
 
         /**
          * Just like the {@link #FORCED} mode but the scheduler will not start triggering jobs until {@link Scheduler#resume()}
-         * is called.
-         * <p>
-         * This can be useful to run some initialization logic that needs to be performed before the scheduler starts.
+         * is called. This can be useful to run some initialization logic that needs to be performed before the scheduler
+         * starts.
          */
         HALTED;
     }

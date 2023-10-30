@@ -221,7 +221,8 @@ public class ExtensionsEntryPoint {
                         if (InjectableContext.class.isAssignableFrom(contextClass)) {
                             config.contextClass((Class<? extends InjectableContext>) contextClass);
                         } else {
-                            CustomAlterableContextInfo info = customAlterableContexts.add(contextClass, context.isNormal);
+                            CustomAlterableContextInfo info = customAlterableContexts.add(contextClass, context.isNormal,
+                                    scopeAnnotation);
                             config.creator(bytecode -> {
                                 return bytecode.newInstance(MethodDescriptor.ofConstructor(info.generatedName));
                             });

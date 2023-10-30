@@ -6,9 +6,8 @@ import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ContextNotActiveException;
@@ -38,13 +37,16 @@ class RequestContext implements ManagedContext {
     private final Notifier<Object> initializedNotifier;
     private final Notifier<Object> beforeDestroyedNotifier;
     private final Notifier<Object> destroyedNotifier;
+    private final Supplier<ContextInstances> contextInstances;
 
     public RequestContext(CurrentContext<RequestContextState> currentContext, Notifier<Object> initializedNotifier,
-            Notifier<Object> beforeDestroyedNotifier, Notifier<Object> destroyedNotifier) {
+            Notifier<Object> beforeDestroyedNotifier, Notifier<Object> destroyedNotifier,
+            Supplier<ContextInstances> contextInstances) {
         this.currentContext = currentContext;
         this.initializedNotifier = initializedNotifier;
         this.beforeDestroyedNotifier = beforeDestroyedNotifier;
         this.destroyedNotifier = destroyedNotifier;
+        this.contextInstances = contextInstances;
     }
 
     @Override
@@ -66,13 +68,17 @@ class RequestContext implements ManagedContext {
             // Context is not active!
             return null;
         }
-        ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) ctxState.map.get(contextual);
+        ContextInstances contextInstances = ctxState.contextInstances;
+        ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) contextInstances.getIfPresent(bean.getIdentifier());
         if (instance == null) {
             CreationalContext<T> creationalContext = creationalContextFun.apply(contextual);
-            // Bean instance does not exist - create one if we have CreationalContext
-            instance = new ContextInstanceHandleImpl<T>((InjectableBean<T>) contextual,
-                    contextual.create(creationalContext), creationalContext);
-            ctxState.map.put(contextual, instance);
+            return (T) contextInstances.computeIfAbsent(bean.getIdentifier(), new Supplier<ContextInstanceHandle<?>>() {
+
+                @Override
+                public ContextInstanceHandle<?> get() {
+                    return new ContextInstanceHandleImpl<>(bean, contextual.create(creationalContext), creationalContext);
+                }
+            }).get();
         }
         return instance.get();
     }
@@ -99,7 +105,8 @@ class RequestContext implements ManagedContext {
         if (state == null) {
             throw notActive();
         }
-        ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) state.map.get(contextual);
+        ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) state.contextInstances
+                .getIfPresent(bean.getIdentifier());
         return instance == null ? null : instance.get();
     }
 
@@ -115,7 +122,8 @@ class RequestContext implements ManagedContext {
             // Context is not active
             throw notActive();
         }
-        ContextInstanceHandle<?> instance = state.map.remove(contextual);
+        InjectableBean<?> bean = (InjectableBean<?>) contextual;
+        ContextInstanceHandle<?> instance = state.contextInstances.remove(bean.getIdentifier());
         if (instance != null) {
             instance.destroy();
         }
@@ -127,7 +135,7 @@ class RequestContext implements ManagedContext {
             traceActivate(initialState);
         }
         if (initialState == null) {
-            RequestContextState state = new RequestContextState(new ConcurrentHashMap<>());
+            RequestContextState state = new RequestContextState(contextInstances.get());
             currentContext.set(state);
             // Fire an event with qualifier @Initialized(RequestScoped.class) if there are any observers for it
             fireIfNotEmpty(initializedNotifier);
@@ -202,12 +210,8 @@ class RequestContext implements ManagedContext {
             if (reqState.invalidate()) {
                 // Fire an event with qualifier @BeforeDestroyed(RequestScoped.class) if there are any observers for it
                 fireIfNotEmpty(beforeDestroyedNotifier);
-                Map<Contextual<?>, ContextInstanceHandle<?>> map = ((RequestContextState) state).map;
-                if (!map.isEmpty()) {
-                    //Performance: avoid an iterator on the map elements
-                    map.forEach(this::destroyContextElement);
-                    map.clear();
-                }
+                reqState.contextInstances.getAllPresent().forEach(this::destroyContextElement);
+                reqState.contextInstances.clear();
                 // Fire an event with qualifier @Destroyed(RequestScoped.class) if there are any observers for it
                 fireIfNotEmpty(destroyedNotifier);
             }
@@ -225,7 +229,7 @@ class RequestContext implements ManagedContext {
         LOG.tracef("Destroy %s%s\n\t...", state != null ? Integer.toHexString(state.hashCode()) : "", stack);
     }
 
-    private void destroyContextElement(Contextual<?> contextual, ContextInstanceHandle<?> contextInstanceHandle) {
+    private void destroyContextElement(ContextInstanceHandle<?> contextInstanceHandle) {
         try {
             contextInstanceHandle.destroy();
         } catch (Exception e) {
@@ -269,16 +273,16 @@ class RequestContext implements ManagedContext {
             }
         }
 
-        private final Map<Contextual<?>, ContextInstanceHandle<?>> map;
+        private final ContextInstances contextInstances;
         private volatile int isValid;
 
-        RequestContextState(ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> value) {
-            this.map = Objects.requireNonNull(value);
+        RequestContextState(ContextInstances contextInstances) {
+            this.contextInstances = Objects.requireNonNull(contextInstances);
         }
 
         @Override
         public Map<InjectableBean<?>, Object> getContextualInstances() {
-            return map.values().stream()
+            return contextInstances.getAllPresent().stream()
                     .collect(Collectors.toUnmodifiableMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
         }
 

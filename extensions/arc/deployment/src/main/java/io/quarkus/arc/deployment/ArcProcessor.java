@@ -396,6 +396,7 @@ public class ArcProcessor {
         }
 
         builder.setBuildCompatibleExtensions(buildCompatibleExtensions.entrypoint);
+        builder.setOptimizeContexts(arcConfig.optimizeContexts);
 
         BeanProcessor beanProcessor = builder.build();
         ContextRegistrar.RegistrationContext context = beanProcessor.registerCustomContexts();
@@ -516,6 +517,12 @@ public class ArcProcessor {
         ExecutorService executor = parallelResourceGeneration ? buildExecutor : null;
         List<ResourceOutput.Resource> resources;
         resources = beanProcessor.generateResources(new ReflectionRegistration() {
+
+            @Override
+            public void registerMethod(String declaringClass, String name, String... params) {
+                reflectiveMethods.produce(new ReflectiveMethodBuildItem(declaringClass, name, params));
+            }
+
             @Override
             public void registerMethod(MethodInfo methodInfo) {
                 reflectiveMethods.produce(new ReflectiveMethodBuildItem(methodInfo));
@@ -591,7 +598,7 @@ public class ArcProcessor {
             throws Exception {
         ArcContainer container = recorder.initContainer(shutdown,
                 currentContextFactory.isPresent() ? currentContextFactory.get().getFactory() : null,
-                config.strictCompatibility);
+                config.strictCompatibility, config.optimizeContexts);
         return new ArcContainerBuildItem(container);
     }
 

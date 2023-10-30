@@ -59,13 +59,17 @@ public class ClientProxyGenerator extends AbstractGenerator {
     private final Predicate<DotName> applicationClassPredicate;
     private final boolean mockable;
     private final Set<String> existingClasses;
+    // We optimize the access to the delegate if a single context is registered for a given scope
+    private final Set<DotName> singleContextNormalScopes;
 
     public ClientProxyGenerator(Predicate<DotName> applicationClassPredicate, boolean generateSources, boolean mockable,
-            ReflectionRegistration reflectionRegistration, Set<String> existingClasses) {
+            ReflectionRegistration reflectionRegistration, Set<String> existingClasses,
+            Set<DotName> singleContextNormalScopes) {
         super(generateSources, reflectionRegistration);
         this.applicationClassPredicate = applicationClassPredicate;
         this.mockable = mockable;
         this.existingClasses = existingClasses;
+        this.singleContextNormalScopes = singleContextNormalScopes;
     }
 
     /**
@@ -136,8 +140,9 @@ public class ClientProxyGenerator extends AbstractGenerator {
             clientProxy.getFieldCreator(MOCK_FIELD, providerType.descriptorName()).setModifiers(ACC_PRIVATE | ACC_VOLATILE);
         }
         FieldCreator contextField = null;
-        if (BuiltinScope.APPLICATION.is(bean.getScope())) {
-            // It is safe to store the application context instance on the proxy
+        if (BuiltinScope.APPLICATION.is(bean.getScope())
+                || singleContextNormalScopes.contains(bean.getScope().getDotName())) {
+            // It is safe to store the context instance on the proxy
             contextField = clientProxy.getFieldCreator(CONTEXT_FIELD, InjectableContext.class)
                     .setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
@@ -275,11 +280,14 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 beanIdentifierHandle);
         creator.writeInstanceField(beanField, creator.getThis(), beanHandle);
         if (contextField != null) {
-            creator.writeInstanceField(contextField, creator.getThis(), creator.invokeInterfaceMethod(
-                    MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
+            // At this point we can be sure there's only one context implementation available
+            ResultHandle contextList = creator.invokeInterfaceMethod(
+                    MethodDescriptors.ARC_CONTAINER_GET_CONTEXTS,
                     containerHandle, creator
                             .invokeInterfaceMethod(MethodDescriptor.ofMethod(InjectableBean.class, "getScope", Class.class),
-                                    beanHandle)));
+                                    beanHandle));
+            creator.writeInstanceField(contextField, creator.getThis(),
+                    creator.invokeInterfaceMethod(MethodDescriptors.LIST_GET, contextList, creator.load(0)));
         }
         creator.returnValue(null);
     }
@@ -301,6 +309,12 @@ public class ClientProxyGenerator extends AbstractGenerator {
         if (BuiltinScope.APPLICATION.is(bean.getScope())) {
             // Application context is stored in a field and is always active
             creator.returnValue(creator.invokeStaticMethod(MethodDescriptors.CLIENT_PROXIES_GET_APP_SCOPED_DELEGATE,
+                    creator.readInstanceField(
+                            FieldDescriptor.of(clientProxy.getClassName(), CONTEXT_FIELD, InjectableContext.class),
+                            creator.getThis()),
+                    beanHandle));
+        } else if (singleContextNormalScopes.contains(bean.getScope().getDotName())) {
+            creator.returnValue(creator.invokeStaticMethod(MethodDescriptors.CLIENT_PROXIES_GET_SINGLE_CONTEXT_DELEGATE,
                     creator.readInstanceField(
                             FieldDescriptor.of(clientProxy.getClassName(), CONTEXT_FIELD, InjectableContext.class),
                             creator.getThis()),

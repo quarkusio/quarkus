@@ -103,7 +103,7 @@ public class ArcContainerImpl implements ArcContainer {
 
     private final boolean strictMode;
 
-    public ArcContainerImpl(CurrentContextFactory currentContextFactory, boolean strictMode) {
+    public ArcContainerImpl(CurrentContextFactory currentContextFactory, boolean strictMode, boolean optimizeContexts) {
         this.strictMode = strictMode;
         id = String.valueOf(ID_GENERATOR.incrementAndGet());
         running = new AtomicBoolean(true);
@@ -117,6 +117,8 @@ public class ArcContainerImpl implements ArcContainer {
         Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings = new HashMap<>();
         Map<String, Set<String>> qualifierNonbindingMembers = new HashMap<>();
         Set<String> qualifiers = new HashSet<>();
+        Supplier<ContextInstances> applicationContextInstances = null;
+        Supplier<ContextInstances> requestContextInstances = null;
         this.currentContextFactory = currentContextFactory == null ? new ThreadLocalCurrentContextFactory()
                 : currentContextFactory;
 
@@ -142,6 +144,12 @@ public class ArcContainerImpl implements ArcContainer {
             transitiveInterceptorBindings.putAll(c.getTransitiveInterceptorBindings());
             qualifierNonbindingMembers.putAll(c.getQualifierNonbindingMembers());
             qualifiers.addAll(c.getQualifiers());
+            if (applicationContextInstances == null) {
+                applicationContextInstances = c.getContextInstances().get(ApplicationScoped.class);
+            }
+            if (requestContextInstances == null) {
+                requestContextInstances = c.getContextInstances().get(RequestScoped.class);
+            }
         }
 
         // register built-in beans
@@ -190,12 +198,18 @@ public class ArcContainerImpl implements ArcContainer {
         this.registeredQualifiers = new Qualifiers(qualifiers, qualifierNonbindingMembers);
         this.registeredInterceptorBindings = new InterceptorBindings(interceptorBindings, transitiveInterceptorBindings);
 
+        ApplicationContext applicationContext = applicationContextInstances != null
+                ? new ApplicationContext(applicationContextInstances.get())
+                : new ApplicationContext();
+        RequestContext requestContext = new RequestContext(this.currentContextFactory.create(RequestScoped.class),
+                notifierOrNull(Set.of(Initialized.Literal.REQUEST, Any.Literal.INSTANCE)),
+                notifierOrNull(Set.of(BeforeDestroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
+                notifierOrNull(Set.of(Destroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
+                requestContextInstances != null ? requestContextInstances : ComputingCacheContextInstances::new);
+
         Contexts.Builder contextsBuilder = new Contexts.Builder(
-                new RequestContext(this.currentContextFactory.create(RequestScoped.class),
-                        notifierOrNull(Set.of(Initialized.Literal.REQUEST, Any.Literal.INSTANCE)),
-                        notifierOrNull(Set.of(BeforeDestroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
-                        notifierOrNull(Set.of(Destroyed.Literal.REQUEST, Any.Literal.INSTANCE))),
-                new ApplicationContext(),
+                requestContext,
+                applicationContext,
                 new SingletonContext(),
                 new DependentContext());
 

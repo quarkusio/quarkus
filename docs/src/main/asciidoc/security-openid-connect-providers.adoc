@@ -481,6 +481,26 @@ quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.client-secret.value=<Client Secret>
 ----
 
+[[discord]]
+=== Discord
+
+Create a https://discord.com/developers/applications[Discord application]:
+
+image::oidc-discord-1.png[role="thumb"]
+
+You now can get your client id and secret:
+
+image::oidc-discord-2.png[role="thumb"]
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=discord
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.client-secret=<Client Secret>
+----
+
 
 [[provider-scope]]
 == Provider scopes

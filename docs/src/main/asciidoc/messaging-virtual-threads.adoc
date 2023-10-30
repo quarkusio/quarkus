@@ -34,7 +34,7 @@ The idea behind Quarkus Virtual Thread support for Reactive Messaging is to offl
 instead of running it on an event-loop thread or a worker thread.
 
 To enable virtual thread support on a message consumer method, simply add the link:{runonvthread}[@RunOnVirtualThread] annotation to the method.
-If the JDK is compatible (Java 19 or later versions) then each incoming message will be offloaded to a new virtual thread.
+If the JDK is compatible (Java 19 or later versions, we recommend 21+) then each incoming message will be offloaded to a new virtual thread.
 It will then be possible to perform blocking operations without blocking the platform thread upon which the virtual thread is mounted.
 
 == Example using the Reactive Messaging Kafka extension
@@ -57,22 +57,22 @@ First, make sure to have a reactive messaging extension dependency to your build
 implementation("io.quarkus:quarkus-smallrye-reactive-messaging-kafka")
 ----
 
-You also need to make sure that you are using Java 19 or later, this can be enforced in your `pom.xml` file with the following:
+You also need to make sure that you are using Java 19 or later (we recommend 21+), this can be enforced in your `pom.xml` file with the following:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <properties>
-    <maven.compiler.source>20</maven.compiler.source>
-    <maven.compiler.target>20</maven.compiler.target>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
 </properties>
 ----
 
-Virtual threads are still a preview feature, so you need to start your application with the `--enable-preview` flag:
+Run the application with:
 
 [source, bash]
 ----
-java --enable-preview -jar target/quarkus-app/quarkus-run.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
 
 or to use the Quarkus Dev mode, insert the following to the `quarkus-maven-plugin` configuration:
@@ -80,18 +80,7 @@ or to use the Quarkus Dev mode, insert the following to the `quarkus-maven-plugi
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
-<maven.compiler.release>20</maven.compiler.release>
-<!-- ... -->
-<plugin>
-    <artifactId>maven-compiler-plugin</artifactId>
-    <version>${compiler-plugin.version}</version>
-    <configuration>
-      <compilerArgs>
-        <arg>-parameters</arg>
-        <arg>--enable-preview</arg>
-      </compilerArgs>
-    </configuration>
-</plugin>
+<maven.compiler.release>21</maven.compiler.release>
 ----
 
 Then you can start using the annotation `@RunOnVirtualThread` on your consumer methods also annotated with `@Incoming`.

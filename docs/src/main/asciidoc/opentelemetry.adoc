@@ -13,15 +13,14 @@ include::_attributes.adoc[]
 This guide explains how your Quarkus application can utilize https://opentelemetry.io/[OpenTelemetry] (OTel) to provide
 distributed tracing for interactive web applications.
 
-OpenTelemetry Metrics and Logging are not yet supported.
-
 [NOTE]
 ====
+- OpenTelemetry Metrics and Logging are not yet supported.
 - Quarkus now supports the OpenTelemetry Autoconfiguration for Traces. The configurations match what you can see at
 https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md[OpenTelemetry SDK Autoconfigure]
 with the `quarkus.*` prefix.
-
 - Extensions and the libraries they provide, are directly instrumented in Quarkus. The *use of the https://opentelemetry.io/docs/instrumentation/java/automatic/[OpenTelemetry Agent] is not needed nor recommended* due to context propagation issues between imperative and reactive libraries.
+- If you come from the legacy OpenTracing extension, there is a xref:telemetry-opentracing-to-otel-tutorial.adoc[guide to help with the migration].
 ====
 
 == Prerequisites
@@ -137,6 +136,33 @@ All configurations have been updated from `quarkus.opentelemetry.\*` -> `quarkus
 
 The legacy configurations are now deprecated but will still work during a transition period.
 ====
+
+=== Disable all or parts of the OpenTelemetry extension
+
+Once you add the dependency, the extension will be enabled by default but there are a few ways to disable the OpenTelemetry extension globally or partially.
+
+|===
+|Property name |Default value |Description
+
+|`quarkus.otel.enabled`
+|true
+|If false, disable the OpenTelemetry usage at *build* time.
+
+|`quarkus.otel.sdk.disabled`
+|false
+|Comes from the OpenTelemetry autoconfiguration. If true, will disable the OpenTelemetry SDK usage at *runtime*.
+
+|`quarkus.otel.traces.enabled`
+|true
+|If false, disable the OpenTelemetry tracing usage at *build* time.
+
+|`quarkus.otel.exporter.otlp.enabled`
+|true
+|If false will disable the default OTLP exporter at *build* time.
+|===
+
+If you need to enable or disable the exporter at runtime, you can use the <<sampler>> because it has the ability to filter out all the spans if needed.
+
 
 == Run the application
 
@@ -359,6 +385,7 @@ public class CustomConfiguration {
 
 By setting `quarkus.otel.traces.eusp.enabled=true` you can add information about the user related to each span. The user's ID and roles will be added to the span attributes, if available.
 
+[[sampler]]
 === Sampler
 A https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#sampling[sampler] decides whether a trace should be discarded or forwarded, effectively managing noise and reducing overhead by limiting the number of collected traces sent to the collector.
 

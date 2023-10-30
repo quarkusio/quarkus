@@ -13,10 +13,10 @@ import java.util.function.BooleanSupplier;
 
 import jakarta.inject.Singleton;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Query;
 
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.SimpleNaturalIdLoadAccess;
 import org.hibernate.annotations.NaturalId;
 import org.jboss.jandex.AnnotationInstance;
@@ -42,7 +42,10 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.orm.PersistenceUnit;
+import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
+import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
@@ -56,7 +59,7 @@ import io.quarkus.security.jpa.runtime.JpaTrustedIdentityProvider;
 class QuarkusSecurityJpaProcessor {
 
     private static final DotName DOTNAME_NATURAL_ID = DotName.createSimple(NaturalId.class.getName());
-    private static final DotName ENTITY_MANAGER_FACTORY_FACTORY = DotName.createSimple(EntityManagerFactory.class.getName());
+    private static final DotName SESSION_FACTORY_FACTORY = DotName.createSimple(SessionFactory.class.getName());
     private static final DotName JPA_IDENTITY_PROVIDER_NAME = DotName.createSimple(JpaIdentityProvider.class.getName());
     private static final DotName JPA_TRUSTED_IDENTITY_PROVIDER_NAME = DotName
             .createSimple(JpaTrustedIdentityProvider.class.getName());
@@ -68,19 +71,21 @@ class QuarkusSecurityJpaProcessor {
     }
 
     @BuildStep
-    void configureJpaAuthConfig(ApplicationIndexBuildItem index,
-            BuildProducer<GeneratedBeanBuildItem> beanProducer,
+    void configureJpaAuthConfig(ApplicationIndexBuildItem index, List<PersistenceUnitDescriptorBuildItem> puDescriptors,
+            BuildProducer<GeneratedBeanBuildItem> beanProducer, SecurityJpaBuildTimeConfig secJpaConfig,
             Optional<JpaSecurityDefinitionBuildItem> jpaSecurityDefinitionBuildItem,
             PanacheEntityPredicateBuildItem panacheEntityPredicate) {
 
         if (jpaSecurityDefinitionBuildItem.isPresent()) {
+            final boolean requireActiveCDIRequestContext = shouldActivateCDIReqCtx(puDescriptors, secJpaConfig);
             JpaSecurityDefinition jpaSecurityDefinition = jpaSecurityDefinitionBuildItem.get().get();
 
             generateIdentityProvider(index.getIndex(), jpaSecurityDefinition, jpaSecurityDefinition.passwordType(),
-                    jpaSecurityDefinition.customPasswordProvider(), beanProducer, panacheEntityPredicate);
+                    jpaSecurityDefinition.customPasswordProvider(), beanProducer, panacheEntityPredicate,
+                    requireActiveCDIRequestContext);
 
             generateTrustedIdentityProvider(index.getIndex(), jpaSecurityDefinition,
-                    beanProducer, panacheEntityPredicate);
+                    beanProducer, panacheEntityPredicate, requireActiveCDIRequestContext);
         }
     }
 
@@ -90,7 +95,7 @@ class QuarkusSecurityJpaProcessor {
 
             @Override
             public boolean appliesTo(Type requiredType) {
-                return requiredType.name().equals(ENTITY_MANAGER_FACTORY_FACTORY);
+                return requiredType.name().equals(SESSION_FACTORY_FACTORY);
             }
 
             public void transform(TransformationContext context) {
@@ -123,7 +128,8 @@ class QuarkusSecurityJpaProcessor {
 
     private void generateIdentityProvider(Index index, JpaSecurityDefinition jpaSecurityDefinition,
             AnnotationValue passwordTypeValue, AnnotationValue passwordProviderValue,
-            BuildProducer<GeneratedBeanBuildItem> beanProducer, PanacheEntityPredicateBuildItem panacheEntityPredicate) {
+            BuildProducer<GeneratedBeanBuildItem> beanProducer, PanacheEntityPredicateBuildItem panacheEntityPredicate,
+            boolean requireActiveCDIRequestContext) {
         GeneratedBeanGizmoAdaptor gizmoAdaptor = new GeneratedBeanGizmoAdaptor(beanProducer);
 
         String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaIdentityProviderImpl";
@@ -136,6 +142,10 @@ class QuarkusSecurityJpaProcessor {
             FieldDescriptor passwordProviderField = classCreator.getFieldCreator("passwordProvider", PasswordProvider.class)
                     .setModifiers(Modifier.PRIVATE)
                     .getFieldDescriptor();
+
+            if (requireActiveCDIRequestContext) {
+                activateCDIRequestContext(classCreator);
+            }
 
             try (MethodCreator methodCreator = classCreator.getMethodCreator("authenticate", SecurityIdentity.class,
                     EntityManager.class, UsernamePasswordAuthenticationRequest.class)) {
@@ -161,7 +171,8 @@ class QuarkusSecurityJpaProcessor {
     }
 
     private void generateTrustedIdentityProvider(Index index, JpaSecurityDefinition jpaSecurityDefinition,
-            BuildProducer<GeneratedBeanBuildItem> beanProducer, PanacheEntityPredicateBuildItem panacheEntityPredicate) {
+            BuildProducer<GeneratedBeanBuildItem> beanProducer, PanacheEntityPredicateBuildItem panacheEntityPredicate,
+            boolean requireActiveCDIRequestContext) {
         GeneratedBeanGizmoAdaptor gizmoAdaptor = new GeneratedBeanGizmoAdaptor(beanProducer);
 
         String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaTrustedIdentityProviderImpl";
@@ -174,6 +185,10 @@ class QuarkusSecurityJpaProcessor {
             try (MethodCreator methodCreator = classCreator.getMethodCreator("authenticate", SecurityIdentity.class,
                     EntityManager.class, TrustedAuthenticationRequest.class)) {
                 methodCreator.setModifiers(Modifier.PUBLIC);
+
+                if (requireActiveCDIRequestContext) {
+                    activateCDIRequestContext(classCreator);
+                }
 
                 ResultHandle username = methodCreator.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(TrustedAuthenticationRequest.class, "getPrincipal", String.class),
@@ -232,6 +247,30 @@ class QuarkusSecurityJpaProcessor {
                     methodCreator.getThis(), query2);
         }
         return user;
+    }
+
+    private static void activateCDIRequestContext(ClassCreator classCreator) {
+        try (MethodCreator methodCreator = classCreator.getMethodCreator("requireActiveCDIRequestContext",
+                DotName.createSimple(boolean.class.getName()).toString())) {
+            methodCreator.setModifiers(Modifier.PROTECTED);
+            methodCreator.returnBoolean(true);
+        }
+    }
+
+    private static boolean shouldActivateCDIReqCtx(List<PersistenceUnitDescriptorBuildItem> puDescriptors,
+            SecurityJpaBuildTimeConfig secJpaConfig) {
+        var descriptor = puDescriptors.stream()
+                .filter(desc -> secJpaConfig.persistenceUnitName().equals(desc.getPersistenceUnitName())).findFirst();
+        if (descriptor.isEmpty()) {
+            throw new ConfigurationException("Persistence unit '" + secJpaConfig.persistenceUnitName()
+                    + "' specified with the 'quarkus.security-jpa.persistence-unit-name' configuration property"
+                    + " does not exist. Please set valid persistence unit name.");
+        }
+        // 'io.quarkus.hibernate.orm.runtime.tenant.TenantResolver' is only resolved when CDI request context is active
+        // we need to active request context even when TenantResolver is @ApplicationScoped for tenant to be set
+        // see io.quarkus.hibernate.orm.runtime.tenant.HibernateCurrentTenantIdentifierResolver.resolveCurrentTenantIdentifier
+        // for more information
+        return descriptor.get().getConfig().getMultiTenancyStrategy() != MultiTenancyStrategy.NONE;
     }
 
     static final class EnabledIfNonDefaultPersistenceUnit implements BooleanSupplier {

@@ -36,6 +36,12 @@
         <dependency>
             <groupId>org.jboss.narayana.rts</groupId>
             <artifactId>lra-proxy-api</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jboss.resteasy</groupId>
+                    <artifactId>resteasy-client</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jboss.narayana.rts</groupId>

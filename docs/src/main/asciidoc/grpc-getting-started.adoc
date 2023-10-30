@@ -99,10 +99,6 @@ If this retrieved version does not work in your context, you can either force to
 You can also download the suitable binary and specify the location via
 `-Dquarkus.grpc.protoc-path=/path/to/protoc`.
 
-
-Alternatively to using the `generate-code` goal of the `quarkus-maven-plugin`, you can use `protobuf-maven-plugin` to generate these files.
-See the <<grpc-generation-reference.adoc#protobuf-maven-plugin>> section for more information.
-
 Let's start with a simple _Hello_ service.
 Create the `src/main/proto/helloworld.proto` file with the following content:
 

@@ -63,6 +63,7 @@ import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.utilities.JavaBinFinder;
 
@@ -365,6 +366,7 @@ public class QuarkusProdModeTest
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        TestConfigUtil.cleanUp();
         ensureNoInjectAnnotationIsUsed(extensionContext.getRequiredTestClass());
         ExclusivityChecker.checkTestType(extensionContext, QuarkusProdModeTest.class);
 
@@ -434,9 +436,8 @@ public class QuarkusProdModeTest
                     .setProjectRoot(testLocation)
                     .setTargetDirectory(buildDir)
                     .setForcedDependencies(forcedDependencies);
-            if (applicationName != null) {
-                builder.setBaseName(applicationName);
-            }
+            builder.setBaseName(applicationName != null ? applicationName
+                    : extensionContext.getDisplayName() + " (QuarkusProdModeTest)");
 
             Map<String, Object> buildContext = new HashMap<>();
             buildContext.put(BUILD_CONTEXT_CUSTOM_SOURCES_PATH_KEY, customSourcesDir);
@@ -758,6 +759,8 @@ public class QuarkusProdModeTest
             if ((outputDir != null) && !preventOutputDirCleanup) {
                 FileUtil.deleteDirectory(outputDir);
             }
+
+            TestConfigUtil.cleanUp();
         }
     }
 

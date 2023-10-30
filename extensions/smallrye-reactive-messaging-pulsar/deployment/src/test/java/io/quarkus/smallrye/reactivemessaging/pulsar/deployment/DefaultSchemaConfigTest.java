@@ -23,7 +23,6 @@ import org.apache.pulsar.client.api.Messages;
 import org.apache.pulsar.client.api.Schema;
 import org.assertj.core.groups.Tuple;
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -47,6 +46,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.pulsar.SchemaProviderRecorder;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
 import io.smallrye.common.annotation.Identifier;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -125,9 +125,9 @@ public class DefaultSchemaConfigTest {
 
             assertThat(syntheticBean.alreadyGeneratedSchema).containsExactlyInAnyOrderEntriesOf(generatedSchemas);
         } finally {
-            // must not leak the Config instance associated to the system classloader
+            // must not leak the lazily-initialized Config instance associated to the system classloader
             if (customConfig == null) {
-                ConfigProviderResolver.instance().releaseConfig(discovery.getConfig());
+                QuarkusConfigFactory.setConfig(null);
             }
         }
     }

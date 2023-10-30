@@ -256,7 +256,7 @@ public class JarClassPathElement implements ClassPathElement {
     }
 
     @Override
-    public ProtectionDomain getProtectionDomain(ClassLoader classLoader) {
+    public ProtectionDomain getProtectionDomain() {
         final URL url;
         try {
             url = jarPath.toURI().toURL();
@@ -264,7 +264,7 @@ public class JarClassPathElement implements ClassPathElement {
             throw new RuntimeException("Unable to create protection domain for " + jarPath, e);
         }
         CodeSource codesource = new CodeSource(url, (Certificate[]) null);
-        return new ProtectionDomain(codesource, null, classLoader, null);
+        return new ProtectionDomain(codesource, null, null, null);
     }
 
     @Override

@@ -131,6 +131,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private volatile boolean driverLoaded;
 
     private QuarkusClassLoader(Builder builder) {
+        // Not passing the name to the parent constructor on purpose:
+        // stacktraces become very ugly if we do that.
         super(builder.parent);
         this.name = builder.name;
         this.elements = builder.elements;
@@ -504,7 +506,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                         byte[] data = classPathElementResource.getData();
                         definePackage(name, classPathElement);
                         Class<?> cl = defineClass(name, data, 0, data.length,
-                                protectionDomains.computeIfAbsent(classPathElement, (ce) -> ce.getProtectionDomain(this)));
+                                protectionDomains.computeIfAbsent(classPathElement, ClassPathElement::getProtectionDomain));
                         if (Driver.class.isAssignableFrom(cl)) {
                             driverLoaded = true;
                         }

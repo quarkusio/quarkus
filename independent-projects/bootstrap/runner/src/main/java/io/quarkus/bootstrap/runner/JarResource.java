@@ -52,7 +52,7 @@ public class JarResource implements ClassLoadingResource {
     }
 
     @Override
-    public void init(ClassLoader runnerClassLoader) {
+    public void init() {
         final URL url;
         try {
             String path = jarPath.toAbsolutePath().toString();
@@ -64,7 +64,7 @@ public class JarResource implements ClassLoadingResource {
         } catch (URISyntaxException | MalformedURLException e) {
             throw new RuntimeException("Unable to create protection domain for " + jarPath, e);
         }
-        this.protectionDomain = new ProtectionDomain(new CodeSource(url, (Certificate[]) null), null, runnerClassLoader, null);
+        this.protectionDomain = new ProtectionDomain(new CodeSource(url, (Certificate[]) null), null);
     }
 
     @Override

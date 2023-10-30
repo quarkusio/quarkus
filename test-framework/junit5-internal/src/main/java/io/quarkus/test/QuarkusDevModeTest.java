@@ -54,6 +54,7 @@ import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
+import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
@@ -228,6 +229,7 @@ public class QuarkusDevModeTest
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
+        TestConfigUtil.cleanUp();
         GroovyClassValue.disable();
         //set the right launch mode in the outer CL, used by the HTTP host config source
         ProfileManager.setLaunchMode(LaunchMode.DEVELOPMENT);
@@ -292,6 +294,7 @@ public class QuarkusDevModeTest
             Path projectSourceParent = projectSourceRoot.getParent();
 
             DevModeContext context = exportArchive(deploymentDir, projectSourceRoot, projectSourceParent);
+            context.setBaseName(extensionContext.getDisplayName() + " (QuarkusDevModeTest)");
             context.setArgs(commandLineArgs);
             context.setTest(true);
             context.setAbortOnFailedStart(!allowFailedStart);
@@ -323,6 +326,7 @@ public class QuarkusDevModeTest
         inMemoryLogHandler.clearRecords();
         inMemoryLogHandler.setFilter(null);
         ClearCache.clearAnnotationCache();
+        TestConfigUtil.cleanUp();
     }
 
     @Override

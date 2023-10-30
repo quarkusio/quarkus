@@ -58,8 +58,8 @@ public class FilteredClassPathElement implements ClassPathElement {
     }
 
     @Override
-    public ProtectionDomain getProtectionDomain(ClassLoader classLoader) {
-        return delegate.getProtectionDomain(classLoader);
+    public ProtectionDomain getProtectionDomain() {
+        return delegate.getProtectionDomain();
     }
 
     @Override

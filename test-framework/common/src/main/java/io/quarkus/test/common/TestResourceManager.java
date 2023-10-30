@@ -179,6 +179,13 @@ public class TestResourceManager implements Closeable {
                 throw new RuntimeException("Unable to stop Quarkus test resource " + entry.getTestResource(), e);
             }
         }
+        // TODO using QuarkusConfigFactory.setConfig(null) here makes continuous testing fail,
+        //   e.g. in io.quarkus.hibernate.orm.HibernateHotReloadTestCase
+        //   or io.quarkus.opentelemetry.deployment.OpenTelemetryContinuousTestingTest;
+        //   maybe this cleanup is not really necessary and just "doesn't hurt" because
+        //   the released config is still cached in QuarkusConfigFactory#config
+        //   and will be restored soon after when QuarkusConfigFactory#getConfigFor is called?
+        //   In that case we should remove this cleanup.
         try {
             ((SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver.instance())
                     .releaseConfig(Thread.currentThread().getContextClassLoader());

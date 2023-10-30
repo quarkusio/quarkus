@@ -21,13 +21,10 @@ import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -42,7 +39,6 @@ public class RestClientBaseTest {
 
     private static Path truststorePath;
     private static Path keystorePath;
-    private static Config createdConfig;
 
     @BeforeAll
     public static void beforeAll() throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
@@ -62,14 +58,6 @@ public class RestClientBaseTest {
             KeyStore keystore = KeyStore.getInstance("JKS");
             keystore.load(null, KEYSTORE_PASSWORD.toCharArray());
             keystore.store(keystoreOs, KEYSTORE_PASSWORD.toCharArray());
-        }
-    }
-
-    @AfterEach
-    public void afterEach() {
-        if (createdConfig != null) {
-            ConfigProviderResolver.instance().releaseConfig(createdConfig);
-            createdConfig = null;
         }
     }
 

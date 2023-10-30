@@ -1971,12 +1971,19 @@ First, add the following dependency to your application:
     <groupId>io.strimzi</groupId>
     <artifactId>kafka-oauth-client</artifactId>
 </dependency>
+<!-- if compiling to native you'd need also the following dependency -->
+<dependency>
+    <groupId>io.strimzi</groupId>
+    <artifactId>kafka-oauth-common</artifactId>
+</dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
 implementation("io.strimzi:kafka-oauth-client")
+// if compiling to native you'd need also the following dependency
+implementation("io.strimzi:kafka-oauth-common")
 ----
 
 This dependency provides the callback handler required to handle the OAuth workflow.

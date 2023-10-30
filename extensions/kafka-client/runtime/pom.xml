@@ -37,6 +37,11 @@
             <artifactId>quarkus-kubernetes-service-binding</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>io.strimzi</groupId>
+            <artifactId>kafka-oauth-common</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

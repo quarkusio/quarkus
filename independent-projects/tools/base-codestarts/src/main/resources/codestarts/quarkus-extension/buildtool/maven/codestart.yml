@@ -1,3 +1,0 @@
-name: maven
-type: buildtool
-fallback: true

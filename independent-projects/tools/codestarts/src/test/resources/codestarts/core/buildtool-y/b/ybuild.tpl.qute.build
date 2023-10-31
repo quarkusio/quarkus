@@ -1,7 +1,0 @@
-prepend
-
-{#include ybuild-layout}
-{#foo}
-foob
-{/foo}
-{/include}

@@ -1,7 +1,0 @@
-sql:
-  max_pool_size: 100
-  max_idle_time_seconds: 200
-  name: defaultName
-  user: defaultUser
-  password: defaultPassword
-  type: DEFAULT_TYPE

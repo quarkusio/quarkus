@@ -1,8 +1,0 @@
-plugins {
-    id 'io.quarkus'
-}
-
-dependencies {
-    testImplementation project(":common")
-    testImplementation project(":custom-filesystem-provider")
-}

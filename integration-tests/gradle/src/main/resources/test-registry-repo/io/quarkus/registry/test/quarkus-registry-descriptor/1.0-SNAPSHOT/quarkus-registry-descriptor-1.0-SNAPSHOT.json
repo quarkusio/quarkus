@@ -1,8 +1,0 @@
-{
-  "platforms" : {
-    "artifact" : "io.quarkus.registry.test:quarkus-platforms::json:1.0-SNAPSHOT"
-  },
-  "non-platform-extensions" : {
-    "disabled" : true
-  }
-}

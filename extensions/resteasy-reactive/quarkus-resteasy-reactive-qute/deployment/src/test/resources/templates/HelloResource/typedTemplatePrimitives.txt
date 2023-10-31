@@ -1,1 +1,0 @@
-Byte: {b} Short: {s} Int: {i} Long: {l} Char: {c} Boolean: {bool} Float: {f} Double: {d}

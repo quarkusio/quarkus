@@ -1,2 +1,0 @@
-io.quarkus.extest.runtime.config.rename.RenameConfigSourceFactory
-io.quarkus.extest.runtime.config.unknown.UnknownBuildPropertyConfigSourceFactory

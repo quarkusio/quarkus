@@ -1,5 +1,0 @@
----
-registries:
-- registry.acme.org:
-    enabled: false
-- registry.quarkus.io

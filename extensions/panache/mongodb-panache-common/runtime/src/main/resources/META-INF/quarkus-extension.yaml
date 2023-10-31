@@ -1,5 +1,0 @@
----
-artifact: ${project.groupId}:${project.artifactId}:${project.version}
-name: "MongoDB Panache Common module"
-metadata:
-  unlisted: true

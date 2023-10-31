@@ -1,1 +1,0 @@
-select id, name from liquibase where id > 1

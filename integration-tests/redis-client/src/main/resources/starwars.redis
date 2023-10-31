@@ -1,6 +1,0 @@
-HSET people:1 firstName "luke" lastName "skywalker"
-HSET people:2 firstName "leia" lastName "organa"
-HSET people:3 firstName "anakin" lastName "skywalker"
-HSET people:4 firstName "c-3po" lastName ""
-HSET people:5 firstName "r2-d2" lastName ""
-HSET people:6 firstName "owen" lastName "lars"

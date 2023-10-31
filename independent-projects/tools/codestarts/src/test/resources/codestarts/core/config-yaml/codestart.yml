@@ -1,7 +1,0 @@
-name: config-yaml
-type: config
-language:
-  base:
-    shared-data:
-      config:
-        file-name: application.yml

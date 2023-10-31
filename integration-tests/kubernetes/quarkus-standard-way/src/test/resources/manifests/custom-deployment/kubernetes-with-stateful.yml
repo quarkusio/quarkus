@@ -1,8 +1,0 @@
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: kubernetes-with-input-statefulset-resource
-spec:
-  selector:
-    matchLabels:
-      custom-label: my-label

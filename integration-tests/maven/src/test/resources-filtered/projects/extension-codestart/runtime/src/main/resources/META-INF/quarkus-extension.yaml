@@ -1,7 +1,0 @@
-name: Acme
-metadata:
-  codestart:
-    name: "acme-code"
-    languages:
-      - "java"
-    artifact: "org.acme.quarkus:acme-quarkus:codestart:\${project.version}"

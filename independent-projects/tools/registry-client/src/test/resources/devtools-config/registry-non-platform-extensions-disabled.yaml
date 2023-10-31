@@ -1,5 +1,0 @@
----
-registries:
-- registry.acme.org:
-    non-platform-extensions:
-      disabled: true

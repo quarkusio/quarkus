@@ -1,4 +1,0 @@
----
-registries:
-- registry.acme.org:
-    update-policy: "always"

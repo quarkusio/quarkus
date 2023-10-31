@@ -1,7 +1,0 @@
----
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: kubernetes-with-existing-cronjob-resource
-spec:
-  schedule: 0 0 0 0 *

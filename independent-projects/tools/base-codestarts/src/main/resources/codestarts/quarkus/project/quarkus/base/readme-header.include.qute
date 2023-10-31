@@ -1,7 +1,0 @@
-### {title}
-
-{description}
-{#if related-guide-section}
-
-[Related guide section...]({related-guide-section})
-{/if}

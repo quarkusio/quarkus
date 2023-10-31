@@ -1,3 +1,0 @@
-INSERT INTO test_user (id, username, password, role) VALUES (1, 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'admin');
-INSERT INTO test_user (id, username, password, role) VALUES (2, 'user','04f8996da763b7a969b1028ee3007569eaf3a635486ddab211d512c85b9df8fb', 'user');
-INSERT INTO test_user (id, username, password, role) VALUES (3, 'noRoleUser','bc84dfdb831a33641357ef365ddafd8d2c2d190242893355dab9b33067e99083', '');

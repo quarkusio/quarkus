@@ -1,2 +1,0 @@
-io.quarkus.rest.client.reactive.runtime.spi.JsonMissingMessageBodyReaderErrorMessageContextualizer
-io.quarkus.rest.client.reactive.runtime.spi.XmlMissingMessageBodyReaderErrorMessageContextualizer

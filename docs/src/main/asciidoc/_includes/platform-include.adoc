@@ -1,4 +1,0 @@
-[NOTE]
-====
-This extension is developed by a third party and is part of the Quarkus Platform.
-====

@@ -1,7 +1,0 @@
-.gitignore
-/
-README.md
-jbang
-jbang.cmd
-src/
-src/main.java

@@ -1,5 +1,0 @@
----
-artifact: ${project.groupId}:${project.artifactId}:${project.version}
-name: "Keycloak Admin Client Common"
-metadata:
-  unlisted: true # should be only used as a part of the Keycloak Admin Client (Reactive)

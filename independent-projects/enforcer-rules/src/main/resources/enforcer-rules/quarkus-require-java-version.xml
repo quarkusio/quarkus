@@ -1,7 +1,0 @@
-<enforcer>
-    <rules>
-        <requireJavaVersion>
-            <version>[${maven.compiler.release},)</version>
-        </requireJavaVersion>
-    </rules>
-</enforcer>

@@ -1,5 +1,0 @@
----
-artifact: ${project.groupId}:${project.artifactId}:${project.version}
-name: "Spring Web RESTEasy Classic"
-metadata:
-  unlisted: true

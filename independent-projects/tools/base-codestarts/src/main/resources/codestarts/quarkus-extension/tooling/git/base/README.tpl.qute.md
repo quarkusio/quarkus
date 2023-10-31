@@ -1,3 +1,0 @@
-# {extension.full-name}
-
-This is a Quarkus Extension for ...

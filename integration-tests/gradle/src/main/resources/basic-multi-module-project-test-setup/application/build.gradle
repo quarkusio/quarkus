@@ -1,9 +1,0 @@
-plugins {
-    id 'io.quarkus'
-}
-
-dependencies {
-    implementation project(":common-one")
-    implementation project(":common-two")
-
-}

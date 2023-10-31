@@ -2982,6 +2982,10 @@ public class RuntimeResource {
      }
 }
 ----
+[IMPORTANT]
+====
+This feature does not work when using native build.
+====
 
 
 == RESTEasy Reactive client

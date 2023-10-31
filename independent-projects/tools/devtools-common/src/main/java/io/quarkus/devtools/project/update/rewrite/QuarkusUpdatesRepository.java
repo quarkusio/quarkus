@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +57,7 @@ public final class QuarkusUpdatesRepository {
             final Artifact artifact = artifactResolver.resolve(DependencyUtils.toArtifact(gav)).getArtifact();
             final ResourceLoader resourceLoader = ResourceLoaders.resolveFileResourceLoader(
                     artifact.getFile());
-            final List<String> recipes = fetchRecipesAsList(resourceLoader, "quarkus-updates", recipeDirectoryNames);
+            final Map<String, String> recipes = fetchUpdateRecipes(resourceLoader, "quarkus-updates", recipeDirectoryNames);
             final Properties props = resourceLoader.loadResourceAsPath("quarkus-updates/", p -> {
                 final Properties properties = new Properties();
                 final Path propPath = p.resolve("recipes.properties");
@@ -78,7 +79,7 @@ public final class QuarkusUpdatesRepository {
                     buildTool,
                     propRewritePluginVersion));
             return new FetchResult(artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion(),
-                    recipes, propRewritePluginVersion);
+                    new ArrayList<>(recipes.values()), propRewritePluginVersion);
         } catch (BootstrapMavenException e) {
             throw new RuntimeException("Failed to resolve artifact: " + gav, e);
         } catch (IOException e) {
@@ -133,38 +134,55 @@ public final class QuarkusUpdatesRepository {
         return currentAVersion.compareTo(recipeAVersion) < 0 && targetAVersion.compareTo(recipeAVersion) >= 0;
     }
 
-    static List<String> fetchRecipesAsList(ResourceLoader resourceLoader, String location,
+    static Map<String, String> fetchUpdateRecipes(ResourceLoader resourceLoader, String location,
             Map<String, String[]> recipeDirectoryNames) throws IOException {
         return resourceLoader.loadResourceAsPath(location,
                 path -> {
                     try (final Stream<Path> pathStream = Files.walk(path)) {
                         return pathStream
                                 .filter(Files::isDirectory)
-                                .flatMap(dir -> {
-                                    String key = toKey(path.relativize(dir).toString());
-                                    String versions[] = recipeDirectoryNames.get(key);
-                                    if (versions != null && versions.length != 0) {
-                                        try {
-                                            Stream<Path> recipePath = Files.walk(dir);
-                                            return recipePath
-                                                    .filter(p -> p.getFileName().toString().matches("^\\d\\H+.ya?ml$"))
-                                                    .filter(p -> shouldApplyRecipe(p.getFileName().toString(),
-                                                            versions[0], versions[1]))
-                                                    .map(p -> {
-                                                        try {
-                                                            return new String(Files.readAllBytes(p));
-                                                        } catch (IOException e) {
-                                                            throw new RuntimeException("Error reading file: " + p, e);
-                                                        }
-                                                    })
-                                                    .onClose(() -> recipePath.close());
-                                        } catch (IOException e) {
-                                            throw new RuntimeException("Error traversing directory: " + dir, e);
-                                        }
-                                    }
-                                    return null;
-
-                                }).filter(Objects::nonNull).collect(Collectors.toList());
+                                .flatMap(dir -> applyStartsWith(toKey(path, dir), recipeDirectoryNames).stream()
+                                        .flatMap(key -> {
+                                            String versions[] = recipeDirectoryNames.get(key);
+                                            if (versions != null && versions.length != 0) {
+                                                try {
+                                                    Stream<Path> recipePath = Files.walk(dir);
+                                                    return recipePath
+                                                            .filter(p -> p.getFileName().toString()
+                                                                    .matches("^\\d\\H+.ya?ml$"))
+                                                            .filter(p -> shouldApplyRecipe(p.getFileName().toString(),
+                                                                    versions[0], versions[1]))
+                                                            .map(p -> {
+                                                                try {
+                                                                    return new String[] { p.toString(),
+                                                                            new String(Files.readAllBytes(p)) };
+                                                                } catch (IOException e) {
+                                                                    throw new RuntimeException("Error reading file: " + p,
+                                                                            e);
+                                                                }
+                                                            })
+                                                            .onClose(() -> recipePath.close());
+                                                } catch (IOException e) {
+                                                    throw new RuntimeException("Error traversing directory: " + dir, e);
+                                                }
+                                            }
+                                            return null;
+                                        }))
+                                .filter(Objects::nonNull)
+                                //results are collected to the map, because there could be duplicated matches in case of wildcard matching
+                                .collect(Collectors.toMap(
+                                        sa -> sa[0],
+                                        sa -> sa[1],
+                                        (v1, v2) -> {
+                                            //Recipe with the same path already loaded. This can happen because of wildcards
+                                            //in case the content differs (which can not happen in the current impl),
+                                            //content is amended
+                                            if (!v1.equals(v2)) {
+                                                return v1 + "\n" + v2;
+                                            }
+                                            return v1;
+                                        },
+                                        LinkedHashMap::new));
                     } catch (IOException e) {
                         throw new RuntimeException("Error traversing base directory", e);
                     }
@@ -177,9 +195,20 @@ public final class QuarkusUpdatesRepository {
                 dep.getCurrentDep().getArtifact().getArtifactId());
     }
 
-    static String toKey(String directory) {
-        return directory
+    static String toKey(Path parentDir, Path recipeDir) {
+        var _path = parentDir.relativize(recipeDir).toString();
+        return _path
                 .replaceAll("(^[/\\\\])|([/\\\\]$)", "")
                 .replaceAll("[/\\\\]", ":");
     }
+
+    static List<String> applyStartsWith(String key, Map<String, String[]> recipeDirectoryNames) {
+        //list for all keys, that matches dir (could be more items in case of wildcard at the end
+        List<String> matchedRecipeKeys;
+        //Current implementation detects whether key starts with an existing recipe folder
+        return recipeDirectoryNames.keySet().stream()
+                .filter(k -> k.startsWith(key))
+                .collect(Collectors.toList());
+    }
+
 }

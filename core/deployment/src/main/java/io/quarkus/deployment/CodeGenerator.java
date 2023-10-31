@@ -361,39 +361,36 @@ public class CodeGenerator {
     private static Map<String, List<String>> getUnavailableConfigServices(ResolvedDependency dep, ClassLoader classLoader)
             throws CodeGenException {
         try (OpenPathTree openTree = dep.getContentTree().open()) {
-            return openTree.apply(META_INF_SERVICES, visit -> {
+            var unavailableServices = new HashMap<String, List<String>>();
+            openTree.apply(META_INF_SERVICES, visit -> {
                 if (visit == null) {
-                    // the application module does not include META-INF/services entry
-                    return Map.of();
+                    // the application module does not include META-INF/services entry. Return `null` here, to let
+                    // MultiRootPathTree.apply() look into all roots.
+                    return null;
                 }
-                Map<String, List<String>> unavailableServices = Map.of();
                 var servicesDir = visit.getPath();
                 for (String serviceClass : CONFIG_SERVICES) {
                     var serviceFile = servicesDir.resolve(serviceClass);
                     if (!Files.exists(serviceFile)) {
                         continue;
                     }
-                    final List<String> implList;
+                    var unavailableList = unavailableServices.computeIfAbsent(META_INF_SERVICES + serviceClass,
+                            k -> new ArrayList<>());
                     try {
-                        implList = Files.readAllLines(serviceFile);
+                        Files.readAllLines(serviceFile).stream()
+                                .map(String::trim)
+                                // skip comments and empty lines
+                                .filter(line -> !line.startsWith("#") && !line.isEmpty())
+                                .filter(className -> classLoader.getResource(className.replace('.', '/') + ".class") == null)
+                                .forEach(unavailableList::add);
                     } catch (IOException e) {
                         throw new UncheckedIOException("Failed to read " + serviceFile, e);
                     }
-                    final List<String> unavailableList = new ArrayList<>(implList.size());
-                    for (String impl : implList) {
-                        if (classLoader.getResource(impl.replace('.', '/') + ".class") == null) {
-                            unavailableList.add(impl);
-                        }
-                    }
-                    if (!unavailableList.isEmpty()) {
-                        if (unavailableServices.isEmpty()) {
-                            unavailableServices = new HashMap<>();
-                        }
-                        unavailableServices.put(META_INF_SERVICES + serviceClass, unavailableList);
-                    }
                 }
-                return unavailableServices;
+                // Always return null to let MultiRootPathTree.apply() look into all roots.
+                return null;
             });
+            return unavailableServices;
         } catch (IOException e) {
             throw new CodeGenException("Failed to read " + dep.getResolvedPaths(), e);
         }

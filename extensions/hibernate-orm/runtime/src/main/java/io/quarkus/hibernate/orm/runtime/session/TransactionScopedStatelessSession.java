@@ -402,6 +402,13 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
+    public Object getTenantIdentifierValue() {
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getTenantIdentifierValue();
+        }
+    }
+
+    @Override
     public boolean isConnected() {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {

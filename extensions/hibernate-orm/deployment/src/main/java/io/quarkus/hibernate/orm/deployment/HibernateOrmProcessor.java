@@ -182,9 +182,9 @@ public final class HibernateOrmProcessor {
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MSSQL,
                 "org.hibernate.dialect.SQLServerDialect", DialectVersions.Defaults.MSSQL));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MYSQL,
-                "org.hibernate.dialect.MySQLDialect", DialectVersions.Defaults.MYSQL));
+                "org.hibernate.dialect.MySQLDialect"));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.ORACLE,
-                "org.hibernate.dialect.OracleDialect", DialectVersions.Defaults.ORACLE));
+                "org.hibernate.dialect.OracleDialect"));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.POSTGRESQL,
                 "org.hibernate.dialect.PostgreSQLDialect"));
     }

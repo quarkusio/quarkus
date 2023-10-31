@@ -144,9 +144,4 @@ public interface UniAsserter {
      * Clear the test data.
      */
     void clearData();
-
-    /**
-     * @return a {@link Uni} representing the operations pipeline up to this point
-     */
-    Uni<?> asUni();
 }

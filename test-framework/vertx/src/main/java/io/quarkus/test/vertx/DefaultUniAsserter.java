@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Assertions;
 
 import io.smallrye.mutiny.Uni;
 
-public final class DefaultUniAsserter implements UniAsserter {
+public final class DefaultUniAsserter implements UnwrappableUniAsserter {
 
     private final ConcurrentMap<String, Object> data;
 

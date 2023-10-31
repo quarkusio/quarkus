@@ -65,7 +65,7 @@ import io.smallrye.mutiny.Uni;
  * </pre>
  *
  */
-public abstract class UniAsserterInterceptor implements UniAsserter {
+public abstract class UniAsserterInterceptor implements UnwrappableUniAsserter {
 
     private final UniAsserter delegate;
 
@@ -192,6 +192,6 @@ public abstract class UniAsserterInterceptor implements UniAsserter {
 
     @Override
     public Uni<?> asUni() {
-        return delegate.asUni();
+        return ((UnwrappableUniAsserter) delegate).asUni();
     }
 }

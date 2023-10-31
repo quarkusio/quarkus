@@ -122,6 +122,11 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     }
 
     @Override
+    public Object getTenantIdentifierValue() {
+        return delegate.get().getTenantIdentifier();
+    }
+
+    @Override
     public boolean isOpen() {
         return delegate.get().isOpen();
     }

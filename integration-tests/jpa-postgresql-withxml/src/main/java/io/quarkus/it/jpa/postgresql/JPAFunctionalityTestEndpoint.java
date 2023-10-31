@@ -268,8 +268,8 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
                 throw new AssertionError(
                         "Our custom XML format mapper throws exceptions. So we were expecting flush to fail, but it did not!");
             }
-            if (!(exception.getCause() instanceof UnsupportedOperationException)
-                    || !exception.getCause().getMessage().contains("I cannot convert anything to XML")) {
+            if (!(exception instanceof UnsupportedOperationException)
+                    || !exception.getMessage().contains("I cannot convert anything to XML")) {
                 throw new AssertionError("flush failed for a different reason than expected.", exception);
             }
         }

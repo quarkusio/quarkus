@@ -156,7 +156,7 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         private final Object testInstance;
         private final Method targetMethod;
         private final List<Object> methodArgs;
-        private final UniAsserter uniAsserter;
+        private final UnwrappableUniAsserter uniAsserter;
         private final CompletableFuture<Object> future;
 
         public RunTestMethodOnVertxEventLoopContextHandler(Object testInstance, Method targetMethod, List<Object> methodArgs,
@@ -165,7 +165,7 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
             this.future = future;
             this.targetMethod = targetMethod;
             this.methodArgs = methodArgs;
-            this.uniAsserter = uniAsserter;
+            this.uniAsserter = (UnwrappableUniAsserter) uniAsserter;
         }
 
         @Override
@@ -219,14 +219,14 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         private final Object testInstance;
         private final Method targetMethod;
         private final List<Object> methodArgs;
-        private final UniAsserter uniAsserter;
+        private final UnwrappableUniAsserter uniAsserter;
 
         public RunTestMethodOnVertxBlockingContextHandler(Object testInstance, Method targetMethod, List<Object> methodArgs,
                 UniAsserter uniAsserter) {
             this.testInstance = testInstance;
             this.targetMethod = targetMethod;
             this.methodArgs = methodArgs;
-            this.uniAsserter = uniAsserter;
+            this.uniAsserter = (UnwrappableUniAsserter) uniAsserter;
         }
 
         @Override

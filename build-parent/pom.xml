@@ -72,7 +72,7 @@
         <!-- MicroProfile TCK versions used to be defined here but have moved to the concrete tck modules -->
 
         <!-- Antlr 4 is used by the PanacheQL parser but also needs to match the requirements of Hibernate ORM 6.x-->
-        <antlr.version>4.10.1</antlr.version>
+        <antlr.version>4.13.0</antlr.version>
 
         <!-- SELinux access label, used when mounting local volumes into containers in tests -->
         <volume.access.modifier>:Z</volume.access.modifier>

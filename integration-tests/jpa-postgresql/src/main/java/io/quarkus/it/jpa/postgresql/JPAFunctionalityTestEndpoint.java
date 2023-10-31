@@ -226,8 +226,8 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
                 throw new AssertionError(
                         "Default mapper cannot process date/time properties. So we were expecting flush to fail, but it did not!");
             }
-            if (!(exception.getCause() instanceof UnsupportedOperationException)
-                    || !exception.getCause().getMessage().contains("I cannot convert anything to JSON")) {
+            if (!(exception instanceof UnsupportedOperationException)
+                    || !exception.getMessage().contains("I cannot convert anything to JSON")) {
                 throw new AssertionError("flush failed for a different reason than expected.", exception);
             }
         }

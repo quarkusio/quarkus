@@ -1143,6 +1143,13 @@ public class TransactionScopedSession implements Session {
     }
 
     @Override
+    public Object getTenantIdentifierValue() {
+        try (SessionResult emr = acquireSession()) {
+            return emr.session.getTenantIdentifierValue();
+        }
+    }
+
+    @Override
     public boolean isConnected() {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {

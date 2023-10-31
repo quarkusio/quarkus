@@ -8,10 +8,9 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 
 @QuarkusTest
-public class LambdaHandlerTest {
-
+class LambdaHandlerTest {
     @Test
-    public void testSimpleLambdaSuccess() throws Exception {
+    void testSimpleLambdaSuccess() throws Exception {
         // you test your lambdas by invoking on http://localhost:8081
         // this works in dev mode too
 

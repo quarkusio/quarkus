@@ -540,7 +540,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         String[] values = annotation.value().asStringArray();
 
         if (values.length == 0) {
-            log.warnv("Ignoring ClientHeaderParam that specifies an empty array of header values for header {} on {}",
+            log.warnv("Ignoring ClientHeaderParam that specifies an empty array of header values for header {0} on {1}",
                     annotation.value("name").asString(), annotation.target());
             return;
         }

@@ -130,7 +130,7 @@ class ForwardedParser {
 
                 matcher = FORWARDED_FOR_PATTERN.matcher(forwarded);
                 if (matcher.find()) {
-                    remoteAddress = parseFor(matcher.group(1).trim(), remoteAddress.port());
+                    remoteAddress = parseFor(matcher.group(1).trim(), remoteAddress != null ? remoteAddress.port() : port);
                 }
             } else if (forwardingProxyOptions.allowXForwarded) {
                 String protocolHeader = delegate.getHeader(X_FORWARDED_PROTO);
@@ -167,7 +167,7 @@ class ForwardedParser {
 
                 String forHeader = delegate.getHeader(X_FORWARDED_FOR);
                 if (forHeader != null) {
-                    remoteAddress = parseFor(getFirstElement(forHeader), remoteAddress.port());
+                    remoteAddress = parseFor(getFirstElement(forHeader), remoteAddress != null ? remoteAddress.port() : port);
                 }
             }
         }

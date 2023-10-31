@@ -45,7 +45,11 @@ public class ForwardedProxyHandler implements Handler<HttpServerRequest> {
 
     @Override
     public void handle(HttpServerRequest event) {
-        if (event.remoteAddress().isDomainSocket()) {
+        if (event.remoteAddress() == null) {
+            // client address may not be available with virtual http channel
+            LOGGER.debug("Client address is not available, 'Forwarded' and 'X-Forwarded' headers are going to be ignored");
+            handleForwardedServerRequest(event, denyAll());
+        } else if (event.remoteAddress().isDomainSocket()) {
             // we do not support domain socket proxy checks, ignore the headers
             LOGGER.debug("Domain socket are not supported, 'Forwarded' and 'X-Forwarded' headers are going to be ignored");
             handleForwardedServerRequest(event, denyAll());
@@ -75,7 +79,7 @@ public class ForwardedProxyHandler implements Handler<HttpServerRequest> {
                     new Handler<AsyncResult<String>>() {
                         @Override
                         public void handle(AsyncResult<String> stringAsyncResult) {
-                            if (stringAsyncResult.succeeded()) {
+                            if (stringAsyncResult.succeeded() && stringAsyncResult.result() != null) {
                                 var trustedIP = Inet.parseInetAddress(stringAsyncResult.result());
                                 if (trustedIP != null) {
                                     // create proxy check for resolved IP and proceed with the lookup

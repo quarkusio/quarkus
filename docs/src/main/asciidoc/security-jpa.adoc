@@ -125,12 +125,15 @@ As such, we do not need dedicated columns to keep them.
 In cryptography, a salt is a name for random data used as an additional input to a one-way function that hashes data, a password, or a passphrase.
 ====
 
-For manual password hashing, create a class that implements the `CustomPasswordProvider`as shown in the example below.
+To represent passwords stored in the database which were hashed using different hashing algorithms, create a class that implements `org.wildfly.security.password.PasswordProvider` as shown in the example below.
 
-The following snippet shows how to set a custom password provider that uses the SHA256 hashing algorithm.
+The following snippet shows how to set a custom password provider that represents a password which was hashed with the SHA256 hashing algorithm.
 
 [source,java]
 ----
+import org.wildfly.security.password.Password;
+import org.wildfly.security.password.PasswordProvider;
+
 @UserDefinition
 @Table(name = "test_user")
 @Entity
@@ -153,8 +156,10 @@ public class CustomPasswordUserEntity {
 
 public class CustomPasswordProvider implements PasswordProvider {
     @Override
-    public Password getPassword(String pass) {
-        byte[] digest = DatatypeConverter.parseHexBinary(pass);
+    public Password getPassword(String passwordInDatabase) {
+        byte[] digest = DatatypeConverter.parseHexBinary(passwordInDatabase);
+
+        // Let the security runtime know that this passwordInDatabase is hashed using the SHA256 hashing algorithm
         return SimpleDigestPassword.createRaw(SimpleDigestPassword.ALGORITHM_SIMPLE_DIGEST_SHA_256, digest);
     }
 }

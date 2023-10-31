@@ -3,12 +3,14 @@ package io.quarkus.vertx.mdc;
 import static io.quarkus.vertx.mdc.VerticleDeployer.REQUEST_ID_HEADER;
 import static io.quarkus.vertx.mdc.VerticleDeployer.VERTICLE_PORT;
 import static io.restassured.RestAssured.given;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -19,6 +21,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.test.QuarkusDevModeTest;
 
 public class VertxMDCDevModeTest {
@@ -34,6 +37,14 @@ public class VertxMDCDevModeTest {
 
     @Test
     void mdcDevMode() {
+        InMemoryLogHandler.reset();
+        await().until(InitialConfigurator.DELAYED_HANDLER::isActivated);
+        await().until(() -> {
+            return Arrays.stream(InitialConfigurator.DELAYED_HANDLER.getHandlers())
+                    .anyMatch(h -> h.getClass().getName().contains("InMemoryLogHandler"));
+        });
+        ;
+
         Path logDirectory = Paths.get(".", "target");
         String value = UUID.randomUUID().toString();
         given().headers(REQUEST_ID_HEADER, value)

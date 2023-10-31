@@ -10,6 +10,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -135,10 +136,15 @@ abstract class AbstractHttpAuthorizer {
                         // the exception twice;at this point, the exception could be failed by the default auth failure handler
                         if (!routingContext.response().ended() && !throwable.equals(routingContext.failure())) {
                             routingContext.fail(throwable);
-                        } else if (!(throwable instanceof AuthenticationFailedException)) {
-                            //don't log auth failure
+                        } else if (throwable instanceof AuthenticationFailedException) {
+                            log.debug("Authentication challenge is required");
+                        } else if (throwable instanceof AuthenticationRedirectException) {
+                            log.debugf("Completing authentication with a redirect to %s",
+                                    ((AuthenticationRedirectException) throwable).getRedirectUri());
+                        } else {
                             log.error("Exception occurred during authorization", throwable);
                         }
+
                     }
                 });
     }

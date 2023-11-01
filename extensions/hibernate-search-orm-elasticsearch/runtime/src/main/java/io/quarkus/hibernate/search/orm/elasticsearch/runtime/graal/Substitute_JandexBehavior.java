@@ -13,7 +13,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 final class Substitute_JandexBehavior {
 
     @Substitute
-    public static <T> T doWithJandex(JandexBehavior.JandexOperation operation) {
+    public static void doWithJandex(JandexBehavior.JandexOperation operation) {
         throw new IllegalStateException("Jandex should not be used at runtime.");
     }
 

@@ -146,13 +146,13 @@ public class ResponseHandler implements ServerRestHandler {
                         if (result instanceof GenericEntity) {
                             GenericEntity<?> genericEntity = (GenericEntity<?>) result;
                             requestContext.setGenericReturnType(genericEntity.getType());
-                            responseBuilder = (ResponseBuilderImpl) ResponseImpl.ok(genericEntity.getEntity());
+                            responseBuilder = ResponseBuilderImpl.ok(genericEntity.getEntity());
                         } else if (result == null) {
                             // FIXME: custom status codes depending on method?
-                            responseBuilder = (ResponseBuilderImpl) ResponseImpl.noContent();
+                            responseBuilder = ResponseBuilderImpl.noContent();
                         } else {
                             // FIXME: custom status codes depending on method?
-                            responseBuilder = (ResponseBuilderImpl) ResponseImpl.ok(result);
+                            responseBuilder = ResponseBuilderImpl.ok(result);
                         }
                         if (responseBuilder.getEntity() != null) {
                             EncodedMediaType produces = requestContext.getResponseContentType();

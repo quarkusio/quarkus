@@ -395,9 +395,19 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.sonatype.plexus</groupId>
+                <groupId>org.codehaus.plexus</groupId>
                 <artifactId>plexus-cipher</artifactId>
                 <version>${plexus-cipher.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-interpolation</artifactId>
+                <version>${plexus-interpolation.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-sec-dispatcher</artifactId>
+                <version>${plexus-sec-dispatcher.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.codehaus.plexus</groupId>

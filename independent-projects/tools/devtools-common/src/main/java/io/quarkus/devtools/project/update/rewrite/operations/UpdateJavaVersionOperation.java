@@ -25,6 +25,7 @@ public class UpdateJavaVersionOperation implements RewriteOperation {
                                 Map.of("key", "maven.compiler.target", "newValue", newVersion)),
                         Map.of("org.openrewrite.maven.ChangePropertyValue",
                                 Map.of("key", "maven.compiler.release", "newValue", newVersion)));
+            case GRADLE_KOTLIN_DSL:
             case GRADLE:
                 return List.of(Map.of(
                         "org.openrewrite.gradle.UpdateJavaCompatibility",

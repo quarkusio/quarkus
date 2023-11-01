@@ -20,6 +20,7 @@ public class UpdateDependencyVersionOperation implements RewriteOperation {
     @Override
     public Map<String, Object> single(BuildTool buildTool) {
         switch (buildTool) {
+            case GRADLE_KOTLIN_DSL:
             case GRADLE:
                 return Map.of("org.openrewrite.gradle.UpgradeDependencyVersion",
                         Map.of(

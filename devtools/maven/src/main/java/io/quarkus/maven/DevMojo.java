@@ -701,7 +701,7 @@ public class DevMojo extends AbstractMojo {
                         version(pluginExec.plugin.getVersion()),
                         pluginExec.plugin.getDependencies()),
                 goal(goal),
-                getPluginConfig(pluginExec.plugin, goal, params),
+                getPluginConfig(pluginExec.plugin, pluginExec.getExecutionId(), goal, params),
                 executionEnvironment(
                         project,
                         session,
@@ -720,11 +720,13 @@ public class DevMojo extends AbstractMojo {
         return false;
     }
 
-    private Xpp3Dom getPluginConfig(Plugin plugin, String goal, Map<String, String> params) throws MojoExecutionException {
+    private Xpp3Dom getPluginConfig(Plugin plugin, String executionId, String goal, Map<String, String> params)
+            throws MojoExecutionException {
         Xpp3Dom mergedConfig = null;
         if (!plugin.getExecutions().isEmpty()) {
             for (PluginExecution exec : plugin.getExecutions()) {
-                if (exec.getConfiguration() != null && exec.getGoals().contains(goal)) {
+                if (exec.getConfiguration() != null && exec.getGoals().contains(goal)
+                        && matchesExecution(executionId, exec.getId())) {
                     mergedConfig = mergedConfig == null ? (Xpp3Dom) exec.getConfiguration()
                             : Xpp3Dom.mergeXpp3Dom(mergedConfig, (Xpp3Dom) exec.getConfiguration(), true);
                 }
@@ -760,6 +762,27 @@ public class DevMojo extends AbstractMojo {
         }
 
         return configuration;
+    }
+
+    /**
+     * Check if the <code>currentExecutionId</code> matches the provided <code>executionId</code>.
+     * <p>
+     * This method will return <code>true</code> if
+     * <ul>
+     * <li>current execution id is undefined</li>
+     * <li>execution id is undefined</li>
+     * <li>both equals (ignoring case)</li>
+     * </ul>
+     *
+     * @param currentExecutionId current execution id (if defined)
+     * @param executionId execution id to test matching (if defined)
+     * @return <code>true</code> if executions ids do match.
+     */
+    private static boolean matchesExecution(String currentExecutionId, String executionId) {
+        if (currentExecutionId == null) {
+            return true;
+        }
+        return executionId == null || currentExecutionId.equalsIgnoreCase(executionId);
     }
 
     private MojoDescriptor getMojoDescriptor(Plugin plugin, String goal) throws MojoExecutionException {

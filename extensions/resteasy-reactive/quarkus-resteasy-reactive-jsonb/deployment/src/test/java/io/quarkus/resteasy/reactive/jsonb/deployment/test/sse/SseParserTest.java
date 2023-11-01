@@ -140,23 +140,12 @@ public class SseParserTest {
     }
 
     private void testParser(String event, String data, String comment, String lastId, String name, long reconnectDelay) {
-        if (data != null) {
-            testParser(Collections.singletonList(event), Collections.singletonList(new InboundSseEventImpl(null, null)
-                    .setData(data)
-                    .setComment(comment)
-                    .setId(lastId)
-                    .setName(name)
-                    .setReconnectDelay(reconnectDelay)));
-        } else if (comment != null) {
-            testParser(Collections.singletonList(event), Collections.singletonList(new InboundSseEventImpl(null, null)
-                    .setData(null)
-                    .setComment(comment)
-                    .setId(lastId)
-                    .setName(name)
-                    .setReconnectDelay(reconnectDelay)));
-        } else {
-            testParser(Collections.singletonList(event), Collections.emptyList());
-        }
+        testParser(Collections.singletonList(event), Collections.singletonList(new InboundSseEventImpl(null, null)
+                .setData(data)
+                .setComment(comment)
+                .setId(lastId)
+                .setName(name)
+                .setReconnectDelay(reconnectDelay)));
     }
 
     private void testParser(List<String> events, List<InboundSseEvent> expectedEvents) {

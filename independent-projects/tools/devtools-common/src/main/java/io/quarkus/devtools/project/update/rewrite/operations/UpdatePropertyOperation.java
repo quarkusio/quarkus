@@ -22,6 +22,7 @@ public class UpdatePropertyOperation implements RewriteOperation {
                 return Map.of("org.openrewrite.maven.ChangePropertyValue",
                         Map.of("key", key, "newValue", newValue));
             case GRADLE:
+            case GRADLE_KOTLIN_DSL:
                 return Map.of(
                         "org.openrewrite.gradle.AddProperty",
                         Map.of("key", key, "value", newValue, "overwrite", true));

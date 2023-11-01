@@ -13,6 +13,7 @@ import static io.quarkus.cache.deployment.CacheDeploymentConstants.INTERCEPTOR_B
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.INTERCEPTOR_BINDING_CONTAINERS;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.MULTI;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.REGISTER_REST_CLIENT;
+import static io.quarkus.cache.runtime.CacheBuildConfig.CAFFEINE_CACHE_TYPE;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.runtime.metrics.MetricsFactory.MICROMETER;
 import static java.util.stream.Collectors.toList;
@@ -54,6 +55,8 @@ import io.quarkus.cache.deployment.exception.UnsupportedRepeatedAnnotationExcept
 import io.quarkus.cache.deployment.exception.VoidReturnTypeTargetException;
 import io.quarkus.cache.deployment.spi.AdditionalCacheNameBuildItem;
 import io.quarkus.cache.deployment.spi.CacheManagerInfoBuildItem;
+import io.quarkus.cache.deployment.spi.CacheTypeBuildItem;
+import io.quarkus.cache.runtime.CacheBuildConfig;
 import io.quarkus.cache.runtime.CacheInvalidateAllInterceptor;
 import io.quarkus.cache.runtime.CacheInvalidateInterceptor;
 import io.quarkus.cache.runtime.CacheManagerRecorder;
@@ -90,6 +93,12 @@ class CacheProcessor {
     @BuildStep
     RestClientAnnotationsTransformerBuildItem restClientAnnotationsTransformer() {
         return new RestClientAnnotationsTransformerBuildItem(new RestClientCacheAnnotationsTransformer());
+    }
+
+    @BuildStep
+    CacheTypeBuildItem type(CacheBuildConfig config) {
+        return new CacheTypeBuildItem(
+                CAFFEINE_CACHE_TYPE.equals(config.type()) ? CacheTypeBuildItem.Type.LOCAL : CacheTypeBuildItem.Type.REMOTE);
     }
 
     @BuildStep

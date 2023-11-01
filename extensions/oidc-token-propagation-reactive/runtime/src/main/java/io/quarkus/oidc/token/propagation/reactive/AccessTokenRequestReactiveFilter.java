@@ -125,9 +125,7 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
     public void propagateToken(ResteasyReactiveClientRequestContext requestContext, String accessToken) {
         if (accessToken != null) {
             var authorizationHeaders = requestContext.getHeaders().get(HttpHeaders.AUTHORIZATION);
-            if (authorizationHeaders == null) {
-                requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, BEARER_SCHEME_WITH_SPACE + accessToken);
-            } else if (authorizationHeaders.stream().noneMatch(h -> h.toString().startsWith(BEARER_SCHEME_WITH_SPACE))) {
+            if (authorizationHeaders == null || authorizationHeaders.stream().noneMatch(h -> h.toString().startsWith(BEARER_SCHEME_WITH_SPACE))) {
                 requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, BEARER_SCHEME_WITH_SPACE + accessToken);
             }
         } else {

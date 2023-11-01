@@ -638,7 +638,7 @@ When using one of the built-in datasource kinds, the JDBC and Reactive drivers a
 
 |`db2`
 |`quarkus-jdbc-db2`
-a|* JDBC: `com.ibm.db2.jcc.DBDriver`
+a|* JDBC: `com.ibm.db2.jcc.DB2Driver`
 
 * XA: `com.ibm.db2.jcc.DB2XADataSource`
 

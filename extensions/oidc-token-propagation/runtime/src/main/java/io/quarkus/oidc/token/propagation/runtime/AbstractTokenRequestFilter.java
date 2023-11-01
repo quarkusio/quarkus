@@ -23,7 +23,10 @@ public abstract class AbstractTokenRequestFilter implements ClientRequestFilter 
 
     public void propagateToken(ClientRequestContext requestContext, String token) throws IOException {
         if (token != null) {
-            if (requestContext.getHeaders().get(HttpHeaders.AUTHORIZATION).stream().noneMatch(h -> h.toString().startsWith(BEARER_SCHEME_WITH_SPACE))) {
+            var authorizationHeaders = requestContext.getHeaders().get(HttpHeaders.AUTHORIZATION);
+            if (authorizationHeaders == null) {
+                requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, BEARER_SCHEME_WITH_SPACE + token);
+            } else if (authorizationHeaders.stream().noneMatch(h -> h.toString().startsWith(BEARER_SCHEME_WITH_SPACE))) {
                 requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, BEARER_SCHEME_WITH_SPACE + token);
             }
         } else {

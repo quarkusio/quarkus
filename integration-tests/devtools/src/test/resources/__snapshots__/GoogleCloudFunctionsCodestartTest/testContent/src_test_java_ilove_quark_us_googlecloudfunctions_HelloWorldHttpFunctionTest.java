@@ -12,7 +12,7 @@ import static org.hamcrest.Matchers.is;
 @WithFunction(FunctionType.HTTP)
 class HelloWorldHttpFunctionTest {
     @Test
-    public void testService() {
+    void testService() {
         when()
                 .get()
                 .then()

@@ -12,10 +12,9 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 @QuarkusTest
-public class FunqyTest {
-
+class FunqyTest {
     @Test
-    public void testCloudEvent() {
+    void testCloudEvent() {
         RestAssured.given().contentType("application/json")
                 .header("ce-specversion", "1.0")
                 .header("ce-id", UUID.randomUUID().toString())

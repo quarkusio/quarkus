@@ -214,4 +214,11 @@ public class SmallRyeGraphQLConfig {
     @ConfigItem
     @ConfigDocSection
     public SmallRyeGraphQLUIConfig ui;
+
+    /**
+     * Additional scalars to register in the schema.
+     * These are taken from the `graphql-java-extended-scalars` library.
+     */
+    @ConfigItem
+    public Optional<List<ExtraScalar>> extraScalars;
 }

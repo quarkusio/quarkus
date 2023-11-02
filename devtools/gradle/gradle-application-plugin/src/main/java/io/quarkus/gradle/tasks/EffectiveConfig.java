@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -139,21 +141,26 @@ final class EffectiveConfig {
 
     static void configSourcesForApplicationProperties(Set<File> sourceDirectories, Consumer<URL> sourceUrls,
             Consumer<ConfigSource> configSourceConsumer, int ordinal, String[] fileExtensions) {
-        URL[] resourceUrls = sourceDirectories.stream().map(File::toURI)
-                .map(u -> {
-                    try {
-                        return u.toURL();
-                    } catch (MalformedURLException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .toArray(URL[]::new);
-
-        for (URL resourceUrl : resourceUrls) {
-            URLClassLoader classLoader = new URLClassLoader(new URL[] { resourceUrl });
-            CombinedConfigSourceProvider configSourceProvider = new CombinedConfigSourceProvider(sourceUrls, ordinal,
-                    fileExtensions);
-            configSourceProvider.getConfigSources(classLoader).forEach(configSourceConsumer);
+        for (var sourceDir : sourceDirectories) {
+            var sourceDirPath = sourceDir.toPath();
+            var locations = new ArrayList<String>();
+            for (String file : fileExtensions) {
+                Path resolved = sourceDirPath.resolve(file);
+                if (Files.exists(resolved)) {
+                    locations.add(resolved.toUri().toString());
+                }
+            }
+            if (!locations.isEmpty()) {
+                URLClassLoader classLoader;
+                try {
+                    classLoader = new URLClassLoader(new URL[] { sourceDir.toURI().toURL() });
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                }
+                CombinedConfigSourceProvider configSourceProvider = new CombinedConfigSourceProvider(sourceUrls, ordinal,
+                        fileExtensions, locations);
+                configSourceProvider.getConfigSources(classLoader).forEach(configSourceConsumer);
+            }
         }
     }
 
@@ -204,11 +211,13 @@ final class EffectiveConfig {
         private final Consumer<URL> sourceUrls;
         private final int ordinal;
         private final String[] fileExtensions;
+        private final List<String> locations;
 
-        CombinedConfigSourceProvider(Consumer<URL> sourceUrls, int ordinal, String[] fileExtensions) {
+        CombinedConfigSourceProvider(Consumer<URL> sourceUrls, int ordinal, String[] fileExtensions, List<String> locations) {
             this.sourceUrls = sourceUrls;
             this.ordinal = ordinal;
             this.fileExtensions = fileExtensions;
+            this.locations = locations;
         }
 
         @Override
@@ -225,8 +234,7 @@ final class EffectiveConfig {
 
         @Override
         public List<ConfigSource> getConfigSources(final ClassLoader classLoader) {
-            // Note:
-            return loadConfigSources(getFileExtensions(), ordinal, classLoader);
+            return loadConfigSources(locations.toArray(new String[0]), ordinal, classLoader);
         }
     }
 }

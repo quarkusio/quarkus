@@ -18,12 +18,12 @@ public class TransactionalUniAsserterTest {
     @Test
     public void testTransactionalUniAsserter(TransactionalUniAsserter asserter) {
         assertNotNull(asserter);
-        asserter.assertThat(() -> Panache.currentTransaction(), transaction -> {
+        asserter.assertThat(Panache::currentTransaction, transaction -> {
             assertNotNull(transaction);
             assertFalse(transaction.isMarkedForRollback());
             asserter.putData("tx", transaction);
         });
-        asserter.assertThat(() -> Panache.currentTransaction(), transaction -> {
+        asserter.assertThat(Panache::currentTransaction, transaction -> {
             assertNotNull(transaction);
             assertFalse(transaction.isMarkedForRollback());
             assertNotEquals(transaction, asserter.getData("tx"));

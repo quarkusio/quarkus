@@ -13,7 +13,7 @@ Use a unified configuration model to define data sources for Java Database Conne
 
 ////
 Note for contributors and writers:
-In text, use `data source` in code, `datasource` or `DataSource` is more common.
+In text, use "data source". In code, "datasource" or "DataSource" is more common.
 See, https://docs.oracle.com/javase/tutorial/jdbc/basics/connecting.html
 ////
 
@@ -30,7 +30,7 @@ Additionally, refer to the Quarkus xref:hibernate-orm.adoc[Hibernate ORM] guide 
 
 == Get started with configuring `datasources` in Quarkus
 
-For rapid configuration of datasources, this section offers a brief overview and code samples for testing and utilization, suitable for users familiar with the fundamentals.
+For users familiar with the fundamentals, this section provides an overview and code samples to set up data sources quickly.
 
 For more advanced configuration with examples, see <<datasource-reference>>.
 
@@ -46,7 +46,7 @@ In dev mode, if you do not provide any explicit database connection details, Qua
 If you provide user credentials, the underlying database will be configured to use them.
 This is useful if you want to connect to the database with an external tool.
 
-To utilize this feature, ensure a Docker or Podman container runtime is installed, depending on the database type. Certain databases, such as H2, operate in in-memory mode and do not require a container runtime.
+To use this feature, ensure a Docker or Podman container runtime is installed, depending on the database type. Certain databases, such as H2, operate in in-memory mode and do not require a container runtime.
 
 TIP: Prefix the actual connection details for prod mode with `%prod.` to ensure they are not applied in dev mode.
 For more information, see the xref:config-reference.adoc#profiles[Profiles] section of the "Configuration reference" guide.
@@ -158,7 +158,7 @@ Quarkus currently includes the following built-in database kinds:
 You can use any JDBC driver in a Quarkus app in JVM mode as described in <<other-databases,Using other databases>>.
 However, using a non-built-in database kind is unlikely to work when compiling your application to a native executable.
 
-For native executable builds, it is recommended to either utilize the available JDBC Quarkus extensions or contribute a custom extension for your specific driver.
+For native executable builds, it is recommended to either use the available JDBC Quarkus extensions or contribute a custom extension for your specific driver.
 ====
 
 . Configure the following properties to define credentials:
@@ -214,7 +214,7 @@ However, for custom drivers, Agroal needs to be added explicitly.
 ====
 
 
-..  For use with a custom JDBC driver, add the `quarkus-agroal` dependency to your project alongside the extension for your relational database driver:
+.. For use with a custom JDBC driver, add the `quarkus-agroal` dependency to your project alongside the extension for your relational database driver:
 +
 [source,bash]
 ----

@@ -12,7 +12,7 @@ include::_attributes.adoc[]
 Read about the use of logging API in Quarkus, configuring logging output, and using logging adapters to unify the output from other logging APIs.
 
 Quarkus uses the JBoss Log Manager logging backend for publishing application and framework logs.
-Quarkus supports the JBoss Logging API as well as multiple other logging APIs, seamlessly integrated with JBoss Log Manager.
+Quarkus supports the JBoss Logging API and multiple other logging APIs, seamlessly integrated with JBoss Log Manager.
 You can use any of the <<logging-apis,following APIs>>:
 
 * link:https://github.com/jboss-logging/jboss-logging[JBoss Logging]
@@ -332,7 +332,7 @@ The logging format string supports the following symbols:
 |%e|Exception|Renders the thrown exception, if any.
 |%F|Source file|Renders the source file name.footnote:calc[]
 |%h|Host name|Renders the system simple host name.
-|%H|Qualified host name|Renders the system's fully qualified host name, which may be the same as the simple host name, depending on OS configuration.
+|%H|Qualified host name|Renders the system's fully qualified host name, which may be the same as the simple host name, depending on operating system configuration.
 |%i|Process ID|Render the current process PID.
 |%l|Source location|Renders the source location information, which includes source file name, line number, class name, and method name.footnote:calc[]
 |%L|Source line|Renders the source line number.footnote:calc[]
@@ -472,7 +472,7 @@ For details about its configuration, see the xref:#quarkus-log-logging-log-confi
 
 === Syslog log handler
 
-The syslog handler in Quarkus follows the link:https://en.wikipedia.org/wiki/Syslog[Syslog] protocol, which is used to send log messages on Unix-like systems.
+The syslog handler in Quarkus follows the link:https://en.wikipedia.org/wiki/Syslog[Syslog] protocol, which is used to send log messages on UNIX-like systems.
 It utilizes the protocol defined in link:https://tools.ietf.org/html/rfc5424[RFC 5424].
 
 By default, the syslog handler is disabled.
@@ -811,7 +811,7 @@ You get messages containing the MDC data:
 
 [source, text]
 ----
-08:48:13 INFO  request.id=c37a3a36-b7f6-4492-83a1-de41dbc26fe2 request.path=/hello/test [me.sa.GreetingResourceJbossLogging] (executor-thread-1) request received
+08:48:13 INFO request.id=c37a3a36-b7f6-4492-83a1-de41dbc26fe2 request.path=/hello/test [me.sa.GreetingResourceJbossLogging] (executor-thread-1) request received
 ----
 
 ==== MDC and supported logging APIs

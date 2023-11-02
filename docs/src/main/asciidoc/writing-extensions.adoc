@@ -2439,6 +2439,7 @@ One of the main things an extension is likely to do is completely separate the c
 Frameworks often do parsing/load of configuration on startup that can be done during build time to both reduce the runtime dependencies on frameworks like xml parsers as well as reducing the startup time the parsing incurs.
 
 An example of parsing an XML config file using JAXB is shown in the `TestProcessor#parseServiceXmlConfig` method:
+
 .Parsing an XML Configuration into Runtime XmlConfig Instance
 [source,java]
 ----

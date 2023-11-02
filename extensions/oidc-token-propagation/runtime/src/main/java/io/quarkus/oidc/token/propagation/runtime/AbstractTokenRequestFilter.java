@@ -23,7 +23,7 @@ public abstract class AbstractTokenRequestFilter implements ClientRequestFilter 
 
     public void propagateToken(ClientRequestContext requestContext, String token) throws IOException {
         if (token != null) {
-            requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, BEARER_SCHEME_WITH_SPACE + token);
+            requestContext.getHeaders().putSingle(HttpHeaders.AUTHORIZATION, BEARER_SCHEME_WITH_SPACE + token);
         } else {
             LOG.debugf("Injected access token is null, aborting the request with HTTP 401 error");
             abortRequest(requestContext);

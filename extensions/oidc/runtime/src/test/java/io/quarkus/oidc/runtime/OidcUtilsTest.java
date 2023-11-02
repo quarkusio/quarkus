@@ -485,6 +485,41 @@ public class OidcUtilsTest {
     }
 
     @Test
+    public void testAcceptDiscordProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.DISCORD));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertFalse(config.discoveryEnabled.get());
+        assertEquals("https://discord.com/api/oauth2", config.getAuthServerUrl().get());
+        assertEquals("authorize", config.getAuthorizationPath().get());
+        assertEquals("token", config.getTokenPath().get());
+        assertEquals("https://discord.com/api/users/@me", config.getUserInfoPath().get());
+        assertEquals(List.of("identify", "email"), config.authentication.scopes.get());
+        assertFalse(config.getAuthentication().idTokenRequired.get());
+    }
+
+    @Test
+    public void testOverrideDiscordProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+
+        tenant.setApplicationType(ApplicationType.HYBRID);
+        tenant.setAuthServerUrl("http://localhost/wiremock");
+        tenant.credentials.clientSecret.setMethod(Method.BASIC);
+        tenant.authentication.setForceRedirectHttpsScheme(false);
+
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.DISCORD));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
+        assertFalse(config.getAuthentication().isForceRedirectHttpsScheme().get());
+        assertEquals(Method.BASIC, config.credentials.clientSecret.method.get());
+    }
+
+    @Test
     public void testCorrectTokenType() throws Exception {
         OidcTenantConfig.Token tokenClaims = new OidcTenantConfig.Token();
         tokenClaims.setTokenType("access_token");

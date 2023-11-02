@@ -124,7 +124,7 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
 
     public void propagateToken(ResteasyReactiveClientRequestContext requestContext, String accessToken) {
         if (accessToken != null) {
-            requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, BEARER_SCHEME_WITH_SPACE + accessToken);
+            requestContext.getHeaders().putSingle(HttpHeaders.AUTHORIZATION, BEARER_SCHEME_WITH_SPACE + accessToken);
         } else {
             LOG.debugf("Access token is null, aborting the request with HTTP 401 error");
             abortRequest(requestContext);

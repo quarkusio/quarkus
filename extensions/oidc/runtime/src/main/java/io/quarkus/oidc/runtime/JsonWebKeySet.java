@@ -28,6 +28,7 @@ public class JsonWebKeySet {
 
     private Map<String, Key> keysWithKeyId = new HashMap<>();
     private Map<String, Key> keysWithThumbprints = new HashMap<>();
+    private Map<String, Key> keysWithS256Thumbprints = new HashMap<>();
     private Map<String, List<Key>> keysWithoutKeyIdAndThumbprint = new HashMap<>();
 
     public JsonWebKeySet(String json) {
@@ -48,7 +49,12 @@ public class JsonWebKeySet {
                     if (x5t != null && jwkKey.getKey() != null) {
                         keysWithThumbprints.put(x5t, jwkKey.getKey());
                     }
-                    if (jwkKey.getKeyId() == null && x5t == null && jwkKey.getKeyType() != null) {
+                    String x5tS256 = ((PublicJsonWebKey) jwkKey)
+                            .getX509CertificateSha256Thumbprint(calculateThumbprintIfMissing);
+                    if (x5tS256 != null && jwkKey.getKey() != null) {
+                        keysWithS256Thumbprints.put(x5tS256, jwkKey.getKey());
+                    }
+                    if (jwkKey.getKeyId() == null && x5t == null && x5tS256 == null && jwkKey.getKeyType() != null) {
                         List<Key> keys = keysWithoutKeyIdAndThumbprint.get(jwkKey.getKeyType());
                         if (keys == null) {
                             keys = new ArrayList<>();
@@ -74,6 +80,10 @@ public class JsonWebKeySet {
 
     public Key getKeyWithThumbprint(String x5t) {
         return keysWithThumbprints.get(x5t);
+    }
+
+    public Key getKeyWithS256Thumbprint(String x5tS256) {
+        return keysWithS256Thumbprints.get(x5tS256);
     }
 
     public Key getKeyWithoutKeyIdAndThumbprint(JsonWebSignature jws) {

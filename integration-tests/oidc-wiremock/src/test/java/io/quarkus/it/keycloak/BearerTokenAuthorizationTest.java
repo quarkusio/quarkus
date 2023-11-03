@@ -14,6 +14,7 @@ import java.util.Set;
 
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
+import org.jose4j.jwx.HeaderParameterNames;
 import org.junit.jupiter.api.Test;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -138,6 +139,31 @@ public class BearerTokenAuthorizationTest {
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("admin"));
+    }
+
+    @Test
+    public void testAccessAdminResourceWithWrongCertThumbprint() {
+        RestAssured.given().auth().oauth2(getAccessTokenWithWrongThumbprint("admin", Set.of("admin")))
+                .when().get("/api/admin/bearer-no-introspection")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void testAccessAdminResourceWithCertS256Thumbprint() {
+        RestAssured.given().auth().oauth2(getAccessTokenWithS256Thumbprint("admin", Set.of("admin")))
+                .when().get("/api/admin/bearer-no-introspection")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("admin"));
+    }
+
+    @Test
+    public void testAccessAdminResourceWithWrongCertS256Thumbprint() {
+        RestAssured.given().auth().oauth2(getAccessTokenWithWrongS256Thumbprint("admin", Set.of("admin")))
+                .when().get("/api/admin/bearer-no-introspection")
+                .then()
+                .statusCode(401);
     }
 
     @Test
@@ -326,6 +352,33 @@ public class BearerTokenAuthorizationTest {
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
                 .jws().thumbprint(OidcWiremockTestResource.getCertificate())
+                .sign("privateKeyWithoutKid.jwk");
+    }
+
+    private String getAccessTokenWithWrongThumbprint(String userName, Set<String> groups) {
+        return Jwt.preferredUserName(userName)
+                .groups(groups)
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .jws().header(HeaderParameterNames.X509_CERTIFICATE_THUMBPRINT, "123")
+                .sign("privateKeyWithoutKid.jwk");
+    }
+
+    private String getAccessTokenWithS256Thumbprint(String userName, Set<String> groups) {
+        return Jwt.preferredUserName(userName)
+                .groups(groups)
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .jws().thumbprintS256(OidcWiremockTestResource.getCertificate())
+                .sign("privateKeyWithoutKid.jwk");
+    }
+
+    private String getAccessTokenWithWrongS256Thumbprint(String userName, Set<String> groups) {
+        return Jwt.preferredUserName(userName)
+                .groups(groups)
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .jws().header(HeaderParameterNames.X509_CERTIFICATE_SHA256_THUMBPRINT, "123")
                 .sign("privateKeyWithoutKid.jwk");
     }
 

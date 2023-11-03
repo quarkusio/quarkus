@@ -4,7 +4,6 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Application Data Caching
-:extension-status: preview
 include::_attributes.adoc[]
 :categories: data
 :summary: This guide explains how to cache expensive method calls of your CDI beans using simple annotations.

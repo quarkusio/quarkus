@@ -106,7 +106,7 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
 
         File outputPath = getGeneratedOutputDirectory().get().getAsFile();
 
-        getLogger().debug("Will trigger preparing sources for source directory: {} buildDir: {}",
+        getLogger().debug("Will trigger preparing sources for source directories: {} buildDir: {}",
                 sourcesDirectories, buildDir.getAbsolutePath());
 
         WorkQueue workQueue = workQueue(configMap, () -> extension().codeGenForkOptions);

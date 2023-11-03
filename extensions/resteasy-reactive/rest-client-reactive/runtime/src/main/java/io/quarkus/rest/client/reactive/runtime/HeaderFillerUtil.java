@@ -6,6 +6,8 @@ import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MultivaluedMap;
 
+import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
+
 @SuppressWarnings("unused")
 public final class HeaderFillerUtil {
 
@@ -27,6 +29,8 @@ public final class HeaderFillerUtil {
                 // if the header is the Content-Type, then we should update if its current value equals what determined at build time (and therefore no other code has changed it)
                 return existingValue.equals(defaultContentType);
             }
+        } else if (HttpHeaders.USER_AGENT.equals(name)) {
+            return RestClientRequestContext.DEFAULT_USER_AGENT_VALUE.equals(existingValue);
         } else {
             return false;
         }

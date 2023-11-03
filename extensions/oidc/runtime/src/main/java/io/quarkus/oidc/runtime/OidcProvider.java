@@ -395,7 +395,19 @@ public class OidcProvider implements Closeable {
                     if (key == null) {
                         // if only `x5t` was set then the key must exist
                         throw new UnresolvableKeyException(
-                                String.format("JWK with thumbprint '%s' is not available", thumbprint));
+                                String.format("JWK with the certificate thumbprint '%s' is not available", thumbprint));
+                    }
+                }
+            }
+
+            if (key == null) {
+                thumbprint = jws.getHeader(HeaderParameterNames.X509_CERTIFICATE_SHA256_THUMBPRINT);
+                if (thumbprint != null) {
+                    key = getKeyWithS256Thumbprint(jws, thumbprint);
+                    if (key == null) {
+                        // if only `x5tS256` was set then the key must exist
+                        throw new UnresolvableKeyException(
+                                String.format("JWK with the SHA256 certificate thumbprint '%s' is not available", thumbprint));
                     }
                 }
             }
@@ -406,7 +418,8 @@ public class OidcProvider implements Closeable {
 
             if (key == null) {
                 throw new UnresolvableKeyException(
-                        String.format("JWK is not available, neither 'kid' nor 'x5t' token headers are set", kid));
+                        String.format("JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set",
+                                kid));
             } else {
                 return key;
             }
@@ -426,6 +439,15 @@ public class OidcProvider implements Closeable {
                 return jwks.getKeyWithThumbprint(thumbprint);
             } else {
                 LOG.debug("Token 'x5t' header is not set");
+                return null;
+            }
+        }
+
+        private Key getKeyWithS256Thumbprint(JsonWebSignature jws, String thumbprint) {
+            if (thumbprint != null) {
+                return jwks.getKeyWithS256Thumbprint(thumbprint);
+            } else {
+                LOG.debug("Token 'x5tS256' header is not set");
                 return null;
             }
         }

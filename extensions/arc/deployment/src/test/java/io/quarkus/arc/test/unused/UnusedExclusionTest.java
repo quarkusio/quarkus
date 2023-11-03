@@ -3,14 +3,12 @@ package io.quarkus.arc.test.unused;
 import java.lang.reflect.Method;
 import java.util.function.Consumer;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -33,7 +31,7 @@ public class UnusedExclusionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(UnusedExclusionTest.class, Alpha.class, Beta.class, Charlie.class, Delta.class,
                             ProducerBean.class, TestRecorder.class, Gama.class, GamaProducer.class)
                     .addAsResource(new StringAsset(
@@ -53,7 +51,7 @@ public class UnusedExclusionTest {
                         BeanContainer beanContainer = context.consume(BeanContainerBuildItem.class).getValue();
                         BytecodeRecorderImpl bytecodeRecorder = new BytecodeRecorderImpl(true,
                                 TestRecorder.class.getSimpleName(),
-                                "test", "" + TestRecorder.class.hashCode());
+                                "test", "" + TestRecorder.class.hashCode(), true, s -> null);
                         // We need to use reflection due to some class loading problems
                         Object recorderProxy = bytecodeRecorder.getRecordingProxy(TestRecorder.class);
                         try {
@@ -76,7 +74,7 @@ public class UnusedExclusionTest {
 
         public void test(BeanContainer beanContainer) {
             // This should trigger the warning - Gama was removed
-            Gama gama = beanContainer.instance(Gama.class);
+            Gama gama = beanContainer.beanInstanceFactory(Gama.class).create().get();
             // Test that fallback was used - no injection was performed
             Assertions.assertNull(gama.beanManager);
         }

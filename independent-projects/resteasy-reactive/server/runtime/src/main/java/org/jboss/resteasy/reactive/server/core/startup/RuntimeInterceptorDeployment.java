@@ -9,11 +9,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ContainerResponseFilter;
-import javax.ws.rs.container.DynamicFeature;
-import javax.ws.rs.ext.ReaderInterceptor;
-import javax.ws.rs.ext.WriterInterceptor;
+
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.container.DynamicFeature;
+import jakarta.ws.rs.ext.ReaderInterceptor;
+import jakarta.ws.rs.ext.WriterInterceptor;
+
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.HasPriority;
 import org.jboss.resteasy.reactive.common.model.ResourceDynamicFeature;
@@ -95,7 +98,8 @@ public class RuntimeInterceptorDeployment {
         for (Map.Entry<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> entry : globalRequestInterceptorsMap
                 .entrySet()) {
             globalRequestInterceptorHandlers
-                    .add(new ResourceRequestFilterHandler(entry.getValue(), false, entry.getKey().isNonBlockingRequired()));
+                    .add(new ResourceRequestFilterHandler(entry.getValue(), false, entry.getKey().isNonBlockingRequired(),
+                            entry.getKey().isWithFormRead()));
         }
 
         InterceptorHandler globalInterceptorHandler = null;
@@ -149,6 +153,9 @@ public class RuntimeInterceptorDeployment {
         List<BeanFactory.BeanInstance<T>> responseBeanInstances = new ArrayList<>(interceptors.size());
         Collections.sort(interceptors);
         for (ResourceInterceptor<T> interceptor : interceptors) {
+            if (RuntimeType.CLIENT.equals(interceptor.getRuntimeType())) {
+                continue;
+            }
             BeanFactory.BeanInstance<T> beanInstance = interceptor.getFactory().createInstance();
             responseBeanInstances.add(beanInstance);
             T containerResponseFilter = beanInstance.getInstance();
@@ -266,19 +273,15 @@ public class RuntimeInterceptorDeployment {
             return responseFilterHandlers;
         }
 
-        public List<ServerRestHandler> setupInterceptorHandler() {
+        public ServerRestHandler setupInterceptorHandler() {
             List<ServerRestHandler> handlers = new ArrayList<>();
             if (method.getNameBindingNames().isEmpty() && methodSpecificReaderInterceptorsMap.isEmpty()
                     && methodSpecificWriterInterceptorsMap.isEmpty()) {
-                if (globalInterceptorHandler != null) {
-                    handlers.add(globalInterceptorHandler);
-                }
+                return globalInterceptorHandler;
             } else if (nameReaderInterceptorsMap.isEmpty() && nameWriterInterceptorsMap.isEmpty()
                     && methodSpecificReaderInterceptorsMap.isEmpty() && methodSpecificWriterInterceptorsMap.isEmpty()) {
                 // in this case there are no filters that match the qualifiers, so let's just reuse the global handler
-                if (globalInterceptorHandler != null) {
-                    handlers.add(globalInterceptorHandler);
-                }
+                return globalInterceptorHandler;
             } else {
                 TreeMap<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> readerInterceptorsToUse = buildInterceptorMap(
                         globalReaderInterceptorsMap, nameReaderInterceptorsMap, methodSpecificReaderInterceptorsMap, method,
@@ -302,9 +305,8 @@ public class RuntimeInterceptorDeployment {
                         writers[idx++] = i;
                     }
                 }
-                handlers.add(new InterceptorHandler(writers, readers));
+                return new InterceptorHandler(writers, readers);
             }
-            return handlers;
         }
 
         public List<ResourceRequestFilterHandler> setupRequestFilterHandler() {
@@ -331,7 +333,8 @@ public class RuntimeInterceptorDeployment {
                 for (Map.Entry<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> entry : interceptorsToUse
                         .entrySet()) {
                     handlers.add(
-                            new ResourceRequestFilterHandler(entry.getValue(), false, entry.getKey().isNonBlockingRequired()));
+                            new ResourceRequestFilterHandler(entry.getValue(), false, entry.getKey().isNonBlockingRequired(),
+                                    entry.getKey().isWithFormRead()));
                 }
             }
             return handlers;

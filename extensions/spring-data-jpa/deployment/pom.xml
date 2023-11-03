@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-spring-data-jpa-deployment</artifactId>
-    <name>Quarkus - Spring - Data JPA - Deployment</name>
+    <name>Quarkus - Spring Data JPA - Deployment</name>
 
     <dependencies>
         <dependency>

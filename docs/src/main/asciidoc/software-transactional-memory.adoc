@@ -4,13 +4,16 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Software Transactional Memory in Quarkus
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: data
+:summary: This guides covers the usage of Software Transactional Memory (STM).
 :extension-status: preview
+:topics: narayana,stm,transactions
+:extensions: io.quarkus:quarkus-narayana-stm
 
 Software Transactional Memory (STM) has been around in research environments since the late
 1990's and has relatively recently started to appear in products and various programming
-languages. We won't go into all of the details behind STM but the interested reader could look at https://groups.csail.mit.edu/tds/papers/Shavit/ShavitTouitou-podc95.pdf[this paper].
+languages. We won't go into all the details behind STM but the interested reader could look at https://groups.csail.mit.edu/tds/papers/Shavit/ShavitTouitou-podc95.pdf[this paper].
 However, suffice it to say that STM offers an approach to developing transactional applications in a highly
 concurrent environment with some of the same characteristics of ACID transactions, which you've probably already used
 through JTA. Importantly though, the Durability property is relaxed (removed) within STM implementations,
@@ -18,8 +21,8 @@ or at least made optional. This is not the situation with JTA, where state chang
 to a relational database which supports https://pubs.opengroup.org/onlinepubs/009680699/toc.pdf[the X/Open XA
 standard].
 
-Note, the STM implementation provided by Quarkus is based on the https://narayana.io/docs/project/index.html#d0e16066[Narayana STM] implementation. This document isn't meant to be a replacement for that project's documentation so you may want
-to look at that for more detail. However, we will try to focus more on how you can combine some of the key capabilities
+Note that the STM implementation provided by Quarkus is based on the https://narayana.io/docs/project/index.html#d0e16066[Narayana STM] implementation. This document isn't meant to be a replacement for that project's documentation, so you may want
+to look at it for more detail. However, we will try to focus more on how you can combine some key capabilities
 into Quarkus when developing Kubernetes native applications and microservices.
 
 == Why use STM with Quarkus?
@@ -35,17 +38,17 @@ these threads using whatever isolation model has been chosen to protect that spe
 instance (object in the case of Quarkus). In Quarkus STM, there are two isolation implementations,
 pessimistic (the default), which would cause conflicting threads to be blocked until the original
 has completed its updates (committed or aborted the transaction); then there's the optimistic
-approach which allows all of the threads to proceed and checks for conflicts at commit time, where
+approach which allows all the threads to proceed and checks for conflicts at commit time, where
 one or more of the threads may be forced to abort if there have been conflicting updates.
 
-* STM objects have state but it doesn't need to be persistent (durable). In fact the
+* STM objects have state, but it doesn't need to be persistent (durable). In fact the
 default behaviour is for objects managed within transactional memory to be volatile, such that
 if the service or microservice within which they are being used crashes or is spawned elsewhere, e.g.,
 by a scheduler, all state in memory is lost and the objects start from scratch. But surely you get this and more
 with JTA (and a suitable transactional datastore) and don't need to worry about restarting your application?
 Not quite. There's a trade-off here: we're doing away
 with persistent state and the overhead of reading from and then writing (and sync-ing) to the datastore during each
-transaction. This makes updates to (volatile) state very fast but you still get the benefits of atomic updates
+transaction. This makes updates to (volatile) state very fast, but you still get the benefits of atomic updates
 across multiple STM objects (e.g., objects your team wrote then calling objects you inherited from another team and requiring
 them to make all-or-nothing updates), as well as consistency
 and isolation in the presence of concurrent threads/users (common in distributed microservices architectures).
@@ -77,27 +80,30 @@ can build STM-aware applications with Quarkus. However, before we do so there ar
 which we need to cover.
 
 Note, as you will see, STM in Quarkus relies on a number of annotations to define behaviours. The lack
-of these annotations causes sensible defaults to be assumed but it is important for the developer to
+of these annotations causes sensible defaults to be assumed, but it is important for the developer to
 understand what these may be. Please refer to the https://narayana.io/docs/project/index.html#d0e16066[Narayana STM manual]
 and the https://narayana.io//docs/project/index.html#d0e16133[STM annotations guide] for more details on
-all of the annotations Narayana STM provides.
+all the annotations Narayana STM provides.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Setting it up
 
-To use the extension include it as a dependency in your application pom:
+To use the extension include it as a dependency in your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-<dependencies>
-    <!-- STM extension -->
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-narayana-stm</artifactId>
-      <version>${quarkus.version}</version>
-    </dependency>
-</dependencies>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-narayana-stm</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-narayana-stm")
 ----
 
 == Defining STM-aware classes
@@ -133,7 +139,7 @@ public class FlightServiceImpl implements FlightService {
     @ReadLock
     public int getNumberOfBookings() { ... }
     public void makeBooking(String details) {...}
-    
+
     @NotState
     private int timesCalled;
 }
@@ -159,7 +165,7 @@ be confusing to use especially in a Kubernetes native environment such as Quarku
 the reader can do the mental mapping.
 
 The default STM container (`org.jboss.stm.Container`) provides support for volatile objects that can only be shared between
-threads in the same microservice/JVM instance. When a STM-aware object is placed into the container it returns a handle
+threads in the same microservice/JVM instance. When an STM-aware object is placed into the container it returns a handle
 through which that object should then be used in the future. It is important to use this handle as continuing to access
 the object through the original reference will not allow the STM subsystem to track access and manage state and
 concurrency control.
@@ -227,7 +233,7 @@ aa.begin(); <2>
 <3> Notice that object updates can be composed which means that updates to multiple objects can be committed together as a single action.
     [Note that it is also possible to begin nested transactions so that you can perform speculative work which may then be abandoned
     without abandoning other work performed by the outer transaction].
-<4> Since the transaction has not yet been committed the changes made by the flight and taxi services are not visible outside of the transaction.
+<4> Since the transaction has not yet been committed the changes made by the flight and taxi services are not visible outside the transaction.
 <5> Since the commit was successful the changes made by the flight and taxi services are now visible to other threads.
     Note that other transactions that relied on the old state may or may not now incur conflicts when they commit (the STM library
     provides a number of features for managing conflicting behaviour and these are covered in the Narayana STM manual).
@@ -238,4 +244,4 @@ aa.begin(); <2>
 Sharing a transaction between multiple services is possible but is currently
 an advanced use case only and the Narayana documentation should be consulted
 if this behaviour is required. In particular, STM does not yet support the features
-described in the link:context-propagation[Context Propagation guide].
+described in the xref:context-propagation.adoc[Context Propagation guide].

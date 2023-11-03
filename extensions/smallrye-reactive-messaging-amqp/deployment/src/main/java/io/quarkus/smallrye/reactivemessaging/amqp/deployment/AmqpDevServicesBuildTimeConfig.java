@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.amqp.deployment;
 
+import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -27,17 +28,22 @@ public class AmqpDevServicesBuildTimeConfig {
 
     /**
      * The image to use.
-     * Note that only {@code quay.io/artemiscloud/activemq-artemis-broker} images are supported.
-     *
-     * Check https://quay.io/repository/artemiscloud/activemq-artemis-broker to find the available versions.
+     * Note that only ActiveMQ Artemis images are supported.
+     * Specifically, the image repository must end with {@code artemiscloud/activemq-artemis-broker}.
+     * <p>
+     * Check the <a href="https://quay.io/repository/artemiscloud/activemq-artemis-broker">activemq-artemis-broker on Quay
+     * page</a>
+     * to find the available versions.
      */
-    @ConfigItem(defaultValue = "quay.io/artemiscloud/activemq-artemis-broker:0.1.2")
+    @ConfigItem(defaultValue = "quay.io/artemiscloud/activemq-artemis-broker:1.0.22")
     public String imageName;
 
     /**
      * The value of the {@code AMQ_EXTRA_ARGS} environment variable to pass to the container.
+     * For ActiveMQ Artemis Broker <= 1.0.21, set this property to
+     * {@code --no-autotune --mapped --no-fsync --relax-jolokia --http-host 0.0.0.0}
      */
-    @ConfigItem(defaultValue = "--no-autotune --mapped --no-fsync")
+    @ConfigItem(defaultValue = "--no-autotune --mapped --no-fsync --relax-jolokia")
     public String extraArgs;
 
     /**
@@ -59,12 +65,18 @@ public class AmqpDevServicesBuildTimeConfig {
      * This property is used when {@code shared} is set to {@code true}.
      * In this case, before starting a container, Dev Services for AMQP looks for a container with the
      * {@code quarkus-dev-service-amqp} label
-     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise it
+     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise, it
      * starts a new container with the {@code quarkus-dev-service-amqp} label set to the specified value.
      * <p>
      * This property is used when you need multiple shared AMQP brokers.
      */
     @ConfigItem(defaultValue = "amqp")
     public String serviceName;
+
+    /**
+     * Environment variables that are passed to the container.
+     */
+    @ConfigItem
+    public Map<String, String> containerEnv;
 
 }

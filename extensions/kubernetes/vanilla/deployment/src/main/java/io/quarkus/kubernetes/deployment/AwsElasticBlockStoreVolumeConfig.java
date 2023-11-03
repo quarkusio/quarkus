@@ -28,7 +28,7 @@ public class AwsElasticBlockStoreVolumeConfig {
     String fsType;
 
     /**
-     * Wether the volumeName is read only or not.
+     * Whether the volumeName is read only or not.
      */
     @ConfigItem
     boolean readOnly;

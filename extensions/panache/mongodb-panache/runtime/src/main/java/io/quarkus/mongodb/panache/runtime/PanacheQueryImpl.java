@@ -12,6 +12,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Collation;
 
 import io.quarkus.mongodb.panache.PanacheQuery;
+import io.quarkus.mongodb.panache.common.runtime.CommonPanacheQueryImpl;
 import io.quarkus.panache.common.Page;
 
 public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
@@ -102,6 +103,12 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @Override
     public <T extends Entity> PanacheQuery<T> withReadPreference(ReadPreference readPreference) {
         delegate.withReadPreference(readPreference);
+        return (PanacheQuery<T>) this;
+    }
+
+    @Override
+    public <T extends Entity> PanacheQuery<T> withBatchSize(int batchSize) {
+        delegate.withBatchSize(batchSize);
         return (PanacheQuery<T>) this;
     }
 

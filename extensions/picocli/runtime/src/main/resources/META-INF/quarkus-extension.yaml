@@ -7,10 +7,12 @@ metadata:
   guide: "https://quarkus.io/guides/picocli"
   categories:
   - "miscellaneous"
-  status: "experimental"
+  status: "stable"
   codestart:
     name: "picocli"
     languages:
       - "java"
       - "kotlin"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
+  config:
+  - "quarkus.picocli."

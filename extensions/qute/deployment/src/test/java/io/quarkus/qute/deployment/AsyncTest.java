@@ -6,11 +6,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.concurrent.CompletionStage;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,8 +21,8 @@ public class AsyncTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(TemplateDataTest.Foo.class)
+            .withApplicationRoot((jar) -> jar
+                    .addClass(Foo.class)
                     .addAsResource(new StringAsset("{foo.val} is not {foo.val.setScale(2,roundingMode)}"),
                             "templates/foo.txt"));
 
@@ -34,14 +32,14 @@ public class AsyncTest {
     @Test
     public void testAsyncRendering() {
         CompletionStage<String> async = foo.data("roundingMode", RoundingMode.HALF_UP)
-                .data("foo", new TemplateDataTest.Foo(new BigDecimal("123.4563"))).renderAsync();
+                .data("foo", new Foo(new BigDecimal("123.4563"))).renderAsync();
         assertEquals("123.4563 is not 123.46", async.toCompletableFuture().join());
     }
 
     @Test
     public void testAsyncRenderingAsUni() {
         Uni<String> uni = Uni.createFrom().completionStage(() -> foo.data("roundingMode", RoundingMode.HALF_UP)
-                .data("foo", new TemplateDataTest.Foo(new BigDecimal("123.4563"))).renderAsync());
+                .data("foo", new Foo(new BigDecimal("123.4563"))).renderAsync());
         assertEquals("123.4563 is not 123.46", uni.await().indefinitely());
     }
 

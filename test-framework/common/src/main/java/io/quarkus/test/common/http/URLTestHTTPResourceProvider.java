@@ -3,6 +3,7 @@ package io.quarkus.test.common.http;
 import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 
 public class URLTestHTTPResourceProvider implements TestHTTPResourceProvider<URL> {
@@ -12,10 +13,10 @@ public class URLTestHTTPResourceProvider implements TestHTTPResourceProvider<URL
     }
 
     @Override
-    public URL provide(URI testUri, Field field) {
+    public URL provide(String testUri, Field field) {
         try {
-            return testUri.toURL();
-        } catch (MalformedURLException e) {
+            return new URI(testUri).toURL();
+        } catch (MalformedURLException | URISyntaxException e) {
             throw new RuntimeException(e);
         }
     }

@@ -5,15 +5,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 
 /**
  * Immutable lists.
@@ -31,9 +28,10 @@ public final class ImmutableList {
     public static <T> List<T> copyOf(List<T> list) {
         if (list.isEmpty()) {
             return Collections.emptyList();
-        }
-        if (list.size() == 1) {
-            return Collections.singletonList(list.get(0));
+        } else if (list.size() == 1) {
+            return of(list.get(0));
+        } else if (list.size() == 2) {
+            return of(list.get(0), list.get(1));
         }
         return new ImmutableArrayList<>(list.toArray());
     }
@@ -45,13 +43,37 @@ public final class ImmutableList {
      */
     @SafeVarargs
     public static <T> List<T> of(T... elements) {
-        if (elements.length == 0) {
-            return Collections.emptyList();
+        switch (elements.length) {
+            case 0:
+                return Collections.emptyList();
+            case 1:
+                return of(elements[0]);
+            case 2:
+                return of(elements[0], elements[1]);
+            default:
+                return new ImmutableArrayList<>(elements);
         }
-        if (elements.length == 1) {
-            return Collections.singletonList(elements[0]);
-        }
-        return new ImmutableArrayList<>(elements);
+    }
+
+    /**
+     *
+     * @param <E>
+     * @param element
+     * @return an immutable list
+     */
+    public static <E> List<E> of(E element) {
+        return Collections.singletonList(element);
+    }
+
+    /**
+     *
+     * @param <E>
+     * @param e1
+     * @param e2
+     * @return an immutable list
+     */
+    public static <E> List<E> of(E e1, E e2) {
+        return new ImmutableList2<>(e1, e2);
     }
 
     /**
@@ -86,162 +108,65 @@ public final class ImmutableList {
 
     }
 
-    static class ImmutableArrayList<E> extends AbstractList<E> {
+    static class ImmutableList2<E> extends AbstractList<E> {
 
-        private final Object[] elements;
+        private final E e0;
+        private final E e1;
 
-        ImmutableArrayList(Object[] elements) {
-            this.elements = elements;
+        ImmutableList2(E e0, E e1) {
+            this.e0 = e0;
+            this.e1 = e1;
         }
 
         @Override
         public E get(int index) {
-            if (index < 0 || index >= elements.length) {
-                indexOutOfBound(index);
+            if (index == 0) {
+                return e0;
+            } else if (index == 1) {
+                return e1;
             }
-            return getInternal(index);
-        }
-
-        @SuppressWarnings("unchecked")
-        E getInternal(int index) {
-            return (E) elements[index];
+            throw indexOutOfBound(index, 2);
         }
 
         @Override
         public int size() {
-            return elements.length;
-        }
-
-        @Override
-        public Iterator<E> iterator() {
-            return new ImmutableListIterator(elements.length);
-        }
-
-        @Override
-        public ListIterator<E> listIterator() {
-            return new ImmutableListIterator(elements.length);
-        }
-
-        @Override
-        public ListIterator<E> listIterator(int index) {
-            if (index < 0 || index > elements.length) {
-                indexOutOfBound(index);
-            }
-            return new ImmutableListIterator(elements.length, index);
-        }
-
-        @Override
-        public List<E> subList(int fromIndex, int toIndex) {
-            if (fromIndex < 0 || fromIndex > toIndex) {
-                indexOutOfBound(fromIndex);
-            }
-            if (toIndex > elements.length) {
-                indexOutOfBound(toIndex);
-            }
-            if (fromIndex == toIndex) {
-                return Collections.emptyList();
-            }
-            return new ImmutableArrayList<>(
-                    Arrays.copyOfRange(this.elements, fromIndex, toIndex));
-        }
-
-        @Override
-        public String toString() {
-            return Arrays.toString(elements);
-        }
-
-        @Override
-        public boolean add(E e) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public E set(int index, E element) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void add(int index, E element) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public E remove(int index) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void clear() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean addAll(int index, Collection<? extends E> c) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        protected void removeRange(int fromIndex, int toIndex) {
-            throw new UnsupportedOperationException();
+            return 2;
         }
 
         @Override
         public boolean isEmpty() {
-            return elements.length == 0;
+            return false;
         }
 
         @Override
-        public void replaceAll(UnaryOperator<E> operator) {
-            throw new UnsupportedOperationException();
+        public Iterator<E> iterator() {
+            return new Itr();
         }
 
         @Override
-        public void sort(Comparator<? super E> c) {
-            throw new UnsupportedOperationException();
+        public ListIterator<E> listIterator() {
+            return new Itr();
         }
 
-        @Override
-        public boolean removeIf(Predicate<? super E> filter) {
-            throw new UnsupportedOperationException();
-        }
+        private final class Itr implements ListIterator<E> {
 
-        @Override
-        public Spliterator<E> spliterator() {
-            return Spliterators.spliterator(this, Spliterator.ORDERED
-                    | Spliterator.IMMUTABLE | Spliterator.NONNULL);
-        }
-
-        void indexOutOfBound(int index) {
-            throw new IndexOutOfBoundsException("Index " + index
-                    + " is out of bounds, list size: " + elements.length);
-        }
-
-        private class ImmutableListIterator implements ListIterator<E> {
-
-            private int cursor;
-
-            private final int size;
-
-            ImmutableListIterator(int size, int position) {
-                this.size = size;
-                this.cursor = position;
-            }
-
-            ImmutableListIterator(int size) {
-                this(size, 0);
-            }
+            private byte cursor = 0;
 
             @Override
             public boolean hasNext() {
-                return cursor < size;
+                return cursor < 2;
             }
 
             @Override
             public E next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException();
+                if (cursor == 0) {
+                    cursor++;
+                    return e0;
+                } else if (cursor == 1) {
+                    cursor++;
+                    return e1;
                 }
-                return getInternal(cursor++);
+                throw new NoSuchElementException();
             }
 
             @Override
@@ -251,10 +176,14 @@ public final class ImmutableList {
 
             @Override
             public E previous() {
-                if (!hasPrevious()) {
-                    throw new NoSuchElementException();
+                if (cursor == 2) {
+                    cursor--;
+                    return e1;
+                } else if (cursor == 1) {
+                    cursor--;
+                    return e0;
                 }
-                return getInternal(--cursor);
+                throw new NoSuchElementException();
             }
 
             @Override
@@ -283,6 +212,146 @@ public final class ImmutableList {
             }
         }
 
+    }
+
+    static class ImmutableArrayList<E> extends AbstractList<E> {
+
+        private final Object[] elements;
+
+        ImmutableArrayList(Object[] elements) {
+            this.elements = elements;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public E get(int index) {
+            if (index < 0 || index >= elements.length) {
+                throw indexOutOfBound(index, size());
+            }
+            return (E) elements[index];
+        }
+
+        @Override
+        public int size() {
+            return elements.length;
+        }
+
+        @Override
+        public Iterator<E> iterator() {
+            return new Itr(elements.length, 0);
+        }
+
+        @Override
+        public ListIterator<E> listIterator() {
+            return new Itr(elements.length, 0);
+        }
+
+        @Override
+        public ListIterator<E> listIterator(int index) {
+            return new Itr(elements.length, index);
+        }
+
+        @Override
+        public List<E> subList(int fromIndex, int toIndex) {
+            if (fromIndex < 0 || fromIndex > toIndex) {
+                throw indexOutOfBound(fromIndex, size());
+            }
+            if (toIndex > elements.length) {
+                throw indexOutOfBound(toIndex, size());
+            }
+            if (fromIndex == toIndex) {
+                return Collections.emptyList();
+            }
+            return new ImmutableArrayList<>(
+                    Arrays.copyOfRange(this.elements, fromIndex, toIndex));
+        }
+
+        @Override
+        public String toString() {
+            return Arrays.toString(elements);
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return elements.length == 0;
+        }
+
+        @Override
+        public Spliterator<E> spliterator() {
+            return Spliterators.spliterator(this, Spliterator.ORDERED
+                    | Spliterator.IMMUTABLE | Spliterator.NONNULL);
+        }
+
+        private final class Itr implements ListIterator<E> {
+
+            private int cursor;
+
+            private final int size;
+
+            Itr(int size, int position) {
+                this.size = size;
+                this.cursor = position;
+            }
+
+            @Override
+            public boolean hasNext() {
+                return cursor < size;
+            }
+
+            @SuppressWarnings("unchecked")
+            @Override
+            public E next() {
+                if (hasNext()) {
+                    return (E) elements[cursor++];
+                }
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public boolean hasPrevious() {
+                return cursor > 0;
+            }
+
+            @SuppressWarnings("unchecked")
+            @Override
+            public E previous() {
+                if (hasPrevious()) {
+                    return (E) elements[--cursor];
+                }
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public int nextIndex() {
+                return cursor;
+            }
+
+            @Override
+            public int previousIndex() {
+                return cursor - 1;
+            }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void set(E e) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void add(E e) {
+                throw new UnsupportedOperationException();
+            }
+        }
+
+    }
+
+    private static IndexOutOfBoundsException indexOutOfBound(int index, int size) {
+        return new IndexOutOfBoundsException("Index " + index
+                + " is out of bounds, list size: " + size);
     }
 
 }

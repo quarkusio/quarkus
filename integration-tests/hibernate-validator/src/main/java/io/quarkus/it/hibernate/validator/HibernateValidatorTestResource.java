@@ -11,31 +11,31 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
-import javax.interceptor.InterceptorBinding;
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Valid;
-import javax.validation.Validator;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.Digits;
-import javax.validation.constraints.Email;
-import javax.validation.constraints.Pattern;
-import javax.validation.groups.ConvertGroup;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.interceptor.InterceptorBinding;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Valid;
+import jakarta.validation.Validator;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.groups.ConvertGroup;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import org.hibernate.validator.constraints.Length;
 
@@ -49,6 +49,7 @@ import io.quarkus.runtime.StartupEvent;
 
 @Path("/hibernate-validator/test")
 public class HibernateValidatorTestResource
+        extends HibernateValidatorTestResourceSuperclass
         implements HibernateValidatorTestResourceGenericInterface<Integer>, HibernateValidatorTestResourceInterface {
 
     @Inject
@@ -131,10 +132,25 @@ public class HibernateValidatorTestResource
     }
 
     @GET
-    @Path("/rest-end-point-validation/{id}/")
+    @Path("/cdi-bean-method-validation-uncaught")
     @Produces(MediaType.TEXT_PLAIN)
+    public String testCDIBeanMethodValidationUncaught() {
+        return greetingService.greeting(null);
+    }
+
+    @GET
+    @Path("/rest-end-point-validation/{id}/")
+    @Produces({ MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
     public String testRestEndPointValidation(@Digits(integer = 5, fraction = 0) @PathParam("id") String id) {
         return id;
+    }
+
+    @GET
+    @Path("/rest-end-point-return-value-validation/{returnValue}/")
+    @Produces(MediaType.TEXT_PLAIN)
+    @Digits(integer = 5, fraction = 0)
+    public String testRestEndPointReturnValueValidation(@PathParam("returnValue") String returnValue) {
+        return returnValue;
     }
 
     // all JAX-RS annotations are defined in the interface
@@ -147,6 +163,13 @@ public class HibernateValidatorTestResource
     @Override
     @SomeInterceptorBindingAnnotation
     public String testRestEndPointInterfaceValidationWithAnnotationOnImplMethod(String id) {
+        return id;
+    }
+
+    // all JAX-RS annotations are defined in the superclass
+    @Override
+    @SomeInterceptorBindingAnnotation
+    public String testRestEndPointInterfaceValidationWithAnnotationOnOverriddenMethod(String id) {
         return id;
     }
 
@@ -248,21 +271,21 @@ public class HibernateValidatorTestResource
         return "FAILED";
     }
 
-    @PUT
-    @Path("/rest-end-point-validation-groups/")
-    @Produces(MediaType.TEXT_PLAIN)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public String testRestEndPointValidationGroups_Put(
-            @Valid @ConvertGroup(to = ValidationGroups.Put.class) MyBeanWithGroups bean) {
-        return "passed";
-    }
-
     @POST
     @Path("/rest-end-point-validation-groups/")
     @Produces(MediaType.TEXT_PLAIN)
     @Consumes(MediaType.APPLICATION_JSON)
     public String testRestEndPointValidationGroups_Post(
             @Valid @ConvertGroup(to = ValidationGroups.Post.class) MyBeanWithGroups bean) {
+        return "passed";
+    }
+
+    @PUT
+    @Path("/rest-end-point-validation-groups/")
+    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public String testRestEndPointValidationGroups_Put(
+            @Valid @ConvertGroup(to = ValidationGroups.Put.class) MyBeanWithGroups bean) {
         return "passed";
     }
 

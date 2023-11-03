@@ -5,19 +5,39 @@ import org.flywaydb.core.Flyway;
 public class FlywayContainer {
 
     private final Flyway flyway;
+
+    private final boolean baselineAtStart;
     private final boolean cleanAtStart;
     private final boolean migrateAtStart;
-    private final String dataSourceName;
+    private final boolean repairAtStart;
 
-    public FlywayContainer(Flyway flyway, boolean cleanAtStart, boolean migrateAtStart, String dataSourceName) {
+    private final boolean validateAtStart;
+    private final String dataSourceName;
+    private final boolean hasMigrations;
+    private final boolean createPossible;
+    private final String id;
+
+    public FlywayContainer(Flyway flyway, boolean baselineAtStart, boolean cleanAtStart, boolean migrateAtStart,
+            boolean repairAtStart, boolean validateAtStart,
+            String dataSourceName, boolean hasMigrations, boolean createPossible) {
         this.flyway = flyway;
+        this.baselineAtStart = baselineAtStart;
         this.cleanAtStart = cleanAtStart;
         this.migrateAtStart = migrateAtStart;
+        this.repairAtStart = repairAtStart;
+        this.validateAtStart = validateAtStart;
         this.dataSourceName = dataSourceName;
+        this.hasMigrations = hasMigrations;
+        this.createPossible = createPossible;
+        this.id = dataSourceName.replace("<", "").replace(">", "");
     }
 
     public Flyway getFlyway() {
         return flyway;
+    }
+
+    public boolean isBaselineAtStart() {
+        return baselineAtStart;
     }
 
     public boolean isCleanAtStart() {
@@ -28,7 +48,27 @@ public class FlywayContainer {
         return migrateAtStart;
     }
 
+    public boolean isRepairAtStart() {
+        return repairAtStart;
+    }
+
+    public boolean isValidateAtStart() {
+        return validateAtStart;
+    }
+
     public String getDataSourceName() {
         return dataSourceName;
+    }
+
+    public boolean isHasMigrations() {
+        return hasMigrations;
+    }
+
+    public boolean isCreatePossible() {
+        return createPossible;
+    }
+
+    public String getId() {
+        return this.id;
     }
 }

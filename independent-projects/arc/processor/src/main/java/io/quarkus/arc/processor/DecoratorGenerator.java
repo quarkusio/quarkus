@@ -4,6 +4,26 @@ import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
+import java.lang.reflect.Type;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type.Kind;
+import org.jboss.jandex.TypeVariable;
+
 import io.quarkus.arc.InjectableDecorator;
 import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
@@ -16,24 +36,6 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import java.lang.reflect.Type;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type.Kind;
-import org.jboss.jandex.TypeVariable;
 
 public class DecoratorGenerator extends BeanGenerator {
 
@@ -46,7 +48,23 @@ public class DecoratorGenerator extends BeanGenerator {
             Set<String> existingClasses, Map<BeanInfo, String> beanToGeneratedName,
             Predicate<DotName> injectionPointAnnotationsPredicate) {
         super(annotationLiterals, applicationClassPredicate, privateMembers, generateSources, reflectionRegistration,
-                existingClasses, beanToGeneratedName, injectionPointAnnotationsPredicate);
+                existingClasses, beanToGeneratedName, injectionPointAnnotationsPredicate, Collections.emptyList());
+    }
+
+    /**
+     * Precompute the generated name for the given decorator so that the {@link ComponentsProviderGenerator} can be executed
+     * before all decorators metadata are generated.
+     *
+     * @param decorator
+     */
+    void precomputeGeneratedName(DecoratorInfo decorator) {
+        ProviderType providerType = new ProviderType(decorator.getProviderType());
+        ClassInfo decoratorClass = decorator.getTarget().get().asClass();
+        String baseName = createBaseName(decoratorClass);
+        String targetPackage = DotNames.packageName(providerType.name());
+        String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
+        beanToGeneratedName.put(decorator, generatedName);
+        beanToGeneratedBaseName.put(decorator, baseName);
     }
 
     /**
@@ -55,13 +73,12 @@ public class DecoratorGenerator extends BeanGenerator {
      * @return a collection of resources
      */
     Collection<Resource> generate(DecoratorInfo decorator) {
-
+        String baseName = beanToGeneratedBaseName.get(decorator);
+        String generatedName = beanToGeneratedName.get(decorator);
         ProviderType providerType = new ProviderType(decorator.getProviderType());
-        ClassInfo decoratorClass = decorator.getTarget().get().asClass();
-        String baseName = createBaseName(decoratorClass);
         String targetPackage = DotNames.packageName(providerType.name());
-        String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
-        beanToGeneratedName.put(decorator, generatedName);
+        ClassInfo decoratorClass = decorator.getTarget().get().asClass();
+
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();
         }
@@ -106,9 +123,12 @@ public class DecoratorGenerator extends BeanGenerator {
         implementGetIdentifier(decorator, decoratorCreator);
         implementSupplierGet(decoratorCreator);
         implementCreate(classOutput, decoratorCreator, decorator, providerType, baseName,
-                injectionPointToProviderField,
-                Collections.emptyMap(), Collections.emptyMap(),
-                reflectionRegistration, targetPackage, isApplicationClass);
+                injectionPointToProviderField, Collections.emptyMap(), Collections.emptyMap(),
+                targetPackage, isApplicationClass);
+        if (decorator.hasDestroyLogic()) {
+            implementDestroy(decorator, decoratorCreator, providerType, Collections.emptyMap(), isApplicationClass, baseName,
+                    targetPackage);
+        }
         implementGet(decorator, decoratorCreator, providerType, baseName);
         implementGetTypes(decoratorCreator, beanTypes.getFieldDescriptor());
         implementGetBeanClass(decorator, decoratorCreator);
@@ -151,9 +171,13 @@ public class DecoratorGenerator extends BeanGenerator {
         // Constructor
         MethodInfo decoratorConstructor = decoratorClass.firstMethod(Methods.INIT);
         MethodCreator constructor = decoratorImplCreator.getMethodCreator(Methods.INIT, "V",
-                decoratorConstructor.parameters().toArray());
+                decoratorConstructor.parameterTypes().stream().map(it -> it.name().toString()).toArray());
+        ResultHandle[] constructorArgs = new ResultHandle[decoratorConstructor.parametersCount()];
+        for (int i = 0; i < decoratorConstructor.parametersCount(); i++) {
+            constructorArgs[i] = constructor.getMethodParam(i);
+        }
         // Invoke super()
-        constructor.invokeSpecialMethod(decoratorConstructor, constructor.getThis());
+        constructor.invokeSpecialMethod(decoratorConstructor, constructor.getThis(), constructorArgs);
         // Set the delegate field
         constructor.writeInstanceField(delegateField.getFieldDescriptor(), constructor.getThis(),
                 constructor.invokeStaticMethod(MethodDescriptors.DECORATOR_DELEGATE_PROVIDER_GET));
@@ -167,24 +191,14 @@ public class DecoratorGenerator extends BeanGenerator {
             ClassInfo decoratedTypeClass = index
                     .getClassByName(decoratedType.name());
             if (decoratedTypeClass == null) {
-                throw new IllegalStateException("TODO");
+                throw new IllegalStateException("Decorated type not found in the bean archive index: " + decoratedType);
             }
 
             // A decorated type can declare type parameters
             // For example Converter<String> should result in a T -> String mapping
             List<TypeVariable> typeParameters = decoratedTypeClass.typeParameters();
-            Map<TypeVariable, org.jboss.jandex.Type> resolvedTypeParameters = Collections.emptyMap();
-            if (!typeParameters.isEmpty()) {
-                resolvedTypeParameters = new HashMap<>();
-                // The delegate type can be used to infer the parameter types
-                org.jboss.jandex.Type type = decorator.getDelegateType();
-                if (type.kind() == Kind.PARAMETERIZED_TYPE) {
-                    List<org.jboss.jandex.Type> typeArguments = type.asParameterizedType().arguments();
-                    for (int i = 0; i < typeParameters.size(); i++) {
-                        resolvedTypeParameters.put(typeParameters.get(i), typeArguments.get(i));
-                    }
-                }
-            }
+            Map<String, org.jboss.jandex.Type> resolvedTypeParameters = Types.resolveDecoratedTypeParams(decoratedTypeClass,
+                    decorator);
 
             for (MethodInfo method : decoratedTypeClass.methods()) {
                 if (Methods.skipForDelegateSubclass(method)) {
@@ -277,10 +291,9 @@ public class DecoratorGenerator extends BeanGenerator {
             ResultHandle delegateQualifiersHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
             for (AnnotationInstance delegateQualifier : decorator.getDelegateQualifiers()) {
                 // Create annotation literal first
-                ClassInfo delegateQualifierClass = decorator.getDeployment().getInterceptorBinding(delegateQualifier.name());
+                ClassInfo delegateQualifierClass = decorator.getDeployment().getQualifier(delegateQualifier.name());
                 constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, delegateQualifiersHandle,
-                        annotationLiterals.process(constructor, classOutput, delegateQualifierClass, delegateQualifier,
-                                Types.getPackageName(creator.getClassName())));
+                        annotationLiterals.create(constructor, delegateQualifierClass, delegateQualifier));
             }
             constructor.writeInstanceField(delegateQualifiers.getFieldDescriptor(), constructor.getThis(),
                     delegateQualifiersHandle);
@@ -334,7 +347,7 @@ public class DecoratorGenerator extends BeanGenerator {
     }
 
     /**
-     * 
+     *
      * @param creator
      * @param qualifiersField
      * @see InjectableDecorator#getDelegateQualifiers()

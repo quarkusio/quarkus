@@ -3,9 +3,9 @@ package io.quarkus.security.runtime.interceptor.check;
 import java.lang.reflect.Method;
 import java.util.function.Supplier;
 
-import io.quarkus.security.ForbiddenException;
-import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.MethodDescription;
+import io.quarkus.security.spi.runtime.SecurityCheck;
 
 public class SupplierRolesAllowedCheck implements SecurityCheck {
 
@@ -19,6 +19,15 @@ public class SupplierRolesAllowedCheck implements SecurityCheck {
 
     @Override
     public void apply(SecurityIdentity identity, Method method, Object[] parameters) {
+        doApply(identity);
+    }
+
+    @Override
+    public void apply(SecurityIdentity identity, MethodDescription methodDescription, Object[] parameters) {
+        doApply(identity);
+    }
+
+    private void doApply(SecurityIdentity identity) {
         if (allowedRoles == null) {
             synchronized (this) {
                 if (allowedRoles == null) {
@@ -26,15 +35,12 @@ public class SupplierRolesAllowedCheck implements SecurityCheck {
                 }
             }
         }
-        for (String role : allowedRoles) {
-            if (identity.hasRole(role) || ("**".equals(role) && !identity.isAnonymous())) {
-                return;
-            }
-        }
-        if (identity.isAnonymous()) {
-            throw new UnauthorizedException();
-        } else {
-            throw new ForbiddenException();
+        RolesAllowedCheck.doApply(identity, allowedRoles);
+    }
+
+    public void resolveAllowedRoles() {
+        if (allowedRoles == null) {
+            allowedRoles = allowedRolesSupplier.get();
         }
     }
 }

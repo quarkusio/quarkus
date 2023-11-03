@@ -1,7 +1,8 @@
 package io.quarkus.security.deployment;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -14,8 +15,20 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public final class SecurityConfig {
 
     /**
-     * List of security providers to enable for reflection
+     * Whether authorization is enabled in dev mode or not. In other launch modes authorization is always enabled.
+     */
+    @ConfigItem(name = "auth.enabled-in-dev-mode", defaultValue = "true")
+    public boolean authorizationEnabledInDevMode;
+
+    /**
+     * List of security providers to register
      */
     @ConfigItem
-    public Optional<List<String>> securityProviders;
+    public Optional<Set<String>> securityProviders;
+
+    /**
+     * Security provider configuration
+     */
+    @ConfigItem
+    public Map<String, String> securityProviderConfig;
 }

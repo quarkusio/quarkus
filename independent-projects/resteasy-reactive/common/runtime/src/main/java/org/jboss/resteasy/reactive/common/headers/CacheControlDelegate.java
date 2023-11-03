@@ -1,8 +1,10 @@
 package org.jboss.resteasy.reactive.common.headers;
 
 import java.util.List;
-import javax.ws.rs.core.CacheControl;
-import javax.ws.rs.ext.RuntimeDelegate;
+
+import jakarta.ws.rs.core.CacheControl;
+import jakarta.ws.rs.ext.RuntimeDelegate;
+
 import org.jboss.resteasy.reactive.common.util.ExtendedCacheControl;
 
 /**
@@ -70,7 +72,7 @@ public class CacheControlDelegate implements RuntimeDelegate.HeaderDelegate<Cach
         return result;
     }
 
-    private static StringBuffer addDirective(String directive, StringBuffer buffer) {
+    private static StringBuilder addDirective(String directive, StringBuilder buffer) {
         if (buffer.length() > 0)
             buffer.append(", ");
         buffer.append(directive);
@@ -80,7 +82,7 @@ public class CacheControlDelegate implements RuntimeDelegate.HeaderDelegate<Cach
     public String toString(CacheControl value) {
         if (value == null)
             throw new IllegalArgumentException("param was null");
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         if (value.isNoCache()) {
             List<String> fields = value.getNoCacheFields();
             if (fields.size() < 1) {

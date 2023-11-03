@@ -17,7 +17,7 @@ public class ErrorPageGenerators {
 
     /**
      * Register a function that will be used to generate the error page for the given root cause.
-     * 
+     *
      * @param rootCauseClassName
      * @param function
      */

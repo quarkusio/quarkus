@@ -5,8 +5,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import io.grpc.stub.AbstractStub;
 import io.quarkus.arc.Arc;
@@ -52,6 +52,10 @@ public class GrpcClientConfigProvider {
 
     public static AbstractStub<?> configureStub(String serviceName, AbstractStub<?> stub) {
         return Arc.container().instance(GrpcClientConfigProvider.class).get().adjustCallOptions(serviceName, stub);
+    }
+
+    public static AbstractStub<?> addBlockingClientInterceptor(AbstractStub<?> stub) {
+        return stub.withInterceptors(new EventLoopBlockingCheckInterceptor());
     }
 
     public static BiFunction<String, AbstractStub<?>, AbstractStub<?>> getStubConfigurator() {

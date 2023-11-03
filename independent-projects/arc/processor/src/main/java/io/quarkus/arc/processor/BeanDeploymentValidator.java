@@ -2,7 +2,8 @@ package io.quarkus.arc.processor;
 
 import java.util.Collection;
 import java.util.List;
-import javax.enterprise.inject.spi.DeploymentException;
+
+import jakarta.enterprise.inject.spi.DeploymentException;
 
 /**
  * Makes it possible to validate the bean deployment and also to skip some validation rules for specific components.
@@ -30,13 +31,13 @@ public interface BeanDeploymentValidator extends BuildExtension {
         List<Throwable> getDeploymentProblems();
 
         /**
-         * 
+         *
          * @return a new stream of beans that form the deployment
          */
         BeanStream beans();
 
         /**
-         * 
+         *
          * @return a new stream of beans that are considered {@code unused} and were removed from the deployment
          */
         BeanStream removedBeans();

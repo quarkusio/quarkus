@@ -13,13 +13,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
-import javax.ws.rs.core.Cookie;
-import javax.ws.rs.core.EntityTag;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.ext.RuntimeDelegate;
+
+import jakarta.ws.rs.core.Cookie;
+import jakarta.ws.rs.core.EntityTag;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.ext.RuntimeDelegate;
+
 import org.jboss.resteasy.reactive.common.util.CookieParser;
 import org.jboss.resteasy.reactive.common.util.DateUtil;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
@@ -28,9 +30,10 @@ import org.jboss.resteasy.reactive.common.util.WeightedLanguage;
 /**
  * These work for MultivaluedMap with String and Object
  */
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class HeaderUtil {
 
-    private static final ClassValue<RuntimeDelegate.HeaderDelegate> HEADER_DELEGATE_CACHE = new ClassValue() {
+    private static final ClassValue<RuntimeDelegate.HeaderDelegate<?>> HEADER_DELEGATE_CACHE = new ClassValue<>() {
         @Override
         protected RuntimeDelegate.HeaderDelegate<?> computeValue(Class type) {
             return RuntimeDelegate.getInstance().createHeaderDelegate(type);
@@ -41,7 +44,11 @@ public class HeaderUtil {
         if (obj instanceof String) {
             return (String) obj;
         } else {
-            return HEADER_DELEGATE_CACHE.get(obj.getClass()).toString(obj);
+            RuntimeDelegate.HeaderDelegate delegate = HEADER_DELEGATE_CACHE.get(obj.getClass());
+            if (delegate != null) {
+                return delegate.toString(obj);
+            }
+            return obj.toString();
         }
     }
 

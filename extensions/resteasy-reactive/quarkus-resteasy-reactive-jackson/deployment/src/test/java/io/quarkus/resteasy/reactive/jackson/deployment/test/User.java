@@ -9,4 +9,11 @@ public class User {
 
     @JsonView(Views.Public.class)
     public String name;
+
+    public static User testUser() {
+        User user = new User();
+        user.id = 1;
+        user.name = "test";
+        return user;
+    }
 }

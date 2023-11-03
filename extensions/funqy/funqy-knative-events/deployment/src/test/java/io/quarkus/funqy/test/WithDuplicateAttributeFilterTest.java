@@ -2,8 +2,6 @@ package io.quarkus.funqy.test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -26,7 +24,7 @@ public class WithDuplicateAttributeFilterTest {
 
         assertTrue(found, "Build failed with wrong exception, expected IllegalStateException but got " + t);
     })
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(WithDuplicateAttributeFilter.class, Identity.class));
 
     @Test
@@ -35,6 +33,18 @@ public class WithDuplicateAttributeFilterTest {
                 .body("[{\"name\": \"Bill\"}, {\"name\": \"Matej\"}]")
                 .header("ce-id", "42")
                 .header("ce-type", "listOfStrings")
+                .header("ce-source", "test")
+                .header("ce-specversion", "1.0")
+                .post("/")
+                .then().statusCode(404);
+    }
+
+    @Test
+    public void testAttributeFilterMatchAndTriggerAsFuncName() {
+        RestAssured.given().contentType("application/json")
+                .body("[{\"name\": \"Bill\"}, {\"name\": \"Matej\"}]")
+                .header("ce-id", "42")
+                .header("ce-type", "toDashSeparated")
                 .header("ce-source", "test")
                 .header("ce-specversion", "1.0")
                 .post("/")

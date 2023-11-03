@@ -3,24 +3,24 @@ package io.quarkus.qute.deployment;
 import java.util.Map;
 
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.qute.deployment.QuteProcessor.Match;
+import io.quarkus.qute.deployment.QuteProcessor.MatchResult;
 
 final class TemplateExpressionMatchesBuildItem extends MultiBuildItem {
 
     final String templateGeneratedId;
 
-    private final Map<Integer, Match> generatedIdsToMatches;
+    private final Map<Integer, MatchResult> generatedIdsToMatches;
 
-    public TemplateExpressionMatchesBuildItem(String templateGeneratedId, Map<Integer, Match> generatedIdsToMatches) {
+    public TemplateExpressionMatchesBuildItem(String templateGeneratedId, Map<Integer, MatchResult> generatedIdsToMatches) {
         this.templateGeneratedId = templateGeneratedId;
         this.generatedIdsToMatches = generatedIdsToMatches;
     }
 
-    Match getMatch(Integer generatedId) {
+    MatchResult getMatch(Integer generatedId) {
         return generatedIdsToMatches.get(generatedId);
     }
 
-    Map<Integer, Match> getGeneratedIdsToMatches() {
+    Map<Integer, MatchResult> getGeneratedIdsToMatches() {
         return generatedIdsToMatches;
     }
 

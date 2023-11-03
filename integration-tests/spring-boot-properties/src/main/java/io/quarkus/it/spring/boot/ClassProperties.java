@@ -9,6 +9,8 @@ public final class ClassProperties {
 
     private AnotherClass anotherClass;
 
+    private Interface anInterface;
+
     public String getValue() {
         return value;
     }
@@ -23,5 +25,13 @@ public final class ClassProperties {
 
     public void setAnotherClass(AnotherClass anotherClass) {
         this.anotherClass = anotherClass;
+    }
+
+    public Interface getAnInterface() {
+        return anInterface;
+    }
+
+    public void setAnInterface(Interface anInterface) {
+        this.anInterface = anInterface;
     }
 }

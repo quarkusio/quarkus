@@ -18,7 +18,7 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-mutiny</artifactId>
+            <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -57,7 +57,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-mutiny-deployment</artifactId>
+            <artifactId>quarkus-resteasy-reactive-jackson-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -149,9 +149,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <redis.url>localhost:6379</redis.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -173,7 +170,7 @@
                                         </log>
                                         <!-- Speed things up a bit by not actually flushing writes to disk -->
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#start-wait -->
+                                            <!-- good docs found at: https://dmp.fabric8.io/#start-wait -->
                                             <time>5000</time>
                                             <!-- wait until Redis is actually up by checking if we can ping the server-->
                                             <exec>

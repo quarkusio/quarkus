@@ -5,18 +5,14 @@ import static org.assertj.core.api.Assertions.entry;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
-import org.assertj.core.api.AbstractObjectAssert;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.openshift.api.model.DeploymentConfig;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -25,7 +21,7 @@ public class BasicOpenshiftTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("basic-openshift")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("openshift.properties");
@@ -44,19 +40,22 @@ public class BasicOpenshiftTest {
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
         assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
-            assertThat(h.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo("basic-openshift");
-                assertThat(m.getLabels().get("app.openshift.io/runtime")).isEqualTo("quarkus");
-                assertThat(m.getNamespace()).isNull();
-            });
-            AbstractObjectAssert<?, ?> specAssert = assertThat(h).extracting("spec");
-            specAssert.extracting("replicas").isEqualTo(1);
-            specAssert.extracting("triggers").isInstanceOfSatisfying(Collection.class, c -> {
-                assertThat(c).isEmpty();
-            });
-            specAssert.extracting("selector").isInstanceOfSatisfying(Map.class, selectorsMap -> {
-                assertThat(selectorsMap).containsOnly(entry("app.kubernetes.io/name", "basic-openshift"),
-                        entry("app.kubernetes.io/version", "0.1-SNAPSHOT"));
+            DeploymentConfig deployment = (DeploymentConfig) h;
+
+            // metadata assertions
+            assertThat(deployment.getMetadata().getName()).isEqualTo("basic-openshift");
+            assertThat(deployment.getMetadata().getLabels().get("app.openshift.io/runtime")).isEqualTo("quarkus");
+            assertThat(deployment.getMetadata().getLabels().get("app.kubernetes.io/managed-by")).isEqualTo("quarkus");
+            assertThat(deployment.getMetadata().getNamespace()).isNull();
+
+            // spec assertions
+            assertThat(deployment.getSpec().getReplicas()).isEqualTo(1);
+            assertThat(deployment.getSpec().getSelector()).containsOnly(entry("app.kubernetes.io/name", "basic-openshift"),
+                    entry("app.kubernetes.io/version", "0.1-SNAPSHOT"));
+
+            // containers assertions
+            assertThat(deployment.getSpec().getTemplate().getSpec().getContainers()).satisfiesExactly(container -> {
+                assertThat(container.getImagePullPolicy()).isEqualTo("Always"); // expect the default value
             });
         });
 

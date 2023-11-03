@@ -2,9 +2,11 @@ package org.jboss.resteasy.reactive.common.headers;
 
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.Link;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.RuntimeDelegate;
+
+import jakarta.ws.rs.core.Link;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.RuntimeDelegate;
+
 import org.jboss.resteasy.reactive.common.jaxrs.LinkBuilderImpl;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 
@@ -104,7 +106,7 @@ public class LinkDelegate implements RuntimeDelegate.HeaderDelegate<Link> {
                     val = value.substring(curr, end);
                     curr = end + 1;
                 } else {
-                    StringBuffer buf = new StringBuffer();
+                    StringBuilder buf = new StringBuilder();
                     while (curr < value.length()) {
                         char c = value.charAt(curr);
                         if (c == ',' || c == ';')
@@ -134,7 +136,7 @@ public class LinkDelegate implements RuntimeDelegate.HeaderDelegate<Link> {
     public String toString(Link value) throws IllegalArgumentException {
         if (value == null)
             throw new IllegalArgumentException("value was null");
-        StringBuffer buf = new StringBuffer("<");
+        StringBuilder buf = new StringBuilder("<");
         buf.append(value.getUri().toString()).append(">");
 
         for (Map.Entry<String, String> entry : value.getParams().entrySet()) {

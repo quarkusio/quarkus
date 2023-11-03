@@ -1,6 +1,5 @@
 package io.quarkus.mongodb.runtime.graal;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 
 import java.security.NoSuchAlgorithmException;
@@ -10,13 +9,20 @@ import java.util.List;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLContext;
 
-import com.mongodb.*;
-import com.mongodb.connection.*;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientException;
+import com.mongodb.MongoCompressor;
+import com.mongodb.ServerAddress;
+import com.mongodb.UnixServerAddress;
+import com.mongodb.connection.BufferProvider;
+import com.mongodb.connection.SocketSettings;
+import com.mongodb.connection.SocketStreamFactory;
+import com.mongodb.connection.SslSettings;
+import com.mongodb.connection.Stream;
 import com.mongodb.internal.connection.InternalStreamConnection;
 import com.mongodb.internal.connection.ServerAddressHelper;
 import com.mongodb.internal.connection.SocketStream;
 import com.mongodb.internal.connection.UnixSocketChannelStream;
-import com.mongodb.internal.dns.DefaultDnsResolver;
 import com.mongodb.lang.Nullable;
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Delete;
@@ -107,7 +113,7 @@ final class CompressorSubstitute {
 }
 
 @TargetClass(InternalStreamConnection.class)
-final class InternalStreamConnectionSubtitution {
+final class InternalStreamConnectionSubstitution {
     @Substitute
     private CompressorSubstitute createCompressor(final MongoCompressor mongoCompressor) {
         throw new UnsupportedOperationException("Unsupported compressor in native mode");
@@ -132,46 +138,6 @@ final class ServerAddressHelperSubstitution {
         }
     }
 
-}
-
-@TargetClass(DefaultDnsResolver.class)
-final class DefaultDnsResolverSubstitution {
-    /*
-     * The format of SRV record is
-     * priority weight port target.
-     * e.g.
-     * 0 5 5060 example.com.
-     * The priority and weight are ignored, and we just concatenate the host (after removing the ending '.') and port with a
-     * ':' in between, as expected by ServerAddress.
-     * It's required that the srvHost has at least three parts (e.g. foo.bar.baz) and that all of the resolved hosts have a
-     * parent
-     * domain equal to the domain of the srvHost.
-     */
-    @Substitute
-    public List<String> resolveHostFromSrvRecords(final String srvHost) {
-        throw new UnsupportedOperationException("mongo+srv:// not supported in native mode");
-    }
-
-    @Substitute
-    private static boolean sameParentDomain(final List<String> srvHostDomainParts, final String resolvedHostDomain) {
-        List<String> resolvedHostDomainParts = asList(resolvedHostDomain.split("\\."));
-        if (srvHostDomainParts.size() > resolvedHostDomainParts.size()) {
-            return false;
-        }
-        return resolvedHostDomainParts
-                .subList(resolvedHostDomainParts.size() - srvHostDomainParts.size(), resolvedHostDomainParts.size())
-                .equals(srvHostDomainParts);
-    }
-
-    /*
-     * A TXT record is just a string
-     * We require each to be one or more query parameters for a MongoDB connection string.
-     * Here we concatenate TXT records together with a '&' separator as required by connection strings
-     */
-    @Substitute
-    public String resolveAdditionalQueryParametersFromTxtRecords(final String host) {
-        throw new UnsupportedOperationException("mongo+srv:// not supported in native mode");
-    }
 }
 
 //TODO: move to a dedicated jna extension that will simply collect JNA substitutions

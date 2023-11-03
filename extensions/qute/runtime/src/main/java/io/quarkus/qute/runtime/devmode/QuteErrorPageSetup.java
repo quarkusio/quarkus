@@ -43,15 +43,15 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
             + "{#if realLines.get(0) > 1}<span style=\"color:silver;\">...</span><br>{/if}\n"
             + "{#for line in sourceLines}\n"
             // highlight the error line - start
-            + "{#if lineNumber is realLines.get(index)}<div style=\"background-color:#555753;\">{/if}\n"
+            + "{#if lineNumber is realLines.get(line_index)}<div style=\"background-color:#555753;\">{/if}\n"
             // line number
-            + "<span style=\"color:silver;\">{realLines.get(index).pad}</span>\n"
+            + "<span style=\"color:silver;\">{realLines.get(line_index).pad}</span>\n"
             // line content
             + " {line}\n"
-            // highlight the error line - end 
-            + "{#if lineNumber is realLines.get(index)}</div>{#else}<br>{/if}\n"
+            // highlight the error line - end
+            + "{#if lineNumber is realLines.get(line_index)}</div>{#else}<br>{/if}\n"
             // point to error
-            + "{#if lineNumber is realLines.get(index)}{space.pad}<span style=\"color:red;\">{#for i in lineCharacterStart}={/for}^</span><br>{/if}\n"
+            + "{#if lineNumber is realLines.get(line_index)}{space.pad}<span style=\"color:red;\">{#for i in lineCharacterStart}={/for}^</span><br>{/if}\n"
             + "{/for}\n"
             + "{#if endLinesSkipped}<span style=\"color:silver;\">...</span>{/if}\n"
             + "</div>";
@@ -94,7 +94,7 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
         builder = new TemplateHtmlBuilder("Error restarting Quarkus", problemsFound, problemsFound);
 
         // Attempt to sort problems by line
-        Collections.sort(problems, new Comparator<Throwable>() {
+        problems.sort(new Comparator<Throwable>() {
             @Override
             public int compare(Throwable t1, Throwable t2) {
                 Object o1 = getOrigin(t1);
@@ -229,7 +229,8 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
     private int getLineCharacterStart(Object origin) {
         int lineCharacter = 0;
         try {
-            Method getLineCharacter = origin.getClass().getClassLoader().loadClass(ORIGIN).getMethod("getLineCharacterStart");
+            Method getLineCharacter = origin.getClass().getClassLoader().loadClass(ORIGIN)
+                    .getMethod("getLineCharacterStart");
             lineCharacter = (int) getLineCharacter.invoke(origin);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalAccessException
                 | IllegalArgumentException | InvocationTargetException e) {

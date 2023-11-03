@@ -5,11 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.event.Observes;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.quartz.Job;
@@ -23,6 +21,7 @@ import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 
+import io.quarkus.quartz.QuartzScheduler;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -30,7 +29,7 @@ public class InjectQuartzSchedulerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Starter.class)
                     .addAsResource(new StringAsset("quarkus.quartz.start-mode=forced"),
                             "application.properties"));
@@ -44,7 +43,9 @@ public class InjectQuartzSchedulerTest {
 
         static final CountDownLatch LATCH = new CountDownLatch(2);
 
-        void onStart(@Observes StartupEvent event, Scheduler quartz) throws SchedulerException {
+        void onStart(@Observes StartupEvent event, Scheduler quartz, QuartzScheduler quartzScheduler)
+                throws SchedulerException {
+            assertTrue(quartz == quartzScheduler.getScheduler());
             JobDetail job = JobBuilder.newJob(Starter.class)
                     .withIdentity("myJob", "myGroup")
                     .build();

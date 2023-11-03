@@ -2,15 +2,16 @@ package io.quarkus.it.mongodb.panache.book;
 
 import java.time.LocalDate;
 
-import javax.json.bind.annotation.JsonbDateFormat;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonFormat.Shape;
 
-import io.quarkus.mongodb.panache.ProjectionFor;
+import io.quarkus.mongodb.panache.common.ProjectionFor;
 
 @ProjectionFor(Book.class)
 public class BookShortView {
     private String title; // uses the field name title and not the column name bookTitle
     private String author;
-    @JsonbDateFormat("yyyy-MM-dd")
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate creationDate;
 
     public String getTitle() {

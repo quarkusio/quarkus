@@ -1,0 +1,14 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "SmallRye Stork"
+metadata:
+  keywords:
+    - "Load Balancing"
+    - "Service Discovery"
+    - "Service Selection"
+  guide: "https://quarkus.io/guides/stork"
+  categories:
+    - "web"
+  status: "preview"
+  config:
+    - "quarkus.stork."

@@ -43,7 +43,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.security.deployment.AdditionalSecurityCheckBuildItem;
 import io.quarkus.security.deployment.SecurityTransformerUtils;
 import io.quarkus.security.runtime.SecurityCheckRecorder;
-import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
+import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.spring.di.deployment.SpringBeanNameToDotNameBuildItem;
 import io.quarkus.spring.security.runtime.interceptor.SpringPreauthorizeInterceptor;
 import io.quarkus.spring.security.runtime.interceptor.SpringSecuredInterceptor;
@@ -80,7 +80,7 @@ class SpringSecurityProcessor {
 
         Set<MethodInfo> methodsWithSecurityAnnotation = new HashSet<>();
 
-        // first first go through the list of annotated methods
+        // first go through the list of annotated methods
         for (AnnotationInstance instance : index.getIndex().getAnnotations(DotNames.SPRING_SECURED)) {
             if (instance.value() == null) {
                 continue;
@@ -178,7 +178,7 @@ class SpringSecurityProcessor {
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
         Map<MethodInfo, AnnotationInstance> result = new HashMap<>();
 
-        // first first go through the list of annotated methods
+        // first go through the list of annotated methods
         for (AnnotationInstance instance : index.getIndex().getAnnotations(DotNames.SPRING_PRE_AUTHORIZE)) {
             if (instance.value() == null) {
                 continue;
@@ -234,7 +234,7 @@ class SpringSecurityProcessor {
                 }
                 MethodInfo methodInfo = instance.target().asMethod();
                 checksStandardSecurity(instance, methodInfo);
-                result.put(methodInfo, metaAnnotation.classAnnotation(DotNames.SPRING_PRE_AUTHORIZE));
+                result.put(methodInfo, metaAnnotation.declaredAnnotation(DotNames.SPRING_PRE_AUTHORIZE));
                 classesInNeedOfAnnotationTransformation.add(methodInfo.declaringClass().name());
             }
         }
@@ -264,7 +264,7 @@ class SpringSecurityProcessor {
     }
 
     /**
-     * The generation needs to be done in it's own build step otherwise we can end up with build cycle errors
+     * The generation needs to be done in its own build step otherwise we can end up with build cycle errors
      */
     @BuildStep
     void generateNecessarySupportClasses(CombinedIndexBuildItem index,
@@ -288,7 +288,7 @@ class SpringSecurityProcessor {
             }
 
             /*
-             * this is essentially the same loop as in addSpringPreAuthorizeSecurityCheck but only deals with cases where
+             * this is essentially the same loop as in addSpringPreAuthorizeSecurityCheck but only deals with cases
              * where beans need to be generated
              */
             for (String part : parts) {
@@ -367,7 +367,7 @@ class SpringSecurityProcessor {
             String value = instance.value().asString().trim();
 
             /*
-             * TODO: this serves fine for most purposes but a full blown solution will need a proper parser
+             * TODO: this serves fine for most purposes but a full-blown solution will need a proper parser
              */
 
             boolean containsAnd = false;
@@ -444,7 +444,7 @@ class SpringSecurityProcessor {
 
                     String propertyName = matcher.group(PARAMETER_EQ_PRINCIPAL_USERNAME_PROPERTY_ACCESSOR_MATCHER_GROUP);
                     if (propertyName == null) { // this is the case where the parameter is supposed to be a string
-                        if (!DotNames.STRING.equals(methodInfo.parameters().get(parameterNameAndIndex.getIndex()).name())) {
+                        if (!DotNames.STRING.equals(methodInfo.parameterType(parameterNameAndIndex.getIndex()).name())) {
                             throw new IllegalArgumentException(
                                     "Expression: '" + part + "' in the @PreAuthorize annotation on method '" + methodInfo.name()
                                             + "' of class '" + methodInfo.declaringClass() + "' references method parameter '"

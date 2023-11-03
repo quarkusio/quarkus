@@ -12,12 +12,11 @@
     <artifactId>quarkus-integration-test-jpa-db2</artifactId>
     <name>Quarkus - Integration Tests - JPA - DB2</name>
     <description>Module that contains JPA related tests running with the DB2 database</description>
-    
+
     <properties>
-        <jdbc-db2.url>jdbc:db2://localhost:50000/hreact</jdbc-db2.url>
-        <db2.image>ibmcom/db2:11.5.5.0</db2.image>
+        <jdbc-db2.url>jdbc:db2://localhost:50005/hreact</jdbc-db2.url>
     </properties>
-    
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -38,8 +37,18 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -152,9 +161,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <jdbc-db2.url>jdbc:db2://localhost:50005/hreact</jdbc-db2.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -189,7 +195,7 @@
                                             <color>cyan</color>
                                         </log>
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
+                                            <!-- good docs found at: https://dmp.fabric8.io/#build-healthcheck -->
                                             <log>.*INSTANCE.*</log>
                                             <!-- Unfortunately booting DB2 is slow, needs to set a generous (15m) timeout;
                                              it generally starts in 2-3 minutes, but it's been occasionally slightly above 10m -->

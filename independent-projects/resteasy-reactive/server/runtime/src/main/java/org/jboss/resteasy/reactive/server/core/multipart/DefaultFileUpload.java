@@ -2,16 +2,19 @@ package org.jboss.resteasy.reactive.server.core.multipart;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import javax.ws.rs.core.HttpHeaders;
+
+import jakarta.ws.rs.core.HttpHeaders;
+
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
+import org.jboss.resteasy.reactive.server.multipart.FormValue;
 
 public class DefaultFileUpload implements FileUpload {
 
     private final String name;
-    private final FormData.FormValue fileUpload;
+    private final FormValue fileUpload;
 
-    public DefaultFileUpload(String name, FormData.FormValue fileUpload) {
+    public DefaultFileUpload(String name, FormValue fileUpload) {
         this.name = name;
         this.fileUpload = fileUpload;
     }
@@ -22,7 +25,7 @@ public class DefaultFileUpload implements FileUpload {
     }
 
     @Override
-    public Path uploadedFile() {
+    public Path filePath() {
         return fileUpload.getFileItem().getFile();
     }
 

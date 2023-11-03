@@ -2,7 +2,7 @@ package io.quarkus.deployment.builditem;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PlatformImports;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.BootstrapConfig;
@@ -11,13 +11,13 @@ public final class AppModelProviderBuildItem extends SimpleBuildItem {
 
     private static final Logger log = Logger.getLogger(AppModelProviderBuildItem.class);
 
-    private final AppModel appModel;
+    private final ApplicationModel appModel;
 
-    public AppModelProviderBuildItem(AppModel appModel) {
+    public AppModelProviderBuildItem(ApplicationModel appModel) {
         this.appModel = appModel;
     }
 
-    public AppModel validateAndGet(BootstrapConfig config) {
+    public ApplicationModel validateAndGet(BootstrapConfig config) {
         final PlatformImports platforms = appModel.getPlatforms();
         if (platforms != null && !BootstrapConfig.MisalignedPlatformImports.IGNORE.equals(config.misalignedPlatformImports)
                 && !platforms.isAligned()) {

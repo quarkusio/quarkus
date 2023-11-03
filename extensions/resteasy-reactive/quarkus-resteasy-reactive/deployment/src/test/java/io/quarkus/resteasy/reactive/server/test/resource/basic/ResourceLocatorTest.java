@@ -1,14 +1,17 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.is;
+
 import java.util.function.Supplier;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation.Builder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation.Builder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -19,7 +22,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorAbstractAnnotationFreeResouce;
+import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorAbstractAnnotationFreeResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorAnnotationFreeSubResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorBaseResource;
 import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.ResourceLocatorCollectionResource;
@@ -58,14 +61,14 @@ public class ResourceLocatorTest {
 
     @RegisterExtension
     static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
                     war.addClass(ResourceLocatorQueueReceiver.class).addClass(ResourceLocatorReceiver.class)
                             .addClass(ResourceLocatorRootInterface.class).addClass(ResourceLocatorSubInterface.class)
                             .addClass(ResourceLocatorSubresource3Interface.class);
-                    war.addClasses(PortProviderUtil.class, ResourceLocatorAbstractAnnotationFreeResouce.class,
+                    war.addClasses(PortProviderUtil.class, ResourceLocatorAbstractAnnotationFreeResource.class,
                             ResourceLocatorAnnotationFreeSubResource.class, ResourceLocatorBaseResource.class,
                             ResourceLocatorCollectionResource.class, ResourceLocatorDirectory.class,
                             ResourceLocatorSubresource.class, ResourceLocatorSubresource2.class,
@@ -111,7 +114,7 @@ public class ResourceLocatorTest {
     }
 
     /**
-     * @tpTestDetails Two matching metods, one a resource locator, the other a resource method.
+     * @tpTestDetails Two matching methods, one a resource locator, the other a resource method.
      * @tpSince RESTEasy 3.0.20
      */
     @Test
@@ -134,8 +137,7 @@ public class ResourceLocatorTest {
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals(response.readEntity(String.class), "got");
             Assertions.assertNotNull(response.getHeaderString("Content-Type"));
-            Assertions.assertNotNull(response.getHeaderString("Content-Type"));
-            Assertions.assertEquals(MediaType.TEXT_PLAIN_TYPE.toString(),
+            Assertions.assertEquals("text/plain;charset=UTF-8",
                     response.getHeaderString("Content-Type"));
         }
         {
@@ -144,5 +146,13 @@ public class ResourceLocatorTest {
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals("posted: hello!", response.readEntity(String.class));
         }
+    }
+
+    @Test
+    @DisplayName("Test @BeanParam annotation in Subresources")
+    public void testBeanParamsInSubresource() {
+        given().get("/sub3/first/resources/subresource3?value=second")
+                .then()
+                .body(is("first and second"));
     }
 }

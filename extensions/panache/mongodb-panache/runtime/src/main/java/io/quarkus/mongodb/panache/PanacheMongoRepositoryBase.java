@@ -30,8 +30,8 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Persist the given entity in the database.
-     * This will set it's ID field if not already set.
-     * 
+     * This will set its ID field if not already set.
+     *
      * @param entity the entity to insert.
      * @see #persist(Iterable)
      * @see #persist(Stream)
@@ -54,7 +54,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Persist the given entity in the database or update it if it already exist.
+     * Persist the given entity in the database or update it if it already exists.
      *
      * @param entity the entity to update.
      * @see #persistOrUpdate(Iterable)
@@ -67,7 +67,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Delete the given entity from the database, if it is already persisted.
-     * 
+     *
      * @param entity the entity to delete.
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
@@ -82,7 +82,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find an entity of this type by ID.
-     * 
+     *
      * @param id the ID of the entity to find.
      * @return the entity found, or <code>null</code> if not found.
      */
@@ -104,7 +104,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query, with optional indexed parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params optional sequence of indexed parameters
      * @return a new {@link PanacheQuery} instance for the given query
@@ -121,7 +121,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query and the given sort options, with optional indexed parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params optional sequence of indexed parameters
@@ -139,7 +139,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Map} of named parameters
      * @return a new {@link PanacheQuery} instance for the given query
@@ -156,7 +156,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Map} of indexed parameters
@@ -174,7 +174,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return a new {@link PanacheQuery} instance for the given query
@@ -191,7 +191,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Parameters} of indexed parameters
@@ -224,7 +224,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      *
      * @param query a {@link org.bson.Document} query
      * @param sort the {@link org.bson.Document} sort
@@ -242,7 +242,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find all entities of this type.
-     * 
+     *
      * @return a new {@link PanacheQuery} instance to find all entities of this type.
      * @see #findAll(Sort)
      * @see #listAll()
@@ -255,7 +255,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find all entities of this type, in the given order.
-     * 
+     *
      * @param sort the sort order to use
      * @return a new {@link PanacheQuery} instance to find all entities of this type.
      * @see #findAll()
@@ -270,7 +270,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Find entities matching a query, with optional indexed parameters.
      * This method is a shortcut for <code>find(query, params).list()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params optional sequence of indexed parameters
      * @return a {@link List} containing all results, without paging
@@ -288,7 +288,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Find entities matching a query and the given sort options, with optional indexed parameters.
      * This method is a shortcut for <code>find(query, sort, params).list()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params optional sequence of indexed parameters
@@ -307,7 +307,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Find entities matching a query, with named parameters.
      * This method is a shortcut for <code>find(query, params).list()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Map} of named parameters
      * @return a {@link List} containing all results, without paging
@@ -325,7 +325,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Find entities matching a query and the given sort options, with named parameters.
      * This method is a shortcut for <code>find(query, sort, params).list()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Map} of indexed parameters
@@ -344,7 +344,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Find entities matching a query, with named parameters.
      * This method is a shortcut for <code>find(query, params).list()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return a {@link List} containing all results, without paging
@@ -362,7 +362,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Find entities matching a query and the given sort options, with named parameters.
      * This method is a shortcut for <code>find(query, sort, params).list()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Parameters} of indexed parameters
@@ -396,7 +396,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for <code>find(query, sort).list()</code>.
      *
      * @param query a {@link org.bson.Document} query
@@ -416,7 +416,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Find all entities of this type.
      * This method is a shortcut for <code>findAll().list()</code>.
-     * 
+     *
      * @return a {@link List} containing all results, without paging
      * @see #listAll(Sort)
      * @see #findAll()
@@ -430,7 +430,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Find all entities of this type, in the given order.
      * This method is a shortcut for <code>findAll(sort).list()</code>.
-     * 
+     *
      * @param sort the sort order to use
      * @return a {@link List} containing all results, without paging
      * @see #listAll()
@@ -445,7 +445,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Find entities matching a query, with optional indexed parameters.
      * This method is a shortcut for <code>find(query, params).stream()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params optional sequence of indexed parameters
      * @return a {@link Stream} containing all results, without paging
@@ -463,7 +463,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Find entities matching a query and the given sort options, with optional indexed parameters.
      * This method is a shortcut for <code>find(query, sort, params).stream()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params optional sequence of indexed parameters
@@ -482,7 +482,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Find entities matching a query, with named parameters.
      * This method is a shortcut for <code>find(query, params).stream()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Map} of named parameters
      * @return a {@link Stream} containing all results, without paging
@@ -500,7 +500,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Find entities matching a query and the given sort options, with named parameters.
      * This method is a shortcut for <code>find(query, sort, params).stream()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Map} of indexed parameters
@@ -519,7 +519,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Find entities matching a query, with named parameters.
      * This method is a shortcut for <code>find(query, params).stream()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return a {@link Stream} containing all results, without paging
@@ -537,7 +537,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Find entities matching a query and the given sort options, with named parameters.
      * This method is a shortcut for <code>find(query, sort, params).stream()</code>.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Parameters} of indexed parameters
@@ -571,7 +571,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for <code>find(query, sort).stream()</code>.
      *
      * @param query a {@link org.bson.Document} query
@@ -591,7 +591,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Find all entities of this type.
      * This method is a shortcut for <code>findAll().stream()</code>.
-     * 
+     *
      * @return a {@link Stream} containing all results, without paging
      * @see #streamAll(Sort)
      * @see #findAll()
@@ -605,7 +605,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Find all entities of this type, in the given order.
      * This method is a shortcut for <code>findAll(sort).stream()</code>.
-     * 
+     *
      * @return a {@link Stream} containing all results, without paging
      * @see #streamAll()
      * @see #findAll(Sort)
@@ -618,7 +618,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Counts the number of this type of entity in the database.
-     * 
+     *
      * @return the number of this type of entity in the database.
      * @see #count(String, Object...)
      * @see #count(String, Map)
@@ -631,7 +631,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Counts the number of this type of entity matching the given query, with optional indexed parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params optional sequence of indexed parameters
      * @return the number of entities counted.
@@ -646,7 +646,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Counts the number of this type of entity matching the given query, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Map} of named parameters
      * @return the number of entities counted.
@@ -661,7 +661,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Counts the number of this type of entity matching the given query, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return the number of entities counted.
@@ -690,7 +690,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Delete all entities of this type from the database.
-     * 
+     *
      * @return the number of entities deleted.
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
@@ -714,7 +714,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Delete all entities of this type matching the given query, with optional indexed parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params optional sequence of indexed parameters
      * @return the number of entities deleted.
@@ -729,7 +729,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Delete all entities of this type matching the given query, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Map} of named parameters
      * @return the number of entities deleted.
@@ -744,7 +744,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Delete all entities of this type matching the given query, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return the number of entities deleted.
@@ -773,7 +773,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Persist all given entities.
-     * 
+     *
      * @param entities the entities to insert
      * @see #persist(Object)
      * @see #persist(Stream)
@@ -785,7 +785,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Persist all given entities.
-     * 
+     *
      * @param entities the entities to insert
      * @see #persist(Object)
      * @see #persist(Iterable)
@@ -797,7 +797,7 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Persist all given entities.
-     * 
+     *
      * @param entities the entities to insert
      * @see #persist(Object)
      * @see #persist(Stream)
@@ -881,50 +881,71 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Update all entities of this type by the given update document, with optional indexed parameters.
-     * The returned {@link PanacheUpdate} object will allow to restrict on which documents the update should be applied.
+     * The returned {@link io.quarkus.mongodb.panache.common.PanacheUpdate} object will allow to restrict on which documents the
+     * update should be applied.
      *
      * @param update the update document, if it didn't contain any update operator, we add <code>$set</code>.
      *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
      * @param params optional sequence of indexed parameters
-     * @return a new {@link PanacheUpdate} instance for the given update document
+     * @return a new {@link io.quarkus.mongodb.panache.common.PanacheUpdate} instance for the given update document
      * @see #update(String, Map)
      * @see #update(String, Parameters)
+     * @see #update(Document)
      */
     @GenerateBridge
-    default PanacheUpdate update(String update, Object... params) {
+    default io.quarkus.mongodb.panache.common.PanacheUpdate update(String update, Object... params) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
      * Update all entities of this type by the given update document, with named parameters.
-     * The returned {@link PanacheUpdate} object will allow to restrict on which documents the update should be applied.
+     * The returned {@link io.quarkus.mongodb.panache.common.PanacheUpdate} object will allow to restrict on which documents the
+     * update should be applied.
      *
      * @param update the update document, if it didn't contain any update operator, we add <code>$set</code>.
      *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
      * @param params {@link Map} of named parameters
-     * @return a new {@link PanacheUpdate} instance for the given update document
+     * @return a new {@link io.quarkus.mongodb.panache.common.PanacheUpdate} instance for the given update document
      * @see #update(String, Object...)
      * @see #update(String, Parameters)
-     *
+     * @see #update(Document)
      */
     @GenerateBridge
-    default PanacheUpdate update(String update, Map<String, Object> params) {
+    default io.quarkus.mongodb.panache.common.PanacheUpdate update(String update, Map<String, Object> params) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
      * Update all entities of this type by the given update document, with named parameters.
-     * The returned {@link PanacheUpdate} object will allow to restrict on which document the update should be applied.
+     * The returned {@link io.quarkus.mongodb.panache.common.PanacheUpdate} object will allow to restrict on which document the
+     * update should be applied.
      *
      * @param update the update document, if it didn't contain any update operator, we add <code>$set</code>.
      *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
      * @param params {@link Parameters} of named parameters
-     * @return a new {@link PanacheUpdate} instance for the given update document
+     * @return a new {@link io.quarkus.mongodb.panache.common.PanacheUpdate} instance for the given update document
      * @see #update(String, Object...)
      * @see #update(String, Map)
+     * @see #update(Document)
      */
     @GenerateBridge
-    default PanacheUpdate update(String update, Parameters params) {
+    default io.quarkus.mongodb.panache.common.PanacheUpdate update(String update, Parameters params) {
+        throw INSTANCE.implementationInjectionMissing();
+    }
+
+    /**
+     * Update all entities of this type by the given update BSON document.
+     * The returned {@link io.quarkus.mongodb.panache.common.PanacheUpdate} object will allow to restrict on which document the
+     * update should be applied.
+     *
+     * @param update the update document, as a {@link org.bson.Document}.
+     * @return a new {@link io.quarkus.mongodb.panache.common.PanacheUpdate} instance for the given update document
+     * @see #update(String, Object...)
+     * @see #update(String, Map)
+     * @see #update(String, Parameters)
+     */
+    @GenerateBridge
+    default io.quarkus.mongodb.panache.common.PanacheUpdate update(Document update) {
         throw INSTANCE.implementationInjectionMissing();
     }
 

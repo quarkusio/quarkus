@@ -25,7 +25,9 @@ public class AddNamespaceToSubjectDecorator extends NamedResourceDecorator<Subje
 
     @Override
     public void andThenVisit(SubjectFluent<?> subject, ObjectMeta resourceMeta) {
-        subject.withNamespace(namespace);
+        if (!subject.hasNamespace()) {
+            subject.withNamespace(namespace);
+        }
     }
 
     @Override

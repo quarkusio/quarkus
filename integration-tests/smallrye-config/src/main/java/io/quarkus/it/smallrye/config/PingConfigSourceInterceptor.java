@@ -1,6 +1,6 @@
 package io.quarkus.it.smallrye.config;
 
-import javax.annotation.Priority;
+import jakarta.annotation.Priority;
 
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorContext;

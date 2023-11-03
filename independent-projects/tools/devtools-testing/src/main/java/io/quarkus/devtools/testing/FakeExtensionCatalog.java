@@ -1,12 +1,11 @@
 package io.quarkus.devtools.testing;
 
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
-import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
-import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public final class FakeExtensionCatalog {
 
@@ -26,13 +25,13 @@ public final class FakeExtensionCatalog {
         }
     }
 
-    public static JsonExtensionCatalog newFakeExtensionCatalog() {
+    public static ExtensionCatalog newFakeExtensionCatalog() {
         InputStream inputString = FakeExtensionCatalog.class.getResourceAsStream(FAKE_EXTENSION_CATALOG_PATH);
         if (inputString == null) {
             throw new IllegalStateException("Failed to locate " + FAKE_EXTENSION_CATALOG_PATH + " on the classpath");
         }
         try {
-            return JsonCatalogMapperHelper.deserialize(inputString, JsonExtensionCatalog.class);
+            return ExtensionCatalog.fromStream(inputString);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

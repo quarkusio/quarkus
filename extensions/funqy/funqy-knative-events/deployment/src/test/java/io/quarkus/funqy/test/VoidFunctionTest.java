@@ -4,8 +4,6 @@ import static io.quarkus.funqy.test.VoidFunction.TEST_EXCEPTION_MSG;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,7 +14,7 @@ import io.restassured.RestAssured;
 public class VoidFunctionTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource("void-function.properties", "application.properties")
                     .addClasses(VoidFunction.class));
 

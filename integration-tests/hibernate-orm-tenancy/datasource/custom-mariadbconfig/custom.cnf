@@ -1,0 +1,35 @@
+#
+# MariaDB tuning meant for fast integration test execution:
+# data is meant to be lost. Never use for actual database needs!
+#
+
+[mysqld]
+
+# Disabling symbolic-links is recommended to prevent assorted security risks
+symbolic-links = 0
+
+# http://www.percona.com/blog/2008/05/31/dns-achilles-heel-mysql-installation/
+skip_name_resolve
+
+max_connections = 10
+
+# Some tuning for tmpfs :
+
+innodb_doublewrite = 0
+innodb_use_native_aio = 1
+innodb_flush_method = O_DSYNC
+innodb_log_file_size = 2M
+innodb_log_buffer_size = 2M
+innodb_buffer_pool_size = 5242880
+innodb_file_per_table = 0
+innodb_flush_log_at_trx_commit = 0
+sync_binlog = 0
+innodb_fast_shutdown = 1
+innodb_temp_data_file_path = ibtmp1:2M:autoextend:max:512M
+
+# Generally useful for tests:
+default-time-zone='+00:00'
+character-set-server=utf8mb4
+collation-server=utf8mb4_unicode_ci
+sql-mode="traditional"
+strict_password_validation = 0

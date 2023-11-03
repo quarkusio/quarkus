@@ -8,6 +8,12 @@ public class TestJavaBean {
     public TestJavaBean() {
     }
 
+    public TestJavaBean(String sval, int ival, Integer boxedIval) {
+        this.sval = sval;
+        this.ival = ival;
+        this.boxedIval = boxedIval;
+    }
+
     public TestJavaBean(String sval, int ival) {
         this.sval = sval;
         this.ival = ival;
@@ -21,6 +27,7 @@ public class TestJavaBean {
 
     private String sval;
     private int ival;
+    private Integer boxedIval = 0;
     private Supplier<String> supplier;
 
     public String getSval() {
@@ -40,6 +47,15 @@ public class TestJavaBean {
         this.ival = ival;
     }
 
+    public Integer getBoxedIval() {
+        return boxedIval;
+    }
+
+    public TestJavaBean setBoxedIval(Integer boxedIval) {
+        this.boxedIval = boxedIval;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -48,7 +64,7 @@ public class TestJavaBean {
             return false;
         TestJavaBean that = (TestJavaBean) o;
         boolean matchesSimple = ival == that.ival &&
-                Objects.equals(sval, that.sval);
+                Objects.equals(sval, that.sval) && Objects.equals(boxedIval, that.boxedIval);
         if (!matchesSimple) {
             return false;
         }
@@ -81,6 +97,7 @@ public class TestJavaBean {
         return "TestJavaBean{" +
                 "sval='" + sval + '\'' +
                 ", ival=" + ival +
+                ", boxedIval=" + boxedIval +
                 '}';
     }
 }

@@ -10,8 +10,8 @@
     </parent>
 
     <artifactId>quarkus-resteasy-qute</artifactId>
-    <name>Quarkus - RESTEasy - Qute - Runtime</name>
-    <description>Qute Templating integration for RESTEasy</description>
+    <name>Quarkus - RESTEasy Classic - Qute - Runtime</name>
+    <description>Qute Templating integration for RESTEasy Classic</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -35,7 +35,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

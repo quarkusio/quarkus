@@ -1,12 +1,14 @@
 package io.quarkus.arc.test.interceptors.arcInvContext;
 
-import io.quarkus.arc.ArcInvocationContext;
 import java.lang.annotation.Annotation;
 import java.util.Set;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.annotation.Priority;
-import javax.interceptor.Interceptor;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Priority;
+import jakarta.interceptor.Interceptor;
+
+import io.quarkus.arc.ArcInvocationContext;
 
 @Priority(2)
 @Interceptor

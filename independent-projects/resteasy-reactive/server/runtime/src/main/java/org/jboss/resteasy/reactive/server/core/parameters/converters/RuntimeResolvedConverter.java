@@ -2,8 +2,10 @@ package org.jboss.resteasy.reactive.server.core.parameters.converters;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import javax.ws.rs.ext.ParamConverter;
-import javax.ws.rs.ext.ParamConverterProvider;
+
+import jakarta.ws.rs.ext.ParamConverter;
+import jakarta.ws.rs.ext.ParamConverterProvider;
+
 import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 
@@ -41,6 +43,14 @@ public class RuntimeResolvedConverter implements ParameterConverter {
     public static class Supplier implements DelegatingParameterConverterSupplier {
 
         private ParameterConverterSupplier delegate;
+
+        public Supplier() {
+        }
+
+        // invoked by reflection for BeanParam in ClassInjectorTransformer
+        public Supplier(ParameterConverterSupplier delegate) {
+            this.delegate = delegate;
+        }
 
         @Override
         public String getClassName() {

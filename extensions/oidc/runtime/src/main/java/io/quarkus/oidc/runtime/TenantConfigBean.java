@@ -1,9 +1,11 @@
 package io.quarkus.oidc.runtime;
 
 import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.function.Function;
 
+import jakarta.enterprise.context.spi.CreationalContext;
+
+import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.smallrye.mutiny.Uni;
 
@@ -13,19 +15,16 @@ public class TenantConfigBean {
     private final Map<String, TenantConfigContext> dynamicTenantsConfig;
     private final TenantConfigContext defaultTenant;
     private final Function<OidcTenantConfig, Uni<TenantConfigContext>> tenantConfigContextFactory;
-    private final Executor blockingExecutor;
 
     public TenantConfigBean(
             Map<String, TenantConfigContext> staticTenantsConfig,
             Map<String, TenantConfigContext> dynamicTenantsConfig,
             TenantConfigContext defaultTenant,
-            Function<OidcTenantConfig, Uni<TenantConfigContext>> tenantConfigContextFactory,
-            Executor blockingExecutor) {
+            Function<OidcTenantConfig, Uni<TenantConfigContext>> tenantConfigContextFactory) {
         this.staticTenantsConfig = staticTenantsConfig;
         this.dynamicTenantsConfig = dynamicTenantsConfig;
         this.defaultTenant = defaultTenant;
         this.tenantConfigContextFactory = tenantConfigContextFactory;
-        this.blockingExecutor = blockingExecutor;
     }
 
     public Map<String, TenantConfigContext> getStaticTenantsConfig() {
@@ -44,7 +43,24 @@ public class TenantConfigBean {
         return dynamicTenantsConfig;
     }
 
-    public Executor getBlockingExecutor() {
-        return blockingExecutor;
+    public static class Destroyer implements BeanDestroyer<TenantConfigBean> {
+
+        @Override
+        public void destroy(TenantConfigBean instance, CreationalContext<TenantConfigBean> creationalContext,
+                Map<String, Object> params) {
+            if (instance.defaultTenant != null && instance.defaultTenant.provider != null) {
+                instance.defaultTenant.provider.close();
+            }
+            for (var i : instance.staticTenantsConfig.values()) {
+                if (i.provider != null) {
+                    i.provider.close();
+                }
+            }
+            for (var i : instance.dynamicTenantsConfig.values()) {
+                if (i.provider != null) {
+                    i.provider.close();
+                }
+            }
+        }
     }
 }

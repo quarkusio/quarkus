@@ -1,27 +1,25 @@
 package io.quarkus.hibernate.orm.runtime.boot;
 
+import static org.hibernate.cfg.AvailableSettings.CLASS_CACHE_PREFIX;
+import static org.hibernate.cfg.AvailableSettings.COLLECTION_CACHE_PREFIX;
 import static org.hibernate.cfg.AvailableSettings.DRIVER;
-import static org.hibernate.cfg.AvailableSettings.JACC_ENABLED;
-import static org.hibernate.cfg.AvailableSettings.JACC_PREFIX;
 import static org.hibernate.cfg.AvailableSettings.JPA_JDBC_DRIVER;
 import static org.hibernate.cfg.AvailableSettings.JPA_JDBC_PASSWORD;
 import static org.hibernate.cfg.AvailableSettings.JPA_JDBC_URL;
 import static org.hibernate.cfg.AvailableSettings.JPA_JDBC_USER;
 import static org.hibernate.cfg.AvailableSettings.JPA_TRANSACTION_TYPE;
 import static org.hibernate.cfg.AvailableSettings.PASS;
+import static org.hibernate.cfg.AvailableSettings.PERSISTENCE_UNIT_NAME;
 import static org.hibernate.cfg.AvailableSettings.TRANSACTION_COORDINATOR_STRATEGY;
 import static org.hibernate.cfg.AvailableSettings.URL;
 import static org.hibernate.cfg.AvailableSettings.USER;
-import static org.hibernate.cfg.AvailableSettings.WRAP_RESULT_SETS;
 import static org.hibernate.cfg.AvailableSettings.XML_MAPPING_ENABLED;
 import static org.hibernate.internal.HEMLogging.messageLogger;
-import static org.hibernate.jpa.AvailableSettings.CLASS_CACHE_PREFIX;
-import static org.hibernate.jpa.AvailableSettings.COLLECTION_CACHE_PREFIX;
-import static org.hibernate.jpa.AvailableSettings.PERSISTENCE_UNIT_NAME;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,15 +29,15 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import javax.persistence.PersistenceException;
-import javax.persistence.spi.PersistenceUnitTransactionType;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.spi.PersistenceUnitTransactionType;
 
-import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.CacheRegionDefinition;
 import org.hibernate.boot.MetadataBuilder;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.archive.scan.internal.StandardScanOptions;
 import org.hibernate.boot.archive.scan.spi.Scanner;
+import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.boot.internal.MetadataImpl;
 import org.hibernate.boot.model.process.spi.ManagedResources;
 import org.hibernate.boot.model.process.spi.MetadataBuildingProcess;
@@ -50,11 +48,9 @@ import org.hibernate.boot.spi.MetadataBuilderContributor;
 import org.hibernate.boot.spi.MetadataBuilderImplementor;
 import org.hibernate.cache.internal.CollectionCacheInvalidator;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
-import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
+import org.hibernate.id.factory.IdentifierGeneratorFactory;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.EntityManagerMessageLogger;
 import org.hibernate.internal.util.StringHelper;
@@ -78,12 +74,14 @@ import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
+import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordableBootstrap;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
-import io.quarkus.hibernate.orm.runtime.recording.RecordingDialectFactory;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusMutableIdentifierGeneratorFactory;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusStaticInitDialectFactory;
 import io.quarkus.hibernate.orm.runtime.tenant.HibernateMultiTenantConnectionProvider;
 
 /**
@@ -91,6 +89,18 @@ import io.quarkus.hibernate.orm.runtime.tenant.HibernateMultiTenantConnectionPro
  * is created, which configuration properties are supportable, custom overrides, etc...
  */
 public class FastBootMetadataBuilder {
+
+    /**
+     * Old deprecated constants:
+     */
+    @Deprecated
+    private static final String JACC_PREFIX = "hibernate.jacc";
+    @Deprecated
+    private static final String JACC_ENABLED = "hibernate.jacc.enabled";
+    @Deprecated
+    private static final String WRAP_RESULT_SETS = "hibernate.jdbc.wrap_result_sets";
+    @Deprecated
+    private static final String ALLOW_ENHANCEMENT_AS_PROXY = "hibernate.bytecode.allow_enhancement_as_proxy";
 
     private static final EntityManagerMessageLogger LOG = messageLogger(FastBootMetadataBuilder.class);
 
@@ -100,9 +110,8 @@ public class FastBootMetadataBuilder {
     private final ManagedResources managedResources;
     private final MetadataBuilderImplementor metamodelBuilder;
     private final Collection<Class<? extends Integrator>> additionalIntegrators;
-    private final Collection<ProvidedService> providedServices;
+    private final Collection<ProvidedService<?>> providedServices;
     private final PreGeneratedProxies preGeneratedProxies;
-    private final String dataSource;
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
@@ -112,7 +121,6 @@ public class FastBootMetadataBuilder {
     public FastBootMetadataBuilder(final QuarkusPersistenceUnitDefinition puDefinition, Scanner scanner,
             Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies) {
         this.persistenceUnit = puDefinition.getActualHibernateDescriptor();
-        this.dataSource = puDefinition.getDataSource();
         this.isReactive = puDefinition.isReactive();
         this.fromPersistenceXml = puDefinition.isFromPersistenceXml();
         this.additionalIntegrators = additionalIntegrators;
@@ -127,11 +135,14 @@ public class FastBootMetadataBuilder {
 
         final RecordableBootstrap ssrBuilder = RecordableBootstrapFactory.createRecordableBootstrapBuilder(puDefinition);
 
+        // Should be set before calling mergeSettings()
+        this.multiTenancyStrategy = puDefinition.getConfig().getMultiTenancyStrategy();
         final MergedSettings mergedSettings = mergeSettings(puDefinition);
-        this.buildTimeSettings = new BuildTimeSettings(mergedSettings.getConfigurationValues());
+        this.buildTimeSettings = createBuildTimeSettings(puDefinition, mergedSettings.getConfigurationValues());
 
         // Build the "standard" service registry
-        ssrBuilder.applySettings(buildTimeSettings.getSettings());
+        ssrBuilder.applySettings(buildTimeSettings.getAllSettings());
+
         this.standardServiceRegistry = ssrBuilder.build();
         registerIdentifierGenerators(standardServiceRegistry);
 
@@ -149,7 +160,7 @@ public class FastBootMetadataBuilder {
          * initializes the EnversService and produces some additional mapping documents.
          * 4. After that point the EnversService appears to be fully functional.
          *
-         * The following trick uses the aforementioned steps to setup the EnversService and then turns it into
+         * The following trick uses the aforementioned steps to set up the EnversService and then turns it into
          * a ProvidedService so that it is not necessary to repeat all these complex steps during the reactivation
          * of the destroyed service registry in PreconfiguredServiceRegistryBuilder.
          *
@@ -189,13 +200,36 @@ public class FastBootMetadataBuilder {
         // was passed
         metamodelBuilder.applyTempClassLoader(null);
 
-        final MultiTenancyStrategy strategy = puDefinition.getMultitenancyStrategy();
-        if (strategy != null && strategy != MultiTenancyStrategy.NONE) {
-            ssrBuilder.addService(MultiTenantConnectionProvider.class,
-                    new HibernateMultiTenantConnectionProvider(puDefinition.getName()));
-        }
-        this.multiTenancyStrategy = strategy;
+    }
 
+    private BuildTimeSettings createBuildTimeSettings(QuarkusPersistenceUnitDefinition puDefinition,
+            Map<String, Object> quarkusConfigSettings) {
+        Map<String, String> quarkusConfigUnsupportedProperties = puDefinition.getConfig()
+                .getQuarkusConfigUnsupportedProperties();
+        Map<String, Object> allSettings = new HashMap<>(quarkusConfigSettings);
+
+        // Ignore properties that were already set by Quarkus;
+        // we'll log a warning about those on startup.
+        // (see io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider.buildRuntimeSettings)
+        quarkusConfigUnsupportedProperties.forEach(allSettings::putIfAbsent);
+
+        var databaseOrmCompatibilityVersion = puDefinition.getConfig().getDatabaseOrmCompatibilityVersion();
+        Map<String, String> appliedDatabaseOrmCompatibilitySettings = new HashMap<>();
+        for (Map.Entry<String, String> entry : databaseOrmCompatibilityVersion.settings(puDefinition.getConfig().getDbKind())
+                .entrySet()) {
+            // Not using putIfAbsent() because that would be ambiguous in case of null values
+            if (!allSettings.containsKey(entry.getKey())) {
+                appliedDatabaseOrmCompatibilitySettings.put(entry.getKey(), entry.getValue());
+            }
+        }
+        allSettings.putAll(appliedDatabaseOrmCompatibilitySettings);
+
+        // We keep a separate copy of settings coming from Quarkus config,
+        // so that we can more easily differentiate between
+        // properties coming from Quarkus and "unsupported" properties
+        // on startup (see io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider.buildRuntimeSettings)
+        return new BuildTimeSettings(puDefinition.getConfig(), quarkusConfigSettings,
+                appliedDatabaseOrmCompatibilitySettings, allSettings);
     }
 
     /**
@@ -216,6 +250,18 @@ public class FastBootMetadataBuilder {
 
         cfg.put(PERSISTENCE_UNIT_NAME, persistenceUnit.getName());
 
+        if (multiTenancyStrategy != null && multiTenancyStrategy != MultiTenancyStrategy.NONE
+                && multiTenancyStrategy != MultiTenancyStrategy.DISCRIMINATOR) {
+            // We need to initialize the multi tenant connection provider
+            // on static init as it is used in MetadataBuildingOptionsImpl
+            // to determine if multi-tenancy is enabled.
+            // Adding the service on runtime init would lead to unpredictable behavior
+            // (metadata generated for a single-tenant application but runtime using multi-tenancy...).
+            // Nothing is expected to actually retrieve a connection from the provider until runtime init, though.
+            cfg.put(AvailableSettings.MULTI_TENANT_CONNECTION_PROVIDER,
+                    new HibernateMultiTenantConnectionProvider(puDefinition.getName()));
+        }
+
         applyTransactionProperties(persistenceUnit, cfg);
         applyJdbcConnectionProperties(cfg);
 
@@ -230,7 +276,7 @@ public class FastBootMetadataBuilder {
 
         cfg.put("hibernate.temp.use_jdbc_metadata_defaults", "false");
 
-        //This shouldn't be encouraged but sometimes it's really useful - and it used to be the default
+        //This shouldn't be encouraged, but sometimes it's really useful - and it used to be the default
         //in Hibernate ORM before the JPA spec would require to change this.
         //At this time of transitioning we'll only expose it as a global system property, so to allow usage
         //for special circumstances and yet not encourage this.
@@ -240,9 +286,10 @@ public class FastBootMetadataBuilder {
                     Boolean.getBoolean(AvailableSettings.ALLOW_UPDATE_OUTSIDE_TRANSACTION));
         }
 
-        //Enable the new Enhanced Proxies capability (unless it was specifically disabled):
-        if (!cfg.containsKey(AvailableSettings.ALLOW_ENHANCEMENT_AS_PROXY)) {
-            cfg.put(AvailableSettings.ALLOW_ENHANCEMENT_AS_PROXY, Boolean.TRUE.toString());
+        if (cfg.containsKey(ALLOW_ENHANCEMENT_AS_PROXY)) {
+            LOG.warn("Setting '" + ALLOW_ENHANCEMENT_AS_PROXY
+                    + "' is being ignored: this property is no longer meaningful since Hibernate ORM 6");
+            cfg.remove(ALLOW_ENHANCEMENT_AS_PROXY);
         }
         //Always Order batch updates as it prevents contention on the data (unless it was disabled)
         if (!cfg.containsKey(AvailableSettings.ORDER_UPDATES)) {
@@ -263,11 +310,12 @@ public class FastBootMetadataBuilder {
          */
         cfg.putIfAbsent(AvailableSettings.CONNECTION_HANDLING,
                 PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_BEFORE_TRANSACTION_COMPLETION);
+        if (cfg.containsKey(WRAP_RESULT_SETS)) {
+            LOG.warn("Wrapping result sets is no longer supported by Hibernate ORM. Setting " + WRAP_RESULT_SETS
 
-        if (readBooleanConfigurationValue(cfg, WRAP_RESULT_SETS)) {
-            LOG.warn("Wrapping result sets is not supported. Setting " + WRAP_RESULT_SETS + " to false.");
+                    + " is being ignored.");
+            cfg.remove(WRAP_RESULT_SETS);
         }
-        cfg.put(WRAP_RESULT_SETS, "false");
 
         // XML mapping support can be costly, so we only enable it when XML mappings are actually used
         // or when integrations (e.g. Envers) need it.
@@ -298,7 +346,7 @@ public class FastBootMetadataBuilder {
 
         // Note: this one is not a boolean, just having the property enables it
         if (cfg.containsKey(JACC_ENABLED)) {
-            LOG.warn("JACC is not supported. Disabling it.");
+            LOG.warn("JACC integration is no longer supported by Hibernate ORM. Option ignored.");
             cfg.remove(JACC_ENABLED);
         }
 
@@ -322,7 +370,7 @@ public class FastBootMetadataBuilder {
 
                 if (keyString.startsWith(JACC_PREFIX)) {
                     LOG.warn(
-                            "Found JACC permission grant [%s] in properties, but JACC is not compatible with the FastBootMetadataBuilder; ignoring!");
+                            "Found JACC permission grant [%s] in properties, but JACC is no longer supported by Hibernate ORM: ignoring!");
                 } else if (keyString.startsWith(CLASS_CACHE_PREFIX)) {
                     mergedSettings.addCacheRegionDefinition(
                             parseCacheRegionDefinitionEntry(keyString.substring(CLASS_CACHE_PREFIX.length() + 1),
@@ -331,6 +379,12 @@ public class FastBootMetadataBuilder {
                     mergedSettings.addCacheRegionDefinition(
                             parseCacheRegionDefinitionEntry(keyString.substring(COLLECTION_CACHE_PREFIX.length() + 1),
                                     (String) entry.getValue(), CacheRegionDefinition.CacheRegionType.COLLECTION));
+                } else if (keyString.startsWith("hibernate.ejb.classcache")) {
+                    LOG.warn(
+                            "Deprecated configuration property prefixed by 'hibernate.ejb.classcache' is being ignored. Suggestion: change prefix to 'hibernate.classcache'");
+                } else if (keyString.startsWith("hibernate.ejb.collectioncache")) {
+                    LOG.warn(
+                            "Deprecated configuration property prefixed by 'hibernate.ejb.collectioncache' is being ignored. Suggestion: change prefix to 'hibernate.collectioncache'");
                 }
             }
         }
@@ -371,7 +425,7 @@ public class FastBootMetadataBuilder {
         destroyServiceRegistry();
         ProxyDefinitions proxyClassDefinitions = ProxyDefinitions.createFromMetadata(storeableMetadata, preGeneratedProxies);
         return new RecordedState(dialect, storeableMetadata, buildTimeSettings, getIntegrators(),
-                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions, dataSource, multiTenancyStrategy,
+                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions, multiTenancyStrategy,
                 isReactive, fromPersistenceXml);
     }
 
@@ -386,8 +440,9 @@ public class FastBootMetadataBuilder {
         MetadataImpl replacement = new MetadataImpl(
                 fullMeta.getUUID(),
                 fullMeta.getMetadataBuildingOptions(), //TODO Replace this
-                fullMeta.getIdentifierGeneratorFactory(),
                 fullMeta.getEntityBindingMap(),
+                fullMeta.getComposites(),
+                fullMeta.getGenericComponentsMap(),
                 fullMeta.getMappedSuperclassMap(),
                 fullMeta.getCollectionBindingMap(),
                 fullMeta.getTypeDefinitionMap(),
@@ -410,7 +465,7 @@ public class FastBootMetadataBuilder {
 
     private Dialect extractDialect() {
         DialectFactory service = standardServiceRegistry.getService(DialectFactory.class);
-        RecordingDialectFactory casted = (RecordingDialectFactory) service;
+        QuarkusStaticInitDialectFactory casted = (QuarkusStaticInitDialectFactory) service;
         return casted.getDialect();
     }
 
@@ -559,14 +614,19 @@ public class FastBootMetadataBuilder {
         if (idGeneratorStrategyProviderSetting != null) {
             final IdentifierGeneratorStrategyProvider idGeneratorStrategyProvider = strategySelector
                     .resolveStrategy(IdentifierGeneratorStrategyProvider.class, idGeneratorStrategyProviderSetting);
-            final MutableIdentifierGeneratorFactory identifierGeneratorFactory = ssr
-                    .getService(MutableIdentifierGeneratorFactory.class);
+            final IdentifierGeneratorFactory identifierGeneratorFactory = ssr
+                    .getService(IdentifierGeneratorFactory.class);
             if (identifierGeneratorFactory == null) {
                 throw persistenceException("Application requested custom identifier generator strategies, "
                         + "but the MutableIdentifierGeneratorFactory could not be found");
             }
+            if (!(identifierGeneratorFactory instanceof QuarkusMutableIdentifierGeneratorFactory)) {
+                throw persistenceException(
+                        "Unexpected implementation of IdentifierGeneratorFactory: do not override core components");
+            }
+            final QuarkusMutableIdentifierGeneratorFactory qIdGenerator = (QuarkusMutableIdentifierGeneratorFactory) identifierGeneratorFactory;
             for (Map.Entry<String, Class<?>> entry : idGeneratorStrategyProvider.getStrategies().entrySet()) {
-                identifierGeneratorFactory.register(entry.getKey(), entry.getValue());
+                qIdGenerator.register(entry.getKey(), entry.getValue());
             }
         }
     }

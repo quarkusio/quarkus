@@ -1,7 +1,7 @@
 package io.quarkus.resteasy.reactive.server.servlet.runtime;
 
-import javax.servlet.Filter;
-import javax.servlet.Servlet;
+import jakarta.servlet.Filter;
+import jakarta.servlet.Servlet;
 
 import org.jboss.resteasy.reactive.server.core.Deployment;
 

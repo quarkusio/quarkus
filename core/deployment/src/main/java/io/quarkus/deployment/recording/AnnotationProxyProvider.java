@@ -17,13 +17,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
-import javax.enterprise.util.AnnotationLiteral;
+import jakarta.enterprise.util.AnnotationLiteral;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.deployment.util.IoUtil;
@@ -63,8 +63,7 @@ public class AnnotationProxyProvider {
             ClassInfo clazz = index.getClassByName(name);
             if (clazz == null) {
                 try (InputStream annotationStream = IoUtil.readClass(classLoader, name.toString())) {
-                    Indexer indexer = new Indexer();
-                    clazz = indexer.index(annotationStream);
+                    clazz = Index.singleClass(annotationStream);
                 } catch (Exception e) {
                     throw new IllegalStateException("Failed to index: " + name, e);
                 }
@@ -111,7 +110,7 @@ public class AnnotationProxyProvider {
 
         /**
          * Explicit values override the default values from the annotation class.
-         * 
+         *
          * @param name
          * @param value
          * @return self
@@ -123,7 +122,7 @@ public class AnnotationProxyProvider {
 
         /**
          * Explicit default values override the default values from the annotation class.
-         * 
+         *
          * @param name
          * @param value
          * @return self
@@ -143,8 +142,9 @@ public class AnnotationProxyProvider {
 
                 String name = annotationInstance.name().toString();
 
-                // Ljavax/enterprise/util/AnnotationLiteral<Lcom/foo/MyAnnotation;>;Lcom/foo/MyAnnotation;
-                String signature = String.format("Ljavax/enterprise/util/AnnotationLiteral<L%1$s;>;L%1$s;",
+                // Ljakarta/enterprise/util/AnnotationLiteral<Lcom/foo/MyAnnotation;>;Lcom/foo/MyAnnotation;
+                String signature = String.format("L%1$s<L%2$s;>;L%2$s;",
+                        AnnotationLiteral.class.getName().replace('.', '/'),
                         name.replace('.', '/'));
 
                 ClassCreator literal = ClassCreator.builder().classOutput(classOutput).className(generatedName)

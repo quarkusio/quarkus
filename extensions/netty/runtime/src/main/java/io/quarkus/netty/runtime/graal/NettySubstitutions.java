@@ -5,17 +5,26 @@ import static io.netty.handler.codec.http.HttpHeaderValues.GZIP;
 import static io.netty.handler.codec.http.HttpHeaderValues.X_DEFLATE;
 import static io.netty.handler.codec.http.HttpHeaderValues.X_GZIP;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.function.BooleanSupplier;
 
+import javax.crypto.NoSuchPaddingException;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
@@ -26,11 +35,10 @@ import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.RecomputeFieldValue.Kind;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.jdk.JDK11OrLater;
-import com.oracle.svm.core.jdk.JDK8OrEarlier;
 
 import io.netty.bootstrap.AbstractBootstrapConfig;
 import io.netty.bootstrap.ChannelFactory;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -195,7 +203,7 @@ final class Target_io_netty_handler_ssl_SslHandler$SslEngineType {
     }
 }
 
-@TargetClass(className = "io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator$AlpnWrapper", onlyWith = JDK11OrLater.class)
+@TargetClass(className = "io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator$AlpnWrapper")
 final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator_AlpnWrapper {
     @Substitute
     public SSLEngine wrapSslEngine(SSLEngine engine, ByteBufAllocator alloc,
@@ -206,44 +214,7 @@ final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator_Alp
 
 }
 
-@TargetClass(className = "io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator$AlpnWrapper", onlyWith = JDK8OrEarlier.class)
-final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator_AlpnWrapperJava8 {
-    @Substitute
-    public SSLEngine wrapSslEngine(SSLEngine engine, ByteBufAllocator alloc,
-            JdkApplicationProtocolNegotiator applicationNegotiator, boolean isServer) {
-        if (Target_io_netty_handler_ssl_JettyAlpnSslEngine.isAvailable()) {
-            return isServer
-                    ? (SSLEngine) (Object) Target_io_netty_handler_ssl_JettyAlpnSslEngine.newServerEngine(engine,
-                            applicationNegotiator)
-                    : (SSLEngine) (Object) Target_io_netty_handler_ssl_JettyAlpnSslEngine.newClientEngine(engine,
-                            applicationNegotiator);
-        }
-        throw new RuntimeException("Unable to wrap SSLEngine of type " + engine.getClass().getName());
-    }
-
-}
-
-@TargetClass(className = "io.netty.handler.ssl.JettyAlpnSslEngine", onlyWith = JDK8OrEarlier.class)
-final class Target_io_netty_handler_ssl_JettyAlpnSslEngine {
-    @Substitute
-    static boolean isAvailable() {
-        return false;
-    }
-
-    @Substitute
-    static Target_io_netty_handler_ssl_JettyAlpnSslEngine newClientEngine(SSLEngine engine,
-            JdkApplicationProtocolNegotiator applicationNegotiator) {
-        return null;
-    }
-
-    @Substitute
-    static Target_io_netty_handler_ssl_JettyAlpnSslEngine newServerEngine(SSLEngine engine,
-            JdkApplicationProtocolNegotiator applicationNegotiator) {
-        return null;
-    }
-}
-
-@TargetClass(className = "io.netty.handler.ssl.JdkAlpnSslEngine", onlyWith = JDK11OrLater.class)
+@TargetClass(className = "io.netty.handler.ssl.JdkAlpnSslEngine")
 final class Target_io_netty_handler_ssl_JdkAlpnSslEngine {
     @Alias
     Target_io_netty_handler_ssl_JdkAlpnSslEngine(final SSLEngine engine,
@@ -385,7 +356,7 @@ final class Target_io_netty_bootstrap_AbstractBootstrap {
                 // channel can be null if newChannel crashed (eg SocketException("too many open files"))
                 channel.unsafe().closeForcibly();
             }
-            // as the Channel is not registered yet we need to force the usage of the GlobalEventExecutor
+            // as the Channel is not registered yet, we need to force the usage of the GlobalEventExecutor
             return new DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE).setFailure(t);
         }
 
@@ -442,8 +413,8 @@ final class Holder_io_netty_util_concurrent_ScheduledFutureTask {
     static final long START_TIME = System.nanoTime();
 }
 
-@TargetClass(className = "io.netty.util.concurrent.ScheduledFutureTask")
-final class Target_io_netty_util_concurrent_ScheduledFutureTask {
+@TargetClass(className = "io.netty.util.concurrent.AbstractScheduledEventExecutor")
+final class Target_io_netty_util_concurrent_AbstractScheduledEventExecutor {
 
     // The START_TIME field is kept but not used.
     // All the accesses to it have been replaced with Holder_io_netty_util_concurrent_ScheduledFutureTask
@@ -454,19 +425,8 @@ final class Target_io_netty_util_concurrent_ScheduledFutureTask {
     }
 
     @Substitute
-    static long nanoTime() {
+    static long defaultCurrentTimeNanos() {
         return System.nanoTime() - Holder_io_netty_util_concurrent_ScheduledFutureTask.START_TIME;
-    }
-
-    @Alias
-    public long deadlineNanos() {
-        return 0;
-    }
-
-    @Substitute
-    public long delayNanos(long currentTimeNanos) {
-        return Math.max(0,
-                deadlineNanos() - (currentTimeNanos - Holder_io_netty_util_concurrent_ScheduledFutureTask.START_TIME));
     }
 }
 
@@ -535,16 +495,6 @@ final class Target_io_netty_buffer_EmptyByteBuf {
 
 }
 
-// We need to delete this class but we let GraalVM dead code elimination do it for us.
-// Otherwise it causes a problem when --report-unsupported-elements-at-runtime is enabled:
-// when trying to delete the class, GraalVM throws a java.lang.NoClassDefFoundError: Lcom/aayushatharva/brotli4j/decoder/DecoderJNI$Wrapper;
-// While we recommend not using this option, some extensions out there are using it.
-//@TargetClass(className = "io.netty.handler.codec.compression.BrotliDecoder")
-//@Delete
-//final class Target_BrotliDecoder {
-//
-//}
-
 @TargetClass(className = "io.netty.handler.codec.http.HttpContentDecompressor")
 final class Target_io_netty_handler_codec_http_HttpContentDecompressor {
 
@@ -596,6 +546,81 @@ final class Target_io_netty_handler_codec_http2_DelegatingDecompressorFrameListe
         } else {
             return new EmbeddedChannel(ctx.channel().id(), ctx.channel().metadata().hasDisconnect(), ctx.channel().config(),
                     new ChannelHandler[] { ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP) });
+        }
+    }
+}
+
+@TargetClass(className = "io.netty.handler.ssl.SslHandler")
+final class Target_SslHandler {
+
+    @Substitute
+    private void setOpensslEngineSocketFd(Channel c) {
+        // do nothing.
+    }
+}
+
+@TargetClass(className = "io.netty.handler.ssl.PemReader")
+final class Alias_PemReader {
+
+    @Alias
+    public static ByteBuf readPrivateKey(File keyFile) {
+        return null;
+    }
+
+    @Alias
+    public static ByteBuf readPrivateKey(InputStream in) throws KeyException {
+        return null;
+    }
+}
+
+/**
+ * If BouncyCastle is not on the classpath, we must not try to read the PEM file using the BouncyCatle PEM reader.
+ */
+@TargetClass(className = "io.netty.handler.ssl.SslContext", onlyWith = IsBouncyNotThere.class)
+final class Target_SslContext {
+
+    @Substitute
+    protected static PrivateKey toPrivateKey(File keyFile, String keyPassword) throws NoSuchAlgorithmException,
+            NoSuchPaddingException, InvalidKeySpecException,
+            InvalidAlgorithmParameterException,
+            KeyException, IOException {
+        if (keyFile == null) {
+            return null;
+        }
+
+        return getPrivateKeyFromByteBuffer(Alias_PemReader.readPrivateKey(keyFile), keyPassword);
+    }
+
+    @Substitute
+    protected static PrivateKey toPrivateKey(InputStream keyInputStream, String keyPassword)
+            throws NoSuchAlgorithmException,
+            NoSuchPaddingException, InvalidKeySpecException,
+            InvalidAlgorithmParameterException,
+            KeyException, IOException {
+        if (keyInputStream == null) {
+            return null;
+        }
+
+        return getPrivateKeyFromByteBuffer(Alias_PemReader.readPrivateKey(keyInputStream), keyPassword);
+    }
+
+    @Alias
+    private static PrivateKey getPrivateKeyFromByteBuffer(ByteBuf encodedKeyBuf, String keyPassword)
+            throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeySpecException,
+            InvalidAlgorithmParameterException, KeyException, IOException {
+        return null;
+    }
+}
+
+class IsBouncyNotThere implements BooleanSupplier {
+
+    @Override
+    public boolean getAsBoolean() {
+        try {
+            NettySubstitutions.class.getClassLoader().loadClass("org.bouncycastle.openssl.PEMParser");
+            return false;
+        } catch (Exception e) {
+            return true;
         }
     }
 }

@@ -10,3 +10,12 @@ metadata:
   categories:
   - "messaging"
   status: "stable"
+  config:
+  - "mp.messaging."
+  - "quarkus.reactive-messaging."
+  - "quarkus.kafka."
+  codestart:
+    name: "reactive-messaging"
+    languages:
+      - "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

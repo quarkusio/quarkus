@@ -5,19 +5,22 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.AbstractList;
+
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Vetoed;
+import jakarta.inject.Inject;
+
+import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.DotName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.test.ArcTestContainer;
-import java.util.AbstractList;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Vetoed;
-import javax.inject.Inject;
-import org.jboss.jandex.AnnotationTarget.Kind;
-import org.jboss.jandex.DotName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class AnnotationsTransformerTest {
 

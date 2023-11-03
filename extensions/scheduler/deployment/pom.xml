@@ -16,11 +16,15 @@
   <dependencies>
       <dependency>
           <groupId>io.quarkus</groupId>
-          <artifactId>quarkus-core-deployment</artifactId>
+          <artifactId>quarkus-arc-deployment</artifactId>
       </dependency>
       <dependency>
           <groupId>io.quarkus</groupId>
-          <artifactId>quarkus-arc-deployment</artifactId>
+          <artifactId>quarkus-virtual-threads-deployment</artifactId>
+      </dependency>
+      <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-vertx-deployment</artifactId>
       </dependency>
       <dependency>
           <groupId>io.quarkus</groupId>
@@ -33,12 +37,27 @@
       </dependency>
       <dependency>
           <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-micrometer-registry-prometheus-deployment</artifactId>
+          <scope>test</scope>
+      </dependency>
+      <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-opentelemetry-deployment</artifactId>
+          <scope>test</scope>
+      </dependency>
+      <dependency>
+          <groupId>io.quarkus</groupId>
           <artifactId>quarkus-junit5-internal</artifactId>
           <scope>test</scope>
       </dependency>
       <dependency>
           <groupId>io.rest-assured</groupId>
           <artifactId>rest-assured</artifactId>
+          <scope>test</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.awaitility</groupId>
+          <artifactId>awaitility</artifactId>
           <scope>test</scope>
       </dependency>
   </dependencies>

@@ -6,6 +6,7 @@ import java.util.function.BooleanSupplier;
 import org.flywaydb.core.internal.scanner.LocationScannerCache;
 import org.flywaydb.core.internal.scanner.ResourceNameCache;
 import org.flywaydb.core.internal.scanner.classpath.ClassPathLocationScanner;
+import org.flywaydb.core.internal.scanner.classpath.ClassPathScanner;
 import org.flywaydb.core.internal.scanner.classpath.FileSystemClassPathLocationScanner;
 
 import com.oracle.svm.core.annotate.Alias;
@@ -15,7 +16,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 /**
  * Get rid of JBoss VFS if it is not present in the classpath.
  */
-@TargetClass(className = "org.flywaydb.core.internal.scanner.classpath.ClassPathScanner", onlyWith = ClassPathScannerSubstitutions.IsJBossVFSAbsent.class)
+@TargetClass(value = ClassPathScanner.class, onlyWith = ClassPathScannerSubstitutions.IsJBossVFSAbsent.class)
 public final class ClassPathScannerSubstitutions {
 
     @Alias

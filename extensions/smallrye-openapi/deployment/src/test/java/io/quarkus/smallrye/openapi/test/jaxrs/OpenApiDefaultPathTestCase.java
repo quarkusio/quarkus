@@ -1,9 +1,7 @@
 package io.quarkus.smallrye.openapi.test.jaxrs;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -15,7 +13,7 @@ public class OpenApiDefaultPathTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiResource.class, ResourceBean.class)
                     .addAsResource(new StringAsset("quarkus.smallrye-openapi.store-schema-directory=target"),
                             "application.properties"));
@@ -36,7 +34,7 @@ public class OpenApiDefaultPathTestCase {
                 .then()
                 .header("Content-Type", "application/json;charset=UTF-8")
                 .body("openapi", Matchers.startsWith("3.0"))
-                .body("info.title", Matchers.equalTo("Generated API"))
+                .body("info.title", Matchers.equalTo("quarkus-smallrye-openapi-deployment API"))
                 .body("tags.name[0]", Matchers.equalTo("test"))
                 .body("paths.'/resource'.get.servers[0]", Matchers.hasKey("url"))
                 .body("paths.'/resource'.get.security[0]", Matchers.hasKey("securityRequirement"))
@@ -44,6 +42,6 @@ public class OpenApiDefaultPathTestCase {
 
         RestAssured.given()
                 .when().options(OPEN_API_PATH)
-                .then().header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+                .then().header("Allow", "GET, HEAD, OPTIONS");
     }
 }

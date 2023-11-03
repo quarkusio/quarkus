@@ -26,7 +26,7 @@ public final class ValueResolverBuilder {
      * And applies to a part of an expression where the base class is assignable to the specified class.
      * <p>
      * The {@link ValueResolver#appliesTo(EvalContext)} logic defined earlier is replaced with a composite predicate.
-     * 
+     *
      * @param name
      * @return self
      */
@@ -50,7 +50,7 @@ public final class ValueResolverBuilder {
      * And applies to a part of an expression where the name is equal to the specified value.
      * <p>
      * The {@link ValueResolver#appliesTo(EvalContext)} logic defined earlier is replaced with a composite predicate.
-     * 
+     *
      * @param name
      * @return self
      */
@@ -74,7 +74,7 @@ public final class ValueResolverBuilder {
      * And applies to a part of an expression where the number of parameters is equal to zero.
      * <p>
      * The {@link ValueResolver#appliesTo(EvalContext)} logic defined earlier is replaced with a composite predicate.
-     * 
+     *
      * @return self
      */
     public ValueResolverBuilder applyToNoParameters() {
@@ -97,7 +97,7 @@ public final class ValueResolverBuilder {
      * And applies to a part of an expression where the number of parameters is equal to the specified size.
      * <p>
      * The {@link ValueResolver#appliesTo(EvalContext)} logic defined earlier is replaced with a composite predicate.
-     * 
+     *
      * @param size
      * @return self
      */
@@ -119,7 +119,7 @@ public final class ValueResolverBuilder {
 
     /**
      * The {@link ValueResolver#appliesTo(EvalContext)} logic defined earlier is replaced with the specified predicate.
-     * 
+     *
      * @param predicate
      * @return self
      */

@@ -1,5 +1,6 @@
 package io.quarkus.it.smallrye.config;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Period;
 import java.util.List;
@@ -7,9 +8,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
+
+import org.eclipse.microprofile.config.spi.Converter;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -37,6 +40,9 @@ public interface Server extends Alias {
     @JsonProperty
     @WithName("io-threads")
     int threads();
+
+    @WithConverter(ByteArrayConverter.class)
+    byte[] bytes();
 
     @JsonProperty
     @WithParentName
@@ -69,6 +75,10 @@ public interface Server extends Alias {
 
         @JsonProperty
         Optional<String> cookie();
+
+        @JsonProperty
+        @WithDefault("1")
+        List<Integer> positions();
     }
 
     interface Proxy {
@@ -143,12 +153,22 @@ public interface Server extends Alias {
         Optional<List<@Size(max = 3) String>> alias();
 
         @JsonProperty
-        Map<String, Admin> admins();
+        Map<String, List<Admin>> admins();
+
+        @JsonProperty
+        Map<String, List<@Size(min = 8, max = 15) String>> firewall();
 
         interface Admin {
             @JsonProperty
-            @Size(max = 3)
+            @Size(max = 4)
             String username();
+        }
+    }
+
+    class ByteArrayConverter implements Converter<byte[]> {
+        @Override
+        public byte[] convert(String value) throws IllegalArgumentException, NullPointerException {
+            return value.getBytes(StandardCharsets.UTF_8);
         }
     }
 }

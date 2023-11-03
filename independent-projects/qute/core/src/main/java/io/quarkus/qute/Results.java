@@ -1,7 +1,7 @@
 package io.quarkus.qute;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -13,27 +13,20 @@ import java.util.stream.Collectors;
 
 public final class Results {
 
-    /**
-     * This field will be removed at some point post Quarkus 2.1.
-     * 
-     * @deprecated Use {@link #notFound(EvalContext)} or {@link #notFound(String)} instead
-     */
-    @Deprecated
-    public static final CompletionStage<Object> NOT_FOUND = CompletedStage.of(Result.NOT_FOUND);
     public static final CompletedStage<Object> FALSE = CompletedStage.of(false);
     public static final CompletedStage<Object> TRUE = CompletedStage.of(true);
-    public static final CompletedStage<Object> NULL = CompletedStage.of(null);
+    public static final CompletedStage<Object> NULL = CompletedStage.NULL;
 
     private Results() {
     }
 
     /**
-     * 
+     *
      * @param result
      * @return {@code true} if the value represents a "not found" result
      */
     public static boolean isNotFound(Object result) {
-        return Result.NOT_FOUND == result || result instanceof NotFound;
+        return result instanceof NotFound;
     }
 
     public static CompletionStage<Object> notFound(EvalContext evalContext) {
@@ -48,10 +41,8 @@ public final class Results {
         return CompletedStage.of(NotFound.EMPTY);
     }
 
-    static CompletableFuture<ResultNode> process(List<CompletionStage<ResultNode>> results) {
-        CompletableFuture<ResultNode> ret = new CompletableFuture<ResultNode>();
-
-        // Collect async results first 
+    static CompletionStage<ResultNode> process(List<CompletionStage<ResultNode>> results) {
+        // Collect async results first
         @SuppressWarnings("unchecked")
         Supplier<ResultNode>[] allResults = new Supplier[results.size()];
         List<CompletableFuture<ResultNode>> asyncResults = null;
@@ -64,7 +55,7 @@ public final class Results {
             } else {
                 CompletableFuture<ResultNode> fu = result.toCompletableFuture();
                 if (asyncResults == null) {
-                    asyncResults = new LinkedList<>();
+                    asyncResults = new ArrayList<>();
                 }
                 asyncResults.add(fu);
                 allResults[idx++] = Futures.toSupplier(fu);
@@ -72,8 +63,9 @@ public final class Results {
         }
         if (asyncResults == null) {
             // No async results present
-            ret.complete(new MultiResultNode(allResults));
+            return CompletedStage.of(new MultiResultNode(allResults));
         } else {
+            CompletableFuture<ResultNode> ret = new CompletableFuture<ResultNode>();
             CompletionStage<?> cs;
             if (asyncResults.size() == 1) {
                 cs = asyncResults.get(0);
@@ -88,23 +80,7 @@ public final class Results {
                     ret.complete(new MultiResultNode(allResults));
                 }
             });
-        }
-        return ret;
-    }
-
-    /**
-     * This enum will be removed at some point post Quarkus 2.1.
-     * 
-     * @deprecated {@link NotFound} instead.
-     */
-    @Deprecated
-    public enum Result {
-
-        NOT_FOUND;
-
-        @Override
-        public String toString() {
-            return "NOT_FOUND";
+            return ret;
         }
     }
 
@@ -132,7 +108,7 @@ public final class Results {
         }
 
         /**
-         * 
+         *
          * @return the base object or empty
          */
         public Optional<Object> getBase() {
@@ -140,7 +116,7 @@ public final class Results {
         }
 
         /**
-         * 
+         *
          * @return the name of the virtual property/function
          */
         public Optional<String> getName() {
@@ -157,11 +133,16 @@ public final class Results {
         public String asMessage() {
             String name = getName().orElse(null);
             if (name != null) {
+                Object base = getBase().orElse(null);
+                List<Expression> params = getParams();
+                boolean isDataMap = isDataMap(base);
+                // Entry "foo" not found in the data map
                 // Property "foo" not found on base object "org.acme.Bar"
                 // Method "getDiscount(value)" not found on base object "org.acme.Item"
-                List<Expression> params = getParams();
                 StringBuilder builder = new StringBuilder();
-                if (params.isEmpty()) {
+                if (isDataMap) {
+                    builder.append("Entry ");
+                } else if (params.isEmpty()) {
                     builder.append("Property ");
                 } else {
                     builder.append("Method ");
@@ -169,14 +150,13 @@ public final class Results {
                 builder.append("\"").append(name);
                 if (!params.isEmpty()) {
                     builder.append("(");
-                    builder.append(getParams().stream().map(Expression::toOriginalString).collect(Collectors.joining(",")));
+                    builder.append(params.stream().map(Expression::toOriginalString).collect(Collectors.joining(",")));
                     builder.append(")");
                 }
                 builder.append("\" not found");
-                Object base = getBase().orElse(null);
-                if (!(base instanceof Map)
-                        // Just ignore the data map
-                        || !((Map<?, ?>) base).containsKey(TemplateInstanceBase.DATA_MAP_KEY)) {
+                if (isDataMap) {
+                    builder.append(" in the data map");
+                } else {
                     builder.append(" on the base object \"").append(base == null ? "null" : base.getClass().getName())
                             .append("\"");
                 }
@@ -184,6 +164,15 @@ public final class Results {
             } else {
                 return "NOT_FOUND";
             }
+        }
+
+        private boolean isDataMap(Object base) {
+            if (base instanceof Map) {
+                return ((Map<?, ?>) base).containsKey(TemplateInstanceBase.DATA_MAP_KEY);
+            } else if (base instanceof Mapper) {
+                return ((Mapper) base).get(TemplateInstanceBase.DATA_MAP_KEY) != null;
+            }
+            return false;
         }
 
         @Override

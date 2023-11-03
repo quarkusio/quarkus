@@ -2,7 +2,6 @@ package org.jboss.resteasy.reactive.server.core.multipart;
 
 import java.io.Closeable;
 import java.io.IOException;
-import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 /**
  * Parser for form data. This can be used by down-stream handlers to parse
@@ -24,14 +23,12 @@ public interface FormDataParser extends Closeable {
     void parse() throws Exception;
 
     /**
-     * Parse the data, blocking the current thread until parsing is complete. For blocking handlers this method is
-     * more efficient than {@link #parse(ResteasyReactiveRequestContext next)}, as the calling thread should do that
-     * actual parsing, rather than the read thread
+     * Parse the data, blocking the current thread until parsing is complete.
      *
      * @return The parsed form data
      * @throws IOException If the data could not be read
      */
-    FormData parseBlocking() throws IOException;
+    FormData parseBlocking() throws Exception;
 
     /**
      * Closes the parser, and removes and temporary files that may have been created.

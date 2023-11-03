@@ -10,7 +10,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class GitRepoVolumeConfig {
 
     /**
-     * Git repoistory URL.
+     * Git repository URL.
      */
     @ConfigItem
     String repository;

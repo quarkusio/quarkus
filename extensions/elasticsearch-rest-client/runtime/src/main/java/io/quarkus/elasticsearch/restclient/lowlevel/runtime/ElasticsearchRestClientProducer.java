@@ -3,11 +3,11 @@ package io.quarkus.elasticsearch.restclient.lowlevel.runtime;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
@@ -29,7 +29,7 @@ public class ElasticsearchRestClientProducer {
         RestClientBuilder builder = RestClientBuilderHelper.createRestClientBuilder(config);
 
         this.client = builder.build();
-        if (config.discovery.enabled) {
+        if (config.discovery().enabled()) {
             this.sniffer = RestClientBuilderHelper.createSniffer(client, config);
         }
 

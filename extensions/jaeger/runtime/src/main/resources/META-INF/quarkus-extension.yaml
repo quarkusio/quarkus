@@ -9,4 +9,6 @@ metadata:
   categories:
     - "observability"
   unlisted: true
-  status: "stable"
+  status: "deprecated"
+  config:
+  - "quarkus.jaeger."

@@ -6,7 +6,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.logging.Logger;
 
@@ -35,8 +35,17 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
                                 "{\"access_token\":\"access_token_1\", \"expires_in\":4, \"refresh_token\":\"refresh_token_1\"}")));
+        server.stubFor(WireMock.post("/tokens_public_client")
+                .withRequestBody(matching("grant_type=password&username=alice&password=alice&client_id=quarkus-app"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"access_token_public_client\", \"expires_in\":20}")));
         server.stubFor(WireMock.post("/non-standard-tokens")
-                .withRequestBody(matching("grant_type=password&username=alice&password=alice"))
+                .withHeader("X-Custom", matching("XCustomHeaderValue"))
+                .withHeader("GrantType", matching("password"))
+                .withRequestBody(matching("grant_type=password&username=alice&password=alice&extra_param=extra_param_value"))
                 .willReturn(WireMock
                         .aResponse()
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
@@ -49,15 +58,55 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .aResponse()
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
-                                "{\"access_token\":\"access_token_2\", \"expires_in\":4, \"refresh_token\":\"refresh_token_1\"}")));
+                                "{\"access_token\":\"access_token_2\", \"expires_in\":4, \"refresh_token\":\"refresh_token_2\", \"refresh_expires_in\":1}")));
 
         server.stubFor(WireMock.post("/refresh-token-only")
-                .withRequestBody(matching("grant_type=refresh_token&refresh_token=shared_refresh_token"))
+                .withRequestBody(
+                        matching("grant_type=refresh_token&refresh_token=shared_refresh_token&extra_param=extra_param_value"))
                 .willReturn(WireMock
                         .aResponse()
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
                                 "{\"access_token\":\"temp_access_token\", \"expires_in\":4}")));
+
+        server.stubFor(WireMock.post("/ciba-token")
+                .withRequestBody(matching(
+                        "grant_type=urn%3Aopenid%3Aparams%3Agrant-type%3Aciba&client_id=quarkus-app&client_secret=secret&auth_req_id=16cdaa49-9591-4b63-b188-703fa3b25031"))
+                .willReturn(WireMock
+                        .badRequest()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"error\":\"expired_token\"}")));
+        server.stubFor(WireMock.post("/ciba-token")
+                .withRequestBody(matching(
+                        "grant_type=urn%3Aopenid%3Aparams%3Agrant-type%3Aciba&client_id=quarkus-app&client_secret=secret&auth_req_id=b1493f2f-c25c-40f5-8d69-94e2ad4b06df"))
+                .inScenario("auth-device-approval")
+                .whenScenarioStateIs(CibaAuthDeviceApprovalState.PENDING.name())
+                .willReturn(WireMock
+                        .badRequest()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"error\":\"authorization_pending\"}")));
+        server.stubFor(WireMock.post("/ciba-token")
+                .withRequestBody(matching(
+                        "grant_type=urn%3Aopenid%3Aparams%3Agrant-type%3Aciba&client_id=quarkus-app&client_secret=secret&auth_req_id=b1493f2f-c25c-40f5-8d69-94e2ad4b06df"))
+                .inScenario("auth-device-approval")
+                .whenScenarioStateIs(CibaAuthDeviceApprovalState.DENIED.name())
+                .willReturn(WireMock
+                        .badRequest()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"error\":\"access_denied\"}")));
+        server.stubFor(WireMock.post("/ciba-token")
+                .withRequestBody(matching(
+                        "grant_type=urn%3Aopenid%3Aparams%3Agrant-type%3Aciba&client_id=quarkus-app&client_secret=secret&auth_req_id=b1493f2f-c25c-40f5-8d69-94e2ad4b06df"))
+                .inScenario("auth-device-approval")
+                .whenScenarioStateIs(CibaAuthDeviceApprovalState.APPROVED.name())
+                .willReturn(WireMock
+                        .ok()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"ciba_access_token\", \"expires_in\":4, \"refresh_token\":\"ciba_refresh_token\"}")));
 
         LOG.infof("Keycloak started in mock mode: %s", server.baseUrl());
 
@@ -73,5 +122,11 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
             LOG.info("Keycloak was shut down");
             server = null;
         }
+    }
+
+    @Override
+    public void inject(TestInjector testInjector) {
+        testInjector.injectIntoFields(server,
+                new TestInjector.AnnotatedAndMatchesType(InjectWireMock.class, WireMockServer.class));
     }
 }

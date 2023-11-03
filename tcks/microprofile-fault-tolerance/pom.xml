@@ -12,6 +12,10 @@
     <artifactId>quarkus-tck-microprofile-fault-tolerance</artifactId>
     <name>Quarkus - TCK - MicroProfile Fault Tolerance</name>
 
+    <properties>
+        <microprofile-fault-tolerance-tck.version>4.0.2</microprofile-fault-tolerance-tck.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -21,6 +25,7 @@
                     <systemPropertyVariables>
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
+                        <smallrye.faulttolerance.mp-compatibility>true</smallrye.faulttolerance.mp-compatibility>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->
@@ -53,7 +58,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.fault-tolerance</groupId>
             <artifactId>microprofile-fault-tolerance-tck</artifactId>
-            <version>${microprofile-fault-tolerance-api.version}</version>
+            <version>${microprofile-fault-tolerance-tck.version}</version>
         </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->

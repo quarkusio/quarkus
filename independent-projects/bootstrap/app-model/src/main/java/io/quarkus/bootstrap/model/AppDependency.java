@@ -1,48 +1,58 @@
 package io.quarkus.bootstrap.model;
 
 import java.io.Serializable;
+import java.util.Objects;
 
-/**
- * Represents an application artifact dependency.
- *
- * @author Alexey Loubyansky
- */
-public class AppDependency implements Serializable {
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.PathCollection;
+
+public class AppDependency implements ResolvedDependency, Serializable {
+
+    private static final long serialVersionUID = 7030281544498286020L;
 
     private final AppArtifact artifact;
     private final String scope;
-    private final boolean optional;
+    private int flags;
 
-    public AppDependency(AppArtifact artifact, String scope) {
-        this(artifact, scope, false);
+    public AppDependency(AppArtifact artifact, String scope, int... flags) {
+        this(artifact, scope, false, flags);
     }
 
-    public AppDependency(AppArtifact artifact, String scope, boolean optional) {
+    public AppDependency(AppArtifact artifact, String scope, boolean optional, int... flags) {
         this.artifact = artifact;
         this.scope = scope;
-        this.optional = optional;
+        int tmpFlags = optional ? DependencyFlags.OPTIONAL : 0;
+        for (int f : flags) {
+            tmpFlags |= f;
+        }
+        this.flags = tmpFlags;
     }
 
     public AppArtifact getArtifact() {
         return artifact;
     }
 
+    @Override
     public String getScope() {
         return scope;
     }
 
-    public boolean isOptional() {
-        return optional;
+    @Override
+    public int getFlags() {
+        return flags;
+    }
+
+    public void clearFlag(int flag) {
+        if ((flags & flag) > 0) {
+            flags ^= flag;
+        }
     }
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((artifact == null) ? 0 : artifact.hashCode());
-        result = prime * result + (optional ? 1231 : 1237);
-        result = prime * result + ((scope == null) ? 0 : scope.hashCode());
-        return result;
+        return Objects.hash(artifact, flags, scope);
     }
 
     @Override
@@ -54,28 +64,66 @@ public class AppDependency implements Serializable {
         if (getClass() != obj.getClass())
             return false;
         AppDependency other = (AppDependency) obj;
-        if (artifact == null) {
-            if (other.artifact != null)
-                return false;
-        } else if (!artifact.equals(other.artifact))
-            return false;
-        if (optional != other.optional)
-            return false;
-        if (scope == null) {
-            if (other.scope != null)
-                return false;
-        } else if (!scope.equals(other.scope))
-            return false;
-        return true;
+        return Objects.equals(artifact, other.artifact) && flags == other.flags && Objects.equals(scope, other.scope);
     }
 
     @Override
     public String toString() {
         final StringBuilder buf = new StringBuilder();
-        artifact.append(buf).append('(').append(scope);
-        if (optional) {
-            buf.append(" optional");
+        artifact.append(buf).append('(');
+        if (isDirect()) {
+            buf.append("direct ");
         }
-        return buf.append(')').toString();
+        if (isOptional()) {
+            buf.append("optional ");
+        }
+        if (isWorkspaceModule()) {
+            buf.append("local ");
+        }
+        if (isRuntimeExtensionArtifact()) {
+            buf.append("extension ");
+        }
+        if (isRuntimeCp()) {
+            buf.append("runtime-cp ");
+        }
+        if (isDeploymentCp()) {
+            buf.append("deployment-cp ");
+        }
+        return buf.append(scope).append(')').toString();
+    }
+
+    @Override
+    public String getGroupId() {
+        return artifact.getGroupId();
+    }
+
+    @Override
+    public String getArtifactId() {
+        return artifact.getArtifactId();
+    }
+
+    @Override
+    public String getClassifier() {
+        return artifact.getClassifier();
+    }
+
+    @Override
+    public String getType() {
+        return artifact.getType();
+    }
+
+    @Override
+    public String getVersion() {
+        return artifact.getVersion();
+    }
+
+    @Override
+    public ArtifactKey getKey() {
+        return artifact.getKey();
+    }
+
+    @Override
+    public PathCollection getResolvedPaths() {
+        return artifact.getResolvedPaths();
     }
 }

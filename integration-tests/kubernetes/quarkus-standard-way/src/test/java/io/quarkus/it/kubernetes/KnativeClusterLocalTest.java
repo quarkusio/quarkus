@@ -10,8 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,7 +22,7 @@ public class KnativeClusterLocalTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("knative-cluster-local").setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("knative-cluster-local.properties");
 
@@ -40,7 +38,7 @@ public class KnativeClusterLocalTest {
 
         assertThat(getKNativeService(kubernetesDir)).satisfies(service -> {
             assertThat(service.getMetadata()).satisfies(m -> {
-                assertThat(m.getLabels()).contains(entry("serving.knative.dev/visibility", "cluster-local"));
+                assertThat(m.getLabels()).contains(entry("networking.knative.dev/visibility", "cluster-local"));
             });
         });
     }

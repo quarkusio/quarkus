@@ -1,5 +1,14 @@
 package org.jboss.resteasy.reactive.server.vertx;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.nio.channels.ClosedChannelException;
+import java.util.ArrayDeque;
+import java.util.Deque;
+
+import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -9,15 +18,9 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InterruptedIOException;
-import java.nio.channels.ClosedChannelException;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
 
 public class VertxInputStream extends InputStream {
 
@@ -140,7 +143,7 @@ public class VertxInputStream extends InputStream {
     @Override
     public void close() throws IOException {
         if (closed) {
-            throw new IOException("Stream is closed");
+            return;
         }
         closed = true;
         try {
@@ -188,7 +191,7 @@ public class VertxInputStream extends InputStream {
                             synchronized (connection) {
                                 eof = true;
                                 if (waiting) {
-                                    connection.notify();
+                                    connection.notifyAll();
                                 }
                             }
                         }
@@ -210,7 +213,7 @@ public class VertxInputStream extends InputStream {
                                     }
                                 }
                                 if (waiting) {
-                                    connection.notify();
+                                    connection.notifyAll();
                                 }
                             }
                         }
@@ -269,6 +272,14 @@ public class VertxInputStream extends InputStream {
         @Override
         public void handle(Buffer event) {
             synchronized (request.connection()) {
+                if (event.length() == 0 && request.version() == HttpVersion.HTTP_2) {
+                    // When using HTTP/2 H2, this indicates that we won't receive anymore data.
+                    eof = true;
+                    if (waiting) {
+                        request.connection().notifyAll();
+                    }
+                    return;
+                }
                 if (input1 == null) {
                     input1 = event;
                 } else {

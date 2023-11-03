@@ -155,7 +155,7 @@ public class ElytronPropertiesFileRecorder {
                     List<Credential> credentials = new ArrayList<>();
                     credentials.add(passwordCred);
                     String rawRoles = roleInfo.get(user);
-                    String[] roles = rawRoles.split(",");
+                    String[] roles = rawRoles != null ? rawRoles.split(",") : new String[0];
                     Attributes attributes = new MapAttributes();
                     for (String role : roles) {
                         attributes.addLast("groups", role);

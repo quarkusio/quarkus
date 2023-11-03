@@ -1,20 +1,24 @@
 package io.quarkus.spring.data.deployment;
 
+import static io.quarkus.hibernate.orm.panache.deployment.EntityToPersistenceUnitUtil.determineEntityPersistenceUnits;
 import static java.util.stream.Collectors.toList;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -41,6 +45,8 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.hibernate.orm.deployment.IgnorableNonIndexedClasses;
+import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
+import io.quarkus.hibernate.orm.panache.deployment.EntityToPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.panache.deployment.JavaJpaTypeBundle;
 import io.quarkus.spring.data.deployment.generate.SpringDataRepositoryCreator;
 
@@ -88,15 +94,31 @@ public class SpringDataJPAProcessor {
     }
 
     @BuildStep
+    void registerReflection(BuildProducer<ReflectiveClassBuildItem> producer) {
+        producer.produce(ReflectiveClassBuildItem.builder(
+                "org.springframework.data.domain.Page",
+                "org.springframework.data.domain.Slice",
+                "org.springframework.data.domain.PageImpl",
+                "org.springframework.data.domain.SliceImpl",
+                "org.springframework.data.domain.Sort",
+                "org.springframework.data.domain.Chunk",
+                "org.springframework.data.domain.PageRequest",
+                "org.springframework.data.domain.AbstractPageRequest").methods().build());
+    }
+
+    @BuildStep
     void build(CombinedIndexBuildItem index,
+            Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<EntityToPersistenceUnitBuildItem> entityToPersistenceUnit) {
 
         detectAndLogSpecificSpringPropertiesIfExist();
 
         IndexView indexView = index.getIndex();
-        List<ClassInfo> interfacesExtendingRepository = getAllInterfacesExtending(DotNames.SUPPORTED_REPOSITORIES,
+        LinkedHashSet<ClassInfo> interfacesExtendingRepository = getAllInterfacesExtending(DotNames.SUPPORTED_REPOSITORIES,
                 indexView);
 
         addRepositoryDefinitionInstances(indexView, interfacesExtendingRepository);
@@ -104,26 +126,23 @@ public class SpringDataJPAProcessor {
         addInterfacesExtendingIntermediateRepositories(indexView, interfacesExtendingRepository);
 
         removeNoRepositoryBeanClasses(interfacesExtendingRepository);
-        implementCrudRepositories(generatedBeans, generatedClasses, additionalBeans, reflectiveClasses,
+        Set<String> entities = implementCrudRepositories(generatedBeans, generatedClasses, additionalBeans, reflectiveClasses,
                 interfacesExtendingRepository, indexView);
+        determineEntityPersistenceUnits(jpaModelPersistenceUnitMapping, entities, "Spring Data JPA")
+                .forEach((e, pu) -> entityToPersistenceUnit.produce(new EntityToPersistenceUnitBuildItem(e, pu)));
+
     }
 
     private void addInterfacesExtendingIntermediateRepositories(IndexView indexView,
-            List<ClassInfo> interfacesExtendingRepository) {
+            Set<ClassInfo> interfacesExtendingRepository) {
         Collection<DotName> noRepositoryBeanRepos = getAllNoRepositoryBeanInterfaces(indexView);
-        Iterator<DotName> iterator = noRepositoryBeanRepos.iterator();
-        while (iterator.hasNext()) {
-            DotName interfaceName = iterator.next();
-            if (DotNames.SUPPORTED_REPOSITORIES.contains(interfaceName)) {
-                iterator.remove();
-            }
-        }
-        List<ClassInfo> interfacesExtending = getAllInterfacesExtending(noRepositoryBeanRepos, indexView);
+        noRepositoryBeanRepos.removeIf(DotNames.SUPPORTED_REPOSITORIES::contains);
+        Set<ClassInfo> interfacesExtending = getAllInterfacesExtending(noRepositoryBeanRepos, indexView);
         interfacesExtendingRepository.addAll(interfacesExtending);
     }
 
     // classes annotated with @RepositoryDefinition behave exactly as if they extended Repository
-    private void addRepositoryDefinitionInstances(IndexView indexView, List<ClassInfo> interfacesExtendingRepository) {
+    private void addRepositoryDefinitionInstances(IndexView indexView, Set<ClassInfo> interfacesExtendingRepository) {
         Collection<AnnotationInstance> repositoryDefinitions = indexView
                 .getAnnotations(DotNames.SPRING_DATA_REPOSITORY_DEFINITION);
         for (AnnotationInstance repositoryDefinition : repositoryDefinitions) {
@@ -198,62 +217,33 @@ public class SpringDataJPAProcessor {
         }
     }
 
-    private void removeNoRepositoryBeanClasses(List<ClassInfo> interfacesExtendingRepository) {
-        Iterator<ClassInfo> iterator = interfacesExtendingRepository.iterator();
-        while (iterator.hasNext()) {
-            ClassInfo next = iterator.next();
-            if (next.classAnnotation(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN) != null) {
-                iterator.remove();
-            }
-        }
+    private void removeNoRepositoryBeanClasses(Set<ClassInfo> interfacesExtendingRepository) {
+        interfacesExtendingRepository.removeIf(
+                next -> next.declaredAnnotation(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN) != null);
     }
 
-    // inefficient implementation, see: https://github.com/wildfly/jandex/issues/65
-    private List<ClassInfo> getAllInterfacesExtending(Collection<DotName> targets, IndexView index) {
-        List<ClassInfo> result = new ArrayList<>();
-        Collection<ClassInfo> knownClasses = index.getKnownClasses();
-        for (ClassInfo clazz : knownClasses) {
-            if (!Modifier.isInterface(clazz.flags())) {
-                continue;
-            }
-            List<DotName> interfaceNames = clazz.interfaceNames();
-            boolean found = false;
-            for (DotName interfaceName : interfaceNames) {
-                if (targets.contains(interfaceName)) {
-                    found = true;
-                    break;
-                }
-            }
-            if (found) {
-                result.add(clazz);
-            }
+    private LinkedHashSet<ClassInfo> getAllInterfacesExtending(Collection<DotName> targets, IndexView index) {
+        LinkedHashSet<ClassInfo> result = new LinkedHashSet<>();
+        for (DotName target : targets) {
+            result.addAll(index.getAllKnownSubinterfaces(target));
         }
         return result;
     }
 
     private Collection<DotName> getAllNoRepositoryBeanInterfaces(IndexView index) {
-        Set<DotName> result = new HashSet<>();
-        Collection<ClassInfo> knownClasses = index.getKnownClasses();
-        for (ClassInfo clazz : knownClasses) {
-            if (!Modifier.isInterface(clazz.flags())) {
-                continue;
-            }
-            boolean found = false;
-            for (ClassInfo classInfo : knownClasses) {
-                if (classInfo.classAnnotation(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN) != null) {
-                    result.add(classInfo.name());
-                }
-            }
-        }
-        return result;
+        return index.getAnnotations(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN).stream()
+                .filter(ai -> ai.target().kind() == Kind.CLASS)
+                .filter(ai -> Modifier.isInterface(ai.target().asClass().flags()))
+                .map(ai -> ai.target().asClass().name())
+                .collect(Collectors.toSet());
     }
 
     // generate a concrete class that will be used by Arc to resolve injection points
-    private void implementCrudRepositories(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
+    private Set<String> implementCrudRepositories(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
-            List<ClassInfo> crudRepositoriesToImplement, IndexView index) {
+            Set<ClassInfo> crudRepositoriesToImplement, IndexView index) {
 
         ClassOutput beansClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
         ClassOutput otherClassOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
@@ -266,11 +256,15 @@ public class SpringDataJPAProcessor {
                 (className -> {
                     // the generated classes that implement interfaces for holding custom query results need
                     // to be registered for reflection here since this is the only point where the generated class is known
-                    reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, className));
+                    reflectiveClasses.produce(ReflectiveClassBuildItem.builder(className).methods().build());
                 }), JavaJpaTypeBundle.BUNDLE);
 
+        Set<String> entities = new HashSet<>();
         for (ClassInfo crudRepositoryToImplement : crudRepositoriesToImplement) {
-            repositoryCreator.implementCrudRepository(crudRepositoryToImplement, index);
+            var result = repositoryCreator.implementCrudRepository(crudRepositoryToImplement, index);
+            entities.add(result.getEntityDotName().toString());
         }
+        return entities;
     }
+
 }

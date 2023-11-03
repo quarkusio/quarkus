@@ -47,34 +47,26 @@ public final class MicrometerConfig {
 
     /**
      * For MeterRegistry configurations with optional 'enabled' attributes,
-     * determine whether or not the registry is enabled using {@link #registryEnabledDefault}
+     * determine whether the registry is enabled using {@link #registryEnabledDefault}
      * as the default value.
      */
     public boolean checkRegistryEnabledWithDefault(CapabilityEnabled config) {
         if (enabled) {
             Optional<Boolean> configValue = config.getEnabled();
-            if (configValue.isPresent()) {
-                return configValue.get();
-            } else {
-                return registryEnabledDefault;
-            }
+            return configValue.orElseGet(() -> registryEnabledDefault);
         }
         return false;
     }
 
     /**
      * For MeterBinder configurations with optional 'enabled' attributes,
-     * determine whether or not the binder is enabled using {@link #binderEnabledDefault}
+     * determine whether the binder is enabled using {@link #binderEnabledDefault}
      * as the default value.
      */
     public boolean checkBinderEnabledWithDefault(CapabilityEnabled config) {
         if (enabled) {
             Optional<Boolean> configValue = config.getEnabled();
-            if (configValue.isPresent()) {
-                return configValue.get();
-            } else {
-                return binderEnabledDefault;
-            }
+            return configValue.orElseGet(() -> binderEnabledDefault);
         }
         return false;
     }
@@ -97,23 +89,37 @@ public final class MicrometerConfig {
         /**
          * Micrometer JVM metrics support.
          * <p>
-         * Micrometer JVM metrics support is enabled by default.
+         * Support for JVM metrics will be enabled if Micrometer
+         * support is enabled, and either this value is true, or this
+         * value is unset and {@code quarkus.micrometer.binder-enabled-default} is true.
          */
-        @ConfigItem(defaultValue = "true")
-        public boolean jvm;
+        @ConfigItem
+        public Optional<Boolean> jvm;
 
         public KafkaConfigGroup kafka;
+
+        public RedisConfigGroup redis;
+        public StorkConfigGroup stork;
+
+        public GrpcServerConfigGroup grpcServer;
+
+        public GrpcClientConfigGroup grpcClient;
+
         public MPMetricsConfigGroup mpMetrics;
 
         /**
          * Micrometer System metrics support.
          * <p>
-         * Micrometer System metrics support is enabled by default.
+         * Support for System metrics will be enabled if Micrometer
+         * support is enabled, and either this value is true, or this
+         * value is unset and {@code quarkus.micrometer.binder-enabled-default} is true.
          */
-        @ConfigItem(defaultValue = "true")
-        public boolean system;
+        @ConfigItem
+        public Optional<Boolean> system;
 
         public VertxConfigGroup vertx;
+
+        public NettyConfigGroup netty;
     }
 
     /** Build / static runtime config for exporters */
@@ -123,7 +129,7 @@ public final class MicrometerConfig {
         public PrometheusConfigGroup prometheus;
     }
 
-    public static interface CapabilityEnabled {
+    public interface CapabilityEnabled {
         Optional<Boolean> getEnabled();
     }
 }

@@ -4,10 +4,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -59,8 +56,7 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
                 classNames.add(line);
             }
         }
-        return new ServiceProviderBuildItem(serviceInterfaceClassName,
-                Collections.unmodifiableList(new ArrayList<>(classNames)), false);
+        return new ServiceProviderBuildItem(serviceInterfaceClassName, List.copyOf(classNames), false);
     }
 
     /**
@@ -84,7 +80,7 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
                     resourcePath);
             return new ServiceProviderBuildItem(
                     serviceInterfaceClassName,
-                    Collections.unmodifiableList(new ArrayList<>(implementations)),
+                    List.copyOf(implementations),
                     false);
         } catch (IOException e) {
             throw new RuntimeException("Could not read class path resources having path '" + resourcePath + "'", e);
@@ -100,7 +96,7 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
      * @param providerClassNames the list of provider class names that must already be mentioned in the file
      */
     public ServiceProviderBuildItem(String serviceInterfaceClassName, String... providerClassNames) {
-        this(serviceInterfaceClassName, Collections.unmodifiableList(Arrays.asList(providerClassNames)), false);
+        this(serviceInterfaceClassName, List.of(providerClassNames), false);
     }
 
     /**
@@ -112,7 +108,7 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
      * @param providers a collection of provider class names that must already be mentioned in the file
      */
     public ServiceProviderBuildItem(String serviceInterfaceClassName, Collection<String> providers) {
-        this(serviceInterfaceClassName, Collections.unmodifiableList(new ArrayList<>(providers)), false);
+        this(serviceInterfaceClassName, List.copyOf(providers), false);
     }
 
     /**
@@ -124,7 +120,7 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
      * @param providers the list of provider class names that must already be mentioned in the file
      */
     public ServiceProviderBuildItem(String serviceInterfaceClassName, List<String> providers) {
-        this(serviceInterfaceClassName, Collections.unmodifiableList(new ArrayList<>(providers)), false);
+        this(serviceInterfaceClassName, List.copyOf(providers), false);
     }
 
     /**
@@ -152,7 +148,7 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
     }
 
     /**
-     * @return a immutable {@link List} of provider class names
+     * @return an immutable {@link List} of provider class names
      */
     public List<String> providers() {
         return providers;

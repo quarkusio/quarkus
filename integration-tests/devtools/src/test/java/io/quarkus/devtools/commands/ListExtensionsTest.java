@@ -28,8 +28,8 @@ import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.devtools.testing.SnapshotTesting;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 
@@ -97,27 +97,20 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
             boolean hibernateValidator = false;
             for (String line : output.split("\r?\n")) {
                 if (line.contains("agroal")) {
-                    assertTrue(line.startsWith("default"), "Agroal should list as being default: " + line);
+                    assertTrue(line.startsWith("✬"), "Agroal is a platform extension: " + line);
                     agroal = true;
                 } else if (line.contains("quarkus-resteasy ")) {
-                    assertTrue(line.startsWith("custom*"), "RESTEasy should list as being custom*: " + line);
-                    assertTrue(
-                            line.contains(
-                                    String.format("%-15s", getMavenPluginVersion())),
-                            "RESTEasy should list as being custom*: " + line);
+                    assertTrue(line.startsWith("✬"), "Resteasy is a platform extension: " + line);
                     resteasy = true;
                     assertTrue(
                             line.endsWith(
-                                    String.format("%s", "https://quarkus.io/guides/rest-json")),
+                                    String.format("%s", "https://quarkus.io/guides/resteasy")),
                             "RESTEasy should list as having an guide: " + line);
                 } else if (line.contains("quarkus-hibernate-orm-panache ")) {
-                    assertTrue(line.startsWith("default"), "Panache should list as being custom: " + line);
-                    assertTrue(
-                            line.contains(String.format("%-25s", getMavenPluginVersion())),
-                            "Panache should list as being custom*: " + line);
+                    assertTrue(line.startsWith("✬"), "Panache is a platform extension: " + line);
                     panache = true;
                 } else if (line.contains("hibernate-validator")) {
-                    assertTrue(line.startsWith("   "), "Hibernate Validator should not list as anything: " + line);
+                    assertTrue(line.startsWith("✬"), "Hibernate validator is a platform extension: " + line);
                     hibernateValidator = true;
                 }
             }

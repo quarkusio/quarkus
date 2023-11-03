@@ -6,6 +6,8 @@ import java.util.logging.Level;
 
 import org.jboss.logmanager.LogContext;
 
+import io.quarkus.runtime.ObjectSubstitution;
+
 /**
  * A level that may be inheritable.
  */
@@ -17,8 +19,12 @@ public abstract class InheritableLevel {
         if (str.equalsIgnoreCase("inherit")) {
             return Inherited.INSTANCE;
         } else {
-            return new ActualLevel(LogContext.getLogContext().getLevelForName(str.toUpperCase(Locale.ROOT)));
+            return of(LogContext.getLogContext().getLevelForName(str.toUpperCase(Locale.ROOT)));
         }
+    }
+
+    public static InheritableLevel of(Level level) {
+        return new ActualLevel(level);
     }
 
     public abstract boolean isInherited();
@@ -35,7 +41,7 @@ public abstract class InheritableLevel {
 
     public abstract int hashCode();
 
-    static final class ActualLevel extends InheritableLevel {
+    public static final class ActualLevel extends InheritableLevel {
         final Level level;
 
         ActualLevel(Level level) {
@@ -63,7 +69,7 @@ public abstract class InheritableLevel {
         }
     }
 
-    static final class Inherited extends InheritableLevel {
+    public static final class Inherited extends InheritableLevel {
         static final Inherited INSTANCE = new Inherited();
 
         private Inherited() {
@@ -87,6 +93,19 @@ public abstract class InheritableLevel {
 
         public int hashCode() {
             return 0;
+        }
+    }
+
+    public static class Substitution implements ObjectSubstitution<InheritableLevel, String> {
+
+        @Override
+        public String serialize(InheritableLevel obj) {
+            return obj.toString();
+        }
+
+        @Override
+        public InheritableLevel deserialize(String obj) {
+            return InheritableLevel.of(obj);
         }
     }
 }

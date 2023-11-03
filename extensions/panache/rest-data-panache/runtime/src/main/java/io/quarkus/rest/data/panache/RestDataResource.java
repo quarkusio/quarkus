@@ -25,7 +25,16 @@ public interface RestDataResource<Entity, ID> {
      * @param sort Panache sort instance that should be used in a query.
      * @return A response with an entities JSON array.
      */
-    List<Entity> list(Page page, Sort sort);
+    default List<Entity> list(Page page, Sort sort) {
+        throw new RuntimeException("Not implemented yet");
+    }
+
+    /**
+     * @return the total number of entities.
+     */
+    default long count() {
+        throw new RuntimeException("Not implemented yet");
+    }
 
     /**
      * Return an entity as a JSON object.
@@ -34,7 +43,9 @@ public interface RestDataResource<Entity, ID> {
      * @param id Entity identifier.
      * @return A response with a JSON object representing an entity.
      */
-    Entity get(ID id);
+    default Entity get(ID id) {
+        throw new RuntimeException("Not implemented yet");
+    }
 
     /**
      * Create a new entity from the provided JSON object.
@@ -44,7 +55,9 @@ public interface RestDataResource<Entity, ID> {
      * @param entity Entity to be created
      * @return A response with a JSON object representing an entity and a location header of the new entity.
      */
-    Entity add(Entity entity);
+    default Entity add(Entity entity) {
+        throw new RuntimeException("Not implemented yet");
+    }
 
     /**
      * Update an existing entity or create a new one from the provided JSON object.
@@ -56,7 +69,9 @@ public interface RestDataResource<Entity, ID> {
      * @return A response with no-content status in case of the update.
      *         A response with a JSON object representing an entity and a location header in case of the create.
      */
-    Entity update(ID id, Entity entity);
+    default Entity update(ID id, Entity entity) {
+        throw new RuntimeException("Not implemented yet");
+    }
 
     /**
      * Delete an entity.
@@ -64,5 +79,7 @@ public interface RestDataResource<Entity, ID> {
      * @param id Entity identifier.
      * @return A boolean indicated whether the entity was deleted or not.
      */
-    boolean delete(ID id);
+    default boolean delete(ID id) {
+        throw new RuntimeException("Not implemented yet");
+    }
 }

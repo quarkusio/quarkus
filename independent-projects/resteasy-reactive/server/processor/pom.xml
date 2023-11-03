@@ -15,25 +15,25 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss</groupId>
+            <groupId>io.smallrye</groupId>
             <artifactId>jandex</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.quarkus.resteasy.reactive</groupId>
+            <artifactId>resteasy-reactive</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus.gizmo</groupId>
             <artifactId>gizmo</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus.resteasy.reactive</groupId>
-            <artifactId>resteasy-reactive</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus.resteasy.reactive</groupId>
             <artifactId>resteasy-reactive-common-processor</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.spec.javax.ws.rs</groupId>
-            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
         </dependency>
         <dependency>
             <groupId>jakarta.enterprise</groupId>
@@ -56,6 +56,29 @@
             <artifactId>jboss-logging</artifactId>
         </dependency>
 
+        <!-- this is only done in order to ensure that resteasy-reactive-build-support is built before this module -->
+        <dependency>
+            <groupId>io.quarkus.resteasy.reactive</groupId>
+            <artifactId>resteasy-reactive-build-support</artifactId>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>de.thetaphi</groupId>
+                <artifactId>forbiddenapis</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

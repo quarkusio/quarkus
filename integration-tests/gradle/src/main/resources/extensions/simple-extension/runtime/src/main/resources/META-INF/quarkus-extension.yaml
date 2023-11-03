@@ -1,0 +1,5 @@
+---
+name: "My extension"
+metadata:
+  status: "preview"
+  unlisted: true

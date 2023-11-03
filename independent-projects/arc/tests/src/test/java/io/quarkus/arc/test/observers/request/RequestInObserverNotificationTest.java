@@ -6,20 +6,24 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Singleton;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.test.ArcTestContainer;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.event.Observes;
-import javax.inject.Singleton;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class RequestInObserverNotificationTest {
 
@@ -29,11 +33,12 @@ public class RequestInObserverNotificationTest {
     @Test
     public void testObserverNotification() {
         ArcContainer container = Arc.container();
-        AtomicReference<String> msg = new AtomicReference<String>();
+        AtomicReference<String> msg = new AtomicReference<>();
         RequestFoo.DESTROYED.set(false);
 
         // Request context should be activated automatically
-        container.beanManager().getEvent().select(AtomicReference.class).fire(msg);
+        container.beanManager().getEvent().select(new TypeLiteral<AtomicReference<String>>() {
+        }).fire(msg);
         String fooId1 = msg.get();
         assertNotNull(fooId1);
         assertTrue(RequestFoo.DESTROYED.get());
@@ -47,7 +52,8 @@ public class RequestInObserverNotificationTest {
             requestContext.activate();
             String fooId2 = container.instance(RequestFoo.class).get().getId();
             assertNotEquals(fooId1, fooId2);
-            container.beanManager().getEvent().select(AtomicReference.class).fire(msg);
+            container.beanManager().getEvent().select(new TypeLiteral<AtomicReference<String>>() {
+            }).fire(msg);
             assertEquals(fooId2, msg.get());
         } finally {
             requestContext.terminate();

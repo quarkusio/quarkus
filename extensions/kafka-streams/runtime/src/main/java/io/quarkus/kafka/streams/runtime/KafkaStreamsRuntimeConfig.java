@@ -1,6 +1,7 @@
 package io.quarkus.kafka.streams.runtime;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -39,10 +40,18 @@ public class KafkaStreamsRuntimeConfig {
 
     /**
      * A comma-separated list of topic names.
-     * The pipeline will only be started once all these topics are present in the Kafka cluster.
+     * The pipeline will only be started once all these topics are present in the Kafka cluster
+     * and {@code ignore.topics} is set to false.
      */
     @ConfigItem
-    public List<String> topics;
+    public Optional<List<String>> topics;
+
+    /**
+     * Timeout to wait for topic names to be returned from admin client.
+     * If set to 0 (or negative), {@code topics} check is ignored.
+     */
+    @ConfigItem(defaultValue = "10S")
+    public Duration topicsTimeout;
 
     /**
      * The schema registry key.
@@ -94,6 +103,7 @@ public class KafkaStreamsRuntimeConfig {
     }
 
     public List<String> getTrimmedTopics() {
-        return topics.stream().map(String::trim).collect(Collectors.toList());
+        return topics.orElseThrow(() -> new IllegalArgumentException("Missing list of topics"))
+                .stream().map(String::trim).collect(Collectors.toList());
     }
 }

@@ -2,11 +2,13 @@ package io.quarkus.resteasy.reactive.server.deployment;
 
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
 
-@ConfigRoot(name = "resteasy-reactive")
-public class ResteasyReactiveServerConfig {
+@ConfigMapping(prefix = "quarkus.resteasy-reactive")
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+public interface ResteasyReactiveServerConfig {
 
     /**
      * Set this to define the application path that serves as the base URI for all
@@ -15,6 +17,5 @@ public class ResteasyReactiveServerConfig {
      * <p>
      * This value is always resolved relative to {@code quarkus.http.root-path}.
      */
-    @ConfigItem
-    Optional<String> path;
+    Optional<String> path();
 }

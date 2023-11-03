@@ -1,7 +1,7 @@
 package io.quarkus.it.jpa.mapping.xml.legacy.app;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class LegacyAppInGraalITCase extends LegacyAppTest {
 }

@@ -15,11 +15,9 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import io.smallrye.config.DotEnvConfigSourceProvider;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -27,24 +25,6 @@ import io.smallrye.config.SmallRyeConfigBuilder;
  *
  */
 public class DotEnvTestCase {
-
-    static ClassLoader classLoader;
-    static ConfigProviderResolver cpr;
-
-    @BeforeAll
-    public static void initConfig() {
-        classLoader = Thread.currentThread().getContextClassLoader();
-        cpr = ConfigProviderResolver.instance();
-    }
-
-    @AfterEach
-    public void doAfter() {
-        try {
-            cpr.releaseConfig(cpr.getConfig());
-        } catch (IllegalStateException ignored) {
-            // just means no config was installed, which is fine
-        }
-    }
 
     private SmallRyeConfig buildConfig(Map<String, String> configMap) throws IOException {
         final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
@@ -61,11 +41,9 @@ public class DotEnvTestCase {
                 }
             }
         }
-        builder.withSources(
-                new ConfigUtils.BuildTimeDotEnvConfigSourceProvider(dotEnv.toUri().toString()).getConfigSources(classLoader));
+        builder.withSources(new DotEnvConfigSourceProvider(dotEnv.toUri().toString()));
         final SmallRyeConfig config = builder.build();
         Files.delete(dotEnv);
-        cpr.registerConfig(config, classLoader);
         return config;
     }
 
@@ -86,5 +64,4 @@ public class DotEnvTestCase {
         assertEquals("foo.bar", config.getValue("foo.bar", String.class));
         assertTrue(config.getOptionalValue("foo.baz", String.class).isPresent());
     }
-
 }

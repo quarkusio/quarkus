@@ -3,32 +3,41 @@ package io.quarkus.hibernate.orm.runtime.boot;
 import java.io.Serializable;
 import java.security.NoSuchAlgorithmException;
 
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.EntityNotFoundException;
-import javax.persistence.PersistenceException;
 import javax.sql.DataSource;
 
-import org.hibernate.MultiTenancyStrategy;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.PersistenceException;
+
+import org.hibernate.HibernateException;
+import org.hibernate.Interceptor;
 import org.hibernate.SessionFactory;
 import org.hibernate.SessionFactoryObserver;
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
+import org.hibernate.boot.model.process.spi.ManagedResources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
+import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.bytecode.internal.SessionFactoryObserverForBytecodeEnhancer;
 import org.hibernate.bytecode.spi.BytecodeProvider;
-import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.SessionFactoryImpl;
-import org.hibernate.jpa.AvailableSettings;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.proxy.EntityNotFoundDelegate;
+import org.hibernate.resource.jdbc.spi.StatementInspector;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.tool.schema.spi.CommandAcceptanceException;
 import org.hibernate.tool.schema.spi.DelayedDropRegistryNotAvailableImpl;
 import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
 
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
+import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
+import io.quarkus.hibernate.orm.runtime.observers.QuarkusSessionFactoryObserverForDbVersionCheck;
+import io.quarkus.hibernate.orm.runtime.observers.SessionFactoryObserverForNamedQueryValidation;
+import io.quarkus.hibernate.orm.runtime.observers.SessionFactoryObserverForSchemaExport;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.tenant.HibernateCurrentTenantIdentifierResolver;
 
@@ -40,19 +49,20 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     private final RuntimeSettings runtimeSettings;
     private final Object validatorFactory;
     private final Object cdiBeanManager;
+
     protected final MultiTenancyStrategy multiTenancyStrategy;
 
     public FastBootEntityManagerFactoryBuilder(
             PrevalidatedQuarkusMetadata metadata, String persistenceUnitName,
             StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
-            Object cdiBeanManager, MultiTenancyStrategy strategy) {
+            Object cdiBeanManager, MultiTenancyStrategy multiTenancyStrategy) {
         this.metadata = metadata;
         this.persistenceUnitName = persistenceUnitName;
         this.standardServiceRegistry = standardServiceRegistry;
         this.runtimeSettings = runtimeSettings;
         this.validatorFactory = validatorFactory;
         this.cdiBeanManager = cdiBeanManager;
-        this.multiTenancyStrategy = strategy;
+        this.multiTenancyStrategy = multiTenancyStrategy;
     }
 
     @Override
@@ -69,8 +79,9 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     public EntityManagerFactory build() {
         try {
             final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
-            populate(persistenceUnitName, optionsBuilder, standardServiceRegistry, multiTenancyStrategy);
-            return new SessionFactoryImpl(metadata, optionsBuilder.buildOptions(), HQLQueryPlan::new);
+            populate(persistenceUnitName, optionsBuilder, standardServiceRegistry);
+            return new SessionFactoryImpl(metadata, optionsBuilder.buildOptions(),
+                    metadata.getTypeConfiguration().getMetadataBuildingContext().getBootstrapContext());
         } catch (Exception e) {
             throw persistenceException("Unable to build Hibernate SessionFactory", e);
         }
@@ -119,13 +130,11 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         return "[PersistenceUnit: " + persistenceUnitName + "] ";
     }
 
-    protected void populate(String persistenceUnitName, SessionFactoryOptionsBuilder options, StandardServiceRegistry ssr,
-            MultiTenancyStrategy strategy) {
-
+    protected void populate(String persistenceUnitName, SessionFactoryOptionsBuilder options, StandardServiceRegistry ssr) {
         // will use user override value or default to false if not supplied to follow
         // JPA spec.
         final boolean jtaTransactionAccessEnabled = runtimeSettings.getBoolean(
-                AvailableSettings.ALLOW_JTA_TRANSACTION_ACCESS);
+                org.hibernate.cfg.AvailableSettings.ALLOW_JTA_TRANSACTION_ACCESS);
         if (!jtaTransactionAccessEnabled) {
             options.disableJtaTransactionAccess();
         }
@@ -136,8 +145,16 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
             options.disableRefreshDetachedEntity();
         }
 
+        //Check for use of deprecated org.hibernate.jpa.AvailableSettings.SESSION_FACTORY_OBSERVER
+        final Object legacyObserver = runtimeSettings.get("hibernate.ejb.session_factory_observer");
+        if (legacyObserver != null) {
+            throw new HibernateException("Legacy setting being used: 'hibernate.ejb.session_factory_observer' was replaced by '"
+                    + org.hibernate.cfg.AvailableSettings.SESSION_FACTORY_OBSERVER + "'. Please update your configuration.");
+        }
+
         // Locate and apply any requested SessionFactoryObserver
-        final Object sessionFactoryObserverSetting = runtimeSettings.get(AvailableSettings.SESSION_FACTORY_OBSERVER);
+        final Object sessionFactoryObserverSetting = runtimeSettings
+                .get(org.hibernate.cfg.AvailableSettings.SESSION_FACTORY_OBSERVER);
         if (sessionFactoryObserverSetting != null) {
 
             final StrategySelector strategySelector = ssr.getService(StrategySelector.class);
@@ -148,7 +165,21 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
 
         options.addSessionFactoryObservers(new ServiceRegistryCloser());
 
+        //New in ORM 6.2:
+        options.addSessionFactoryObservers(new SessionFactoryObserverForNamedQueryValidation(metadata));
+        options.addSessionFactoryObservers(new SessionFactoryObserverForSchemaExport(metadata));
+        //Vanilla ORM registers this one as well; we don't:
+        //options.addSessionFactoryObservers( new SessionFactoryObserverForRegistration() );
+
+        // This one is specific to Quarkus
+        options.addSessionFactoryObservers(new QuarkusSessionFactoryObserverForDbVersionCheck());
+
         options.applyEntityNotFoundDelegate(new JpaEntityNotFoundDelegate());
+
+        // This is necessary for Hibernate Reactive, see https://github.com/quarkusio/quarkus/issues/15814
+        // This is also necessary for Hibernate ORM if we want to prevent calls to getters on initialized entities
+        // outside of sessions from throwing exceptions, see https://github.com/quarkusio/quarkus/discussions/27657
+        options.enableCollectionInDefaultFetchGroup(true);
 
         if (this.validatorFactory != null) {
             options.applyValidatorFactory(validatorFactory);
@@ -163,11 +194,23 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         BytecodeProvider bytecodeProvider = ssr.getService(BytecodeProvider.class);
         options.addSessionFactoryObservers(new SessionFactoryObserverForBytecodeEnhancer(bytecodeProvider));
 
-        if (strategy != null && strategy != MultiTenancyStrategy.NONE) {
-            options.applyMultiTenancyStrategy(strategy);
+        // Should be added in case of discriminator strategy too, that is not handled by options.isMultiTenancyEnabled()
+        if (options.isMultiTenancyEnabled()
+                || (multiTenancyStrategy != null && multiTenancyStrategy != MultiTenancyStrategy.NONE)) {
             options.applyCurrentTenantIdentifierResolver(new HibernateCurrentTenantIdentifierResolver(persistenceUnitName));
         }
 
+        InjectableInstance<Interceptor> interceptorInstance = PersistenceUnitUtil.singleExtensionInstanceForPersistenceUnit(
+                Interceptor.class, persistenceUnitName);
+        if (!interceptorInstance.isUnsatisfied()) {
+            options.applyStatelessInterceptorSupplier(interceptorInstance::get);
+        }
+
+        InjectableInstance<StatementInspector> statementInspectorInstance = PersistenceUnitUtil
+                .singleExtensionInstanceForPersistenceUnit(StatementInspector.class, persistenceUnitName);
+        if (!statementInspectorInstance.isUnsatisfied()) {
+            options.applyStatementInspector(statementInspectorInstance.get());
+        }
     }
 
     private static class ServiceRegistryCloser implements SessionFactoryObserver {
@@ -188,10 +231,19 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
 
     private static class JpaEntityNotFoundDelegate implements EntityNotFoundDelegate, Serializable {
 
-        @Override
-        public void handleEntityNotFound(String entityName, Serializable id) {
+        public void handleEntityNotFound(String entityName, Object id) {
             throw new EntityNotFoundException("Unable to find " + entityName + " with id " + id);
         }
+    }
+
+    @Override
+    public ManagedResources getManagedResources() {
+        throw new IllegalStateException("This method is not available at runtime in Quarkus");
+    }
+
+    @Override
+    public MetadataImplementor metadata() {
+        return metadata;
     }
 
 }

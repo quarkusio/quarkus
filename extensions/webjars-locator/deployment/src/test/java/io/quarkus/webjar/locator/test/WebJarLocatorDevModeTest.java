@@ -3,21 +3,19 @@ package io.quarkus.webjar.locator.test;
 import static org.hamcrest.core.Is.is;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
-public class WebJarLocatorDevModeTest {
+public class WebJarLocatorDevModeTest extends WebJarLocatorTestSupport {
     private static final String META_INF_RESOURCES = "META-INF/resources/";
 
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(PostResource.class)
                     .addAsResource(new StringAsset("<html>Hello!<html>"), META_INF_RESOURCES + "/index.html")
                     .addAsResource(new StringAsset("Test"), META_INF_RESOURCES + "/some/path/test.txt"));
@@ -44,15 +42,15 @@ public class WebJarLocatorDevModeTest {
                 .body(is("Test"));
 
         // Test Existing Web Jars
-        RestAssured.get("/webjars/jquery/jquery.min.js").then()
+        RestAssured.get("/webjars/jquery-ui/jquery-ui.min.js").then()
                 .statusCode(200);
         RestAssured.get("/webjars/momentjs/min/moment.min.js").then()
                 .statusCode(200);
 
         // Test using version in url of existing Web Jar
-        RestAssured.get("/webjars/jquery/3.5.1/jquery.min.js").then()
+        RestAssured.get("/webjars/jquery-ui/" + JQUERY_UI_VERSION + "/jquery-ui.min.js").then()
                 .statusCode(200);
-        RestAssured.get("/webjars/momentjs/2.24.0/min/moment.min.js").then()
+        RestAssured.get("/webjars/momentjs/" + MOMENTJS_VERSION + "/min/moment.min.js").then()
                 .statusCode(200);
 
         // Test non-existing Web Jar
@@ -97,9 +95,9 @@ public class WebJarLocatorDevModeTest {
                 .statusCode(200);
 
         // Test using version in url of existing Web Jar
-        RestAssured.get("/webjars/jquery/3.5.1/jquery.min.js").then()
+        RestAssured.get("/webjars/jquery-ui/" + JQUERY_UI_VERSION + "/jquery-ui.min.js").then()
                 .statusCode(200);
-        RestAssured.get("/webjars/momentjs/2.24.0/min/moment.min.js").then()
+        RestAssured.get("/webjars/momentjs/" + MOMENTJS_VERSION + "/min/moment.min.js").then()
                 .statusCode(200);
 
         // Test non-existing Web Jar

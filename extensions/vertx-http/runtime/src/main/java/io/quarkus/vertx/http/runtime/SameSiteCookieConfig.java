@@ -14,7 +14,7 @@ import io.vertx.core.http.CookieSameSite;
 public class SameSiteCookieConfig {
 
     /**
-     * If the cookie pattern is case sensitive
+     * If the cookie pattern is case-sensitive
      */
     @ConfigItem
     public boolean caseSensitive;

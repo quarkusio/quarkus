@@ -2,11 +2,12 @@ package io.quarkus.micrometer.test;
 
 import java.util.concurrent.CompletionStage;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -31,14 +32,27 @@ public class PingPongResource {
 
     @GET
     @Path("pong/{message}")
-    public String pong(@PathParam("message") String message) {
-        return message;
+    public Response pong(@PathParam("message") String message) {
+        if (message.equals("500")) {
+            return Response.status(500).build();
+        } else if (message.equals("400")) {
+            return Response.status(400).build();
+        }
+        return Response.ok(message, "text/plain").build();
     }
 
     @GET
     @Path("ping/{message}")
     public String ping(@PathParam("message") String message) {
-        return pingRestClient.pingpong(message);
+        try {
+            return pingRestClient.pingpong(message);
+        } catch (Exception ex) {
+            if (!"400".equals(message) && !"500".equals(message)) {
+                throw ex;
+            }
+            // expected exception
+        }
+        return message;
     }
 
     @GET

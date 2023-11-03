@@ -7,38 +7,39 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-
 /**
  * Note that we cannot use event.getExecutor().invoke() directly because the callbacks would be invoked upon the original test
  * class instance and not the real test instance.
  * <p>
  * This class works for JUnit callbacks only, see {@link QuarkusTestNgCallbacks} for TestNG
  */
-class QuarkusJunitCallbacks {
+abstract class QuarkusJunitCallbacks {
 
-    static void invokeJunitBefores(Object testInstance)
+    static void invokeJunitBefores(String className, Object testInstance)
             throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
         // if there is no managed deployment, then we have no test instance because it hasn't been deployed yet
         if (testInstance != null) {
             List<Method> befores = new ArrayList<>();
             collectCallbacks(testInstance.getClass(), befores, (Class<? extends Annotation>) testInstance.getClass()
-                    .getClassLoader().loadClass(Before.class.getName()));
+                    .getClassLoader().loadClass(className));
             for (Method before : befores) {
-                before.invoke(testInstance);
+                if (before.canAccess(testInstance) && before.getParameters().length == 0) {
+                    before.invoke(testInstance);
+                }
             }
         }
     }
 
-    static void invokeJunitAfters(Object testInstance)
+    static void invokeJunitAfters(String className, Object testInstance)
             throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
         if (testInstance != null) {
             List<Method> afters = new ArrayList<>();
             collectCallbacks(testInstance.getClass(), afters, (Class<? extends Annotation>) testInstance.getClass()
-                    .getClassLoader().loadClass(After.class.getName()));
+                    .getClassLoader().loadClass(className));
             for (Method after : afters) {
-                after.invoke(testInstance);
+                if (after.canAccess(testInstance) && after.getParameters().length == 0) {
+                    after.invoke(testInstance);
+                }
             }
         }
     }

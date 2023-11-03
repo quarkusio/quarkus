@@ -7,6 +7,7 @@ import java.net.URL;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 
 /**
@@ -19,9 +20,18 @@ public class TypesafeClientTest {
     URL url;
 
     @Test
-    public void testTypesafeClient() {
+    public void testTypesafeClientSingleResultOperationOverHttp() {
         when()
-                .get("/typesafe/" + url.toString())
+                .get("/typesafe-single-http/" + url.toString())
+                .then()
+                .log().everything()
+                .statusCode(204);
+    }
+
+    @Test
+    public void testTypesafeClientSingleResultOperationOverWebSocket() {
+        when()
+                .get("/typesafe-single-websocket/" + url.toString())
                 .then()
                 .log().everything()
                 .statusCode(204);
@@ -46,6 +56,16 @@ public class TypesafeClientTest {
     public void testHeader() {
         when()
                 .get("/typesafe-header/" + url.toString())
+                .then()
+                .log().everything()
+                .statusCode(204);
+    }
+
+    @DisabledOnIntegrationTest(forArtifactTypes = DisabledOnIntegrationTest.ArtifactType.NATIVE_BINARY)
+    @Test
+    public void testAutowiredUrl() throws Exception {
+        when()
+                .get("/autowired-typesafe/")
                 .then()
                 .log().everything()
                 .statusCode(204);

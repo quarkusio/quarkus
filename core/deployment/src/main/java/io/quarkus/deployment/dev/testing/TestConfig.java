@@ -2,6 +2,7 @@ package io.quarkus.deployment.dev.testing;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -40,7 +41,9 @@ public class TestConfig {
     public boolean displayTestOutput;
 
     /**
-     * Tags that should be included for continuous testing.
+     * Tags that should be included for continuous testing. This supports JUnit Tag Expressions.
+     *
+     * @see <a href="https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-expressions">JUnit Tag Expressions</a>
      */
     @ConfigItem
     public Optional<List<String>> includeTags;
@@ -50,7 +53,11 @@ public class TestConfig {
      *
      * This is ignored if include-tags has been set.
      *
-     * Defaults to 'slow'
+     * Defaults to 'slow'.
+     *
+     * This supports JUnit Tag Expressions.
+     *
+     * @see <a href="https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-expressions">JUnit Tag Expressions</a>
      */
     @ConfigItem(defaultValue = "slow")
     public Optional<List<String>> excludeTags;
@@ -71,6 +78,20 @@ public class TestConfig {
      */
     @ConfigItem(defaultValue = ".*\\.IT[^.]+|.*IT|.*ITCase")
     public Optional<String> excludePattern;
+
+    /**
+     * Test engine ids that should be included for continuous testing.
+     */
+    @ConfigItem
+    public Optional<List<String>> includeEngines;
+
+    /**
+     * Test engine ids that should be excluded by default with continuous testing.
+     *
+     * This is ignored if include-engines has been set.
+     */
+    @ConfigItem
+    public Optional<List<String>> excludeEngines;
 
     /**
      * Disable the testing status/prompt message at the bottom of the console
@@ -135,10 +156,22 @@ public class TestConfig {
     String nativeImageProfile;
 
     /**
+     * The profile to use when testing using {@code @QuarkusIntegrationTest}
+     */
+    @ConfigItem(defaultValue = "prod")
+    String integrationTestProfile;
+
+    /**
      * Profile related test settings
      */
     @ConfigItem
     Profile profile;
+
+    /**
+     * Container related test settings
+     */
+    @ConfigItem
+    Container container;
 
     /**
      * Additional launch parameters to be used when Quarkus launches the produced artifact for {@code @QuarkusIntegrationTest}
@@ -150,7 +183,13 @@ public class TestConfig {
     Optional<List<String>> argLine;
 
     /**
-     * Used in {@code @QuarkusIntegrationTest} and {@code NativeImageTest} to determine how long the test will wait for the
+     * Additional environment variables to be set in the process that {@code @QuarkusIntegrationTest} launches.
+     */
+    @ConfigItem
+    Map<String, String> env;
+
+    /**
+     * Used in {@code @QuarkusIntegrationTest} to determine how long the test will wait for the
      * application to launch
      */
     @ConfigItem(defaultValue = "PT1M")
@@ -187,6 +226,38 @@ public class TestConfig {
     @ConfigItem(defaultValue = "java\\..*")
     String classClonePattern;
 
+    /**
+     * If this is true then only the tests from the main application module will be run (i.e. the module that is currently
+     * running mvn quarkus:dev).
+     *
+     * If this is false then tests from all dependency modules will be run as well.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean onlyTestApplicationModule;
+
+    /**
+     * Modules that should be included for continuous testing. This is a regular expression and
+     * is matched against the module groupId:artifactId.
+     */
+    @ConfigItem
+    public Optional<String> includeModulePattern;
+
+    /**
+     * Modules that should be excluded for continuous testing. This is a regular expression and
+     * is matched against the module groupId:artifactId.
+     *
+     * This is ignored if include-module-pattern has been set.
+     *
+     */
+    @ConfigItem
+    public Optional<String> excludeModulePattern;
+
+    /**
+     * If the test callbacks should be invoked for the integration tests (tests annotated with {@code @QuarkusIntegrationTest}).
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean enableCallbacksForIntegrationTests;
+
     @ConfigGroup
     public static class Profile {
 
@@ -204,6 +275,36 @@ public class TestConfig {
          */
         @ConfigItem(defaultValue = "")
         Optional<List<String>> tags;
+    }
+
+    @ConfigGroup
+    public static class Container {
+
+        /**
+         * Controls the container network to be used when @QuarkusIntegration needs to launch the application in a container.
+         * This setting only applies if Quarkus does not need to use a shared network - which is the case if DevServices are
+         * used when running the test.
+         */
+        @ConfigItem
+        Optional<String> network;
+
+        /**
+         * Set additional ports to be exposed when @QuarkusIntegration needs to launch the application in a container.
+         */
+        @ConfigItem
+        Map<String, String> additionalExposedPorts;
+
+        /**
+         * A set of labels to add to the launched container
+         */
+        @ConfigItem
+        Map<String, String> labels;
+
+        /**
+         * A set of volume mounts to add to the launched container
+         */
+        @ConfigItem
+        Map<String, String> volumeMounts;
     }
 
     public enum Mode {

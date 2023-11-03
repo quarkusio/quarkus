@@ -1,5 +1,8 @@
 package io.quarkus.arc.impl;
 
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+
 import java.lang.reflect.Array;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
@@ -20,7 +23,7 @@ import java.util.Set;
  * @author Marko Luksa
  * @author Jozef Hartinger
  */
-class HierarchyDiscovery {
+public final class HierarchyDiscovery {
 
     private final Map<Class<?>, Type> types;
     private final Map<TypeVariable<?>, Type> resolvedTypeVariables;
@@ -29,14 +32,14 @@ class HierarchyDiscovery {
 
     /**
      * Constructs a new {@link HierarchyDiscovery} instance.
-     * 
+     *
      * @param type the type whose hierarchy will be discovered
      */
-    HierarchyDiscovery(Type type) {
+    public HierarchyDiscovery(Type type) {
         this(type, new TypeResolver(new HashMap<TypeVariable<?>, Type>()));
     }
 
-    HierarchyDiscovery(Type type, TypeResolver resolver) {
+    public HierarchyDiscovery(Type type, TypeResolver resolver) {
         this.types = new HashMap<Class<?>, Type>();
         this.resolver = resolver;
         this.resolvedTypeVariables = resolver.getResolvedTypeVariables();
@@ -71,9 +74,9 @@ class HierarchyDiscovery {
                 this.types.put(arrayClass, type);
                 discoverFromClass(arrayClass, rawGeneric);
             }
-        } else if (type instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) type;
-            Type rawType = (parameterizedType).getRawType();
+        } else if (isParameterizedType(type)) {
+            final ParameterizedType parameterizedType = asParameterizedType(type);
+            final Type rawType = parameterizedType.getRawType();
             if (rawType instanceof Class<?>) {
                 Class<?> clazz = (Class<?>) rawType;
                 processTypeVariables(clazz.getTypeParameters(), parameterizedType.getActualTypeArguments());
@@ -102,8 +105,8 @@ class HierarchyDiscovery {
     }
 
     protected Type processAndResolveType(Type superclass, Class<?> rawSuperclass) {
-        if (superclass instanceof ParameterizedType) {
-            ParameterizedType parameterizedSuperclass = (ParameterizedType) superclass;
+        if (isParameterizedType(superclass)) {
+            ParameterizedType parameterizedSuperclass = asParameterizedType(superclass);
             processTypeVariables(rawSuperclass.getTypeParameters(), parameterizedSuperclass.getActualTypeArguments());
             return resolveType(parameterizedSuperclass);
         } else if (superclass instanceof Class<?>) {

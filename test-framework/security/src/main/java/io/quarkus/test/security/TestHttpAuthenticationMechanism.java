@@ -3,9 +3,9 @@ package io.quarkus.test.security;
 import java.util.Collections;
 import java.util.Set;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.security.identity.IdentityProviderManager;

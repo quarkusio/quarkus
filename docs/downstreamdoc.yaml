@@ -1,0 +1,20 @@
+guides:
+  - src/main/asciidoc/datasource.adoc
+  - src/main/asciidoc/logging.adoc
+  - src/main/asciidoc/security-architecture.adoc
+  - src/main/asciidoc/security-authentication-mechanisms.adoc
+  - src/main/asciidoc/security-authorize-web-endpoints-reference.adoc
+  - src/main/asciidoc/security-basic-authentication.adoc
+  - src/main/asciidoc/security-basic-authentication-howto.adoc
+  - src/main/asciidoc/security-getting-started-tutorial.adoc
+  - src/main/asciidoc/security-identity-providers.adoc
+  - src/main/asciidoc/security-jpa.adoc
+  - src/main/asciidoc/security-oidc-bearer-token-authentication.adoc
+  - src/main/asciidoc/security-oidc-bearer-token-authentication-tutorial.adoc
+  - src/main/asciidoc/security-oidc-code-flow-authentication.adoc
+  - src/main/asciidoc/security-oidc-code-flow-authentication-tutorial.adoc
+  - src/main/asciidoc/security-oidc-configuration-properties-reference.adoc
+  - src/main/asciidoc/security-openid-connect-client-reference.adoc
+  - src/main/asciidoc/security-overview.adoc
+  - src/main/asciidoc/security-proactive-authentication.adoc
+  - src/main/asciidoc/security-cors.adoc

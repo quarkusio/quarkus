@@ -5,12 +5,17 @@ import static java.util.Objects.requireNonNull;
 import java.io.Serializable;
 import java.util.Objects;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.GACT;
+
 /**
  * GroupId, artifactId, classifier, type, version
  *
  * @author Alexey Loubyansky
  */
-public class AppArtifactCoords implements Serializable {
+public class AppArtifactCoords implements ArtifactCoords, Serializable {
+
+    private static final long serialVersionUID = -4401898149727779844L;
 
     public static final String TYPE_JAR = "jar";
     public static final String TYPE_POM = "pom";
@@ -35,8 +40,7 @@ public class AppArtifactCoords implements Serializable {
             throw new IllegalArgumentException("One of type, version or separating them ':' is missing from '" + str + "'");
         }
         parts[4] = str.substring(versionSep + 1);
-        AppArtifactKey.split(str, parts, versionSep);
-        return parts;
+        return GACT.split(str, parts, versionSep);
     }
 
     protected final String groupId;

@@ -1,6 +1,6 @@
 package io.quarkus.arc;
 
-import javax.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.context.spi.CreationalContext;
 
 /**
  *

@@ -55,7 +55,7 @@ public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism 
         } catch (SSLPeerUnverifiedException e) {
             return Uni.createFrom().nullItem();
         }
-
+        context.put(HttpAuthenticationMechanism.class.getName(), this);
         return identityProviderManager
                 .authenticate(HttpSecurityUtils.setRoutingContextAttribute(new CertificateAuthenticationRequest(
                         new CertificateCredential(X509Certificate.class.cast(certificate))), context));
@@ -73,7 +73,7 @@ public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     @Override
-    public HttpCredentialTransport getCredentialTransport() {
-        return new HttpCredentialTransport(HttpCredentialTransport.Type.X509, "X509");
+    public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
+        return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.X509, "X509"));
     }
 }

@@ -2,32 +2,34 @@ package org.jboss.resteasy.reactive.client.impl;
 
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.READ_TIMEOUT;
 
-import io.vertx.core.Context;
-import io.vertx.core.http.HttpClient;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.client.CompletionStageRxInvoker;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.RxInvoker;
-import javax.ws.rs.client.RxInvokerProvider;
-import javax.ws.rs.core.CacheControl;
-import javax.ws.rs.core.Cookie;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
+
+import jakarta.ws.rs.ProcessingException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.client.CompletionStageRxInvoker;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.RxInvoker;
+import jakarta.ws.rs.client.RxInvokerProvider;
+import jakarta.ws.rs.core.CacheControl;
+import jakarta.ws.rs.core.Cookie;
+import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
+
+import io.vertx.core.Context;
+import io.vertx.core.http.HttpClient;
 
 public class InvocationBuilderImpl implements Invocation.Builder {
 
@@ -65,11 +67,13 @@ public class InvocationBuilderImpl implements Invocation.Builder {
 
     @Override
     public Invocation build(String method) {
+        setUserAgentIfNotSet();
         return new InvocationImpl(method, async(), null);
     }
 
     @Override
     public Invocation build(String method, Entity<?> entity) {
+        setUserAgentIfNotSet();
         return new InvocationImpl(method, async(), entity);
     }
 
@@ -95,6 +99,7 @@ public class InvocationBuilderImpl implements Invocation.Builder {
 
     @Override
     public AsyncInvokerImpl async() {
+        setUserAgentIfNotSet();
         return new AsyncInvokerImpl(restClient, httpClient, uri, requestSpec, configuration,
                 properties, handlerChain, requestContext);
     }
@@ -173,6 +178,7 @@ public class InvocationBuilderImpl implements Invocation.Builder {
 
     @Override
     public <T extends RxInvoker> T rx(Class<T> clazz) {
+        setUserAgentIfNotSet();
         if (clazz == MultiInvoker.class) {
             return (T) new MultiInvoker(this);
         } else if (clazz == UniInvoker.class) {
@@ -187,6 +193,13 @@ public class InvocationBuilderImpl implements Invocation.Builder {
         return null;
     }
 
+    private void setUserAgentIfNotSet() {
+        if (!requestSpec.headers.getHeaders().containsKey(HttpHeaders.USER_AGENT)
+                && restClient.getUserAgent() != null && !restClient.getUserAgent().isEmpty()) {
+            this.requestSpec.headers.header(HttpHeaders.USER_AGENT, restClient.getUserAgent());
+        }
+    }
+
     @Override
     public Response get() {
         return unwrap(async().get());
@@ -194,13 +207,11 @@ public class InvocationBuilderImpl implements Invocation.Builder {
 
     private <T> T unwrap(CompletableFuture<T> c) {
         if (Context.isOnEventLoopThread()) {
-            throw new BlockingNotAllowedException("Blocking REST client call made from the event loop. " +
-                    "If the code is executed from a RESTEasy Reactive resource, either annotate the resource method " +
-                    "with `@Blocking` or use non-blocking client calls.");
+            throw new BlockingNotAllowedException();
         }
         try {
-            return c.get(readTimeoutMs, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException | TimeoutException e) {
+            return c.get();
+        } catch (InterruptedException e) {
             throw new ProcessingException(e);
         } catch (ExecutionException e) {
             if (e.getCause() instanceof ProcessingException) {

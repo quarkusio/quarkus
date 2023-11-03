@@ -6,9 +6,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletionStage;
 
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.Instance;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.Instance;
 
 import org.jboss.logging.Logger;
 
@@ -19,6 +19,7 @@ import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.NamespaceResolver;
+import io.quarkus.qute.Qute;
 import io.quarkus.qute.Resolver;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
@@ -41,20 +42,24 @@ public final class MessageBundles {
 
     public static <T> T get(Class<T> bundleInterface, Localized localized) {
         if (!bundleInterface.isInterface()) {
-            throw new IllegalArgumentException("Not a message bundle interface: " + bundleInterface);
+            throw new IllegalArgumentException("Not a message bundle interface: " + bundleInterface.getName());
         }
         if (!bundleInterface.isAnnotationPresent(MessageBundle.class)
                 && !bundleInterface.isAnnotationPresent(Localized.class)) {
             throw new IllegalArgumentException(
                     "Message bundle interface must be annotated either with @MessageBundle or with @Localized: "
-                            + bundleInterface);
+                            + bundleInterface.getName());
         }
         InstanceHandle<T> handle = localized != null ? Arc.container().instance(bundleInterface, localized)
                 : Arc.container().instance(bundleInterface);
         if (handle.isAvailable()) {
             return handle.get();
         }
-        throw new IllegalStateException("Unable to obtain a message bundle instance for: " + bundleInterface);
+        throw new IllegalStateException(Qute.fmt(
+                "Unable to obtain a message bundle for interface [{iface.name}]{#if loc} and locale [{loc.value}]{/if}")
+                .data("iface", bundleInterface)
+                .data("loc", localized)
+                .render());
     }
 
     static void setupNamespaceResolvers(@Observes EngineBuilder builder, BundleContext context) {
@@ -62,7 +67,7 @@ public final class MessageBundles {
         ArcContainer container = Arc.container();
         // For every bundle register a new resolver
         for (Entry<String, Map<String, Class<?>>> entry : context.getBundleInterfaces().entrySet()) {
-            final String bundle = entry.getKey();
+            final String bundleName = entry.getKey();
             final Map<String, Resolver> interfaces = new HashMap<>();
             Resolver resolver = null;
             for (Entry<String, Class<?>> locEntry : entry.getValue().entrySet()) {
@@ -71,8 +76,15 @@ public final class MessageBundles {
                     continue;
                 }
                 Instance<?> found = container.select(locEntry.getValue(), new Localized.Literal(locEntry.getKey()));
-                if (!found.isResolvable()) {
-                    throw new IllegalStateException("Bean instance for localized interface not found: " + locEntry.getValue());
+                if (found.isUnsatisfied()) {
+                    throw new IllegalStateException(
+                            Qute.fmt("Bean not found for localized interface [{e.value}] and locale [{e.key}]")
+                                    .data("e", locEntry).render());
+                }
+                if (found.isAmbiguous()) {
+                    throw new IllegalStateException(
+                            Qute.fmt("Multiple beans found for localized interface [{e.value}] and locale [{e.key}]")
+                                    .data("e", locEntry).render());
                 }
                 interfaces.put(locEntry.getKey(), (Resolver) found.get());
             }
@@ -103,7 +115,7 @@ public final class MessageBundles {
 
                 @Override
                 public String getNamespace() {
-                    return bundle;
+                    return bundleName;
                 }
             });
         }

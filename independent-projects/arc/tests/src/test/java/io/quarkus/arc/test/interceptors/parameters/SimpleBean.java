@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.interceptors.parameters;
 
-import javax.enterprise.context.Dependent;
+import jakarta.enterprise.context.Dependent;
 
 @Dependent
 public class SimpleBean {

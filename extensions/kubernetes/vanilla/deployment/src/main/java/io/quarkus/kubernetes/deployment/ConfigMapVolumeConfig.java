@@ -1,5 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
+import java.util.Map;
+
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -20,6 +22,12 @@ public class ConfigMapVolumeConfig {
      */
     @ConfigItem(defaultValue = "0600")
     String defaultMode;
+
+    /**
+     * The list of files to be mounted.
+     */
+    @ConfigItem
+    Map<String, VolumeItemConfig> items;
 
     /**
      * Optional

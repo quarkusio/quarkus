@@ -7,10 +7,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import javax.json.bind.annotation.JsonbTransient;
-import javax.persistence.EntityManager;
-import javax.persistence.LockModeType;
-import javax.persistence.Transient;
+import jakarta.json.bind.annotation.JsonbTransient;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -641,7 +641,7 @@ public abstract class PanacheEntityBase {
      *
      * WARNING: the default implementation of this method uses a bulk delete query and ignores
      * cascading rules from the JPA model.
-     * 
+     *
      * @return the number of entities deleted.
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
@@ -668,7 +668,7 @@ public abstract class PanacheEntityBase {
      *
      * WARNING: the default implementation of this method uses a bulk delete query and ignores
      * cascading rules from the JPA model.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params optional sequence of indexed parameters
      * @return the number of entities deleted.
@@ -686,7 +686,7 @@ public abstract class PanacheEntityBase {
      *
      * WARNING: the default implementation of this method uses a bulk delete query and ignores
      * cascading rules from the JPA model.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params {@link Map} of named parameters
      * @return the number of entities deleted.
@@ -704,7 +704,7 @@ public abstract class PanacheEntityBase {
      *
      * WARNING: the default implementation of this method uses a bulk delete query and ignores
      * cascading rules from the JPA model.
-     * 
+     *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return the number of entities deleted.
@@ -778,7 +778,7 @@ public abstract class PanacheEntityBase {
      * @return the number of entities updated.
      * @see #update(String, Object...)
      * @see #update(String, Parameters)
-     * 
+     *
      */
     @GenerateBridge
     public static int update(String query, Map<String, Object> params) {

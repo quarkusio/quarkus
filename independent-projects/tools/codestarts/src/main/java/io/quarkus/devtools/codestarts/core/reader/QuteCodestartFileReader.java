@@ -1,37 +1,48 @@
 package io.quarkus.devtools.codestarts.core.reader;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+
+import org.apache.commons.io.FilenameUtils;
+
 import io.quarkus.devtools.codestarts.CodestartException;
 import io.quarkus.devtools.codestarts.CodestartResource;
 import io.quarkus.devtools.codestarts.CodestartResource.Source;
+import io.quarkus.qute.CompletedStage;
 import io.quarkus.qute.Engine;
+import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.ResultMapper;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.TemplateNode;
+import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.Variant;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.Map;
-import java.util.Optional;
-import org.apache.commons.io.FilenameUtils;
 
 final class QuteCodestartFileReader implements CodestartFileReader {
 
     private static final String TPL_QUTE_FLAG = ".tpl.qute";
     private static final String ENTRY_QUTE_FLAG = ".entry.qute";
     public static final String INCLUDE_QUTE_FLAG = ".include.qute";
+    public static final String SKIP_TAG = "<SKIP>";
 
     @Override
     public boolean matches(String fileName) {
-        return fileName.contains(TPL_QUTE_FLAG) || fileName.contains(ENTRY_QUTE_FLAG) || fileName.contains(INCLUDE_QUTE_FLAG);
+        return fileName.contains(TPL_QUTE_FLAG)
+                || fileName.contains(ENTRY_QUTE_FLAG)
+                || fileName.contains(INCLUDE_QUTE_FLAG);
     }
 
     @Override
     public String cleanFileName(String fileName) {
-        return fileName.replaceAll(TPL_QUTE_FLAG, "").replace(ENTRY_QUTE_FLAG, "");
+        return fileName
+                .replaceAll(TPL_QUTE_FLAG, "")
+                .replace(ENTRY_QUTE_FLAG, "");
     }
 
     @Override
@@ -41,7 +52,11 @@ final class QuteCodestartFileReader implements CodestartFileReader {
         if (FilenameUtils.getName(source.path()).contains(INCLUDE_QUTE_FLAG)) {
             return Optional.empty();
         }
-        return Optional.of(readQuteFile(projectResource, source, languageName, data));
+        final String value = readQuteFile(projectResource, source, languageName, data);
+        if (SKIP_TAG.equals(value)) {
+            return Optional.empty();
+        }
+        return Optional.of(value);
     }
 
     public static String readQuteFile(CodestartResource projectResource, Source source, String languageName,
@@ -49,6 +64,7 @@ final class QuteCodestartFileReader implements CodestartFileReader {
         final String content = source.read();
         final String templateId = source.absolutePath();
         final Engine engine = Engine.builder().addDefaults()
+                .addValueResolver(new StringValueResolver())
                 .addResultMapper(new MissingValueMapper())
                 .removeStandaloneLines(true)
                 // For now we need to disable strict rendering for codestarts
@@ -142,4 +158,38 @@ final class QuteCodestartFileReader implements CodestartFileReader {
      * }
      * }
      **/
+
+    private static class StringValueResolver implements ValueResolver {
+        @Override
+        public boolean appliesTo(EvalContext context) {
+            return ValueResolver.matchClass(context, String.class);
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            String value = (String) context.getBase();
+            switch (context.getName()) {
+                case "startsWith":
+                    if (context.getParams().size() == 1) {
+                        return context.evaluate(context.getParams().get(0)).thenCompose(e -> {
+                            return CompletedStage.of(value.startsWith((String) e));
+                        });
+                    }
+                case "contains":
+                    if (context.getParams().size() == 1) {
+                        return context.evaluate(context.getParams().get(0)).thenCompose(e -> {
+                            return CompletedStage.of(value.contains((CharSequence) e));
+                        });
+                    }
+                case "endsWith":
+                    if (context.getParams().size() == 1) {
+                        return context.evaluate(context.getParams().get(0)).thenCompose(e -> {
+                            return CompletedStage.of(value.endsWith((String) e));
+                        });
+                    }
+                default:
+                    return Results.notFound(context);
+            }
+        }
+    }
 }

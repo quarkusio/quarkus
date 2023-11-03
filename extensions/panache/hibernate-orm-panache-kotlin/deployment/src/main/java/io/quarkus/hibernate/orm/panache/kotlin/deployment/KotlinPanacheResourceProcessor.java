@@ -15,8 +15,8 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.persistence.EntityManager;
-import javax.persistence.Id;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Id;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -38,12 +38,15 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
-import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity;
 import io.quarkus.hibernate.orm.panache.kotlin.runtime.PanacheKotlinHibernateOrmRecorder;
 import io.quarkus.panache.common.deployment.ByteCodeType;
 import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildItem;
+import io.quarkus.panache.common.deployment.KotlinPanacheCompanionEnhancer;
+import io.quarkus.panache.common.deployment.KotlinPanacheEntityEnhancer;
+import io.quarkus.panache.common.deployment.KotlinPanacheRepositoryEnhancer;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
@@ -80,19 +83,19 @@ public final class KotlinPanacheResourceProcessor {
                 bundle.entityCompanionBase(), bundle.entityCompanion());
     }
 
-    public PanacheEntityEnhancer createEntityEnhancer(CombinedIndexBuildItem index,
+    private PanacheEntityEnhancer createEntityEnhancer(CombinedIndexBuildItem index,
             List<PanacheMethodCustomizer> methodCustomizers) {
-        return new KotlinPanacheEntityEnhancer(index.getIndex(), methodCustomizers);
+        return new KotlinPanacheEntityEnhancer(index.getIndex(), methodCustomizers, KotlinJpaTypeBundle.BUNDLE);
     }
 
     private PanacheRepositoryEnhancer createRepositoryEnhancer(CombinedIndexBuildItem index,
             List<PanacheMethodCustomizer> methodCustomizers) {
-        return new KotlinPanacheRepositoryEnhancer(index.getIndex(), methodCustomizers);
+        return new KotlinPanacheRepositoryEnhancer(index.getIndex(), methodCustomizers, KotlinJpaTypeBundle.BUNDLE);
     }
 
     private KotlinPanacheCompanionEnhancer createCompanionEnhancer(CombinedIndexBuildItem index,
             List<PanacheMethodCustomizer> customizers) {
-        return new KotlinPanacheCompanionEnhancer(index.getIndex(), customizers);
+        return new KotlinPanacheCompanionEnhancer(index.getIndex(), customizers, KotlinJpaTypeBundle.BUNDLE);
     }
 
     @BuildStep
@@ -134,7 +137,7 @@ public final class KotlinPanacheResourceProcessor {
             String name = classInfo.name().toString();
             if (modelClasses.add(name)) {
                 transformers.produce(new BytecodeTransformerBuildItem(name, entityEnhancer));
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, name));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(name).methods().fields().build());
             }
         }
 
@@ -176,7 +179,8 @@ public final class KotlinPanacheResourceProcessor {
         }
         for (Type parameterType : typeParameters) {
             // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, parameterType.name().toString()));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(parameterType.name().toString()).methods().fields().build());
         }
     }
 
@@ -198,7 +202,8 @@ public final class KotlinPanacheResourceProcessor {
 
         for (Type parameterType : typeParameters) {
             // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, parameterType.name().toString()));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(parameterType.name().toString()).methods().fields().build());
         }
     }
 

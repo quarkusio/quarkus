@@ -12,10 +12,8 @@
     <artifactId>quarkus-hibernate-reactive-deployment</artifactId>
     <name>Quarkus - Hibernate Reactive - Deployment</name>
 
-    <!-- Defaults, to simplify local testing -->
     <properties>
-        <postgres.image>postgres:13.1</postgres.image>
-        <postgres.reactive.url>vertx-reactive:postgresql://localhost:5432/hibernate_orm_test</postgres.reactive.url>
+        <postgres.reactive.url>vertx-reactive:postgresql://localhost:5431/hibernate_orm_test</postgres.reactive.url>
     </properties>
 
     <dependencies>
@@ -63,7 +61,16 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-reactive-server-spi-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-vertx</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -73,12 +80,17 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <artifactId>quarkus-resteasy-reactive-jsonb-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-h2-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -149,9 +161,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <postgres.reactive.url>vertx-reactive:postgresql://localhost:5431/hibernate_orm_test</postgres.reactive.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -172,13 +181,13 @@
                                             <port>5431:5432</port>
                                         </ports>
                                         <wait>
-                                            <tcp>
-                                                <mode>mapped</mode>
-                                                <ports>
-                                                    <port>5432</port>
-                                                </ports>
-                                            </tcp>
-                                            <time>10000</time>
+                                            <!-- For some reason, Postgres will tell us it's ready *twice*,
+                                            and that's the truth the second time only.
+                                            See https://github.com/fabric8io/docker-maven-plugin/issues/628
+                                            See also how the condition is configured in testcontainers:
+                                            https://github.com/testcontainers/testcontainers-java/blob/c64aab9fd5e3a452ee0faf793560327eb4da9841/modules/postgresql/src/main/java/org/testcontainers/containers/PostgreSQLContainer.java#L52-L55 -->
+                                            <time>20000</time>
+                                            <log>(?s)ready to accept connections.*ready to accept connections</log>
                                         </wait>
                                     </run>
                                 </image>

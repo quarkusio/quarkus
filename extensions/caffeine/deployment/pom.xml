@@ -21,6 +21,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-caffeine</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

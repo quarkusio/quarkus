@@ -10,7 +10,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.persistence.NoResultException;
+import jakarta.persistence.NoResultException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -143,7 +143,8 @@ public abstract class AbstractMethodsAdder {
                     MethodDescriptor.ofMethod(Optional.class, "empty", Optional.class));
             catchBlock.returnValue(emptyOptional);
         } else if (DotNames.LIST.equals(returnType) || DotNames.COLLECTION.equals(returnType)
-                || DotNames.SET.equals(returnType) || DotNames.ITERATOR.equals(returnType)) {
+                || DotNames.SET.equals(returnType) || DotNames.ITERATOR.equals(returnType)
+                || DotNames.SPRING_DATA_PAGE.equals(returnType) || DotNames.SPRING_DATA_SLICE.equals(returnType)) {
             ResultHandle list;
 
             if (customResultType == null) {
@@ -188,6 +189,34 @@ public abstract class AbstractMethodsAdder {
                 ResultHandle set = methodCreator.newInstance(
                         MethodDescriptor.ofConstructor(LinkedHashSet.class, Collection.class), list);
                 methodCreator.returnValue(set);
+            } else if (DotNames.SPRING_DATA_PAGE.equals(returnType)) {
+                ResultHandle pageResult;
+                if (pageableParameterIndex != null) {
+                    ResultHandle count = methodCreator.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(PanacheQuery.class, "count", long.class),
+                            panacheQuery);
+                    pageResult = methodCreator.newInstance(
+                            MethodDescriptor.ofConstructor(PageImpl.class, List.class, Pageable.class, long.class),
+                            list, methodCreator.getMethodParam(pageableParameterIndex), count);
+                } else {
+                    pageResult = methodCreator.newInstance(MethodDescriptor.ofConstructor(PageImpl.class, List.class), list);
+                }
+
+                methodCreator.returnValue(pageResult);
+            } else if (DotNames.SPRING_DATA_SLICE.equals(returnType)) {
+                ResultHandle sliceResult;
+                if (pageableParameterIndex != null) {
+                    ResultHandle hasNextPage = methodCreator.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(PanacheQuery.class, "hasNextPage", boolean.class),
+                            panacheQuery);
+                    sliceResult = methodCreator.newInstance(
+                            MethodDescriptor.ofConstructor(SliceImpl.class, List.class, Pageable.class, boolean.class),
+                            list, methodCreator.getMethodParam(pageableParameterIndex), hasNextPage);
+                } else {
+                    sliceResult = methodCreator.newInstance(MethodDescriptor.ofConstructor(SliceImpl.class, List.class), list);
+                }
+
+                methodCreator.returnValue(sliceResult);
             }
             methodCreator.returnValue(list);
 
@@ -197,41 +226,6 @@ public abstract class AbstractMethodsAdder {
                     panacheQuery);
             methodCreator.returnValue(stream);
 
-        } else if (DotNames.SPRING_DATA_PAGE.equals(returnType)) {
-            ResultHandle list = methodCreator.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(PanacheQuery.class, "list", List.class),
-                    panacheQuery);
-            ResultHandle pageResult;
-            if (pageableParameterIndex != null) {
-                ResultHandle count = methodCreator.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(PanacheQuery.class, "count", long.class),
-                        panacheQuery);
-                pageResult = methodCreator.newInstance(
-                        MethodDescriptor.ofConstructor(PageImpl.class, List.class, Pageable.class, long.class),
-                        list, methodCreator.getMethodParam(pageableParameterIndex), count);
-            } else {
-                pageResult = methodCreator.newInstance(MethodDescriptor.ofConstructor(PageImpl.class, List.class), list);
-            }
-
-            methodCreator.returnValue(pageResult);
-
-        } else if (DotNames.SPRING_DATA_SLICE.equals(returnType)) {
-            ResultHandle list = methodCreator.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(PanacheQuery.class, "list", List.class),
-                    panacheQuery);
-            ResultHandle sliceResult;
-            if (pageableParameterIndex != null) {
-                ResultHandle hasNextPage = methodCreator.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(PanacheQuery.class, "hasNextPage", boolean.class),
-                        panacheQuery);
-                sliceResult = methodCreator.newInstance(
-                        MethodDescriptor.ofConstructor(SliceImpl.class, List.class, Pageable.class, boolean.class),
-                        list, methodCreator.getMethodParam(pageableParameterIndex), hasNextPage);
-            } else {
-                sliceResult = methodCreator.newInstance(MethodDescriptor.ofConstructor(SliceImpl.class, List.class), list);
-            }
-
-            methodCreator.returnValue(sliceResult);
         } else if (isHibernateSupportedReturnType(returnType)) {
             ResultHandle singleResult = methodCreator.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(PanacheQuery.class, "singleResult", Object.class),
@@ -304,7 +298,7 @@ public abstract class AbstractMethodsAdder {
             return t;
         }
         if (t.kind() == Type.Kind.ARRAY) {
-            return verifyQueryResultType(t.asArrayType().component(), index);
+            return verifyQueryResultType(t.asArrayType().constituent(), index);
         } else if (t.kind() == Type.Kind.PARAMETERIZED_TYPE) {
             final List<Type> types = t.asParameterizedType().arguments();
             if (types.size() == 1) {
@@ -323,7 +317,7 @@ public abstract class AbstractMethodsAdder {
         return t;
     }
 
-    protected DotName createSimpleInterfaceImpl(DotName ifaceName) {
+    protected DotName createSimpleInterfaceImpl(DotName ifaceName, DotName entityName) {
         String fullName = ifaceName.toString();
 
         // package name: must be in the same package as the interface
@@ -335,7 +329,7 @@ public abstract class AbstractMethodsAdder {
 
         return DotName.createSimple(packageName
                 + (ifaceName.isInner() ? ifaceName.local() : ifaceName.withoutPackagePrefix()) + "_"
-                + HashUtil.sha1(ifaceName.toString()));
+                + HashUtil.sha1(ifaceName.toString()) + "_" + HashUtil.sha1(entityName.toString()));
     }
 
     protected DotName getPrimitiveTypeName(DotName returnTypeName) {

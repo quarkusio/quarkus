@@ -1,15 +1,22 @@
 package org.jboss.resteasy.reactive.server.providers.serialisers;
 
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.Provider;
-import org.jboss.resteasy.reactive.common.providers.serialisers.DefaultTextPlainBodyHandler;
+import java.io.IOException;
+import java.lang.reflect.Type;
 
-@Provider
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.ProcessingException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
+import org.jboss.resteasy.reactive.common.providers.serialisers.DefaultTextPlainBodyHandler;
+import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
+import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
+import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
+
 @Consumes("text/plain")
-public class ServerDefaultTextPlainBodyHandler extends DefaultTextPlainBodyHandler {
+public class ServerDefaultTextPlainBodyHandler extends DefaultTextPlainBodyHandler implements ServerMessageBodyReader<Object> {
 
     @Override
     protected void validateInput(String input) throws ProcessingException {
@@ -18,5 +25,17 @@ public class ServerDefaultTextPlainBodyHandler extends DefaultTextPlainBodyHandl
             // TODO: this seems to be an edge case, but perhaps it needs to be handled by RequestDeserializeHandler?
             throw new BadRequestException(Response.status(Response.Status.BAD_REQUEST).entity("").build());
         }
+    }
+
+    @Override
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod,
+            MediaType mediaType) {
+        return super.isReadable(type, genericType, null, mediaType);
+    }
+
+    @Override
+    public Object readFrom(Class<Object> type, Type genericType, MediaType mediaType, ServerRequestContext context)
+            throws WebApplicationException, IOException {
+        return doReadFrom(type, mediaType, context.getInputStream());
     }
 }

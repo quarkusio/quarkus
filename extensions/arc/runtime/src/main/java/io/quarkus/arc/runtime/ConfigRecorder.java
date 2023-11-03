@@ -1,12 +1,14 @@
 package io.quarkus.arc.runtime;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import javax.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.inject.spi.DeploymentException;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -14,6 +16,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import io.quarkus.arc.impl.ParameterizedTypeImpl;
 import io.quarkus.runtime.annotations.RecordableConstructor;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.config.ConfigMappings;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigValidationException;
@@ -32,6 +35,9 @@ public class ConfigRecorder {
         if (cl == null) {
             cl = ConfigRecorder.class.getClassLoader();
         }
+        Set<String> problems = new HashSet<>();
+        List<Throwable> suppressed = new ArrayList<>();
+        StringBuilder msg = new StringBuilder();
 
         for (ConfigValidationMetadata property : properties) {
             Class<?> propertyType = load(property.getRawTypeName(), cl);
@@ -53,18 +59,19 @@ public class ConfigRecorder {
             try {
                 ConfigProducerUtil.getValue(property.getName(), effectivePropertyType, property.getDefaultValue(), config);
             } catch (Exception e) {
-                throw new DeploymentException(
-                        "Failed to load config value of type " + effectivePropertyType + " for: " + property.getName(), e);
+                msg.append("Failed to load config value of type ").append(effectivePropertyType).append(" for: ")
+                        .append(property.getName()).append(System.lineSeparator());
+                problems.add(property.getName());
+                suppressed.add(e);
             }
         }
-    }
-
-    public void registerConfigMappings(final Set<ConfigClassWithPrefix> configClasses) {
-        try {
-            SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
-            ConfigMappings.registerConfigMappings(config, configClasses);
-        } catch (ConfigValidationException e) {
-            throw new DeploymentException(e.getMessage(), e);
+        if (!problems.isEmpty()) {
+            DeploymentException deploymentException = new DeploymentException(
+                    new ConfigurationException(msg.toString(), problems));
+            for (Throwable i : suppressed) {
+                deploymentException.addSuppressed(i);
+            }
+            throw deploymentException;
         }
     }
 

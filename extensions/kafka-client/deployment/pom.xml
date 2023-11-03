@@ -19,6 +19,11 @@
             <artifactId>quarkus-kafka-client</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.xerial.snappy</groupId>
+            <artifactId>snappy-java</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health-spi</artifactId>
         </dependency>
@@ -39,6 +44,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-caffeine-deployment</artifactId>
         </dependency>
+        
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
@@ -50,12 +56,16 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>io.strimzi</groupId>
+            <artifactId>strimzi-test-container</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit4-mock</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devservices-common</artifactId>
+            <artifactId>quarkus-devservices-deployment</artifactId>
         </dependency>
     </dependencies>
 

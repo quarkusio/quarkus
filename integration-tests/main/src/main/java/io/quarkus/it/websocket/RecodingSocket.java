@@ -1,7 +1,7 @@
 package io.quarkus.it.websocket;
 
-import javax.websocket.OnMessage;
-import javax.websocket.server.ServerEndpoint;
+import jakarta.websocket.OnMessage;
+import jakarta.websocket.server.ServerEndpoint;
 
 @ServerEndpoint(value = "/recoder", encoders = ServerDtoEncoder.class, decoders = ServerDtoDecoder.class)
 public class RecodingSocket {

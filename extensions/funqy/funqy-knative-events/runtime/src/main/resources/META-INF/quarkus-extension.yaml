@@ -9,9 +9,11 @@ metadata:
   guide: "https://quarkus.io/guides/funqy-knative-events"
   categories:
   - "cloud"
-  status: "experimental"
+  status: "stable"
   codestart:
     name: "funqy-knative-events"
     kind: "example"
     languages: "java"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
+  config:
+  - "quarkus.funqy.knative-events."

@@ -40,14 +40,13 @@ public class ReflectionValueResolver implements ValueResolver {
             return false;
         }
         // Check if there is a member with the given name and number of params
-        return candidates.computeIfAbsent(MemberKey.from(base, context.getName(), context.getParams().size()),
-                this::findCandidate).isPresent();
+        return candidates.computeIfAbsent(MemberKey.from(context), this::findCandidate).isPresent();
     }
 
     @Override
     public CompletionStage<Object> resolve(EvalContext context) {
         Object base = context.getBase();
-        MemberKey key = MemberKey.from(base, context.getName(), context.getParams().size());
+        MemberKey key = MemberKey.from(context);
         // At this point the candidate for the given key should be already computed
         AccessorCandidate candidate = candidates.get(key).orElse(null);
         if (candidate == null) {
@@ -108,10 +107,7 @@ public class ReflectionValueResolver implements ValueResolver {
 
         for (Class<?> clazzToTest : classes) {
             for (Method method : clazzToTest.getMethods()) {
-                if (!isMethodValid(method)) {
-                    continue;
-                }
-                if (method.isBridge()) {
+                if (!isMethodProperty(method)) {
                     continue;
                 }
                 if (name.equals(method.getName())) {
@@ -137,7 +133,8 @@ public class ReflectionValueResolver implements ValueResolver {
     private Field findField(Class<?> clazz, String name) {
         Field found = null;
         for (Field field : clazz.getFields()) {
-            if (field.getName().equals(name)) {
+            if (!Modifier.isStatic(field.getModifiers())
+                    && field.getName().equals(name)) {
                 found = field;
             }
         }
@@ -158,26 +155,28 @@ public class ReflectionValueResolver implements ValueResolver {
 
         for (Class<?> clazzToTest : hierarchy) {
             for (Method method : clazzToTest.getMethods()) {
-                if (!Modifier.isPublic(method.getModifiers())
-                        || (!method.isVarArgs() && method.getParameterCount() != numberOfParams)
-                        || method.getReturnType().equals(Void.TYPE)
-                        || Object.class.equals(method.getDeclaringClass())
-                        || method.isBridge()
-                        || !name.equals(method.getName())) {
-                    continue;
+                if (isMethodCandidate(method)
+                        && name.equals(method.getName())) {
+                    foundMatch.add(method);
+                    method.trySetAccessible();
                 }
-                foundMatch.add(method);
-                method.trySetAccessible();
             }
         }
         return foundMatch.size() == 1 ? Collections.singletonList(foundMatch.get(0)) : foundMatch;
     }
 
-    private static boolean isMethodValid(Method method) {
-        return method != null && Modifier.isPublic(method.getModifiers())
-                && method.getParameterCount() == 0
+    private static boolean isMethodCandidate(Method method) {
+        return method != null
+                && Modifier.isPublic(method.getModifiers())
+                && !Modifier.isStatic(method.getModifiers())
                 && !method.getReturnType().equals(Void.TYPE)
+                && !method.isBridge()
                 && !Object.class.equals(method.getDeclaringClass());
+    }
+
+    private static boolean isMethodProperty(Method method) {
+        return isMethodCandidate(method)
+                && method.getParameterCount() == 0;
     }
 
     private static boolean matchesPrefix(String name, String methodName,

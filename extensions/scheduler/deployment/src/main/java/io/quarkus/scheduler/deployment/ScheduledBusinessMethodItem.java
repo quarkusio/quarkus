@@ -11,17 +11,29 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class ScheduledBusinessMethodItem extends MultiBuildItem {
 
     private final BeanInfo bean;
-
     private final List<AnnotationInstance> schedules;
-
     private final MethodInfo method;
+    private final boolean nonBlocking;
+    private final boolean runOnVirtualThread;
 
     public ScheduledBusinessMethodItem(BeanInfo bean, MethodInfo method, List<AnnotationInstance> schedules) {
+        this(bean, method, schedules, false, false);
+    }
+
+    public ScheduledBusinessMethodItem(BeanInfo bean, MethodInfo method, List<AnnotationInstance> schedules,
+            boolean hasNonBlockingAnnotation, boolean hasRunOnVirtualThreadAnnotation) {
         this.bean = bean;
         this.method = method;
         this.schedules = schedules;
+        this.nonBlocking = hasNonBlockingAnnotation || SchedulerDotNames.COMPLETION_STAGE.equals(method.returnType().name())
+                || SchedulerDotNames.UNI.equals(method.returnType().name()) || KotlinUtil.isSuspendMethod(method);
+        this.runOnVirtualThread = hasRunOnVirtualThreadAnnotation;
     }
 
+    /**
+     *
+     * @return the bean or {@code null} for a static method
+     */
     public BeanInfo getBean() {
         return bean;
     }
@@ -32,6 +44,18 @@ public final class ScheduledBusinessMethodItem extends MultiBuildItem {
 
     public List<AnnotationInstance> getSchedules() {
         return schedules;
+    }
+
+    public boolean isNonBlocking() {
+        return nonBlocking;
+    }
+
+    public boolean isRunOnVirtualThread() {
+        return runOnVirtualThread;
+    }
+
+    public String getMethodDescription() {
+        return method.declaringClass().name() + "#" + method.name() + "()";
     }
 
 }

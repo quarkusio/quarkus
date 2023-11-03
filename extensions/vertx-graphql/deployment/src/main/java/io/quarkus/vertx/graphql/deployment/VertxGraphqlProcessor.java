@@ -12,18 +12,16 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceDirectoryBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.*;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.graphql.runtime.VertxGraphqlRecorder;
+import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.WebsocketSubProtocolsBuildItem;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.graphql.impl.GraphQLBatch;
-// import io.vertx.ext.web.handler.graphql.impl.GraphQLInputDeserializer;
 import io.vertx.ext.web.handler.graphql.impl.GraphQLQuery;
 
 class VertxGraphqlProcessor {
@@ -35,26 +33,38 @@ class VertxGraphqlProcessor {
     }
 
     @BuildStep
-    WebsocketSubProtocolsBuildItem websocketSubProtocols() {
+    WebsocketSubProtocolsBuildItem graphQLWSProtocol() {
+        return new WebsocketSubProtocolsBuildItem("graphql-transport-ws");
+    }
+
+    @BuildStep
+    WebsocketSubProtocolsBuildItem appoloWSProtocol() {
         return new WebsocketSubProtocolsBuildItem("graphql-ws");
     }
 
     @BuildStep
     List<ReflectiveClassBuildItem> registerForReflection() {
         return Arrays.asList(
-                //new ReflectiveClassBuildItem(true, true, GraphQLInputDeserializer.class.getName()),
-                new ReflectiveClassBuildItem(true, true, GraphQLBatch.class.getName()),
-                new ReflectiveClassBuildItem(true, true, GraphQLQuery.class.getName()));
+                ReflectiveClassBuildItem.builder(GraphQLBatch.class.getName()).methods().fields().build(),
+                ReflectiveClassBuildItem.builder(GraphQLQuery.class.getName()).methods().fields().build());
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
+    void registerI18nResources(BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
+        resourceBundle.produce(new NativeImageResourceBundleBuildItem("i18n/Execution"));
+        resourceBundle.produce(new NativeImageResourceBundleBuildItem("i18n/General"));
+        resourceBundle.produce(new NativeImageResourceBundleBuildItem("i18n/Parsing"));
+        resourceBundle.produce(new NativeImageResourceBundleBuildItem("i18n/Validation"));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
     void registerVertxGraphqlUI(VertxGraphqlRecorder recorder,
             BuildProducer<NativeImageResourceDirectoryBuildItem> nativeResourcesProducer, VertxGraphqlConfig config,
             LaunchModeBuildItem launchMode,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<RouteBuildItem> routes,
-            BuildProducer<RequireBodyHandlerBuildItem> body) {
+            BodyHandlerBuildItem bodyHandler) {
 
         boolean includeVertxGraphqlUi = launchMode.getLaunchMode().isDevOrTest() || config.ui.alwaysInclude;
         if (!includeVertxGraphqlUi) {
@@ -77,11 +87,9 @@ class VertxGraphqlProcessor {
                 .build());
         routes.produce(
                 nonApplicationRootPathBuildItem.routeBuilder()
-                        .route(path + "/*")
+                        .routeFunction(path + "/*", recorder.routeFunction(bodyHandler.getHandler()))
                         .handler(handler)
                         .build());
-        // Body handler required in Vert.x 4, to avoid DDOS attack.
-        body.produce(new RequireBodyHandlerBuildItem());
 
         nativeResourcesProducer.produce(new NativeImageResourceDirectoryBuildItem("io/vertx/ext/web/handler/graphiql"));
     }

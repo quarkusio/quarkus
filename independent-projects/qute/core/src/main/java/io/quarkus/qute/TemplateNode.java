@@ -11,14 +11,14 @@ import java.util.concurrent.CompletionStage;
 public interface TemplateNode {
 
     /**
-     * 
+     *
      * @param context
      * @return the result node
      */
     CompletionStage<ResultNode> resolve(ResolutionContext context);
 
     /**
-     * 
+     *
      * @return a list of expressions
      */
     default List<Expression> getExpressions() {
@@ -26,16 +26,34 @@ public interface TemplateNode {
     }
 
     /**
-     * 
+     * Returns the parameter declarations defined in this template node.
+     *
+     * @return a list of param declarations
+     */
+    default List<ParameterDeclaration> getParameterDeclarations() {
+        return Collections.emptyList();
+    }
+
+    /**
+     *
      * @return the origin of the node
      */
     Origin getOrigin();
 
     /**
-     * 
+     *
      * @return {@code true} if the node represents a constant
      */
     default boolean isConstant() {
+        return false;
+    }
+
+    /**
+     *
+     * @return {@code true} if the node represents a section
+     * @see SectionNode
+     */
+    default boolean isSection() {
         return false;
     }
 
@@ -45,7 +63,7 @@ public interface TemplateNode {
     public interface Origin {
 
         /**
-         * 
+         *
          * @return the line where the node can be found
          */
         int getLine();
@@ -54,7 +72,7 @@ public interface TemplateNode {
          * Note that this information is not available for all nodes.
          * <p>
          * However, it's always available for an expression node.
-         * 
+         *
          * @return the line character the node starts
          */
         int getLineCharacterStart();
@@ -63,7 +81,7 @@ public interface TemplateNode {
          * Note that this information is not available for all nodes.
          * <p>
          * However, it's always available for an expression node.
-         * 
+         *
          * @return the line character the node ends
          */
         int getLineCharacterEnd();
@@ -72,11 +90,22 @@ public interface TemplateNode {
 
         String getTemplateGeneratedId();
 
+        default boolean hasNonGeneratedTemplateId() {
+            return !getTemplateId().equals(getTemplateGeneratedId());
+        }
+
         /**
-         * 
+         *
          * @return the template variant
          */
         Optional<Variant> getVariant();
+
+        default void appendTo(StringBuilder builder) {
+            // It only makes sense to append the info for a template with an explicit id
+            if (hasNonGeneratedTemplateId()) {
+                builder.append(" template [").append(getTemplateId()).append("] ").append("line ").append(getLine());
+            }
+        }
 
     }
 

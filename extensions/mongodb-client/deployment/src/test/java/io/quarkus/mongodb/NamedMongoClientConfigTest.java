@@ -5,13 +5,11 @@ import static org.assertj.core.api.Assertions.entry;
 
 import java.lang.annotation.Annotation;
 
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Default;
-import javax.inject.Inject;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Default;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.health.HealthCheckResponse;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -26,10 +24,9 @@ import io.quarkus.mongodb.health.MongoHealthCheck;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class NamedMongoClientConfigTest extends MongoWithReplicasTestBase {
-
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MongoTestBase.class))
+            .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class))
             .withConfigurationResource("application-named-mongoclient.properties");
 
     @Inject

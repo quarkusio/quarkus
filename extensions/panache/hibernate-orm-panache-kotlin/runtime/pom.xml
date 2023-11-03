@@ -75,7 +75,7 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.hibernate</groupId>
+            <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-jpamodelgen</artifactId>
             <scope>provided</scope>
             <!-- Exclude these dependencies, since they are banned -->
@@ -100,18 +100,7 @@
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <executions>
-                    <execution>
-                        <id>kapt</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>kapt</goal>
-                        </goals>
-                        <configuration>
-                            <annotationProcessors>
-                                <annotationProcessor>org.hibernate.jpamodelgen.JPAMetaModelEntityProcessor</annotationProcessor>
-                            </annotationProcessors>
-                        </configuration>
-                    </execution>
+                    <!-- see profile further down for kapt execution -->
                     <execution>
                         <id>compile</id>
                         <phase>compile</phase>
@@ -126,15 +115,27 @@
                             <goal>test-compile</goal>
                         </goals>
                     </execution>
+                    <execution>
+                        <id>kapt</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>kapt</goal>
+                        </goals>
+                        <configuration>
+                            <annotationProcessors>
+                                <annotationProcessor>org.hibernate.jpamodelgen.JPAMetaModelEntityProcessor</annotationProcessor>
+                            </annotationProcessors>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
             </plugin>
             <!-- The entity classes needs to be indexed -->
             <plugin>
-                <groupId>org.jboss.jandex</groupId>
+                <groupId>io.smallrye</groupId>
                 <artifactId>jandex-maven-plugin</artifactId>
                 <executions>
                     <execution>

@@ -1,8 +1,8 @@
 package io.quarkus.jdbc.postgresql.runtime.graal;
 
 import java.io.StringWriter;
-import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
+import java.util.function.BiFunction;
 
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
@@ -11,6 +11,7 @@ import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.graalvm.nativeimage.ImageSingletons;
 import org.postgresql.core.BaseConnection;
 import org.postgresql.util.GT;
 import org.postgresql.util.PSQLException;
@@ -21,39 +22,41 @@ import org.postgresql.xml.PGXmlFactoryFactory;
 /**
  * Used by PgSQLXML: easier to keep the actual code separated from the substitutions.
  */
-public final class DomHelper {
+final class DomHelper {
 
-    //This is the actual code reaching to the JDK XML types; no other code except
-    //the reflective call in the previous method should trigger this inclusion.
-    public static String processDomResult(DOMResult domResult, BaseConnection conn) throws SQLException {
-        return maybeProcessAsDomResult(domResult, conn);
-    }
+    // Stays null unless XML result processing becomes reachable.
+    private BiFunction<DOMResult, BaseConnection, String> processDomResult;
 
     // This is only ever invoked if field domResult got initialized; which in turn
-    // is only possible if setResult(Class) is reacheable.
-    public static String maybeProcessAsDomResult(DOMResult domResult, BaseConnection conn) throws SQLException {
-        try {
-            return (String) DomHelper.class.getMethod(obfuscatedMethodName(), DOMResult.class, BaseConnection.class)
-                    .invoke(null, domResult, conn);
-        } catch (NoSuchMethodException | IllegalAccessException e) {
-            throw new RuntimeException("Unexpected failure in reflective call - please report", e);
-        } catch (InvocationTargetException e) {
-            final Throwable cause = e.getCause();
-            if (cause instanceof SQLException) {
-                //Propagate normal SQLException(s):
-                throw (SQLException) cause;
-            } else {
-                throw new RuntimeException("Unexpected failure in reflective call - please report", e);
+    // is only possible if setResult(Class) is reachable.
+    public static String processDomResult(DOMResult domResult, BaseConnection conn) throws SQLException {
+        BiFunction<DOMResult, BaseConnection, String> func = ImageSingletons.lookup(DomHelper.class).processDomResult;
+        if (func == null) {
+            return null;
+        } else {
+            try {
+                return func.apply(domResult, conn);
+            } catch (UncheckedSQLException e) {
+                throw (SQLException) e.getCause();
             }
         }
     }
 
-    //When GraalVM can figure out a constant name for the target method to be invoked reflectively,
-    //it automatically registers it for reflection. We don't want that to happen in this particular case.
-    private static String obfuscatedMethodName() {
-        return "reallyProcessDom" + "Result";
+    // Called by SQLXMLFeature when setResult(Class) becomes reachable
+    static void enableXmlProcessing() {
+        ImageSingletons.lookup(DomHelper.class).processDomResult = DomHelper::doProcessDomResult;
     }
 
+    public static String doProcessDomResult(DOMResult domResult, BaseConnection conn) {
+        try {
+            return reallyProcessDomResult(domResult, conn);
+        } catch (SQLException e) {
+            throw new UncheckedSQLException(e);
+        }
+    }
+
+    // This XML processing code should only be reachable (via processDomResult function) iff it's
+    // actually used. I.e. setResult(Class) is reachable.
     public static String reallyProcessDomResult(DOMResult domResult, BaseConnection conn) throws SQLException {
         TransformerFactory factory = getXmlFactoryFactory(conn).newTransformerFactory();
         try {
@@ -74,5 +77,13 @@ public final class DomHelper {
             return conn.getXmlFactoryFactory();
         }
         return DefaultPGXmlFactoryFactory.INSTANCE;
+    }
+}
+
+@SuppressWarnings("serial")
+final class UncheckedSQLException extends RuntimeException {
+
+    UncheckedSQLException(SQLException cause) {
+        super(cause);
     }
 }

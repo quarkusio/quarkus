@@ -1,8 +1,6 @@
 package io.quarkus.resteasy.test;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -13,7 +11,7 @@ public class ContentLengthTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(ContentLengthResource.class))
             .overrideConfigKey("quarkus.resteasy.vertx.response-buffer-size", "100");
 
@@ -23,8 +21,9 @@ public class ContentLengthTestCase {
         for (int i = 0; i < 10000; ++i) {
             sb.append("Hello World");
         }
-        RestAssured.given().body(sb.toString()).post("/length/cl").then().header("Content-Length",
-                Matchers.equalTo(Integer.toString(sb.length())));
+        RestAssured.given().body(sb.toString()).post("/length/cl").then()
+                .header("Content-Length", Matchers.equalTo(Integer.toString(sb.length()))).and()
+                .header("Transfer-Encoding", Matchers.not("chunked"));
     }
 
     @Test
@@ -33,8 +32,9 @@ public class ContentLengthTestCase {
         for (int i = 0; i < 10; ++i) {
             sb.append("A");
         }
-        RestAssured.given().body(sb.toString()).post("/length").then().header("Content-Length",
-                Matchers.equalTo(Integer.toString(sb.length())));
+        RestAssured.given().body(sb.toString()).post("/length").then()
+                .header("Content-Length", Matchers.equalTo(Integer.toString(sb.length()))).and()
+                .header("Transfer-Encoding", Matchers.not("chunked"));
     }
 
     @Test
@@ -43,6 +43,8 @@ public class ContentLengthTestCase {
         for (int i = 0; i < 101; ++i) {
             sb.append("A");
         }
-        RestAssured.given().body(sb.toString()).post("/length").then().header("Content-Length", Matchers.nullValue());
+        RestAssured.given().body(sb.toString()).post("/length").then()
+                .header("Content-Length", Matchers.nullValue()).and()
+                .header("Transfer-Encoding", "chunked");
     }
 }

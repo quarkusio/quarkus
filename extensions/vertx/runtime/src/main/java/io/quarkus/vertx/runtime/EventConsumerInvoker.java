@@ -18,6 +18,10 @@ public abstract class EventConsumerInvoker {
         return false;
     }
 
+    public boolean isRunningOnVirtualThread() {
+        return false;
+    }
+
     public boolean isOrdered() {
         return false;
     }
@@ -77,7 +81,7 @@ public abstract class EventConsumerInvoker {
             if (failure != null) {
                 if (message.replyAddress() == null) {
                     // No reply handler
-                    throw VertxRecorder.wrapIfNecessary(failure);
+                    throw VertxEventBusConsumerRecorder.wrapIfNecessary(failure);
                 } else {
                     message.fail(ConsumeEvent.EXPLICIT_FAILURE_CODE, failure.getMessage());
                 }
@@ -105,12 +109,12 @@ public abstract class EventConsumerInvoker {
             try {
                 requestContext.destroy(endState);
             } catch (Exception e) {
-                throw VertxRecorder.wrapIfNecessary(e);
+                throw VertxEventBusConsumerRecorder.wrapIfNecessary(e);
             }
             if (failure != null) {
                 if (message.replyAddress() == null) {
                     // No reply handler
-                    throw VertxRecorder.wrapIfNecessary(failure);
+                    throw VertxEventBusConsumerRecorder.wrapIfNecessary(failure);
                 } else {
                     message.fail(ConsumeEvent.EXPLICIT_FAILURE_CODE, failure.getMessage());
                 }

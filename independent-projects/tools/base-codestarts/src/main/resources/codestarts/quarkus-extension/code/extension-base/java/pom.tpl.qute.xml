@@ -23,8 +23,8 @@
     <version>{version}</version>
 {/if}
     <artifactId>{namespace.id}{extension.id}-parent</artifactId>
-{#if extension.name}
-    <name>{namespace.name}{extension.name} - Parent</name>
+{#if extension.full-name}
+    <name>{extension.full-name} - Parent</name>
 {/if}
     <packaging>pom</packaging>
 
@@ -32,9 +32,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
+        <maven.compiler.release>11</maven.compiler.release>
         {#if quarkus.version}<quarkus.version>{quarkus.version}</quarkus.version>{/if}
         {#if maven.compiler-plugin-version}<compiler-plugin.version>{maven.compiler-plugin-version}</compiler-plugin.version>{/if}
         {#if maven.surefire-plugin.version}
@@ -47,15 +45,24 @@
     <modules>
         <module>deployment</module>
         <module>runtime</module>
+        {#if has-docs-module}
+        <module>docs</module>
+        {/if}
     </modules>
 {#if quarkus.bom}
 
     <dependencyManagement>
         <dependencies>
             <dependency>
+                {#if quarkus.version}
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bom</artifactId>
+                <version>$\{quarkus.version}</version>
+                {#else}
                 <groupId>{quarkus.bom.group-id}</groupId>
                 <artifactId>{quarkus.bom.artifact-id}</artifactId>
                 <version>{quarkus.bom.version}</version>
+                {/if}
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -105,6 +112,11 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>$\{compiler-plugin.version}</version>
+                    <configuration>
+                        <compilerArgs>
+                            <arg>-parameters</arg>
+                        </compilerArgs>
+                    </configuration>
                 </plugin>
                 {/if}
             </plugins>

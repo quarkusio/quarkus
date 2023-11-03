@@ -6,3 +6,5 @@ CREATE TABLE test_user (
 );
 
 INSERT INTO test_user (id, username, password, role) VALUES (1, 'user','user', 'user');
+INSERT INTO test_user (id, username, password, role) VALUES (1, 'worker','worker', 'worker');
+INSERT INTO test_user (id, username, password, role) VALUES (1, 'admin','admin', 'admin');

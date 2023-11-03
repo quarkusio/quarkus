@@ -1,0 +1,30 @@
+[versions]
+plugin-publish = "1.2.1"
+
+# updating Kotlin here makes QuarkusPluginTest > shouldNotFailOnProjectDependenciesWithoutMain(Path) fail
+kotlin = "1.8.10"
+smallrye-config = "3.4.1"
+
+junit5 = "5.10.0"
+assertj = "3.24.2"
+
+[plugins]
+plugin-publish = { id = "com.gradle.plugin-publish", version.ref = "plugin-publish" }
+
+[libraries]
+quarkus-bom = { module = "io.quarkus:quarkus-bom" }
+quarkus-bootstrap-core = { module = "io.quarkus:quarkus-bootstrap-core" }
+quarkus-bootstrap-gradle-resolver = { module = "io.quarkus:quarkus-bootstrap-gradle-resolver" }
+quarkus-core-deployment = { module = "io.quarkus:quarkus-core-deployment" }
+quarkus-devtools-common = { module = "io.quarkus:quarkus-devtools-common" }
+quarkus-devtools-testing = { module = "io.quarkus:quarkus-devtools-testing" }
+quarkus-project-core-extension-codestarts = { module = "io.quarkus:quarkus-project-core-extension-codestarts" }
+
+kotlin-gradle-plugin-api = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin" }
+smallrye-config-yaml = { module = "io.smallrye.config:smallrye-config-source-yaml", version.ref = "smallrye-config" }
+jackson-databind = {module="com.fasterxml.jackson.core:jackson-databind"}
+jackson-dataformat-yaml = {module="com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"}
+
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit5" }
+junit-api = { module = "org.junit.jupiter:junit-jupiter-api" }
+assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }

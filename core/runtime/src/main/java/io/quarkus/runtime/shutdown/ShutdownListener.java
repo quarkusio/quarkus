@@ -15,7 +15,7 @@ public interface ShutdownListener {
     /**
      * Pre shutdown notification, the listener can use this to notify external
      * systems this application is about to shut down.
-     * 
+     *
      * @param notification The notification event
      */
     default void preShutdown(ShutdownNotification notification) {

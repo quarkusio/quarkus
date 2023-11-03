@@ -1,7 +1,7 @@
 package io.quarkus.it.hibernate.orm.rest.data.panache;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 class HibernateOrmRestDataPanacheIT extends HibernateOrmRestDataPanacheTest {
 }

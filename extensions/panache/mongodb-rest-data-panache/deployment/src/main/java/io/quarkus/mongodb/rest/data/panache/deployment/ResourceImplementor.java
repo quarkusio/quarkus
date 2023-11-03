@@ -3,9 +3,11 @@ package io.quarkus.mongodb.rest.data.panache.deployment;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.util.List;
+import java.util.Map;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.logging.Logger;
 
@@ -36,8 +38,9 @@ class ResourceImplementor {
         this.entityClassHelper = entityClassHelper;
     }
 
-    String implement(ClassOutput classOutput, DataAccessImplementor dataAccessImplementor, String resourceType,
+    String implement(ClassOutput classOutput, DataAccessImplementor dataAccessImplementor, ClassInfo resourceInterface,
             String entityType) {
+        String resourceType = resourceInterface.name().toString();
         String className = resourceType + "Impl_" + HashUtil.sha1(resourceType);
         LOGGER.tracef("Starting generation of '%s'", className);
         ClassCreator classCreator = ClassCreator.builder()
@@ -60,17 +63,40 @@ class ResourceImplementor {
     }
 
     private void implementList(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
-        MethodCreator methodCreator = classCreator.getMethodCreator("list", List.class, Page.class, Sort.class);
+        MethodCreator methodCreator = classCreator.getMethodCreator("list", List.class, Page.class, Sort.class,
+                String.class, Map.class);
         ResultHandle page = methodCreator.getMethodParam(0);
         ResultHandle sort = methodCreator.getMethodParam(1);
-        ResultHandle columns = methodCreator.invokeVirtualMethod(ofMethod(Sort.class, "getColumns", List.class), sort);
-        ResultHandle isEmptySort = methodCreator.invokeInterfaceMethod(ofMethod(List.class, "isEmpty", boolean.class), columns);
-
-        BranchResult isEmptySortBranch = methodCreator.ifTrue(isEmptySort);
-        isEmptySortBranch.trueBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page));
-        isEmptySortBranch.falseBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort));
+        ResultHandle query = methodCreator.getMethodParam(2);
+        ResultHandle queryParams = methodCreator.getMethodParam(3);
+        ResultHandle hasQuery = methodCreator.invokeVirtualMethod(ofMethod(String.class, "isEmpty", boolean.class), query);
+        BranchResult hasQueryBranch = methodCreator.ifTrue(hasQuery);
+        implementListWithoutQuery(hasQueryBranch.trueBranch(), page, sort, dataAccessImplementor);
+        implementListWithQuery(hasQueryBranch.falseBranch(), page, sort, query, queryParams, dataAccessImplementor);
 
         methodCreator.close();
+    }
+
+    private void implementListWithoutQuery(BytecodeCreator body, ResultHandle page, ResultHandle sort,
+            DataAccessImplementor dataAccessImplementor) {
+        ResultHandle columns = body.invokeVirtualMethod(ofMethod(Sort.class, "getColumns", List.class), sort);
+        ResultHandle isEmptySort = body.invokeInterfaceMethod(ofMethod(List.class, "isEmpty", boolean.class), columns);
+
+        BranchResult isEmptySortBranch = body.ifTrue(isEmptySort);
+        isEmptySortBranch.trueBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page));
+        isEmptySortBranch.falseBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort));
+    }
+
+    private void implementListWithQuery(BytecodeCreator body, ResultHandle page, ResultHandle sort, ResultHandle query,
+            ResultHandle queryParams, DataAccessImplementor dataAccessImplementor) {
+        ResultHandle columns = body.invokeVirtualMethod(ofMethod(Sort.class, "getColumns", List.class), sort);
+        ResultHandle isEmptySort = body.invokeInterfaceMethod(ofMethod(List.class, "isEmpty", boolean.class), columns);
+
+        BranchResult isEmptySortBranch = body.ifTrue(isEmptySort);
+        isEmptySortBranch.trueBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page, query,
+                queryParams));
+        isEmptySortBranch.falseBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort,
+                query, queryParams));
     }
 
     private void implementListPageCount(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {

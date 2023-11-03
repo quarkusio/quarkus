@@ -1,0 +1,18 @@
+= A valid heading
+== GitLab Code Quality
+== The Infinispan project
+== Installing SmallRye to do xyz
+== Installing RESTEasy with Quarkus
+== A Jira instance
+== Knative is a component used in Quarkus
+== Eclipse Vert.x and Netty are upgraded in Quarkus
+== IBM Cloud
+== Proof Key for Code Exchange
+== Kogito updates
+== IBM Cloud is a valid product name
+== Spotify, GraphQL, and Vineflower are proper nouns so uppercase in headings is OK.
+== Use xDS gRPC
+== Use JBoss Logging for application logging
+== JBoss Logging API
+== A heading about Graylog, Logstash, or Fluentd open-source software
+== About the Istio service mesh

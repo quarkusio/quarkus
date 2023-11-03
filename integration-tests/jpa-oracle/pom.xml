@@ -14,9 +14,7 @@
     <description>Module that contains JPA related tests running with the Oracle database</description>
 
     <properties>
-        <oracledb.url>jdbc:oracle:thin:@localhost:1521/XE</oracledb.url>
-        <!-- See https://hub.docker.com/r/gvenzl/oracle-xe -->
-        <oracle.image>gvenzl/oracle-xe:11-slim</oracle.image>
+        <oracledb.url>jdbc:oracle:thin:@localhost:1521/FREEPDB1</oracledb.url>
     </properties>
 
     <dependencies>
@@ -30,6 +28,14 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-oracle</artifactId>
         </dependency>
+        <!-- Include the PostgreSQL driver as well: not actually used, but
+            we need to validate native-image compilation with multiple JDBC drivers, in particular to
+            test all weird native-image metadata being included in the Oracle JDBC driver -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-postgresql</artifactId>
+        </dependency>
+
         <!-- .. and some web endpoints -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -40,6 +46,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -70,6 +81,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-oracle-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -162,9 +186,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <oracledb.url>jdbc:oracle:thin:@localhost:1521/XE</oracledb.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -187,10 +208,13 @@
                                             <color>red</color>
                                         </log>
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
+                                            <!-- good docs found at: https://dmp.fabric8.io/#build-healthcheck -->
                                             <!-- Unfortunately booting this is slow, needs to set a generous timeout: -->
                                             <time>60000</time>
-                                            <log>DATABASE IS READY TO USE!</log>
+                                            <!-- leverage the healthcheck in the image we use -->
+                                            <healthy>yes</healthy>
+                                            <!-- In case of any issues with the built-in healthcheck we can revert back to the original log check:-->
+                                            <!--<log>DATABASE IS READY TO USE!</log>-->
                                         </wait>
                                     </run>
                                 </image>
@@ -236,7 +260,40 @@
                 </plugins>
             </build>
         </profile>
-
+        <!-- In general, we want to avoid os- or arch-based guards on tests, but the Oracle
+         db would not start on M1 - see https://stackoverflow.com/questions/68605011/oracle-12c-docker-setup-on-apple-m1 -->
+        <profile>
+            <id>mac-m1</id>
+            <activation>
+                <os>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <configuration>
+                            <images>
+                                <image>
+                                    <name>${oracle.image}</name>
+                                    <run>
+                                        <skip>true</skip>
+                                    </run>
+                                </image>
+                            </images>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
 </project>

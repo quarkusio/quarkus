@@ -2,7 +2,7 @@ package io.quarkus.resteasy.runtime.standalone;
 
 import java.security.Principal;
 
-import javax.ws.rs.core.SecurityContext;
+import jakarta.ws.rs.core.SecurityContext;
 
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;

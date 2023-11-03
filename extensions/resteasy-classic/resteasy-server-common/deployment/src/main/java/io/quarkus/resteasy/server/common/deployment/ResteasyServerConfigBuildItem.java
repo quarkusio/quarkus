@@ -21,7 +21,7 @@ public final class ResteasyServerConfigBuildItem extends SimpleBuildItem {
      */
     public ResteasyServerConfigBuildItem(String rootPath, String path, Map<String, String> initParameters) {
         this.rootPath = rootPath;
-        this.path = path;
+        this.path = path.startsWith("/") ? path : "/" + path;
         this.initParameters = initParameters;
     }
 

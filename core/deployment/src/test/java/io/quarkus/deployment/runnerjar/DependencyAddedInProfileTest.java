@@ -8,10 +8,15 @@ import org.apache.maven.model.Profile;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
 
-public class DependencyAddedInProfileTest extends ExecutableOutputOutcomeTestBase {
+public class DependencyAddedInProfileTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
-    protected TsArtifact modelApp() {
+    protected boolean createWorkspace() {
+        return true;
+    }
+
+    @Override
+    protected TsArtifact composeApplication() {
 
         final TsQuarkusExt extA_100 = new TsQuarkusExt("ext-a", "1.0.0");
         addToExpectedLib(extA_100.getRuntime());

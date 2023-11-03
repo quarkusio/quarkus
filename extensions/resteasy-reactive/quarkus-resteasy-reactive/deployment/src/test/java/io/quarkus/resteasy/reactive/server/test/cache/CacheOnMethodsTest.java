@@ -5,8 +5,8 @@ import static org.hamcrest.Matchers.nullValue;
 
 import java.util.function.Supplier;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.Cache;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -20,7 +20,7 @@ import io.restassured.RestAssured;
 public class CacheOnMethodsTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<JavaArchive>() {
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class).addClasses(ResourceWithCache.class);

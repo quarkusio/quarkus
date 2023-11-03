@@ -1,7 +1,7 @@
 package io.quarkus.resteasy.reactive.server.test.websocket;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import io.vertx.core.Handler;
 import io.vertx.core.http.ServerWebSocket;

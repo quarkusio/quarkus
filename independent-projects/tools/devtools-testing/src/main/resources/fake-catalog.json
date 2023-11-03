@@ -5,8 +5,48 @@
   "derived-from": [],
   "extensions": [
     {
+      "name" : "RESTEasy JSON-B",
+      "description" : "JSON-B serialization support for RESTEasy",
+      "metadata" : {
+        "keywords" : [ "resteasy-jsonb", "jaxrs-json", "resteasy-json", "resteasy", "jaxrs", "json", "jsonb" ],
+        "guide" : "https://quarkus.io/guides/rest-json",
+        "categories" : [ "web", "serialization" ],
+        "status" : "stable",
+        "config" : [ "quarkus.resteasy." ],
+        "built-with-quarkus-core" : "999-FAKE",
+        "capabilities" : {
+          "provides" : [ "io.quarkus.rest.jsonb", "io.quarkus.resteasy.json.jsonb" ]
+        },
+        "extension-dependencies" : [ "io.quarkus:quarkus-resteasy", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-jsonb", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jsonp" ]
+      },
+      "artifact": "io.quarkus:quarkus-resteasy-jsonb::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
+    },
+    {
+      "name" : "RESTEasy Jackson",
+      "description" : "Jackson serialization support for RESTEasy",
+      "metadata" : {
+        "keywords" : [ "resteasy-jackson", "jaxrs-json", "resteasy-json", "resteasy", "jaxrs", "json", "jackson" ],
+        "categories" : [ "web", "serialization" ],
+        "status" : "stable",
+        "config" : [ "quarkus.resteasy.", "quarkus.jackson." ],
+        "built-with-quarkus-core" : "999-FAKE",
+        "capabilities" : {
+          "provides" : [ "io.quarkus.rest.jackson", "io.quarkus.resteasy.json.jackson" ]
+        },
+        "extension-dependencies" : [ "io.quarkus:quarkus-resteasy", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-arc" ]
+      },
+      "artifact": "io.quarkus:quarkus-resteasy-jackson::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
+    },
+
+    {
       "name": "RESTEasy Reactive",
-      "description": "Reactive implementation of JAX-RS with additional features. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.",
+      "description": "A JAX-RS implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.",
       "metadata": {
         "short-name": "resteasy-reactive",
         "keywords": [
@@ -48,7 +88,7 @@
           "core"
         ],
         "status": "stable",
-        "guide": "https://quarkus.io/guides/config#yaml",
+        "guide": "https://quarkus.io/guides/config-yaml",
         "codestart": {
           "name": "config-yaml",
           "kind": "core",
@@ -172,6 +212,39 @@
       "origins": [
         "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
       ]
+    },
+    {
+      "name": "Uncategorized extension",
+      "description": "Some uncategorized extension",
+      "metadata": {
+        "keywords": [
+          "uncategorized"
+        ],
+        "categories": [
+          "unknown"
+        ],
+        "status": "preview",
+        "built-with-quarkus-core": "999-FAKE"
+      },
+      "artifact": "io.quarkus:quarkus-uncategorized-extension::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
+    },
+    {
+      "name": "extension in unknown category",
+      "description": "Some unknown category extension",
+      "metadata": {
+        "keywords": [
+          "unknown-category"
+        ],
+        "status": "preview",
+        "built-with-quarkus-core": "999-FAKE"
+      },
+      "artifact": "io.quarkus:quarkus-unknown-category-extension::jar:999-FAKE",
+      "origins": [
+        "io.quarkus:quarkus-fake-bom:999-FAKE:json:999-FAKE"
+      ]
     }
   ],
   "categories": [
@@ -214,7 +287,8 @@
           "io.quarkus:quarkus-smallrye-reactive-messaging",
           "io.quarkus:quarkus-smallrye-reactive-messaging-amqp",
           "io.quarkus:quarkus-smallrye-reactive-messaging-kafka",
-          "io.quarkus:quarkus-smallrye-reactive-messaging-mqtt"
+          "io.quarkus:quarkus-smallrye-reactive-messaging-mqtt",
+          "io.quarkus:quarkus-smallrye-reactive-messaging-rabbitmq"
         ]
       }
     },
@@ -301,7 +375,7 @@
         "doc-root": "https://quarkus.io",
         "rest-assured-version": "4.3.2",
         "compiler-plugin-version": "3.8.1",
-        "surefire-plugin-version": "3.0.0-M5",
+        "surefire-plugin-version": "3.0.0",
         "kotlin-version": "1.4.31",
         "scala-version": "2.12.13",
         "scala-plugin-version": "4.4.0",
@@ -312,9 +386,9 @@
         "gradle-plugin-id": "io.quarkus",
         "gradle-plugin-version": "999-FAKE",
         "supported-maven-versions": "[3.6.2,)",
-        "proposed-maven-version": "3.8.1",
-        "maven-wrapper-version": "0.7.7",
-        "gradle-wrapper-version": "6.8.3"
+        "proposed-maven-version": "3.9.5",
+        "maven-wrapper-version": "3.2.0",
+        "gradle-wrapper-version": "8.4"
       }
     },
     "codestarts-artifacts": [

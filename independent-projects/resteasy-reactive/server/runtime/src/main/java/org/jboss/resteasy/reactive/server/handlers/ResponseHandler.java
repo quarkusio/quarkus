@@ -1,10 +1,14 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
 import java.io.ByteArrayInputStream;
+import java.util.Collections;
 import java.util.List;
-import javax.ws.rs.core.GenericEntity;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
+import java.util.Map;
+
+import jakarta.ws.rs.core.GenericEntity;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.RestResponseImpl;
@@ -17,7 +21,20 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 /**
  * Our job is to turn endpoint return types into Response instances
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class ResponseHandler implements ServerRestHandler {
+
+    public static final ResponseHandler NO_CUSTOMIZER_INSTANCE = new ResponseHandler();
+
+    private final List<ResponseBuilderCustomizer> responseBuilderCustomizers;
+
+    public ResponseHandler(List<ResponseBuilderCustomizer> responseBuilderCustomizers) {
+        this.responseBuilderCustomizers = responseBuilderCustomizers;
+    }
+
+    private ResponseHandler() {
+        this.responseBuilderCustomizers = Collections.emptyList();
+    }
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
@@ -60,7 +77,7 @@ public class ResponseHandler implements ServerRestHandler {
                 mediaTypeAlreadyExists = true;
             }
             EncodedMediaType produces = requestContext.getResponseContentType();
-            if (!mediaTypeAlreadyExists && produces != null) {
+            if (!mediaTypeAlreadyExists && (produces != null) && (responseBuilder.getEntity() != null)) {
                 responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
             }
             if ((responseBuilder instanceof ResponseBuilderImpl)) {
@@ -83,9 +100,6 @@ public class ResponseHandler implements ServerRestHandler {
                 responseBuilder = fromResponse(existing);
                 responseBuilder.entity(genericEntity.getEntity());
             } else {
-                // TCK says to use the entity type as generic type if we return a response
-                if (existing.hasEntity() && (existing.getEntity() != null))
-                    requestContext.setGenericReturnType(existing.getEntity().getClass());
                 //TODO: super inefficient
                 responseBuilder = fromResponse(existing);
                 if ((result instanceof RestResponseImpl)) {
@@ -109,7 +123,7 @@ public class ResponseHandler implements ServerRestHandler {
                 mediaTypeAlreadyExists = true;
             }
             EncodedMediaType produces = requestContext.getResponseContentType();
-            if (!mediaTypeAlreadyExists && produces != null) {
+            if (!mediaTypeAlreadyExists && (produces != null) && (responseBuilder.getEntity() != null)) {
                 responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
             }
             if ((responseBuilder instanceof ResponseBuilderImpl)) {
@@ -128,21 +142,28 @@ public class ResponseHandler implements ServerRestHandler {
                 @Override
                 public Response get() {
                     if (response == null) {
-                        Response.ResponseBuilder responseBuilder;
+                        ResponseBuilderImpl responseBuilder;
                         if (result instanceof GenericEntity) {
                             GenericEntity<?> genericEntity = (GenericEntity<?>) result;
                             requestContext.setGenericReturnType(genericEntity.getType());
-                            responseBuilder = ResponseImpl.ok(genericEntity.getEntity());
+                            responseBuilder = ResponseBuilderImpl.ok(genericEntity.getEntity());
                         } else if (result == null) {
                             // FIXME: custom status codes depending on method?
-                            responseBuilder = ResponseImpl.noContent();
+                            responseBuilder = ResponseBuilderImpl.noContent();
                         } else {
                             // FIXME: custom status codes depending on method?
-                            responseBuilder = ResponseImpl.ok(result);
+                            responseBuilder = ResponseBuilderImpl.ok(result);
                         }
-                        EncodedMediaType produces = requestContext.getResponseContentType();
-                        if (produces != null) {
-                            responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
+                        if (responseBuilder.getEntity() != null) {
+                            EncodedMediaType produces = requestContext.getResponseContentType();
+                            if (produces != null) {
+                                responseBuilder.header(HttpHeaders.CONTENT_TYPE, produces.toString());
+                            }
+                        }
+                        if (!responseBuilderCustomizers.isEmpty()) {
+                            for (int i = 0; i < responseBuilderCustomizers.size(); i++) {
+                                responseBuilderCustomizers.get(i).customize(responseBuilder);
+                            }
                         }
                         if ((responseBuilder instanceof ResponseBuilderImpl)) {
                             // avoid unnecessary copying of HTTP headers from the Builder to the Response
@@ -158,6 +179,11 @@ public class ResponseHandler implements ServerRestHandler {
                 public boolean isCreated() {
                     return response != null;
                 }
+
+                @Override
+                public boolean isPredetermined() {
+                    return responseBuilderCustomizers.isEmpty();
+                }
             });
 
         }
@@ -169,10 +195,13 @@ public class ResponseHandler implements ServerRestHandler {
         if (response.hasEntity()) {
             b.entity(response.getEntity());
         }
-        for (String headerName : response.getHeaders().keySet()) {
-            List<Object> headerValues = response.getHeaders().get(headerName);
-            for (Object headerValue : headerValues) {
-                b.header(headerName, headerValue);
+        var headers = response.getHeaders();
+        if (headers != null) {
+            for (String headerName : headers.keySet()) {
+                List<Object> headerValues = headers.get(headerName);
+                for (Object headerValue : headerValues) {
+                    b.header(headerName, headerValue);
+                }
             }
         }
         return (ResponseBuilderImpl) b;
@@ -192,4 +221,71 @@ public class ResponseHandler implements ServerRestHandler {
         }
         return (ResponseBuilderImpl) b;
     }
+
+    public interface ResponseBuilderCustomizer {
+
+        void customize(Response.ResponseBuilder responseBuilder);
+
+        class StatusCustomizer implements ResponseBuilderCustomizer {
+
+            private int status;
+
+            public StatusCustomizer(int status) {
+                this.status = status;
+            }
+
+            public StatusCustomizer() {
+            }
+
+            public int getStatus() {
+                return status;
+            }
+
+            public void setStatus(int status) {
+                this.status = status;
+            }
+
+            @Override
+            public void customize(Response.ResponseBuilder responseBuilder) {
+                responseBuilder.status(status);
+            }
+        }
+
+        @SuppressWarnings("ForLoopReplaceableByForEach")
+        class AddHeadersCustomizer implements ResponseBuilderCustomizer {
+
+            private Map<String, List<String>> headers;
+
+            public AddHeadersCustomizer(Map<String, List<String>> headers) {
+                this.headers = headers;
+            }
+
+            public AddHeadersCustomizer() {
+            }
+
+            public Map<String, List<String>> getHeaders() {
+                return headers;
+            }
+
+            public void setHeaders(Map<String, List<String>> headers) {
+                this.headers = headers;
+            }
+
+            @Override
+            public void customize(Response.ResponseBuilder responseBuilder) {
+                for (Map.Entry<String, List<String>> header : headers.entrySet()) {
+                    List<String> values = header.getValue();
+                    String headerName = header.getKey();
+                    if (values.size() == 1) {
+                        responseBuilder.header(headerName, values.get(0));
+                    } else {
+                        for (int i = 0; i < values.size(); i++) {
+                            responseBuilder.header(headerName, values.get(i));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 }

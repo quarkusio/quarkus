@@ -22,7 +22,7 @@ public class JsonRecorder {
         return new Consumer<Route>() {
             @Override
             public void accept(Route route) {
-                route.order(2).produces("application/json");
+                route.order(3).produces("application/json");
             }
         };
     }

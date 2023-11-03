@@ -4,19 +4,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Probe;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -25,16 +22,16 @@ public class KubernetesWithHealthAndJibTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("health-and-jib")
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
-            .withConfigurationResource("kubernetes-with-health-and-jib.properties")
-            .setForcedDependencies(
-                    Arrays.asList(
-                            new AppArtifact("io.quarkus", "quarkus-smallrye-health", Version.getVersion()),
-                            new AppArtifact("io.quarkus", "quarkus-container-image-jib", Version.getVersion())));
+            .overrideConfigKey("quarkus.http.port", "9000")
+            .overrideConfigKey("quarkus.container-image.name", "with-health-and-jib")
+            .setForcedDependencies(List.of(
+                    Dependency.of("io.quarkus", "quarkus-smallrye-health", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-container-image-jib", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -49,7 +46,7 @@ public class KubernetesWithHealthAndJibTest {
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
         assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
             assertThat(d.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo("with-health-and-jib");
+                assertThat(m.getName()).isEqualTo("health-and-jib");
             });
 
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {

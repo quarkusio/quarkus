@@ -1,8 +1,8 @@
 package io.quarkus.it.jpa.mapping.xml.legacy.library_a;
 
-import javax.persistence.Basic;
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 /**
  * An annotated entity whose mapping is overridden in orm.xml.

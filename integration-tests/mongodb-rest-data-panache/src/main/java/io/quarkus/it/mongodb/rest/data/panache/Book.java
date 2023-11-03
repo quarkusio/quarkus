@@ -2,7 +2,7 @@ package io.quarkus.it.mongodb.rest.data.panache;
 
 import org.bson.codecs.pojo.annotations.BsonId;
 
-import io.quarkus.mongodb.panache.MongoEntity;
+import io.quarkus.mongodb.panache.common.MongoEntity;
 
 @MongoEntity
 public class Book {

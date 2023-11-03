@@ -17,6 +17,10 @@ public class JsonConfigGroup implements MicrometerConfig.CapabilityEnabled {
     /**
      * The path for the JSON metrics endpoint.
      * The default value is {@code metrics}.
+     *
+     * By default, this value will be resolved as a path relative to `${quarkus.http.non-application-root-path}`.
+     * If the management interface is enabled, the value will be resolved as a path relative to
+     * `${quarkus.management.root-path}`.
      */
     @ConfigItem(defaultValue = "metrics")
     public String path;

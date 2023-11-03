@@ -1,14 +1,28 @@
 package io.quarkus.dev.console;
 
-import java.util.ArrayDeque;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.io.PrintStream;
+import java.util.List;
 import java.util.Locale;
-import java.util.function.Predicate;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 
 public abstract class QuarkusConsole {
+
+    public static final int TEST_STATUS = 100;
+    public static final int TEST_RESULTS = 200;
+    public static final int COMPILE_ERROR = 300;
 
     public static final String FORCE_COLOR_SUPPORT = "io.quarkus.force-color-support";
 
     public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
+    public static final boolean IS_MAC = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("mac");
+    public static final boolean IS_LINUX = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("linux");
 
     /**
      * <a href="https://conemu.github.io">ConEmu</a> ANSI X3.64 support enabled,
@@ -29,15 +43,66 @@ public abstract class QuarkusConsole {
             && System.getenv("MSYSTEM") != null
             && System.getenv("MSYSTEM").startsWith("MINGW")
             && "xterm".equals(System.getenv("TERM"));
-    protected final ArrayDeque<InputHolder> inputHandlers = new ArrayDeque<>();
+    protected volatile Consumer<int[]> inputHandler;
 
     public static volatile QuarkusConsole INSTANCE = new BasicConsole(hasColorSupport(), false, System.out::print);
 
     public static volatile boolean installed;
 
-    protected volatile Predicate<String> outputFilter;
+    protected static final List<BiPredicate<String, Boolean>> outputFilters = new CopyOnWriteArrayList<>();
 
     private volatile boolean started = false;
+
+    static boolean redirectsInstalled = false;
+
+    public final static PrintStream ORIGINAL_OUT = System.out;
+    public final static PrintStream ORIGINAL_ERR = System.err;
+    public final static InputStream ORIGINAL_IN = System.in;
+
+    public static PrintStream REDIRECT_OUT = null;
+    public static PrintStream REDIRECT_ERR = null;
+    public static StateChangeInputStream REDIRECT_IN;
+    protected volatile boolean userReadInProgress;
+
+    public synchronized static void installRedirects() {
+        if (redirectsInstalled) {
+            return;
+        }
+        redirectsInstalled = true;
+
+        //force console init
+        //otherwise you can get a stack overflow as it sees the redirected output
+        QuarkusConsole.INSTANCE.isInputSupported();
+        REDIRECT_OUT = new RedirectPrintStream(false);
+        REDIRECT_ERR = new RedirectPrintStream(true);
+        REDIRECT_IN = new StateChangeInputStream();
+        System.setOut(REDIRECT_OUT);
+        System.setErr(REDIRECT_ERR);
+        System.setIn(REDIRECT_IN);
+    }
+
+    public synchronized static void uninstallRedirects() {
+        if (!redirectsInstalled) {
+            return;
+        }
+
+        if (REDIRECT_OUT != null) {
+            REDIRECT_OUT.flush();
+            REDIRECT_OUT.close();
+            REDIRECT_OUT = null;
+        }
+        if (REDIRECT_ERR != null) {
+            REDIRECT_ERR.flush();
+            REDIRECT_ERR.close();
+            REDIRECT_ERR = null;
+        }
+        REDIRECT_IN = null;
+        System.setOut(ORIGINAL_OUT);
+        System.setErr(ORIGINAL_ERR);
+        System.setIn(ORIGINAL_IN);
+
+        redirectsInstalled = false;
+    }
 
     public static boolean hasColorSupport() {
         if (Boolean.getBoolean(FORCE_COLOR_SUPPORT)) {
@@ -59,28 +124,6 @@ public abstract class QuarkusConsole {
         }
     }
 
-    public synchronized void pushInputHandler(InputHandler inputHandler) {
-        InputHolder holder = inputHandlers.peek();
-        if (holder != null) {
-            holder.setEnabled(false);
-        }
-        holder = createHolder(inputHandler);
-        if (started) {
-            holder.setEnabled(true);
-        }
-        inputHandlers.push(holder);
-        inputHandler.promptHandler(holder);
-    }
-
-    public synchronized void popInputHandler() {
-        InputHolder holder = inputHandlers.pop();
-        holder.setEnabled(false);
-        holder = inputHandlers.peek();
-        if (holder != null) {
-            holder.setEnabled(true);
-        }
-    }
-
     public static void start() {
         INSTANCE.startInternal();
     }
@@ -90,17 +133,39 @@ public abstract class QuarkusConsole {
             return;
         }
         started = true;
-        InputHolder holder = inputHandlers.peek();
-        if (holder != null) {
-            holder.setEnabled(true);
-        }
     }
 
-    public abstract InputHolder createHolder(InputHandler inputHandler);
+    public void setInputHandler(Consumer<int[]> inputHandler) {
+        this.inputHandler = inputHandler;
+    }
 
-    public abstract void write(String s);
+    public abstract void doReadLine();
 
-    public abstract void write(byte[] buf, int off, int len);
+    public abstract StatusLine registerStatusLine(int priority);
+
+    public abstract void setPromptMessage(String message);
+
+    public abstract void write(boolean errorStream, String s);
+
+    public abstract void write(boolean errorStream, byte[] buf, int off, int len);
+
+    public void exitCliMode() {
+        //noop for the non-aesh console
+    }
+
+    /**
+     * Exposes single character aliases so they can be displayed in the help screen
+     */
+    public Map<Character, String> singleLetterAliases() {
+        return Map.of();
+    }
+
+    /**
+     * runs a single letter alias
+     */
+    public void runAlias(char alias) {
+
+    }
 
     protected String stripAnsiCodes(String s) {
         if (s == null) {
@@ -110,71 +175,96 @@ public abstract class QuarkusConsole {
         return s;
     }
 
-    public void setOutputFilter(Predicate<String> logHandler) {
-        this.outputFilter = logHandler;
+    public static void addOutputFilter(BiPredicate<String, Boolean> logHandler) {
+        outputFilters.add(logHandler);
     }
 
-    protected static abstract class InputHolder implements InputHandler.ConsoleStatus {
-        public final InputHandler handler;
-        volatile boolean enabled;
-        String prompt;
-        String status;
-        String results;
-        String compileError;
+    public static void removeOutputFilter(BiPredicate<String, Boolean> logHandler) {
+        outputFilters.remove(logHandler);
+    }
 
-        protected InputHolder(InputHandler handler) {
-            this.handler = handler;
-        }
-
-        public InputHolder setEnabled(boolean enabled) {
-            this.enabled = enabled;
-            if (enabled) {
-                setStatus(status);
-                setPrompt(prompt);
-                setResults(results);
-                setCompileError(compileError);
+    protected boolean shouldWrite(boolean errorStream, String s) {
+        boolean ok = true;
+        for (var i : outputFilters) {
+            if (!i.test(s, errorStream)) {
+                //no early exit as filters can also record output
+                ok = false;
             }
-            return this;
+        }
+        return ok;
+    }
+
+    public boolean isInputSupported() {
+        return true;
+    }
+
+    public boolean isAnsiSupported() {
+        return false;
+    }
+
+    protected void userReadStart() {
+
+    }
+
+    protected void userReadStop() {
+
+    }
+
+    public static class StateChangeInputStream extends InputStream {
+
+        private final LinkedBlockingDeque<Integer> queue = new LinkedBlockingDeque<>();
+
+        private volatile boolean reading;
+
+        public synchronized boolean acceptInput(int input) {
+            if (reading) {
+                queue.add(input);
+                notifyAll();
+                return true;
+            }
+            return false;
         }
 
         @Override
-        public void setPrompt(String prompt) {
-            this.prompt = prompt;
-            if (enabled) {
-                setPromptMessage(prompt);
+        public synchronized int read() throws IOException {
+            reading = true;
+            try {
+                while (queue.isEmpty()) {
+                    try {
+                        wait();
+                    } catch (InterruptedException e) {
+                        throw new InterruptedIOException();
+                    }
+                }
+                return queue.pollFirst();
+            } finally {
+                reading = false;
             }
         }
 
         @Override
-        public void setStatus(String status) {
-            this.status = status;
-            if (enabled) {
-                setStatusMessage(status);
+        public synchronized int read(byte[] b, int off, int len) throws IOException {
+            reading = true;
+            int read = 0;
+            try {
+                while (read < len) {
+                    while (queue.isEmpty()) {
+                        try {
+                            wait();
+                        } catch (InterruptedException e) {
+                            throw new InterruptedIOException();
+                        }
+                    }
+                    byte byteValue = queue.poll().byteValue();
+                    b[read++] = byteValue;
+                    if (byteValue == '\n' || byteValue == '\r') {
+                        return read;
+                    }
+                }
+                return read;
+            } finally {
+                reading = false;
             }
         }
-
-        @Override
-        public void setResults(String results) {
-            this.results = results;
-            if (enabled) {
-                setResultsMessage(results);
-            }
-        }
-
-        @Override
-        public void setCompileError(String compileError) {
-            this.compileError = compileError;
-            if (enabled) {
-                setCompileErrorMessage(compileError);
-            }
-        }
-
-        protected abstract void setStatusMessage(String status);
-
-        protected abstract void setPromptMessage(String prompt);
-
-        protected abstract void setResultsMessage(String results);
-
-        protected abstract void setCompileErrorMessage(String results);
     }
 }

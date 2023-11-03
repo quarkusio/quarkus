@@ -1,16 +1,17 @@
 package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.quarkus.qute.IfSectionHelper.Operator;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.IfSectionHelper.Operator;
 
 public class IfSectionTest {
 
@@ -73,6 +74,12 @@ public class IfSectionTest {
     public void testCompositeParameters() {
         Engine engine = Engine.builder().addDefaults().build();
         assertEquals("OK", engine.parse("{#if (true || false) && true}OK{/if}").render());
+        assertEquals("OK", engine.parse("{#if (true || false) && true && !false}OK{/if}").render());
+        assertEquals("OK", engine.parse("{#if  true && true && !(true || false)}NOK{#else}OK{/if}").render());
+        assertEquals("OK", engine.parse("{#if true && true  && !(true && false)}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if true && !true && (true || false)}NOK{#else}OK{/if}").render());
+        assertEquals("OK", engine.parse("{#if true && (true  && ( true && false))}NOK{#else}OK{/if}").render());
+        assertEquals("OK", engine.parse("{#if true && (!false || false || (true || false))}OK{#else}NOK{/if}").render());
         assertEquals("OK", engine.parse("{#if (foo.or(false) || false || true) && (true)}OK{/if}").render());
         assertEquals("NOK", engine.parse("{#if foo.or(false) || false}OK{#else}NOK{/if}").render());
         assertEquals("OK", engine.parse("{#if false || (foo.or(false) || (false || true))}OK{#else}NOK{/if}").render());
@@ -112,8 +119,8 @@ public class IfSectionTest {
     @Test
     public void testParserErrors() {
         // Missing operand
-        assertParserError("{#if foo >}{/}",
-                "Parser error on line 1: binary operator [GT] set but the second operand not present for {#if} section",
+        ParserTest.assertParserError("{#if foo >}{/}", IfSectionHelper.Code.BINARY_OPERATOR_MISSING_SECOND_OPERAND,
+                "Parser error: binary operator [GT] set but the second operand not present for {#if} section",
                 1);
     }
 
@@ -207,17 +214,70 @@ public class IfSectionTest {
                 engine.parse("FOO\n\n{#if false}\nBAZ\n{/if}\n").render());
     }
 
-    private void assertParserError(String template, String message, int line) {
-        Engine engine = Engine.builder().addDefaultSectionHelpers().build();
+    @Test
+    public void testSafeExpression() {
+        Engine engine = Engine.builder().strictRendering(true).addDefaults().build();
         try {
-            engine.parse(template);
-            fail("No parser error found");
+            engine.parse("{#if val.is.not.there}NOK{#else}OK{/if}").render();
+            fail();
         } catch (TemplateException expected) {
-            assertNotNull(expected.getOrigin());
-            assertEquals(line, expected.getOrigin().getLine(), "Wrong line");
-            assertEquals(message,
+            assertEquals("Rendering error: Entry \"val\" not found in the data map in expression {val.is.not.there}",
                     expected.getMessage());
         }
+        assertEquals("OK", engine.parse("{#if val.is.not.there??}NOK{#else}OK{/if}").render());
+        assertEquals("OK", engine.parse("{#if hero??}NOK{#else}OK{/if}").render());
+        assertEquals("OK", engine.parse("{#if hero??}OK{#else}NOK{/if}").data("hero", true).render());
+    }
+
+    @Test
+    public void testFromageCondition() {
+        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver())
+                .addNamespaceResolver(NamespaceResolver.builder("ContentStatus").resolve(ec -> ContentStatus.NEW).build())
+                .build();
+        assertEquals("OK",
+                engine.parse("{#if user && target.status == ContentStatus:NEW && !target.voted(user)}NOK{#else}OK{/if}")
+                        .data("user", "Stef", "target", new Target(ContentStatus.ACCEPTED)).render());
+        assertEquals("OK",
+                engine.parse("{#if user && target.status == ContentStatus:NEW && !target.voted(user)}OK{#else}NOK{/if}")
+                        .data("user", "Stef", "target", new Target(ContentStatus.NEW)).render());
+    }
+
+    @Test
+    public void testParameterOrigin() {
+        Engine engine = Engine.builder().addDefaults().build();
+        Template template = engine.parse("  {#if item.price > 1}{/if}");
+        List<Expression> expressions = template.getExpressions();
+        assertEquals(2, expressions.size());
+        for (Expression expression : expressions) {
+            if (expression.isLiteral()) {
+                assertEquals(1, expression.getLiteralValue().getNow(false));
+                assertEquals(1, expression.getOrigin().getLine());
+                assertEquals(3, expression.getOrigin().getLineCharacterStart());
+            } else {
+                assertEquals("item.price", expression.toOriginalString());
+                assertEquals(1, expression.getOrigin().getLine());
+                assertEquals(3, expression.getOrigin().getLineCharacterStart());
+            }
+        }
+    }
+
+    public static class Target {
+
+        public ContentStatus status;
+
+        public Target(ContentStatus status) {
+            this.status = status;
+        }
+
+        public boolean voted(String user) {
+            return false;
+        }
+
+    }
+
+    public enum ContentStatus {
+        NEW,
+        ACCEPTED
     }
 
 }

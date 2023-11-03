@@ -14,8 +14,10 @@ import io.quarkus.cli.common.DevOptions;
 import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
-import io.quarkus.cli.common.RegistryClientMixin;
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.cli.common.TargetQuarkusVersionGroup;
+import io.quarkus.cli.registry.RegistryClientMixin;
+import io.quarkus.cli.update.RewriteGroup;
 import io.quarkus.devtools.project.BuildTool;
 
 public class JBangRunner implements BuildSystemRunner {
@@ -70,7 +72,19 @@ public class JBangRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
+    public Integer projectInfo(boolean perModule) {
+        throw new UnsupportedOperationException("Not there yet. ;)");
+    }
+
+    @Override
+    public Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite, boolean perModule)
+            throws Exception {
+        throw new UnsupportedOperationException("Not there yet. ;)");
+    }
+
+    @Override
+    public BuildCommandArgs prepareAction(String action, BuildOptions buildOptions, RunModeOption runMode,
+            List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
 
         if (buildOptions.offline) {
@@ -82,14 +96,31 @@ public class JBangRunner implements BuildSystemRunner {
         if (buildOptions.buildNative) {
             args.add("--native");
         }
-        args.add("build");
+        if (buildOptions.clean) {
+            args.add("--fresh");
+        }
+
+        args.add(action);
+        args.addAll(flattenMappedProperties(propertiesOptions.properties));
+        args.add(registryClient.getRegistryClientProperty());
         args.addAll(params);
         args.add(getMainPath());
         return prependExecutable(args);
     }
 
     @Override
-    public List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, DebugOptions debugOptions,
+    public BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
+        return prepareAction("build", buildOptions, runMode, params);
+    }
+
+    @Override
+    public BuildCommandArgs prepareTest(BuildOptions buildOptions, RunModeOption runMode, List<String> params, String filter) {
+        throw new UnsupportedOperationException("Not there yet. ;)");
+    }
+
+    @Override
+    public List<Supplier<BuildCommandArgs>> prepareDevTestMode(boolean devMode, DevOptions commonOptions,
+            DebugOptions debugOptions,
             List<String> params) {
         throw new UnsupportedOperationException("Not there yet. ;)");
     }

@@ -1,24 +1,23 @@
 package io.quarkus.it.spring.data.jpa;
 
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.CascadeType;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.SequenceGenerator;
-import javax.persistence.Table;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
 
 @Entity(name = "Post")
 @Table(name = "post")
-public class Post {
+public class Post extends AbstractPost implements ByPassHolder {
 
     @Id
     @SequenceGenerator(name = "postSeqGen", sequenceName = "postSeq", initialValue = 100, allocationSize = 1)
@@ -34,8 +33,6 @@ public class Post {
     private Map<String, String> metadata = new HashMap<>();
 
     private boolean bypass;
-
-    private ZonedDateTime posted;
 
     private String organization;
 
@@ -69,14 +66,6 @@ public class Post {
 
     public void setBypass(boolean bypass) {
         this.bypass = bypass;
-    }
-
-    public ZonedDateTime getPosted() {
-        return posted;
-    }
-
-    public void setPosted(ZonedDateTime postedAt) {
-        this.posted = postedAt;
     }
 
     public String getOrganization() {

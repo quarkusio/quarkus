@@ -11,18 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'quarkusio/quarkus'
     env:
-      MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m
+      MAVEN_OPTS: -Xmx2560m
       JBANG_REPO: $HOME/release/repository
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           ref: main
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v3
         with:
+          distribution: temurin
           java-version: 11
       - name: Create maven repo
         run: mkdir -p $HOME/release/repository
@@ -30,8 +30,11 @@ jobs:
         run: |
           ./mvnw --settings .github/mvn-settings.xml \
             -B \
-            -DskipITs -Dinvoker.skip=true \
+            -Prelease \
+            -DskipTests -DskipITs \
+            -Ddokka \
             -Dmaven.repo.local=$HOME/release/repository \
+            -Dgpg.skip \
             clean install
       - name: Report
         if: always()

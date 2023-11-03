@@ -1,6 +1,9 @@
 package io.quarkus.oidc.common.runtime;
 
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -13,24 +16,29 @@ public class OidcCommonConfig {
      * The base URL of the OpenID Connect (OIDC) server, for example, `https://host:port/auth`.
      * OIDC discovery endpoint will be called by default by appending a '.well-known/openid-configuration' path to this URL.
      * Note if you work with Keycloak OIDC server, make sure the base URL is in the following format:
-     * `https://host:port/auth/realms/{realm}` where `{realm}` has to be replaced by the name of the Keycloak realm.
+     * `https://host:port/realms/{realm}` where `{realm}` has to be replaced by the name of the Keycloak realm.
      */
     @ConfigItem
     public Optional<String> authServerUrl = Optional.empty();
 
     /**
      * Enables OIDC discovery.
-     * If the discovery is disabled then the 'token-path' property must be configured.
+     * If the discovery is disabled then the OIDC endpoint URLs must be configured individually.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean discoveryEnabled = true;
+    @ConfigItem(defaultValueDocumentation = "true")
+    public Optional<Boolean> discoveryEnabled = Optional.empty();
 
     /**
-     * Relative path of the OIDC token endpoint which issues access and refresh tokens
-     * using either 'client_credentials' or 'password' grants
+     * Relative path or absolute URL of the OIDC token endpoint which issues access and refresh tokens.
      */
     @ConfigItem
     public Optional<String> tokenPath = Optional.empty();
+
+    /**
+     * Relative path or absolute URL of the OIDC token revocation endpoint.
+     */
+    @ConfigItem
+    public Optional<String> revokePath = Optional.empty();
 
     /**
      * The client-id of the application. Each application has a client-id that is used to identify the application
@@ -162,7 +170,14 @@ public class OidcCommonConfig {
                  * client_secret_post: client id and secret are submitted as the 'client_id' and 'client_secret' form
                  * parameters.
                  */
-                POST
+                POST,
+
+                /**
+                 * client_secret_jwt: client id and generated JWT secret are submitted as the 'client_id' and 'client_secret'
+                 * form
+                 * parameters.
+                 */
+                POST_JWT
             }
 
             /**
@@ -231,7 +246,8 @@ public class OidcCommonConfig {
             public Provider secretProvider = new Provider();
 
             /**
-             * If provided, indicates that JWT is signed using a private key in PEM or JWK format
+             * If provided, indicates that JWT is signed using a private key in PEM or JWK format. You can use the
+             * {@link #signatureAlgorithm} property to specify the key algorithm.
              */
             @ConfigItem
             public Optional<String> keyFile = Optional.empty();
@@ -243,10 +259,10 @@ public class OidcCommonConfig {
             public Optional<String> keyStoreFile = Optional.empty();
 
             /**
-             * A parameter to specify the password of the key store file. If not given, the default ("password") is used.
+             * A parameter to specify the password of the key store file.
              */
-            @ConfigItem(defaultValue = "password")
-            public String keyStorePassword;
+            @ConfigItem
+            public Optional<String> keyStorePassword;
 
             /**
              * The private key id/alias
@@ -257,14 +273,46 @@ public class OidcCommonConfig {
             /**
              * The private key password
              */
-            @ConfigItem(defaultValue = "password")
-            public String keyPassword;
+            @ConfigItem
+            public Optional<String> keyPassword;
+
+            /**
+             * JWT audience ('aud') claim value.
+             * By default, the audience is set to the address of the OpenId Connect Provider's token endpoint.
+             */
+            @ConfigItem
+            public Optional<String> audience = Optional.empty();
 
             /**
              * Key identifier of the signing key added as a JWT 'kid' header
              */
             @ConfigItem
             public Optional<String> tokenKeyId = Optional.empty();
+
+            /**
+             * Issuer of the signing key added as a JWT 'iss' claim (default: client id)
+             */
+            @ConfigItem
+            public Optional<String> issuer = Optional.empty();
+
+            /**
+             * Subject of the signing key added as a JWT 'sub' claim (default: client id)
+             */
+            @ConfigItem
+            public Optional<String> subject = Optional.empty();
+
+            /**
+             * Additional claims.
+             */
+            @ConfigItem
+            public Map<String, String> claims = new HashMap<>();
+
+            /**
+             * Signature algorithm, also used for the {@link #keyFile} property.
+             * Supported values: RS256, RS384, RS512, PS256, PS384, PS512, ES256, ES384, ES512, HS256, HS384, HS512.
+             */
+            @ConfigItem
+            public Optional<String> signatureAlgorithm = Optional.empty();
 
             /**
              * JWT life-span in seconds. It will be added to the time it was issued at to calculate the expiration time.
@@ -302,6 +350,38 @@ public class OidcCommonConfig {
 
             public void setSecretProvider(Provider secretProvider) {
                 this.secretProvider = secretProvider;
+            }
+
+            public Optional<String> getSignatureAlgorithm() {
+                return signatureAlgorithm;
+            }
+
+            public void setSignatureAlgorithm(String signatureAlgorithm) {
+                this.signatureAlgorithm = Optional.of(signatureAlgorithm);
+            }
+
+            public Optional<String> getAudience() {
+                return audience;
+            }
+
+            public void setAudience(String audience) {
+                this.audience = Optional.of(audience);
+            }
+
+            public Optional<String> getKeyFile() {
+                return keyFile;
+            }
+
+            public void setKeyFile(String keyFile) {
+                this.keyFile = Optional.of(keyFile);
+            }
+
+            public Map<String, String> getClaims() {
+                return claims;
+            }
+
+            public void setClaims(Map<String, String> claims) {
+                this.claims = claims;
             }
 
         }
@@ -349,6 +429,12 @@ public class OidcCommonConfig {
              * Certificates are validated and hostname verification is enabled. This is the default value.
              */
             REQUIRED,
+
+            /**
+             * Certificates are validated but hostname verification is disabled.
+             */
+            CERTIFICATE_VALIDATION,
+
             /**
              * All certificated are trusted and hostname verification is disabled.
              */
@@ -362,12 +448,126 @@ public class OidcCommonConfig {
         @ConfigItem
         public Optional<Verification> verification = Optional.empty();
 
+        /**
+         * An optional key store which holds the certificate information instead of specifying separate files.
+         */
+        @ConfigItem
+        public Optional<Path> keyStoreFile = Optional.empty();
+
+        /**
+         * An optional parameter to specify type of the key store file. If not given, the type is automatically detected
+         * based on the file name.
+         */
+        @ConfigItem
+        public Optional<String> keyStoreFileType = Optional.empty();
+
+        /**
+         * An optional parameter to specify a provider of the key store file. If not given, the provider is automatically
+         * detected
+         * based on the key store file type.
+         */
+        @ConfigItem
+        public Optional<String> keyStoreProvider;
+
+        /**
+         * A parameter to specify the password of the key store file. If not given, the default ("password") is used.
+         */
+        @ConfigItem
+        public Optional<String> keyStorePassword;
+
+        /**
+         * An optional parameter to select a specific key in the key store. When SNI is disabled, if the key store contains
+         * multiple
+         * keys and no alias is specified, the behavior is undefined.
+         */
+        @ConfigItem
+        public Optional<String> keyStoreKeyAlias = Optional.empty();
+
+        /**
+         * An optional parameter to define the password for the key, in case it's different from {@link #keyStorePassword}.
+         */
+        @ConfigItem
+        public Optional<String> keyStoreKeyPassword = Optional.empty();
+
+        /**
+         * An optional trust store which holds the certificate information of the certificates to trust
+         */
+        @ConfigItem
+        public Optional<Path> trustStoreFile = Optional.empty();
+
+        /**
+         * A parameter to specify the password of the trust store file.
+         */
+        @ConfigItem
+        public Optional<String> trustStorePassword = Optional.empty();
+
+        /**
+         * A parameter to specify the alias of the trust store certificate.
+         */
+        @ConfigItem
+        public Optional<String> trustStoreCertAlias = Optional.empty();
+
+        /**
+         * An optional parameter to specify type of the trust store file. If not given, the type is automatically detected
+         * based on the file name.
+         */
+        @ConfigItem
+        public Optional<String> trustStoreFileType = Optional.empty();
+
+        /**
+         * An optional parameter to specify a provider of the trust store file. If not given, the provider is automatically
+         * detected
+         * based on the trust store file type.
+         */
+        @ConfigItem
+        public Optional<String> trustStoreProvider;
+
         public Optional<Verification> getVerification() {
             return verification;
         }
 
         public void setVerification(Verification verification) {
             this.verification = Optional.of(verification);
+        }
+
+        public Optional<Path> getTrustStoreFile() {
+            return trustStoreFile;
+        }
+
+        public void setTrustStoreFile(Path trustStoreFile) {
+            this.trustStoreFile = Optional.of(trustStoreFile);
+        }
+
+        public Optional<String> getTrustStorePassword() {
+            return trustStorePassword;
+        }
+
+        public void setTrustStorePassword(String trustStorePassword) {
+            this.trustStorePassword = Optional.of(trustStorePassword);
+        }
+
+        public Optional<String> getTrustStoreCertAlias() {
+            return trustStoreCertAlias;
+        }
+
+        public void setTrustStoreCertAlias(String trustStoreCertAlias) {
+            this.trustStoreCertAlias = Optional.of(trustStoreCertAlias);
+        }
+
+        public Optional<String> getKeyStoreProvider() {
+            return keyStoreProvider;
+        }
+
+        public void setKeyStoreProvider(String keyStoreProvider) {
+            this.keyStoreProvider = Optional.of(keyStoreProvider);
+        }
+
+        public Optional<String> getTrustStoreProvider() {
+            return trustStoreProvider;
+        }
+
+        public void setTrustStoreProvider(String trustStoreProvider) {
+            this.trustStoreProvider = Optional.of(trustStoreProvider);
         }
 
     }
@@ -427,6 +627,14 @@ public class OidcCommonConfig {
         this.tokenPath = Optional.of(tokenPath);
     }
 
+    public Optional<String> getRevokePath() {
+        return revokePath;
+    }
+
+    public void setRevokePath(String revokePath) {
+        this.revokePath = Optional.of(revokePath);
+    }
+
     public Optional<String> getClientId() {
         return clientId;
     }
@@ -443,12 +651,12 @@ public class OidcCommonConfig {
         this.credentials = credentials;
     }
 
-    public boolean isDiscoveryEnabled() {
+    public Optional<Boolean> isDiscoveryEnabled() {
         return discoveryEnabled;
     }
 
     public void setDiscoveryEnabled(boolean enabled) {
-        this.discoveryEnabled = enabled;
+        this.discoveryEnabled = Optional.of(enabled);
     }
 
     public Proxy getProxy() {

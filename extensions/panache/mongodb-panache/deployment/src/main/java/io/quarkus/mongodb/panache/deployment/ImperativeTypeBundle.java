@@ -5,7 +5,7 @@ import io.quarkus.mongodb.panache.PanacheMongoEntityBase;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import io.quarkus.mongodb.panache.PanacheMongoRepositoryBase;
 import io.quarkus.mongodb.panache.PanacheQuery;
-import io.quarkus.mongodb.panache.PanacheUpdate;
+import io.quarkus.mongodb.panache.common.PanacheUpdate;
 import io.quarkus.mongodb.panache.runtime.JavaMongoOperations;
 import io.quarkus.panache.common.deployment.ByteCodeType;
 import io.quarkus.panache.common.deployment.TypeBundle;

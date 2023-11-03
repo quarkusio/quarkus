@@ -4,21 +4,8 @@ import static io.quarkus.devtools.codestarts.CodestartResourceLoader.loadCodesta
 import static io.quarkus.devtools.codestarts.core.CodestartCatalogs.findLanguageName;
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.AppContent.CODE;
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
-import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getCodestartName;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getGuide;
 
-import io.quarkus.devtools.codestarts.Codestart;
-import io.quarkus.devtools.codestarts.CodestartCatalogLoader;
-import io.quarkus.devtools.codestarts.CodestartException;
-import io.quarkus.devtools.codestarts.CodestartStructureException;
-import io.quarkus.devtools.codestarts.CodestartType;
-import io.quarkus.devtools.codestarts.DataKey;
-import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
-import io.quarkus.devtools.project.extensions.Extensions;
-import io.quarkus.platform.catalog.processor.ExtensionProcessor;
-import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
-import io.quarkus.registry.catalog.Extension;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -28,10 +15,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import io.quarkus.devtools.codestarts.Codestart;
+import io.quarkus.devtools.codestarts.CodestartCatalogLoader;
+import io.quarkus.devtools.codestarts.CodestartException;
+import io.quarkus.devtools.codestarts.CodestartStructureException;
+import io.quarkus.devtools.codestarts.CodestartType;
+import io.quarkus.devtools.codestarts.DataKey;
+import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
+import io.quarkus.devtools.project.extensions.Extensions;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.platform.catalog.processor.ExtensionProcessor;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
+import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.smallrye.common.version.VersionScheme;
 
 public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<QuarkusCodestartProjectInput> {
 
@@ -39,6 +42,12 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     public static final String INPUT_SELECTED_EXTENSIONS_KEY = "selected-extensions";
     public static final String INPUT_SELECTED_EXTENSIONS_GA_KEY = "selected-extensions-ga";
     public static final String INPUT_PROVIDED_CODE_KEY = "provided-code";
+    private static final String IO_QUARKUS_GROUP_ID = "io.quarkus";
+    private static final String IO_QUARKUS_PLATFORM_GROUP_ID = "io.quarkus.platform";
+    private static final String COM_REDHAT_QUARKUS_PLATFORM_GROUP_ID = "com.redhat.quarkus.platform";
+    private static final String QUARKUS_BOM = "quarkus-bom";
+    private static final String QUARKUS_UNIVERSE_BOM = "quarkus-universe-bom";
+    private static final Set<String> LANGUAGE_EXTENSIONS = Set.of("quarkus-kotlin", "quarkus-scala");
     private final Map<String, Extension> extensionsMapping;
 
     public enum AppContent implements DataKey {
@@ -60,14 +69,15 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     }
 
     public enum Tooling implements DataKey {
-        GRADLE_WRAPPER,
-        MAVEN_WRAPPER,
-        DOCKERFILES
+        TOOLING_GRADLE_WRAPPER,
+        TOOLING_MAVEN_WRAPPER,
+        TOOLING_DOCKERFILES,
+        TOOLING_GITHUB_ACTION
     }
 
     public enum ExtensionCodestart implements DataKey {
         RESTEASY,
-        RESTEAST_REACTIVE,
+        RESTEASY_REACTIVE,
         SPRING_WEB
     }
 
@@ -128,14 +138,17 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
                 .filter(c -> !isExample(c) || projectInput.getExample() == null || c.matches(projectInput.getExample()))
                 .collect(Collectors.toCollection(ArrayList::new));
 
-        // include default codestarts if no code selected
+        // include default codestarts depending on the versions and the extensions being chosen or not
+        Optional<ExtensionCodestart> selectedDefaultCodeStart = getSelectedDefaultCodeStart(projectInput);
+
         if (projectInput.getAppContent().contains(CODE)
+                && selectedDefaultCodeStart.isPresent()
                 && projectCodestarts.stream()
                         .noneMatch(c -> c.getType() == CodestartType.CODE && !c.getSpec().isPreselected())) {
             final Codestart defaultCodestart = codestarts.stream()
-                    .filter(c -> c.matches(ExtensionCodestart.RESTEASY.key()))
+                    .filter(c -> c.matches(selectedDefaultCodeStart.get().key()))
                     .findFirst().orElseThrow(() -> new CodestartStructureException(
-                            ExtensionCodestart.RESTEASY.key() + " codestart not found"));
+                            selectedDefaultCodeStart.get().key() + " codestart not found"));
             final String languageName = findLanguageName(projectCodestarts);
             if (defaultCodestart.implementsLanguage(languageName)) {
                 projectCodestarts.add(defaultCodestart);
@@ -165,6 +178,52 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         return projectCodestarts;
     }
 
+    private Optional<ExtensionCodestart> getSelectedDefaultCodeStart(QuarkusCodestartProjectInput projectInput) {
+        // This is very hackyish, we need a better data structure to do better
+        Optional<ArtifactCoords> quarkusBom = projectInput.getBoms().stream()
+                .map(ArtifactCoords::fromString)
+                .filter(b -> isCoreBom(b) || isPlatformBom(b) || isUniverseBom(b))
+                .findFirst();
+
+        String bomVersion = null;
+
+        if (quarkusBom.isPresent()) {
+            bomVersion = quarkusBom.get().getVersion();
+        }
+
+        if (bomVersion == null || VersionScheme.MAVEN.compare(bomVersion, "2.8") >= 0) {
+            if (projectInput.getExtensions().isEmpty() ||
+                    (projectInput.getExtensions().size() == 1
+                            && isLanguageExtension(projectInput.getExtensions().iterator().next()))) {
+                return Optional.of(ExtensionCodestart.RESTEASY_REACTIVE);
+            }
+
+            return Optional.empty();
+        }
+
+        return Optional.of(ExtensionCodestart.RESTEASY);
+    }
+
+    private boolean isCoreBom(ArtifactCoords artifactCoords) {
+        return IO_QUARKUS_GROUP_ID.equals(artifactCoords.getGroupId()) && QUARKUS_BOM.equals(artifactCoords.getArtifactId());
+    }
+
+    private boolean isUniverseBom(ArtifactCoords artifactCoords) {
+        return IO_QUARKUS_GROUP_ID.equals(artifactCoords.getGroupId())
+                && QUARKUS_UNIVERSE_BOM.equals(artifactCoords.getArtifactId());
+    }
+
+    private boolean isPlatformBom(ArtifactCoords artifactCoords) {
+        return (IO_QUARKUS_PLATFORM_GROUP_ID.equals(artifactCoords.getGroupId()) ||
+                COM_REDHAT_QUARKUS_PLATFORM_GROUP_ID.equals(artifactCoords.getGroupId()))
+                && QUARKUS_BOM.equals(artifactCoords.getArtifactId());
+    }
+
+    private boolean isLanguageExtension(ArtifactCoords artifactCoords) {
+        return IO_QUARKUS_GROUP_ID.equals(artifactCoords.getGroupId())
+                && LANGUAGE_EXTENSIONS.contains(artifactCoords.getArtifactId());
+    }
+
     private Set<String> getExtensionCodestarts(QuarkusCodestartProjectInput projectInput) {
         return getSelectedExtensionsAsStream(projectInput)
                 .map(ExtensionProcessor::getCodestartName)
@@ -186,17 +245,17 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
             switch (projectInput.getBuildTool()) {
                 case GRADLE:
                 case GRADLE_KOTLIN_DSL:
-                    codestarts.add(QuarkusCodestartCatalog.Tooling.GRADLE_WRAPPER.key());
+                    codestarts.add(Tooling.TOOLING_GRADLE_WRAPPER.key());
                     break;
                 case MAVEN:
-                    codestarts.add(QuarkusCodestartCatalog.Tooling.MAVEN_WRAPPER.key());
+                    codestarts.add(Tooling.TOOLING_MAVEN_WRAPPER.key());
                     break;
                 default:
                     throw new IllegalArgumentException("Unsupported build tool wrapper: " + projectInput.getBuildTool());
             }
         }
         if (projectInput.getAppContent().contains(AppContent.DOCKERFILES)) {
-            codestarts.add(QuarkusCodestartCatalog.Tooling.DOCKERFILES.key());
+            codestarts.add(QuarkusCodestartCatalog.Tooling.TOOLING_DOCKERFILES.key());
         }
         return codestarts;
     }
@@ -237,11 +296,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
     public static Map<String, Extension> buildExtensionsMapping(
             Collection<Extension> extensions) {
         final Map<String, Extension> map = new HashMap<>(extensions.size());
-        extensions.forEach(e -> {
-            if (getCodestartName(e) != null) {
-                map.put(e.getArtifact().getGroupId() + ":" + e.getArtifact().getArtifactId(), e);
-            }
-        });
+        extensions.forEach(e -> map.put(e.getArtifact().getGroupId() + ":" + e.getArtifact().getArtifactId(), e));
         return map;
     }
 

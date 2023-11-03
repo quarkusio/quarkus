@@ -1,7 +1,7 @@
 package io.quarkus.it.resteasy.jackson;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 class BigKeysResourceIT extends BigKeysResourceTest {
 }

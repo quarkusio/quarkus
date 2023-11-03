@@ -32,12 +32,25 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <excludedArtifacts>
                         <excludedArtifact>org.springframework.boot:spring-boot</excludedArtifact>
                     </excludedArtifacts>
                 </configuration>
+            </plugin>
+            <!--- @SpringBootConfigProperties needs to be part of the index -->
+            <plugin>
+                <groupId>io.smallrye</groupId>
+                <artifactId>jandex-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>make-index</id>
+                        <goals>
+                            <goal>jandex</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

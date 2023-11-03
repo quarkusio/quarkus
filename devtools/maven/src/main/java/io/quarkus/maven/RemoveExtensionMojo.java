@@ -31,7 +31,7 @@ public class RemoveExtensionMojo extends QuarkusProjectMojoBase {
     Set<String> extensions;
 
     /**
-     * For usability reason, this parameter allow removing a single extension.
+     * For usability reason, this parameter allows removing a single extension.
      */
     @Parameter(property = "extension")
     String extension;

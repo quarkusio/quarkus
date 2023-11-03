@@ -8,21 +8,20 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+import io.quarkus.cli.QuarkusCli;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import picocli.CommandLine;
 import picocli.CommandLine.Help.ColorScheme;
 import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.Spec;
 
 public class OutputOptionMixin implements MessageWriter {
 
     static final boolean picocliDebugEnabled = "DEBUG".equalsIgnoreCase(System.getProperty("picocli.trace"));
 
-    @CommandLine.Option(names = { "-e", "--errors" }, description = "Display error messages.")
-    boolean showErrors;
+    boolean verbose = false;
 
-    @CommandLine.Option(names = { "--verbose" }, description = "Verbose mode.")
-    boolean verbose;
+    @CommandLine.Option(names = { "-e", "--errors" }, description = "Print more context on errors and exceptions.")
+    boolean showErrors;
 
     @CommandLine.Option(names = {
             "--cli-test" }, hidden = true, description = "Manually set output streams for unit test purposes.")
@@ -36,7 +35,7 @@ public class OutputOptionMixin implements MessageWriter {
         testProjectRoot = Paths.get(path).toAbsolutePath();
     }
 
-    @Spec(Spec.Target.MIXEE)
+    @CommandLine.Spec(CommandLine.Spec.Target.MIXEE)
     CommandSpec mixee;
 
     ColorScheme scheme;
@@ -71,8 +70,21 @@ public class OutputOptionMixin implements MessageWriter {
         return showErrors || picocliDebugEnabled;
     }
 
+    private static OutputOptionMixin getOutput(CommandSpec commandSpec) {
+        return ((QuarkusCli) commandSpec.root().userObject()).getOutput();
+    }
+
+    @CommandLine.Option(names = { "--verbose" }, description = "Verbose mode.")
+    public void setVerbose(boolean verbose) {
+        getOutput(mixee).verbose = verbose;
+    }
+
+    public boolean getVerbose() {
+        return getOutput(mixee).verbose;
+    }
+
     public boolean isVerbose() {
-        return verbose || picocliDebugEnabled;
+        return getVerbose() || picocliDebugEnabled;
     }
 
     public boolean isCliTest() {
@@ -83,7 +95,7 @@ public class OutputOptionMixin implements MessageWriter {
         return CommandLine.Help.Ansi.AUTO.enabled();
     }
 
-    public void printText(String[] text) {
+    public void printText(String... text) {
         for (String line : text) {
             out().println(colorScheme().ansi().new Text(line, colorScheme()));
         }
@@ -126,13 +138,13 @@ public class OutputOptionMixin implements MessageWriter {
     @Override
     public void debug(String msg) {
         if (isVerbose()) {
-            out().println(colorScheme().ansi().new Text("[DEBUG] " + msg, colorScheme()));
+            out().println(colorScheme().ansi().new Text("@|faint [DEBUG] " + msg + "|@", colorScheme()));
         }
     }
 
     @Override
     public void warn(String msg) {
-        out().println(colorScheme().ansi().new Text(WARN_ICON + " " + msg, colorScheme()));
+        out().println(colorScheme().ansi().new Text("@|yellow " + WARN_ICON + " " + msg + "|@", colorScheme()));
     }
 
     // CommandLine must be passed in (forwarded commands)
@@ -158,7 +170,7 @@ public class OutputOptionMixin implements MessageWriter {
     public String toString() {
         return "OutputOptions [testMode=" + cliTestMode
                 + ", showErrors=" + showErrors
-                + ", verbose=" + verbose + "]";
+                + ", verbose=" + getVerbose() + "]";
     }
 
 }

@@ -1,13 +1,14 @@
 package io.quarkus.it.kafka.streams;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 
 import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.errors.InvalidStateStoreException;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
@@ -27,7 +28,7 @@ public class KafkaStreamsEndpoint {
     private ReadOnlyKeyValueStore<Integer, Long> getCountstore() {
         while (true) {
             try {
-                return streams.store("countstore", QueryableStoreTypes.keyValueStore());
+                return streams.store(StoreQueryParameters.fromNameAndType("countstore", QueryableStoreTypes.keyValueStore()));
             } catch (InvalidStateStoreException e) {
                 // ignore, store not ready yet
             }

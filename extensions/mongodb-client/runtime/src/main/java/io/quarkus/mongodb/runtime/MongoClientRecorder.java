@@ -2,12 +2,14 @@ package io.quarkus.mongodb.runtime;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.literal.NamedLiteral;
-import javax.enterprise.util.AnnotationLiteral;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.literal.NamedLiteral;
+import jakarta.enterprise.util.AnnotationLiteral;
 
+import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoClient;
 import com.mongodb.event.ConnectionPoolListener;
 
@@ -15,14 +17,15 @@ import io.quarkus.arc.Arc;
 import io.quarkus.mongodb.metrics.MicrometerConnectionPoolListener;
 import io.quarkus.mongodb.metrics.MongoMetricsConnectionPoolListener;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
+import io.quarkus.mongodb.runtime.dns.MongoDnsClientProvider;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.vertx.core.Vertx;
 
 @Recorder
 public class MongoClientRecorder {
 
-    public Supplier<MongoClientSupport> mongoClientSupportSupplier(List<String> codecProviders,
-            List<String> propertyCodecProviders, List<String> bsonDiscriminators, List<String> commandListeners,
+    public Supplier<MongoClientSupport> mongoClientSupportSupplier(List<String> bsonDiscriminators,
             List<Supplier<ConnectionPoolListener>> connectionPoolListenerSuppliers, boolean disableSslSupport) {
 
         return new Supplier<MongoClientSupport>() {
@@ -34,33 +37,38 @@ public class MongoClientRecorder {
                     connectionPoolListeners.add(item.get());
                 }
 
-                return new MongoClientSupport(codecProviders, propertyCodecProviders, bsonDiscriminators, commandListeners,
+                return new MongoClientSupport(bsonDiscriminators,
                         connectionPoolListeners, disableSslSupport);
             }
         };
     }
 
+    /** Helper to lazily create Mongo clients. */
+    static final class MongoClientSupplier<T> implements Supplier<T> {
+        private final Function<MongoClients, T> producer;
+
+        MongoClientSupplier(Function<MongoClients, T> producer) {
+            this.producer = producer;
+        }
+
+        @Override
+        public T get() {
+            // The beans defined in io.quarkus.mongodb.deployment.MongoClientProcessor.createBlockingSyntheticBean and
+            // io.quarkus.mongodb.deployment.MongoClientProcessor.createReactiveSyntheticBean are ApplicationScoped,
+            // so no need to cache the result here.
+            MongoClients mongoClients = Arc.container().instance(MongoClients.class).get();
+            return producer.apply(mongoClients);
+        }
+    }
+
     public Supplier<MongoClient> mongoClientSupplier(String clientName,
             @SuppressWarnings("unused") MongodbConfig mongodbConfig) {
-        MongoClient mongoClient = Arc.container().instance(MongoClients.class).get().createMongoClient(clientName);
-        return new Supplier<MongoClient>() {
-            @Override
-            public MongoClient get() {
-                return mongoClient;
-            }
-        };
+        return new MongoClientSupplier<>(mongoClients -> mongoClients.createMongoClient(clientName));
     }
 
     public Supplier<ReactiveMongoClient> reactiveMongoClientSupplier(String clientName,
             @SuppressWarnings("unused") MongodbConfig mongodbConfig) {
-        ReactiveMongoClient reactiveMongoClient = Arc.container().instance(MongoClients.class).get()
-                .createReactiveMongoClient(clientName);
-        return new Supplier<ReactiveMongoClient>() {
-            @Override
-            public ReactiveMongoClient get() {
-                return reactiveMongoClient;
-            }
-        };
+        return new MongoClientSupplier<>(mongoClients -> mongoClients.createReactiveMongoClient(clientName));
     }
 
     public RuntimeValue<MongoClient> getClient(String name) {
@@ -98,5 +106,26 @@ public class MongoClientRecorder {
                 return new MongoMetricsConnectionPoolListener();
             }
         };
+    }
+
+    /**
+     * We need to perform some initialization work on the main thread to ensure that reactive operations (such as DNS
+     * resolution)
+     * don't end up being performed on the event loop
+     */
+    public void performInitialization(MongodbConfig config, RuntimeValue<Vertx> vertx) {
+        MongoDnsClientProvider.vertx = vertx.getValue();
+        initializeDNSLookup(config.defaultMongoClientConfig);
+        for (MongoClientConfig mongoClientConfig : config.mongoClientConfigs.values()) {
+            initializeDNSLookup(mongoClientConfig);
+        }
+    }
+
+    private void initializeDNSLookup(MongoClientConfig mongoClientConfig) {
+        if (mongoClientConfig.connectionString.isEmpty()) {
+            return;
+        }
+        // this ensures that DNS resolution will take place if necessary
+        new ConnectionString(mongoClientConfig.connectionString.get());
     }
 }

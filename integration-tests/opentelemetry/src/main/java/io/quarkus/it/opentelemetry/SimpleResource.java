@@ -1,14 +1,17 @@
 package io.quarkus.it.opentelemetry;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import io.opentelemetry.api.baggage.Baggage;
+import io.opentelemetry.context.Scope;
 
 @Path("")
 @Produces(MediaType.APPLICATION_JSON)
@@ -22,6 +25,10 @@ public class SimpleResource {
         @Path("/")
         @GET
         TraceData slashPath();
+
+        @Path("/from-baggage")
+        @GET
+        TraceData fromBaggagePath();
     }
 
     @Inject
@@ -30,6 +37,9 @@ public class SimpleResource {
     @Inject
     @RestClient
     SimpleClient simpleClient;
+
+    @Inject
+    Baggage baggage;
 
     @GET
     public TraceData noPath() {
@@ -48,6 +58,25 @@ public class SimpleResource {
     @Path("/slashpath")
     public TraceData slashPathClient() {
         return simpleClient.slashPath();
+    }
+
+    @GET
+    @Path("/slashpath-baggage")
+    public TraceData slashPathBaggageClient() {
+        try (Scope scope = baggage.toBuilder()
+                .put("baggage-key", "baggage-value")
+                .build()
+                .makeCurrent()) {
+            return simpleClient.fromBaggagePath();
+        }
+    }
+
+    @GET
+    @Path("/from-baggage")
+    public TraceData fromBaggageValue() {
+        TraceData data = new TraceData();
+        data.message = baggage.getEntryValue("baggage-key");
+        return data;
     }
 
     @GET

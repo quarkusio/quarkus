@@ -11,15 +11,13 @@ public class CliVersionTest {
 
     @Test
     public void testCommandVersion() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "version");
+
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "-v");
         result.echoSystemOut();
+        Assertions.assertEquals(result.stdout.trim(), System.getProperty("project.version"),
+                "Version output for command aliases should be the same.");
 
-        CliDriver.Result result2 = CliDriver.execute(workspaceRoot, "-v");
+        CliDriver.Result result2 = CliDriver.execute(workspaceRoot, "--version");
         Assertions.assertEquals(result.stdout, result2.stdout, "Version output for command aliases should be the same.");
-        CliDriver.println("-- same as above\n\n");
-
-        CliDriver.Result result3 = CliDriver.execute(workspaceRoot, "--version");
-        Assertions.assertEquals(result.stdout, result3.stdout, "Version output for command aliases should be the same.");
-        CliDriver.println("-- same as above\n\n");
     }
 }

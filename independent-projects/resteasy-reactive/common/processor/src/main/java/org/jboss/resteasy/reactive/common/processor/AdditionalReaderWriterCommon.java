@@ -2,14 +2,15 @@ package org.jboss.resteasy.reactive.common.processor;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.ws.rs.RuntimeType;
+
+import jakarta.ws.rs.RuntimeType;
 
 @SuppressWarnings({ "rawtypes" })
 abstract class AdditionalReaderWriterCommon implements AdditionalReaderWriter {
 
     private final List<Entry> entries = new ArrayList<>();
 
-    public void add(Class handlerClass, String mediaType, Class entityClass,
+    public void add(String handlerClass, String mediaType, String entityClass,
             RuntimeType constraint) {
 
         Entry newEntry = new Entry(handlerClass, mediaType, entityClass, constraint);

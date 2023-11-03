@@ -6,8 +6,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,19 +26,19 @@ public class IdeProcessor {
 
     private static final Logger log = Logger.getLogger(IdeProcessor.class);
 
-    private static Map<String, List<Ide>> IDE_MARKER_FILES = new HashMap<>();
+    private final static Map<String, List<Ide>> IDE_MARKER_FILES = Map.of(
+            ".idea", Collections.singletonList(Ide.IDEA),
+            ".project", Arrays.asList(Ide.VSCODE, Ide.ECLIPSE),
+            "nbactions.xml", Collections.singletonList(Ide.NETBEANS),
+            "nb-configuration.xml", Collections.singletonList(Ide.NETBEANS));
     private static Map<Predicate<ProcessInfo>, Ide> IDE_PROCESSES = new HashMap<>();
-    private static Map<Ide, Function<ProcessInfo, String>> IDE_ARGUMENTS_EXEC_INDICATOR = new HashMap<>();
+    private final static Map<Ide, Function<ProcessInfo, String>> IDE_ARGUMENTS_EXEC_INDICATOR = new HashMap<>();
 
     static {
-        IDE_MARKER_FILES.put(".idea", Collections.singletonList(Ide.IDEA));
-        IDE_MARKER_FILES.put(".project", Arrays.asList(Ide.VSCODE, Ide.ECLIPSE));
-        IDE_MARKER_FILES.put("nbactions.xml", Collections.singletonList(Ide.NETBEANS));
-        IDE_MARKER_FILES.put("nb-configuration.xml", Collections.singletonList(Ide.NETBEANS));
 
-        IDE_MARKER_FILES = Collections.unmodifiableMap(IDE_MARKER_FILES);
-
-        IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("idea") && processInfo.command.endsWith("java")),
+        IDE_PROCESSES.put(
+                (processInfo -> (processInfo.containInCommand("idea") || processInfo.containInCommand("IDEA"))
+                        && (processInfo.command.endsWith("java") || processInfo.command.endsWith("java.exe"))),
                 Ide.IDEA);
         IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("code")), Ide.VSCODE);
         IDE_PROCESSES.put((processInfo -> processInfo.containInCommand("eclipse")), Ide.ECLIPSE);
@@ -64,9 +64,9 @@ public class IdeProcessor {
             // into '/home/test/software/idea/ideaIU-203.5981.114/idea-IU-203.5981.114/bin/idea.sh'
             String command = processInfo.getCommand();
             int jbrIndex = command.indexOf("jbr");
-            if ((jbrIndex > -1) && command.endsWith("java")) {
+            if ((jbrIndex > -1) && (command.endsWith("java") || command.endsWith("java.exe"))) {
                 String ideaHome = command.substring(0, jbrIndex);
-                return (ideaHome + "bin" + File.separator + "idea") + (IdeUtil.isWindows() ? ".exe" : ".sh");
+                return (ideaHome + "bin" + File.separator + "idea") + (IdeUtil.isWindows() ? ".bat" : ".sh");
             }
             return null;
         });
@@ -102,7 +102,9 @@ public class IdeProcessor {
                             }
                         }
                     }
-                    if (matches.size() == 1) {
+                    if ((matches.size() == 0 && runningIdes.size() > 0)) {
+                        result = runningIdes.iterator().next();
+                    } else if (matches.size() >= 1) {
                         result = matches.get(0);
                     }
                 }
@@ -132,13 +134,26 @@ public class IdeProcessor {
         if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
             return null;
         }
-        Set<Ide> result = new HashSet<>(2);
-        Path projectRoot = buildSystemTarget.getOutputDirectory().getParent();
-        IDE_MARKER_FILES.forEach((file, ides) -> {
-            if (Files.exists(projectRoot.resolve(file))) {
-                result.addAll(ides);
+
+        Set<Ide> result = EnumSet.noneOf(Ide.class);
+        Path root = buildSystemTarget.getOutputDirectory();
+
+        // hack to try and guess the IDE when using a multi-module project
+        for (int i = 0; i < 3; i++) {
+            root = root.getParent();
+            if (root == null || !result.isEmpty()) {
+                break;
             }
-        });
+
+            for (Map.Entry<String, List<Ide>> entry : IDE_MARKER_FILES.entrySet()) {
+                String file = entry.getKey();
+                List<Ide> ides = entry.getValue();
+                if (Files.exists(root.resolve(file))) {
+                    result.addAll(ides);
+                }
+            }
+        }
+
         return new IdeFileBuildItem(result);
     }
 
@@ -147,7 +162,7 @@ public class IdeProcessor {
         if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
             return null;
         }
-        Set<Ide> result = new HashSet<>(4);
+        Set<Ide> result = EnumSet.noneOf(Ide.class);
         List<ProcessInfo> processInfos = Collections.emptyList();
         try {
             processInfos = ProcessUtil.runningProcesses();
@@ -186,7 +201,7 @@ public class IdeProcessor {
                 ProcessHandle.Info info = p.info();
                 Optional<String> command = info.command();
                 if (command.isPresent()) {
-                    result.add(new ProcessInfo(command.get(), info.arguments().orElse(null)));
+                    result.add(new ProcessInfo(command.get(), info.commandLine().orElse(""), info.arguments().orElse(null)));
                 }
             });
             return result;
@@ -196,10 +211,12 @@ public class IdeProcessor {
     private static class ProcessInfo {
         // the executable pathname of the process.
         private final String command;
+        private final String commandLine;
         private final String[] arguments;
 
-        public ProcessInfo(String command, String[] arguments) {
+        public ProcessInfo(String command, String commandLine, String[] arguments) {
             this.command = command;
+            this.commandLine = commandLine;
             this.arguments = arguments;
         }
 
@@ -207,12 +224,16 @@ public class IdeProcessor {
             return command;
         }
 
+        public String getCommandLine() {
+            return commandLine;
+        }
+
         public String[] getArguments() {
             return arguments;
         }
 
         private boolean containInCommand(String value) {
-            return this.command.contains(value);
+            return this.command.contains(value) || this.commandLine.contains(value);
         }
 
         private boolean containInArguments(String value) {

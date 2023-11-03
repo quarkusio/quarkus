@@ -18,6 +18,13 @@ import java.lang.annotation.Target;
 @Documented
 public @interface ConfigRoot {
     /**
+     * Determine the prefix key of the configuration root.
+     *
+     * @return the prefix key name
+     */
+    String prefix() default "quarkus";
+
+    /**
      * Determine the phase of this configuration root.
      *
      * @return the phase

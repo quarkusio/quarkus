@@ -6,6 +6,8 @@ import static org.mockito.internal.util.ObjectMethodsGuru.isToStringMethod;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.time.Duration;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -15,14 +17,21 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 import org.mockito.internal.stubbing.defaultanswers.ReturnsEmptyValues;
-import org.mockito.internal.util.JavaEightUtil;
 import org.mockito.internal.util.Primitives;
 import org.mockito.invocation.InvocationOnMock;
 
@@ -79,57 +88,62 @@ public class MutinyAnswer extends ReturnsEmptyValues {
     Object returnValueForClass(Class<?> type) {
         if (Primitives.isPrimitiveOrWrapper(type)) {
             return Primitives.defaultValue(type);
-            //new instances are used instead of Collections.emptyList(), etc.
-            //to avoid UnsupportedOperationException if code under test modifies returned collection
+            // new instances are used instead of Collections.emptyList(), etc.
+            // to avoid UnsupportedOperationException if code under test modifies returned
+            // collection
         } else if (type == Iterable.class) {
-            return new ArrayList<Object>(0);
+            return new ArrayList<>(0);
         } else if (type == Collection.class) {
-            return new LinkedList<Object>();
+            return new LinkedList<>();
         } else if (type == Set.class) {
-            return new HashSet<Object>();
+            return new HashSet<>();
         } else if (type == HashSet.class) {
-            return new HashSet<Object>();
+            return new HashSet<>();
         } else if (type == SortedSet.class) {
-            return new TreeSet<Object>();
+            return new TreeSet<>();
         } else if (type == TreeSet.class) {
-            return new TreeSet<Object>();
+            return new TreeSet<>();
         } else if (type == LinkedHashSet.class) {
-            return new LinkedHashSet<Object>();
+            return new LinkedHashSet<>();
         } else if (type == List.class) {
-            return new LinkedList<Object>();
+            return new LinkedList<>();
         } else if (type == LinkedList.class) {
-            return new LinkedList<Object>();
+            return new LinkedList<>();
         } else if (type == ArrayList.class) {
-            return new ArrayList<Object>();
+            return new ArrayList<>();
         } else if (type == Map.class) {
-            return new HashMap<Object, Object>();
+            return new HashMap<>();
         } else if (type == HashMap.class) {
-            return new HashMap<Object, Object>();
+            return new HashMap<>();
         } else if (type == SortedMap.class) {
-            return new TreeMap<Object, Object>();
+            return new TreeMap<>();
         } else if (type == TreeMap.class) {
-            return new TreeMap<Object, Object>();
+            return new TreeMap<>();
         } else if (type == LinkedHashMap.class) {
-            return new LinkedHashMap<Object, Object>();
-        } else if ("java.util.Optional".equals(type.getName())) {
-            return JavaEightUtil.emptyOptional();
-        } else if ("java.util.OptionalDouble".equals(type.getName())) {
-            return JavaEightUtil.emptyOptionalDouble();
-        } else if ("java.util.OptionalInt".equals(type.getName())) {
-            return JavaEightUtil.emptyOptionalInt();
-        } else if ("java.util.OptionalLong".equals(type.getName())) {
-            return JavaEightUtil.emptyOptionalLong();
-        } else if ("java.util.stream.Stream".equals(type.getName())) {
-            return JavaEightUtil.emptyStream();
-        } else if ("java.util.stream.DoubleStream".equals(type.getName())) {
-            return JavaEightUtil.emptyDoubleStream();
-        } else if ("java.util.stream.IntStream".equals(type.getName())) {
-            return JavaEightUtil.emptyIntStream();
-        } else if ("java.util.stream.LongStream".equals(type.getName())) {
-            return JavaEightUtil.emptyLongStream();
+            return new LinkedHashMap<>();
+        } else if (type == Optional.class) {
+            return Optional.empty();
+        } else if (type == OptionalDouble.class) {
+            return OptionalDouble.empty();
+        } else if (type == OptionalInt.class) {
+            return OptionalInt.empty();
+        } else if (type == OptionalLong.class) {
+            return OptionalLong.empty();
+        } else if (type == Stream.class) {
+            return Stream.empty();
+        } else if (type == DoubleStream.class) {
+            return DoubleStream.empty();
+        } else if (type == IntStream.class) {
+            return IntStream.empty();
+        } else if (type == LongStream.class) {
+            return LongStream.empty();
+        } else if (type == Duration.class) {
+            return Duration.ZERO;
+        } else if (type == Period.class) {
+            return Period.ZERO;
         }
 
-        //Let's not care about the rest of collections.
+        // Let's not care about the rest of collections.
         return null;
     }
 }

@@ -20,7 +20,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
-                        <!-- These tests embed random imcompatible libraries in the deployment-->
+                        <!-- These tests embed random incompatible libraries in the deployment-->
                         <io.quarkus.arquillian.skip-libraries>true</io.quarkus.arquillian.skip-libraries>
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
@@ -46,7 +46,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.opentracing</groupId>
             <artifactId>microprofile-opentracing-tck-rest-client</artifactId>
-            <version>${microprofile-opentracing-api.version}</version>
+            <version>${microprofile-opentracing-tck.version}</version>
         </dependency>
     </dependencies>
 

@@ -8,13 +8,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.spi.Annotated;
-import javax.enterprise.inject.spi.AnnotatedCallable;
-import javax.enterprise.inject.spi.AnnotatedParameter;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.inject.Qualifier;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.spi.Annotated;
+import jakarta.enterprise.inject.spi.AnnotatedCallable;
+import jakarta.enterprise.inject.spi.AnnotatedParameter;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.inject.Qualifier;
 
 public class MethodParameterInjectionPoint<T> implements InjectionPoint {
     private Method method;
@@ -63,8 +63,9 @@ public class MethodParameterInjectionPoint<T> implements InjectionPoint {
     }
 
     private Type findTypeOrGenericType() {
-        if (method.getGenericParameterTypes().length > 0) {
-            return method.getGenericParameterTypes()[position];
+        Type[] genericParameterTypes = method.getGenericParameterTypes();
+        if (genericParameterTypes.length > 0) {
+            return genericParameterTypes[position];
         }
         return method.getParameterTypes()[position];
     }

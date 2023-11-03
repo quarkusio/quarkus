@@ -7,6 +7,8 @@ import java.util.Set;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.grpc.deployment.GrpcClientBuildItem.ClientInfo;
+import io.quarkus.grpc.deployment.GrpcClientBuildItem.ClientType;
 
 public final class GrpcClientBuildItem extends MultiBuildItem {
 
@@ -23,7 +25,12 @@ public final class GrpcClientBuildItem extends MultiBuildItem {
     }
 
     public void addClient(ClientInfo client) {
+        addClient(client, false);
+    }
+
+    public void addClient(ClientInfo client, boolean addChannel) {
         clients.add(client);
+        clients.add(new ClientInfo(GrpcDotNames.CHANNEL, ClientType.CHANNEL, client.interceptors));
     }
 
     public String getClientName() {
@@ -35,20 +42,22 @@ public final class GrpcClientBuildItem extends MultiBuildItem {
         public final DotName className;
         public final ClientType type;
         public final DotName implName;
+        public final Set<String> interceptors;
 
-        public ClientInfo(DotName className, ClientType type) {
-            this(className, type, null);
+        public ClientInfo(DotName className, ClientType type, Set<String> interceptors) {
+            this(className, type, null, interceptors);
         }
 
-        public ClientInfo(DotName className, ClientType type, DotName implName) {
+        public ClientInfo(DotName className, ClientType type, DotName implName, Set<String> interceptors) {
             this.className = className;
             this.type = type;
             this.implName = implName;
+            this.interceptors = interceptors;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(className);
+            return Objects.hash(className, interceptors);
         }
 
         @Override
@@ -63,25 +72,32 @@ public final class GrpcClientBuildItem extends MultiBuildItem {
                 return false;
             }
             ClientInfo other = (ClientInfo) obj;
-            return Objects.equals(className, other.className);
+            return Objects.equals(className, other.className) && Objects.equals(interceptors, other.interceptors);
         }
 
     }
 
     public enum ClientType {
 
-        BLOCKING_STUB("newBlockingStub"),
-        MUTINY_STUB("newMutinyStub"),
-        MUTINY_CLIENT(null);
+        CHANNEL(null, false),
+        BLOCKING_STUB("newBlockingStub", true),
+        MUTINY_STUB("newMutinyStub", false),
+        MUTINY_CLIENT(null, false);
 
         private final String factoryMethodName;
+        private boolean blocking;
 
-        ClientType(String factoryMethodName) {
+        ClientType(String factoryMethodName, boolean blocking) {
             this.factoryMethodName = factoryMethodName;
+            this.blocking = blocking;
         }
 
         public String getFactoryMethodName() {
             return factoryMethodName;
+        }
+
+        public boolean isBlocking() {
+            return blocking;
         }
     }
 }

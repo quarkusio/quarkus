@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.server.runtime;
 
+import jakarta.enterprise.context.ContextNotActiveException;
+
 import org.jboss.resteasy.reactive.server.core.CurrentRequest;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
@@ -22,11 +24,13 @@ public class QuarkusCurrentRequest implements CurrentRequest {
     @Override
     public void set(ResteasyReactiveRequestContext set) {
         if (set == null) {
-            currentVertxRequest.setOtherHttpContextObject(null);
-            currentVertxRequest.setCurrent(null);
+            try {
+                currentVertxRequest.setCurrent(null, null);
+            } catch (ContextNotActiveException ignored) {
+                // ignored because for HTTP pipelining it can already be closed
+            }
         } else {
-            currentVertxRequest.setOtherHttpContextObject(set);
-            currentVertxRequest.setCurrent(set.unwrap(RoutingContext.class));
+            currentVertxRequest.setCurrent(set.unwrap(RoutingContext.class), set);
         }
     }
 }

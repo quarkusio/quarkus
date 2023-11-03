@@ -51,6 +51,10 @@
                     <groupId>com.sun</groupId>
                     <artifactId>tools</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>kubernetes-client</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 

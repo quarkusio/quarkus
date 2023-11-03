@@ -6,18 +6,17 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
-import javax.inject.Qualifier;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+import jakarta.inject.Qualifier;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -27,7 +26,7 @@ public class AutoFieldInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(AutoFieldInjectionTest.class, Client.class, Producer.class));
 
     @Inject
@@ -37,10 +36,16 @@ public class AutoFieldInjectionTest {
     public void testInjectionWorks() {
         assertEquals("ok", bean.foo);
         assertEquals(1l, bean.bar);
+        assertNull(Client.staticFoo);
+        assertNull(bean.baz);
     }
 
     @Dependent
     static class Client {
+
+        // @Inject should not be added here
+        @MyQualifier
+        static String staticFoo;
 
         // @Inject is added automatically
         @MyQualifier
@@ -48,6 +53,14 @@ public class AutoFieldInjectionTest {
 
         @MyQualifier
         Long bar;
+
+        // @Inject should not be added here
+        @MyQualifier
+        final Long baz;
+
+        Client() {
+            this.baz = null;
+        }
 
     }
 

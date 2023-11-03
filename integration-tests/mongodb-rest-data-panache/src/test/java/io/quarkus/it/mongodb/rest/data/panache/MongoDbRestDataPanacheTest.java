@@ -7,25 +7,24 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.ws.rs.core.MediaType;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.ws.rs.core.MediaType;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.mongodb.MongoTestResource;
 import io.restassured.response.Response;
 
 @QuarkusTest
-@QuarkusTestResource(MongoTestResource.class)
-@DisabledOnOs(OS.WINDOWS)
+@QuarkusTestResource(value = MongoTestResource.class, initArgs = @ResourceArg(name = MongoTestResource.PORT, value = "37017"))
 class MongoDbRestDataPanacheTest {
 
     private Author dostoevsky;
@@ -113,6 +112,17 @@ class MongoDbRestDataPanacheTest {
                 .and().body("author.id", contains(dostoevsky.id.toString(), dostoevsky.id.toString()))
                 .and().body("author.name", contains(dostoevsky.name, dostoevsky.name))
                 .and().body("author.dob", contains(dostoevsky.dob.toString(), dostoevsky.dob.toString()));
+    }
+
+    @Test
+    void shouldListBooksWithFilter() {
+        given().accept("application/json")
+                .when()
+                .queryParam("title", crimeAndPunishment.getTitle())
+                .get("/books")
+                .then().statusCode(200)
+                .and().body("title", not(contains(idiot.getTitle())))
+                .and().body("title", contains(crimeAndPunishment.getTitle()));
     }
 
     @Test

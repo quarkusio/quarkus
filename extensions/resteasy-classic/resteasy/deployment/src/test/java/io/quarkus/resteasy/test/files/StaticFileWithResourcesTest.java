@@ -16,8 +16,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -32,7 +30,7 @@ public class StaticFileWithResourcesTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(RootResource.class)
                     .addAsResource(new File("src/test/resources/lorem.txt"), "META-INF/resources/lorem.txt")
                     .addAsResource(new File("src/test/resources/index.html"), "META-INF/resources/web/index.html"));
@@ -68,7 +66,7 @@ public class StaticFileWithResourcesTest {
         // RFC1123 date formatter
         final DateFormat dtf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.ENGLISH);
         dtf.setTimeZone(TimeZone.getTimeZone("GMT"));
-        // date in past, so that we always get a 200 response, instead of 304
+        // date in the past, so that we always get a 200 response, instead of 304
         final Date fiveMinInPast = new Date(System.currentTimeMillis() - (5 * 60 * 1000));
         final String modifiedSinceHeader = dtf.format(fiveMinInPast);
         final int numRequests = 10;

@@ -17,7 +17,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-opentelemetry</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <!-- JAX-RS -->
@@ -36,6 +35,18 @@
             <artifactId>quarkus-rest-client</artifactId>
         </dependency>
 
+        <!-- Vertx WebClient -->
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
+        </dependency>
+        
+        <!-- Security -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-security</artifactId>
+        </dependency>
+
         <!-- Needed for InMemorySpanExporter to verify captured traces -->
         <dependency>
             <groupId>io.opentelemetry</groupId>
@@ -49,6 +60,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-security</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
@@ -56,11 +72,6 @@
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.logging</groupId>
-            <artifactId>commons-logging-jboss-logging</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -117,6 +128,19 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-security-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
@@ -131,6 +155,15 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <vertx.disableWebsockets>false</vertx.disableWebsockets>
+                    </systemPropertyVariables>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -155,6 +188,9 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skipTests>${native.surefire.skip}</skipTests>
+                            <systemPropertyVariables>
+                                <vertx.disableWebsockets>false</vertx.disableWebsockets>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
 
@@ -168,6 +204,7 @@
                                 </goals>
                                 <configuration>
                                     <systemPropertyVariables>
+                                        <vertx.disableWebsockets>false</vertx.disableWebsockets>
                                         <native.image.path>
                                             ${project.build.directory}/${project.build.finalName}-runner
                                         </native.image.path>

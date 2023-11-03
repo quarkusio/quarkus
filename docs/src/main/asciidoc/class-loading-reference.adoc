@@ -3,21 +3,30 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Class Loading Reference
-
-include::./attributes.adoc[]
+= Class Loading Reference
+include::_attributes.adoc[]
+:categories: architecture
+:summary: Learn more about Quarkus class loading infrastructure.
+:topics: internals,extensions
+:extensions: io.quarkus:quarkus-core
 
 This document explains the Quarkus class loading architecture. It is intended for extension
 authors and advanced users who want to understand exactly how Quarkus works.
 
 The Quarkus class loading architecture is slightly different depending on the mode that
-the application is run in. When running a production application everything is loaded
-in the system ClassLoader, so it is a completely flat class path. This also applies to
-native image mode which does not really support multiple ClassLoaders, and is based on
-a normal production Quarkus application.
+the application is run in.
+
+When running a production application using the `fast-jar` package type
+(which is the default), almost all dependencies are loaded via the `io.quarkus.bootstrap.runner.RunnerClassLoader`
+which indexes class at build time, while a small set of dependencies is loaded from the system ClassLoader.
+
+When running a production application using the `legacy-jar` package type everything is loaded
+in the system ClassLoader, so it is a completely flat classpath.
+
+The flat classpath strategy is also used for GraalVM native images, since GraalVM does not really support multiple ClassLoaders.
 
 For all other use cases (e.g. tests, dev mode, and building the application) Quarkus
-uses the class loading architecture outlined here.
+uses the class loading architecture outlined in following section.
 
 
 == Bootstrapping Quarkus
@@ -57,14 +66,18 @@ prevent the transformation, as the loaded class is not used at runtime.
 
 == ClassLoader Implementations
 
-Quarkus has the following ClassLoaders:
+Quarkus has a number of ClassLoaders. This shows the relationship between them :
 
-Base ClassLoader:: 
+image::classloader-hierarchy.png[alt=Quarkus ClassLoader hierarchy,role="center"]
+
+Here are the roles of each ClassLoader:
+
+Base ClassLoader::
 
 This is usually the normal JVM System ClassLoader. In some environments such as Maven it may be different. This ClassLoader
 is used to load the bootstrap classes, and other ClassLoader instances will delegate the loading of JDK classes to it.
 
-Augment ClassLoader::
+Augmentation ClassLoader::
 
 This loads all the `-deployment` artifacts and their dependencies, as well as other user dependencies. It does not load the
 application root or any hot deployed code. This ClassLoader is persistent, even if the application restarts it will remain
@@ -77,7 +90,7 @@ the builder classes are isolated, which means that use cases that want to custom
 
 Deployment ClassLoader::
 
-This can load all application classes, its parent is the Augment ClassLoader so it can also load all deployment classes.
+This can load all application classes. Its parent is the Augmentation ClassLoader, so it can also load all deployment classes.
 
 This ClassLoader is non-persistent, it will be re-created when the application is started, and is isolated. This ClassLoader
 is the context ClassLoader that is used when running the build steps. It is also transformer safe.
@@ -85,7 +98,7 @@ is the context ClassLoader that is used when running the build steps. It is also
 Base Runtime ClassLoader::
 
 This loads all the runtime extension dependencies, as well as other user dependencies (note that this may include duplicate
-copies of classes also loaded by the Augment ClassLoader). It does not load the application root or any hot deployed
+copies of classes also loaded by the Augmentation ClassLoader). It does not load the application root or any hot deployed
 code. This ClassLoader is persistent, even if the application restarts it will remain (which is why it cannot load
 application classes that may be hot deployed). Its parent is the base ClassLoader.
 
@@ -126,7 +139,7 @@ this, however there are a few cases where this is necessary:
 - Some logging related classes, as logging must be loaded by the system ClassLoader
 - Quarkus bootstrap itself
 
-If this is required it can be configured in the `quarkus-bootstrap-maven-plugin`. Note that if you
+If this is required it can be configured in the `quarkus-extension-maven-plugin`. Note that if you
 mark a dependency as parent first then all of its dependencies must also be parent first,
 or a `LinkageError` can occur.
 
@@ -134,12 +147,12 @@ or a `LinkageError` can occur.
 ----
 <plugin>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+    <artifactId>quarkus-extension-maven-plugin</artifactId>
     <configuration>
         <parentFirstArtifacts>
             <parentFirstArtifact>io.quarkus:quarkus-bootstrap-core</parentFirstArtifact>
             <parentFirstArtifact>io.quarkus:quarkus-development-mode-spi</parentFirstArtifact>
-            <parentFirstArtifact>org.jboss.logmanager:jboss-logmanager-embedded</parentFirstArtifact>
+            <parentFirstArtifact>org.jboss.logmanager:jboss-logmanager</parentFirstArtifact>
             <parentFirstArtifact>org.jboss.logging:jboss-logging</parentFirstArtifact>
             <parentFirstArtifact>org.ow2.asm:asm</parentFirstArtifact>
         </parentFirstArtifacts>
@@ -152,15 +165,15 @@ or a `LinkageError` can occur.
 There are some dependencies that we can be sure we do not want. This generally happens when a dependency has had a name
 change (e.g. smallrye-config changing groups from `org.smallrye` to `org.smallrye.config`, the `javax` -> `jakarta` rename).
 This can cause problems, as if these artifacts end up in the dependency tree out of date classes can be loaded that are
-not compatible with Quarkus. To deal with this extensions can specify artifacts that should never be loaded. This is
-done by modifying the `quarkus-bootstrap-maven-plugin` config in the pom (which generates the `quarkus-extension.properties`
+not compatible with Quarkus. To deal with this, extensions can specify artifacts that should never be loaded. This is
+done by modifying the `quarkus-extension-maven-plugin` config in the pom (which generates the `quarkus-extension.properties`
 file). Simply add an `excludedArtifacts` section as shown below:
 
 [source,xml]
 ----
 <plugin>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+    <artifactId>quarkus-extension-maven-plugin</artifactId>
     <configuration>
         <excludedArtifacts>
             <excludedArtifact>io.smallrye:smallrye-config</excludedArtifact>
@@ -181,6 +194,18 @@ Note that class loading config is different to normal config, in that it does no
 
 
 include::{generated-dir}/config/quarkus-class-loading-configuration-class-loading-config.adoc[opts=optional, leveloffset=+1]
+
+== Hiding/Removing classes and resources from dependencies
+
+It is possible to hide/remove classes and resources from dependencies. This is an advanced option, but it can be useful
+at times. This is done via the `quarkus.class-loading.removed-resources` config key, for example:
+
+`quarkus.class-loading.removed-resources."io.quarkus\:quarkus-integration-test-shared-library"=io/quarkus/it/shared/RemovedResource.class`
+
+This will remove the `RemovedResource.class` file from the `io.quarkus:quarkus-integration-test-shared-library` artifact.
+
+Even though this option is a class loading option it will also affect the generated application, so when the application
+is created removed resources will not be accessible.
 
 == Reading Class Bytecode
 

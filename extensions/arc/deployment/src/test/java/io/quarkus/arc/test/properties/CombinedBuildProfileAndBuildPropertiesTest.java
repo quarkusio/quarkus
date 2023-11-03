@@ -3,15 +3,13 @@ package io.quarkus.arc.test.properties;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.CDI;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -25,7 +23,7 @@ public class CombinedBuildProfileAndBuildPropertiesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Producer.class, AnotherProducer.class,
                             GreetingBean.class, Hello.class, PingBean.class, PongBean.class, FooBean.class, BarBean.class))
             .overrideConfigKey("some.prop1", "v1")
@@ -119,6 +117,7 @@ public class CombinedBuildProfileAndBuildPropertiesTest {
 
     // this will be enabled since the profile condition does not pass
     @IfBuildProperty(name = "some.prop1", stringValue = "v1")
+    @IfBuildProperty(name = "some.prop2", stringValue = "v2")
     @UnlessBuildProfile("test")
     static class BarBean {
 
@@ -185,8 +184,9 @@ public class CombinedBuildProfileAndBuildPropertiesTest {
 
     }
 
-    // this will match since both conditions pass
+    // this will match since all conditions pass
     @IfBuildProperty(name = "some.other.prop1", stringValue = "v1", enableIfMissing = true)
+    @IfBuildProperty(name = "some.prop2", stringValue = "v2")
     @UnlessBuildProfile("dev")
     static class AnotherProducer {
 

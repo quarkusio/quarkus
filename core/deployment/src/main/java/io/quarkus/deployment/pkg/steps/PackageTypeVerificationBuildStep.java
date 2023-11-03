@@ -1,6 +1,5 @@
 package io.quarkus.deployment.pkg.steps;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -17,12 +16,14 @@ public class PackageTypeVerificationBuildStep {
 
     @BuildStep
     List<PackageTypeBuildItem> builtins() {
-        return Arrays.asList(new PackageTypeBuildItem(PackageConfig.NATIVE),
-                new PackageTypeBuildItem(PackageConfig.NATIVE_SOURCES),
-                new PackageTypeBuildItem(PackageConfig.JAR), new PackageTypeBuildItem(PackageConfig.FAST_JAR),
-                new PackageTypeBuildItem(PackageConfig.LEGACY_JAR),
-                new PackageTypeBuildItem(PackageConfig.UBER_JAR),
-                new PackageTypeBuildItem(PackageConfig.MUTABLE_JAR));
+        return List.of(
+                new PackageTypeBuildItem(PackageConfig.BuiltInType.NATIVE.getValue()),
+                new PackageTypeBuildItem(PackageConfig.BuiltInType.NATIVE_SOURCES.getValue()),
+                new PackageTypeBuildItem(PackageConfig.BuiltInType.JAR.getValue()),
+                new PackageTypeBuildItem(PackageConfig.BuiltInType.FAST_JAR.getValue()),
+                new PackageTypeBuildItem(PackageConfig.BuiltInType.LEGACY_JAR.getValue()),
+                new PackageTypeBuildItem(PackageConfig.BuiltInType.UBER_JAR.getValue()),
+                new PackageTypeBuildItem(PackageConfig.BuiltInType.MUTABLE_JAR.getValue()));
     }
 
     @BuildStep

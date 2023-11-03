@@ -1,9 +1,12 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
 import java.util.Map;
+import java.util.Objects;
 
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.spi.metrics.NetworkMetrics;
 
@@ -15,15 +18,23 @@ import io.vertx.core.spi.metrics.NetworkMetrics;
  */
 public class VertxNetworkMetrics implements NetworkMetrics<Map<String, Object>> {
     final MeterRegistry registry;
-
-    final String nameBytesRead;
-    final String nameBytesWritten;
+    final DistributionSummary nameBytesRead;
+    final DistributionSummary nameBytesWritten;
     final String nameExceptionOccurred;
 
-    VertxNetworkMetrics(MeterRegistry registry, String prefix) {
+    final Tags tags;
+
+    VertxNetworkMetrics(MeterRegistry registry, String prefix, Tags tags) {
         this.registry = registry;
-        nameBytesRead = prefix + ".bytes.read";
-        nameBytesWritten = prefix + ".bytes.written";
+        this.tags = tags;
+        DistributionSummary.Builder nameBytesReadBuilder = DistributionSummary.builder(prefix + ".bytes.read");
+        DistributionSummary.Builder nameBytesWrittenBuilder = DistributionSummary.builder(prefix + ".bytes.written");
+        if (tags != null) {
+            nameBytesReadBuilder.tags(this.tags);
+            nameBytesWrittenBuilder.tags(this.tags);
+        }
+        nameBytesRead = nameBytesReadBuilder.register(registry);
+        nameBytesWritten = nameBytesWrittenBuilder.register(registry);
         nameExceptionOccurred = prefix + ".errors";
     }
 
@@ -36,7 +47,7 @@ public class VertxNetworkMetrics implements NetworkMetrics<Map<String, Object>> 
      */
     @Override
     public void bytesRead(Map<String, Object> socketMetric, SocketAddress remoteAddress, long numberOfBytes) {
-        DistributionSummary.builder(nameBytesRead).register(registry).record(numberOfBytes);
+        nameBytesRead.record(numberOfBytes);
     }
 
     /**
@@ -48,7 +59,7 @@ public class VertxNetworkMetrics implements NetworkMetrics<Map<String, Object>> 
      */
     @Override
     public void bytesWritten(Map<String, Object> socketMetric, SocketAddress remoteAddress, long numberOfBytes) {
-        DistributionSummary.builder(nameBytesWritten).register(registry).record(numberOfBytes);
+        nameBytesWritten.record(numberOfBytes);
     }
 
     /**
@@ -61,6 +72,13 @@ public class VertxNetworkMetrics implements NetworkMetrics<Map<String, Object>> 
      */
     @Override
     public void exceptionOccurred(Map<String, Object> socketMetric, SocketAddress remoteAddress, Throwable t) {
-        registry.counter(nameExceptionOccurred, "class", t.getClass().getName()).increment();
+        Tags copy = Objects.requireNonNullElseGet(tags, Tags::empty).and(Tag.of("class", t.getClass().getName()));
+        registry.counter(nameExceptionOccurred, copy).increment();
+    }
+
+    @Override
+    public void close() {
+        nameBytesRead.close();
+        nameBytesWritten.close();
     }
 }

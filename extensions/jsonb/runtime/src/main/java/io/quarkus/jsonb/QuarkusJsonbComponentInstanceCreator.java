@@ -1,6 +1,7 @@
 package io.quarkus.jsonb;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -51,8 +52,8 @@ public class QuarkusJsonbComponentInstanceCreator implements JsonbComponentInsta
 
     private <T> Object fallbackCreate(Class<T> componentClass) {
         try {
-            return componentClass.newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
+            return componentClass.getDeclaredConstructor().newInstance();
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new IllegalStateException("Cannot instantiate JSON-B component: " + componentClass, e);
         }
     }

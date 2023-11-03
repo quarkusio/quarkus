@@ -8,7 +8,11 @@
 //$Id$
 package io.quarkus.it.infinispan.cache.jpa;
 
-import javax.persistence.*;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Transient;
 
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;

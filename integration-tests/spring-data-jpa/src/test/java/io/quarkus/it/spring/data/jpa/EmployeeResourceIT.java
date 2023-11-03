@@ -1,7 +1,7 @@
 package io.quarkus.it.spring.data.jpa;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class EmployeeResourceIT extends EmployeeResourceTest {
 }

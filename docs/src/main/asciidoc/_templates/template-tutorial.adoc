@@ -1,0 +1,76 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+////
+TODO:
+- Title: https://quarkus.io/guides/doc-reference#titles-headings
+- Use the file name as the ID
+- Choose appropriate categories: https://quarkus.io/guides/doc-reference#categories
+////
+[id="..."]
+= Title using sentence capitalization
+include::_attributes.adoc[]
+:diataxis-type: tutorial
+:categories: ...
+////
+:extension-status: preview
+TODO: uncomment the above for experimental or tech-preview content.
+The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
+////
+
+Describe what the learner will accomplish (examples: build, create, construct, deploy; not: “you will learn...”).
+This short summary should help a reader determine if they want to engage with the content.
+
+////
+TODO: If this is a tutorial for an experimental or tech-preview extension, uncomment the following (otherwise delete)
+include::{includes}/extension-status.adoc[]
+////
+
+== Prerequisites
+
+////
+TODO: If this tutorial will use dev tools, use the following common include:
+include::{includes}/devtools/prerequisites.adoc[]
+This file offers a few different variables that can be used to tweak what is shown.
+////
+
+- Materials, software, ...
+- Whatever they should already have in hand to complete this set of steps
+
+:sectnums:
+:sectnumlevels: 3
+== Outline steps
+
+- xref:../doc-create-tutorial.adoc[Tutorial: Create a tutorial]
+- xref:../doc-concept.adoc#tutorial[Quarkus documentation content types: Tutorials]
+- xref:../doc-reference.adoc[Quarkus style and content guidelines]
+
+Each step should conclude with a comprehensible/observable result.
+
+== Use the right language
+
+- Give your learner plenty of clues to help confirm they are on the right track and orient themselves.
+    - "Notice that...", "Remember that..."
+
+- Provide minimal explanation of actions in the most basic language possible.
+Link to more detailed explanation.
+    - "We must always do x before we do y because… (see Explanation for more details)."
+
+:sectnums!:
+== Summary
+
+In closing, describe (and admire, in a mild way) what your learner has accomplished (not: “you have learned…”).
+
+== References
+
+To help direct the reader to more information about the content topic, optionally add a *References* section to the end of the page and include `links` or `xrefs` to other related content resources.
+
+=== Create cross-references
+
+To create anchors for in-file and cross-file navigation, see the following detailed instructions in the Quarkus style and content guidelines.
+
+* xref:../doc-contribute-docs-howto.adoc#anchors-howto[Cross-reference in-file and cross-file content by using anchors]
+
+* xref:../doc-reference.adoc#cross-references[Cross-references]

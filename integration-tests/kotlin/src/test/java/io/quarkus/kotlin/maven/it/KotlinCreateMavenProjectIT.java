@@ -59,14 +59,17 @@ public class KotlinCreateMavenProjectIT extends QuarkusPlatformAwareMojoTestBase
                 .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
                         && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
                         && d.getScope().equalsIgnoreCase("import")
-                        && d.getType().equalsIgnoreCase("pom"))).isTrue();
+                        && d.getType().equalsIgnoreCase("pom")))
+                .isTrue();
 
         assertThat(
                 model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")
-                        && d.getVersion() == null)).isTrue();
+                        && d.getVersion() == null))
+                .isTrue();
         assertThat(
                 model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-kotlin")
-                        && d.getVersion() == null)).isTrue();
+                        && d.getVersion() == null))
+                .isTrue();
 
         assertThat(model.getProfiles()).hasSize(1);
         assertThat(model.getProfiles().get(0).getId()).isEqualTo("native");
@@ -75,14 +78,16 @@ public class KotlinCreateMavenProjectIT extends QuarkusPlatformAwareMojoTestBase
     private InvocationResult setup(Properties params)
             throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
 
-        params.setProperty("platformArtifactId", "quarkus-bom");
-        params.setProperty("platformVersion", getQuarkusCoreVersion());
+        params.setProperty("platformGroupId", getBomGroupId());
+        params.setProperty("platformArtifactId", getBomArtifactId());
+        params.setProperty("platformVersion", getBomVersion());
 
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
                 getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":" + getMavenPluginVersion() + ":create"));
         request.setProperties(params);
+        request.setShowErrors(true);
         File log = new File(testDir, "build-create-" + testDir.getName() + ".log");
         PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
                 InvokerLogger.DEBUG);

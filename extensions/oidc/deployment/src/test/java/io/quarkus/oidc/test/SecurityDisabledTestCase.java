@@ -4,8 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,7 +21,7 @@ public class SecurityDisabledTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
                     .addAsResource("application-security-disabled.properties", "application.properties"));
 
@@ -32,7 +30,7 @@ public class SecurityDisabledTestCase {
         try (final WebClient webClient = createWebClient()) {
 
             HtmlPage page = webClient.getPage("http://localhost:8081/unprotected");
-            assertEquals("unprotected", page.getBody().asText());
+            assertEquals("unprotected", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }

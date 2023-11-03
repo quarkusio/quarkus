@@ -3,11 +3,14 @@ package io.quarkus.it.mongodb;
 import static com.mongodb.client.model.Filters.eq;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import javax.inject.Inject;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Response;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Response;
+
+import org.bson.Document;
 
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
@@ -20,6 +23,14 @@ public class ReactiveBookResource {
 
     private ReactiveMongoCollection<Book> getCollection() {
         return client.getDatabase("books").getCollection("my-reactive-collection", Book.class);
+    }
+
+    @DELETE
+    public CompletableFuture<Response> clearCollection() {
+        return getCollection()
+                .deleteMany(new Document())
+                .onItem().transform(x -> Response.ok().build())
+                .subscribeAsCompletionStage();
     }
 
     @GET

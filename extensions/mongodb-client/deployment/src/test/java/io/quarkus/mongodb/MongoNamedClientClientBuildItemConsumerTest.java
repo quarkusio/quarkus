@@ -6,11 +6,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.literal.NamedLiteral;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.literal.NamedLiteral;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -29,7 +27,7 @@ public class MongoNamedClientClientBuildItemConsumerTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MongoTestBase.class))
+            .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class))
             .withConfigurationResource("named-mongoclient.properties")
             .addBuildChainCustomizer(buildCustomizer());
 

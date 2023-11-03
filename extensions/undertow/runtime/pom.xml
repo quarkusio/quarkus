@@ -37,8 +37,8 @@
             <artifactId>jakarta.enterprise.cdi-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>graal-sdk</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -85,7 +85,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <capabilities>
                         <provides>io.quarkus.servlet</provides>
@@ -99,7 +99,7 @@
                     </excludedArtifacts>
                     <parentFirstArtifacts>
                         <!--
-                        Sentry logging has a dependency on the Servlet API, so we load it parent first to
+                        Sentry logging has a dependency on the Servlet API, so we load its parent first to
                         prevent class loading problems.
 
                         see https://github.com/quarkusio/quarkus/issues/7407

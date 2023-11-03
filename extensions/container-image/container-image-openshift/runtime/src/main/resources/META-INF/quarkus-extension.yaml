@@ -8,4 +8,4 @@ metadata:
     - "image"
   categories:
     - "cloud"
-  status: "preview"
+  status: "stable"

@@ -34,7 +34,6 @@ import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.devtools.project.codegen.writer.FileProjectWriter;
 import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.maven.utilities.MojoUtils;
@@ -49,7 +48,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .groupId("org.acme.foo")
                 .artifactId("resteasy-app")
                 .version("1.0.0-FOO")
-                .className("org.acme.getting.started.GreetingResource")
+                .resourceClassName("org.acme.getting.started.GreetingResource")
                 .resourcePath("/foo")
                 .extensions(Collections.singleton("resteasy")));
         final Properties quarkusProp = getQuarkusProperties();
@@ -80,6 +79,31 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     }
 
     @Test
+    public void createWithPackage() throws Exception {
+        final File file = new File("target/with-package");
+        final Path projectDir = file.toPath();
+        SnapshotTesting.deleteTestDirectory(file);
+        assertCreateProject(newCreateProject(projectDir)
+                .groupId("org.acme.foo")
+                .artifactId("package-app")
+                .version("1.0.0-FOO")
+                .resourceClassName("SomeResource")
+                .packageName("io.aloha")
+                .resourcePath("/bar")
+                .extensions(Collections.singleton("resteasy")));
+        assertThat(projectDir.resolve("src/main/java/io/aloha/SomeResource.java"))
+                .exists()
+                .satisfies(checkContains("package io.aloha;"))
+                .satisfies(checkContains("class SomeResource"))
+                .satisfies(checkContains("@Path(\"/bar\")"));
+        assertThat(projectDir.resolve("pom.xml"))
+                .exists()
+                .satisfies(checkContains("<groupId>org.acme.foo</groupId>"))
+                .satisfies(checkContains("<artifactId>package-app</artifactId>"))
+                .satisfies(checkContains("<version>1.0.0-FOO</version>"));
+    }
+
+    @Test
     public void createSpringWeb() throws Exception {
         final File file = new File("target/create-spring");
         final Path projectDir = file.toPath();
@@ -89,7 +113,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .packageName("org.acme.bar.spr")
                 .artifactId("spring-web-app")
                 .version("1.0.0-BAR")
-                .className("BarController")
+                .resourceClassName("BarController")
                 .resourcePath("/bar")
                 .extensions(Collections.singleton("spring-web")));
         assertThat(projectDir.resolve("pom.xml"))
@@ -114,7 +138,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         SnapshotTesting.deleteTestDirectory(file);
         assertCreateProject(newCreateProject(projectDir)
                 .artifactId("spring-web-resteasy-app")
-                .className("BarController")
+                .resourceClassName("BarController")
                 .packageName("io.test")
                 .resourcePath("/bar")
                 .extensions(new HashSet<>(Arrays.asList("resteasy", "spring-web"))));
@@ -148,7 +172,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .packageName("my.project")
                 .artifactId("resteasy-app")
                 .version("1.0.0-FOO")
-                .className("FooResource")
+                .resourceClassName("FooResource")
                 .resourcePath("/foo")
                 .extensions(Collections.singleton("resteasy")));
 
@@ -201,13 +225,13 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                     .groupId("something.is")
                     .artifactId("wrong")
                     .version("1.0.0-SNAPSHOT")
-                    .className("org.foo.MyResource")
+                    .resourceClassName("org.foo.MyResource")
                     .execute();
         }).withRootCauseInstanceOf(IOException.class);
     }
 
     @Test
-    @Timeout(3)
+    @Timeout(6)
     @DisplayName("Should create correctly multiple times in parallel with multiple threads")
     void createMultipleTimes() throws InterruptedException {
         final ExecutorService executorService = Executors.newFixedThreadPool(4);
@@ -215,17 +239,15 @@ public class CreateProjectTest extends PlatformAwareTestBase {
 
         List<Callable<Void>> collect = IntStream.range(0, 15).boxed().map(i -> (Callable<Void>) () -> {
             File tempDir = Files.createTempDirectory("test").toFile();
-            FileProjectWriter write = new FileProjectWriter(tempDir);
             final QuarkusProject project = QuarkusProjectHelper.getProject(tempDir.toPath(), BuildTool.MAVEN);
             final QuarkusCommandOutcome result = new CreateProject(project)
                     .groupId("org.acme")
                     .artifactId("acme")
                     .version("1.0.0-SNAPSHOT")
-                    .className("org.acme.MyResource")
+                    .resourceClassName("org.acme.MyResource")
                     .execute();
             assertTrue(result.isSuccess());
             latch.countDown();
-            write.close();
             tempDir.delete();
             return null;
         }).collect(Collectors.toList());

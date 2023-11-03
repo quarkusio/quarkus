@@ -1,21 +1,24 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpClientResponse;
-import io.vertx.core.http.HttpConnection;
-import io.vertx.core.net.impl.ConnectionBase;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.sse.InboundSseEvent;
-import javax.ws.rs.sse.SseEventSource;
+
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.sse.InboundSseEvent;
+import jakarta.ws.rs.sse.SseEventSource;
+
 import org.jboss.resteasy.reactive.common.util.CommonSseUtil;
+
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClientResponse;
+import io.vertx.core.http.HttpConnection;
+import io.vertx.core.net.impl.ConnectionBase;
 
 public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
 
@@ -39,6 +42,11 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
 
     public SseEventSourceImpl(WebTargetImpl webTarget, Invocation.Builder invocationBuilder,
             long reconnectDelay, TimeUnit reconnectUnit) {
+        this(webTarget, invocationBuilder, reconnectDelay, reconnectUnit, null);
+    }
+
+    public SseEventSourceImpl(WebTargetImpl webTarget, Invocation.Builder invocationBuilder,
+            long reconnectDelay, TimeUnit reconnectUnit, String defaultContentType) {
         // tests set a null endpoint
         Objects.requireNonNull(reconnectUnit);
         if (reconnectDelay <= 0)
@@ -46,7 +54,7 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
         this.webTarget = webTarget;
         this.reconnectDelay = reconnectDelay;
         this.reconnectUnit = reconnectUnit;
-        this.sseParser = new SseParser(this);
+        this.sseParser = new SseParser(this, defaultContentType);
         this.invocationBuilder = invocationBuilder;
     }
 
@@ -94,7 +102,7 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
             if (throwable != null) {
                 receiveThrowable(throwable);
                 notifyCompletion();
-            } else if (response.getStatus() != Response.Status.OK.getStatusCode()) {
+            } else if (Response.Status.Family.familyOf(response.getStatus()) != Response.Status.Family.SUCCESSFUL) {
                 receiveThrowable(new RuntimeException("HTTP call unsuccessful: " + response.getStatus()));
                 notifyCompletion();
             } else if (!MediaType.SERVER_SENT_EVENTS_TYPE.isCompatible(response.getMediaType())) {
@@ -133,7 +141,9 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
         vertxClientResponse.request().exceptionHandler(null);
         connection = vertxClientResponse.request().connection();
         String sseContentTypeHeader = vertxClientResponse.getHeader(CommonSseUtil.SSE_CONTENT_TYPE);
-        sseParser.setSseContentTypeHeader(sseContentTypeHeader);
+        if ((sseContentTypeHeader != null) && !sseContentTypeHeader.isEmpty()) {
+            sseParser.setSseContentTypeHeader(sseContentTypeHeader);
+        }
         // we don't add a closeHandler handler on the connection as it can race with this handler
         // and close before the emitter emits anything
         // see: https://github.com/quarkusio/quarkus/pull/16438

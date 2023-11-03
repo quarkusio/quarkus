@@ -10,15 +10,16 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.devui.tests.DevUIJsonRPCTest;
+import io.quarkus.test.ContinuousTestingTestUtils;
+import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.vertx.http.deployment.devmode.tests.TestStatus;
-import io.quarkus.vertx.http.testrunner.ContinuousTestingTestUtils;
 
-public class TestParameterizedTestCase {
+public class TestParameterizedTestCase extends DevUIJsonRPCTest {
 
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClasses(OddResource.class, Setup.class, HelloResource.class)
@@ -26,23 +27,33 @@ public class TestParameterizedTestCase {
                                     "application.properties");
                 }
             })
-            .setTestArchiveProducer(new Supplier<JavaArchive>() {
+            .setTestArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClass(ParamET.class);
                 }
             });
 
+    public TestParameterizedTestCase() {
+        super("devui-continuous-testing");
+    }
+
     @Test
-    public void testParameterizedTests() throws InterruptedException {
+    public void testParameterizedTests() throws InterruptedException, Exception {
         ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
         TestStatus ts = utils.waitForNextCompletion();
-        ;
 
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(4L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
 
+        super.executeJsonRPCMethod("runFailed");
+
+        ts = utils.waitForNextCompletion();
+
+        Assertions.assertEquals(1L, ts.getTestsFailed());
+        Assertions.assertEquals(3L, ts.getTestsPassed()); //they are all re-run
+        Assertions.assertEquals(0L, ts.getTestsSkipped());
         test.modifyTestSourceFile(ParamET.class, new Function<String, String>() {
             @Override
             public String apply(String s) {

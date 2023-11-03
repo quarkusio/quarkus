@@ -1,7 +1,14 @@
 package io.quarkus.maven;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.function.Consumer;
 
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -13,10 +20,11 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.repository.RemoteRepository;
 
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.maven.components.QuarkusWorkspaceProvider;
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 /**
  * Displays Quarkus application build dependency tree including the deployment ones.
@@ -25,31 +33,81 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 public class DependencyTreeMojo extends AbstractMojo {
 
     @Component
-    protected QuarkusBootstrapProvider bootstrapProvider;
+    protected QuarkusWorkspaceProvider workspaceProvider;
 
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     protected MavenProject project;
 
-    @Parameter(defaultValue = "${project.remoteRepositories}", readonly = true, required = true)
+    @Parameter(defaultValue = "${session}", readonly = true)
+    protected MavenSession session;
+
+    @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
     private List<RemoteRepository> repos;
 
     /**
      * Target launch mode corresponding to {@link io.quarkus.runtime.LaunchMode} for which the dependency tree should be built.
-     * {@link io.quarkus.runtime.LaunchMode.PROD} is the default.
+     * {@code io.quarkus.runtime.LaunchMode.NORMAL} is the default.
      */
     @Parameter(property = "mode", required = false, defaultValue = "prod")
     String mode;
+
+    /**
+     * If specified, this parameter will cause the dependency tree to be written to the path specified, instead of writing to
+     * the console.
+     */
+    @Parameter(property = "outputFile", required = false)
+    File outputFile;
+
+    /**
+     * Whether to append outputs into the output file or overwrite it.
+     */
+    @Parameter(property = "appendOutput", required = false, defaultValue = "false")
+    boolean appendOutput;
 
     protected MavenArtifactResolver resolver;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
-        final StringBuilder buf = new StringBuilder();
-        buf.append("Quarkus application ").append(mode.toUpperCase()).append(" mode build dependency tree:");
-        getLog().info(buf.toString());
+        BufferedWriter writer = null;
+        final Consumer<String> log;
+        if (outputFile == null) {
+            log = s -> getLog().info(s);
+        } else {
+            final BufferedWriter bw;
+            try {
+                Files.createDirectories(outputFile.toPath().getParent());
+                bw = writer = Files.newBufferedWriter(outputFile.toPath(),
+                        appendOutput && outputFile.exists() ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
+            } catch (IOException e) {
+                throw new MojoExecutionException("Failed to initialize file output writer", e);
+            }
+            log = s -> {
+                try {
+                    bw.write(s);
+                    bw.newLine();
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to log the dependency tree to a file", e);
+                }
+            };
+        }
+        try {
+            logTree(log);
+        } finally {
+            if (writer != null) {
+                try {
+                    writer.close();
+                } catch (IOException e) {
+                    getLog().debug("Failed to close the output file", e);
+                }
+            }
+        }
+    }
 
-        final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(), null, "pom",
+    private void logTree(final Consumer<String> log) throws MojoExecutionException {
+        log.accept("Quarkus application " + mode.toUpperCase() + " mode build dependency tree:");
+
+        final ArtifactCoords appArtifact = ArtifactCoords.pom(project.getGroupId(), project.getArtifactId(),
                 project.getVersion());
         final BootstrapAppModelResolver modelResolver;
         try {
@@ -66,23 +124,25 @@ public class DependencyTreeMojo extends AbstractMojo {
                             "Parameter 'mode' was set to '" + mode + "' while expected one of 'dev', 'test' or 'prod'");
                 }
             }
-            modelResolver.setBuildTreeLogger(s -> getLog().info(s));
+            modelResolver.setBuildTreeLogger(log);
             modelResolver.resolveModel(appArtifact);
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to resolve application model " + appArtifact + " dependencies", e);
         }
     }
 
-    protected MavenArtifactResolver resolver() throws BootstrapMavenException {
+    protected MavenArtifactResolver resolver() {
         return resolver == null
-                ? resolver = MavenArtifactResolver.builder()
-                        .setRepositorySystem(bootstrapProvider.repositorySystem())
-                        .setRemoteRepositoryManager(bootstrapProvider.remoteRepositoryManager())
-                        //.setRepositorySystemSession(repoSession) the session should be initialized with the loaded workspace
+                ? resolver = workspaceProvider.createArtifactResolver(BootstrapMavenContext.config()
+                        .setUserSettings(session.getRequest().getUserSettingsFile())
+                        // The system needs to be initialized with the bootstrap model builder to properly interpolate system properties set on the command line
+                        // e.g. -Dquarkus.platform.version=xxx
+                        //.setRepositorySystem(repoSystem)
+                        // The session should be initialized with the loaded workspace
+                        //.setRepositorySystemSession(repoSession)
                         .setRemoteRepositories(repos)
-                        .setPreferPomsFromWorkspace(true)
-                        .build()
+                        // To support multi-module projects that haven't been installed
+                        .setPreferPomsFromWorkspace(true))
                 : resolver;
     }
-
 }

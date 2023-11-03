@@ -37,7 +37,7 @@ public class DirectoryClassPathElementTestCase {
 
     @Test
     public void testGetAllResources() {
-        DirectoryClassPathElement f = new DirectoryClassPathElement(root);
+        DirectoryClassPathElement f = new DirectoryClassPathElement(root, true);
         Set<String> res = f.getProvidedResources();
         Assertions.assertEquals(4, res.size());
         Assertions.assertEquals(new HashSet<>(Arrays.asList("a.txt", "b.txt", "foo", "foo/sub.txt")), res);
@@ -45,7 +45,7 @@ public class DirectoryClassPathElementTestCase {
 
     @Test
     public void testGetResource() {
-        DirectoryClassPathElement f = new DirectoryClassPathElement(root);
+        DirectoryClassPathElement f = new DirectoryClassPathElement(root, true);
         ClassPathResource res = f.getResource("foo/sub.txt");
         Assertions.assertNotNull(res);
         Assertions.assertEquals("subdir file", new String(res.getData(), StandardCharsets.UTF_8));
@@ -59,7 +59,7 @@ public class DirectoryClassPathElementTestCase {
         } else {
             invalidPath = "hello\u0000world";
         }
-        final DirectoryClassPathElement classPathElement = new DirectoryClassPathElement(root);
+        final DirectoryClassPathElement classPathElement = new DirectoryClassPathElement(root, true);
         final ClassPathResource resource = classPathElement.getResource(invalidPath);
         Assertions.assertNull(resource, "DirectoryClassPathElement wasn't expected to return a resource for an invalid path");
     }

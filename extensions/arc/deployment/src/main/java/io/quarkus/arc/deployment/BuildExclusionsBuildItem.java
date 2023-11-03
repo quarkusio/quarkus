@@ -57,7 +57,7 @@ public final class BuildExclusionsBuildItem extends SimpleBuildItem {
      * <li>In case of a field it will check if it is part of the excluded field and if its declaring class is excluded</li>
      * <li>In all other cases, it is not excluded</li>
      * </ul>
-     * 
+     *
      * @param target the target to check.
      * @return {@code true} if the target is excluded, {@code false} otherwise.
      */
@@ -82,7 +82,7 @@ public final class BuildExclusionsBuildItem extends SimpleBuildItem {
 
     /**
      * Converts the given target into a String unique representation.
-     * 
+     *
      * @param target the target to convert.
      * @return a unique representation as a {@code String} of the target
      */

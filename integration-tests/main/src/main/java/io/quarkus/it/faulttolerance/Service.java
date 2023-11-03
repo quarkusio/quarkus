@@ -2,10 +2,12 @@ package io.quarkus.it.faulttolerance;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.faulttolerance.Retry;
+
+import io.smallrye.faulttolerance.api.ApplyFaultTolerance;
 
 @ApplicationScoped
 public class Service {
@@ -19,7 +21,7 @@ public class Service {
         name = "Lucie";
     }
 
-    @Retry(maxRetries = 10)
+    @ApplyFaultTolerance("my-fault-tolerance")
     public String getName(AtomicInteger counter) {
         if (counter.incrementAndGet() >= THRESHOLD) {
             return name;
@@ -27,4 +29,11 @@ public class Service {
         throw new IllegalStateException("Counter=" + counter.get());
     }
 
+    @Retry // set of `retryOn` exceptions is configured in application.properties
+    public String retriedMethod(AtomicInteger counter) {
+        if (counter.incrementAndGet() >= THRESHOLD) {
+            return name;
+        }
+        throw new MyFaultToleranceError();
+    }
 }

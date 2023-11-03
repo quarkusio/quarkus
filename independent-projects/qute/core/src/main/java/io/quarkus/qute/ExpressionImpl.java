@@ -1,6 +1,5 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.TemplateNode.Origin;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -8,12 +7,14 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import io.quarkus.qute.TemplateNode.Origin;
+
 final class ExpressionImpl implements Expression {
 
     static final ExpressionImpl EMPTY = new ExpressionImpl(0, null, Collections.emptyList(), Results.NotFound.EMPTY, null);
 
     /**
-     * 
+     *
      * @param value
      * @return a new expression
      */
@@ -29,9 +30,6 @@ final class ExpressionImpl implements Expression {
             return EMPTY;
         }
         Object literalValue = LiteralSupport.getLiteralValue(literal);
-        if (literalValue == null) {
-            throw new IllegalArgumentException("Not a literal value: " + literal);
-        }
         return literal(id, literal, literalValue, Parser.SYNTHETIC_ORIGIN);
     }
 
@@ -61,6 +59,11 @@ final class ExpressionImpl implements Expression {
         this.parts = parts;
         this.literal = literal != Results.NotFound.EMPTY ? CompletedStage.of(literal) : null;
         this.origin = origin;
+    }
+
+    @Override
+    public boolean hasNamespace() {
+        return namespace != null;
     }
 
     public String getNamespace() {
@@ -241,18 +244,6 @@ final class ExpressionImpl implements Expression {
 
         public String getTypeInfo() {
             return typeInfo;
-        }
-
-        void setCachedResolver(ValueResolver resolver) {
-            ValueResolver last = this.cachedResolver;
-            if (last != null) {
-                return;
-            }
-            synchronized (this) {
-                if (this.cachedResolver == null) {
-                    this.cachedResolver = resolver;
-                }
-            }
         }
 
         @Override

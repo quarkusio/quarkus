@@ -2,12 +2,10 @@ package io.quarkus.liquibase.test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.UnsatisfiedResolutionException;
-import javax.inject.Inject;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.UnsatisfiedResolutionException;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -18,7 +16,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * Liquibase needs a datasource to work.
- * This tests assures, that an error occurs, as soon as a named liquibase configuration points to an missing datasource.
+ * This tests assures, that an error occurs, as soon as a named liquibase configuration points to a missing datasource.
  */
 public class LiquibaseExtensionConfigMissingNamedDataSourceTest {
 
@@ -28,7 +26,7 @@ public class LiquibaseExtensionConfigMissingNamedDataSourceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource("db/changeLog.xml", "db/changeLog.xml")
                     .addAsResource("config-for-missing-named-datasource.properties", "application.properties"));
 

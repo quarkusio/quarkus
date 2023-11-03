@@ -12,6 +12,10 @@ service Streaming {
     rpc Source(Empty) returns (stream Item) {}
     rpc Sink(stream Item) returns (Empty) {}
     rpc Pipe(stream Item) returns (stream Item) {}
+    rpc QuickStringStream (stream StringRequest) returns (StringReply) {}
+    rpc MidStringStream (stream StringRequest) returns (StringReply) {}
+    rpc QuickStringBiDiStream (stream StringRequest) returns (stream StringReply) {}
+    rpc MidStringBiDiStream (stream StringRequest) returns (stream StringReply) {}
 }
 
 message Item {
@@ -19,4 +23,12 @@ message Item {
 }
 
 message Empty {
+}
+
+message StringRequest {
+    string anyValue = 1;
+}
+
+message StringReply {
+    string message = 1;
 }

@@ -1,43 +1,51 @@
 package io.quarkus.kubernetes.deployment;
 
-import java.util.stream.Collectors;
+import static io.quarkus.kubernetes.deployment.Constants.RBAC_API_VERSION;
+import static io.quarkus.kubernetes.deployment.Constants.ROLE;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
 import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.api.model.rbac.PolicyRuleBuilder;
+import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
 import io.fabric8.kubernetes.api.model.rbac.RoleBuilder;
-import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 class AddRoleResourceDecorator extends ResourceProvidingDecorator<KubernetesListBuilder> {
-    private final KubernetesRoleBuildItem spec;
+    private final String deploymentName;
+    private final String name;
+    private final String namespace;
+    private final Map<String, String> labels;
+    private final List<PolicyRule> rules;
 
-    public AddRoleResourceDecorator(KubernetesRoleBuildItem buildItem) {
-        this.spec = buildItem;
+    public AddRoleResourceDecorator(String deploymentName, String name, String namespace, Map<String, String> labels,
+            List<PolicyRule> rules) {
+        this.deploymentName = deploymentName;
+        this.name = name;
+        this.namespace = namespace;
+        this.labels = labels;
+        this.rules = rules;
     }
 
     public void visit(KubernetesListBuilder list) {
-        ObjectMeta meta = getMandatoryDeploymentMetadata(list);
-
-        if (contains(list, "rbac.authorization.k8s.io/v1", "Role", spec.getName())) {
+        if (contains(list, RBAC_API_VERSION, ROLE, name)) {
             return;
         }
 
+        Map<String, String> roleLabels = new HashMap<>();
+        roleLabels.putAll(labels);
+        getDeploymentMetadata(list, deploymentName)
+                .map(ObjectMeta::getLabels)
+                .ifPresent(roleLabels::putAll);
+
         list.addToItems(new RoleBuilder()
                 .withNewMetadata()
-                .withName(spec.getName())
-                .withLabels(meta.getLabels())
+                .withName(name)
+                .withNamespace(namespace)
+                .withLabels(roleLabels)
                 .endMetadata()
-                .withRules(
-                        spec.getRules()
-                                .stream()
-                                .map(it -> new PolicyRuleBuilder()
-                                        .withApiGroups(it.getApiGroups())
-                                        .withNonResourceURLs(it.getNonResourceURLs())
-                                        .withResourceNames(it.getResourceNames())
-                                        .withResources(it.getResources())
-                                        .withVerbs(it.getVerbs())
-                                        .build())
-                                .collect(Collectors.toList())));
+                .withRules(rules));
     }
 }

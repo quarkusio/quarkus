@@ -4,12 +4,14 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
+import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.eclipse.microprofile.context.spi.ContextManagerExtension;
 import org.eclipse.microprofile.context.spi.ContextManagerProvider;
 import org.eclipse.microprofile.context.spi.ThreadContextProvider;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.context.SmallRyeContextManager;
 import io.smallrye.context.SmallRyeContextManagerProvider;
@@ -40,7 +42,7 @@ public class SmallRyeContextPropagationRecorder {
         builder.withContextManagerExtensions(discoveredExtensions.toArray(new ContextManagerExtension[0]));
     }
 
-    public void configureRuntime(ExecutorService executorService) {
+    public void configureRuntime(ExecutorService executorService, ShutdownContext shutdownContext) {
         // associate the static init manager to the runtime CL
         ContextManagerProvider contextManagerProvider = ContextManagerProvider.instance();
         // finish building our manager
@@ -49,6 +51,15 @@ public class SmallRyeContextPropagationRecorder {
         SmallRyeContextManager contextManager = builder.build();
 
         contextManagerProvider.registerContextManager(contextManager, Thread.currentThread().getContextClassLoader());
+        //needs to be late, as running threads can re-create an implicit one
+        shutdownContext.addLastShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                contextManagerProvider.releaseContextManager(contextManager);
+            }
+        });
+        //Avoid leaking the classloader:
+        this.builder = null;
     }
 
     public Supplier<Object> initializeManagedExecutor(ExecutorService executorService) {
@@ -68,6 +79,26 @@ public class SmallRyeContextPropagationRecorder {
                         throw new IllegalStateException("This executor is managed by the container and cannot be shut down.");
                     }
                 };
+            }
+        };
+    }
+
+    public Supplier<Object> initializeConfiguredThreadContext(String[] cleared, String[] propagated, String[] unchanged) {
+        return new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return ThreadContext.builder().propagated(propagated).cleared(cleared).unchanged(unchanged).build();
+            }
+        };
+    }
+
+    public Supplier<Object> initializeConfiguredManagedExecutor(String[] cleared, String[] propagated, int maxAsync,
+            int maxQueued) {
+        return new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return ManagedExecutor.builder().propagated(propagated).cleared(cleared).maxAsync(maxAsync).maxQueued(maxQueued)
+                        .build();
             }
         };
     }

@@ -3,31 +3,22 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Continuous Testing
-
-include::./attributes.adoc[]
-
-:toc: macro
-:toclevels: 4
-:doctype: book
-:icons: font
-:docinfo1:
-
+= Continuous Testing
+include::_attributes.adoc[]
+:categories: core
+:summary: Get early test feedback with Continuous Testing.
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: testing,dev-ui,tooling,devmode
+:extensions: io.quarkus:quarkus-core
 
 Learn how to use continuous testing in your Quarkus Application.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* The completed greeter application from the link:getting-started[Getting Started Guide]
+include::{includes}/prerequisites.adoc[]
+* The completed greeter application from the xref:getting-started.adoc[Getting Started Guide]
 
 == Introduction
 
@@ -37,8 +28,11 @@ only run the relevant tests when code is changed.
 
 == Solution
 
-Start the link:getting-started[Getting Started] application (or any other application) using `mvn quarkus:dev`. Quarkus
-will start in development mode as normal, but down the bottom of the screen you should see the following:
+Start the xref:getting-started.adoc[Getting Started] application (or any other application) using:
+
+include::{includes}/devtools/dev.adoc[]
+
+Quarkus will start in development mode as normal, but down the bottom of the screen you should see the following:
 
 [source]
 ----
@@ -149,6 +143,13 @@ your tests (e.g. running wiremock on the same port), or if you only want to deve
 mode run `mvn quarkus:test`.
 
 NOTE: The Dev UI is not available when running in continuous testing mode, as this is provided by dev mode.
+
+== Multi-module Projects
+
+Note that continuous testing supports multi-module projects, so tests in modules other than the application can still
+be run when files are changed. The modules that are run can be controlled using config as listed below.
+
+This is enabled by default, and can be disabled via `quarkus.test.only-test-application-module=true`.
 
 == Configuring Continuous Testing
 

@@ -1,0 +1,12 @@
+name: smallrye-health-codestart
+ref: smallrye-health
+type: code
+tags: extension-codestart
+metadata:
+  title: SmallRye Health
+  description: Monitor your application's health using SmallRye Health
+  related-guide-section: https://quarkus.io/guides/smallrye-health
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-smallrye-health

@@ -4,13 +4,17 @@
     <groupId>{project.group-id}</groupId>
     <artifactId>{project.artifact-id}</artifactId>
     <version>{project.version}</version>
+    {#if project.name }
+    <name>{project.name}</name>
+    {/if}
+    {#if project.description }
+    <description>{project.description}</description>
+    {/if}
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.source>{java.version}</maven.compiler.source>
-        <maven.compiler.target>{java.version}</maven.compiler.target>
-        <maven.compiler.parameters>true</maven.compiler.parameters>
+        <maven.compiler.release>{java.version}</maven.compiler.release>
 
         <quarkus.platform.group-id>{quarkus.platform.group-id}</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>{quarkus.platform.artifact-id}</quarkus.platform.artifact-id>
@@ -19,6 +23,7 @@
         <quarkus-plugin.version>{quarkus.maven-plugin.version}</quarkus-plugin.version>
         {/if}
         <compiler-plugin.version>{maven-compiler-plugin.version}</compiler-plugin.version>
+        <skipITs>true</skipITs>
         <surefire-plugin.version>{maven-surefire-plugin.version}</surefire-plugin.version>
         {#if uberjar}
         <quarkus.package.type>uber-jar</quarkus.package.type>
@@ -143,9 +148,10 @@
                 <groupId>org.apache.maven.plugins</groupId>     
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>$\{compiler-plugin.version}</version>
-                <!-- Workaround to support maven.compiler.parameters property (see https://youtrack.jetbrains.com/issue/IDEA-201496) -->
                 <configuration>
-                    <parameters>$\{maven.compiler.parameters}</parameters>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <!-- Run the tests in JVM mode -->
@@ -160,8 +166,32 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
+            <!-- Run the tests with the executable produced by the build (could be native, jvm, or container image) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>$\{surefire-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                        <configuration>
+                            <systemPropertyVariables>
+                                {#if generate-native}
+                                <native.image.path>$\{project.build.directory}/$\{project.build.finalName}-runner</native.image.path>
+                                {/if}
+                                <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                                <maven.home>$\{maven.home}</maven.home>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
+    {#if generate-native}
     <profiles>
         <!-- Use this profile to build a native executable using GraalVM -->
         <profile>
@@ -173,32 +203,9 @@
             </activation>
             <properties>
                 <quarkus.package.type>native</quarkus.package.type>
+                <skipITs>false</skipITs>
             </properties>
-            <build>
-                <plugins>
-                    <!-- Run the tests with the native executable -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>$\{surefire-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                                <configuration>
-                                    <systemPropertyVariables>
-                                        <native.image.path>$\{project.build.directory}/$\{project.build.finalName}-runner</native.image.path>
-                                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                                        <maven.home>$\{maven.home}</maven.home>
-                                    </systemPropertyVariables>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
     </profiles>
+    {/if}
 </project>

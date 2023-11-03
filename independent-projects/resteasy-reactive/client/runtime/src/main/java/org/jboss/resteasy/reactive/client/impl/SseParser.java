@@ -1,10 +1,12 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import java.nio.charset.StandardCharsets;
+
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.sse.SseEvent;
+
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
-import java.nio.charset.StandardCharsets;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.sse.SseEvent;
 
 public class SseParser implements Handler<Buffer> {
 
@@ -48,7 +50,8 @@ public class SseParser implements Handler<Buffer> {
      */
     private String contentType;
     /**
-     * The content type we're reading. Defaults to the X-Sse-Element-Type header
+     * The content type we're reading. If the X-Sse-Element-Type header is not set, then it defaults to the declared @Produces
+     * (if any)
      */
     private String contentTypeHeader;
     /**
@@ -65,8 +68,9 @@ public class SseParser implements Handler<Buffer> {
     private long eventReconnectTime = SseEvent.RECONNECT_NOT_SET;
     private SseEventSourceImpl sseEventSource;
 
-    public SseParser(SseEventSourceImpl sseEventSource) {
+    public SseParser(SseEventSourceImpl sseEventSource, String defaultContentType) {
         this.sseEventSource = sseEventSource;
+        this.contentTypeHeader = defaultContentType;
     }
 
     public void setSseContentTypeHeader(String sseContentTypeHeader) {
@@ -76,6 +80,7 @@ public class SseParser implements Handler<Buffer> {
     @Override
     public void handle(Buffer event) {
         byte[] newBytes = event.getBytes();
+        event.getByteBuf().release();
         // check if we have partial data remaining
         if (bytes != null) {
             // concat old and new data
@@ -141,9 +146,6 @@ public class SseParser implements Handler<Buffer> {
     }
 
     private void dispatchEvent() {
-        // ignore empty events
-        if (dataBuffer.length() == 0)
-            return;
         WebTargetImpl webTarget = sseEventSource.getWebTarget();
         InboundSseEventImpl event;
         // tests don't set a web target, and we don't want them to end up starting vertx just to test parsing
@@ -156,7 +158,7 @@ public class SseParser implements Handler<Buffer> {
         event.setComment(commentBuffer.length() == 0 ? null : commentBuffer.toString());
         // SSE spec says empty string is the default, but JAX-RS says null if not specified
         event.setId(lastEventId);
-        event.setData(dataBuffer.toString());
+        event.setData(dataBuffer.length() == 0 ? null : dataBuffer.toString());
         // SSE spec says "message" is the default, but JAX-RS says null if not specified
         event.setName(eventType);
         event.setReconnectDelay(eventReconnectTime);

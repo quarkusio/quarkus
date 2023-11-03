@@ -3,736 +3,505 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using OpenID Connect and OAuth2 Client and Filters to manage access tokens
+= OpenID Connect Client and Token Propagation Quickstart
+include::_attributes.adoc[]
+:categories: security
+:summary: This guide explains how to use OpenID Connect and OAuth2 Client and Filters to acquire, refresh and propagate access tokens.
+:topics: security,oidc,client
+:extensions: io.quarkus:quarkus-oidc-client
 
-include::./attributes.adoc[]
-:toc:
+This quickstart demonstrates how to use `OpenID Connect Client Reactive Filter` to acquire and propagate access tokens as `HTTP Authorization Bearer` access tokens, alongside `OpenID Token Propagation Reactive Filter` which propagates the incoming `HTTP Authorization Bearer` access tokens.
 
-This guide explains how to use:
+Please check xref:security-openid-connect-client-reference.adoc[OpenID Connect Client and Token Propagation Reference Guide] for all the information related to `Oidc Client` and `Token Propagation` support in Quarkus.
 
- - `quarkus-oidc-client` and `quarkus-oidc-client-filter` (or `quarkus-oidc-client-reactive-filter`) extensions to acquire and refresh access tokens from OpenId Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak]
- - `quarkus-oidc-token-propagation` extension to propagate the current bearer or authorization code flow access tokens
+Please also read xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication] guide if you need to protect your applications using Bearer Token Authorization.
 
-The access tokens managed by these extensions can be used as HTTP Authorization Bearer tokens to access the remote services.
+== Prerequisites
 
-== OidcClient
+:prerequisites-docker:
+include::{includes}/prerequisites.adoc[]
+* https://stedolan.github.io/jq/[jq tool]
 
-`quarkus-oidc-client` extension provides a reactive `io.quarkus.oidc.client.OidcClient` which can be used to acquire and refresh tokens using SmallRye Mutiny `Uni` and `Vert.x WebClient`.
+== Architecture
 
-`OidcClient` is initialized at the build time with the IDP token endpoint URL which can be auto-discovered or manually configured and uses this endpoint to acquire access tokens using `client_credentials` or `password` token grants and refresh the tokens using `refresh_token` grant.
+In this example, we will build an application which consists of two Jakarta REST resources, `FrontendResource` and `ProtectedResource`. `FrontendResource` propagates access tokens to `ProtectedResource` and uses either `OpenID Connect Client Reactive Filter` to acquire a token first before propagating it or `OpenID Token Propagation Reactive Filter` to propagate the incoming, already existing access token.
 
-Here is how `OidcClient` can be configured to use the `client_credentials` grant:
+`FrontendResource` has 4 endpoints:
 
-[source,properties]
+* `/frontend/user-name-with-oidc-client-token`
+* `/frontend/admin-name-with-oidc-client-token`
+* `/frontend/user-name-with-propagated-token`
+* `/frontend/admin-name-with-propagated-token`
+
+`FrontendResource` will use REST Client with `OpenID Connect Client Reactive Filter` to acquire and propagate an access token to `ProtectedResource` when either `/frontend/user-name-with-oidc-client-token` or `/frontend/admin-name-with-oidc-client-token` is called. And it will use REST Client with `OpenID Connect Token Propagation Reactive Filter` to propagate the current incoming access token to `ProtectedResource` when either `/frontend/user-name-with-propagated-token` or `/frontend/admin-name-with-propagated-token` is called.
+
+`ProtecedResource` has 2 endpoints:
+
+* `/protected/user-name`
+* `/protected/admin-name`
+
+Both of these endpoints return the username extracted from the incoming access token which was propagated to `ProtectedResource` from `FrontendResource`. The only difference between these endpoints is that calling `/protected/user-name` is only allowed if the current access token has a `user` role and calling `/protected/admin-name` is only allowed if the current access token has an `admin` role.
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `security-openid-connect-client-quickstart` link:{quickstarts-tree-url}/security-openid-connect-client-quickstart[directory].
+
+== Creating the Maven Project
+
+First, we need a new project. Create a new project with the following command:
+
+:create-app-artifact-id: security-openid-connect-client-quickstart
+:create-app-extensions: oidc,oidc-client-reactive-filter,oidc-token-propagation-reactive,resteasy-reactive
+include::{includes}/devtools/create-app.adoc[]
+
+This command generates a Maven project, importing the `oidc`, `oidc-client-reactive-filter`, `oidc-token-propagation-reactive-filter` and `resteasy-reactive` extensions.
+
+If you already have your Quarkus project configured, you can add these extensions to your project by running the following command in your project base directory:
+
+:add-extension-extensions: oidc,oidc-client-reactive-filter,oidc-token-propagation-reactive,resteasy-reactive
+include::{includes}/devtools/extension-add.adoc[]
+
+This will add the following to your build file:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
-quarkus.oidc-client.client-id=quarkus-app
-quarkus.oidc-client.credentials.secret=secret
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc-client-reactive-filter</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc-token-propagation-reactive</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-reactive</artifactId>
+</dependency>
 ----
 
-The `client_credentials` grant allows to set extra parameters to the token request via `quarkus.oidc-client.grant-options.client.<param-name>=<value>`. Here is how to set the intended token recipient via the `audience` parameter:
-
-[source,properties]
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
 ----
-quarkus.oidc-client.grant-options.client.audience=https://example.com/api
+implementation("io.quarkus:quarkus-oidc,oidc-client-reactive-filter,oidc-token-propagation-reactive,resteasy-reactive")
 ----
 
-Here is how `OidcClient` can be configured to use the `password` grant:
+== Writing the application
 
-[source,properties]
-----
-quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
-quarkus.oidc-client.client-id=quarkus-app
-quarkus.oidc-client.credentials.secret=secret
-quarkus.oidc-client.grant.type=password
-quarkus.oidc-client.grant-options.password.username=alice
-quarkus.oidc-client.grant-options.password.password=alice
-----
-In both cases `OidcClient` will auto-discover the token endpoint URL and use it to acquire the tokens.
-
-=== Use OidcClient directly
-
-One can use `OidcClient` directly as follows:
+Let's start by implementing `ProtectedResource`:
 
 [source,java]
 ----
-import javax.inject.PostConstruct;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
+package org.acme.security.openid.connect.client;
 
-import io.quarkus.oidc.client.OidcClient;
-import io.quarkus.oidc.client.Tokens;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 
-@Path("/service")
-public class OidcClientResource {
+import io.quarkus.security.Authenticated;
+import io.smallrye.mutiny.Uni;
+
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
+@Path("/protected")
+@Authenticated
+public class ProtectedResource {
 
     @Inject
-    OidcClient client;
+    JsonWebToken principal;
 
-    volatile Tokens currentTokens;
-
-    @PostConstruct
-    public init() {
-        currentTokens = client.getTokens().await().indefinitely();
+    @GET
+    @RolesAllowed("user")
+    @Produces("text/plain")
+    @Path("userName")
+    public Uni<String> userName() {
+        return Uni.createFrom().item(principal.getName());
     }
 
     @GET
-    public String getResponse() {
-        
-        Tokens tokens = currentTokens;
-        if (tokens.isAccessTokenExpired()) {
-            // Add @Blocking method annotation if this code is used with Reactive RestClient
-            tokens = client.refreshTokens(tokens.getRefreshToken()).await().indefinitely();
-            currentTokens = tokens;
-        } 
-        // use tokens.getAccessToken() to configure MP RestClient Authorization header/etc
+    @RolesAllowed("admin")
+    @Produces("text/plain")
+    @Path("adminName")
+    public Uni<String> adminName() {
+        return Uni.createFrom().item(principal.getName());
     }
 }
 ----
 
-=== Use OidcClient in MicroProfile RestClient client filter
+As you can see `ProtectedResource` returns a name from both `userName()` and `adminName()` methods. The name is extracted from the current `JsonWebToken`.
 
-`quarkus-oidc-client-filter` extension provides `io.quarkus.oidc.client.filter.OidcClientRequestFilter` JAX-RS ClientRequestFilter which uses `OidcClient` to acquire the access token, refresh it if needed, and set it as an HTTP `Authorization` `Bearer` scheme value.
-
-By default, this filter will get `OidcClient` to acquire the first pair of access and refresh tokens at its initialization time. If the access tokens are short-lived and refresh tokens are not available then the token acquisition should be delayed with `quarkus.oidc-client.early-tokens-acquisition=false`.
-
-You can selectively register `OidcClientRequestFilter` by using either `io.quarkus.oidc.client.filter.OidcClientFilter` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotations:
+Next let's add a REST Client with `OidcClientRequestReactiveFilter` and another REST Client with `AccessTokenRequestReactiveFilter`. `FrontendResource` will use these two clients to call `ProtectedResource`:
 
 [source,java]
 ----
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-import io.quarkus.oidc.client.filter.OidcClientFilter;
+package org.acme.security.openid.connect.client;
 
-@RegisterRestClient
-@OidcClientFilter
-@Path("/")
-public interface ProtectedResourceService {
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 
-    @GET
-    String getUserName();
-}
-----
-
-or
-
-[source,java]
-----
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-import io.quarkus.oidc.client.filter.OidcClientRequestFilter;
 
-@RegisterRestClient
-@RegisterProvider(OidcClientRequestFilter.class)
-@Path("/")
-public interface ProtectedResourceService {
-
-    @GET
-    String getUserName();
-}
-----
-
-Alternatively, `OidcClientRequestFilter` can be registered automatically with all MP Rest or JAX-RS clients if `quarkus.oidc-client-filter.register-filter=true` property is set.
-
-`OidcClientRequestFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-client-filter.client-name` configuration property.
-
-=== Use OidcClient in MicroProfile RestClient Reactive client filter
-
-`quarkus-oidc-client-reactive-filter` extension provides `io.quarkus.oidc.client.filter.OidcClientRequestReactiveFilter`.
-
-It works similary to the way `OidcClientRequestFilter` (described in the previous section) does - it uses `OidcClient` to acquire the access token, refresh it if needed, and set it as an HTTP `Authorization` `Bearer` scheme value. The difference is that it works with link:rest-client-reactive[Reactive RestClient] and implements a non-blocking client filter which does not block the current IO thread when acquring or refreshing the tokens.
-
-`OidcClientRequestReactiveFilter` delays an initial token acquisition until it is executed to avoid blocking an IO thread and it currently can only be registered with `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotation:
-
-[source,java]
-----
-import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import io.quarkus.oidc.client.reactive.filter.OidcClientRequestReactiveFilter;
 import io.smallrye.mutiny.Uni;
 
 @RegisterRestClient
 @RegisterProvider(OidcClientRequestReactiveFilter.class)
 @Path("/")
-public interface ProtectedResourceService {
+public interface RestClientWithOidcClientFilter {
 
     @GET
+    @Produces("text/plain")
+    @Path("userName")
     Uni<String> getUserName();
-}
-----
-
-`OidcClientRequestReactiveFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-client-reactive-filter.client-name` configuration property.
-
-=== Use injected Tokens
-
-If you prefer you can use your own custom filter and inject `Tokens`:
-
-[source,java]
-----
-@Provider
-@Priority(Priorities.AUTHENTICATION)
-public class OidcClientRequestCustomFilter implements ClientRequestFilter {
-
-    @Inject
-    Tokens tokens;
-
-    @Override
-    public void filter(ClientRequestContext requestContext) throws IOException {
-        requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, "Bearer " + tokens.getAccessToken());
-    }
-}
-----
-
-The `Tokens` producer will acquire and refresh the tokens, and the custom filter will decide how and when to use the token.
-
-See also the previous section about delaying the token acquisition in some cases.
-
-=== Refreshing Access Tokens
-
-Both `OidcClientRequestFilter` and `Tokens` producer will refresh the current expired access token if the refresh token is available.
-Additionally, `quarkus.oidc-client.refresh-token-time-skew` property can be used for a preemptive access token refreshment to avoid sending nearly expired access tokens which may cause HTTP 401 errors. For example if this property is set to `3S` and the access token will expire in less than 3 seconds then this token will be auto-refreshed.
-
-If the access token needs to be refreshed but no refresh token is available then an attempt will be made to acquire a new token using the configured grant such as `client_credentials`.
-
-Please note that some OpenId Connect Providers will not return a refresh token in a `client_credentials` grant response. For example, starting from Keycloak 12 a refresh token will not be returned by default for `client_credentials`. The providers may also restrict a number of times a refresh token can be used.
-
-=== OidcClients
-
-`io.quarkus.oidc.client.OidcClients` is a container of ``OidcClient``s - it includes a default `OidcClient` (which can also be injected directly as described above) and named clients which can be configured like this:
-
-[source,properties]
-----
-quarkus.oidc-client.client-enabled=false
-
-quarkus.oidc-client.jwt-secret.auth-server-url=http://localhost:8180/auth/realms/quarkus/
-quarkus.oidc-client.jwt-secret.client-id=quarkus-app
-quarkus.oidc-client.jwt-secret.credentials.jwt.secret=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow
-----
-
-Note in this case the default client is disabled with a `client-enabled=false` property. The `jwt-secret` client can be accessed like this:
-
-[source,java]
-----
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-
-import io.quarkus.oidc.client.OidcClient;
-import io.quarkus.oidc.client.OidcClients;
-
-@Path("/clients")
-public class OidcClientResource {
-
-    @Inject
-    OidcClients clients;
 
     @GET
-    public String getResponse() {
-        OidcClient client = clients.getClient("jwt-secret");
-        // use this client to get the token
-    }
+    @Produces("text/plain")
+    @Path("adminName")
+    Uni<String> getAdminName();
 }
 ----
 
-[NOTE]
-====
-If you also use link:security-openid-connect-multitenancy[OIDC multitenancy] and each OIDC tenant has its own associated `OidcClient` then you can use a Vert.x `RoutingContext` `tenantId` attribute, for example:
+where `RestClientWithOidcClientFilter` will depend on `OidcClientRequestReactiveFilter` to acquire and propagate the tokens and
 
 [source,java]
 ----
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+package org.acme.security.openid.connect.client;
 
-import io.quarkus.oidc.client.OidcClient;
-import io.quarkus.oidc.client.OidcClients;
-import io.vertx.ext.web.RoutingContext;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 
-@Path("/clients")
-public class OidcClientResource {
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-    @Inject
-    OidcClients clients;
-    @Inject
-    RoutingContext context;
+import io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter;
+import io.smallrye.mutiny.Uni;
+
+@RegisterRestClient
+@RegisterProvider(AccessTokenRequestReactiveFilter.class)
+@Path("/")
+public interface RestClientWithTokenPropagationFilter {
 
     @GET
-    public String getResponse() {
-        String tenantId = context.get("tenantId");
-        // named OIDC tenant and client configurations use the same key:
-        OidcClient client = clients.getClient(tenantId);
-        // use this client to get the token
-    }
+    @Produces("text/plain")
+    @Path("userName")
+    Uni<String> getUserName();
+
+    @GET
+    @Produces("text/plain")
+    @Path("adminName")
+    Uni<String> getAdminName();
 }
 ----
-====
 
-If you need you can also create new `OidcClient` programmatically like this:
+where `RestClientWithTokenPropagationFilter` will depend on `AccessTokenRequestReactiveFilter` to propagate the incoming, already existing tokens.
+
+Note that both `RestClientWithOidcClientFilter` and `RestClientWithTokenPropagationFilter` interfaces are identical - the reason behind it is that combining `OidcClientRequestReactiveFilter` and `AccessTokenRequestReactiveFilter` on the same REST Client will cause side effects as both filters can interfere with other, for example, `OidcClientRequestReactiveFilter` may override the token propagated by `AccessTokenRequestReactiveFilter` or `AccessTokenRequestReactiveFilter` can fail if it is called when no token is available to propagate and `OidcClientRequestReactiveFilter` is expected to acquire a new token instead.
+
+Now let's complete creating the application with adding `FrontendResource`:
 
 [source,java]
 ----
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+package org.acme.security.openid.connect.client;
 
-import io.quarkus.oidc.client.OidcClient;
-import io.quarkus.oidc.client.OidcClients;
-import io.quarkus.oidc.client.OidcClientConfig;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import io.smallrye.mutiny.Uni;
 
-@Path("/clients")
-public class OidcClientResource {
+@Path("/frontend")
+public class FrontendResource {
+    @Inject
+    @RestClient
+    RestClientWithOidcClientFilter restClientWithOidcClientFilter;
 
     @Inject
-    OidcClients clients;
+    @RestClient
+    RestClientWithTokenPropagationFilter restClientWithTokenPropagationFilter;
 
     @GET
-    public String getResponse() {
-        OidcClientConfig cfg = new OidcClientConfig();
-        cfg.setId("myclient");
-        cfg.setAuthServerUrl("http://localhost:8081/auth/realms/quarkus/");
-        cfg.setClientId("quarkus");
-        cfg.getCredentials().setSecret("secret");
-        Uni<OidcClient> client = clients.newClient(config);
-        // use this client to get the token
+    @Path("user-name-with-oidc-client-token")
+    @Produces("text/plain")
+    public Uni<String> getUserNameWithOidcClientToken() {
+        return restClientWithOidcClientFilter.getUserName();
+    }
+
+    @GET
+    @Path("admin-name-with-oidc-client-token")
+    @Produces("text/plain")
+    public Uni<String> getAdminNameWithOidcClientToken() {
+	    return restClientWithOidcClientFilter.getAdminName();
+    }
+
+    @GET
+    @Path("user-name-with-propagated-token")
+    @Produces("text/plain")
+    public Uni<String> getUserNameWithPropagatedToken() {
+        return restClientWithTokenPropagationFilter.getUserName();
+    }
+
+    @GET
+    @Path("admin-name-with-propagated-token")
+    @Produces("text/plain")
+    public Uni<String> getAdminNameWithPropagatedToken() {
+        return restClientWithTokenPropagationFilter.getAdminName();
     }
 }
 ----
 
-==== Inject named `OidcClient` and `Tokens`
+`FrontendResource` will use REST Client with `OpenID Connect Client Reactive Filter` to acquire and propagate an access token to `ProtectedResource` when either `/frontend/user-name-with-oidc-client-token` or `/frontend/admin-name-with-oidc-client-token` is called. And it will use REST Client with `OpenID Connect Token Propagation Reactive Filter` to propagate the current incoming access token to `ProtectedResource` when either `/frontend/user-name-with-propagated-token` or `/frontend/admin-name-with-propagated-token` is called.
 
-In case of multiple configured ``OidcClient``s you can specify the `OidcClient` injection target by the extra qualifier `@NamedOidcClient` instead of working with `OidcClients`:
-
-[source,java]
-----
-package io.quarkus.oidc.client;
-
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-
-@Path("/clients")
-public class OidcClientResource {
-
-    @Inject
-    @NamedOidcClient("jwt-secret")
-    OidcClient client;
-
-    @GET
-    public String getResponse() {
-        // use client to get the token
-    }
-}
-----
-
-The same qualifier can be used to specify the `OidcClient` used for a `Tokens` injection:
+Finally, let's add a Jakarta REST `ExceptionMapper`:
 
 [source,java]
 ----
+package org.acme.security.openid.connect.client;
+
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
+
+import org.jboss.resteasy.reactive.ClientWebApplicationException;
+
 @Provider
-@Priority(Priorities.AUTHENTICATION)
-@RequestScoped
-public class OidcClientRequestCustomFilter implements ClientRequestFilter {
+public class FrontendExceptionMapper implements ExceptionMapper<ClientWebApplicationException> {
 
-    @Inject
-    @NamedOidcClient("jwt-secret")
-    Tokens tokens;
+	@Override
+	public Response toResponse(ClientWebApplicationException t) {
+		return Response.status(t.getResponse().getStatus()).build();
+	}
 
-    @Override
-    public void filter(ClientRequestContext requestContext) throws IOException {
-        requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, "Bearer " + tokens.getAccessToken());
-    }
 }
 ----
 
-[[oidc-client-authentication]]
-=== OidcClient Authentication
+This exception mapper is only added to verify during the tests that `ProtectedResource` returns `403` when the token has no expected role. Without this mapper `RESTEasy Reactive` will correctly convert the exceptions which will escape from REST Client calls to `500` to avoid leaking the information from the downstream resources such as `ProtectedResource` but in the tests it will not be possible to assert that `500` is in fact caused by an authorization exception as opposed to some internal error.
 
-`OidcClient` has to authenticate to the OpenId Connect Provider for the `client_credentials` and other grant requests to succeed.
-All the https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication[OIDC Client Authentication] options are supported, for example:
+== Configuring the application
 
-`client_secret_basic`:
+We have prepared the code, and now let's configure the application:
 
 [source,properties]
 ----
-quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
-quarkus.oidc-client.client-id=quarkus-app
-quarkus.oidc-client.credentials.secret=mysecret
-----
+# Configure OIDC
 
-or
+%prod.quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus
+quarkus.oidc.client-id=backend-service
+quarkus.oidc.credentials.secret=secret
 
-[source,properties]
-----
-quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
-quarkus.oidc-client.client-id=quarkus-app
-quarkus.oidc-client.credentials.client-secret.value=mysecret
-----
+# Tell Dev Services for Keycloak to import the realm file
+# This property is not effective when running the application in JVM or Native modes but only in dev and test modes.
 
-or with the secret retrieved from a link:credentials-provider[CredentialsProvider]:
+quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 
-[source,properties]
-----
-quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
-quarkus.oidc-client.client-id=quarkus-app
+# Configure OIDC Client
 
-# This is a key which will be used to retrieve a secret from the map of credentails returned from CredentialsProvider
-quarkus.oidc-client.credentials.client-secret.provider.key=mysecret-key
-# Set it only if more than one CredentialsProvider can be registered
-quarkus.oidc-client.credentials.client-secret.provider.name=oidc-credentials-provider
-----
-
-`client_secret_post`:
-
-[source,properties]
-----
-quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
-quarkus.oidc-client.client-id=quarkus-app
-quarkus.oidc-client.credentials.client-secret.value=mysecret
-quarkus.oidc-client.credentials.client-secret.method=post
-----
-
-`client_secret_jwt`:
-
-[source,properties]
-----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
-quarkus.oidc.client-id=quarkus-app
-quarkus.oidc.credentials.jwt.secret=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow
-
-# This is a token key identifier 'kid' header - set it if your OpenId Connect provider requires it,
-quarkus.oidc.credentials.jwt.token-key-id=mykey
-----
-
-or with the secret retrieved from a link:credentials-provider[CredentialsProvider]:
-
-[source,properties]
-----
-quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
-quarkus.oidc-client.client-id=quarkus-app
-
-# This is a key which will be used to retrieve a secret from the map of credentails returned from CredentialsProvider
-quarkus.oidc-client.credentials.jwt.secret-provider.key=mysecret-key
-# Set it only if more than one CredentialsProvider can be registered
-quarkus.oidc-client.credentials.jwt.secret-provider.name=oidc-credentials-provider
-----
-
-`private_key_jwt` with the PEM key file:
-
-[source,properties]
-----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
-quarkus.oidc.client-id=quarkus-app
-quarkus.oidc.credentials.jwt.key-file=privateKey.pem
-
-# This is a token key identifier 'kid' header - set it if your OpenId Connect provider requires it
-quarkus.oidc.credentials.jwt.token-key-id=mykey
-----
-
-`private_key_jwt` with the key store file:
-
-[source,properties]
-----
-quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus/
-quarkus.oidc.client-id=quarkus-app
-quarkus.oidc.credentials.jwt.key-store-file=keystore.jks
-quarkus.oidc.credentials.jwt.key-store-password=mypassword
-quarkus.oidc.credentials.jwt.key-password=mykeypassword
-# Private key alias inside the keystore
-quarkus.oidc.credentials.jwt.key-id=mykey
-
-# This is a token key identifier 'kid' header - set it if your OpenId Connect provider requires it,
-# Note it can be different to the `quarkus.oidc.credentials.jwt.key-id` value
-quarkus.oidc.credentials.jwt.token-key-id=mykey
-----
-
-Using `client_secret_jwt` or `private_key_jwt` authentication methods ensures that no client secret goes over the wire.
-
-[[integration-testing-oidc-client]]
-=== Testing
-
-Start by adding the following dependencies to your test project:
-
-[source,xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-junit5</artifactId>
-    <scope>test</scope>
-</dependency>
-<dependency>
-    <groupId>org.awaitility</groupId>
-    <artifactId>awaitility</artifactId>
-    <scope>test</scope>
-</dependency>
-----
-
-[[integration-testing-wiremock]]
-==== Wiremock
-
-Add the following dependencies to your test project:
-
-[source,xml]
-----
-<dependency>
-    <groupId>com.github.tomakehurst</groupId>
-    <artifactId>wiremock-jre8</artifactId>
-    <scope>test</scope>
-</dependency>
-----
-
-Write Wiremock based `QuarkusTestResourceLifecycleManager`, for example:
-[source, java]
-----
-package io.quarkus.it.keycloak;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.matching;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.client.WireMock;
-import com.github.tomakehurst.wiremock.core.Options.ChunkedEncodingPolicy;
-
-import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-
-public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycleManager {
-    private WireMockServer server;
-
-    @Override
-    public Map<String, String> start() {
-
-        server = new WireMockServer(wireMockConfig().dynamicPort().useChunkedTransferEncoding(ChunkedEncodingPolicy.NEVER));
-        server.start();
-
-        server.stubFor(WireMock.post("/tokens")
-                .withRequestBody(matching("grant_type=password&username=alice&password=alice"))
-                .willReturn(WireMock
-                        .aResponse()
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(
-                                "{\"access_token\":\"access_token_1\", \"expires_in\":4, \"refresh_token\":\"refresh_token_1\"}")));
-        server.stubFor(WireMock.post("/tokens")
-                .withRequestBody(matching("grant_type=refresh_token&refresh_token=refresh_token_1"))
-                .willReturn(WireMock
-                        .aResponse()
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(
-                                "{\"access_token\":\"access_token_2\", \"expires_in\":4, \"refresh_token\":\"refresh_token_1\"}")));
-
-
-        Map<String, String> conf = new HashMap<>();
-        conf.put("keycloak.url", server.baseUrl());
-        return conf;
-    }
-
-    @Override
-    public synchronized void stop() {
-        if (server != null) {
-            server.stop();
-            server = null;
-        }
-    }
-}
-----
-
-Prepare the REST test endpoints, you can have the test frontend endpoint which uses the injected MP REST client with a registered OidcClient filter to invoke on the downstream endpoint which echoes the token back, for example, see the `integration-tests/oidc-client-wiremock` in the `main` Quarkus repository.
-
-Set `application.properties`, for example:
-
-[source, properties]
-----
-# Use 'keycloak.url' property set by the test KeycloakRealmResourceManager
-quarkus.oidc-client.auth-server-url=${keycloak.url}
-quarkus.oidc-client.discovery-enabled=false
-quarkus.oidc-client.token-path=/tokens
-quarkus.oidc-client.client-id=quarkus-service-app
-quarkus.oidc-client.credentials.secret=secret
+quarkus.oidc-client.auth-server-url=${quarkus.oidc.auth-server-url}
+quarkus.oidc-client.client-id=${quarkus.oidc.client-id}
+quarkus.oidc-client.credentials.secret=${quarkus.oidc.credentials.secret}
 quarkus.oidc-client.grant.type=password
 quarkus.oidc-client.grant-options.password.username=alice
 quarkus.oidc-client.grant-options.password.password=alice
+
+# Configure REST Clients
+
+%prod.port=8080
+%dev.port=8080
+%test.port=8081
+
+org.acme.security.openid.connect.client.RestClientWithOidcClientFilter/mp-rest/url=http://localhost:${port}/protected
+org.acme.security.openid.connect.client.RestClientWithTokenPropagationFilter/mp-rest/url=http://localhost:${port}/protected
 ----
 
-and finally write the test code. Given the Wiremock-based resource above, the first test invocation should return `access_token_1` access token which will expire in 4 seconds. Use `awaitility` to wait for about 5 seconds, and now the next test invocation should return `access_token_2` access token which confirms the expired `access_token_1` access token has been refreshed.
+This configuration references Keycloak which will be used by `ProtectedResource` to verify the incoming access tokens and by `OidcClient` to get the tokens for a user `alice` using a `password` grant. Both RESTClients point to `ProtectedResource`'s HTTP address.
 
-=== Keycloak
+NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures that `Dev Services for Keycloak` will launch a container for you when the application is run in dev or test modes. See <<keycloak-dev-mode,Running the Application in Dev mode>> section below for more information.
 
-If you work with Keycloak then you can use the same approach as described in the link:security-openid-connect#integration-testing-keycloak[OpenId Connect Bearer Token Integration testing] `Keycloak` section.
+== Starting and Configuring the Keycloak Server
 
-== How to check the errors in the logs ==
+NOTE: Do not start the Keycloak server when you run the application in dev mode or test modes - `Dev Services for Keycloak` will launch a container. See <<keycloak-dev-mode,Running the Application in Dev mode>> section below for more information. Make sure to put the link:{quickstarts-tree-url}/security-openid-connect-client-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath (`target/classes` directory) so that it gets imported automatically when running in dev mode - unless you have already built a link:{quickstarts-tree-url}/security-openid-connect-quickstart[complete solution] in which case this realm file will be added to the classpath during the build.
 
-Please enable `io.quarkus.oidc.client.runtime.OidcClientImpl` `TRACE` level logging to see more details about the token acquisition and refresh errors:
+To start a Keycloak Server you can use Docker and just run the following command:
 
-[source, properties]
+[source,bash,subs=attributes+]
 ----
-quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientImpl".level=TRACE
-quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientImpl".min-level=TRACE
-----
-
-Please enable `io.quarkus.oidc.client.runtime.OidcClientRecorder` `TRACE` level logging to see more details about the OidcClient initialization errors:
-
-[source, properties]
-----
-quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".level=TRACE
-quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".min-level=TRACE
+docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 
-== Token endpoint configuration
+where `keycloak.version` should be set to `17.0.0` or higher.
 
-By default the token endpoint address is discovered by adding a `/.well-known/openid-configuration` path to the configured `quarkus.oidc-client.auth-server-url`.
+You should be able to access your Keycloak Server at http://localhost:8180[localhost:8180].
 
-Alternatively, if the discovery endpoint is not available or you would like to save on the discovery endpoint roundtrip, you can disable the discovery and configure the token endpoint address with a relative path value, for example:
+Log in as the `admin` user to access the Keycloak Administration Console. Username should be `admin` and password `admin`.
 
-[source, properties]
+Import the link:{quickstarts-tree-url}/security-openid-connect-client-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm. For more details, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
+
+This `quarkus` realm file will add a `frontend` client, and `alice` and `admin` users. `alice` has a `user` role, `admin` - both `user` and `admin` roles.
+
+[[keycloak-dev-mode]]
+== Running the Application in Dev mode
+
+To run the application in a dev mode, use:
+
+include::{includes}/devtools/dev.adoc[]
+
+xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
+
+Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev-v1[/q/dev-v1] and click on a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
+
+You will be asked to log in into a `Single Page Application` provided by `OpenID Connect Dev UI`:
+
+ * Login as `alice` (password: `alice`) who has a `user` role
+ ** accessing `/frontend/user-name-with-propagated-token` will return `200`
+ ** accessing `/frontend/admin-name-with-propagated-token` will return `403`
+ * Logout and login as `admin` (password: `admin`) who has both `admin` and `user` roles
+ ** accessing `/frontend/user-name-with-propagated-token` will return `200`
+ ** accessing `/frontend/admin-name-with-propagated-token` will return `200`
+
+In this case you are testing that `FrontendResource` can propagate the access tokens acquired by `OpenID Connect Dev UI`.
+
+== Running the Application in JVM mode
+
+When you're done playing with the `dev` mode" you can run it as a standard Java application.
+
+First compile it:
+
+include::{includes}/devtools/build.adoc[]
+
+Then run it:
+
+[source,bash]
 ----
-quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus
-quarkus.oidc-client.discovery-enabled=false
-# Token endpoint: http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens
-quarkus.oidc-client.token-path=/protocol/openid-connect/tokens
-----
-
-[[token-propagation]]
-== Token Propagation in MicroProfile RestClient client filter
-
-`quarkus-oidc-token-propagation` extension provide `io.quarkus.oidc.token.propagation.AccessTokenRequestFilter` and `io.quarkus.oidc.token.propagation.JsonWebTokenRequestFilter` JAX-RS ClientRequestFilters which propagates the current link:security-openid-connect[Bearer] or link:security-openid-connect-web-authentication[Authorization Code Flow] access token as an HTTP `Authorization` `Bearer` scheme value.
-
-When you need to propagate the current Authorization Code Flow access token then the immediate token propagation will work well - as the code flow access tokens (as opposed to ID tokens) are meant to be propagated for the current Quarkus endpoint to access the remote services on behalf of the currently authenticated user.
-
-However, the direct end to end Bearer token propagation should be avoided if possible. For example, `Client -> Service A -> Service B` where `Service B` receives a token sent by `Client` to `Service A`. In such cases `Service B` will not be able to distinguish if the token came from `Service A` or from `Client` directly. For `Service B` to verify the token came from `Service A` it should be able to assert a new issuer and audience claims.
-
-Additionally, a complex application may need to exchange or update the tokens before propagating them. For example, the access context might be different when Service A is accessing Service B. In this case, Service A might be granted a narrow or a completely different set of scopes to access Service B.
-
-Please see below how both `AccessTokenRequestFilter` and `JsonWebTokenRequestFilter` can help.
-
-=== AccessTokenRequestFilter
-
-`AccessTokenRequestFilter` treats all tokens as Strings and as such it can work with both JWT and opaque tokens.
-
-You can selectively register `AccessTokenRequestFilter` by using either `io.quarkus.oidc.token.propagation.AccessToken` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider`, for example:
-
-[source,java]
-----
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-import io.quarkus.oidc.token.propagation.AccessToken;
-
-@RegisterRestClient
-@AccessToken
-@Path("/")
-public interface ProtectedResourceService {
-
-    @GET
-    String getUserName();
-}
-----
-or
-
-[source,java]
-----
-import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-import io.quarkus.oidc.token.propagation.AccessTokenRequestFilter;
-
-@RegisterRestClient
-@RegisterProvider(AccessTokenRequestFilter.class)
-@Path("/")
-public interface ProtectedResourceService {
-
-    @GET
-    String getUserName();
-}
+java -jar target/quarkus-app/quarkus-run.jar
 ----
 
-Alternatively, `AccessTokenRequestFilter` can be registered automatically with all MP Rest or JAX-RS clients if `quarkus.oidc-token-propagation.register-filter` property is set to `true` and `quarkus.oidc-token-propagation.json-web-token` property is set to `false` (which is a default value).
+== Running the Application in Native Mode
 
-==== Exchange Token Before Propagation
+This same demo can be compiled into native code: no modifications required.
 
-If the current access token needs to be exchanged before propagation and you work with link:https://www.keycloak.org/docs/latest/securing_apps/#_token-exchange[Keycloak] or other OpenId Connect Provider which supports a link:https://tools.ietf.org/html/rfc8693[Token Exchange] token grant then you can configure `AccessTokenRequestFilter` like this:
+This implies that you no longer need to install a JVM on your
+production environment, as the runtime technology is included in
+the produced binary, and optimized to run with minimal resource overhead.
 
-[source,properties]
+Compilation will take a bit longer, so this step is disabled by default;
+let's build again by enabling the `native` profile:
+
+include::{includes}/devtools/build-native.adoc[]
+
+After getting a cup of coffee, you'll be able to run this binary directly:
+
+[source,bash]
 ----
-quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus
-quarkus.oidc-client.client-id=quarkus-app
-quarkus.oidc-client.credentials.secret=secret
-quarkus.oidc-client.grant.type=exchange
-quarkus.oidc-client.grant-options.exchange.audience=quarkus-app-exchange
-
-quarkus.oidc-token-propagation.exchange-token=true
-----
-
-Note `AccessTokenRequestFilter` will use `OidcClient` to exchange the current token and you can use `quarkus.oidc-client.grant-options.exchange` to set the additional exchange properties expected by your OpenId Connect Provider.
-
-`AccessTokenRequestFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-token-propagation.client-name` configuration property.
-
-=== JsonWebTokenRequestFilter
-
-Using `JsonWebTokenRequestFilter` is recommended if you work with Bearer JWT tokens where these tokens can have their claims such as `issuer` and `audience` modified and the updated tokens secured (for example, re-signed) again. It expects an injected `org.eclipse.microprofile.jwt.JsonWebToken` and therefore will not work with the opaque tokens. Also, if your OpenId Connect Provider supports a Token Exchange protocol then it is recommended to use `AccessTokenRequestFilter` instead - as both JWT and opaque bearer tokens can be securely exchanged with `AccessTokenRequestFilter`.
-
-`JsonWebTokenRequestFilter` makes it easy for `Service A` implemementations to update the injected `org.eclipse.microprofile.jwt.JsonWebToken` with the new `issuer` and `audience` claim values and secure the updated token again with a new signature. The only difficult step is to ensure `Service A` has a signing key - it should be provisioned from a secure file system or from the remote secure storage such as Vault.
-
-You can selectively register `JsonWebTokenRequestFilter` by using either `io.quarkus.oidc.token.propagation.JsonWebToken` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider`, for example:
-
-[source,java]
-----
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-import io.quarkus.oidc.token.propagation.JsonWebToken;
-
-@RegisterRestClient
-@AccessToken
-@Path("/")
-public interface ProtectedResourceService {
-
-    @GET
-    String getUserName();
-}
-----
-or
-
-[source,java]
-----
-import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-import io.quarkus.oidc.token.propagation.JsonWebTokenRequestFilter;
-
-@RegisterRestClient
-@RegisterProvider(JsonWebTokenTokenRequestFilter.class)
-@Path("/")
-public interface ProtectedResourceService {
-
-    @GET
-    String getUserName();
-}
+./target/security-openid-connect-quickstart-1.0.0-SNAPSHOT-runner
 ----
 
-Alternatively, `JsonWebTokenRequestFilter` can be registered automatically with all MP Rest or JAX-RS clients if both `quarkus.oidc-token-propagation.register-filter` and `quarkus.oidc-token-propagation.json-web-token` properties are set to `true`.
+== Testing the Application
 
-==== Update Token Before Propagation
+See <<keycloak-dev-mode,Running the Application in Dev mode>> section above about testing your application in dev mode.
 
-If the injected token needs to have its `iss` (issuer) and/or `aud` (audience) claims updated and secured again with a new signature then you can configure `JsonWebTokenRequestFilter` like this:
+You can test the application launched in JVM or Native modes with `curl`.
 
-[source,properties]
+Obtain an access token for `alice`:
+
+[source,bash]
 ----
-quarkus.oidc-token-propagation.secure-json-web-token=true
-smallrye.jwt.sign.key.location=/privateKey.pem
-# Set a new issuer
-smallrye.jwt.new-token.issuer=http://frontend-resource
-# Set a new audience
-smallrye.jwt.new-token.audience=http://downstream-resource
-# Override the existing token issuer and audience claims if they are already set
-smallrye.jwt.new-token.override-matching-claims=true
+export access_token=$(\
+    curl --insecure -X POST http://localhost:8180/realms/quarkus/protocol/openid-connect/token \
+    --user backend-service:secret \
+    -H 'content-type: application/x-www-form-urlencoded' \
+    -d 'username=alice&password=alice&grant_type=password' | jq --raw-output '.access_token' \
+ )
 ----
 
-As already noted above, please use `AccessTokenRequestFilter` if you work with Keycloak or OpenId Connect Provider which supports a Token Exchange protocol.
+Now use this token to call `/frontend/user-name-with-propagated-token` and `/frontend/admin-name-with-propagated-token`:
 
-[[integration-testing-token-propagation]]
-=== Testing
+[source,bash]
+----
+curl -i -X GET \
+  http://localhost:8080/frontend/user-name-with-propagated-token \
+  -H "Authorization: Bearer "$access_token
+----
 
-You can generate the tokens as described in link:security-openid-connect#integration-testing[OpenId Connect Bearer Token Integration testing] section.
-Prepare the REST test endpoints, you can have the test frontend endpoint which uses the injected MP REST client with a registered token propagation filter to invoke on the downstream endpoint, for example, see the `integration-tests/oidc-token-propagation` in the `main` Quarkus repository.
+will return `200` status code and the name `alice` while
+
+[source,bash]
+----
+curl -i -X GET \
+  http://localhost:8080/frontend/admin-name-with-propagated-token \
+  -H "Authorization: Bearer "$access_token
+----
+
+will return `403` - recall that `alice` only has a `user` role.
+
+Next obtain an access token for `admin`:
+
+[source,bash]
+----
+export access_token=$(\
+    curl --insecure -X POST http://localhost:8180/realms/quarkus/protocol/openid-connect/token \
+    --user backend-service:secret \
+    -H 'content-type: application/x-www-form-urlencoded' \
+    -d 'username=admin&password=admin&grant_type=password' | jq --raw-output '.access_token' \
+ )
+----
+
+and use this token to call `/frontend/user-name-with-propagated-token` and `/frontend/admin-name-with-propagated-token`:
+
+[source,bash]
+----
+curl -i -X GET \
+  http://localhost:8080/frontend/user-name-with-propagated-token \
+  -H "Authorization: Bearer "$access_token
+----
+
+will return `200` status code and the name `admin`, and
+
+[source,bash]
+----
+curl -i -X GET \
+  http://localhost:8080/frontend/admin-name-with-propagated-token \
+  -H "Authorization: Bearer "$access_token
+----
+
+will also return `200` status code and the name `admin`, as `admin` has both `user` and `admin` roles.
+
+
+Now let's check `FrontendResource` methods which do not propagate the existing tokens but use `OidcClient` to acquire and propagate the tokens. You have seen that `OidcClient` is configured to acquire the tokens for the `alice` user, so:
+
+[source,bash]
+----
+curl -i -X GET \
+  http://localhost:8080/frontend/user-name-with-oidc-client-token
+----
+
+will return `200` status code and the name `alice`, but
+
+[source,bash]
+----
+curl -i -X GET \
+  http://localhost:8080/frontend/admin-name-with-oidc-client-token
+----
+
+will return `403` status code.
 
 == References
 
-* link:security[Quarkus Security]
-* link:security-openid-connect[Quarkus - Using OpenID Connect to Protect Service Applications using Bearer Token Authorization]
-* link:security-openid-connect-web-authentication[Quarkus - Using OpenID Connect to Protect Web Applications using Authorization Code Flow]
+* xref:security-openid-connect-client-reference.adoc[OpenID Connect Client and Token Propagation Reference Guide]
+* xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
+* xref:security-overview.adoc[Quarkus Security overview]

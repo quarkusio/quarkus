@@ -1,6 +1,8 @@
 package io.quarkus.runtime.logging;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -17,7 +19,7 @@ public final class LogConfig {
     /**
      * The log level of the root category, which is used as the default log level for all categories.
      *
-     * JBoss Logging supports Apache style log levels:
+     * JBoss Logging supports Apache-style log levels:
      *
      * * {@link org.jboss.logmanager.Level#FATAL}
      * * {@link org.jboss.logmanager.Level#ERROR}
@@ -61,7 +63,7 @@ public final class LogConfig {
      * Logging categories.
      * <p>
      * Logging is done on a per-category basis. Each category can be independently configured.
-     * A configuration which applies to a category will also apply to all sub-categories of that category,
+     * A configuration that applies to a category will also apply to all sub-categories of that category,
      * unless there is a more specific matching sub-category configuration.
      */
     @ConfigItem(name = "category")
@@ -80,7 +82,7 @@ public final class LogConfig {
     /**
      * File handlers.
      * <p>
-     * The named file handlers configured here can be linked on one or more categories.
+     * The named file handlers configured here can be linked to one or more categories.
      */
     @ConfigItem(name = "handler.file")
     @ConfigDocSection
@@ -89,7 +91,7 @@ public final class LogConfig {
     /**
      * Syslog handlers.
      * <p>
-     * The named syslog handlers configured here can be linked on one or more categories.
+     * The named syslog handlers configured here can be linked to one or more categories.
      */
     @ConfigItem(name = "handler.syslog")
     @ConfigDocSection
@@ -101,4 +103,11 @@ public final class LogConfig {
     @ConfigItem(name = "filter")
     @ConfigDocSection
     public Map<String, CleanupFilterConfig> filters;
+
+    /**
+     * The names of additional handlers to link to the root category.
+     * These handlers are defined in consoleHandlers, fileHandlers, or syslogHandlers.
+     */
+    @ConfigItem
+    Optional<List<String>> handlers;
 }

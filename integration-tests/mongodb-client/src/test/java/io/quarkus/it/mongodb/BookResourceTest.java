@@ -1,16 +1,15 @@
 package io.quarkus.it.mongodb;
 
+import static io.restassured.RestAssured.get;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 
-import javax.json.bind.Jsonb;
+import jakarta.json.bind.Jsonb;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.mongodb.health.MongoHealthCheck;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -19,8 +18,7 @@ import io.quarkus.test.mongodb.MongoTestResource;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-@QuarkusTestResource(MongoTestResource.class)
-@DisabledOnOs(OS.WINDOWS)
+@QuarkusTestResource(value = MongoTestResource.class)
 public class BookResourceTest {
     private static Jsonb jsonb;
 
@@ -46,6 +44,8 @@ public class BookResourceTest {
 
     @Test
     public void health() throws Exception {
+        // trigger (lazy) creation of the client, otherwise the health check would fail
+        get("/books");
         RestAssured.when().get("/q/health/ready").then()
                 .body("status", is("UP"),
                         "checks.data", containsInAnyOrder(hasKey(MongoHealthCheck.CLIENT_DEFAULT)),

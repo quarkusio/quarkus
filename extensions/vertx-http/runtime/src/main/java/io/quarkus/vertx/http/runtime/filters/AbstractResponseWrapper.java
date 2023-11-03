@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.runtime.filters;
 
+import java.util.Set;
+
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -10,6 +12,7 @@ import io.vertx.core.http.HttpFrame;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.StreamPriority;
+import io.vertx.core.net.HostAndPort;
 import io.vertx.core.streams.ReadStream;
 
 class AbstractResponseWrapper implements HttpServerResponse {
@@ -197,6 +200,16 @@ class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
+    public Future<Void> writeEarlyHints(MultiMap headers) {
+        return delegate.writeEarlyHints(headers);
+    }
+
+    @Override
+    public void writeEarlyHints(MultiMap headers, Handler<AsyncResult<Void>> handler) {
+        delegate.writeEarlyHints(headers, handler);
+    }
+
+    @Override
     public Future<Void> end(String chunk) {
         return delegate.end(chunk);
     }
@@ -311,6 +324,7 @@ class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
+    @Deprecated
     public void close() {
         delegate.close();
     }
@@ -364,7 +378,7 @@ class AbstractResponseWrapper implements HttpServerResponse {
 
     @Override
     public Future<HttpServerResponse> push(HttpMethod method, String host, String path) {
-        return null;
+        return delegate.push(method, host, path);
     }
 
     @Override
@@ -377,7 +391,7 @@ class AbstractResponseWrapper implements HttpServerResponse {
 
     @Override
     public Future<HttpServerResponse> push(HttpMethod method, String path, MultiMap headers) {
-        return null;
+        return delegate.push(method, path, headers);
     }
 
     @Override
@@ -389,7 +403,7 @@ class AbstractResponseWrapper implements HttpServerResponse {
 
     @Override
     public Future<HttpServerResponse> push(HttpMethod method, String path) {
-        return null;
+        return delegate.push(method, path);
     }
 
     @Override
@@ -401,8 +415,14 @@ class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
+    @Deprecated
     public Future<HttpServerResponse> push(HttpMethod method, String host, String path, MultiMap headers) {
-        return null;
+        return delegate.push(method, host, path, headers);
+    }
+
+    @Override
+    public Future<HttpServerResponse> push(HttpMethod method, HostAndPort authority, String path, MultiMap headers) {
+        return delegate.push(method, authority, path, headers);
     }
 
     @Override
@@ -444,7 +464,6 @@ class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
-
     public Cookie removeCookie(String name) {
         return delegate.removeCookie(name);
     }
@@ -453,6 +472,26 @@ class AbstractResponseWrapper implements HttpServerResponse {
 
     public Cookie removeCookie(String name, boolean invalidate) {
         return delegate.removeCookie(name, invalidate);
+    }
+
+    @Override
+    public Set<Cookie> removeCookies(String name) {
+        return delegate.removeCookies(name);
+    }
+
+    @Override
+    public Set<Cookie> removeCookies(String name, boolean invalidate) {
+        return delegate.removeCookies(name, invalidate);
+    }
+
+    @Override
+    public Cookie removeCookie(String name, String domain, String path) {
+        return delegate.removeCookie(name, domain, path);
+    }
+
+    @Override
+    public Cookie removeCookie(String name, String domain, String path, boolean invalidate) {
+        return delegate.removeCookie(name, domain, path, invalidate);
     }
 
     @Override

@@ -27,8 +27,8 @@
             <artifactId>derbyclient</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>graal-sdk</artifactId>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -37,10 +37,14 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <parentFirstArtifacts>
                         <parentFirstArtifact>org.apache.derby:derbyclient</parentFirstArtifact>
+                        <!-- for Dev Services, see: https://github.com/quarkusio/quarkus/issues/21639 -->
+                        <parentFirstArtifact>org.apache.derby:derby</parentFirstArtifact>
+                        <parentFirstArtifact>org.apache.derby:derbynet</parentFirstArtifact>
+                        <parentFirstArtifact>org.apache.derby:derbytools</parentFirstArtifact>
                     </parentFirstArtifacts>
                 </configuration>
             </plugin>

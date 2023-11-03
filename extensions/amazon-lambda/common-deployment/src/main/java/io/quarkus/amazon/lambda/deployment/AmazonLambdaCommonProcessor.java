@@ -5,7 +5,6 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaMapperRecorder;
-import io.quarkus.amazon.lambda.runtime.LambdaBuildTimeConfig;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -13,6 +12,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.SnapStartDefaultValueBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
@@ -20,8 +20,11 @@ import io.quarkus.deployment.pkg.steps.NativeSourcesBuild;
 import io.quarkus.jackson.runtime.ObjectMapperProducer;
 import io.quarkus.runtime.LaunchMode;
 
-@SuppressWarnings("unchecked")
 public final class AmazonLambdaCommonProcessor {
+    @BuildStep
+    public SnapStartDefaultValueBuildItem enableSnapStartByDefault() {
+        return new SnapStartDefaultValueBuildItem(true);
+    }
 
     @BuildStep(onlyIf = NativeSourcesBuild.class)
     void failForNativeSources(BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
@@ -43,7 +46,7 @@ public final class AmazonLambdaCommonProcessor {
             LaunchModeBuildItem launchModeBuildItem) {
         LaunchMode mode = launchModeBuildItem.getLaunchMode();
         if (mode.isDevOrTest()) {
-            return; // just in case we're on windows.
+            return; // just in case we're on Windows.
         }
         systemProperty.produce(new SystemPropertyBuildItem("java.io.tmpdir", "/tmp"));
         systemProperty.produce(new SystemPropertyBuildItem("vertx.cacheDirBase", "/tmp/vertx"));
@@ -75,12 +78,11 @@ public final class AmazonLambdaCommonProcessor {
 
     @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT)
-    void initContextReaders(LambdaBuildTimeConfig config,
-            AmazonLambdaMapperRecorder recorder,
+    void initContextReaders(AmazonLambdaMapperRecorder recorder,
             LambdaObjectMapperInitializedBuildItem dependency,
             LaunchModeBuildItem launchModeBuildItem) {
         LaunchMode mode = launchModeBuildItem.getLaunchMode();
-        if (config.enablePollingJvmMode && mode.isDevOrTest()) {
+        if (mode.isDevOrTest()) {
             // only need context readers in native or dev or test mode
             recorder.initContextReaders();
         }

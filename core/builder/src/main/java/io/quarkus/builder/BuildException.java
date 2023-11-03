@@ -1,5 +1,6 @@
 package io.quarkus.builder;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.wildfly.common.Assert;
@@ -23,6 +24,16 @@ public class BuildException extends Exception {
     public BuildException(final List<Diagnostic> diagnostics) {
         super(constructMessage(null, Assert.checkNotNullParam("diagnostics", diagnostics)));
         this.diagnostics = diagnostics;
+    }
+
+    /**
+     * Constructs a new {@code DeploymentException} instance. The diagnostics is left blank ({@code null}), and no
+     * cause is specified.
+     *
+     * @param msg the message
+     */
+    public BuildException(String msg) {
+        this(msg, Collections.emptyList());
     }
 
     /**

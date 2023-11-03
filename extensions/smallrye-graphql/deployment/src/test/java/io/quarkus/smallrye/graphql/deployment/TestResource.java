@@ -1,7 +1,7 @@
 package io.quarkus.smallrye.graphql.deployment;
 
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Mutation;
@@ -59,6 +59,16 @@ public class TestResource {
     @Mutation
     public TestPojo moo(String name) {
         return new TestPojo(name);
+    }
+
+    @Query
+    public String testCharset(String characters) {
+        return characters;
+    }
+
+    @Query
+    public TestUnion testUnion() {
+        return new TestUnionMember("what is my name");
     }
 
     // <placeholder>

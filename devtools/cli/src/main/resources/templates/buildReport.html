@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quarkus Build Report - {buildTarget}</title>
+    <style>
+        body {
+            font-family: sans;
+            padding: 2rem;
+        }
+
+        div.container {
+            width: 100%;
+            margin-right: auto;
+            margin-left: auto;
+        }
+
+        table {
+            width: 90%;
+            margin-bottom: 1rem;
+            color: #212529;
+            vertical-align: top;
+            border-color: #dee2e6;
+            caption-side: bottom;
+            border-collapse: collapse;
+            --bs-table-bg: transparent;
+            --bs-table-accent-bg: transparent;
+            --bs-table-striped-color: #212529;
+            --bs-table-striped-bg: rgba(0, 0, 0, 0.05);
+            --bs-table-active-color: #212529;
+            --bs-table-active-bg: rgba(0, 0, 0, 0.1);
+            --bs-table-hover-color: #212529;
+            --bs-table-hover-bg: rgba(0, 0, 0, 0.075);
+        }
+
+        table> :not(caption)>*>* {
+            padding: .5rem .5rem;
+            background-color: var(--bs-table-bg);
+            border-bottom-width: 1px;
+            box-shadow: inset 0 0 0 9999px var(--bs-table-accent-bg);
+        }
+
+        table> :not(:first-child) {
+            border-top: 2px solid black;
+        }
+
+        tbody>tr:nth-of-type(2n+1)>* {
+            --bs-table-accent-bg: var(--bs-table-striped-bg);
+            color: var(--bs-table-striped-color);
+        }
+
+        h1,
+        h2 {
+            margin-top: 0;
+            margin-bottom: .5rem;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        p.lead {
+            font-size: 1.25rem;
+            font-weight: 300;
+        }
+
+        th {
+            text-align: left;
+        }
+
+        tr {
+            border-bottom: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <h1>Quarkus Build Report - {buildTarget}</h1>
+        
+        <ul>
+            <li><a href="#build_steps">Build Steps</a></li>
+            <li><a href="#build_items">Build Items</a></li>
+        </ul>
+        
+        <h2 id="build_steps">Build Steps</h2>
+
+        <p class="lead">
+            Executed <strong>{records.size}</strong> build steps on <strong>{threads.size}</strong> threads in
+            <strong>{duration}</strong> ms.
+        </p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Build Step</th>
+                    <th scope="col">Started</th>
+                    <th scope="col">Duration</th>
+                    <th scope="col">Thread</th>
+                </tr>
+            </thead>
+            <tbody>
+                {#for record in records}
+                <tr>
+                    <td>{record_count}</td>
+                    <td>
+                        {record.stepId}
+                    </td>
+                    <td>
+                        {record.started}
+                    </td>
+                    <td>
+                        {#if record.duration < 1} &lt; 1ms {#else} {record.duration} ms {/if} </td>
+                    <td>
+                        {record.thread}
+                    </td>
+                    {/for}
+            </tbody>
+        </table>
+        
+        <h2 id="build_items">Build Items</h2>
+        
+        <p class="lead">
+            Produced <strong>{buildItemsCount}</strong> build items of <strong>{buildItems.size}</strong> types.
+        </p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Build Item Class</th>
+                    <th scope="col">Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {#for buildItem in buildItems}
+                <tr>
+                    <td>{buildItem_count}</td>
+                    <td>
+                        {buildItem.clazz}
+                    </td>
+                    <td>
+                        {buildItem.count}
+                    </td>
+                    {/for}
+            </tbody>
+        </table>
+        
+        
+    </div>
+
+</body>
+
+</html>

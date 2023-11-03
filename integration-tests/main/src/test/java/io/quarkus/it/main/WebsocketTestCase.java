@@ -6,12 +6,12 @@ import java.net.URI;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import javax.websocket.ClientEndpointConfig;
-import javax.websocket.ContainerProvider;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.MessageHandler;
-import javax.websocket.Session;
+import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.MessageHandler;
+import jakarta.websocket.Session;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -32,6 +32,8 @@ public class WebsocketTestCase {
 
     @TestHTTPResource("wsopen")
     URI openURI;
+    @TestHTTPResource("added-dynamic")
+    URI added;
 
     @Test
     public void websocketTest() throws Exception {
@@ -52,6 +54,29 @@ public class WebsocketTestCase {
 
         try {
             Assertions.assertEquals("hello", message.poll(20, TimeUnit.SECONDS));
+        } finally {
+            session.close();
+        }
+    }
+
+    @Test
+    public void addedWebSocketTest() throws Exception {
+
+        LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
+        Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
+            @Override
+            public void onOpen(Session session, EndpointConfig endpointConfig) {
+                session.addMessageHandler(new MessageHandler.Whole<String>() {
+                    @Override
+                    public void onMessage(String s) {
+                        message.add(s);
+                    }
+                });
+            }
+        }, ClientEndpointConfig.Builder.create().build(), added);
+
+        try {
+            Assertions.assertEquals("DYNAMIC", message.poll(20, TimeUnit.SECONDS));
         } finally {
             session.close();
         }

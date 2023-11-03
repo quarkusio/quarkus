@@ -29,9 +29,10 @@ public class GoogleCloudFunctionInfo {
         this.functionType = functionType;
     }
 
-    public static enum FunctionType {
+    public enum FunctionType {
         HTTP,
         BACKGROUND,
-        RAW_BACKGROUND;
+        RAW_BACKGROUND,
+        CLOUD_EVENT
     }
 }

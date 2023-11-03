@@ -11,7 +11,12 @@ import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.ObserverInfo;
 import io.quarkus.builder.item.SimpleBuildItem;
 
-abstract class RegisteredComponentsBuildItem extends SimpleBuildItem {
+/**
+ * It's made public so that you can make use of the abstraction.
+ * e.g. if you need to do a similar inspection over {@link BeanDiscoveryFinishedBuildItem} and
+ * {@link SynthesisFinishedBuildItem}
+ */
+public abstract class RegisteredComponentsBuildItem extends SimpleBuildItem {
 
     private final Collection<BeanInfo> beans;
     private final Collection<InjectionPointInfo> injectionPoints;
@@ -28,7 +33,7 @@ abstract class RegisteredComponentsBuildItem extends SimpleBuildItem {
     /**
      * @return the registered beans
      */
-    public Collection<BeanInfo> geBeans() {
+    public Collection<BeanInfo> getBeans() {
         return beans;
     }
 
@@ -47,7 +52,7 @@ abstract class RegisteredComponentsBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * 
+     *
      * @return a convenient {@link Stream} wrapper that can be used to filter a set of beans
      */
     public BeanStream beanStream() {
@@ -56,7 +61,7 @@ abstract class RegisteredComponentsBuildItem extends SimpleBuildItem {
 
     /**
      * The bean resolver can be used to apply the type-safe resolution rules.
-     * 
+     *
      * @return the bean resolver
      */
     public BeanResolver getBeanResolver() {

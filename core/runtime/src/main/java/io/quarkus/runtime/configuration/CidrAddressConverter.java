@@ -4,7 +4,7 @@ import static io.quarkus.runtime.configuration.ConverterSupport.DEFAULT_QUARKUS_
 
 import java.io.Serializable;
 
-import javax.annotation.Priority;
+import jakarta.annotation.Priority;
 
 import org.eclipse.microprofile.config.spi.Converter;
 import org.wildfly.common.net.CidrAddress;

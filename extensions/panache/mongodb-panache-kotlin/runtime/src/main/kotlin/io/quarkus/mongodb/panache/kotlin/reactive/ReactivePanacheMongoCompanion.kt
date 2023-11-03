@@ -1,7 +1,6 @@
 package io.quarkus.mongodb.panache.kotlin.reactive
 
 import io.quarkus.mongodb.panache.kotlin.reactive.runtime.KotlinReactiveMongoOperations.Companion.INSTANCE
-import io.quarkus.mongodb.panache.reactive.ReactivePanacheUpdate
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection
 import io.quarkus.mongodb.reactive.ReactiveMongoDatabase
 import io.quarkus.panache.common.Parameters
@@ -9,17 +8,17 @@ import io.quarkus.panache.common.Sort
 import io.quarkus.panache.common.impl.GenerateBridge
 import io.smallrye.mutiny.Multi
 import io.smallrye.mutiny.Uni
+import java.util.stream.Stream
 import org.bson.Document
 import org.bson.types.ObjectId
-import java.util.stream.Stream
 
 /**
  * Define persistence and query methods for an Entity with a default ID type of [ObjectId]
  *
  * @param Entity the entity type
  */
-interface ReactivePanacheMongoCompanion<Entity : ReactivePanacheMongoEntityBase>
-    : ReactivePanacheMongoCompanionBase<Entity, ObjectId>
+interface ReactivePanacheMongoCompanion<Entity : ReactivePanacheMongoEntityBase> :
+    ReactivePanacheMongoCompanionBase<Entity, ObjectId>
 
 /**
  * Define persistence and query methods for an Entity with a type of Id
@@ -27,7 +26,7 @@ interface ReactivePanacheMongoCompanion<Entity : ReactivePanacheMongoEntityBase>
  * @param Entity the entity type
  * @param Id the ID type
  */
-interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityBase, Id: Any> {
+interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityBase, Id : Any> {
     /**
      * Find an entity of this type by ID.
      *
@@ -50,7 +49,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun find(query: String, vararg params: Any?): ReactivePanacheQuery<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun find(query: String, vararg params: Any?): ReactivePanacheQuery<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a query and the given sort options, with optional indexed parameters.
@@ -66,7 +66,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun find(query: String, sort: Sort, vararg params: Any?): ReactivePanacheQuery<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun find(query: String, sort: Sort, vararg params: Any?): ReactivePanacheQuery<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a query, with named parameters.
@@ -81,7 +82,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun find(query: String, params: Map<String, Any?>): ReactivePanacheQuery<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun find(query: String, params: Map<String, Any?>): ReactivePanacheQuery<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
@@ -97,7 +99,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun find(query: String, sort: Sort, params: Map<String, Any?>): ReactivePanacheQuery<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun find(query: String, sort: Sort, params: Map<String, Any?>): ReactivePanacheQuery<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a query, with named parameters.
@@ -112,7 +115,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun find(query: String, params: Parameters): ReactivePanacheQuery<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun find(query: String, params: Parameters): ReactivePanacheQuery<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
@@ -128,7 +132,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun find(query: String, sort: Sort, params: Parameters): ReactivePanacheQuery<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun find(query: String, sort: Sort, params: Parameters): ReactivePanacheQuery<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities using a BSON query.
@@ -142,10 +147,11 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun find(query: Document): ReactivePanacheQuery<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun find(query: Document): ReactivePanacheQuery<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      *
      * @param query a [Document] query
      * @param sort the [Document] sort
@@ -157,7 +163,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun find(query: Document, sort: Document): ReactivePanacheQuery<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun find(query: Document, sort: Document): ReactivePanacheQuery<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find all entities of this type.
@@ -180,11 +187,12 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [streamAll]
      */
     @GenerateBridge
-    fun findAll(sort: Sort): ReactivePanacheQuery<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun findAll(sort: Sort): ReactivePanacheQuery<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities matching a query, with optional indexed parameters.
-     * This method is a shortcut for `find(query, params).list()`.
+     * Find entities matching a query, with optional indexed parameters. This method is a shortcut
+     * for `find(query, params).list()`.
      *
      * @param query a query string
      * @param params optional sequence of indexed parameters
@@ -196,7 +204,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun list(query: String, vararg params: Any?): Uni<List<Entity>> = throw INSTANCE.implementationInjectionMissing()
+    fun list(query: String, vararg params: Any?): Uni<List<Entity>> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities matching a query and the given sort options, with optional indexed parameters.
@@ -213,11 +222,12 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun list(query: String, sort: Sort, vararg params: Any?): Uni<List<Entity>> = throw INSTANCE.implementationInjectionMissing()
+    fun list(query: String, sort: Sort, vararg params: Any?): Uni<List<Entity>> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities matching a query, with named parameters.
-     * This method is a shortcut for `find(query, params).list()`.
+     * Find entities matching a query, with named parameters. This method is a shortcut for
+     * `find(query, params).list()`.
      *
      * @param query a query string
      * @param params [Map] of named parameters
@@ -229,11 +239,12 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun list(query: String, params: Map<String, Any?>): Uni<List<Entity>> = throw INSTANCE.implementationInjectionMissing()
+    fun list(query: String, params: Map<String, Any?>): Uni<List<Entity>> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities matching a query and the given sort options, with named parameters.
-     * This method is a shortcut for `find(query, sort, params).list()`.
+     * Find entities matching a query and the given sort options, with named parameters. This method
+     * is a shortcut for `find(query, sort, params).list()`.
      *
      * @param query a query string
      * @param sort the sort strategy to use
@@ -246,11 +257,12 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun list(query: String, sort: Sort, params: Map<String, Any?>): Uni<List<Entity>> = throw INSTANCE.implementationInjectionMissing()
+    fun list(query: String, sort: Sort, params: Map<String, Any?>): Uni<List<Entity>> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities matching a query, with named parameters.
-     * This method is a shortcut for `find(query, params).list()`.
+     * Find entities matching a query, with named parameters. This method is a shortcut for
+     * `find(query, params).list()`.
      *
      * @param query a query string
      * @param params [Parameters] of named parameters
@@ -262,11 +274,12 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun list(query: String, params: Parameters): Uni<List<Entity>> = throw INSTANCE.implementationInjectionMissing()
+    fun list(query: String, params: Parameters): Uni<List<Entity>> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities matching a query and the given sort options, with named parameters.
-     * This method is a shortcut for `find(query, sort, params).list()`.
+     * Find entities matching a query and the given sort options, with named parameters. This method
+     * is a shortcut for `find(query, sort, params).list()`.
      *
      * @param query a query string
      * @param sort the sort strategy to use
@@ -279,11 +292,11 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun list(query: String, sort: Sort, params: Parameters): Uni<List<Entity>> = throw INSTANCE.implementationInjectionMissing()
+    fun list(query: String, sort: Sort, params: Parameters): Uni<List<Entity>> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities using a BSON query.
-     * This method is a shortcut for `find(query).list()`.
+     * Find entities using a BSON query. This method is a shortcut for `find(query).list()`.
      *
      * @param query a [Document] query
      * @return a [List] containing all results, without paging
@@ -297,8 +310,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
     fun list(query: Document): Uni<List<Entity>> = throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
-     * This method is a shortcut for `find(query, sort).list()`.
+     * Find entities using a BSON query and a BSON sort. This method is a shortcut for `find(query,
+     * sort).list()`.
      *
      * @param query a [Document] query
      * @param sort the [Document] sort
@@ -310,11 +323,11 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun list(query: Document, sort: Document): Uni<List<Entity>> = throw INSTANCE.implementationInjectionMissing()
+    fun list(query: Document, sort: Document): Uni<List<Entity>> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find all entities of this type.
-     * This method is a shortcut for `findAll().list()`.
+     * Find all entities of this type. This method is a shortcut for `findAll().list()`.
      *
      * @return a [List] containing all results, without paging
      * @see [listAll]
@@ -325,8 +338,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
     fun listAll(): Uni<List<Entity>> = throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find all entities of this type, in the given order.
-     * This method is a shortcut for `findAll(sort).list()`.
+     * Find all entities of this type, in the given order. This method is a shortcut for
+     * `findAll(sort).list()`.
      *
      * @param sort the sort order to use
      * @return a [List] containing all results, without paging
@@ -338,8 +351,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
     fun listAll(sort: Sort): Uni<List<Entity>> = throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities matching a query, with optional indexed parameters.
-     * This method is a shortcut for `find(query, params).stream()`.
+     * Find entities matching a query, with optional indexed parameters. This method is a shortcut
+     * for `find(query, params).stream()`.
      *
      * @param query a query string
      * @param params optional sequence of indexed parameters
@@ -351,7 +364,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [list]
      */
     @GenerateBridge
-    fun stream(query: String, vararg params: Any?): Multi<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun stream(query: String, vararg params: Any?): Multi<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Find entities matching a query and the given sort options, with optional indexed parameters.
@@ -368,11 +382,12 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [list]
      */
     @GenerateBridge
-    fun stream(query: String, sort: Sort, vararg params: Any?): Multi<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun stream(query: String, sort: Sort, vararg params: Any?): Multi<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities matching a query, with named parameters.
-     * This method is a shortcut for `find(query, params).stream()`.
+     * Find entities matching a query, with named parameters. This method is a shortcut for
+     * `find(query, params).stream()`.
      *
      * @param query a query string
      * @param params [Map] of named parameters
@@ -384,11 +399,12 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [list]
      */
     @GenerateBridge
-    fun stream(query: String, params: Map<String, Any?>): Multi<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun stream(query: String, params: Map<String, Any?>): Multi<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities matching a query and the given sort options, with named parameters.
-     * This method is a shortcut for `find(query, sort, params).stream()`.
+     * Find entities matching a query and the given sort options, with named parameters. This method
+     * is a shortcut for `find(query, sort, params).stream()`.
      *
      * @param query a query string
      * @param sort the sort strategy to use
@@ -401,11 +417,12 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [list]
      */
     @GenerateBridge
-    fun stream(query: String, sort: Sort, params: Map<String, Any?>): Multi<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun stream(query: String, sort: Sort, params: Map<String, Any?>): Multi<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities matching a query, with named parameters.
-     * This method is a shortcut for `find(query, params).stream()`.
+     * Find entities matching a query, with named parameters. This method is a shortcut for
+     * `find(query, params).stream()`.
      *
      * @param query a query string
      * @param params [Parameters] of named parameters
@@ -417,11 +434,12 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [list]
      */
     @GenerateBridge
-    fun stream(query: String, params: Parameters): Multi<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun stream(query: String, params: Parameters): Multi<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities matching a query and the given sort options, with named parameters.
-     * This method is a shortcut for `find(query, sort, params).stream()`.
+     * Find entities matching a query and the given sort options, with named parameters. This method
+     * is a shortcut for `find(query, sort, params).stream()`.
      *
      * @param query a query string
      * @param sort the sort strategy to use
@@ -434,11 +452,11 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [list]
      */
     @GenerateBridge
-    fun stream(query: String, sort: Sort, params: Parameters): Multi<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun stream(query: String, sort: Sort, params: Parameters): Multi<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities using a BSON query.
-     * This method is a shortcut for `find(query).stream()`.
+     * Find entities using a BSON query. This method is a shortcut for `find(query).stream()`.
      *
      * @param query a [Document] query
      * @return a [Multi] containing all results, without paging
@@ -452,8 +470,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
     fun stream(query: Document): Multi<Entity> = throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
-     * This method is a shortcut for `find(query, sort).stream()`.
+     * Find entities using a BSON query and a BSON sort. This method is a shortcut for `find(query,
+     * sort).stream()`.
      *
      * @param query a [Document] query
      * @param sort the [Document] sort
@@ -465,23 +483,22 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [stream]
      */
     @GenerateBridge
-    fun stream(query: Document, sort: Document): Multi<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun stream(query: Document, sort: Document): Multi<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find all entities of this type.
-     * This method is a shortcut for `findAll().stream()`.
+     * Find all entities of this type. This method is a shortcut for `findAll().stream()`.
      *
      * @return a [Multi] containing all results, without paging
      * @see [streamAll]
      * @see [findAll]
      * @see [listAll]
      */
-    @GenerateBridge
-    fun streamAll(): Multi<Entity> = throw INSTANCE.implementationInjectionMissing()
+    @GenerateBridge fun streamAll(): Multi<Entity> = throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Find all entities of this type, in the given order.
-     * This method is a shortcut for `findAll(sort).stream()`.
+     * Find all entities of this type, in the given order. This method is a shortcut for
+     * `findAll(sort).stream()`.
      *
      * @param sort the sort order to use
      * @return a [Multi] containing all results, without paging
@@ -500,11 +517,11 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [count]
      * @see [count]
      */
-    @GenerateBridge
-    fun count(): Uni<Long> = throw INSTANCE.implementationInjectionMissing()
+    @GenerateBridge fun count(): Uni<Long> = throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Counts the number of this type of entity matching the given query, with optional indexed parameters.
+     * Counts the number of this type of entity matching the given query, with optional indexed
+     * parameters.
      *
      * @param query a query string
      * @param params optional sequence of indexed parameters
@@ -514,7 +531,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [count]
      */
     @GenerateBridge
-    fun count(query: String, vararg params: Any?): Uni<Long> = throw INSTANCE.implementationInjectionMissing()
+    fun count(query: String, vararg params: Any?): Uni<Long> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Counts the number of this type of entity matching the given query, with named parameters.
@@ -527,7 +545,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [count]
      */
     @GenerateBridge
-    fun count(query: String, params: Map<String, Any?>): Uni<Long> = throw INSTANCE.implementationInjectionMissing()
+    fun count(query: String, params: Map<String, Any?>): Uni<Long> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Counts the number of this type of entity matching the given query, with named parameters.
@@ -540,13 +559,14 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [count]
      */
     @GenerateBridge
-    fun count(query: String, params: Parameters): Uni<Long> = throw INSTANCE.implementationInjectionMissing()
+    fun count(query: String, params: Parameters): Uni<Long> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Counts the number of this type of entity matching the given query
      *
      * @param query a [Document] query
-     * @return he number of entities counted.
+     * @return the number of entities counted.
      * @see [count]
      * @see [count]
      * @see [count]
@@ -562,8 +582,7 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [delete]
      * @see [delete]
      */
-    @GenerateBridge
-    fun deleteAll(): Uni<Long> = throw INSTANCE.implementationInjectionMissing()
+    @GenerateBridge fun deleteAll(): Uni<Long> = throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Delete an entity of this type by ID.
@@ -585,7 +604,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [delete]
      */
     @GenerateBridge
-    fun delete(query: String, vararg params: Any?): Uni<Long> = throw INSTANCE.implementationInjectionMissing()
+    fun delete(query: String, vararg params: Any?): Uni<Long> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Delete all entities of this type matching the given query, with named parameters.
@@ -598,7 +618,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [delete]
      */
     @GenerateBridge
-    fun delete(query: String, params: Map<String, Any?>): Uni<Long> = throw INSTANCE.implementationInjectionMissing()
+    fun delete(query: String, params: Map<String, Any?>): Uni<Long> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Delete all entities of this type matching the given query, with named parameters.
@@ -611,13 +632,14 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [delete]
      */
     @GenerateBridge
-    fun delete(query: String, params: Parameters): Uni<Long> = throw INSTANCE.implementationInjectionMissing()
+    fun delete(query: String, params: Parameters): Uni<Long> =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
      * Delete all entities of this type matching the given query
      *
      * @param query a [Document] query
-     * @return he number of entities counted.
+     * @return the number of entities counted.
      * @see [count]
      * @see [count]
      * @see [count]
@@ -653,7 +675,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [persist]
      * @see [persist]
      */
-    fun persist(firstEntity: Entity, vararg entities: Entity): Uni<Void> = INSTANCE.persist(firstEntity, *entities)
+    fun persist(firstEntity: Entity, vararg entities: Entity): Uni<Void> =
+        INSTANCE.persist(firstEntity, *entities)
 
     /**
      * Update all given entities.
@@ -683,7 +706,8 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [update]
      * @see [update]
      */
-    fun update(firstEntity: Entity, vararg entities: Entity): Uni<Void> = INSTANCE.update(firstEntity, *entities)
+    fun update(firstEntity: Entity, vararg entities: Entity): Uni<Void> =
+        INSTANCE.update(firstEntity, *entities)
 
     /**
      * Persist all given entities or update them if they already exist.
@@ -714,58 +738,87 @@ interface ReactivePanacheMongoCompanionBase<Entity : ReactivePanacheMongoEntityB
      * @see [persistOrUpdate]
      */
     fun persistOrUpdate(firstEntity: Entity, vararg entities: Entity): Uni<Void> =
-            INSTANCE.persistOrUpdate(firstEntity, *entities)
+        INSTANCE.persistOrUpdate(firstEntity, *entities)
 
     /**
-     * Update all entities of this type by the given update document, with optional indexed parameters.
-     * The returned [ReactivePanacheUpdate] object will allow to restrict on which document the update should be applied.
+     * Update all entities of this type by the given update document, with optional indexed
+     * parameters. The returned [io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate]
+     * object will allow to restrict on which document the update should be applied.
      *
      * @param update the update document, if it didn't contain any update operator, we add `$set`.
-     * It can also be expressed as a query string.
+     *   It can also be expressed as a query string.
      * @param params optional sequence of indexed parameters
-     * @return a new [ReactivePanacheUpdate] instance for the given update document
+     * @return a new [io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate] instance for
+     *   the given update document
      * @see [update]
      * @see [update]
      */
     @GenerateBridge
-    fun update(update: String, vararg params: Any?): ReactivePanacheUpdate = throw INSTANCE.implementationInjectionMissing()
+    fun update(
+        update: String,
+        vararg params: Any?
+    ): io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Update all entities of this type by the given update document, with named parameters.
-     * The returned [ReactivePanacheUpdate] object will allow to restrict on which document the update should be applied.
+     * Update all entities of this type by the given update document, with named parameters. The
+     * returned [io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate] object will allow
+     * to restrict on which document the update should be applied.
      *
      * @param update the update document, if it didn't contain any update operator, we add `$set`.
-     * It can also be expressed as a query string.
+     *   It can also be expressed as a query string.
      * @param params [Map] of named parameters
-     * @return a new [ReactivePanacheUpdate] instance for the given update document
+     * @return a new [io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate] instance for
+     *   the given update document
      * @see [update]
      */
     @GenerateBridge
-    fun update(update: String, params: Map<String, Any?>): ReactivePanacheUpdate = throw INSTANCE.implementationInjectionMissing()
+    fun update(
+        update: String,
+        params: Map<String, Any?>
+    ): io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Update all entities of this type by the given update document, with named parameters.
-     * The returned [ReactivePanacheUpdate] object will allow to restrict on which document the update should be applied.
+     * Update all entities of this type by the given update document, with named parameters. The
+     * returned [io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate] object will allow
+     * to restrict on which document the update should be applied.
      *
      * @param update the update document, if it didn't contain any update operator, we add `$set`.
-     * It can also be expressed as a query string.
+     *   It can also be expressed as a query string.
      * @param params [Parameters] of named parameters
-     * @return a new [ReactivePanacheUpdate] instance for the given update document
+     * @return a new [io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate] instance for
+     *   the given update document
      * @see [update]
      */
     @GenerateBridge
-    fun update(update: String, params: Parameters): ReactivePanacheUpdate = throw INSTANCE.implementationInjectionMissing()
+    fun update(
+        update: String,
+        params: Parameters
+    ): io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate =
+        throw INSTANCE.implementationInjectionMissing()
 
     /**
-     * Allow to access the underlying Mongo Collection.
+     * Update all entities of this type by the given BSON update document. The returned
+     * [io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate] object will allow to
+     * restrict on which document the update should be applied.
+     *
+     * @param update the update document, as a [Document].
+     * @param params [Parameters] of named parameters
+     * @return a new [io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate] instance for
+     *   the given update document
+     * @see [update]
      */
     @GenerateBridge
-    fun mongoCollection(): ReactiveMongoCollection<Entity> = throw INSTANCE.implementationInjectionMissing()
+    fun update(update: Document): io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate =
+        throw INSTANCE.implementationInjectionMissing()
 
-    /**
-     * Allow to access the underlying Mongo Database.
-     */
+    /** Allow to access the underlying Mongo Collection. */
+    @GenerateBridge
+    fun mongoCollection(): ReactiveMongoCollection<Entity> =
+        throw INSTANCE.implementationInjectionMissing()
+
+    /** Allow to access the underlying Mongo Database. */
     @GenerateBridge
     fun mongoDatabase(): ReactiveMongoDatabase = throw INSTANCE.implementationInjectionMissing()
-
 }

@@ -2,7 +2,6 @@ package io.quarkus.deployment.proxy;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
@@ -12,6 +11,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
+import jakarta.inject.Inject;
 
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -35,6 +36,7 @@ public class ProxyFactory<T> {
     private boolean classDefined = false;
     private final Object lock = new Object();
     private Constructor<?> constructor;
+    private Constructor<?> injectConstructor;
 
     public ProxyFactory(ProxyConfiguration<T> configuration) {
         Objects.requireNonNull(configuration.getAnchorClass(), "anchorClass must be set");
@@ -48,10 +50,10 @@ public class ProxyFactory<T> {
             throw new IllegalArgumentException(
                     "A proxy cannot be created for class " + this.superClassName + " because the it is not public");
         }
-        if (!hasNoArgsConstructor(superClass, configuration.isAllowPackagePrivate())) {
+        if (!findConstructor(superClass, configuration.isAllowPackagePrivate(), true)) {
             throw new IllegalArgumentException(
                     "A proxy cannot be created for class " + this.superClassName
-                            + " because it does contain a no-arg constructor");
+                            + " because it does not declare a no-arg constructor");
         }
         if (Modifier.isFinal(superClass.getModifiers())) {
             throw new IllegalArgumentException(
@@ -77,16 +79,39 @@ public class ProxyFactory<T> {
         }
     }
 
-    private boolean hasNoArgsConstructor(Class<?> clazz, boolean allowPackagePrivate) {
-        for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
-            if (constructor.getParameterCount() == 0) {
-                if (allowPackagePrivate) {
-                    return !Modifier.isPrivate(constructor.getModifiers());
+    public ClassLoader getClassLoader() {
+        return classLoader;
+    }
+
+    private boolean findConstructor(Class<?> clazz, boolean allowPackagePrivate, boolean allowInject) {
+        Constructor<?>[] ctors = clazz.getDeclaredConstructors();
+        if (allowInject) {
+            for (Constructor<?> constructor : ctors) {
+                //ctor needs to be @Inject or the only constructor
+                if (constructor.isAnnotationPresent(Inject.class)
+                        || (ctors.length == 1 && constructor.getParameterCount() > 0)) {
+                    if (!isModifierCorrect(allowPackagePrivate, constructor)) {
+                        return false;
+                    }
+                    injectConstructor = constructor;
+                    return true;
                 }
-                return Modifier.isPublic(constructor.getModifiers()) || Modifier.isProtected(constructor.getModifiers());
+            }
+        }
+        for (Constructor<?> constructor : ctors) {
+            if (constructor.getParameterCount() == 0) {
+                injectConstructor = constructor;
+                return isModifierCorrect(allowPackagePrivate, constructor);
             }
         }
         return false;
+    }
+
+    private boolean isModifierCorrect(boolean allowPackagePrivate, Constructor<?> constructor) {
+        if (allowPackagePrivate) {
+            return !Modifier.isPrivate(constructor.getModifiers());
+        }
+        return Modifier.isPublic(constructor.getModifiers()) || Modifier.isProtected(constructor.getModifiers());
     }
 
     private void addMethodsOfClass(Class<?> clazz) {
@@ -103,8 +128,13 @@ public class ProxyFactory<T> {
             if (methodInfo.getName().equals("finalize") && methodInfo.getParameterCount() == 0) {
                 continue;
             }
-            if (!Modifier.isStatic(methodInfo.getModifiers()) &&
-                    !Modifier.isFinal(methodInfo.getModifiers()) &&
+            int modifiers = methodInfo.getModifiers();
+            if (Modifier.isPublic(modifiers) && Modifier.isFinal(modifiers) && !Modifier.isStatic(modifiers)
+                    && clazz != Object.class) {
+                throw new RuntimeException("Public method " + methodInfo + " cannot be proxied as it is final");
+            }
+            if (!Modifier.isStatic(modifiers) &&
+                    !Modifier.isFinal(modifiers) &&
                     !methodInfo.getName().equals("<init>")) {
                 methods.add(methodInfo);
             }
@@ -118,10 +148,21 @@ public class ProxyFactory<T> {
         synchronized (lock) {
             if (!classDefined) {
                 doDefineClass();
-                try {
-                    constructor = loadClass().getConstructor(InvocationHandler.class);
-                } catch (NoSuchMethodException e) {
-                    throw new RuntimeException(e);
+                if (injectConstructor == null) {
+                    try {
+                        constructor = loadClass().getConstructor(InvocationHandler.class);
+                    } catch (NoSuchMethodException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    try {
+                        List<Class<?>> args = new ArrayList<>();
+                        args.add(InvocationHandler.class);
+                        args.addAll(Arrays.asList(injectConstructor.getParameterTypes()));
+                        constructor = loadClass().getConstructor(args.toArray(Class[]::new));
+                    } catch (NoSuchMethodException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 classDefined = true;
             }
@@ -140,9 +181,21 @@ public class ProxyFactory<T> {
                 ctor.returnValue(null);
             }
 
+            Class<?>[] parameterTypes = injectConstructor.getParameterTypes();
+            List<Class<?>> args = new ArrayList<>();
+            args.add(InvocationHandler.class);
+            args.addAll(Arrays.asList(parameterTypes));
             try (MethodCreator ctor = cc
-                    .getMethodCreator(MethodDescriptor.ofConstructor(proxyName, InvocationHandler.class.getName()))) {
-                ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(this.superClassName), ctor.getThis());
+                    .getMethodCreator(MethodDescriptor.ofConstructor(proxyName, args.toArray(Class[]::new)))) {
+                List<ResultHandle> params = new ArrayList<>();
+                for (int i = 0; i < injectConstructor.getParameterCount(); ++i) {
+                    params.add(ctor.getMethodParam(i + 1));
+                }
+                ctor.invokeSpecialMethod(
+                        MethodDescriptor.ofConstructor(injectConstructor.getDeclaringClass(),
+                                parameterTypes),
+                        ctor.getThis(),
+                        params.toArray(ResultHandle[]::new));
                 ctor.writeInstanceField(invocationHandlerField, ctor.getThis(), ctor.getMethodParam(0));
                 ctor.returnValue(null);
             }
@@ -155,14 +208,17 @@ public class ProxyFactory<T> {
 
                     ResultHandle getDeclaredMethodParamsArray = mc.newArray(Class.class,
                             methodInfo.getParameterCount());
-                    for (int i = 0; i < methodInfo.getParameterCount(); i++) {
-                        ResultHandle paramClass = mc.loadClass(methodInfo.getParameters()[i].getType());
-                        mc.writeArrayValue(getDeclaredMethodParamsArray, i, paramClass);
+                    if (methodInfo.getParameterCount() > 0) {
+                        Parameter[] methodInfoParameters = methodInfo.getParameters();
+                        for (int i = 0; i < methodInfo.getParameterCount(); i++) {
+                            ResultHandle paramClass = mc.loadClassFromTCCL(methodInfoParameters[i].getType());
+                            mc.writeArrayValue(getDeclaredMethodParamsArray, i, paramClass);
+                        }
                     }
                     ResultHandle method = mc.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class,
                                     Class[].class),
-                            mc.loadClass(methodInfo.getDeclaringClass()), mc.load(methodInfo.getName()),
+                            mc.loadClassFromTCCL(methodInfo.getDeclaringClass()), mc.load(methodInfo.getName()),
                             getDeclaredMethodParamsArray);
 
                     // result = invocationHandler.invoke(...)
@@ -202,8 +258,25 @@ public class ProxyFactory<T> {
         synchronized (lock) {
             try {
                 defineClass();
-                return (T) constructor.newInstance(handler);
-            } catch (InvocationTargetException e) {
+                Object[] args = new Object[constructor.getParameterCount()];
+                args[0] = handler;
+                Class<?>[] parameterTypes = this.constructor.getParameterTypes();
+                for (int i = 1; i < constructor.getParameterCount(); ++i) {
+                    Constructor<?> paramConstructor = null;
+                    try {
+                        paramConstructor = parameterTypes[i].getConstructor();
+                    } catch (NoSuchMethodException e) {
+                        // We won't use the constructor
+                    }
+                    if (paramConstructor != null) {
+                        paramConstructor.setAccessible(true);
+                        args[i] = paramConstructor.newInstance();
+                    } else {
+                        args[i] = null;
+                    }
+                }
+                return (T) constructor.newInstance(args);
+            } catch (Exception e) {
                 // if this happens, we have not created the proxy correctly
                 throw new IllegalStateException(e);
             }

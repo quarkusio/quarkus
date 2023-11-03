@@ -2,6 +2,11 @@ package io.quarkus.test.common;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,8 +58,10 @@ public class TestResourceManagerTest {
         }
 
         @Override
-        public void inject(Object testInstance) {
-            ((AtomicInteger) testInstance).incrementAndGet();
+        public void inject(Object instance) {
+            if (instance instanceof AtomicInteger) {
+                ((AtomicInteger) instance).incrementAndGet();
+            }
         }
 
         @Override
@@ -71,8 +78,10 @@ public class TestResourceManagerTest {
         }
 
         @Override
-        public void inject(Object testInstance) {
-            ((AtomicInteger) testInstance).incrementAndGet();
+        public void inject(Object instance) {
+            if (instance instanceof AtomicInteger) {
+                ((AtomicInteger) instance).incrementAndGet();
+            }
         }
 
         @Override
@@ -172,5 +181,56 @@ public class TestResourceManagerTest {
         public int order() {
             return 2;
         }
+    }
+
+    @Test
+    void testAnnotationBased() {
+        TestResourceManager manager = new TestResourceManager(RepeatableAnnotationBasedTestResourcesTest.class);
+        manager.init("test");
+        Map<String, String> props = manager.start();
+        Assertions.assertEquals("value", props.get("annotationkey1"));
+        Assertions.assertEquals("value", props.get("annotationkey2"));
+    }
+
+    public static class AnnotationBasedQuarkusTestResource
+            implements QuarkusTestResourceConfigurableLifecycleManager<WithAnnotationBasedTestResource> {
+
+        private String key;
+
+        @Override
+        public void init(WithAnnotationBasedTestResource annotation) {
+            this.key = annotation.key();
+        }
+
+        @Override
+        public Map<String, String> start() {
+            Map<String, String> props = new HashMap<>();
+            props.put(key, "value");
+            return props;
+        }
+
+        @Override
+        public void stop() {
+        }
+    }
+
+    @QuarkusTestResource(AnnotationBasedQuarkusTestResource.class)
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    @Repeatable(WithAnnotationBasedTestResource.List.class)
+    public @interface WithAnnotationBasedTestResource {
+        String key() default "";
+
+        @Target(ElementType.TYPE)
+        @Retention(RetentionPolicy.RUNTIME)
+        @QuarkusTestResourceRepeatable(WithAnnotationBasedTestResource.class)
+        @interface List {
+            WithAnnotationBasedTestResource[] value();
+        }
+    }
+
+    @WithAnnotationBasedTestResource(key = "annotationkey1")
+    @WithAnnotationBasedTestResource(key = "annotationkey2")
+    public static class RepeatableAnnotationBasedTestResourcesTest {
     }
 }

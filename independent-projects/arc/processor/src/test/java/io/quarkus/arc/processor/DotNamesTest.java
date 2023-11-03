@@ -1,22 +1,23 @@
 package io.quarkus.arc.processor;
 
-import static io.quarkus.arc.processor.Basics.index;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.processor.DotNamesTest.Nested.NestedNested;
 import java.io.IOException;
+
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.arc.processor.DotNamesTest.Nested.NestedNested;
+
 public class DotNamesTest {
 
     @Test
     public void testSimpleName() throws IOException {
-        Index index = index(Nested.class, NestedNested.class, DotNamesTest.class);
+        Index index = Index.of(Nested.class, NestedNested.class, DotNamesTest.class);
         Assertions.assertEquals("Nested",
                 DotNames.simpleName(index.getClassByName(DotName.createSimple(Nested.class.getName()))));
         assertEquals("DotNamesTest$Nested",

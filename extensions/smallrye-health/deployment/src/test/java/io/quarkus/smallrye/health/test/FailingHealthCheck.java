@@ -4,18 +4,20 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.enterprise.context.Dependent;
+import jakarta.enterprise.context.Dependent;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.Readiness;
+import org.eclipse.microprofile.health.Startup;
 
 import io.smallrye.health.api.HealthGroup;
 
 @Dependent
 @Liveness
 @Readiness
+@Startup
 @HealthGroup("group1")
 @HealthGroup("group2")
 public class FailingHealthCheck implements HealthCheck {

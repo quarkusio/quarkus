@@ -1,17 +1,25 @@
 package io.quarkus.platform.catalog.processor;
 
 import static io.quarkus.registry.catalog.Extension.*;
+import static java.util.stream.Collectors.toMap;
 
-import io.quarkus.registry.catalog.Extension;
+import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.Optional;
+import java.util.Set;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.catalog.Extension;
 
 public final class ExtensionProcessor {
 
-    private static final String STABLE_STATS = "stable";
-    public static final String PROVIDES_CODE_TAG = "provides-code";
+    private static final String QUARKUS_BOM_ARTIFACT_ID = "quarkus-bom";
 
     public enum CodestartKind {
         CORE,
@@ -36,11 +44,15 @@ public final class ExtensionProcessor {
 
     public static String getShortName(Extension extension) {
         final String shortName = getMetadataValue(extension, MD_SHORT_NAME).asString();
-        return shortName == null ? extension.getName() : shortName;
+        return shortName == null ? "" : shortName;
     }
 
     public static String getGuide(Extension extension) {
         return getMetadataValue(extension, MD_GUIDE).asString();
+    }
+
+    public static Integer getMinimumJavaVersion(Extension extension) {
+        return getMetadataValue(extension, MD_MINIMUM_JAVA_VERSION).asInteger();
     }
 
     public static List<String> getCategories(Extension extension) {
@@ -53,6 +65,17 @@ public final class ExtensionProcessor {
 
     public static String getCodestartName(Extension extension) {
         return getMetadataValue(extension, MD_NESTED_CODESTART_NAME).asString();
+    }
+
+    public static Optional<ArtifactCoords> getBom(Extension extension) {
+        if (extension == null || extension.getOrigins() == null || extension.getOrigins().isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(extension.getOrigins().get(0).getBom());
+    }
+
+    public static Optional<ArtifactCoords> getNonQuarkusBomOnly(Extension extension) {
+        return getBom(extension).filter(p -> !p.getArtifactId().equals(QUARKUS_BOM_ARTIFACT_ID));
     }
 
     public static List<String> getCodestartLanguages(Extension extension) {
@@ -84,40 +107,59 @@ public final class ExtensionProcessor {
         return getMetadataValue(extension, MD_KEYWORDS).asStringList();
     }
 
+    public static Set<String> getCliPlugins(Extension extension) {
+        return new HashSet<>(getMetadataValue(extension, MD_CLI_PLUGINS).asStringList());
+    }
+
     /**
-     * List of strings to use for matching.
+     * List of strings to use for optimised word matching.
      * <br/>
      * <br/>
-     * It includes a mix of static keywords, the artifactId, and keywords extracted from the description
+     * It includes a mix of static optimised keywords gathered from: the artifactId, name, shortname, categories and keywords
+     * extracted from the
+     * description
      *
      * @return list of keywords to use for matching.
      */
-    public static List<String> getExtendedKeywords(Extension extension) {
-        return ExtendedKeywords.extendsKeywords(extension.getArtifact().getArtifactId(), extension.getDescription(),
+    public static Set<String> getExtendedKeywords(Extension extension) {
+        return ExtendedKeywords.extendsKeywords(extension.getArtifact().getArtifactId(), extension.getName(),
+                getShortName(extension), getCategories(extension), extension.getDescription(),
                 getKeywords(extension));
     }
 
-    public static List<String> getTags(Extension extension) {
-        return getTags(extension, null);
-    }
-
-    public static List<String> getTags(Extension extension, String customStatusKey) {
-        final List<String> keys = new ArrayList<>();
-        keys.add(customStatusKey != null ? customStatusKey : MD_STATUS);
-        final List<String> tags = keys.stream()
-                .map(key -> getMetadataValue(extension, key).asStringList())
-                .flatMap(List::stream)
-                .filter(tag -> !STABLE_STATS.equals(tag))
-                .map(String::toLowerCase)
-                .collect(Collectors.toCollection(ArrayList::new));
+    /**
+     * Clean version of the metadata with a Map of key:values to ease client usage
+     *
+     * @param extension
+     * @return
+     */
+    public static Map<String, Collection<String>> getSyntheticMetadata(Extension extension) {
+        Map<String, Object> extendedMetadata = new HashMap<>(extension.getMetadata());
+        List<String> withList = new ArrayList<>(getMetadataValue(extension, "with").asStringList());
         if (providesCode(extension)) {
-            tags.add(PROVIDES_CODE_TAG);
+            withList.add("starter-code");
         }
-        return tags;
+        extendedMetadata.put("with", withList);
+        extendedMetadata.put("origin", extension.hasPlatformOrigin() ? "platform" : "other");
+        if (getMetadataValue(extension, "status").isEmpty()) {
+            extendedMetadata.put("status", "stable");
+        }
+        return extendedMetadata.entrySet().stream()
+                .map(e -> new AbstractMap.SimpleImmutableEntry<>(e.getKey(), (new MetadataValue(e.getValue()).asStringList())))
+                .filter(e -> !e.getValue().isEmpty())
+                .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     public Extension getExtension() {
         return extension;
+    }
+
+    public Optional<ArtifactCoords> getBom() {
+        return ExtensionProcessor.getBom(extension);
+    }
+
+    public Optional<ArtifactCoords> getNonQuarkusBomOnly() {
+        return ExtensionProcessor.getNonQuarkusBomOnly(extension);
     }
 
     public String getBuiltWithQuarkusCore() {
@@ -167,35 +209,30 @@ public final class ExtensionProcessor {
         return getKeywords(extension);
     }
 
+    public Integer getMinimumJavaVersion() {
+        return getMinimumJavaVersion(extension);
+    }
+
     /**
      * List of strings to use for matching.
      * <br/>
      * <br/>
-     * It includes a mix of static keywords, the artifactId, and keywords extracted from the description
+     * It includes a mix of static optimised keywords gathered from: the artifactId, name, shortname, categories and keywords
+     * extracted from the
+     * description
      *
      * @return list of keywords to use for matching.
      */
-    public List<String> getExtendedKeywords() {
+    public Set<String> getExtendedKeywords() {
         return getExtendedKeywords(extension);
     }
 
-    public List<String> getTags() {
-        return getTags(extension, null);
+    public Set<String> getCliPlugins() {
+        return getCliPlugins(extension);
     }
 
-    public List<String> getTags(String customStatusKey) {
-        final List<String> keys = new ArrayList<>();
-        keys.add(customStatusKey != null ? customStatusKey : MD_STATUS);
-        final List<String> tags = keys.stream()
-                .map(key -> getMetadataValue(extension, key).asStringList())
-                .flatMap(List::stream)
-                .filter(tag -> !STABLE_STATS.equals(tag))
-                .map(String::toLowerCase)
-                .collect(Collectors.toCollection(ArrayList::new));
-        if (providesCode()) {
-            tags.add(PROVIDES_CODE_TAG);
-        }
-        return tags;
+    public Map<String, Collection<String>> getSyntheticMetadata() {
+        return getSyntheticMetadata(extension);
     }
 
     public static MetadataValue getMetadataValue(Extension extension, String path) {

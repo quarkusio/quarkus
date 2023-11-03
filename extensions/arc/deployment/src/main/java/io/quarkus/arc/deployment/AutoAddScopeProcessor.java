@@ -1,8 +1,11 @@
 package io.quarkus.arc.deployment;
 
-import java.util.HashSet;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -31,13 +34,18 @@ public class AutoAddScopeProcessor {
         if (autoScopes.isEmpty()) {
             return;
         }
+
+        List<AutoAddScopeBuildItem> sortedAutoScopes = autoScopes.stream()
+                .sorted(Comparator.comparingInt(AutoAddScopeBuildItem::getPriority).reversed()).collect(Collectors.toList());
+
         Set<DotName> containerAnnotationNames = autoInjectAnnotations.stream().flatMap(a -> a.getAnnotationNames().stream())
                 .collect(Collectors.toSet());
         containerAnnotationNames.add(DotNames.POST_CONSTRUCT);
         containerAnnotationNames.add(DotNames.PRE_DESTROY);
         containerAnnotationNames.add(DotNames.INJECT);
 
-        Set<DotName> unremovables = new HashSet<>();
+        ConcurrentMap<DotName, AutoAddScopeBuildItem> unremovables = sortedAutoScopes.stream()
+                .anyMatch(AutoAddScopeBuildItem::isUnremovable) ? new ConcurrentHashMap<>() : null;
 
         annotationsTransformers.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
 
@@ -47,17 +55,26 @@ public class AutoAddScopeProcessor {
             }
 
             @Override
+            public int getPriority() {
+                // Make sure this annotation transformer runs before all transformers with the default priority
+                return DEFAULT_PRIORITY + 1000;
+            }
+
+            @Override
             public void transform(TransformationContext context) {
                 if (scopes.isScopeIn(context.getAnnotations())) {
                     // Skip classes annotated with a scope
                     return;
                 }
                 ClassInfo clazz = context.getTarget().asClass();
+                DotName scope = null;
                 Boolean requiresContainerServices = null;
+                String reason = null;
 
-                for (AutoAddScopeBuildItem autoScope : autoScopes) {
+                for (AutoAddScopeBuildItem autoScope : sortedAutoScopes) {
                     if (autoScope.isContainerServicesRequired()) {
                         if (requiresContainerServices == null) {
+                            // Analyze the class hierarchy lazily
                             requiresContainerServices = requiresContainerServices(clazz, containerAnnotationNames,
                                     beanArchiveIndex.getIndex());
                         }
@@ -67,24 +84,33 @@ public class AutoAddScopeProcessor {
                         }
                     }
                     if (autoScope.test(clazz, context.getAnnotations(), beanArchiveIndex.getIndex())) {
-                        context.transform().add(autoScope.getDefaultScope()).done();
-                        if (autoScope.isUnremovable()) {
-                            unremovables.add(clazz.name());
+                        if (scope != null) {
+                            BiConsumer<DotName, String> consumer = autoScope.getScopeAlreadyAdded();
+                            if (consumer != null) {
+                                consumer.accept(scope, reason);
+                            } else {
+                                LOGGER.debugf("Scope %s was already added for reason: %s", scope, reason);
+                            }
+                            continue;
                         }
-                        LOGGER.debugf("Automatically added scope %s to class %s" + autoScope.getReason(),
-                                autoScope.getDefaultScope(), clazz, autoScope.getReason());
-                        break;
+                        scope = autoScope.getDefaultScope();
+                        reason = autoScope.getReason();
+                        context.transform().add(scope).done();
+                        if (unremovables != null && autoScope.isUnremovable()) {
+                            unremovables.put(clazz.name(), autoScope);
+                        }
+                        LOGGER.debugf("Automatically added scope %s to class %s: %s", scope, clazz, autoScope.getReason());
                     }
                 }
             }
         }));
 
-        if (!unremovables.isEmpty()) {
+        if (unremovables != null) {
             unremovableBeans.produce(new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
 
                 @Override
                 public boolean test(BeanInfo bean) {
-                    return bean.isClassBean() && unremovables.contains(bean.getBeanClass());
+                    return bean.isClassBean() && unremovables.containsKey(bean.getBeanClass());
                 }
             }));
         }
@@ -113,14 +139,14 @@ public class AutoAddScopeProcessor {
     }
 
     private boolean hasContainerAnnotation(ClassInfo clazz, Set<DotName> containerAnnotationNames) {
-        if (clazz.annotations().isEmpty() || containerAnnotationNames.isEmpty()) {
+        if (clazz.annotationsMap().isEmpty() || containerAnnotationNames.isEmpty()) {
             return false;
         }
         return containsAny(clazz, containerAnnotationNames);
     }
 
     private boolean containsAny(ClassInfo clazz, Set<DotName> annotationNames) {
-        for (DotName annotation : clazz.annotations().keySet()) {
+        for (DotName annotation : clazz.annotationsMap().keySet()) {
             if (annotationNames.contains(annotation)) {
                 return true;
             }

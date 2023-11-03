@@ -1,8 +1,11 @@
 package io.quarkus.bootstrap.app;
 
-import io.quarkus.bootstrap.model.PathsCollection;
 import java.io.Serializable;
 import java.nio.file.Path;
+
+import io.quarkus.bootstrap.model.PathsCollection;
+import io.quarkus.paths.PathCollection;
+import io.quarkus.paths.PathList;
 
 /**
  * An additional archive that should be added to the generated application.
@@ -15,10 +18,12 @@ import java.nio.file.Path;
  */
 public class AdditionalDependency implements Serializable {
 
+    private static final long serialVersionUID = -6987195473010677257L;
+
     /**
      * The path to the application archive
      */
-    private final PathsCollection archivePath;
+    private final PathCollection paths;
 
     /**
      * If this archive is hot reloadable, only takes effect in dev mode.
@@ -32,17 +37,31 @@ public class AdditionalDependency implements Serializable {
     private final boolean forceApplicationArchive;
 
     public AdditionalDependency(Path archivePath, boolean hotReloadable, boolean forceApplicationArchive) {
-        this(PathsCollection.of(archivePath), hotReloadable, forceApplicationArchive);
+        this(PathList.of(archivePath), hotReloadable, forceApplicationArchive);
     }
 
-    public AdditionalDependency(PathsCollection archivePath, boolean hotReloadable, boolean forceApplicationArchive) {
-        this.archivePath = archivePath;
+    /**
+     * @param archivePath archive paths
+     * @param hotReloadable whether the dependency is reloadable
+     * @param forceApplicationArchive whether it should be added as an application archive
+     */
+    public AdditionalDependency(PathCollection paths, boolean hotReloadable, boolean forceApplicationArchive) {
+        this.paths = paths;
         this.hotReloadable = hotReloadable;
         this.forceApplicationArchive = forceApplicationArchive;
     }
 
+    /**
+     * @deprecated in favor of {@link #getResolvedPaths()}
+     * @return archive paths
+     */
+    @Deprecated
     public PathsCollection getArchivePath() {
-        return archivePath;
+        return PathsCollection.from(paths);
+    }
+
+    public PathCollection getResolvedPaths() {
+        return paths;
     }
 
     public boolean isHotReloadable() {

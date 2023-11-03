@@ -1,13 +1,14 @@
 package io.quarkus.it.main;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class RegisterForReflectionITCase {
 
     private static final String BASE_PKG = "io.quarkus.it.rest";
@@ -35,10 +36,12 @@ public class RegisterForReflectionITCase {
     }
 
     @Test
-    public void testTargetWithNested() {
+    public void testTargetWithNestedPost22_1() {
         final String resourceC = BASE_PKG + ".ResourceC";
 
-        assertRegistration("FAILED", resourceC);
+        // Starting with GraalVM 22.1 ResourceC implicitly gets registered by GraalVM
+        // (see https://github.com/oracle/graal/pull/4414)
+        assertRegistration("ResourceC", resourceC);
         assertRegistration("InaccessibleClassOfC", resourceC + "$InaccessibleClassOfC");
         assertRegistration("OtherInaccessibleClassOfC", resourceC + "$InaccessibleClassOfC$OtherInaccessibleClassOfC");
     }
@@ -50,6 +53,15 @@ public class RegisterForReflectionITCase {
         assertRegistration("FAILED", resourceD);
         assertRegistration("StaticClassOfD", resourceD + "$StaticClassOfD");
         assertRegistration("FAILED", resourceD + "$StaticClassOfD$OtherAccessibleClassOfD");
+    }
+
+    @Test
+    public void testLambdaCapturing() {
+        final String resourceLambda = BASE_PKG + ".ResourceLambda";
+
+        // Starting with GraalVM 22.1 support Lambda functions serialization
+        // (see https://github.com/oracle/graal/issues/3756)
+        RestAssured.given().when().get("/reflection/lambda").then().body(startsWith("Comparator$$Lambda$"));
     }
 
     private void assertRegistration(String expected, String queryParam) {

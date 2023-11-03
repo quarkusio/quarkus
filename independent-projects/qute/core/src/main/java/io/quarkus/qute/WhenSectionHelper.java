@@ -1,7 +1,5 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.IfSectionHelper.Operator;
-import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -16,6 +14,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import io.quarkus.qute.IfSectionHelper.Operator;
+import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 
 /**
  * Basic {@code when/switch} statement.
@@ -126,7 +127,7 @@ public class WhenSectionHelper implements SectionHelper {
                 }
                 Expression valueExpr = block.addExpression(VALUE, value);
                 if (valueExpr.hasTypeInfo()) {
-                    // If type info is available we do add the expression id 
+                    // If type info is available we do add the expression id
                     previousScope.putAttribute(VALUE_EXPR_ID, valueExpr.getGeneratedId());
                 }
             } else if (ELSE.equals(block.getLabel())) {
@@ -143,7 +144,7 @@ public class WhenSectionHelper implements SectionHelper {
                     }
                     added++;
                     if (valueExprId != null) {
-                        // This could be an enum switch - we need to add a hint in order to validate the enum constants properly 
+                        // This could be an enum switch - we need to add a hint in order to validate the enum constants properly
                         String previousBinding = previousScope.getBinding(param);
                         String newBinding = previousBinding;
                         if (newBinding == null) {
@@ -160,7 +161,9 @@ public class WhenSectionHelper implements SectionHelper {
                     }
                 }
             } else {
-                throw block.createParserError("Invalid case block used in a {#when} section: " + block.getLabel());
+                // this should never happen
+                throw block.error("Invalid case block used in a \\{#when\\} section: {label}")
+                        .argument("label", block.getLabel()).origin(block.getOrigin()).build();
             }
             return previousScope;
         }

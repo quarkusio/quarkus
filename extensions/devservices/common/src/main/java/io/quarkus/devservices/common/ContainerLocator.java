@@ -46,7 +46,9 @@ public class ContainerLocator {
                     .flatMap(container -> getMappedPort(container, port)
                             .flatMap(containerPort -> Optional.ofNullable(containerPort.getPublicPort())
                                     .map(port -> {
-                                        final ContainerAddress containerAddress = new ContainerAddress(containerPort.getIp(),
+                                        final ContainerAddress containerAddress = new ContainerAddress(
+                                                container.getId(),
+                                                DockerClientFactory.instance().dockerHostIpAddress(),
                                                 containerPort.getPublicPort());
                                         log.infof("Dev Services container found: %s (%s). Connecting to: %s.",
                                                 container.getId(),
@@ -54,6 +56,16 @@ public class ContainerLocator {
                                                 containerAddress.getUrl());
                                         return containerAddress;
                                     })));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<Integer> locatePublicPort(String serviceName, boolean shared, LaunchMode launchMode, int privatePort) {
+        if (shared && launchMode == LaunchMode.DEVELOPMENT) {
+            return lookup(serviceName)
+                    .flatMap(container -> getMappedPort(container, privatePort))
+                    .map(ContainerPort::getPublicPort);
         } else {
             return Optional.empty();
         }

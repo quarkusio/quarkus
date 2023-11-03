@@ -1,6 +1,7 @@
 package io.quarkus.runtime.logging;
 
 import java.io.File;
+import java.nio.charset.Charset;
 import java.util.Optional;
 import java.util.logging.Level;
 
@@ -41,33 +42,51 @@ public class FileConfig {
     File path;
 
     /**
+     * The name of the filter to link to the file handler.
+     */
+    @ConfigItem
+    Optional<String> filter;
+
+    /**
+     * The character encoding used
+     */
+    @ConfigItem
+    Optional<Charset> encoding;
+
+    /**
      * File async logging config
      */
     AsyncConfig async;
 
     /**
-     * File rotation config
+     * File rotation config.
+     * The time interval is determined by the content of the <code>fileSuffix</code> property.
+     * The size interval is determined by the content of the <code>maxFileSize</code> property.
+     * If both are used, the rotating will be based on time, then on size.
      */
     RotationConfig rotation;
 
     @ConfigGroup
     public static class RotationConfig {
         /**
-         * The maximum file size of the log file after which a rotation is executed.
+         * The maximum log file size, after which a rotation is executed.
          */
-        @ConfigItem
-        Optional<MemorySize> maxFileSize;
+        @ConfigItem(defaultValue = "10M")
+        MemorySize maxFileSize;
 
         /**
          * The maximum number of backups to keep.
          */
-        @ConfigItem(defaultValue = "1")
+        @ConfigItem(defaultValue = "5")
         int maxBackupIndex;
 
         /**
-         * File handler rotation file suffix.
-         *
+         * The file handler rotation file suffix.
+         * When used, the file will be rotated based on its suffix.
+         * <p>
          * Example fileSuffix: .yyyy-MM-dd
+         * <p>
+         * Note: If the suffix ends with .zip or .gz, the rotation file will also be compressed.
          */
         @ConfigItem
         Optional<String> fileSuffix;

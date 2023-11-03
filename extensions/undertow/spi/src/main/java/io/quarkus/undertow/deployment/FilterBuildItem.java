@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.undertow.servlet.api.InstanceFactory;
@@ -27,7 +27,7 @@ public final class FilterBuildItem extends MultiBuildItem {
         this.filterClass = builder.filterClass;
         this.loadOnStartup = builder.loadOnStartup;
         this.asyncSupported = builder.asyncSupported;
-        this.mappings = Collections.unmodifiableList(new ArrayList<>(builder.mappings));
+        this.mappings = List.copyOf(builder.mappings);
         this.instanceFactory = builder.instanceFactory;
         this.initParams = Collections.unmodifiableMap(new HashMap<>(builder.initParams));
     }

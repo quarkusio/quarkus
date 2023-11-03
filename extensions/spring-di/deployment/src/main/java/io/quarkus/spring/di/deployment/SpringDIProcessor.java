@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.enterprise.inject.spi.DefinitionException;
+import jakarta.enterprise.inject.spi.DefinitionException;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
@@ -24,23 +24,28 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
+import org.jboss.jandex.Type;
 
-import io.quarkus.arc.deployment.AdditionalStereotypeBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.StereotypeRegistrarBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.StereotypeRegistrar;
 import io.quarkus.arc.processor.Transformation;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 
-/*
- * A simple processor that maps annotations Spring DI annotation to CDI annotation
+/**
+ * A simple processor that maps Spring DI annotations to CDI annotations.
  * Arc's handling of annotation mapping (by creating an extra abstraction layer on top of the Jandex index)
- * suits this sort of handling perfectly
+ * suits this sort of handling perfectly.
  */
+@BuildSteps(onlyIf = SpringDiEnabled.class)
 public class SpringDIProcessor {
 
     private static final DotName SPRING_SCOPE_ANNOTATION = DotName.createSimple("org.springframework.context.annotation.Scope");
@@ -48,11 +53,10 @@ public class SpringDIProcessor {
     static final DotName SPRING_COMPONENT = DotName.createSimple("org.springframework.stereotype.Component");
     static final DotName SPRING_SERVICE = DotName.createSimple("org.springframework.stereotype.Service");
     static final DotName SPRING_REPOSITORY = DotName.createSimple("org.springframework.stereotype.Repository");
-    private static final Set<DotName> SPRING_STEREOTYPE_ANNOTATIONS = Arrays.stream(new DotName[] {
+    private static final Set<DotName> SPRING_STEREOTYPE_ANNOTATIONS = Set.of(
             SPRING_COMPONENT,
             SPRING_SERVICE,
-            SPRING_REPOSITORY,
-    }).collect(Collectors.toSet());
+            SPRING_REPOSITORY);
 
     private static final DotName CONFIGURATION_ANNOTATION = DotName
             .createSimple("org.springframework.context.annotation.Configuration");
@@ -71,11 +75,13 @@ public class SpringDIProcessor {
     private static final DotName CDI_SINGLETON_ANNOTATION = BuiltinScope.SINGLETON.getInfo().getDotName();
     private static final DotName CDI_DEPENDENT_ANNOTATION = BuiltinScope.DEPENDENT.getInfo().getDotName();
     private static final DotName CDI_REQUEST_SCOPED_ANNOTATION = BuiltinScope.REQUEST.getInfo().getDotName();
-    private static final DotName CDI_SESSION_SCOPED_ANNOTATION = DotName.createSimple("javax.enterprise.context.SessionScoped");
+    private static final DotName CDI_SESSION_SCOPED_ANNOTATION = DotName
+            .createSimple("jakarta.enterprise.context.SessionScoped");
     private static final DotName CDI_APP_SCOPED_ANNOTATION = BuiltinScope.APPLICATION.getInfo().getDotName();
     private static final DotName CDI_NAMED_ANNOTATION = DotNames.NAMED;
     private static final DotName CDI_INJECT_ANNOTATION = DotNames.INJECT;
     private static final DotName CDI_PRODUCES_ANNOTATION = DotNames.PRODUCES;
+    private static final DotName QUARKUS_ALL_ANNOTATION = DotNames.ALL;
     private static final DotName MP_CONFIG_PROPERTY_ANNOTATION = DotName.createSimple(ConfigProperty.class.getName());
 
     @BuildStep
@@ -86,7 +92,7 @@ public class SpringDIProcessor {
     /*
      * This Build Item can't be generated in the beanTransformer method because the annotation transformer
      * is generated lazily.
-     * However the logic is the same
+     * However, the logic is the same.
      */
     @BuildStep
     SpringBeanNameToDotNameBuildItem createBeanNamesMap(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
@@ -117,18 +123,24 @@ public class SpringDIProcessor {
     @BuildStep
     AnnotationsTransformerBuildItem beanTransformer(
             final BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            final BuildProducer<AdditionalStereotypeBuildItem> additionalStereotypeBuildItemBuildProducer) {
+            final BuildProducer<StereotypeRegistrarBuildItem> stereotypeRegistrarProducer) {
         final IndexView index = beanArchiveIndexBuildItem.getIndex();
         final Map<DotName, Set<DotName>> stereotypeScopes = getStereotypeScopes(index);
-        final Map<DotName, Collection<AnnotationInstance>> instances = new HashMap<>();
+        final Set<DotName> stereotypeAnnotations = new HashSet<>();
         for (final DotName name : stereotypeScopes.keySet()) {
-            instances.put(name, index.getAnnotations(name)
+            stereotypeAnnotations.addAll(index.getAnnotations(name)
                     .stream()
                     .filter(it -> it.target().kind() == AnnotationTarget.Kind.CLASS
                             && it.target().asClass().isAnnotation())
+                    .map(AnnotationInstance::name)
                     .collect(Collectors.toSet()));
         }
-        additionalStereotypeBuildItemBuildProducer.produce(new AdditionalStereotypeBuildItem(instances));
+        stereotypeRegistrarProducer.produce(new StereotypeRegistrarBuildItem(new StereotypeRegistrar() {
+            @Override
+            public Set<DotName> getAdditionalStereotypes() {
+                return stereotypeAnnotations;
+            }
+        }));
         return new AnnotationsTransformerBuildItem(context -> {
             final Collection<AnnotationInstance> annotations = context.getAnnotations();
             if (annotations.isEmpty()) {
@@ -161,7 +173,7 @@ public class SpringDIProcessor {
         final List<ClassInfo> allAnnotations = getOrderedAnnotations(index);
         final Set<DotName> stereotypeClasses = new HashSet<>(SPRING_STEREOTYPE_ANNOTATIONS);
         for (final ClassInfo clazz : allAnnotations) {
-            final Set<DotName> clazzAnnotations = clazz.annotations().keySet();
+            final Set<DotName> clazzAnnotations = clazz.annotationsMap().keySet();
             final Set<DotName> clazzStereotypes = new HashSet<>();
             final Set<DotName> clazzScopes = new HashSet<>();
             for (final DotName stereotypeName : stereotypeClasses) {
@@ -200,10 +212,10 @@ public class SpringDIProcessor {
     private DotName getScope(final AnnotationTarget target) {
         AnnotationValue value = null;
         if (target.kind() == AnnotationTarget.Kind.CLASS) {
-            if (target.asClass().classAnnotation(SPRING_SCOPE_ANNOTATION) != null) {
-                value = target.asClass().classAnnotation(SPRING_SCOPE_ANNOTATION).value();
+            if (target.asClass().declaredAnnotation(SPRING_SCOPE_ANNOTATION) != null) {
+                value = target.asClass().declaredAnnotation(SPRING_SCOPE_ANNOTATION).value();
                 if ((value == null) || value.asString().isEmpty()) {
-                    value = target.asClass().classAnnotation(SPRING_SCOPE_ANNOTATION).value("scopeName");
+                    value = target.asClass().declaredAnnotation(SPRING_SCOPE_ANNOTATION).value("scopeName");
                 }
             }
         } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
@@ -235,7 +247,7 @@ public class SpringDIProcessor {
 
     /**
      * @return All the annotations in the index ordered with dependents after their dependencies.
-     *         They are traversed in this order so that we can start with out root annotations
+     *         They are traversed in this order so that we can start without root annotations
      *         (@Component, @Service & @Repository) and create a set of everything that extends it
      *         directly or indirectly.
      */
@@ -243,7 +255,7 @@ public class SpringDIProcessor {
         final Map<DotName, Set<DotName>> deps = new HashMap<>();
         for (final ClassInfo clazz : index.getKnownClasses()) {
             if (clazz.isAnnotation()) {
-                deps.put(clazz.name(), clazz.annotations().keySet());
+                deps.put(clazz.name(), clazz.annotationsMap().keySet());
             }
         }
         final List<ClassInfo> ret = new ArrayList<>();
@@ -277,7 +289,7 @@ public class SpringDIProcessor {
      *
      * @param target The annotated class
      * @param stereotypeScopes A map on spring stereotype classes to all the scopes
-     *        they, or any of their stereotypes (etc) declare
+     *        they, or any of their stereotypes (etc.) declare
      * @return The CDI annotations to add to the class
      */
     Set<AnnotationInstance> getAnnotationsToAdd(
@@ -296,9 +308,9 @@ public class SpringDIProcessor {
             final Set<DotName> scopes = new HashSet<>();
             final Set<DotName> scopeStereotypes = new HashSet<>();
             final Set<String> names = new HashSet<>();
-            final Set<DotName> clazzAnnotations = classInfo.annotations().keySet();
+            final Set<DotName> clazzAnnotations = classInfo.annotationsMap().keySet();
 
-            for (AnnotationInstance instance : classInfo.classAnnotations()) {
+            for (AnnotationInstance instance : classInfo.declaredAnnotations()) {
                 // make sure that we don't mix and match Spring and CDI annotations since this can cause a lot of problems
                 if (arcScopes.contains(instance.name())) {
                     return annotationsToAdd;
@@ -313,13 +325,13 @@ public class SpringDIProcessor {
                         scopes.addAll(scopeNames);
                     }
                     if (SPRING_STEREOTYPE_ANNOTATIONS.contains(clazzAnnotation) && !classInfo.isAnnotation()) {
-                        names.add(getBeanNameFromStereotypeInstance(classInfo.classAnnotation(clazzAnnotation)));
+                        names.add(getBeanNameFromStereotypeInstance(classInfo.declaredAnnotation(clazzAnnotation)));
                     }
                 }
             }
             DotName declaredScope = getScope(classInfo);
             // @Named is a bean-defining annotation in Spring, but not in Arc.
-            if (declaredScope == null && classInfo.classAnnotation(CDI_NAMED_ANNOTATION) != null) {
+            if (declaredScope == null && classInfo.declaredAnnotation(CDI_NAMED_ANNOTATION) != null) {
                 declaredScope = CDI_SINGLETON_ANNOTATION; // implicit default scope in spring
             }
             final boolean isAnnotation = classInfo.isAnnotation();
@@ -328,7 +340,8 @@ public class SpringDIProcessor {
                         declaredScope,
                         target,
                         Collections.emptyList()));
-            } else if (!(isAnnotation && scopes.isEmpty()) && !classInfo.annotations().containsKey(CONFIGURATION_ANNOTATION)) { // Annotations without an explicit scope shouldn't default to anything
+            } else if (!(isAnnotation && scopes.isEmpty())
+                    && !classInfo.annotationsMap().containsKey(CONFIGURATION_ANNOTATION)) { // Annotations without an explicit scope shouldn't default to anything
                 boolean shouldAdd = false;
                 for (final DotName clazzAnnotation : clazzAnnotations) {
                     if (stereotypes.contains(clazzAnnotation) || scopeStereotypes.contains(clazzAnnotation)) {
@@ -353,7 +366,7 @@ public class SpringDIProcessor {
                         Collections.singletonList(AnnotationValue.createStringValue("value", name))));
             }
 
-            if (classInfo.annotations().containsKey(CONFIGURATION_ANNOTATION)) {
+            if (classInfo.annotationsMap().containsKey(CONFIGURATION_ANNOTATION)) {
                 annotationsToAdd.add(create(
                         CDI_APP_SCOPED_ANNOTATION,
                         target,
@@ -384,6 +397,14 @@ public class SpringDIProcessor {
                                 Collections.singletonList((AnnotationValue.createStringValue("value", value)))));
                     }
                 }
+                addAllAnnotationOnListField(target, annotationsToAdd, fieldInfo);
+            } else if (fieldInfo.hasAnnotation(CDI_INJECT_ANNOTATION)) {
+                boolean isSpringBean = fieldInfo.declaringClass().annotations().stream()
+                        .anyMatch(ai -> stereotypeScopes.keySet().contains(ai.name()));
+                if (isSpringBean) {
+                    // Mix case of JSR-303 support in Spring
+                    addAllAnnotationOnListField(target, annotationsToAdd, fieldInfo);
+                }
             } else if (fieldInfo.hasAnnotation(SPRING_VALUE_ANNOTATION)) {
                 final AnnotationInstance annotation = fieldInfo.annotation(SPRING_VALUE_ANNOTATION);
                 addSpringValueAnnotations(target, annotation, true, annotationsToAdd);
@@ -391,7 +412,7 @@ public class SpringDIProcessor {
         } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
             final MethodInfo methodInfo = target.asMethod();
             if (methodInfo.hasAnnotation(BEAN_ANNOTATION)
-                    && methodInfo.declaringClass().classAnnotation(CONFIGURATION_ANNOTATION) != null) {
+                    && methodInfo.declaringClass().declaredAnnotation(CONFIGURATION_ANNOTATION) != null) {
                 annotationsToAdd.add(create(
                         CDI_PRODUCES_ANNOTATION,
                         target,
@@ -413,11 +434,17 @@ public class SpringDIProcessor {
                         CDI_NAMED_ANNOTATION,
                         target,
                         Collections.singletonList(AnnotationValue.createStringValue("value", beanName))));
+                addAllAnnotationOnMethodListParameters(annotationsToAdd, methodInfo);
             } else if (methodInfo.hasAnnotation(AUTOWIRED_ANNOTATION)) {
                 annotationsToAdd.add(create(
                         CDI_INJECT_ANNOTATION,
                         target,
                         Collections.emptyList()));
+                addAllAnnotationOnMethodListParameters(annotationsToAdd, methodInfo);
+
+            } else if (methodInfo.hasAnnotation(CDI_INJECT_ANNOTATION)) {
+                // Mix case of JSR-303 support in Spring
+                addAllAnnotationOnMethodListParameters(annotationsToAdd, methodInfo);
             }
 
             // add method parameter conversion annotations
@@ -440,6 +467,31 @@ public class SpringDIProcessor {
 
         }
         return annotationsToAdd;
+    }
+
+    private void addAllAnnotationOnListField(AnnotationTarget target, Set<AnnotationInstance> annotationsToAdd,
+            FieldInfo fieldInfo) {
+        // in Spring List<SomeBean> means that all instances of SomeBean should be injected
+        if (fieldInfo.type().name().equals(DotNames.LIST)) {
+            annotationsToAdd.add(create(
+                    QUARKUS_ALL_ANNOTATION,
+                    target,
+                    Collections.emptyList()));
+        }
+    }
+
+    private void addAllAnnotationOnMethodListParameters(Set<AnnotationInstance> annotationsToAdd, MethodInfo methodInfo) {
+        // in Spring List<SomeBean> means that all instances of SomeBean should be injected
+        List<Type> parameters = methodInfo.parameterTypes();
+        for (int i = 0; i < parameters.size(); i++) {
+            Type parameter = parameters.get(i);
+            if (parameter.name().equals(DotNames.LIST)) {
+                annotationsToAdd.add(create(
+                        QUARKUS_ALL_ANNOTATION,
+                        MethodParameterInfo.create(methodInfo, (short) i),
+                        Collections.emptyList()));
+            }
+        }
     }
 
     /**
@@ -522,7 +574,13 @@ public class SpringDIProcessor {
             return;
         }
         String defaultValue = null;
-        String propertyName = annotationValue.asString().replace("${", "").replace("}", "");
+        String stringValue = annotationValue.asString();
+        if (stringValue.contains("#{")) {
+            throw new IllegalArgumentException(
+                    "SpEL expressions are not supported when using " + SPRING_VALUE_ANNOTATION + ". Offending value is '"
+                            + annotation + "'");
+        }
+        String propertyName = stringValue.replace("${", "").replace("}", "");
         if (propertyName.contains(":")) {
             final int index = propertyName.indexOf(':');
             if (index < propertyName.length() - 1) {

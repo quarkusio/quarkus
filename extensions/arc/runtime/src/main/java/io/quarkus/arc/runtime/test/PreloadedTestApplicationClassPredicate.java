@@ -2,7 +2,7 @@ package io.quarkus.arc.runtime.test;
 
 import java.util.Set;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.quarkus.runtime.test.TestApplicationClassPredicate;
 

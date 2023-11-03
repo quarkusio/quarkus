@@ -2,12 +2,12 @@ package io.quarkus.deployment.conditionaldeps;
 
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
-import io.quarkus.deployment.runnerjar.ExecutableOutputOutcomeTestBase;
+import io.quarkus.deployment.runnerjar.BootstrapFromOriginalJarTestBase;
 
-public class ExcludedDirectConditionalDependencyTest extends ExecutableOutputOutcomeTestBase {
+public class ExcludedDirectConditionalDependencyTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
-    protected TsArtifact modelApp() {
+    protected TsArtifact composeApplication() {
 
         final TsQuarkusExt extA = new TsQuarkusExt("ext-a");
 

@@ -14,8 +14,7 @@
     <description>Module that contains JPA related tests running with the MariaDB database</description>
 
     <properties>
-        <mariadb.url>jdbc:mariadb://localhost:3306/hibernate_orm_test</mariadb.url>
-        <mariadb.image>mariadb:10.4</mariadb.image>
+        <mariadb.url>jdbc:mariadb://localhost:3308/hibernate_orm_test</mariadb.url>
     </properties>
 
     <dependencies>
@@ -39,8 +38,18 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -153,9 +162,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <mariadb.url>jdbc:mariadb://localhost:3308/hibernate_orm_test</mariadb.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -164,8 +170,23 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${mariadb.image}</name>
+                                    <name>healthcheck-${mariadb.image}</name>
                                     <alias>quarkus-test-mariadb</alias>
+                                    <build>
+                                        <from>${mariadb.image}</from>
+                                        <healthCheck>
+                                            <!-- The exact values for these aren't very important, but it is important they are there -->
+                                            <interval>5s</interval>
+                                            <timeout>3s</timeout>
+                                            <startPeriod>5s</startPeriod>
+                                            <retries>5</retries>
+                                            <!--  We could also use /usr/local/bin/healthcheck.sh but it seemed complicated to get the right level.
+                                            Note that mysqladmin ping returns 0 even if the password is wrong so we don't need to pass in a password, but it makes the logs cleaner-->
+                                            <cmd>
+                                                <shell>mysqladmin ping -h localhost -u root -psecret|| exit 1</shell>
+                                            </cmd>
+                                        </healthCheck>
+                                    </build>
                                     <run>
                                         <ports>
                                             <port>3308:3306</port>
@@ -185,19 +206,19 @@
                                         <tmpfs>/var/lib/mysql</tmpfs>
                                         <wait>
                                             <time>20000</time>
-                                            <exec>
-                                                <postStart>mysqladmin ping -h localhost -u hibernate_orm_test -phibernate_orm_test</postStart>
-                                            </exec>
+                                            <healthy>true</healthy>
                                         </wait>
                                         <volumes>
                                             <bind>
-                                                <volume>${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d/:Z</volume>
+                                                <volume>
+                                                    ${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d${volume.access.modifier}
+                                                </volume>
                                             </bind>
                                         </volumes>
                                     </run>
                                 </image>
                             </images>
-                            <!--Stops all mariadb:10.4 images currently running, not just those we just started.
+                            <!--Stops all mariadb images currently running, not just those we just started.
                               Useful to stop processes still running from a previously failed integration test run -->
                             <allContainers>true</allContainers>
                         </configuration>
@@ -207,6 +228,7 @@
                                 <phase>compile</phase>
                                 <goals>
                                     <goal>stop</goal>
+                                    <goal>build</goal>
                                     <goal>start</goal>
                                 </goals>
                             </execution>

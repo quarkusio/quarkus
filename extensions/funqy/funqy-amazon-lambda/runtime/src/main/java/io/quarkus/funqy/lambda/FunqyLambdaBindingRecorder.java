@@ -27,6 +27,7 @@ import io.quarkus.funqy.runtime.FunctionRecorder;
 import io.quarkus.funqy.runtime.FunqyConfig;
 import io.quarkus.funqy.runtime.FunqyServerResponse;
 import io.quarkus.funqy.runtime.RequestContextImpl;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -107,9 +108,9 @@ public class FunqyLambdaBindingRecorder {
     }
 
     @SuppressWarnings("rawtypes")
-    public void startPollLoop(ShutdownContext context) {
+    public void startPollLoop(ShutdownContext context, LaunchMode launchMode) {
         AbstractLambdaPollLoop loop = new AbstractLambdaPollLoop(AmazonLambdaMapperRecorder.objectMapper,
-                AmazonLambdaMapperRecorder.cognitoIdReader, AmazonLambdaMapperRecorder.clientCtxReader) {
+                AmazonLambdaMapperRecorder.cognitoIdReader, AmazonLambdaMapperRecorder.clientCtxReader, launchMode) {
 
             @Override
             protected Object processRequest(Object input, AmazonLambdaContext context) throws Exception {

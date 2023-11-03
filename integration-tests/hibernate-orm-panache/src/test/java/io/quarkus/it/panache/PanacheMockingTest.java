@@ -3,9 +3,9 @@ package io.quarkus.it.panache;
 import java.util.Collections;
 import java.util.Optional;
 
-import javax.inject.Inject;
-import javax.persistence.LockModeType;
-import javax.ws.rs.WebApplicationException;
+import jakarta.inject.Inject;
+import jakarta.persistence.LockModeType;
+import jakarta.ws.rs.WebApplicationException;
 
 import org.hibernate.Session;
 import org.hibernate.query.Query;

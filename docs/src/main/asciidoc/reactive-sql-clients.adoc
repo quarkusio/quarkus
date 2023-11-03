@@ -3,23 +3,37 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Reactive SQL Clients
-
-include::./attributes.adoc[]
+= Reactive SQL Clients
+include::_attributes.adoc[]
+:categories: data
+:summary: This guide covers how to use the Reactive SQL Clients in Quarkus.
 :config-file: application.properties
+:topics: data,database,reactive,sql
+:extensions: io.quarkus:quarkus-reactive-mysql-client,io.quarkus:quarkus-reactive-oracle-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-db2-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-mssql-client
 
 The Reactive SQL Clients have a straightforward API focusing on scalability and low-overhead.
 Currently, the following database servers are supported:
 
-* DB2
+* IBM Db2
 * PostgreSQL
 * MariaDB/MySQL
+* Microsoft SQL Server
+* Oracle
+
+[NOTE]
+====
+The Reactive SQL Client for Oracle is considered _tech preview_.
+
+In _tech preview_ mode, early feedback is requested to mature the idea.
+There is no guarantee of stability in the platform until the solution matures.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+====
 
 In this guide, you will learn how to implement a simple CRUD application exposing data stored in *PostgreSQL* over a RESTful API.
 
 NOTE: Extension and connection pool class names for each client can be found at the bottom of this document.
 
-IMPORTANT: If you are not familiar with the Quarkus Vert.x extension, consider reading the link:vertx[Using Eclipse Vert.x] guide first.
+IMPORTANT: If you are not familiar with the Quarkus Vert.x extension, consider reading the xref:vertx.adoc[Using Eclipse Vert.x] guide first.
 
 The application shall manage fruit entities:
 
@@ -51,7 +65,7 @@ Do you need a ready-to-use PostgreSQL server to try out the examples?
 
 [source,bash]
 ----
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:10.5
+docker run -it --rm=true --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:14.1
 ----
 ====
 
@@ -60,29 +74,21 @@ docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name qua
 === Reactive PostgreSQL Client extension
 
 First, make sure your project has the `quarkus-reactive-pg-client` extension enabled.
-If you are creating a new project, set the `extensions` parameter as follows:
+If you are creating a new project, use the following command:
 
-[source,bash, subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=reactive-pg-client-quickstart \
-    -DclassName="org.acme.vertx.FruitResource" \
-    -Dpath="/fruits" \
-    -Dextensions="resteasy,reactive-pg-client,resteasy-mutiny"
-cd reactive-pg-client-quickstart
-----
+:create-app-artifact-id: reactive-pg-client-quickstart
+:create-app-extensions: resteasy-reactive,reactive-pg-client
+include::{includes}/devtools/create-app.adoc[]
 
 If you have an already created project, the `reactive-pg-client` extension can be added to an existing Quarkus project with the `add-extension` command:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="reactive-pg-client"
-----
+:add-extension-extensions: reactive-pg-client
+include::{includes}/devtools/extension-add.adoc[]
 
-Otherwise, you can manually add this to the dependencies section of your `pom.xml` file:
+Otherwise, you can manually add the dependency to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -90,14 +96,15 @@ Otherwise, you can manually add this to the dependencies section of your `pom.xm
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-reactive-pg-client")
+----
+
 === Mutiny
 
-Reactive REST endpoints in your application that return Uni or Multi need `Mutiny support for RESTEasy` extension (`io.quarkus:quarkus-resteasy-mutiny`) to work properly:
-
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="resteasy-mutiny"
-----
+RESTEasy Reactive includes supports for Mutiny types (e.g. `Uni` and `Multi`) out of the box.
 
 [TIP]
 ====
@@ -108,21 +115,26 @@ If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an i
 === JSON Binding
 
 We will expose `Fruit` instances over HTTP in the JSON format.
-Consequently, you also need to add the `quarkus-resteasy-jackson` extension:
+Consequently, you also need to add the `quarkus-resteasy-reactive-jackson` extension:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="resteasy-jackson"
-----
+:add-extension-extensions: resteasy-reactive-jackson
+include::{includes}/devtools/extension-add.adoc[]
 
-If you prefer not to use the command line, manually add this to the dependencies section of your `pom.xml` file:
+If you prefer not to use the command line, manually add the dependency to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-jackson</artifactId>
+    <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
 ----
 
 Of course, this is only a requirement for this guide, not any application using the Reactive PostgreSQL Client.
@@ -155,10 +167,10 @@ public class FruitResource {
 
 == Database schema and seed data
 
-Before we implement the REST endpoint and data management code, we need to setup the database schema.
-It would also be convenient to have some data inserted upfront.
+Before we implement the REST endpoint and data management code, we need to set up the database schema.
+It would also be convenient to have some data inserted up-front.
 
-For production we would recommend to use something like the link:flyway[Flyway database migration tool].
+For production, we would recommend to use something like the xref:flyway.adoc[Flyway database migration tool].
 But for development we can simply drop and create the tables on startup, and then insert a few fruits.
 
 [source,java]
@@ -168,8 +180,7 @@ But for development we can simply drop and create the tables on startup, and the
 @ConfigProperty(name = "myapp.schema.create", defaultValue = "true") // <1>
 boolean schemaCreate;
 
-@PostConstruct
-void config() {
+void config(@Observes StartupEvent ev) {
     if (schemaCreate) {
         initdb();
     }
@@ -195,13 +206,6 @@ client.query("DROP TABLE IF EXISTS fruits").execute()
     .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Apple')").execute())
     .await().indefinitely();
 ----
-
-[IMPORTANT]
-.Breaking Change in Quarkus 1.5
-====
-Vert.x 3.9, integrated in Quarkus 1.5, introduces a breaking change regarding the `query` methods.
-To retrieve the result you need to call `.execute()`.
-====
 
 NOTE: Wondering why we need block until the latest query is completed?
 This code is part of a `@PostConstruct` method and Quarkus invokes it synchronously.
@@ -267,12 +271,9 @@ public Multi<Fruit> get() {
 }
 ----
 
-Now start Quarkus in `dev` mode with:
+Now start Quarkus in dev mode with:
 
-[source,bash]
-----
-./mvnw compile quarkus:dev
-----
+include::{includes}/devtools/dev.adoc[]
 
 Lastly, open your browser and navigate to http://localhost:8080/fruits, you should see:
 
@@ -291,7 +292,7 @@ client.preparedQuery("SELECT id, name FROM fruits WHERE id = $1").execute(Tuple.
 ----
 
 TIP: For PostgreSQL, the SQL string can refer to parameters by position, using `$1`, `$2`, ...etc.
-Please refer to the <<Database Clients details>> section for other databases.
+Please refer to the <<reactive-sql-clients-details>> section for other databases.
 
 Similar to the simple `query` method, `preparedQuery` returns an instance of `PreparedQuery<RowSet<Row>>`.
 Equipped with this tooling, we are able to safely use an `id` provided by the user to get the details of a particular fruit:
@@ -309,20 +310,20 @@ public static Uni<Fruit> findById(PgPool client, Long id) {
 <2> Get an `Iterator` for the `RowSet` result.
 <3> Create a `Fruit` instance from the `Row` if an entity was found.
 
-And in the JAX-RS resource:
+And in the Jakarta REST resource:
 
 [source,java]
 .src/main/java/org/acme/vertx/FruitResource.java
 ----
 @GET
 @Path("{id}")
-public Uni<Response> getSingle(@PathParam Long id) {
+public Uni<Response> getSingle(Long id) {
     return Fruit.findById(client, id)
             .onItem().transform(fruit -> fruit != null ? Response.ok(fruit) : Response.status(Status.NOT_FOUND)) // <1>
             .onItem().transform(ResponseBuilder::build); // <2>
 }
 ----
-<1> Prepare a JAX-RS response with  either the `Fruit` instance if found or the `404` status code.
+<1> Prepare a Jakarta REST response with  either the `Fruit` instance if found or the `404` status code.
 <2> Build and send the response.
 
 The same logic applies when saving a `Fruit`:
@@ -375,7 +376,7 @@ And to handle the HTTP `DELETE` method in the web resource:
 ----
 @DELETE
 @Path("{id}")
-public Uni<Response> delete(@PathParam Long id) {
+public Uni<Response> delete(Long id) {
     return Fruit.delete(client, id)
             .onItem().transform(deleted -> deleted ? Status.NO_CONTENT : Status.NOT_FOUND)
             .onItem().transform(status -> Response.status(status).build());
@@ -466,13 +467,14 @@ $(document).ready(function () {
 All done!
 Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits.
 
+[[reactive-sql-clients-details]]
 == Database Clients details
 
 [cols="10,40,40,10"]
 |===
 |Database |Extension name |Pool class name |Placeholders
 
-|DB2
+|IBM Db2
 |`quarkus-reactive-db2-client`
 |`io.vertx.mutiny.db2client.DB2Pool`
 |`?`
@@ -480,6 +482,16 @@ Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits
 |MariaDB/MySQL
 |`quarkus-reactive-mysql-client`
 |`io.vertx.mutiny.mysqlclient.MySQLPool`
+|`?`
+
+|Microsoft SQL Server
+|`quarkus-reactive-mssql-client`
+|`io.vertx.mutiny.mssqlclient.MSSQLPool`
+|`@p1`, `@p2`, etc.
+
+|Oracle
+|`quarkus-reactive-oracle-client`
+|`io.vertx.mutiny.oracleclient.OraclePool`
 |`?`
 
 |PostgreSQL
@@ -491,29 +503,29 @@ Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits
 == Transactions
 
 The reactive SQL clients support transactions.
-A transaction is started with `client.begin()` and terminated with either `tx.commit()` or `tx.rollback()`.
+A transaction is started with `io.vertx.mutiny.sqlclient.SqlConnection#begin` and terminated with either `io.vertx.mutiny.sqlclient.Transaction#commit` or `io.vertx.mutiny.sqlclient.Transaction#rollback`.
 All these operations are asynchronous:
 
-* `client.begin()` returns a `Uni<Transaction>`
-* `client.commit()` and `client.rollback()` return `Uni<Void>`
+* `connection.begin()` returns a `Uni<Transaction>`
+* `transaction.commit()` and `transaction.rollback()` return `Uni<Void>`
 
 Managing transactions in the reactive programming world can be cumbersome.
-Instead of writing repetitive and complex (thus error-prone!) code, you can use the `io.vertx.mutiny.sqlclient.SqlClientHelper`.
+Instead of writing repetitive and complex (thus error-prone!) code, you can use the `io.vertx.mutiny.sqlclient.Pool#withTransaction` helper method.
 
 The following snippet shows how to run 2 insertions in the same transaction:
 
 [source, java]
 ----
 public static Uni<Void> insertTwoFruits(PgPool client, Fruit fruit1, Fruit fruit2) {
-    return SqlClientHelper.inTransactionUni(client, tx -> {
-        Uni<RowSet<Row>> insertOne = tx.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING id")
+    return client.withTransaction(conn -> {
+        Uni<RowSet<Row>> insertOne = conn.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING id")
                 .execute(Tuple.of(fruit1.name));
-        Uni<RowSet<Row>> insertTwo = tx.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING id")
+        Uni<RowSet<Row>> insertTwo = conn.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING id")
                 .execute(Tuple.of(fruit2.name));
 
-        return insertOne.and(insertTwo)
+        return Uni.combine().all().unis(insertOne, insertTwo)
                 // Ignore the results (the two ids)
-                .onItem().ignore().andContinueWithNull();
+                .discardItems();
     });
 }
 ----
@@ -524,12 +536,12 @@ You can also create dependent actions as follows:
 
 [source, java]
 ----
-return SqlClientHelper.inTransactionUni(client, tx -> tx
+return client.withTransaction(conn -> conn
 
         .preparedQuery("INSERT INTO person (firstname,lastname) VALUES ($1,$2) RETURNING id")
-                .execute(Tuple.of(person.getFirstName(), person.getLastName()))
+        .execute(Tuple.of(person.getFirstName(), person.getLastName()))
 
-        .onItem().transformToUni(id -> tx.preparedQuery("INSERT INTO addr (person_id,addrline1) VALUES ($1,$2)")
+        .onItem().transformToUni(id -> conn.preparedQuery("INSERT INTO addr (person_id,addrline1) VALUES ($1,$2)")
                 .execute(Tuple.of(id.iterator().next().getLong("id"), person.getLastName())))
 
         .onItem().ignore().andContinueWithNull());
@@ -642,14 +654,14 @@ MySQLPool additional2Client;
 
 The PostgreSQL and MariaDB/MySQL clients can be configured to connect to the server through a UNIX domain socket.
 
-First make sure that link:vertx-reference.adoc#native-transport[native transport support] is enabled.
+First make sure that xref:vertx-reference.adoc#native-transport[native transport support] is enabled.
 
 Then configure the database connection url.
 This step depends on the database type.
 
 === PostgreSQL
 
-PostgresSQL domain socket paths have the following form: `<directory>/.s.PGSQL.<port>`
+PostgreSQL domain socket paths have the following form: `<directory>/.s.PGSQL.<port>`
 
 The database connection url must be configured so that:
 
@@ -678,9 +690,29 @@ In `application.properties` add:
 quarkus.datasource.reactive.url=mysql:///quarkus_test?host=/var/run/mysqld/mysqld.sock
 ----
 
-== Pooled Connection `idle-timeout`
+== Load-balancing connections
 
-Reactive datasources can be configured with an `idle-timeout` (in milliseconds).
+The reactive PostgreSQL and MariaDB/MySQL clients support defining several connections.
+
+A typical configuration with several connections would look like:
+
+[source,properties]
+----
+quarkus.datasource.reactive.url=postgresql://host1:5432/default,postgresql://host2:5432/default,postgresql://host3:5432/default
+----
+
+This can also be written with indexed property syntax:
+
+[source,properties]
+----
+quarkus.datasource.reactive.url[0]=postgresql://host1:5432/default
+quarkus.datasource.reactive.url[1]=postgresql://host2:5432/default
+quarkus.datasource.reactive.url[2]=postgresql://host3:5432/default
+----
+
+== Pooled connection `idle-timeout`
+
+Reactive datasources can be configured with an `idle-timeout`.
 It is the maximum time a connection remains unused in the pool before it is closed.
 
 NOTE: The `idle-timeout` is disabled by default.
@@ -692,6 +724,126 @@ For example, you could expire idle connections after 60 minutes:
 quarkus.datasource.reactive.idle-timeout=PT60M
 ----
 
+== Pooled Connection `max-lifetime`
+
+In addition to `idle-timeout`, reactive datasources can also be configured with a `max-lifetime`.
+It is the maximum time a connection remains in the pool before it is closed and replaced as needed.
+The `max-lifetime` allows ensuring the pool has fresh connections with up-to-date configuration.
+
+NOTE: The `max-lifetime` is disabled by default but is an important configuration when using a credentials
+provider that provides time limited credentials, like the link:credentials-provider.adoc[Vault credentials provider].
+
+For example, you could ensure connections are recycled after 60 minutes:
+
+[source,properties]
+----
+quarkus.datasource.reactive.max-lifetime=PT60M
+----
+
+== Customizing pool creation
+
+Sometimes, the database connection pool cannot be configured only by declaration.
+
+You may need to read a specific file only present in production, or retrieve configuration data from a proprietary configuration server.
+
+In this case, you can customize pool creation by creating a class implementing an interface which depends on the target database:
+
+[cols="30,70"]
+|===
+|Database |Pool creator class name
+
+|IBM Db2
+|`io.quarkus.reactive.db2.client.DB2PoolCreator`
+
+|MariaDB/MySQL
+|`io.quarkus.reactive.mysql.client.MySQLPoolCreator`
+
+|Microsoft SQL Server
+|`io.quarkus.reactive.mssql.client.MSSQLPoolCreator`
+
+|Oracle
+|`io.quarkus.reactive.oracle.client.OraclePoolCreator`
+
+|PostgreSQL
+|`io.quarkus.reactive.pg.client.PgPoolCreator`
+|===
+
+Here's an example for PostgreSQL:
+
+[source,java]
+----
+import jakarta.inject.Singleton;
+
+import io.quarkus.reactive.pg.client.PgPoolCreator;
+import io.vertx.pgclient.PgConnectOptions;
+import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.PoolOptions;
+
+@Singleton
+public class CustomPgPoolCreator implements PgPoolCreator {
+
+    @Override
+    public PgPool create(Input input) {
+        PgConnectOptions connectOptions = input.pgConnectOptions();
+        PoolOptions poolOptions = input.poolOptions();
+        // Customize connectOptions, poolOptions or both, as required
+        return PgPool.pool(input.vertx(), connectOptions, poolOptions);
+    }
+}
+----
+
+== Pipelining
+
+The PostgreSQL and MariaDB/MySQL clients support pipelining of queries at the connection level.
+The feature consists in sending multiple queries on the same database connection without waiting for the corresponding responses.
+
+In some use cases, query pipelining can improve database access performance.
+
+Here's an example for PostgreSQL:
+
+[source,java]
+----
+import jakarta.inject.Inject;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.pgclient.PgPool;
+
+public class PipeliningExample {
+
+    @Inject
+    PgPool client;
+
+    public Uni<String> favoriteFruitAndVegetable() {
+        // Explicitely acquire a connection
+        return client.withConnection(conn -> {
+            Uni<String> favoriteFruit = conn.query("SELECT name FROM fruits WHERE preferred IS TRUE").execute()
+                    .onItem().transform(rows -> rows.iterator().next().getString("name"));
+            Uni<String> favoriteVegetable = conn.query("SELECT name FROM vegetables WHERE preferred IS TRUE").execute()
+                    .onItem().transform(rows -> rows.iterator().next().getString("name"));
+            // favoriteFruit and favoriteVegetable unis will be subscribed at the same time
+            return Uni.combine().all().unis(favoriteFruit, favoriteVegetable)
+                    .combinedWith(PipeliningExample::formatMessage);
+        });
+    }
+
+    private static String formatMessage(String fruit, String vegetable) {
+        return String.format("The favorite fruit is %s and the favorite vegetable is %s", fruit, vegetable);
+    }
+}
+----
+
+The maximum number of pipelined queries is configured with the `pipelining-limit` property:
+
+[source,properties]
+----
+# For PostgreSQL
+quarkus.datasource.reactive.postgresql.pipelining-limit=256
+# For MariaDB/MySQL
+quarkus.datasource.reactive.mysql.pipelining-limit=256
+----
+
+By default, `pipelining-limit` is set to 256.
+
 == Configuration Reference
 
 === Common Datasource
@@ -702,13 +854,21 @@ include::{generated-dir}/config/quarkus-datasource.adoc[opts=optional, leveloffs
 
 include::{generated-dir}/config/quarkus-reactive-datasource.adoc[opts=optional, leveloffset=+1]
 
-=== DB2
+=== IBM Db2
 
 include::{generated-dir}/config/quarkus-reactive-db2-client.adoc[opts=optional, leveloffset=+1]
 
 === MariaDB/MySQL
 
 include::{generated-dir}/config/quarkus-reactive-mysql-client.adoc[opts=optional, leveloffset=+1]
+
+=== Microsoft SQL Server
+
+include::{generated-dir}/config/quarkus-reactive-mssql-client.adoc[opts=optional, leveloffset=+1]
+
+=== Oracle
+
+include::{generated-dir}/config/quarkus-reactive-oracle-client.adoc[opts=optional, leveloffset=+1]
 
 === PostgreSQL
 

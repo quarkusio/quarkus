@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-oidc-client</artifactId>
     <name>Quarkus - OpenID Connect Client - Runtime</name>
-    <description>Use OpenID Connect Client to get and refresh access tokens</description>
+    <description>Get and refresh access tokens from OpenID Connect providers</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -20,15 +20,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http</artifactId>
+            <artifactId>quarkus-vertx</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -41,7 +37,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

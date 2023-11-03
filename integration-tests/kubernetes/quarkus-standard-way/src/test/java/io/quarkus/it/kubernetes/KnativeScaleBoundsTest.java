@@ -6,9 +6,8 @@ import static org.assertj.core.api.Assertions.entry;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,7 +21,7 @@ public class KnativeScaleBoundsTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("knative-scale-bounds")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("knative-scale-bounds.properties");
@@ -42,10 +41,10 @@ public class KnativeScaleBoundsTest {
                 .deserializeAsList(kubernetesDir.resolve("knative.yml"));
 
         assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).singleElement().satisfies(i -> {
-            assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
-                assertThat(s.getMetadata().getAnnotations()).contains(entry("autoscaling.knative.dev/minScale", "3"));
-                assertThat(s.getMetadata().getAnnotations()).contains(entry("autoscaling.knative.dev/maxScale", "5"));
-            });
+            Service service = (Service) i;
+            Map<String, String> annotations = service.getSpec().getTemplate().getMetadata().getAnnotations();
+            assertThat(annotations).contains(entry("autoscaling.knative.dev/minScale", "3"));
+            assertThat(annotations).contains(entry("autoscaling.knative.dev/maxScale", "5"));
         });
     }
 }

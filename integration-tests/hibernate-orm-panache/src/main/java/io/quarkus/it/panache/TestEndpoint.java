@@ -14,25 +14,26 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
-import javax.persistence.LockModeType;
-import javax.persistence.NoResultException;
-import javax.persistence.NonUniqueResultException;
-import javax.persistence.PersistenceException;
-import javax.transaction.Transactional;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElements;
-import javax.xml.bind.annotation.XmlTransient;
+import jakarta.inject.Inject;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.NonUniqueResultException;
+import jakarta.persistence.PersistenceException;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlElements;
+import jakarta.xml.bind.annotation.XmlTransient;
 
 import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.hibernate.jpa.QueryHints;
 import org.junit.jupiter.api.Assertions;
 
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
@@ -44,6 +45,7 @@ import io.quarkus.panache.common.exception.PanacheQueryException;
 @Path("test")
 public class TestEndpoint {
 
+    private static final String LINE_SEPARATOR = System.getProperty("line.separator");
     // fake unused injection point to force ArC to not remove this otherwise I can't mock it in the tests
     @Inject
     MockablePersonRepository mockablePersonRepository;
@@ -170,10 +172,70 @@ public class TestEndpoint {
         Assertions.assertEquals(person, persons.get(0));
         Assertions.assertEquals(1, Person.find("#Person.getByName", Parameters.with("name", "stef")).count());
         Assertions.assertThrows(PanacheQueryException.class, () -> Person.find("#Person.namedQueryNotFound").list());
+        Assertions.assertThrows(IllegalArgumentException.class,
+                () -> Person.find("#Person.getByName", Sort.by("name"), Parameters.with("name", "stef")));
         NamedQueryEntity.find("#NamedQueryMappedSuperClass.getAll").list();
         NamedQueryEntity.find("#NamedQueryEntity.getAll").list();
+        Assertions.assertThrows(PanacheQueryException.class, () -> NamedQueryEntity.find("NamedQueryEntity.getAll").list());
         NamedQueryWith2QueriesEntity.find("#NamedQueryWith2QueriesEntity.getAll1").list();
         NamedQueryWith2QueriesEntity.find("#NamedQueryWith2QueriesEntity.getAll2").list();
+
+        Assertions.assertEquals(1, Person.count("#Person.countAll"));
+        Assertions.assertThrows(PanacheQueryException.class, () -> Person.count("Person.countAll"));
+        Assertions.assertEquals(1, Person.count("#Person.countByName", Parameters.with("name", "stef").map()));
+        Assertions.assertEquals(1, Person.count("#Person.countByName", Parameters.with("name", "stef")));
+        Assertions.assertEquals(1, Person.count("#Person.countByName.ordinal", "stef"));
+
+        Assertions.assertEquals(1, Person.update("#Person.updateAllNames", Parameters.with("name", "stef2").map()));
+        persons = Person.find("#Person.getByName", Parameters.with("name", "stef2")).list();
+        Assertions.assertEquals(1, persons.size());
+
+        Assertions.assertThrows(PanacheQueryException.class,
+                () -> Person.update("Person.updateAllNames", Parameters.with("name", "stef2").map()));
+
+        Assertions.assertEquals(1, Person.update("#Person.updateAllNames", Parameters.with("name", "stef3")));
+        persons = Person.find("#Person.getByName", Parameters.with("name", "stef3")).list();
+        Assertions.assertEquals(1, persons.size());
+
+        Assertions.assertEquals(1, Person.update("#Person.updateNameById",
+                Parameters.with("name", "stef2").and("id", person.id).map()));
+        persons = Person.find("#Person.getByName", Parameters.with("name", "stef2")).list();
+        Assertions.assertEquals(1, persons.size());
+
+        Assertions.assertEquals(1, Person.update("#Person.updateNameById",
+                Parameters.with("name", "stef3").and("id", person.id)));
+        persons = Person.find("#Person.getByName", Parameters.with("name", "stef3")).list();
+        Assertions.assertEquals(1, persons.size());
+
+        Assertions.assertEquals(1, Person.update("#Person.updateNameById.ordinal", "stef", person.id));
+        persons = Person.find("#Person.getByName", Parameters.with("name", "stef")).list();
+        Assertions.assertEquals(1, persons.size());
+
+        Dog.deleteAll();
+        Assertions.assertEquals(1, Person.delete("#Person.deleteAll"));
+        Assertions.assertEquals(0, Person.find("").list().size());
+
+        Assertions.assertThrows(PanacheQueryException.class, () -> Person.delete("Person.deleteAll"));
+
+        person = makeSavedPerson();
+        Dog.deleteAll();
+        Assertions.assertEquals(1, Person.find("").list().size());
+        Assertions.assertEquals(1, Person.delete("#Person.deleteById", Parameters.with("id", person.id).map()));
+        Assertions.assertEquals(0, Person.find("").list().size());
+
+        person = makeSavedPerson();
+        Dog.deleteAll();
+        Assertions.assertEquals(1, Person.find("").list().size());
+        Assertions.assertEquals(1, Person.delete("#Person.deleteById", Parameters.with("id", person.id)));
+        Assertions.assertEquals(0, Person.find("").list().size());
+
+        person = makeSavedPerson();
+        Dog.deleteAll();
+        Assertions.assertEquals(1, Person.find("").list().size());
+        Assertions.assertEquals(1, Person.delete("#Person.deleteById.ordinal", person.id));
+        Assertions.assertEquals(0, Person.find("").list().size());
+
+        person = makeSavedPerson();
 
         //empty query
         persons = Person.find("").list();
@@ -290,10 +352,10 @@ public class TestEndpoint {
         makeSavedPerson("p2");
 
         // full form
-        int updateByIndexParameter = Person.update("update from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1");
+        int updateByIndexParameter = Person.update("update Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1");
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
 
-        int updateByNamedParameter = Person.update("update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
+        int updateByNamedParameter = Person.update("update Person2 p set p.name = 'stefNEW' where p.name = :pName",
                 Parameters.with("pName", "stefp2").map());
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated");
 
@@ -361,11 +423,11 @@ public class TestEndpoint {
         makeSavedPerson("p2");
 
         // full form
-        int updateByIndexParameter = personDao.update("update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
+        int updateByIndexParameter = personDao.update("update Person2 p set p.name = 'stefNEW' where p.name = ?1",
                 "stefp1");
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
 
-        int updateByNamedParameter = personDao.update("update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
+        int updateByNamedParameter = personDao.update("update Person2 p set p.name = 'stefNEW' where p.name = :pName",
                 Parameters.with("pName", "stefp2").map());
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated");
 
@@ -660,10 +722,70 @@ public class TestEndpoint {
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
         Assertions.assertThrows(PanacheQueryException.class, () -> personDao.find("#Person.namedQueryNotFound").list());
+        Assertions.assertThrows(IllegalArgumentException.class,
+                () -> personDao.find("#Person.getByName", Sort.by("name"), Parameters.with("name", "stef")));
         namedQueryRepository.find("#NamedQueryMappedSuperClass.getAll").list();
         namedQueryRepository.find("#NamedQueryEntity.getAll").list();
+        Assertions.assertThrows(PanacheQueryException.class, () -> namedQueryRepository.find("NamedQueryEntity.getAll").list());
         namedQueryWith2QueriesRepository.find("#NamedQueryWith2QueriesEntity.getAll1").list();
         namedQueryWith2QueriesRepository.find("#NamedQueryWith2QueriesEntity.getAll2").list();
+
+        Assertions.assertEquals(1, personDao.count("#Person.countAll"));
+        Assertions.assertThrows(PanacheQueryException.class, () -> personDao.count("Person.countAll"));
+        Assertions.assertEquals(1, personDao.count("#Person.countByName", Parameters.with("name", "stef").map()));
+        Assertions.assertEquals(1, personDao.count("#Person.countByName", Parameters.with("name", "stef")));
+        Assertions.assertEquals(1, personDao.count("#Person.countByName.ordinal", "stef"));
+
+        Assertions.assertEquals(1, personDao.update("#Person.updateAllNames", Parameters.with("name", "stef2").map()));
+        persons = personDao.find("#Person.getByName", Parameters.with("name", "stef2")).list();
+        Assertions.assertEquals(1, persons.size());
+
+        Assertions.assertThrows(PanacheQueryException.class,
+                () -> personDao.update("Person.updateAllNames", Parameters.with("name", "stef2").map()));
+
+        Assertions.assertEquals(1, personDao.update("#Person.updateAllNames", Parameters.with("name", "stef3")));
+        persons = personDao.find("#Person.getByName", Parameters.with("name", "stef3")).list();
+        Assertions.assertEquals(1, persons.size());
+
+        Assertions.assertEquals(1, personDao.update("#Person.updateNameById",
+                Parameters.with("name", "stef2").and("id", person.id).map()));
+        persons = personDao.find("#Person.getByName", Parameters.with("name", "stef2")).list();
+        Assertions.assertEquals(1, persons.size());
+
+        Assertions.assertEquals(1, personDao.update("#Person.updateNameById",
+                Parameters.with("name", "stef3").and("id", person.id)));
+        persons = personDao.find("#Person.getByName", Parameters.with("name", "stef3")).list();
+        Assertions.assertEquals(1, persons.size());
+
+        Assertions.assertEquals(1, personDao.update("#Person.updateNameById.ordinal", "stef", person.id));
+        persons = personDao.find("#Person.getByName", Parameters.with("name", "stef")).list();
+        Assertions.assertEquals(1, persons.size());
+
+        Dog.deleteAll();
+        Assertions.assertEquals(1, personDao.delete("#Person.deleteAll"));
+        Assertions.assertEquals(0, personDao.find("").list().size());
+
+        Assertions.assertThrows(PanacheQueryException.class, () -> personDao.delete("Person.deleteAll"));
+
+        person = makeSavedPersonDao();
+        dogDao.deleteAll();
+        Assertions.assertEquals(1, personDao.find("").list().size());
+        Assertions.assertEquals(1, personDao.delete("#Person.deleteById", Parameters.with("id", person.id).map()));
+        Assertions.assertEquals(0, personDao.find("").list().size());
+
+        person = makeSavedPersonDao();
+        dogDao.deleteAll();
+        Assertions.assertEquals(1, personDao.find("").list().size());
+        Assertions.assertEquals(1, personDao.delete("#Person.deleteById", Parameters.with("id", person.id)));
+        Assertions.assertEquals(0, personDao.find("").list().size());
+
+        person = makeSavedPersonDao();
+        dogDao.deleteAll();
+        Assertions.assertEquals(1, personDao.find("").list().size());
+        Assertions.assertEquals(1, personDao.delete("#Person.deleteById.ordinal", person.id));
+        Assertions.assertEquals(0, personDao.find("").list().size());
+
+        person = makeSavedPerson();
 
         //empty query
         persons = personDao.find("").list();
@@ -1132,7 +1254,17 @@ public class TestEndpoint {
         person = Person.find("name = ?1", "2").project(PersonName.class).firstResult();
         Assertions.assertEquals("2", person.name);
 
+        person = Person.find(String.format(
+                "select uniqueName, name%sfrom io.quarkus.it.panache.Person%swhere name = ?1",
+                LINE_SEPARATOR, LINE_SEPARATOR), "2")
+                .project(PersonName.class)
+                .firstResult();
+        Assertions.assertEquals("2", person.name);
+
         person = Person.find("name = :name", Parameters.with("name", "2")).project(PersonName.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("#Person.getByName", Parameters.with("name", "2")).project(PersonName.class).firstResult();
         Assertions.assertEquals("2", person.name);
 
         PanacheQuery<PersonName> query = Person.findAll().project(PersonName.class).page(0, 2);
@@ -1146,6 +1278,76 @@ public class TestEndpoint {
         DogDto dogDto = Dog.findAll().project(DogDto.class).firstResult();
         Assertions.assertEquals("stef", dogDto.ownerName);
         owner.delete();
+
+        CatOwner catOwner = new CatOwner("Julie");
+        catOwner.persist();
+        Cat bubulle = new Cat("Bubulle", catOwner);
+        bubulle.weight = 8.5d;
+        bubulle.persist();
+
+        CatDto catDto = Cat.findAll().project(CatDto.class).firstResult();
+        Assertions.assertEquals("Julie", catDto.ownerName);
+
+        CatProjectionBean fieldsProjection = Cat.find("select c.name, c.owner.name as ownerName from Cat c")
+                .project(CatProjectionBean.class).firstResult();
+        Assertions.assertEquals("Julie", fieldsProjection.getOwnerName());
+
+        fieldsProjection = Cat.find("#Cat.NameAndOwnerName")
+                .project(CatProjectionBean.class).firstResult();
+        Assertions.assertEquals("Julie", fieldsProjection.getOwnerName());
+
+        PanacheQueryException exception = Assertions.assertThrows(PanacheQueryException.class,
+                () -> Cat.find("select new FakeClass('fake_cat', 'fake_owner', 12.5 from Cat c)")
+                        .project(CatProjectionBean.class).firstResult());
+        Assertions.assertTrue(
+                exception.getMessage().startsWith("Unable to perform a projection on a 'select [distinct]? new' query"));
+
+        CatProjectionBean constantProjection = Cat.find("select 'fake_cat', 'fake_owner', 12.5D from Cat c")
+                .project(CatProjectionBean.class).firstResult();
+        Assertions.assertEquals("fake_cat", constantProjection.getName());
+        Assertions.assertEquals("fake_owner", constantProjection.getOwnerName());
+        Assertions.assertEquals(12.5d, constantProjection.getWeight());
+
+        PanacheQuery<CatProjectionBean> projectionQuery = Cat
+                // The spaces at the beginning are intentional
+                .find("   SELECT c.name, cast(null as string), SUM(c.weight) from Cat c where name = :name group by name  ",
+                        Parameters.with("name", bubulle.name))
+                .project(CatProjectionBean.class);
+        CatProjectionBean aggregationProjection = projectionQuery.firstResult();
+        Assertions.assertEquals(bubulle.name, aggregationProjection.getName());
+        Assertions.assertNull(aggregationProjection.getOwnerName());
+        Assertions.assertEquals(bubulle.weight, aggregationProjection.getWeight());
+
+        long count = projectionQuery.count();
+        Assertions.assertEquals(1L, count);
+
+        PanacheQuery<CatProjectionBean> projectionDistinctQuery = Cat
+                // The spaces at the beginning are intentional
+                .find("   SELECT   disTINct  c.name, cast(null as string), SUM(c.weight) from Cat c where name = :name group by name  ",
+                        Parameters.with("name", bubulle.name))
+                .project(CatProjectionBean.class);
+        CatProjectionBean aggregationDistinctProjection = projectionDistinctQuery.singleResult();
+        Assertions.assertEquals(bubulle.name, aggregationDistinctProjection.getName());
+        Assertions.assertNull(aggregationDistinctProjection.getOwnerName());
+        Assertions.assertEquals(bubulle.weight, aggregationDistinctProjection.getWeight());
+
+        long countDistinct = projectionDistinctQuery.count();
+        Assertions.assertEquals(1L, countDistinct);
+
+        // We are checking that not everything gets lowercased
+        PanacheQuery<CatProjectionBean> letterCaseQuery = Cat
+                // The spaces at the beginning are intentional
+                .find("   SELECT   disTINct  'GARFIELD', 'JoN ArBuCkLe' from Cat c where name = :NamE group by name  ",
+                        Parameters.with("NamE", bubulle.name))
+                .project(CatProjectionBean.class);
+
+        CatProjectionBean catView = letterCaseQuery.firstResult();
+        // Must keep the letter case
+        Assertions.assertEquals("GARFIELD", catView.getName());
+        Assertions.assertEquals("JoN ArBuCkLe", catView.getOwnerName());
+
+        Cat.deleteAll();
+        CatOwner.deleteAll();
 
         return "OK";
     }
@@ -1317,9 +1519,9 @@ public class TestEndpoint {
     public String testBug8254() {
         CatOwner owner = new CatOwner("8254");
         owner.persist();
-        new Cat(owner).persist();
-        new Cat(owner).persist();
-        new Cat(owner).persist();
+        new Cat("Cat 1", owner).persist();
+        new Cat("Cat 2", owner).persist();
+        new Cat("Cat 3", owner).persist();
 
         // This used to fail with an invalid query "SELECT COUNT(*) SELECT DISTINCT cat.owner FROM Cat cat WHERE cat.owner = ?1"
         // Should now result in a valid query "SELECT COUNT(DISTINCT cat.owner) FROM Cat cat WHERE cat.owner = ?1"
@@ -1337,6 +1539,9 @@ public class TestEndpoint {
         assertEquals(3L, Cat.find("FROM Cat WHERE owner = ?1", owner).count());
         assertEquals(3L, Cat.find("owner", owner).count());
         assertEquals(1L, CatOwner.find("name = ?1", "8254").count());
+
+        Cat.deleteAll();
+        CatOwner.deleteAll();
 
         return "OK";
     }
@@ -1447,6 +1652,66 @@ public class TestEndpoint {
         }
 
         Person.deleteAll();
+
+        return "OK";
+    }
+
+    @GET
+    @Path("testSortByNullPrecedence")
+    @Transactional
+    public String testSortByNullPrecedence() {
+        Person.deleteAll();
+
+        Person stefPerson = new Person();
+        stefPerson.name = "Stef";
+        stefPerson.persist();
+
+        Person josePerson = new Person();
+        josePerson.name = null;
+        josePerson.persist();
+
+        List<Person> persons = Person.findAll(Sort.by("name", Sort.NullPrecedence.NULLS_FIRST)).list();
+        assertEquals(josePerson.id, persons.get(0).id);
+        persons = Person.findAll(Sort.by("name", Sort.NullPrecedence.NULLS_LAST)).list();
+        assertEquals(josePerson.id, persons.get(persons.size() - 1).id);
+
+        Person.deleteAll();
+
+        return "OK";
+    }
+
+    @GET
+    @Path("testEnhancement27184DeleteDetached")
+    // NOT @Transactional
+    public String testEnhancement27184DeleteDetached() {
+        QuarkusTransaction.begin();
+        Person.deleteAll();
+        QuarkusTransaction.commit();
+
+        QuarkusTransaction.begin();
+        Person person = new Person();
+        person.name = "Yoann";
+        person.persist();
+        QuarkusTransaction.commit();
+
+        QuarkusTransaction.begin();
+        assertTrue(Person.findByIdOptional(person.id).isPresent());
+        QuarkusTransaction.commit();
+
+        QuarkusTransaction.begin();
+        // 'person' is detached at this point,
+        // since the previous transaction and session were closed.
+        // We want .delete() to work regardless.
+        person.delete();
+        QuarkusTransaction.commit();
+
+        QuarkusTransaction.begin();
+        assertFalse(Person.findByIdOptional(person.id).isPresent());
+        QuarkusTransaction.commit();
+
+        QuarkusTransaction.begin();
+        Person.deleteAll();
+        QuarkusTransaction.commit();
 
         return "OK";
     }

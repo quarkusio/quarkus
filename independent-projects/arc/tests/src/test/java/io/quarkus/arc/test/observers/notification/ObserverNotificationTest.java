@@ -2,13 +2,16 @@ package io.quarkus.arc.test.observers.notification;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class ObserverNotificationTest {
 
@@ -19,7 +22,7 @@ public class ObserverNotificationTest {
     public void testContextualInstanceIsUsed() {
         assertEquals(0, StringObserver.CONSTRUCTED.get());
         assertEquals(0, StringObserver.NOTIFIED.get());
-        Arc.container().beanManager().fireEvent("hello");
+        Arc.container().beanManager().getEvent().fire("hello");
         assertEquals(1, StringObserver.CONSTRUCTED.get());
         assertEquals(1, StringObserver.NOTIFIED.get());
     }

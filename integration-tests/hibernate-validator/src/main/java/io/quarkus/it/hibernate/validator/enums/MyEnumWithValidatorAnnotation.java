@@ -1,6 +1,6 @@
 package io.quarkus.it.hibernate.validator.enums;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * Simply adding this class to the code, without even referencing it from anywhere,

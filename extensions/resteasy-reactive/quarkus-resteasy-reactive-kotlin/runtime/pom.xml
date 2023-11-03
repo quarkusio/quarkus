@@ -15,10 +15,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-server-common</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-jdk8</artifactId>
         </dependency>
@@ -27,8 +23,16 @@
             <artifactId>kotlinx-coroutines-jdk8</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jetbrains.kotlinx</groupId>
-            <artifactId>kotlinx-coroutines-reactive</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-reactive-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus.resteasy.reactive</groupId>
+            <artifactId>resteasy-reactive</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>mutiny-kotlin</artifactId>
         </dependency>
     </dependencies>
 
@@ -37,11 +41,15 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <dependencyCondition>
                         <artifact>io.quarkus:quarkus-kotlin</artifact>
                     </dependencyCondition>
+                    <capabilities>
+                        <provides>io.quarkus.rest.kotlinx-serialization</provides>
+                        <provides>io.quarkus.resteasy.reactive.json.kotlinx-serialization</provides>
+                    </capabilities>
                 </configuration>
             </plugin>
             <plugin>

@@ -11,3 +11,5 @@ metadata:
   categories:
   - "compatibility"
   status: "stable"
+  config:
+  - "quarkus.spring-cloud-config."

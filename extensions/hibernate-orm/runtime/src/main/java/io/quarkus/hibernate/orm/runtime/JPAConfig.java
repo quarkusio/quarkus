@@ -1,8 +1,8 @@
 package io.quarkus.hibernate.orm.runtime;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -10,44 +10,50 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.BeforeDestroyed;
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 
 import org.jboss.logging.Logger;
 
-@Singleton
+import io.quarkus.arc.BeanDestroyer;
+import io.quarkus.hibernate.orm.runtime.boot.RuntimePersistenceUnitDescriptor;
+
 public class JPAConfig {
 
     private static final Logger LOGGER = Logger.getLogger(JPAConfig.class.getName());
 
-    private final Map<String, Set<String>> entityPersistenceUnitMapping;
-
-    private final Map<String, LazyPersistenceUnit> persistenceUnits;
+    private final Map<String, LazyPersistenceUnit> persistenceUnits = new HashMap<>();
+    private final Set<String> deactivatedPersistenceUnitNames = new HashSet<>();
 
     @Inject
-    public JPAConfig(JPAConfigSupport jpaConfigSupport) {
-        this.entityPersistenceUnitMapping = Collections.unmodifiableMap(jpaConfigSupport.entityPersistenceUnitMapping);
-
-        Map<String, LazyPersistenceUnit> persistenceUnitsBuilder = new HashMap<>();
-        for (String persistenceUnitName : jpaConfigSupport.persistenceUnitNames) {
-            persistenceUnitsBuilder.put(persistenceUnitName, new LazyPersistenceUnit(persistenceUnitName));
+    public JPAConfig(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
+        Map<String, HibernateOrmRuntimeConfigPersistenceUnit> puConfigMap = hibernateOrmRuntimeConfig
+                .getAllPersistenceUnitConfigsAsMap();
+        for (RuntimePersistenceUnitDescriptor descriptor : PersistenceUnitsHolder.getPersistenceUnitDescriptors()) {
+            String puName = descriptor.getName();
+            var puConfig = puConfigMap.getOrDefault(descriptor.getConfigurationName(),
+                    new HibernateOrmRuntimeConfigPersistenceUnit());
+            if (puConfig.active.isPresent() && !puConfig.active.get()) {
+                LOGGER.infof("Hibernate ORM persistence unit '%s' was deactivated through configuration properties",
+                        puName);
+                deactivatedPersistenceUnitNames.add(puName);
+            } else {
+                persistenceUnits.put(puName, new LazyPersistenceUnit(puName));
+            }
         }
-        this.persistenceUnits = persistenceUnitsBuilder;
     }
 
     void startAll() {
         List<CompletableFuture<?>> start = new ArrayList<>();
-        //start PU's in parallel, for faster startup
-        //also works around https://github.com/quarkusio/quarkus/issues/17304 to some extent
+        //by using a dedicated thread for starting up the PR,
+        //we work around https://github.com/quarkusio/quarkus/issues/17304 to some extent
         //as the main thread is now no longer polluted with ThreadLocals by default
         //this is not a complete fix, but will help as long as the test methods
         //don't access the datasource directly, but only over HTTP calls
+        boolean moreThanOneThread = persistenceUnits.size() > 1;
+        //start PUs in parallel, for faster startup
         for (Map.Entry<String, LazyPersistenceUnit> i : persistenceUnits.entrySet()) {
             CompletableFuture<Object> future = new CompletableFuture<>();
             start.add(future);
@@ -61,7 +67,7 @@ public class JPAConfig {
                         future.completeExceptionally(t);
                     }
                 }
-            }, "JPA Startup Thread: " + i.getKey()).start();
+            }, moreThanOneThread ? "JPA Startup Thread: " + i.getKey() : "JPA Startup Thread").start();
         }
         for (CompletableFuture<?> i : start) {
             try {
@@ -85,6 +91,12 @@ public class JPAConfig {
         }
 
         if (lazyPersistenceUnit == null) {
+            if (deactivatedPersistenceUnitNames.contains(unitName)) {
+                throw new IllegalStateException(
+                        "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit "
+                                + unitName
+                                + ": Hibernate ORM was deactivated through configuration properties");
+            }
             throw new IllegalArgumentException(
                     String.format(Locale.ROOT, "Unable to find an EntityManagerFactory for persistence unit '%s'", unitName));
         }
@@ -93,40 +105,35 @@ public class JPAConfig {
     }
 
     /**
-     * Returns the registered persistence units.
+     * Returns the registered, active persistence units.
      *
-     * @return Set containing the names of all registered persistence units.
+     * @return Set containing the names of all registered, actives persistence units.
      */
     public Set<String> getPersistenceUnits() {
         return persistenceUnits.keySet();
     }
 
     /**
-     * Returns the set of persistence units an entity is attached to.
-     */
-    public Set<String> getPersistenceUnitsForEntity(String entityClass) {
-        return entityPersistenceUnitMapping.getOrDefault(entityClass, Collections.emptySet());
-    }
-
-    /**
-     * Need to shutdown all instances of Hibernate ORM before the actual destroy event,
-     * as it might need to use the datasources during shutdown.
+     * Returns the name of persistence units that were deactivated through configuration properties.
      *
-     * @param event ignored
+     * @return Set containing the names of all persistence units that were deactivated through configuration properties.
      */
-    void destroy(@Observes @BeforeDestroyed(ApplicationScoped.class) Object event) {
-        for (LazyPersistenceUnit factory : persistenceUnits.values()) {
-            try {
-                factory.close();
-            } catch (Exception e) {
-                LOGGER.warn("Unable to close the EntityManagerFactory: " + factory, e);
-            }
-        }
+    public Set<String> getDeactivatedPersistenceUnitNames() {
+        return deactivatedPersistenceUnitNames;
     }
 
-    @PreDestroy
-    void destroy() {
-        persistenceUnits.clear();
+    public static class Destroyer implements BeanDestroyer<JPAConfig> {
+        @Override
+        public void destroy(JPAConfig instance, CreationalContext<JPAConfig> creationalContext, Map<String, Object> params) {
+            for (LazyPersistenceUnit factory : instance.persistenceUnits.values()) {
+                try {
+                    factory.close();
+                } catch (Exception e) {
+                    LOGGER.warn("Unable to close the EntityManagerFactory: " + factory, e);
+                }
+            }
+            instance.persistenceUnits.clear();
+        }
     }
 
     static final class LazyPersistenceUnit {

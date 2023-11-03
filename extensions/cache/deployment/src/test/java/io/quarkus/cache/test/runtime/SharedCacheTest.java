@@ -2,11 +2,9 @@ package io.quarkus.cache.test.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import javax.enterprise.context.Dependent;
-import javax.inject.Inject;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,8 +20,8 @@ public class SharedCacheTest {
     private static final Object KEY = new Object();
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClasses(CachedService.class, LocalCachedService.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .withApplicationRoot(jar -> jar.addClasses(CachedService.class, LocalCachedService.class));
 
     @Inject
     CachedService externalCachedService;

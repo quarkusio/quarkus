@@ -8,15 +8,16 @@ import java.util.Optional;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 
 public class RunningQuarkusApplicationImpl implements RunningQuarkusApplication {
 
     private final Closeable closeTask;
-    private final ClassLoader classLoader;
+    private final QuarkusClassLoader classLoader;
 
     private boolean closing;
 
-    public RunningQuarkusApplicationImpl(Closeable closeTask, ClassLoader classLoader) {
+    public RunningQuarkusApplicationImpl(Closeable closeTask, QuarkusClassLoader classLoader) {
         this.closeTask = closeTask;
         this.classLoader = classLoader;
     }
@@ -30,7 +31,11 @@ public class RunningQuarkusApplicationImpl implements RunningQuarkusApplication 
     public void close() throws Exception {
         if (!closing) {
             closing = true;
-            closeTask.close();
+            try {
+                closeTask.close();
+            } finally {
+                classLoader.close();
+            }
         }
     }
 
@@ -76,7 +81,7 @@ public class RunningQuarkusApplicationImpl implements RunningQuarkusApplication 
         try {
             Class<?> actualClass = Class.forName(clazz.getName(), true,
                     classLoader);
-            Class<?> cdi = classLoader.loadClass("javax.enterprise.inject.spi.CDI");
+            Class<?> cdi = classLoader.loadClass("jakarta.enterprise.inject.spi.CDI");
             Object instance = cdi.getMethod("current").invoke(null);
             Method selectMethod = cdi.getMethod("select", Class.class, Annotation[].class);
             Object cdiInstance = selectMethod.invoke(instance, actualClass, qualifiers);

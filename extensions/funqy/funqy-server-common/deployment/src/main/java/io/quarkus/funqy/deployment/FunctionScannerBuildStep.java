@@ -63,13 +63,20 @@ public class FunctionScannerBuildStep {
             classNames.add(className);
             classes.add(method.declaringClass());
             String methodName = method.name();
+
+            if (!Modifier.isPublic(method.flags())) {
+                throw new RuntimeException(
+                        String.format("Method '%s' annotated with '@Funq' declared in the class '%s' is not public.",
+                                methodName, className));
+            }
+
             String functionName = null;
             if (funqMethod.value() != null) {
                 functionName = funqMethod.value().asString();
             }
             if (functionName != null && functionName.isEmpty())
                 functionName = null;
-            functions.produce(new FunctionBuildItem(className, methodName, functionName));
+            functions.produce(new FunctionBuildItem(className, methodName, method.descriptor(), functionName));
 
             String source = FunctionScannerBuildStep.class.getSimpleName() + " > " + method.declaringClass() + "[" + method
                     + "]";
@@ -85,8 +92,8 @@ public class FunctionScannerBuildStep {
                         .source(source)
                         .build());
             }
-            for (short i = 0; i < method.parameters().size(); i++) {
-                Type parameterType = method.parameters().get(i);
+            for (short i = 0; i < method.parametersCount(); i++) {
+                Type parameterType = method.parameterType(i);
                 if (!hasAnnotation(method, i, CONTEXT)) {
                     reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
                             .type(parameterType)
@@ -101,13 +108,17 @@ public class FunctionScannerBuildStep {
         }
         Set<ClassInfo> withoutDefaultCtor = new HashSet<>();
         for (ClassInfo clazz : classes) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true, clazz.name().toString()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(clazz.name().toString()).methods()
+                    .fields().build());
             if (!clazz.hasNoArgsConstructor()) {
                 withoutDefaultCtor.add(clazz);
             }
         }
         unremovableBeans.produce(new UnremovableBeanBuildItem(b -> classNames.contains(b.getBeanClass().toString())));
         generateDefaultConstructors(transformers, withoutDefaultCtor);
+
+        // we need to use an annotation transformer here instead of an AdditionalBeanBuildItem because
+        // the use of the latter along with the BeanArchiveIndexBuildItem results in build cycles
         annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
 
             @Override
@@ -120,9 +131,13 @@ public class FunctionScannerBuildStep {
                 ClassInfo clazz = transformationContext.getTarget().asClass();
                 if (!classes.contains(clazz))
                     return;
-                Transformation transformation = transformationContext.transform()
-                        .add(BuiltinScope.DEPENDENT.getName());
-                if (clazz.classAnnotation(DotNames.TYPED) == null) {
+                if (BuiltinScope.isDeclaredOn(clazz)) {
+                    // nothing to do as the presence of a scope will automatically qualify the class as a bean
+                    return;
+                }
+                Transformation transformation = transformationContext.transform();
+                transformation.add(BuiltinScope.DEPENDENT.getName());
+                if (clazz.declaredAnnotation(DotNames.TYPED) == null) {
                     // Add @Typed(MySubresource.class)
                     transformation.add(createTypedAnnotationInstance(clazz));
                 }
@@ -152,10 +167,11 @@ public class FunctionScannerBuildStep {
         recorder.init();
         for (FunctionBuildItem function : functions) {
             if (function.getFunctionName() == null) {
-                recorder.register(context.classProxy(function.getClassName()), function.getMethodName());
+                recorder.register(context.classProxy(function.getClassName()), function.getMethodName(),
+                        function.getDescriptor());
             } else {
                 recorder.register(context.classProxy(function.getClassName()), function.getMethodName(),
-                        function.getFunctionName());
+                        function.getDescriptor(), function.getFunctionName());
             }
         }
         return FunctionInitializedBuildItem.SINGLETON;
@@ -165,6 +181,12 @@ public class FunctionScannerBuildStep {
             Set<ClassInfo> withoutDefaultCtor) {
 
         for (ClassInfo classInfo : withoutDefaultCtor) {
+            // don't generate constructor for normal scoped beans as the Quarkus Arc does that for us
+            final BuiltinScope scope = BuiltinScope.from(classInfo);
+            if (scope != null && scope.getInfo().isNormal()) {
+                continue;
+            }
+
             // keep it super simple - only generate default constructor is the object is a direct descendant of Object
             if (!(classInfo.superClassType() != null && classInfo.superClassType().name().equals(DotNames.OBJECT))) {
                 return;
@@ -181,7 +203,8 @@ public class FunctionScannerBuildStep {
                                 public void visit(int version, int access, String name, String signature, String superName,
                                         String[] interfaces) {
                                     super.visit(version, access, name, signature, superName, interfaces);
-                                    MethodVisitor ctor = visitMethod(Modifier.PUBLIC, "<init>", "()V", null,
+                                    MethodVisitor ctor = visitMethod(Modifier.PUBLIC | Opcodes.ACC_SYNTHETIC, "<init>", "()V",
+                                            null,
                                             null);
                                     ctor.visitCode();
                                     ctor.visitVarInsn(Opcodes.ALOAD, 0);

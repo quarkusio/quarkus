@@ -1,14 +1,13 @@
 package io.quarkus.qute.deployment.i18n;
 
+import static io.quarkus.qute.i18n.MessageBundle.DEFAULT_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Locale;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,7 +21,7 @@ public class MessageBundleLogicalLineTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Messages.class)
                     .addAsResource("messages/msg_cs.properties")
                     .addAsResource(new StringAsset(
@@ -40,7 +39,7 @@ public class MessageBundleLogicalLineTest {
                 foo.instance().setAttribute(MessageBundles.ATTRIBUTE_LOCALE, Locale.forLanguageTag("cs")).render());
     }
 
-    @MessageBundle(locale = "en")
+    @MessageBundle(value = DEFAULT_NAME, locale = "en")
     public interface Messages {
 
         @Message("Hello {name}!")

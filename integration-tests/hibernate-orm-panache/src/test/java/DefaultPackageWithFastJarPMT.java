@@ -1,7 +1,5 @@
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -15,7 +13,7 @@ public class DefaultPackageWithFastJarPMT {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(PackagelessCat.class, TestResources.class))
             .setApplicationName("default-package")
             .setApplicationVersion(Version.getVersion())

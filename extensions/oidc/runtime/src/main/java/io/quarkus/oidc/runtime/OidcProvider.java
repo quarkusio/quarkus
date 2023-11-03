@@ -1,18 +1,30 @@
 package io.quarkus.oidc.runtime;
 
+import java.io.Closeable;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import jakarta.json.JsonObject;
+
+import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jws.JsonWebSignature;
+import org.jose4j.jwt.MalformedClaimException;
 import org.jose4j.jwt.consumer.ErrorCodeValidator;
+import org.jose4j.jwt.consumer.ErrorCodes;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
+import org.jose4j.jwt.consumer.JwtContext;
+import org.jose4j.jwt.consumer.Validator;
+import org.jose4j.jwx.HeaderParameterNames;
 import org.jose4j.jwx.JsonWebStructure;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.UnresolvableKeyException;
@@ -21,50 +33,83 @@ import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.TokenCustomizer;
 import io.quarkus.oidc.TokenIntrospection;
+import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.AuthenticationFailedException;
-import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.RoutingContext;
 
-public class OidcProvider {
+public class OidcProvider implements Closeable {
 
     private static final Logger LOG = Logger.getLogger(OidcProvider.class);
     private static final String ANY_ISSUER = "any";
-    private static final String[] SUPPORTED_ALGORITHMS = new String[] { SignatureAlgorithm.RS256.getAlgorithm(),
+    private static final String ANY_AUDIENCE = "any";
+    private static final String[] ASYMMETRIC_SUPPORTED_ALGORITHMS = new String[] { SignatureAlgorithm.RS256.getAlgorithm(),
             SignatureAlgorithm.RS384.getAlgorithm(),
             SignatureAlgorithm.RS512.getAlgorithm(),
             SignatureAlgorithm.ES256.getAlgorithm(),
             SignatureAlgorithm.ES384.getAlgorithm(),
-            SignatureAlgorithm.ES512.getAlgorithm() };
-    private static final AlgorithmConstraints ALGORITHM_CONSTRAINTS = new AlgorithmConstraints(
-            AlgorithmConstraints.ConstraintType.PERMIT, SUPPORTED_ALGORITHMS);
+            SignatureAlgorithm.ES512.getAlgorithm(),
+            SignatureAlgorithm.PS256.getAlgorithm(),
+            SignatureAlgorithm.PS384.getAlgorithm(),
+            SignatureAlgorithm.PS512.getAlgorithm(),
+            SignatureAlgorithm.EDDSA.getAlgorithm() };
+    private static final AlgorithmConstraints ASYMMETRIC_ALGORITHM_CONSTRAINTS = new AlgorithmConstraints(
+            AlgorithmConstraints.ConstraintType.PERMIT, ASYMMETRIC_SUPPORTED_ALGORITHMS);
+    private static final AlgorithmConstraints SYMMETRIC_ALGORITHM_CONSTRAINTS = new AlgorithmConstraints(
+            AlgorithmConstraints.ConstraintType.PERMIT, SignatureAlgorithm.HS256.getAlgorithm());
 
     final OidcProviderClient client;
-    final RefreshableVerificationKeyResolver keyResolver;
+    final RefreshableVerificationKeyResolver asymmetricKeyResolver;
     final OidcTenantConfig oidcConfig;
+    final TokenCustomizer tokenCustomizer;
     final String issuer;
     final String[] audience;
+    final Map<String, String> requiredClaims;
+    final Key tokenDecryptionKey;
+    final AlgorithmConstraints requiredAlgorithmConstraints;
 
-    public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks) {
-        this.client = client;
-        this.oidcConfig = oidcConfig;
-        this.keyResolver = jwks == null ? null : new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval);
-
-        this.issuer = checkIssuerProp();
-        this.audience = checkAudienceProp();
+    public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks, Key tokenDecryptionKey) {
+        this(client, oidcConfig, jwks, TokenCustomizerFinder.find(oidcConfig), tokenDecryptionKey);
     }
 
-    public OidcProvider(String publicKeyEnc, OidcTenantConfig oidcConfig) {
-        this.client = null;
+    public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks,
+            TokenCustomizer tokenCustomizer, Key tokenDecryptionKey) {
+        this.client = client;
         this.oidcConfig = oidcConfig;
-        this.keyResolver = new LocalPublicKeyResolver(publicKeyEnc);
+        this.tokenCustomizer = tokenCustomizer;
+        this.asymmetricKeyResolver = jwks == null ? null
+                : new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval);
+
         this.issuer = checkIssuerProp();
         this.audience = checkAudienceProp();
+        this.requiredClaims = checkRequiredClaimsProp();
+        this.tokenDecryptionKey = tokenDecryptionKey;
+        this.requiredAlgorithmConstraints = checkSignatureAlgorithm();
+    }
+
+    public OidcProvider(String publicKeyEnc, OidcTenantConfig oidcConfig, Key tokenDecryptionKey) {
+        this.client = null;
+        this.oidcConfig = oidcConfig;
+        this.tokenCustomizer = TokenCustomizerFinder.find(oidcConfig);
+        this.asymmetricKeyResolver = new LocalPublicKeyResolver(publicKeyEnc);
+        this.issuer = checkIssuerProp();
+        this.audience = checkAudienceProp();
+        this.requiredClaims = checkRequiredClaimsProp();
+        this.tokenDecryptionKey = tokenDecryptionKey;
+        this.requiredAlgorithmConstraints = checkSignatureAlgorithm();
+    }
+
+    private AlgorithmConstraints checkSignatureAlgorithm() {
+        if (oidcConfig != null && oidcConfig.token.signatureAlgorithm.isPresent()) {
+            String configuredAlg = oidcConfig.token.signatureAlgorithm.get().getAlgorithm();
+            return new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT, configuredAlg);
+        } else {
+            return null;
+        }
     }
 
     private String checkIssuerProp() {
@@ -83,23 +128,81 @@ public class OidcProvider {
         return audienceProp != null ? audienceProp.toArray(new String[] {}) : null;
     }
 
-    public TokenVerificationResult verifyJwtToken(String token) throws InvalidJwtException {
+    private Map<String, String> checkRequiredClaimsProp() {
+        return oidcConfig != null ? oidcConfig.token.requiredClaims : null;
+    }
+
+    public TokenVerificationResult verifySelfSignedJwtToken(String token) throws InvalidJwtException {
+        return verifyJwtTokenInternal(token, true, false, null, SYMMETRIC_ALGORITHM_CONSTRAINTS, new SymmetricKeyResolver(),
+                true);
+    }
+
+    public TokenVerificationResult verifyJwtToken(String token, boolean enforceAudienceVerification, boolean subjectRequired,
+            String nonce)
+            throws InvalidJwtException {
+        return verifyJwtTokenInternal(customizeJwtToken(token), enforceAudienceVerification, subjectRequired, nonce,
+                (requiredAlgorithmConstraints != null ? requiredAlgorithmConstraints : ASYMMETRIC_ALGORITHM_CONSTRAINTS),
+                asymmetricKeyResolver, true);
+    }
+
+    public TokenVerificationResult verifyLogoutJwtToken(String token) throws InvalidJwtException {
+        final boolean enforceExpReq = !oidcConfig.token.age.isPresent();
+        TokenVerificationResult result = verifyJwtTokenInternal(token, true, false, null, ASYMMETRIC_ALGORITHM_CONSTRAINTS,
+                asymmetricKeyResolver,
+                enforceExpReq);
+        if (!enforceExpReq) {
+            // Expiry check was skipped during the initial verification but if the logout token contains the exp claim
+            // then it must be verified
+            if (isTokenExpired(result.localVerificationResult.getLong(Claims.exp.name()))) {
+                String error = String.format("Logout token for client %s has expired", oidcConfig.clientId.get());
+                LOG.debugf(error);
+                throw new InvalidJwtException(error, List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)), null);
+            }
+        }
+        return result;
+    }
+
+    private TokenVerificationResult verifyJwtTokenInternal(String token,
+            boolean enforceAudienceVerification,
+            boolean subjectRequired,
+            String nonce,
+            AlgorithmConstraints algConstraints,
+            VerificationKeyResolver verificationKeyResolver, boolean enforceExpReq) throws InvalidJwtException {
         JwtConsumerBuilder builder = new JwtConsumerBuilder();
 
-        builder.setVerificationKeyResolver(keyResolver);
+        builder.setVerificationKeyResolver(verificationKeyResolver);
 
-        builder.setJwsAlgorithmConstraints(ALGORITHM_CONSTRAINTS);
+        builder.setJwsAlgorithmConstraints(algConstraints);
 
-        builder.setRequireExpirationTime();
+        if (enforceExpReq) {
+            builder.setRequireExpirationTime();
+        }
+        if (subjectRequired) {
+            builder.setRequireSubject();
+        }
+
+        if (nonce != null) {
+            builder.registerValidator(new CustomClaimsValidator(Map.of(OidcConstants.NONCE, nonce)));
+        }
+
         builder.setRequireIssuedAt();
 
         if (issuer != null) {
             builder.setExpectedIssuer(issuer);
         }
         if (audience != null) {
-            builder.setExpectedAudience(audience);
+            if (audience.length == 1 && audience[0].equals(ANY_AUDIENCE)) {
+                builder.setSkipDefaultAudienceValidation();
+            } else {
+                builder.setExpectedAudience(audience);
+            }
+        } else if (enforceAudienceVerification) {
+            builder.setExpectedAudience(oidcConfig.clientId.get());
         } else {
             builder.setSkipDefaultAudienceValidation();
+        }
+        if (requiredClaims != null && !requiredClaims.isEmpty()) {
+            builder.registerValidator(new CustomClaimsValidator(requiredClaims));
         }
 
         if (oidcConfig.token.lifespanGrace.isPresent()) {
@@ -125,68 +228,138 @@ public class OidcProvider {
             }
             throw ex;
         }
-        return new TokenVerificationResult(OidcUtils.decodeJwtContent(token), null);
+        TokenVerificationResult result = new TokenVerificationResult(OidcUtils.decodeJwtContent(token), null);
+
+        verifyTokenAge(result.localVerificationResult.getLong(Claims.iat.name()));
+        return result;
     }
 
-    public Uni<TokenVerificationResult> refreshJwksAndVerifyJwtToken(String token) {
-        return keyResolver.refresh().onItem().transformToUni(new Function<Void, Uni<? extends TokenVerificationResult>>() {
-
-            @Override
-            public Uni<? extends TokenVerificationResult> apply(Void v) {
-                try {
-                    return Uni.createFrom().item(verifyJwtToken(token));
-                } catch (Throwable t) {
-                    return Uni.createFrom().failure(t);
-                }
+    private String customizeJwtToken(String token) {
+        if (tokenCustomizer != null) {
+            JsonObject headers = AbstractJsonObjectResponse.toJsonObject(
+                    OidcUtils.decodeJwtHeadersAsString(token));
+            headers = tokenCustomizer.customizeHeaders(headers);
+            if (headers != null) {
+                String newHeaders = new String(
+                        Base64.getUrlEncoder().withoutPadding().encode(headers.toString().getBytes()),
+                        StandardCharsets.UTF_8);
+                int dotIndex = token.indexOf('.');
+                String newToken = newHeaders + token.substring(dotIndex);
+                return newToken;
             }
-
-        });
+        }
+        return token;
     }
 
-    public Uni<TokenVerificationResult> introspectToken(String token) {
-        return client.introspectToken(token).onItemOrFailure()
-                .transform(new BiFunction<TokenIntrospection, Throwable, TokenVerificationResult>() {
+    private void verifyTokenAge(Long iat) throws InvalidJwtException {
+        if (oidcConfig.token.age.isPresent() && iat != null) {
+            final long now = now() / 1000;
+
+            if (now - iat > oidcConfig.token.age.get().toSeconds() + getLifespanGrace()) {
+                final String errorMessage = "Token age exceeds the configured token age property";
+                LOG.debugf(errorMessage);
+                throw new InvalidJwtException(errorMessage,
+                        List.of(new ErrorCodeValidator.Error(ErrorCodes.ISSUED_AT_INVALID_PAST, errorMessage)), null);
+            }
+        }
+    }
+
+    public Uni<TokenVerificationResult> refreshJwksAndVerifyJwtToken(String token, boolean enforceAudienceVerification,
+            boolean subjectRequired, String nonce) {
+        return asymmetricKeyResolver.refresh().onItem()
+                .transformToUni(new Function<Void, Uni<? extends TokenVerificationResult>>() {
 
                     @Override
-                    public TokenVerificationResult apply(TokenIntrospection introspectionResult, Throwable t) {
-                        if (t != null) {
-                            throw new AuthenticationFailedException(t);
+                    public Uni<? extends TokenVerificationResult> apply(Void v) {
+                        try {
+                            return Uni.createFrom()
+                                    .item(verifyJwtToken(token, enforceAudienceVerification, subjectRequired, nonce));
+                        } catch (Throwable t) {
+                            return Uni.createFrom().failure(t);
                         }
-                        if (!Boolean.TRUE.equals(introspectionResult.getBoolean(OidcConstants.INTROSPECTION_TOKEN_ACTIVE))) {
-                            LOG.debugf("Token issued to client %s is not active: %s", oidcConfig.clientId.get());
-                            throw new AuthenticationFailedException();
-                        }
-                        Long exp = introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP);
-                        if (exp != null) {
-                            final int lifespanGrace = client.getOidcConfig().token.lifespanGrace.isPresent()
-                                    ? client.getOidcConfig().token.lifespanGrace.getAsInt()
-                                    : 0;
-                            if (System.currentTimeMillis() / 1000 > exp + lifespanGrace) {
-                                LOG.debugf("Token issued to client %s has expired %s", oidcConfig.clientId.get());
-                                throw new AuthenticationFailedException();
-                            }
-                        }
-
-                        return new TokenVerificationResult(null, introspectionResult);
                     }
 
                 });
     }
 
-    public Uni<JsonObject> getUserInfo(RoutingContext vertxContext, TokenAuthenticationRequest request) {
-        String accessToken = vertxContext.get(OidcConstants.ACCESS_TOKEN_VALUE);
-        if (accessToken == null) {
-            accessToken = request.getToken().getToken();
+    public Uni<TokenIntrospection> introspectToken(String token, boolean fallbackFromJwkMatch) {
+        if (client.getMetadata().getIntrospectionUri() == null) {
+            String errorMessage = String.format("Token issued to client %s "
+                    + (fallbackFromJwkMatch ? "does not have a matching verification key and it " : "")
+                    + "can not be introspected because the introspection endpoint address is unknown - "
+                    + "please check if your OpenId Connect Provider supports the token introspection",
+                    oidcConfig.clientId.get());
+
+            throw new AuthenticationFailedException(errorMessage);
         }
+        return client.introspectToken(token).onItemOrFailure()
+                .transform(new BiFunction<TokenIntrospection, Throwable, TokenIntrospection>() {
+
+                    @Override
+                    public TokenIntrospection apply(TokenIntrospection introspectionResult, Throwable t) {
+                        if (t != null) {
+                            throw new AuthenticationFailedException(t);
+                        }
+                        if (!introspectionResult.isActive()) {
+                            verifyTokenExpiry(introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP));
+                            throw new AuthenticationFailedException(
+                                    String.format("Token issued to client %s is not active", oidcConfig.clientId.get()));
+                        }
+                        verifyTokenExpiry(introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP));
+                        try {
+                            verifyTokenAge(introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_IAT));
+                        } catch (InvalidJwtException ex) {
+                            throw new AuthenticationFailedException(ex);
+                        }
+
+                        return introspectionResult;
+                    }
+
+                    private void verifyTokenExpiry(Long exp) {
+                        if (isTokenExpired(exp)) {
+                            String error = String.format("Token issued to client %s has expired",
+                                    oidcConfig.clientId.get());
+                            LOG.debugf(error);
+                            throw new AuthenticationFailedException(
+                                    new InvalidJwtException(error,
+                                            List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)), null));
+                        }
+                    }
+
+                });
+    }
+
+    private boolean isTokenExpired(Long exp) {
+        return exp != null && now() / 1000 > exp + getLifespanGrace();
+    }
+
+    private int getLifespanGrace() {
+        return client.getOidcConfig().token.lifespanGrace.isPresent()
+                ? client.getOidcConfig().token.lifespanGrace.getAsInt()
+                : 0;
+    }
+
+    private static final long now() {
+        return System.currentTimeMillis();
+    }
+
+    public Uni<UserInfo> getUserInfo(String accessToken) {
         return client.getUserInfo(accessToken);
     }
 
-    public Uni<AuthorizationCodeTokens> getCodeFlowTokens(String code, String redirectUri) {
-        return client.getAuthorizationCodeTokens(code, redirectUri);
+    public Uni<AuthorizationCodeTokens> getCodeFlowTokens(String code, String redirectUri, String codeVerifier) {
+        return client.getAuthorizationCodeTokens(code, redirectUri, codeVerifier);
     }
 
     public Uni<AuthorizationCodeTokens> refreshTokens(String refreshToken) {
         return client.refreshAuthorizationCodeTokens(refreshToken);
+    }
+
+    @Override
+    public void close() {
+        if (client != null) {
+            client.close();
+        }
     }
 
     private class JsonWebKeyResolver implements RefreshableVerificationKeyResolver {
@@ -202,19 +375,85 @@ public class OidcProvider {
         @Override
         public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext)
                 throws UnresolvableKeyException {
+            Key key = null;
+
+            // Try 'kid' first
             String kid = jws.getKeyIdHeaderValue();
-            if (kid == null) {
-                throw new UnresolvableKeyException("Token 'kid' header is not set");
+            if (kid != null) {
+                key = getKeyWithId(jws, kid);
+                if (key == null) {
+                    // if `kid` was set then the key must exist
+                    throw new UnresolvableKeyException(String.format("JWK with kid '%s' is not available", kid));
+                }
             }
-            Key key = jwks.getKey(kid);
+
+            String thumbprint = null;
             if (key == null) {
-                throw new UnresolvableKeyException(String.format("JWK with kid '%s' is not available", kid));
+                thumbprint = jws.getHeader(HeaderParameterNames.X509_CERTIFICATE_THUMBPRINT);
+                if (thumbprint != null) {
+                    key = getKeyWithThumbprint(jws, thumbprint);
+                    if (key == null) {
+                        // if only `x5t` was set then the key must exist
+                        throw new UnresolvableKeyException(
+                                String.format("JWK with the certificate thumbprint '%s' is not available", thumbprint));
+                    }
+                }
             }
-            return key;
+
+            if (key == null) {
+                thumbprint = jws.getHeader(HeaderParameterNames.X509_CERTIFICATE_SHA256_THUMBPRINT);
+                if (thumbprint != null) {
+                    key = getKeyWithS256Thumbprint(jws, thumbprint);
+                    if (key == null) {
+                        // if only `x5tS256` was set then the key must exist
+                        throw new UnresolvableKeyException(
+                                String.format("JWK with the SHA256 certificate thumbprint '%s' is not available", thumbprint));
+                    }
+                }
+            }
+
+            if (key == null && kid == null && thumbprint == null) {
+                key = jwks.getKeyWithoutKeyIdAndThumbprint(jws);
+            }
+
+            if (key == null) {
+                throw new UnresolvableKeyException(
+                        String.format("JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set",
+                                kid));
+            } else {
+                return key;
+            }
+        }
+
+        private Key getKeyWithId(JsonWebSignature jws, String kid) {
+            if (kid != null) {
+                return jwks.getKeyWithId(kid);
+            } else {
+                LOG.debug("Token 'kid' header is not set");
+                return null;
+            }
+        }
+
+        private Key getKeyWithThumbprint(JsonWebSignature jws, String thumbprint) {
+            if (thumbprint != null) {
+                return jwks.getKeyWithThumbprint(thumbprint);
+            } else {
+                LOG.debug("Token 'x5t' header is not set");
+                return null;
+            }
+        }
+
+        private Key getKeyWithS256Thumbprint(JsonWebSignature jws, String thumbprint) {
+            if (thumbprint != null) {
+                return jwks.getKeyWithS256Thumbprint(thumbprint);
+            } else {
+                LOG.debug("Token 'x5tS256' header is not set");
+                return null;
+            }
         }
 
         public Uni<Void> refresh() {
-            final long now = System.currentTimeMillis();
+            final long now = now();
             if (now > lastForcedRefreshTime + forcedJwksRefreshIntervalMilliSecs) {
                 lastForcedRefreshTime = now;
                 return client.getJsonWebKeySet().onItem().transformToUni(new Function<JsonWebKeySet, Uni<? extends Void>>() {
@@ -252,6 +491,14 @@ public class OidcProvider {
 
     }
 
+    private class SymmetricKeyResolver implements VerificationKeyResolver {
+        @Override
+        public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext)
+                throws UnresolvableKeyException {
+            return KeyUtils.createSecretKeyFromSecret(oidcConfig.credentials.secret.get());
+        }
+    }
+
     public OidcConfigurationMetadata getMetadata() {
         return client.getMetadata();
     }
@@ -259,6 +506,35 @@ public class OidcProvider {
     private static interface RefreshableVerificationKeyResolver extends VerificationKeyResolver {
         default Uni<Void> refresh() {
             return Uni.createFrom().voidItem();
+        }
+    }
+
+    private static class CustomClaimsValidator implements Validator {
+
+        private final Map<String, String> customClaims;
+
+        public CustomClaimsValidator(Map<String, String> customClaims) {
+            this.customClaims = customClaims;
+        }
+
+        @Override
+        public String validate(JwtContext jwtContext) throws MalformedClaimException {
+            var claims = jwtContext.getJwtClaims();
+            for (var targetClaim : customClaims.entrySet()) {
+                var claimName = targetClaim.getKey();
+                if (!claims.hasClaim(claimName)) {
+                    return "claim " + claimName + " is missing";
+                }
+                if (!claims.isClaimValueString(claimName)) {
+                    throw new MalformedClaimException("expected claim " + claimName + " to be a string");
+                }
+                var claimValue = claims.getStringClaimValue(claimName);
+                var targetValue = targetClaim.getValue();
+                if (!claimValue.equals(targetValue)) {
+                    return "claim " + claimName + "does not match expected value of " + targetValue;
+                }
+            }
+            return null;
         }
     }
 }

@@ -1,0 +1,13 @@
+plugins {
+    id 'io.quarkus'
+    id 'java-library'
+    id "com.github.vlsi.jandex" version "1.86"
+}
+
+dependencies {
+
+}
+
+jandex {
+    toolVersion = "3.1.0"
+}

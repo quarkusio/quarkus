@@ -17,6 +17,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.core.http.Cookie;
+import io.vertx.core.http.CookieSameSite;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -35,11 +36,18 @@ public class PersistentLoginManager {
     private final long timeoutMillis;
     private final SecureRandom secureRandom = new SecureRandom();
     private final long newCookieIntervalMillis;
+    private final boolean httpOnlyCookie;
+    private final CookieSameSite cookieSameSite;
+    private final String cookiePath;
 
-    public PersistentLoginManager(String encryptionKey, String cookieName, long timeoutMillis, long newCookieIntervalMillis) {
+    public PersistentLoginManager(String encryptionKey, String cookieName, long timeoutMillis, long newCookieIntervalMillis,
+            boolean httpOnlyCookie, String cookieSameSite, String cookiePath) {
         this.cookieName = cookieName;
         this.newCookieIntervalMillis = newCookieIntervalMillis;
         this.timeoutMillis = timeoutMillis;
+        this.httpOnlyCookie = httpOnlyCookie;
+        this.cookieSameSite = CookieSameSite.valueOf(cookieSameSite);
+        this.cookiePath = cookiePath;
         try {
             if (encryptionKey == null) {
                 this.secretKey = KeyGenerator.getInstance("AES").generateKey();
@@ -56,7 +64,11 @@ public class PersistentLoginManager {
     }
 
     public RestoreResult restore(RoutingContext context) {
-        Cookie existing = context.getCookie(cookieName);
+        return restore(context, cookieName);
+    }
+
+    public RestoreResult restore(RoutingContext context, String cookieName) {
+        Cookie existing = context.request().getCookie(cookieName);
         // If there is no credential cookie, we have nothing to restore.
         if (existing == null) {
             // Enforce new login.
@@ -100,6 +112,11 @@ public class PersistentLoginManager {
     }
 
     public void save(SecurityIdentity identity, RoutingContext context, RestoreResult restoreResult, boolean secureCookie) {
+        save(identity.getPrincipal().getName(), context, cookieName, restoreResult, secureCookie);
+    }
+
+    public void save(String value, RoutingContext context, String cookieName, RestoreResult restoreResult,
+            boolean secureCookie) {
         if (restoreResult != null) {
             if (!restoreResult.newCookieNeeded) {
                 return;
@@ -115,18 +132,31 @@ public class PersistentLoginManager {
             log.debugf("The new cookie will expire at %s", new Date(timeout).toString());
             contents.append(timeout);
             contents.append(":");
-            contents.append(identity.getPrincipal().getName());
+            contents.append(value);
             byte[] encrypted = cipher.doFinal(contents.toString().getBytes(StandardCharsets.UTF_8));
             ByteBuffer message = ByteBuffer.allocate(1 + iv.length + encrypted.length);
             message.put((byte) iv.length);
             message.put(iv);
             message.put(encrypted);
             String cookieValue = Base64.getEncoder().encodeToString(message.array());
-            context.addCookie(Cookie.cookie(cookieName, cookieValue).setPath("/").setSecure(secureCookie));
+            context.addCookie(
+                    Cookie.cookie(cookieName, cookieValue).setPath(cookiePath).setSameSite(cookieSameSite)
+                            .setSecure(secureCookie)
+                            .setHttpOnly(httpOnlyCookie));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
+    }
+
+    public void clear(RoutingContext ctx) {
+        // Vert.x sends back a set-cookie with max-age and expiry but no path, so we have to set it first,
+        // otherwise web clients don't clear it
+        Cookie cookie = ctx.request().getCookie(cookieName);
+        if (cookie != null) {
+            cookie.setPath("/");
+        }
+        ctx.response().removeCookie(cookieName);
     }
 
     public static class RestoreResult {

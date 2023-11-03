@@ -10,11 +10,14 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -968,7 +971,7 @@ public class StockMethodsAdder {
     }
 
     // Spring Data allows users to add any of the methods of CrudRepository, PagingAndSortingRepository, JpaRepository
-    // to the their interface declaration without having to make their repository extend any of those
+    // to their interface declaration without having to make their repository extend any of those
     // this is done so users have the ability to add only what they need
     private Set<MethodInfo> stockMethodsAddedToInterface(ClassInfo repositoryToImplement) {
         Set<MethodInfo> result = new HashSet<>();
@@ -1003,7 +1006,7 @@ public class StockMethodsAdder {
             return false;
         }
 
-        if (candidate.parameters().size() != target.parameters().size()) {
+        if (candidate.parametersCount() != target.parametersCount()) {
             return false;
         }
 
@@ -1011,8 +1014,8 @@ public class StockMethodsAdder {
             return false;
         }
 
-        for (int i = 0; i < candidate.parameters().size(); i++) {
-            if (!canTypesBeConsideredSame(candidate.parameters().get(i), target.parameters().get(i))) {
+        for (int i = 0; i < candidate.parametersCount(); i++) {
+            if (!canTypesBeConsideredSame(candidate.parameterType(i), target.parameterType(i))) {
                 return false;
             }
         }
@@ -1042,18 +1045,23 @@ public class StockMethodsAdder {
             throw new IllegalStateException("Entity " + originalEntityDotName + " was not part of the Quarkus index");
         }
 
-        if (!classInfo.annotations().containsKey(DotNames.JPA_ID)) {
+        List<AnnotationInstance> annotationInstances = Stream.of(DotNames.JPA_ID, DotNames.JPA_EMBEDDED_ID)
+                .map(classInfo.annotationsMap()::get)
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+        if (annotationInstances.isEmpty()) {
             if (DotNames.OBJECT.equals(classInfo.superName())) {
-                throw new IllegalArgumentException("Currently only Entities with the @Id annotation are supported. " +
-                        "Offending class is " + originalEntityDotName);
+                throw new IllegalArgumentException(
+                        "Currently only Entities with the @Id or @EmbeddedId annotation are supported. Offending class is "
+                                + originalEntityDotName);
             }
             return getIdAnnotationTargetRec(classInfo.superName(), index, originalEntityDotName);
         }
 
-        List<AnnotationInstance> annotationInstances = classInfo.annotations().get(DotNames.JPA_ID);
         if (annotationInstances.size() > 1) {
             throw new IllegalArgumentException(
-                    "Currently the @Id annotation can only be placed on a single field or method. " +
+                    "Currently the @Id or @EmbeddedId annotation can only be placed on a single field or method. " +
                             "Offending class is " + originalEntityDotName);
         }
 
@@ -1071,14 +1079,14 @@ public class StockMethodsAdder {
             throw new IllegalStateException("Entity " + originalEntityDotName + " was not part of the Quarkus index");
         }
 
-        if (!classInfo.annotations().containsKey(DotNames.VERSION)) {
+        if (!classInfo.annotationsMap().containsKey(DotNames.VERSION)) {
             if (DotNames.OBJECT.equals(classInfo.superName())) {
                 return Optional.empty();
             }
             return getVersionAnnotationTargetRec(classInfo.superName(), index, originalEntityDotName);
         }
 
-        List<AnnotationInstance> annotationInstances = classInfo.annotations().get(DotNames.VERSION);
+        List<AnnotationInstance> annotationInstances = classInfo.annotationsMap().get(DotNames.VERSION);
         if (annotationInstances.size() > 1) {
             throw new IllegalArgumentException(
                     "Currently the @Version annotation can only be placed on a single field or method. " +

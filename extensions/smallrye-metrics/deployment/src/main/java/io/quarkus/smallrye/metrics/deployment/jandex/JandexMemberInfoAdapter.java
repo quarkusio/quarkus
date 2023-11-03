@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.IndexView;
 
+import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames;
 import io.smallrye.metrics.elementdesc.AnnotationInfo;
 import io.smallrye.metrics.elementdesc.MemberInfo;
@@ -16,9 +17,11 @@ import io.smallrye.metrics.elementdesc.adapter.MemberInfoAdapter;
 public class JandexMemberInfoAdapter implements MemberInfoAdapter<AnnotationTarget> {
 
     private final IndexView indexView;
+    private final TransformedAnnotationsBuildItem transformedAnnotations;
 
-    public JandexMemberInfoAdapter(IndexView indexView) {
+    public JandexMemberInfoAdapter(IndexView indexView, TransformedAnnotationsBuildItem transformedAnnotations) {
         this.indexView = indexView;
+        this.transformedAnnotations = transformedAnnotations;
     }
 
     @Override
@@ -43,21 +46,19 @@ public class JandexMemberInfoAdapter implements MemberInfoAdapter<AnnotationTarg
             declaringClassName = input.asMethod().declaringClass().name().toString();
             declaringClassSimpleName = input.asMethod().declaringClass().simpleName();
             name = input.asMethod().name();
-            annotationInformation = input.asMethod()
-                    .annotations()
+            annotationInformation = transformedAnnotations.getAnnotations(input)
                     .stream()
                     .filter(SmallRyeMetricsDotNames::isMetricAnnotation)
                     .map(annotationInfoAdapter::convert)
                     .collect(Collectors.toList());
-            parameterTypeNames = input.asMethod().parameters().stream()
+            parameterTypeNames = input.asMethod().parameterTypes().stream()
                     .map(type -> type.name().toString())
                     .toArray(String[]::new);
         } else {
             declaringClassName = input.asField().declaringClass().name().toString();
             declaringClassSimpleName = input.asField().declaringClass().simpleName();
             name = input.asField().name();
-            annotationInformation = input.asField()
-                    .annotations()
+            annotationInformation = transformedAnnotations.getAnnotations(input)
                     .stream()
                     .filter(SmallRyeMetricsDotNames::isMetricAnnotation)
                     .map(annotationInfoAdapter::convert)

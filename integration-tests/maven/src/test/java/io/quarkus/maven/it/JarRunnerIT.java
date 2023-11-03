@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -35,18 +36,22 @@ import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
+import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 import io.quarkus.utilities.JavaBinFinder;
 
 @DisableForNative
 public class JarRunnerIT extends MojoTestBase {
+    private DevModeClient devModeClient = new DevModeClient();
 
     /**
      * Tests that a Quarkus project builds fine if the project is hosted in a directory
@@ -57,26 +62,29 @@ public class JarRunnerIT extends MojoTestBase {
      * @see <a href="https://github.com/quarkusio/quarkus/issues/11511"/>
      */
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "With maven-compiler-plugin 2.11.0, this test is not working anymore on Windows: Error while storing the mojo status: Input length = 1")
     public void testNonAsciiDir() throws Exception {
         final File testDir = initProject("projects/classic", "projects/ěščřžýáíéůú");
         final RunningInvoker running = new RunningInvoker(testDir, false);
 
         final MavenProcessInvocationResult result = running.execute(Arrays.asList("install", "-DskipTests"),
                 Collections.emptyMap());
-        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        await().atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
         running.stop();
 
         File output = new File(testDir, "target/output.log");
         output.createNewFile();
 
-        Process process = doLaunch(new File(testDir, "target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
-                Collections.emptyList()).start();
+        Process process = doLaunch(new File(testDir, "target/quarkus-app"), Paths.get("quarkus-run.jar"), output, List.of())
+                .start();
         try {
             // Wait until server up
             dumpFileContentOnFailure(() -> {
                 await().pollDelay(1, TimeUnit.SECONDS)
-                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                        .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                        .until(() -> devModeClient.getHttpResponse("/app/hello/package", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
         } finally {
@@ -91,7 +99,8 @@ public class JarRunnerIT extends MojoTestBase {
         RunningInvoker running = new RunningInvoker(testDir, false);
 
         MavenProcessInvocationResult result = running.execute(Arrays.asList("package", "-DskipTests"), Collections.emptyMap());
-        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        await().atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
         running.stop();
 
@@ -105,7 +114,8 @@ public class JarRunnerIT extends MojoTestBase {
             // Wait until server up
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
-                    .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                    .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                    .until(() -> devModeClient.getHttpResponse("/app/hello/package", 200));
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
 
@@ -129,7 +139,8 @@ public class JarRunnerIT extends MojoTestBase {
 
         final MavenProcessInvocationResult result = running.execute(Arrays.asList("install"),
                 Collections.emptyMap());
-        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        await().atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
         running.stop();
 
@@ -137,9 +148,9 @@ public class JarRunnerIT extends MojoTestBase {
         output.createNewFile();
 
         Process process = doLaunch(new File(testDir, "app/target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
-                Collections.emptyList()).start();
+                List.of()).start();
         try {
-            Assertions.assertEquals("builder-image is customized", DevModeTestUtils.getHttpResponse("/hello"));
+            Assertions.assertEquals("builder-image is customized", devModeClient.getHttpResponse("/hello"));
         } finally {
             process.destroy();
         }
@@ -154,7 +165,8 @@ public class JarRunnerIT extends MojoTestBase {
         final MavenProcessInvocationResult result = running.execute(
                 Arrays.asList("install -Dquarkus.native.builder-image=commandline -DskipTests"),
                 Collections.emptyMap());
-        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        await().atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
         running.stop();
 
@@ -162,9 +174,9 @@ public class JarRunnerIT extends MojoTestBase {
         output.createNewFile();
 
         Process process = doLaunch(new File(testDir, "app/target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
-                Collections.emptyList()).start();
+                List.of()).start();
         try {
-            Assertions.assertEquals("builder-image is commandline", DevModeTestUtils.getHttpResponse("/hello"));
+            Assertions.assertEquals("builder-image is commandline", devModeClient.getHttpResponse("/hello"));
         } finally {
             process.destroy();
         }
@@ -200,7 +212,8 @@ public class JarRunnerIT extends MojoTestBase {
                         "-DskipTests",
                         "-Dquarkus.package.type=legacy-jar"), Collections.emptyMap());
 
-        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        await().atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
         running.stop();
 
@@ -235,7 +248,8 @@ public class JarRunnerIT extends MojoTestBase {
             dumpFileContentOnFailure(() -> {
                 await()
                         .pollDelay(1, TimeUnit.SECONDS)
-                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                        .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                        .until(() -> devModeClient.getHttpResponse("/app/hello/package", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
 
@@ -252,6 +266,214 @@ public class JarRunnerIT extends MojoTestBase {
         }
     }
 
+    @Test
+    public void reaugmentationWithRemovedArtifacts() throws Exception {
+        File testDir = initProject("projects/multimodule-classpath", "projects/multimodule-resources-classpath-reaugmentation");
+        RunningInvoker running = new RunningInvoker(testDir, false);
+
+        // The default build
+        MavenProcessInvocationResult result = running
+                .execute(List.of("package", "-DskipTests", "-Dquarkus.package.type=mutable-jar",
+                        "-Dquarkus.analytics.disabled=true"), Map.of());
+        await().atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
+        running.stop();
+
+        testDir = testDir.toPath().resolve("runner").toFile();
+
+        Path runJar = testDir.toPath().toAbsolutePath().resolve(Paths.get("target/quarkus-app/quarkus-run.jar"));
+        assertThat(runJar).exists();
+
+        File output = new File(testDir, "target/output.log");
+        output.createNewFile();
+
+        Process process = doLaunch(runJar, output).start();
+        try {
+            AtomicReference<String> response = new AtomicReference<>();
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES).until(() -> {
+                        String ret = devModeClient.getHttpResponse("/cp/resourceCount/entry", false);
+                        response.set(ret);
+                        return true;
+                    });
+
+            // Test that bean is not resolvable
+            assertThat(response.get()).isEqualTo("2");
+        } finally {
+            process.destroy();
+        }
+
+        // re-augment and exclude html-extra
+        process = doLaunch(runJar, output,
+                List.of("-Dquarkus.class-loading.removed-artifacts=cp.acme:multimodule-cp-resources-html-extra",
+                        "-Dquarkus.launch.rebuild=true"))
+                .start();
+        try {
+            assertThat(process.waitFor()).isEqualTo(0);
+        } finally {
+            process.destroy();
+        }
+
+        process = doLaunch(runJar, output).start();
+        try {
+            AtomicReference<String> response = new AtomicReference<>();
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES).until(() -> {
+                        String ret = devModeClient.getHttpResponse("/cp/resourceCount/entry", false);
+                        response.set(ret);
+                        return true;
+                    });
+
+            // Test that bean is not resolvable
+            assertThat(response.get()).isEqualTo("1");
+        } finally {
+            process.destroy();
+        }
+
+        // re-augment with the original dependencies
+        process = doLaunch(runJar, output, List.of("-Dquarkus.launch.rebuild=true")).start();
+        try {
+            assertThat(process.waitFor()).isEqualTo(0);
+        } finally {
+            process.destroy();
+        }
+
+        process = doLaunch(runJar, output).start();
+        try {
+            AtomicReference<String> response = new AtomicReference<>();
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES).until(() -> {
+                        String ret = devModeClient.getHttpResponse("/cp/resourceCount/entry", false);
+                        response.set(ret);
+                        return true;
+                    });
+
+            // Test that bean is not resolvable
+            assertThat(response.get()).isEqualTo("2");
+        } finally {
+            process.destroy();
+        }
+    }
+
+    @Test
+    @Timeout(80) // windows might need more time
+    public void reaugmentationWithRemovedArtifactsUsingSystemProperties() throws Exception {
+        File testDir = initProject("projects/extension-removed-resources",
+                "projects/extension-removed-artifacts-reaugmentation");
+        RunningInvoker running = new RunningInvoker(testDir, false);
+
+        // The default build
+        MavenProcessInvocationResult result = running
+                .execute(List.of("package", "-DskipTests", "-Dquarkus.package.type=mutable-jar"), Map.of());
+        await().atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
+        running.stop();
+
+        testDir = testDir.toPath().resolve("runner").toFile();
+
+        Path runJar = testDir.toPath().toAbsolutePath().resolve(Paths.get("target/quarkus-app/quarkus-run.jar"));
+        assertThat(runJar).exists();
+
+        File output = new File(testDir, "target/output.log");
+        output.createNewFile();
+
+        Process process = doLaunch(runJar, output).start();
+        try {
+            AtomicReference<String> response = new AtomicReference<>();
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES).until(() -> {
+                        String ret = devModeClient.getHttpResponse("/words/runtime", false);
+                        response.set(ret);
+                        return true;
+                    });
+            assertThat(response.get()).isEqualTo("subatomic,supersonic");
+
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES).until(() -> {
+                        String ret = devModeClient.getHttpResponse("/words/buildtime", false);
+                        response.set(ret);
+                        return true;
+                    });
+            assertThat(response.get()).isEqualTo("subatomic,supersonic");
+        } finally {
+            process.destroy();
+        }
+
+        // re-augment and exclude html-extra
+        process = doLaunch(runJar, output,
+                List.of("-Dquarkus.class-loading.removed-artifacts=org.acme:acme-subatomic-provider",
+                        "-Dquarkus.launch.rebuild=true"))
+                .start();
+        try {
+            assertThat(process.waitFor()).isEqualTo(0);
+        } finally {
+            process.destroy();
+        }
+
+        process = doLaunch(runJar, output).start();
+        try {
+            AtomicReference<String> response = new AtomicReference<>();
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES).until(() -> {
+                        String ret = devModeClient.getHttpResponse("/words/runtime", false);
+                        response.set(ret);
+                        return true;
+                    });
+            assertThat(response.get()).isEqualTo("supersonic");
+
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES).until(() -> {
+                        String ret = devModeClient.getHttpResponse("/words/buildtime", false);
+                        response.set(ret);
+                        return true;
+                    });
+            assertThat(response.get()).isEqualTo("supersonic");
+        } finally {
+            process.destroy();
+        }
+
+        // re-augment with the original dependencies
+        process = doLaunch(runJar, output, List.of("-Dquarkus.launch.rebuild=true")).start();
+        try {
+            assertThat(process.waitFor()).isEqualTo(0);
+        } finally {
+            process.destroy();
+        }
+
+        process = doLaunch(runJar, output).start();
+        try {
+            AtomicReference<String> response = new AtomicReference<>();
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES).until(() -> {
+                        String ret = devModeClient.getHttpResponse("/words/runtime", false);
+                        response.set(ret);
+                        return true;
+                    });
+            assertThat(response.get()).isEqualTo("subatomic,supersonic");
+
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES).until(() -> {
+                        String ret = devModeClient.getHttpResponse("/words/buildtime", false);
+                        response.set(ret);
+                        return true;
+                    });
+            assertThat(response.get()).isEqualTo("subatomic,supersonic");
+        } finally {
+            process.destroy();
+        }
+    }
+
     private void assertThatMutableFastJarWorks(String targetDirSuffix, String providersDir) throws Exception {
         File testDir = initProject("projects/classic",
                 "projects/project-classic-console-output-mutable-fast-jar" + targetDirSuffix);
@@ -261,7 +483,8 @@ public class JarRunnerIT extends MojoTestBase {
                 .execute(Arrays.asList("package", "-DskipTests", "-Dquarkus.package.type=mutable-jar",
                         "-Dquarkus.package.user-providers-directory=" + providersDir), Collections.emptyMap());
 
-        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        await().atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
         running.stop();
 
@@ -286,7 +509,8 @@ public class JarRunnerIT extends MojoTestBase {
             dumpFileContentOnFailure(() -> {
                 await()
                         .pollDelay(1, TimeUnit.SECONDS)
-                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                        .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                        .until(() -> devModeClient.getHttpResponse("/app/hello/package", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
             performRequest("/app/added", 404);
@@ -302,8 +526,9 @@ public class JarRunnerIT extends MojoTestBase {
         }
 
         //add a user jar to the providers dir, and make sure it is picked up in re-augmentation
+        File addedJar = providers.resolve("added.jar").toFile();
         ShrinkWrap.create(JavaArchive.class).addClass(AddedRestEndpoint.class)
-                .as(ZipExporter.class).exportTo(providers.resolve("added.jar").toFile());
+                .as(ZipExporter.class).exportTo(addedJar);
 
         //now reaugment
         List<String> commands = new ArrayList<>();
@@ -322,7 +547,8 @@ public class JarRunnerIT extends MojoTestBase {
             // Wait until server up
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
-                    .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/moved/app/hello/package", 200));
+                    .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                    .until(() -> devModeClient.getHttpResponse("/moved/app/hello/package", 200));
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
 
@@ -337,6 +563,46 @@ public class JarRunnerIT extends MojoTestBase {
         } finally {
             process.destroy();
         }
+
+        //now remove it, and make sure everything is back to the way it was
+
+        //add a user jar to the providers dir, and make sure it is picked up in re-augmentation
+        addedJar.delete();
+
+        //now reaugment
+        commands = new ArrayList<>();
+        commands.add(JavaBinFinder.findBin());
+        commands.add("-Dquarkus.http.root-path=/anothermove");
+        commands.add("-Dquarkus.launch.rebuild=true");
+        commands.add("-jar");
+        commands.add(jar.toString());
+        processBuilder = new ProcessBuilder(commands.toArray(new String[0]));
+        processBuilder.redirectOutput(output);
+        processBuilder.redirectError(output);
+        Assertions.assertEquals(0, processBuilder.start().waitFor());
+
+        process = doLaunch(jar, output).start();
+        try {
+            // Wait until server up
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                    .until(() -> devModeClient.getHttpResponse("/anothermove/app/hello/package", 200));
+
+            String logs = FileUtils.readFileToString(output, "UTF-8");
+
+            assertThatOutputWorksCorrectly(logs);
+
+            // test that the application name and version are properly set
+            assertApplicationPropertiesSetCorrectly("/anothermove");
+
+            assertResourceReadingFromClassPathWorksCorrectly("/anothermove");
+            assertUsingProtectionDomainWorksCorrectly("/anothermove");
+            performRequest("/anothermove/app/added", 404);
+        } finally {
+            process.destroy();
+        }
+
     }
 
     @Test
@@ -349,7 +615,8 @@ public class JarRunnerIT extends MojoTestBase {
                 .execute(Arrays.asList("package", "-DskipTests", "-Dquarkus.package.create-appcds=true"),
                         Collections.emptyMap());
 
-        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        await().atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
         running.stop();
 
@@ -361,14 +628,15 @@ public class JarRunnerIT extends MojoTestBase {
         // by using '-Xshare:on' we ensure that the JVM will fail if for any reason is cannot use the AppCDS
         // '-Xlog:class+path=info' will print diagnostic information that is useful for debugging if something goes wrong
         Process process = doLaunch(jar.getFileName(), output,
-                Arrays.asList("-XX:SharedArchiveFile=app-cds.jsa", "-Xshare:on", "-Xlog:class+path=info"))
-                        .directory(jar.getParent().toFile()).start();
+                List.of("-XX:SharedArchiveFile=app-cds.jsa", "-Xshare:on", "-Xlog:class+path=info"))
+                .directory(jar.getParent().toFile()).start();
         try {
             // Wait until server up
             dumpFileContentOnFailure(() -> {
                 await()
-                        .pollDelay(1, TimeUnit.SECONDS)
-                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                        .pollDelay(10, TimeUnit.SECONDS)
+                        .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                        .until(() -> devModeClient.getHttpResponse("/app/hello/package", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
 
@@ -390,7 +658,8 @@ public class JarRunnerIT extends MojoTestBase {
         RunningInvoker running = new RunningInvoker(testDir, false);
 
         MavenProcessInvocationResult result = running.execute(Arrays.asList("package", "-DskipTests"), Collections.emptyMap());
-        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        await().atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
         running.stop();
 
@@ -406,8 +675,8 @@ public class JarRunnerIT extends MojoTestBase {
             AtomicReference<String> response = new AtomicReference<>();
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
-                    .atMost(1, TimeUnit.MINUTES).until(() -> {
-                        String ret = DevModeTestUtils.getHttpResponse("/hello", true);
+                    .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES).until(() -> {
+                        String ret = devModeClient.getHttpResponse("/hello", true);
                         response.set(ret);
                         return ret.contains("hello:");
                     });
@@ -420,7 +689,7 @@ public class JarRunnerIT extends MojoTestBase {
     }
 
     private ProcessBuilder doLaunch(Path jar, File output) throws IOException {
-        return doLaunch(null, jar, output, Collections.emptyList());
+        return doLaunch(null, jar, output, List.of());
     }
 
     private ProcessBuilder doLaunch(Path jar, File output, Collection<String> vmArgs) throws IOException {
@@ -548,7 +817,8 @@ public class JarRunnerIT extends MojoTestBase {
                         "-Dquarkus.package.type=fast-jar",
                         outputDir == null ? "" : "-Dquarkus.package.output-directory=" + outputDir), Collections.emptyMap());
 
-        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        await().atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
         running.stop();
 
@@ -577,7 +847,8 @@ public class JarRunnerIT extends MojoTestBase {
             dumpFileContentOnFailure(() -> {
                 await()
                         .pollDelay(1, TimeUnit.SECONDS)
-                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                        .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                        .until(() -> devModeClient.getHttpResponse("/app/hello/package", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
 

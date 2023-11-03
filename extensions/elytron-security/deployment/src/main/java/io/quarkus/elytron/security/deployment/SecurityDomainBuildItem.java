@@ -6,7 +6,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
- * This represent a {@linkplain SecurityDomain} instance output by a build step.
+ * This represents a {@linkplain SecurityDomain} instance output by a build step.
  */
 public final class SecurityDomainBuildItem extends SimpleBuildItem {
 

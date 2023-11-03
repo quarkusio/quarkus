@@ -1,6 +1,7 @@
 package io.quarkus.qute;
 
 import java.util.regex.Pattern;
+
 import org.jboss.logging.Logger;
 
 class LiteralSupport {
@@ -13,7 +14,7 @@ class LiteralSupport {
     static final Pattern FLOAT_LITERAL_PATTERN = Pattern.compile("[-+]?[0-9]*\\.?[0-9]+(f|F)");
 
     /**
-     * 
+     *
      * @param literal
      * @return {@link Results.NotFound.EMPTY} if no literal was found, otherwise the literal value
      */
@@ -22,7 +23,8 @@ class LiteralSupport {
         if (literal == null || literal.isEmpty()) {
             return value;
         }
-        if (isStringLiteralSeparator(literal.charAt(0))) {
+        char firstChar = literal.charAt(0);
+        if (isStringLiteralSeparator(firstChar) && literal.charAt(literal.length() - 1) == firstChar) {
             value = literal.substring(1, literal.length() - 1);
         } else if (literal.equals("true")) {
             value = Boolean.TRUE;
@@ -31,7 +33,6 @@ class LiteralSupport {
         } else if (literal.equals("null")) {
             value = null;
         } else {
-            char firstChar = literal.charAt(0);
             if (Character.isDigit(firstChar) || firstChar == '-' || firstChar == '+') {
                 if (INTEGER_LITERAL_PATTERN.matcher(literal).matches()) {
                     try {

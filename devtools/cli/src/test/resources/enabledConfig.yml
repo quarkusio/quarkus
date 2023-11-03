@@ -1,0 +1,6 @@
+registries:
+  - registry.test.local:
+      update-policy: "always"
+      maven:
+        repository:
+          url: https://registry.quarkus.io/maven

@@ -1,13 +1,11 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
-import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Profile;
 import org.apache.maven.model.building.ModelBuilder;
@@ -17,6 +15,11 @@ import org.apache.maven.model.building.ModelBuildingResult;
 import org.apache.maven.model.building.Result;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+
+import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 /**
  *
@@ -40,7 +43,7 @@ public class MavenModelBuilder implements ModelBuilder {
             final Model requestModel = getModel(request);
             if (requestModel != null) {
                 final Artifact artifact = new DefaultArtifact(ModelUtils.getGroupId(requestModel), requestModel.getArtifactId(),
-                        null, "pom",
+                        null, ArtifactCoords.TYPE_POM,
                         ModelUtils.getVersion(requestModel));
                 if (workspace.findArtifact(artifact) != null) {
                     final ModelBuildingResult result = workspace
@@ -79,17 +82,23 @@ public class MavenModelBuilder implements ModelBuilder {
     }
 
     private void completeWorkspaceProjectBuildRequest(ModelBuildingRequest request) throws BootstrapMavenException {
-        final Set<String> addedProfiles = new HashSet<>();
+        final Set<String> addedProfiles;
         final List<Profile> profiles = request.getProfiles();
-        profiles.forEach(p -> addedProfiles.add(p.getId()));
+        if (profiles.isEmpty()) {
+            addedProfiles = Set.of();
+        } else {
+            addedProfiles = new HashSet<>(profiles.size());
+            for (Profile p : profiles) {
+                addedProfiles.add(p.getId());
+            }
+        }
 
-        final List<Profile> activeSettingsProfiles = ctx.getActiveSettingsProfiles();
-        activeSettingsProfiles.forEach(p -> {
+        for (Profile p : ctx.getActiveSettingsProfiles()) {
             if (!addedProfiles.contains(p.getId())) {
                 profiles.add(p);
                 request.getActiveProfileIds().add(p.getId());
             }
-        });
+        }
 
         final BootstrapMavenOptions cliOptions = ctx.getCliOptions();
         request.getActiveProfileIds().addAll(cliOptions.getActiveProfileIds());

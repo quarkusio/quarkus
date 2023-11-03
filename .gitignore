@@ -2,6 +2,7 @@
 target
 *.iml
 .idea
+!.idea/runConfigurations
 .settings
 .project
 .classpath
@@ -11,6 +12,7 @@ local-test
 out
 lib
 bin
+!devtools/cli/distribution/java-binary/bin
 dependency-reduced-pom.xml
 derby.log
 hotspot.log
@@ -30,11 +32,13 @@ ObjectStore
 docker/distroless/bazel-*
 /.apt_generated_tests/
 quarkus.log
+quarkus.log*
 replay_*.logß
 nbactions.xml
 nb-configuration.xml
 .cache
 /lsp/
-.jbang
-.sdkmanrc
 .envrc
+.jekyll-cache
+.mvn/.gradle-enterprise
+.quarkus

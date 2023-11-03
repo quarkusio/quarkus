@@ -3,17 +3,19 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Kubernetes Client
-
-include::./attributes.adoc[]
-
+= Kubernetes Client
+include::_attributes.adoc[]
+:categories: cloud
+:summary: This guide demonstrates how to use the Fabric8 Kubernetes client to interact with your Kubernetes cluster.
+:topics: kubernetes,openshift,kubernetes-client
+:extensions: io.quarkus:quarkus-kubernetes-client
 
 Quarkus includes the `kubernetes-client` extension which enables the use of the https://github.com/fabric8io/kubernetes-client[Fabric8 Kubernetes Client]
 in native mode while also making it easier to work with.
 
 Having a Kubernetes Client extension in Quarkus is very useful in order to unlock the power of Kubernetes Operators.
 Kubernetes Operators are quickly emerging as a new class of Cloud Native applications.
-These applications essentially watch the Kubernetes API and react to changes on various resources and can be used to manage the lifecycle of all kinds of complex systems like databases, messaging systems and much much more.
+These applications essentially watch the Kubernetes API and react to changes on various resources and can be used to manage the lifecycle of all kinds of complex systems like databases, messaging systems and much more.
 Being able to write such operators in Java with the very low footprint that native images provide is a great match.
 
 == Configuration
@@ -21,19 +23,24 @@ Being able to write such operators in Java with the very low footprint that nati
 Once you have your Quarkus project configured you can add the `kubernetes-client` extension
 to your project by running the following command in your project base directory.
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="kubernetes-client"
-----
+:add-extension-extensions: kubernetes-client
+include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-kubernetes-client</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-kubernetes-client")
 ----
 
 == Usage
@@ -47,12 +54,21 @@ quarkus.kubernetes-client.trust-certs=false
 quarkus.kubernetes-client.namespace=default
 ----
 
-Note that the full list of properties is available in the https://github.com/quarkusio/quarkus/blob/main/extensions/kubernetes-client/runtime-internal/src/main/java/io/quarkus/kubernetes/client/runtime/KubernetesClientBuildConfig.java[KubernetesClientBuildConfig] class.
+Note that the full list of properties is available in the link:#quarkus-kubernetes-client_quarkus.kubernetes-client.devservices-dev-services[Dev Services section of the configuration reference].
 
-=== Overriding
+In dev mode and when running tests, xref:kubernetes-dev-services.adoc[Dev Services for Kubernetes] automatically starts a Kubernetes API server.
 
-The extension also allows application code to override either of  `io.fabric8.kubernetes.client.Config` or `io.fabric8.kubernetes.client.KubernetesClient` which are
-normally provided by the extension by simply declaring custom versions of those beans.
+=== Customizing and overriding
+
+Quarkus provides multiple integration points for influencing the Kubernetes Client provided as a CDI bean.
+
+==== Kubernetes Client Config customization
+
+The first integration point is the use of the `io.quarkus.kubernetes.client.KubernetesConfigCustomizer` interface. When such a bean exists,
+it allows for arbitrary customizations of the `io.fabric8.kubernetes.client.Config` created by Quarkus (which takes into account the `quarkus.kubernetes-client.*` properties).
+
+Alternatively, application code can override the  `io.fabric8.kubernetes.client.Config` or even the `io.fabric8.kubernetes.client.KubernetesClient` bean (which are
+normally provided by the extension) by simply declaring custom versions of those beans.
 
 An example of this can be seen in the following snippet:
 
@@ -68,6 +84,47 @@ public class KubernetesClientProducer {
     }
 }
 ----
+
+==== Kubernetes Client ObjectMapper customization
+
+The Fabric8 Kubernetes Client uses its own `ObjectMapper` instance for serialization and deserialization of Kubernetes resources.
+This mapper is provided to the client through a `KubernetesSerialization` instance that's injected into
+the `KubernetesClient` bean.
+
+If for some reason you must customize the default `ObjectMapper` bean provided by this extension and used by the Kubernetes Client, you can do so by declaring a bean that implements the `KubernetesClientObjectMapperCustomizer` interface.
+
+The following code snippet contains an example of a `KubernetesClientObjectMapperCustomizer` to set the `ObjectMapper` locale:
+
+[source,java]
+----
+@Singleton
+public static class Customizer implements KubernetesClientObjectMapperCustomizer {
+    @Override
+    public void customize(ObjectMapper objectMapper) {
+        objectMapper.setLocale(Locale.ROOT);
+    }
+}
+----
+
+Furthermore, if you must replace the default `ObjectMapper` bean used by the Kubernetes Client that the extension creates automatically, you can do so by declaring a bean of type `@KubernetesClientObjectMapper`.
+The following code snippet shows how you can declare this bean:
+
+[source,java]
+----
+@Singleton
+public class KubernetesObjectMapperProducer {
+    @KubernetesClientObjectMapper
+    @Singleton
+    @Produces
+    public ObjectMapper kubernetesClientObjectMapper() {
+        return new ObjectMapper();
+    }
+}
+----
+
+
+WARNING: The static `io.fabric8.kubernetes.client.utils.Serialization` utils class is deprecated and should not be used.
+Access to `Serialization.jsonMapper()` should be replaced by the usage of @KubernetesClientObjectMapperCustomizer` declared beans.
 
 == Testing
 
@@ -90,7 +147,7 @@ public class Pods {
 
     @GET
     @Path("/{namespace}")
-    public List<Pod> pods(@PathParam("namespace") String namespace) {
+    public List<Pod> pods(String namespace) {
         return kubernetesClient.pods().inNamespace(namespace).list().getItems();
     }
 }
@@ -107,6 +164,8 @@ public class KubernetesClientTest {
 
     @KubernetesTestServer
     KubernetesServer mockServer;
+    @Inject
+    KubernetesClient client;
 
     @BeforeEach
     public void before() {
@@ -114,8 +173,8 @@ public class KubernetesClientTest {
         final Pod pod2 = new PodBuilder().withNewMetadata().withName("pod2").withNamespace("test").and().build();
 
         // Set up Kubernetes so that our "pretend" pods are created
-        mockServer.getClient().pods().create(pod1);
-        mockServer.getClient().pods().create(pod2);
+        client.pods().resource(pod1).create();
+        client.pods().resource(pod2).create();
     }
 
     @Test
@@ -129,13 +188,20 @@ public class KubernetesClientTest {
 
 Note that to take advantage of these features, the `quarkus-test-kubernetes-client` dependency needs to be added, for example like so:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-test-kubernetes-client</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-test-kubernetes-client")
 ----
 
 By default, the mock server will be in CRUD mode, so you have to use the client to build your state before your application can retrieve it,
@@ -173,18 +239,38 @@ public class KubernetesClientTest {
 }
 ----
 
+You can also use the `setup` attribute on the `@WithKubernetesTestServer` annotation to provide a class that will configure the `KubernetesServer` instance:
 
-Alternately, you can create a `CustomKubernetesMockServerTestResource.java` to ensure all your `@QuarkusTest` enabled test classes share the same mock server setup:
+[source%nowrap,java]
+----
+@WithKubernetesTestServer(setup = MyTest.Setup.class)
+@QuarkusTest
+public class MyTest {
+
+    public static class Setup implements Consumer<KubernetesServer> {
+
+        @Override
+        public void accept(KubernetesServer server) {
+          server.expect().get().withPath("/api/v1/namespaces/test/pods")
+            .andReturn(200, new PodList()).always();
+        }
+    }
+
+    // tests
+}
+----
+
+Alternately, you can create an extension of the `KubernetesServerTestResource` class to ensure all your `@QuarkusTest` enabled test classes share the same mock server setup via the `QuarkusTestResource` annotation:
 
 [source%nowrap,java]
 ----
 public class CustomKubernetesMockServerTestResource extends KubernetesServerTestResource {
 
     @Override
-    public void configureMockServer(KubernetesServer mockServer) {
-        mockServer.expect().get().withPath("/api/v1/namespaces/test/pods")
-                .andReturn(200, new PodList())
-                .always();
+    protected void configureServer() {
+        super.configureServer();
+        server.expect().get().withPath("/api/v1/namespaces/test/pods")
+          .andReturn(200, new PodList()).always();
     }
 }
 ----
@@ -192,17 +278,13 @@ public class CustomKubernetesMockServerTestResource extends KubernetesServerTest
 and use this in your other test classes as follows:
 [source%nowrap,java]
 ----
-@QuarkusTestResource(KubernetesMockServerTestResource.class)
+@QuarkusTestResource(CustomKubernetesMockServerTestResource.class)
 @QuarkusTest
 public class KubernetesClientTest {
 
     //tests will now use the configured server...
 }
 ----
-
-Furthermore, to get a mock server that replies with empty lists by default (instead of getting 404 responses from the Kubernetes API),
-you can use the `EmptyDefaultKubernetesMockServerTestResource.class` instead of
-`KubernetesMockServerTestResource.class`.
 
 [#note-on-generic-types]
 == Note on implementing or extending generic types
@@ -287,6 +369,29 @@ public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
 client.pods().watch(new ResourceWatcher<Pod>());
 ----
 
+[#note-on-ec-keys]
+== Note on using Elliptic Curve keys
+
+Please note that if you would like to use Elliptic Curve keys with Kubernetes Client then adding a BouncyCastle PKIX dependency is required:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bcpkix-jdk18on</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.bouncycastle:bcpkix-jdk18on")
+----
+
+Note that internally an `org.bouncycastle.jce.provider.BouncyCastleProvider` provider will be registered if it has not already been registered.
+
+You can have this provider registered as described in the xref:security-customization.adoc#bouncy-castle[BouncyCastle] or xref:security-customization.adoc#bouncy-castle-fips[BouncyCastle FIPS] sections.
 
 == Access to the Kubernetes API
 
@@ -337,14 +442,12 @@ the `openshift-client` extension, in a similar way. This leverages the dedicated
 openshift client, and provides access to `OpenShift` proprietary objects (e.g. `Route`, `ProjectRequest`, `BuildConfig` ...)
 
 Note that the configuration properties are shared with the `kubernetes-client` extension. In
-particular they have the same `quarkus.kubernetes-client` prefix.
+particular, they have the same `quarkus.kubernetes-client` prefix.
 
 Add the extension with:
 
-[source]
-----
-./mvnw quarkus:add-extension -Dextensions="openshift-client"
-----
+:add-extension-extensions: openshift-client
+include::{includes}/devtools/extension-add.adoc[]
 
 Note that `openshift-client` extension has a dependency on the `kubernetes-client` extension.
 
@@ -384,15 +487,36 @@ public class OpenShiftClientTest {
 ...
 ----
 
+Or by using the `@WithOpenShiftTestServer` similar to the `@WithKubernetesTestServer` explained in the
+previous section:
+
+[source, java]
+----
+@WithOpenShiftTestServer
+@QuarkusTest
+public class OpenShiftClientTest {
+
+    @OpenShiftTestServer
+    private OpenShiftServer mockOpenShiftServer;
+...
+----
+
 To use this feature, you have to add a dependency on `quarkus-test-openshift-client`:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-test-openshift-client</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.quarkus:quarkus-test-openshift-client")
 ----
 
 == Configuration Reference

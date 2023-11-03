@@ -10,3 +10,6 @@ language:
   base:
     dependencies:
       - io.quarkus:quarkus-funqy-google-cloud-functions
+    test-dependencies:
+      - io.quarkus:quarkus-test-google-cloud-functions
+      - io.rest-assured:rest-assured

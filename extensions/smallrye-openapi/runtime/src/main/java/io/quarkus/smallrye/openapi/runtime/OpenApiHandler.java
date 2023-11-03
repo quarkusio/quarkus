@@ -1,8 +1,6 @@
 package io.quarkus.smallrye.openapi.runtime;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import io.quarkus.arc.Arc;
 import io.smallrye.openapi.runtime.io.Format;
@@ -21,14 +19,8 @@ public class OpenApiHandler implements Handler<RoutingContext> {
     private volatile OpenApiDocumentService openApiDocumentService;
     private static final String ALLOWED_METHODS = "GET, HEAD, OPTIONS";
     private static final String QUERY_PARAM_FORMAT = "format";
-    private static final Map<String, String> RESPONSE_HEADERS = new HashMap<>();
 
-    static {
-        RESPONSE_HEADERS.put("Access-Control-Allow-Origin", "*");
-        RESPONSE_HEADERS.put("Access-Control-Allow-Credentials", "true");
-        RESPONSE_HEADERS.put("Access-Control-Allow-Methods", ALLOWED_METHODS);
-        RESPONSE_HEADERS.put("Access-Control-Allow-Headers", "Content-Type, Authorization");
-        RESPONSE_HEADERS.put("Access-Control-Max-Age", "86400");
+    public OpenApiHandler() {
     }
 
     @Override
@@ -37,25 +29,33 @@ public class OpenApiHandler implements Handler<RoutingContext> {
         HttpServerResponse resp = event.response();
 
         if (req.method().equals(HttpMethod.OPTIONS)) {
-            resp.headers().setAll(RESPONSE_HEADERS);
             resp.headers().set("Allow", ALLOWED_METHODS);
             event.next();
         } else {
-            String accept = req.headers().get("Accept");
-
-            List<String> formatParams = event.queryParam(QUERY_PARAM_FORMAT);
-            String formatParam = formatParams.isEmpty() ? null : formatParams.get(0);
 
             // Default content type is YAML
             Format format = Format.YAML;
 
-            // Check Accept, then query parameter "format" for JSON; else use YAML.
-            if ((accept != null && accept.contains(Format.JSON.getMimeType())) ||
-                    ("JSON".equalsIgnoreCase(formatParam))) {
+            String path = event.normalizedPath();
+            // Content negotiation with file extension
+            if (path.endsWith(".json")) {
                 format = Format.JSON;
+            } else if (path.endsWith(".yaml") || path.endsWith(".yml")) {
+                format = Format.YAML;
+            } else {
+                // Content negotiation with Accept header
+                String accept = req.headers().get("Accept");
+
+                List<String> formatParams = event.queryParam(QUERY_PARAM_FORMAT);
+                String formatParam = formatParams.isEmpty() ? null : formatParams.get(0);
+
+                // Check Accept, then query parameter "format" for JSON; else use YAML.
+                if ((accept != null && accept.contains(Format.JSON.getMimeType())) ||
+                        ("JSON".equalsIgnoreCase(formatParam))) {
+                    format = Format.JSON;
+                }
             }
 
-            resp.headers().setAll(RESPONSE_HEADERS);
             resp.headers().set("Content-Type", format.getMimeType() + ";charset=UTF-8");
             byte[] schemaDocument = getOpenApiDocumentService().getDocument(format);
             resp.end(Buffer.buffer(schemaDocument));

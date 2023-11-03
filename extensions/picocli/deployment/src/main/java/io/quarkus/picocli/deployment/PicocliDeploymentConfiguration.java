@@ -12,7 +12,7 @@ class PicocliDeploymentConfiguration {
      * </p>
      * <p>
      * CAUTION: this will have serious build-time performance impact since
-     * this is run on every restart in devmode, use with care!
+     * this is run on every restart in dev mode, use with care!
      * </p>
      * <p>
      * This property is intended to be used only in cases where an incompatible change in the

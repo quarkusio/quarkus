@@ -9,25 +9,32 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
-import io.quarkus.bootstrap.util.IoUtils;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
+
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Parent;
+import org.assertj.core.api.Assertions;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
+import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.bootstrap.workspace.SourceDir;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.paths.PathTree;
 
 public class LocalWorkspaceDiscoveryTest {
 
@@ -118,6 +125,45 @@ public class LocalWorkspaceDiscoveryTest {
     }
 
     @Test
+    public void moduleWithDifferentParentPomRawModel() throws Exception {
+        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("workspace-module-with-different-parent");
+        assertNotNull(moduleUrl);
+        final Path moduleDir = Path.of(moduleUrl.toURI());
+        assertNotNull(moduleUrl);
+
+        final LocalWorkspace ws = LocalProject.loadWorkspace(moduleDir).getWorkspace();
+
+        assertNotNull(ws.getProject("org.acme", "acme-runtimes"));
+        assertNotNull(ws.getProject("org.acme", "acme-parent"));
+        assertNotNull(ws.getProject("org.acme", "acme-build-no-bom-parent"));
+        assertNotNull(ws.getProject("org.acme", "acme-build-parent"));
+        assertNotNull(ws.getProject("org.acme", "acme-dependencies-bom"));
+        assertEquals(5, ws.getProjects().size());
+    }
+
+    @Test
+    public void moduleWithDifferentParentPomEffectiveModel() throws Exception {
+        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("workspace-module-with-different-parent");
+        assertNotNull(moduleUrl);
+        final Path moduleDir = Path.of(moduleUrl.toURI());
+        assertNotNull(moduleUrl);
+
+        final LocalWorkspace ws = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .setEffectiveModelBuilder(true)
+                .setCurrentProject(moduleDir.toString()))
+                .getWorkspace();
+
+        assertNotNull(ws.getProject("org.acme", "acme-runtimes"));
+        assertNotNull(ws.getProject("org.acme", "acme-parent"));
+        assertNotNull(ws.getProject("org.acme", "acme-build-no-bom-parent"));
+        assertNotNull(ws.getProject("org.acme", "acme-build-parent"));
+        assertNotNull(ws.getProject("org.acme", "acme-dependencies-bom"));
+        assertEquals(5, ws.getProjects().size());
+    }
+
+    @Test
     public void nonParentAggregator() throws Exception {
         final URL moduleUrl = Thread.currentThread().getContextClassLoader()
                 .getResource("non-parent-aggregator/service-extension/deployment");
@@ -137,7 +183,7 @@ public class LocalWorkspaceDiscoveryTest {
             module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
                     .setEffectiveModelBuilder(true)
                     .setCurrentProject(moduleDir.toString()))
-                            .getCurrentProject();
+                    .getCurrentProject();
         } finally {
             if (originalBaseDir == null) {
                 System.clearProperty(topLevelBaseDirProp);
@@ -158,16 +204,16 @@ public class LocalWorkspaceDiscoveryTest {
     }
 
     @Test
-    public void loadModulesInProfiles() throws Exception {
+    public void loadEffectiveModelBuilderModulesInProfiles() throws Exception {
         final URL moduleUrl = Thread.currentThread().getContextClassLoader()
                 .getResource("modules-in-profiles/integration-tests/rest-tests");
         assertNotNull(moduleUrl);
-        final Path moduleDir = Paths.get(moduleUrl.toURI());
+        final Path moduleDir = Path.of(moduleUrl.toURI());
 
         final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
                 .setEffectiveModelBuilder(true)
                 .setCurrentProject(moduleDir.toString()))
-                        .getCurrentProject();
+                .getCurrentProject();
         final LocalWorkspace ws = module1.getWorkspace();
 
         assertNotNull(ws.getProject("org.acme", "quarkus-quickstart-multimodule-parent"));
@@ -180,6 +226,28 @@ public class LocalWorkspaceDiscoveryTest {
     }
 
     @Test
+    public void loadModulesInProfiles() throws Exception {
+        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("modules-in-profiles/integration-tests/rest-tests");
+        assertNotNull(moduleUrl);
+        final Path moduleDir = Path.of(moduleUrl.toURI());
+
+        final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .setCurrentProject(moduleDir.toString()))
+                .getCurrentProject();
+        final LocalWorkspace ws = module1.getWorkspace();
+
+        assertNotNull(ws.getProject("org.acme", "quarkus-quickstart-multimodule-parent"));
+        assertNotNull(ws.getProject("org.acme", "quarkus-quickstart-multimodule-html"));
+        assertNotNull(ws.getProject("org.acme", "quarkus-quickstart-multimodule-main"));
+        assertNotNull(ws.getProject("org.acme", "quarkus-quickstart-multimodule-rest"));
+        assertNotNull(ws.getProject("org.acme", "acme-integration-tests"));
+        assertNotNull(ws.getProject("org.acme", "acme-rest-tests"));
+        assertNotNull(ws.getProject("org.acme", "other"));
+        assertEquals(7, ws.getProjects().size());
+    }
+
+    @Test
     public void loadOverlappingWorkspaceLayout() throws Exception {
         final URL moduleUrl = Thread.currentThread().getContextClassLoader()
                 .getResource("overlapping-workspace-layout/root/root/module1");
@@ -188,7 +256,7 @@ public class LocalWorkspaceDiscoveryTest {
 
         final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
                 .setCurrentProject(moduleDir.toString()))
-                        .getCurrentProject();
+                .getCurrentProject();
         final LocalWorkspace ws = module1.getWorkspace();
 
         final LocalProject wsModule1 = ws.getProject("org.acme", "module1");
@@ -211,13 +279,31 @@ public class LocalWorkspaceDiscoveryTest {
         final LocalWorkspace ws = new BootstrapMavenContext(BootstrapMavenContext.config()
                 .setRootProjectDir(rootProjectDir)
                 .setCurrentProject(nestedProjectDir.toString()))
-                        .getWorkspace();
+                .getWorkspace();
 
         assertNotNull(ws.getProject("org.acme", "nested-project-module1"));
         assertNotNull(ws.getProject("org.acme", "nested-project-parent"));
         assertNotNull(ws.getProject("org.acme", "root-module1"));
         assertNotNull(ws.getProject("org.acme", "root"));
         assertEquals(4, ws.getProjects().size());
+    }
+
+    @Test
+    public void loadWorkspaceWithMissingModule() throws Exception {
+        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-missing-module/root");
+        assertNotNull(projectUrl);
+        final Path rootProjectDir = Paths.get(projectUrl.toURI());
+        assertTrue(Files.exists(rootProjectDir));
+        final Path nestedProjectDir = rootProjectDir.resolve("module1");
+        assertTrue(Files.exists(nestedProjectDir));
+
+        final LocalWorkspace ws = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .setCurrentProject(nestedProjectDir.toString()))
+                .getWorkspace();
+
+        assertNotNull(ws.getProject("org.acme", "module1"));
+        assertNotNull(ws.getProject("org.acme", "root"));
+        assertEquals(2, ws.getProjects().size());
     }
 
     @Test
@@ -231,7 +317,7 @@ public class LocalWorkspaceDiscoveryTest {
 
         final LocalWorkspace ws = new BootstrapMavenContext(BootstrapMavenContext.config()
                 .setCurrentProject(nestedProjectDir.toString()))
-                        .getWorkspace();
+                .getWorkspace();
 
         assertNotNull(ws.getProject("org.acme", "module3"));
         assertNotNull(ws.getProject("org.acme", "module2"));
@@ -247,6 +333,26 @@ public class LocalWorkspaceDiscoveryTest {
         final Path projectDir = Paths.get(projectUrl.toURI());
         assertTrue(Files.exists(projectDir));
         final LocalProject project = LocalProject.loadWorkspace(projectDir);
+
+        assertEquals("acme", project.getArtifactId());
+        assertWorkspaceWithParentInChildDir(project);
+        assertParents(project, "acme-parent", "acme-dependencies");
+    }
+
+    @Test
+    public void loadWorkspaceFromRootDirWithParentInChildDirEffectiveModel() throws Exception {
+        final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-parent-is-not-root-dir");
+        assertNotNull(projectUrl);
+        final Path projectDir = Paths.get(projectUrl.toURI());
+        assertTrue(Files.exists(projectDir));
+
+        final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .setEffectiveModelBuilder(true)
+                .setCurrentProject(projectDir.toString()))
+                .getCurrentProject();
+        final LocalWorkspace ws = module1.getWorkspace();
+        final LocalProject project = ws.getProject("org.acme", "acme");
+        assertNotNull(project);
 
         assertEquals("acme", project.getArtifactId());
         assertWorkspaceWithParentInChildDir(project);
@@ -350,9 +456,9 @@ public class LocalWorkspaceDiscoveryTest {
         assertEquals(MvnProjectBuilder.DEFAULT_GROUP_ID, project.getGroupId());
         assertEquals("independent", project.getArtifactId());
         assertEquals(MvnProjectBuilder.DEFAULT_VERSION, project.getVersion());
-        final Map<AppArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
+        final Map<ArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
         assertEquals(6, projects.size());
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "independent")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "independent")));
 
         assertNull(project.getLocalParent());
     }
@@ -378,9 +484,9 @@ public class LocalWorkspaceDiscoveryTest {
         assertEquals("root-no-parent-module", project.getArtifactId());
         assertEquals(MvnProjectBuilder.DEFAULT_VERSION, project.getVersion());
         assertNotNull(project.getWorkspace());
-        final Map<AppArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
+        final Map<ArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
         assertEquals(5, projects.size());
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-no-parent-module")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-no-parent-module")));
 
         assertParents(project);
     }
@@ -433,16 +539,16 @@ public class LocalWorkspaceDiscoveryTest {
         assertNotNull(project);
         assertNotNull(project.getWorkspace());
         assertEquals("non-module-child", project.getArtifactId());
-        final Map<AppArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-no-parent-module")));
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-with-parent")));
+        final Map<ArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-no-parent-module")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-with-parent")));
         assertTrue(
-                projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-not-direct-child")));
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root")));
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "non-module-child")));
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "another-child")));
+                projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-not-direct-child")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "non-module-child")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "another-child")));
         assertTrue(projects
-                .containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "empty-parent-relative-path-module")));
+                .containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "empty-parent-relative-path-module")));
         assertEquals(7, projects.size());
 
         assertParents(project, "root");
@@ -569,18 +675,29 @@ public class LocalWorkspaceDiscoveryTest {
         final URL rootPomUrl = Thread.currentThread().getContextClassLoader()
                 .getResource(testResourceDirName + "/root/pom.xml");
         assertEquals(new File(rootPomUrl.toURI()), root);
+
+        final WorkspaceModule wsModule = module1.toWorkspaceModule();
+        Assertions.assertThat(wsModule.getModuleDir()).isEqualTo(module1Dir.toFile());
+        Assertions.assertThat(wsModule.getBuildDir()).isEqualTo(module1Dir.resolve("target").toFile());
+        SourceDir src = wsModule.getMainSources().getResourceDirs().iterator().next();
+        PathTree sourceTree = src.getSourceTree();
+        Assertions.assertThat(sourceTree).isNotNull();
+        Collection<Path> roots = sourceTree.getRoots();
+        Assertions.assertThat(roots).hasSize(1);
+        Assertions.assertThat(roots.iterator().next()).isEqualTo(module1Dir.resolve("build"));
+        Assertions.assertThat(src.getOutputDir()).isEqualTo(module1Dir.resolve("target/classes/META-INF/resources"));
     }
 
     private void assertCompleteWorkspace(final LocalProject project) {
-        final Map<AppArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
+        final Map<ArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
         assertEquals(5, projects.size());
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-no-parent-module")));
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-with-parent")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-no-parent-module")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-with-parent")));
         assertTrue(
-                projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-not-direct-child")));
+                projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-not-direct-child")));
         assertTrue(projects
-                .containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "empty-parent-relative-path-module")));
-        assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root")));
+                .containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "empty-parent-relative-path-module")));
+        assertTrue(projects.containsKey(ArtifactKey.ga(MvnProjectBuilder.DEFAULT_GROUP_ID, "root")));
     }
 
     private static void assertParents(LocalProject project, String... parentArtifactId) {

@@ -2,8 +2,6 @@ package io.quarkus.vertx.http.devmode;
 
 import static org.hamcrest.Matchers.equalTo;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,7 +16,7 @@ public class CompileProblemTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(CompileErrorEndpoint.class, CompileCorrectlyEndpoint.class));
 
     @Test

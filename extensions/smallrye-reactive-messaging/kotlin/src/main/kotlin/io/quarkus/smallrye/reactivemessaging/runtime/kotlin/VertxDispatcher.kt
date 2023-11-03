@@ -2,8 +2,8 @@ package io.quarkus.smallrye.reactivemessaging.runtime.kotlin
 
 import io.quarkus.arc.Arc
 import io.vertx.core.Context
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineDispatcher
 
 class VertxDispatcher(private val vertxContext: Context) : CoroutineDispatcher() {
     override fun dispatch(context: CoroutineContext, block: Runnable) {

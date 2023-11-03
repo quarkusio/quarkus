@@ -1,6 +1,5 @@
 package io.quarkus.panache.common.deployment.visitors;
 
-import static io.quarkus.deployment.util.AsmUtil.getDescriptor;
 import static io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassOperationGenerationVisitor.OBJECT;
 import static io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassOperationGenerationVisitor.recursivelyFindEntityTypeArguments;
 import static io.quarkus.panache.common.deployment.visitors.PanacheRepositoryClassOperationGenerationVisitor.CLASS;
@@ -48,7 +47,7 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
     protected ClassInfo entityInfo;
     protected List<PanacheMethodCustomizer> methodCustomizers;
     protected final Map<String, ByteCodeType> typeArguments = new HashMap<>();
-    protected final Function<String, String> argMapper;
+    protected final Function<String, org.jboss.jandex.Type> argMapper;
     protected final ByteCodeType entityUpperBound;
     private final Map<String, String> erasures = new HashMap<>();
 
@@ -77,8 +76,8 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
         argMapper = type -> {
             ByteCodeType byteCodeType = typeArguments.get(type);
             return byteCodeType != null
-                    ? byteCodeType.descriptor()
-                    : OBJECT.descriptor();
+                    ? byteCodeType.get()
+                    : OBJECT.get();
         };
     }
 
@@ -109,7 +108,7 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
 
         for (MethodInfo method : panacheEntityBaseClassInfo.methods()) {
             // Do not generate a method that already exists
-            String descriptor = AsmUtil.getDescriptor(method, name -> null);
+            String descriptor = method.descriptor();
             if (!userMethods.contains(method.name() + "/" + descriptor)) {
                 AnnotationInstance bridge = method.annotation(PanacheConstants.DOTNAME_GENERATE_BRIDGE);
                 if (bridge != null) {
@@ -145,12 +144,12 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
     }
 
     protected void generateMethod(MethodInfo method, AnnotationValue targetReturnTypeErased, AnnotationValue callSuperMethod) {
-        List<org.jboss.jandex.Type> parameters = method.parameters();
+        List<org.jboss.jandex.Type> parameters = method.parameterTypes();
 
         MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC,
                 method.name(),
-                AsmUtil.getDescriptor(method, name -> null),
-                AsmUtil.getSignature(method, name1 -> null),
+                method.descriptor(),
+                method.genericSignature(),
                 null);
         AsmUtil.copyParameterNames(mv, method);
         mv.visitCode();
@@ -195,7 +194,7 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
         descriptors(method, joiner);
 
         org.jboss.jandex.Type returnType = method.returnType();
-        String descriptor = getDescriptor(returnType, argMapper);
+        String descriptor = returnType.descriptor(argMapper);
         String key = returnType.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE
                 ? returnType.asTypeVariable().identifier()
                 : returnType.name().toString();
@@ -229,7 +228,7 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
     }
 
     private void descriptors(MethodInfo method, StringJoiner joiner) {
-        for (org.jboss.jandex.Type parameter : method.parameters()) {
+        for (org.jboss.jandex.Type parameter : method.parameterTypes()) {
             if (parameter.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE
                     || method.name().endsWith("ById")
                             && parameter.name().equals(typeArguments.get("Id").dotName())) {
@@ -248,7 +247,7 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
                 descriptor = OBJECT.descriptor();
                 break;
             default:
-                String value = getDescriptor(parameter, argMapper);
+                String value = parameter.descriptor(argMapper);
                 descriptor = erasures.getOrDefault(value, value);
         }
         return descriptor;

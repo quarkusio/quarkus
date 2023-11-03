@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import javax.ws.rs.ext.ExceptionMapper;
+
+import jakarta.ws.rs.ext.ExceptionMapper;
+
 import org.jboss.resteasy.reactive.common.core.LazyUnmanagedBeanFactory;
 import org.jboss.resteasy.reactive.common.util.URLUtils;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
@@ -43,9 +45,7 @@ public class ResourceClass {
      */
     private Map<String, String> classLevelExceptionMappers = new HashMap<>();
 
-    public boolean isSubResource() {
-        return path == null;
-    }
+    private Supplier<Boolean> isDisabled;
 
     public String getClassName() {
         return className;
@@ -114,6 +114,14 @@ public class ResourceClass {
 
     public void setClassLevelExceptionMappers(Map<String, String> classLevelExceptionMappers) {
         this.classLevelExceptionMappers = classLevelExceptionMappers;
+    }
+
+    public Supplier<Boolean> getIsDisabled() {
+        return isDisabled;
+    }
+
+    public void setIsDisabled(Supplier<Boolean> isDisabled) {
+        this.isDisabled = isDisabled;
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

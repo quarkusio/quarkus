@@ -1,16 +1,21 @@
 package io.quarkus.rest.data.panache.deployment.methods;
 
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
+import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.param;
+import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.responseType;
+import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.uniType;
 
 import java.lang.annotation.Annotation;
 import java.util.function.Supplier;
 
-import javax.validation.Valid;
-import javax.ws.rs.core.Response;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -23,8 +28,10 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.rest.data.panache.RestDataResource;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
-import io.quarkus.rest.data.panache.deployment.utils.ResponseImplementor;
+import io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator;
+import io.quarkus.rest.data.panache.deployment.utils.UniImplementor;
 import io.quarkus.rest.data.panache.runtime.UpdateExecutor;
+import io.smallrye.mutiny.Uni;
 
 public final class UpdateMethodImplementor extends StandardMethodImplementor {
 
@@ -36,14 +43,16 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
 
     private static final String REL = "update";
 
-    private final boolean withValidation;
+    private static final String EXCEPTION_MESSAGE = "Failed to update an entity";
 
-    public UpdateMethodImplementor(boolean withValidation) {
-        this.withValidation = withValidation;
+    public UpdateMethodImplementor(Capabilities capabilities) {
+        super(capabilities);
     }
 
     /**
-     * Generate JAX-RS UPDATE method that exposes {@link RestDataResource#update(Object, Object)}.
+     * Generate JAX-RS UPDATE method.
+     *
+     * The RESTEasy Classic version exposes {@link RestDataResource#update(Object, Object)}.
      * Expose {@link RestDataResource#update(Object, Object)} via JAX-RS method.
      * Generated code looks more or less like this:
      *
@@ -87,22 +96,64 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
      *     }
      * }
      * </pre>
+     *
+     * The RESTEasy Reactive version exposes
+     * {@link io.quarkus.rest.data.panache.ReactiveRestDataResource#update(Object, Object)}.
+     *
+     * <pre>
+     * {@code
+     *     &#64;PUT
+     *     &#64;Path("{id}")
+     *     &#64;Consumes({"application/json"})
+     *     &#64;Produces({"application/json"})
+     *     &#64;LinkResource(
+     *         rel = "update",
+     *         entityClassName = "com.example.Entity"
+     *     )
+     *     public Uni<Response> update(@PathParam("id") ID id, Entity entityToSave) {
+     *         return resource.get(id).flatMap(entity -> {
+     *             if (entity == null) {
+     *                 return Uni.createFrom().item(Response.status(204).build());
+     *             } else {
+     *                 return resource.update(id, entityToSave).map(savedEntity -> {
+     *                     String location = new ResourceLinksProvider().getSelfLink(savedEntity);
+     *                     if (location != null) {
+     *                         ResponseBuilder responseBuilder = Response.status(201);
+     *                         responseBuilder.entity(savedEntity);
+     *                         responseBuilder.location(URI.create(location));
+     *                         return responseBuilder.build();
+     *                     } else {
+     *                         throw new RuntimeException("Could not extract a new entity URL")
+     *                     }
+     *                 });
+     *             }
+     *         }).onFailure().invoke(t -> throw new RestDataPanacheException(t));
+     *     }
+     * }
+     * </pre>
      */
     @Override
     protected void implementInternal(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(METHOD_NAME, Response.class,
-                resourceMetadata.getIdType(), resourceMetadata.getEntityType());
+        MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
+                isNotReactivePanache() ? responseType() : uniType(resourceMetadata.getEntityType()),
+                param("id", resourceMetadata.getIdType()),
+                param("entity", resourceMetadata.getEntityType()),
+                param("uriInfo", UriInfo.class));
 
         // Add method annotations
         addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_UPDATE_METHOD_NAME), "{id}"));
         addPutAnnotation(methodCreator);
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
+        addContextAnnotation(methodCreator.getParameterAnnotations(2));
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
-        addProducesAnnotation(methodCreator, APPLICATION_JSON);
-        addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addProducesJsonAnnotation(methodCreator, resourceProperties);
+        addLinksAnnotation(methodCreator, resourceProperties, resourceMetadata.getEntityType(), REL);
+        addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_UPDATE_METHOD_NAME));
+        addOpenApiResponseAnnotation(methodCreator, Response.Status.CREATED, resourceMetadata.getEntityType());
+        addSecurityAnnotations(methodCreator, resourceProperties);
         // Add parameter annotations
-        if (withValidation) {
+        if (hasValidatorCapability()) {
             methodCreator.getParameterAnnotations(1).addAnnotation(Valid.class);
         }
 
@@ -110,10 +161,52 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
         ResultHandle id = methodCreator.getMethodParam(0);
         ResultHandle entityToSave = methodCreator.getMethodParam(1);
 
+        if (isNotReactivePanache()) {
+            implementClassicVersion(methodCreator, resourceMetadata, resourceProperties, resource, id, entityToSave);
+        } else {
+            implementReactiveVersion(methodCreator, resourceMetadata, resourceProperties, resource, id, entityToSave);
+        }
+
+        methodCreator.close();
+    }
+
+    @Override
+    protected String getResourceMethodName() {
+        return RESOURCE_UPDATE_METHOD_NAME;
+    }
+
+    private void implementReactiveVersion(MethodCreator methodCreator, ResourceMetadata resourceMetadata,
+            ResourceProperties resourceProperties, ResultHandle resource, ResultHandle id, ResultHandle entityToSave) {
+        ResultHandle uniResponse = methodCreator.invokeVirtualMethod(
+                ofMethod(resourceMetadata.getResourceClass(), RESOURCE_GET_METHOD_NAME, Uni.class, Object.class),
+                resource, id);
+
+        methodCreator
+                .returnValue(UniImplementor.flatMap(methodCreator, uniResponse, EXCEPTION_MESSAGE, (getBody, itemWasFound) -> {
+
+                    ResultHandle uniUpdateEntity = getBody.invokeVirtualMethod(
+                            ofMethod(resourceMetadata.getResourceClass(), RESOURCE_UPDATE_METHOD_NAME, Uni.class, Object.class,
+                                    Object.class),
+                            resource, id, entityToSave);
+
+                    getBody.returnValue(UniImplementor.map(getBody, uniUpdateEntity, EXCEPTION_MESSAGE,
+                            (updateBody, itemUpdated) -> {
+                                BranchResult ifEntityIsNew = updateBody.ifNull(itemWasFound);
+                                ifEntityIsNew.trueBranch()
+                                        .returnValue(responseImplementor.created(ifEntityIsNew.trueBranch(), itemUpdated,
+                                                resourceProperties));
+                                ifEntityIsNew.falseBranch()
+                                        .returnValue(responseImplementor.noContent(ifEntityIsNew.falseBranch()));
+                            }));
+                }));
+    }
+
+    private void implementClassicVersion(MethodCreator methodCreator, ResourceMetadata resourceMetadata,
+            ResourceProperties resourceProperties, ResultHandle resource, ResultHandle id, ResultHandle entityToSave) {
         // Invoke resource methods inside a supplier function which will be given to an update executor.
         // For ORM, this update executor will have the @Transactional annotation to make
         // sure that all database operations are executed in a single transaction.
-        TryBlock tryBlock = implementTryBlock(methodCreator, "Failed to update an entity");
+        TryBlock tryBlock = implementTryBlock(methodCreator, EXCEPTION_MESSAGE);
         ResultHandle updateExecutor = getUpdateExecutor(tryBlock);
         ResultHandle updateFunction = getUpdateFunction(tryBlock, resourceMetadata.getResourceClass(), resource, id,
                 entityToSave);
@@ -123,15 +216,8 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
 
         BranchResult createdNewEntity = tryBlock.ifNotNull(newEntity);
         createdNewEntity.trueBranch()
-                .returnValue(ResponseImplementor.created(createdNewEntity.trueBranch(), newEntity));
-        createdNewEntity.falseBranch().returnValue(ResponseImplementor.noContent(createdNewEntity.falseBranch()));
-
-        methodCreator.close();
-    }
-
-    @Override
-    protected String getResourceMethodName() {
-        return RESOURCE_UPDATE_METHOD_NAME;
+                .returnValue(responseImplementor.created(createdNewEntity.trueBranch(), newEntity, resourceProperties));
+        createdNewEntity.falseBranch().returnValue(responseImplementor.noContent(createdNewEntity.falseBranch()));
     }
 
     private ResultHandle getUpdateFunction(BytecodeCreator creator, String resourceClass, ResultHandle resource,
@@ -177,7 +263,7 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
         ResultHandle arcContainer = creator.invokeStaticMethod(ofMethod(Arc.class, "container", ArcContainer.class));
         ResultHandle instanceHandle = creator.invokeInterfaceMethod(
                 ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class, Annotation[].class),
-                arcContainer, creator.loadClass(UpdateExecutor.class), creator.newArray(Annotation.class, 0));
+                arcContainer, creator.loadClassFromTCCL(UpdateExecutor.class), creator.newArray(Annotation.class, 0));
         ResultHandle instance = creator.invokeInterfaceMethod(
                 ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
 

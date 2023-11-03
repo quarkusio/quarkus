@@ -1,5 +1,13 @@
 package io.quarkus.qute.generator;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.qute.CompletedStage;
@@ -8,13 +16,7 @@ import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.Results.NotFound;
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.function.BiConsumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import io.quarkus.qute.TemplateInstance;
 
 public final class Descriptors {
 
@@ -25,8 +27,6 @@ public final class Descriptors {
             boolean.class, Class.class);
     public static final MethodDescriptor GET_CLASS = MethodDescriptor.ofMethod(Object.class, "getClass", Class.class);
     public static final MethodDescriptor COLLECTION_SIZE = MethodDescriptor.ofMethod(Collection.class, "size", int.class);
-    public static final MethodDescriptor EQUALS = MethodDescriptor.ofMethod(Object.class, "equals", boolean.class,
-            Object.class);
     public static final MethodDescriptor GET_NAME = MethodDescriptor.ofMethod(EvalContext.class, "getName", String.class);
     public static final MethodDescriptor GET_BASE = MethodDescriptor.ofMethod(EvalContext.class, "getBase", Object.class);
     public static final MethodDescriptor GET_PARAMS = MethodDescriptor.ofMethod(EvalContext.class, "getParams", List.class);
@@ -35,7 +35,7 @@ public final class Descriptors {
     public static final MethodDescriptor EVALUATE = MethodDescriptor.ofMethod(EvalContext.class, "evaluate",
             CompletionStage.class, Expression.class);
     static final MethodDescriptor LIST_GET = MethodDescriptor.ofMethod(List.class, "get", Object.class, int.class);
-    static final MethodDescriptor COMPLETED_STAGE = MethodDescriptor.ofMethod(CompletedStage.class,
+    static final MethodDescriptor COMPLETED_STAGE_OF = MethodDescriptor.ofMethod(CompletedStage.class,
             "of", CompletedStage.class, Object.class);
     public static final MethodDescriptor COMPLETABLE_FUTURE_ALL_OF = MethodDescriptor.ofMethod(CompletableFuture.class,
             "allOf",
@@ -58,6 +58,8 @@ public final class Descriptors {
             CompletionStage.class, BiConsumer.class);
     public static final MethodDescriptor BOOLEAN_LOGICAL_OR = MethodDescriptor.ofMethod(Boolean.class, "logicalOr",
             boolean.class, boolean.class, boolean.class);
+    public static final MethodDescriptor BOOLEAN_VALUE = MethodDescriptor.ofMethod(Boolean.class, "booleanValue",
+            boolean.class);
     public static final MethodDescriptor EVALUATED_PARAMS_EVALUATE = MethodDescriptor.ofMethod(EvaluatedParams.class,
             "evaluate",
             EvaluatedParams.class,
@@ -91,8 +93,13 @@ public final class Descriptors {
             CompletionStage.class, EvalContext.class);
     public static final MethodDescriptor NOT_FOUND_FROM_EC = MethodDescriptor.ofMethod(NotFound.class, "from",
             NotFound.class, EvalContext.class);
+    public static final MethodDescriptor TEMPLATE_INSTANCE_DATA = MethodDescriptor.ofMethod(TemplateInstance.class, "data",
+            TemplateInstance.class, String.class, Object.class);
 
     public static final FieldDescriptor EVALUATED_PARAMS_STAGE = FieldDescriptor.of(EvaluatedParams.class, "stage",
             CompletionStage.class);
+    public static final FieldDescriptor RESULTS_TRUE = FieldDescriptor.of(Results.class, "TRUE", CompletedStage.class);
+    public static final FieldDescriptor RESULTS_FALSE = FieldDescriptor.of(Results.class, "FALSE", CompletedStage.class);
+    public static final FieldDescriptor RESULTS_NULL = FieldDescriptor.of(Results.class, "NULL", CompletedStage.class);
 
 }

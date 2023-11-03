@@ -2,11 +2,10 @@ package io.quarkus.resteasy.reactive.links.runtime;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 
-import javax.ws.rs.core.Link;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Link;
+import jakarta.ws.rs.core.UriInfo;
 
 import io.quarkus.resteasy.reactive.links.RestLinksProvider;
 
@@ -34,8 +33,9 @@ final class RestLinksProviderImpl implements RestLinksProvider {
     public Collection<Link> getTypeLinks(Class<?> elementType) {
         verifyInit();
 
-        List<Link> links = new LinkedList<>();
-        for (LinkInfo linkInfo : linksContainer.getForClass(elementType)) {
+        List<LinkInfo> linkInfoList = linksContainer.getForClass(elementType);
+        List<Link> links = new ArrayList<>(linkInfoList.size());
+        for (LinkInfo linkInfo : linkInfoList) {
             if (linkInfo.getPathParameters().size() == 0) {
                 links.add(Link.fromUriBuilder(uriInfo.getBaseUriBuilder().path(linkInfo.getPath()))
                         .rel(linkInfo.getRel())
@@ -49,8 +49,9 @@ final class RestLinksProviderImpl implements RestLinksProvider {
     public <T> Collection<Link> getInstanceLinks(T instance) {
         verifyInit();
 
-        List<Link> links = new LinkedList<>();
-        for (LinkInfo linkInfo : linksContainer.getForClass(instance.getClass())) {
+        List<LinkInfo> linkInfoList = linksContainer.getForClass(instance.getClass());
+        List<Link> links = new ArrayList<>(linkInfoList.size());
+        for (LinkInfo linkInfo : linkInfoList) {
             links.add(Link.fromUriBuilder(uriInfo.getBaseUriBuilder().path(linkInfo.getPath()))
                     .rel(linkInfo.getRel())
                     .build(getPathParameterValues(linkInfo, instance)));
@@ -62,10 +63,11 @@ final class RestLinksProviderImpl implements RestLinksProvider {
         List<Object> values = new ArrayList<>(linkInfo.getPathParameters().size());
         for (String name : linkInfo.getPathParameters()) {
             GetterAccessor accessor = getterAccessorsContainer.get(linkInfo.getEntityType(), name);
-            if (accessor == null) {
-                throw new RuntimeException("Could not get '" + name + "' value");
+            if (accessor != null) {
+                values.add(accessor.get(instance));
+            } else {
+                values.add("{" + name + "}");
             }
-            values.add(accessor.get(instance));
         }
         return values.toArray();
     }

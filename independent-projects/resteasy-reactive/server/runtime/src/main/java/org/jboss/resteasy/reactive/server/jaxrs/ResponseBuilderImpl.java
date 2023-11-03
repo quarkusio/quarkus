@@ -2,8 +2,10 @@ package org.jboss.resteasy.reactive.server.jaxrs;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
+
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.common.jaxrs.AbstractResponseBuilder;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.Deployment;
@@ -38,10 +40,12 @@ public class ResponseBuilderImpl extends AbstractResponseBuilder {
                         prefix = deployment.getPrefix();
                     }
                     // Spec says relative to request, but TCK tests relative to Base URI, so we do that
-                    location = new URI(req.getRequestScheme(), null, host, port,
-                            prefix +
-                                    (location.getPath().startsWith("/") ? location.getPath() : "/" + location.getPath()),
-                            location.getQuery(), null);
+                    String path = location.toString();
+                    if (!path.startsWith("/")) {
+                        path = "/" + path;
+                    }
+                    URI baseUri = new URI(req.getRequestScheme(), null, host, port, null, null, null);
+                    location = baseUri.resolve(prefix + path);
                 } catch (URISyntaxException e) {
                     throw new RuntimeException(e);
                 }
@@ -70,9 +74,12 @@ public class ResponseBuilderImpl extends AbstractResponseBuilder {
                         port = Integer.parseInt(host.substring(index + 1));
                         host = host.substring(0, index);
                     }
-                    location = new URI(req.getRequestScheme(), null, host, port,
-                            location.getPath().startsWith("/") ? location.getPath() : "/" + location.getPath(),
-                            location.getQuery(), null);
+                    String path = location.toString();
+                    if (!path.startsWith("/")) {
+                        path = "/" + path;
+                    }
+                    location = new URI(req.getRequestScheme(), null, host, port, null, null, null)
+                            .resolve(path);
                 } catch (URISyntaxException e) {
                     throw new RuntimeException(e);
                 }
@@ -89,19 +96,19 @@ public class ResponseBuilderImpl extends AbstractResponseBuilder {
 
     //TODO: add the rest of static methods of Response if we need them
 
-    public static Response.ResponseBuilder withStatus(Response.Status status) {
-        return new ResponseBuilderImpl().status(status);
+    public static ResponseBuilderImpl withStatus(Response.Status status) {
+        return (ResponseBuilderImpl) new ResponseBuilderImpl().status(status);
     }
 
-    public static Response.ResponseBuilder ok() {
+    public static ResponseBuilderImpl ok() {
         return withStatus(Response.Status.OK);
     }
 
-    public static Response.ResponseBuilder ok(Object entity) {
-        return ok().entity(entity);
+    public static ResponseBuilderImpl ok(Object entity) {
+        return (ResponseBuilderImpl) ok().entity(entity);
     }
 
-    public static Response.ResponseBuilder noContent() {
+    public static ResponseBuilderImpl noContent() {
         return withStatus(Response.Status.NO_CONTENT);
     }
 }

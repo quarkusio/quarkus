@@ -1,6 +1,5 @@
 package io.quarkus.it.main;
 
-import static io.quarkus.test.junit.DisableIfBuiltWithGraalVMOlderThan.GraalVMVersion.GRAALVM_21_0;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
-import io.quarkus.test.junit.DisableIfBuiltWithGraalVMOlderThan;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
@@ -49,6 +47,14 @@ public class RestClientTestCase {
                 .body(is("TEST"));
     }
 
+    /**
+     * This test in Native won't work on a barebone system,
+     * just with C.UTF-8 default fallback locale.
+     *
+     * For example, this package satisfies the dependency on a RHEL 9 type of OS:
+     * glibc-all-langpacks
+     *
+     */
     @DisabledOnOs(OS.WINDOWS)
     @Test
     public void testEmojis() {
@@ -129,8 +135,8 @@ public class RestClientTestCase {
                 .when().get("/client/cdi/default-scope-on-interface")
                 .getBody().print();
 
-        Assertions.assertEquals("javax.inject.Singleton", responseWithSingletonScope);
-        Assertions.assertEquals("javax.enterprise.context.Dependent", responseWithDefaultScope);
+        Assertions.assertEquals("jakarta.inject.Singleton", responseWithSingletonScope);
+        Assertions.assertEquals("jakarta.enterprise.context.Dependent", responseWithDefaultScope);
     }
 
     @Test
@@ -177,7 +183,6 @@ public class RestClientTestCase {
     }
 
     @Test
-    @DisableIfBuiltWithGraalVMOlderThan(GRAALVM_21_0)
     public void testFaultTolerance() {
         RestAssured.when().get("/client/fault-tolerance").then()
                 .body(is("Hello fallback!"));

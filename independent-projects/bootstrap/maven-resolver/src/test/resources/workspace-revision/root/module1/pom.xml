@@ -9,4 +9,14 @@
     </parent>
 
     <artifactId>root-module1</artifactId>
+
+    <build>
+        <resources>
+            <resource>
+                <targetPath>META-INF/resources</targetPath>
+                <directory>build</directory>
+            </resource>
+        </resources>
+    </build>
+
 </project>

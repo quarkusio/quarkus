@@ -2,11 +2,11 @@ package io.quarkus.it.websocket;
 
 import java.io.Writer;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonWriter;
-import javax.websocket.Encoder;
-import javax.websocket.EndpointConfig;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonWriter;
+import jakarta.websocket.Encoder;
+import jakarta.websocket.EndpointConfig;
 
 public class ServerDtoEncoder implements Encoder.TextStream<Dto> {
     @Override

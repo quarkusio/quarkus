@@ -8,12 +8,23 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class NativeImageResourceBundleBuildItem extends MultiBuildItem {
 
     private final String bundleName;
+    private final String moduleName;
 
     public NativeImageResourceBundleBuildItem(String bundleName) {
         this.bundleName = bundleName;
+        this.moduleName = null;
+    }
+
+    public NativeImageResourceBundleBuildItem(String bundleName, String moduleName) {
+        this.bundleName = bundleName;
+        this.moduleName = moduleName;
     }
 
     public String getBundleName() {
         return bundleName;
+    }
+
+    public String getModuleName() {
+        return moduleName;
     }
 }

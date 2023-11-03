@@ -12,14 +12,16 @@ public class Tokens {
     final private Long accessTokenExpiresAt;
     final private Long refreshTokenTimeSkew;
     final private String refreshToken;
+    final Long refreshTokenExpiresAt;
     final private JsonObject grantResponse;
 
     public Tokens(String accessToken, Long accessTokenExpiresAt, Duration refreshTokenTimeSkewDuration, String refreshToken,
-            JsonObject grantResponse) {
+            Long refreshTokenExpiresAt, JsonObject grantResponse) {
         this.accessToken = accessToken;
         this.accessTokenExpiresAt = accessTokenExpiresAt;
         this.refreshTokenTimeSkew = refreshTokenTimeSkewDuration == null ? null : refreshTokenTimeSkewDuration.getSeconds();
         this.refreshToken = refreshToken;
+        this.refreshTokenExpiresAt = refreshTokenExpiresAt;
         this.grantResponse = grantResponse;
     }
 
@@ -44,11 +46,11 @@ public class Tokens {
     }
 
     public boolean isAccessTokenExpired() {
-        if (accessTokenExpiresAt == null) {
-            return false;
-        }
-        final long nowSecs = System.currentTimeMillis() / 1000;
-        return nowSecs > accessTokenExpiresAt;
+        return isExpired(accessTokenExpiresAt);
+    }
+
+    public boolean isRefreshTokenExpired() {
+        return isExpired(refreshTokenExpiresAt);
     }
 
     public boolean isAccessTokenWithinRefreshInterval() {
@@ -57,5 +59,13 @@ public class Tokens {
         }
         final long nowSecs = System.currentTimeMillis() / 1000;
         return nowSecs + refreshTokenTimeSkew > accessTokenExpiresAt;
+    }
+
+    private static boolean isExpired(Long expiresAt) {
+        if (expiresAt == null) {
+            return false;
+        }
+        final long nowSecs = System.currentTimeMillis() / 1000;
+        return nowSecs > expiresAt;
     }
 }

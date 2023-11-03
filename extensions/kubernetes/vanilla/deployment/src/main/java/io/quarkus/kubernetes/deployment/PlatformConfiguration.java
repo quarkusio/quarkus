@@ -24,6 +24,10 @@ public interface PlatformConfiguration extends EnvVarHolder {
 
     boolean isAddBuildTimestamp();
 
+    boolean isAddVersionToLabelSelectors();
+
+    boolean isAddNameToLabelSelectors();
+
     Optional<String> getWorkingDir();
 
     Optional<List<String>> getCommand();
@@ -32,7 +36,7 @@ public interface PlatformConfiguration extends EnvVarHolder {
 
     Optional<String> getServiceAccount();
 
-    Optional<String> getHost();
+    Optional<String> getContainerName();
 
     Map<String, PortConfig> getPorts();
 
@@ -42,9 +46,13 @@ public interface PlatformConfiguration extends EnvVarHolder {
 
     Optional<List<String>> getImagePullSecrets();
 
+    boolean isGenerateImagePullSecret();
+
     ProbeConfig getLivenessProbe();
 
     ProbeConfig getReadinessProbe();
+
+    ProbeConfig getStartupProbe();
 
     PrometheusConfig getPrometheusConfig();
 
@@ -53,6 +61,8 @@ public interface PlatformConfiguration extends EnvVarHolder {
     Map<String, SecretVolumeConfig> getSecretVolumes();
 
     Map<String, ConfigMapVolumeConfig> getConfigMapVolumes();
+
+    List<String> getEmptyDirVolumes();
 
     Map<String, GitRepoVolumeConfig> getGitRepoVolumes();
 
@@ -72,20 +82,17 @@ public interface PlatformConfiguration extends EnvVarHolder {
 
     ResourcesConfig getResources();
 
-    default Optional<ExpositionConfig> getExposition() {
-        return Optional.empty();
-    }
-
-    default boolean isExpose() {
-        return false;
-    }
-
     default String getConfigName() {
         return getClass().getSimpleName().replaceAll("Config$", "").toLowerCase();
     }
 
-    public Optional<String> getAppSecret();
+    Optional<String> getAppSecret();
 
-    public Optional<String> getAppConfigMap();
+    Optional<String> getAppConfigMap();
 
+    RbacConfig getRbacConfig();
+
+    SecurityContextConfig getSecurityContext();
+
+    boolean isIdempotent();
 }

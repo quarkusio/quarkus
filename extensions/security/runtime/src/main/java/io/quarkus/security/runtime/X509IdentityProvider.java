@@ -2,7 +2,7 @@ package io.quarkus.security.runtime;
 
 import java.security.cert.X509Certificate;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.IdentityProvider;

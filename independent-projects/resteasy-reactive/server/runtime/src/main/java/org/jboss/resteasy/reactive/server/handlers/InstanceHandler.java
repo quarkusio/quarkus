@@ -22,6 +22,7 @@ public class InstanceHandler implements ServerRestHandler {
         if (instance == null) {
             synchronized (this) {
                 if (instance == null) {
+                    requestContext.requireCDIRequestScope();
                     instance = factory.createInstance().getInstance();
                 }
             }

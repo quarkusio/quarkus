@@ -6,6 +6,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.jboss.resteasy.reactive.server.core.multipart.FormData;
+
 public interface ServerHttpRequest {
 
     String getRequestHeader(CharSequence name);
@@ -52,12 +54,23 @@ public interface ServerHttpRequest {
 
     /**
      * Unwraps a backing object
-     * 
+     *
      * @param theType
      * @param <T>
      * @return
      */
     <T> T unwrap(Class<T> theType);
+
+    /**
+     * If the underlying transport has handled multipart this can return the result, instead of using resteasy reactives
+     * built in parser.
+     *
+     */
+    default FormData getExistingParsedForm() {
+        return null;
+    }
+
+    boolean isOnIoThread();
 
     interface ReadCallback {
 

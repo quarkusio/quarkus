@@ -15,10 +15,10 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
-import org.jboss.jandex.Type.Kind;
+import org.jboss.jandex.TypeVariable;
 
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.panache.common.Sort;
 
 public class MethodNameParser {
@@ -79,24 +79,32 @@ public class MethodNameParser {
     public Result parse(MethodInfo methodInfo) {
         String methodName = methodInfo.name();
         ClassInfo repositoryClassInfo = methodInfo.declaringClass();
-        String repositoryMethodDescription = methodName + " of Repository " + repositoryClassInfo;
+        String repositoryMethodDescription = "'" + methodName + "' of repository '" + repositoryClassInfo + "'";
         QueryType queryType = getType(methodName);
         if (queryType == null) {
-            throw new UnableToParseMethodException("Method " + repositoryMethodDescription + " cannot be parsed");
+            throw new UnableToParseMethodException("Method " + repositoryMethodDescription
+                    + " cannot be parsed. Did you forget to annotate the method with '@Query'?");
         }
 
         int byIndex = methodName.indexOf("By");
         if ((byIndex == -1) || (byIndex + 2 >= methodName.length())) {
-            throw new UnableToParseMethodException("Method " + repositoryMethodDescription + " cannot be parsed");
+            throw new UnableToParseMethodException("Method " + repositoryMethodDescription
+                    + " cannot be parsed as there is no proper 'By' clause in the name.");
         }
 
         // handle 'Top' and 'First'
         Integer topCount = null;
-        int firstIndex = methodName.indexOf("First");
-        int topIndex = methodName.indexOf("Top");
-        if ((firstIndex != -1) || (topIndex != -1)) {
+        int minFirstOrTopIndex = Math.min(indexOfOrMaxValue(methodName, "First"), indexOfOrMaxValue(methodName, "Top"));
+        // 'First' and 'Top' could be part of a field name, so we only consider them as part of a top query
+        // if they are found before 'By'
+        if (minFirstOrTopIndex < byIndex) {
+            if (queryType != QueryType.SELECT) {
+                throw new UnableToParseMethodException(
+                        "When 'Top' or 'First' is specified, the query must be a find query. Offending method is "
+                                + repositoryMethodDescription + ".");
+            }
             try {
-                String topCountStr = methodName.substring(Math.max(firstIndex, topIndex), byIndex)
+                String topCountStr = methodName.substring(minFirstOrTopIndex, byIndex)
                         .replace("Top", "").replace("First", "");
                 if (topCountStr.isEmpty()) {
                     topCount = 1;
@@ -108,11 +116,6 @@ public class MethodNameParser {
                         "Unable to parse query with limiting results clause. Offending method is "
                                 + repositoryMethodDescription + ".");
             }
-        }
-        if ((topCount != null) && (queryType != QueryType.SELECT)) {
-            throw new UnableToParseMethodException(
-                    "When 'Top' or 'First' is specified, the query must be a find query. Offending method is "
-                            + repositoryMethodDescription + ".");
         }
 
         if (methodName.substring(0, byIndex).contains("Distinct")) {
@@ -329,6 +332,11 @@ public class MethodNameParser {
                 topCount);
     }
 
+    private int indexOfOrMaxValue(String methodName, String term) {
+        int index = methodName.indexOf(term);
+        return index != -1 ? index : Integer.MAX_VALUE;
+    }
+
     /**
      * See:
      * https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#repositories.query-methods.query-property-expressions
@@ -343,6 +351,7 @@ public class MethodNameParser {
         ClassInfo parentClassInfo = this.entityClass;
         FieldInfo fieldInfo = null;
 
+        MutableReference<List<ClassInfo>> parentSuperClassInfos = new MutableReference<>();
         int fieldStartIndex = 0;
         while (fieldStartIndex < fieldPathExpression.length()) {
             if (fieldPathExpression.charAt(fieldStartIndex) == '_') {
@@ -351,7 +360,6 @@ public class MethodNameParser {
                     throw new UnableToParseMethodException(fieldNotResolvableMessage + offendingMethodMessage);
                 }
             }
-            MutableReference<List<ClassInfo>> parentSuperClassInfos = new MutableReference<>();
             // the underscore character is treated as reserved character to manually define traversal points.
             int firstSeparator = fieldPathExpression.indexOf('_', fieldStartIndex);
             int fieldEndIndex = firstSeparator == -1 ? fieldPathExpression.length() : firstSeparator;
@@ -377,17 +385,28 @@ public class MethodNameParser {
             }
             fieldPathBuilder.append(fieldInfo.name());
             if (!isHibernateProvidedBasicType(fieldInfo.type().name())) {
-                parentClassInfo = indexView.getClassByName(fieldInfo.type().name());
+                DotName parentClassName;
+                boolean typed = false;
+                if (fieldInfo.type().kind() == Type.Kind.TYPE_VARIABLE) {
+                    typed = true;
+                    parentClassName = getParentNameFromTypedFieldViaHierarchy(fieldInfo, mappedSuperClassInfos);
+                } else {
+                    parentClassName = fieldInfo.type().name();
+                }
+                parentClassInfo = indexView.getClassByName(parentClassName);
+                parentSuperClassInfos.set(null);
                 if (parentClassInfo == null) {
                     throw new IllegalStateException(
                             "Entity class " + fieldInfo.type().name() + " referenced by "
                                     + this.entityClass + "." + fieldPathBuilder
-                                    + " was not part of the Quarkus index. " + offendingMethodMessage);
+                                    + " was not part of the Quarkus index"
+                                    + (typed ? " or typed field could not be resolved properly. " : ". ")
+                                    + offendingMethodMessage);
                 }
+
             }
             fieldStartIndex = fieldEndIndex;
         }
-
         return fieldInfo;
     }
 
@@ -485,7 +504,7 @@ public class MethodNameParser {
     }
 
     private String getEntityName() {
-        AnnotationInstance annotationInstance = entityClass.classAnnotation(DotNames.JPA_ENTITY);
+        AnnotationInstance annotationInstance = entityClass.declaredAnnotation(DotNames.JPA_ENTITY);
         if (annotationInstance != null && annotationInstance.value("name") != null) {
             AnnotationValue annotationValue = annotationInstance.value("name");
             return annotationValue.asString().length() > 0 ? annotationValue.asString() : entityClass.simpleName();
@@ -529,24 +548,66 @@ public class MethodNameParser {
         Type superClassType = entityClass.superClassType();
         while (superClassType != null && !superClassType.name().equals(DotNames.OBJECT)) {
             ClassInfo superClass = indexView.getClassByName(superClassType.name());
-            if (superClass.classAnnotation(DotNames.JPA_MAPPED_SUPERCLASS) != null) {
+            if (superClass.declaredAnnotation(DotNames.JPA_MAPPED_SUPERCLASS) != null) {
                 mappedSuperClassInfoElements.add(superClass);
-            } else if (superClass.classAnnotation(DotNames.JPA_INHERITANCE) != null) {
+            } else if (superClass.declaredAnnotation(DotNames.JPA_INHERITANCE) != null) {
                 mappedSuperClassInfoElements.add(superClass);
             }
 
-            if (superClassType.kind() == Kind.CLASS) {
-                superClassType = superClass.superClassType();
-            } else if (superClassType.kind() == Kind.PARAMETERIZED_TYPE) {
-                ParameterizedType parameterizedType = superClassType.asParameterizedType();
-                superClassType = parameterizedType.owner();
-            }
+            superClassType = superClass.superClassType();
         }
         return mappedSuperClassInfoElements;
     }
 
     private boolean isHibernateProvidedBasicType(DotName dotName) {
         return DotNames.HIBERNATE_PROVIDED_BASIC_TYPES.contains(dotName);
+    }
+
+    // Tries to get the parent (name) of a field that is typed, e.g.:
+    // class Foo<ID extends Serializable> { @EmbeddedId ID id; }
+    // class Bar<ID extends SomeMoreSpecificBaseId> extends FOO<ID> { }
+    // class Baz extends Bar<BazId> { }
+    // @Embeddable class BazId extends SomeMoreSpecificBaseId { @Column String a; @Column String b; }
+    //
+    // Without this method, type of Foo.id would be Serializable and therefore Foo.id.a (or b) would not be found.
+    //
+    // Note: This method is lenient in that it doesn't throw exceptions aggressively when an assumption is not met.
+    private DotName getParentNameFromTypedFieldViaHierarchy(FieldInfo fieldInfo, List<ClassInfo> parentSuperClassInfos) {
+        // find in the hierarchy the position of the class the fieldInfo belongs to
+        int superClassIndex = parentSuperClassInfos.indexOf(fieldInfo.declaringClass());
+        if (superClassIndex == -1) {
+            // field seems to belong to concrete entity class; no use narrowing it down via class hierarchy
+            return fieldInfo.type().name();
+        }
+        TypeVariable typeVariable = fieldInfo.type().asTypeVariable();
+        // entire hierarchy as list: entityClass, superclass of entityClass, superclass of the latter, ...
+        List<ClassInfo> classInfos = new ArrayList<>();
+        classInfos.add(entityClass);
+        classInfos.addAll(parentSuperClassInfos.subList(0, superClassIndex + 1));
+        // go down the hierarchy until ideally a concrete class is found that specifies the actual type of the field
+        for (int i = classInfos.size() - 1; i > 0; i--) {
+            ClassInfo currentClassInfo = classInfos.get(i);
+            ClassInfo childClassInfo = classInfos.get(i - 1);
+            int typeParameterIndex = currentClassInfo.typeParameters().indexOf(typeVariable);
+            if (typeParameterIndex >= 0) {
+                List<Type> resolveTypeParameters = JandexUtil.resolveTypeParameters(childClassInfo.name(),
+                        currentClassInfo.name(), indexView);
+                if (resolveTypeParameters.size() <= typeParameterIndex) {
+                    // edge case; subclass without or with incomplete parameterization? raw types?
+                    break;
+                }
+                Type type = resolveTypeParameters.get(typeParameterIndex);
+                if (type.kind() == Type.Kind.TYPE_VARIABLE) {
+                    // go on with the type variable from the child class (which is potentially more specific that the previous one)
+                    typeVariable = type.asTypeVariable();
+                } else if (type.kind() == Type.Kind.CLASS) {
+                    // ideal outcome: concrete class, doesn't get more specific than this
+                    return type.name();
+                }
+            }
+        }
+        // return the most specific type variable we were able to get
+        return typeVariable.name();
     }
 
     private static class MutableReference<T> {

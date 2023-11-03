@@ -6,16 +6,21 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import io.quarkus.bootstrap.model.PathsCollection;
+import io.quarkus.paths.PathCollection;
 
 public interface CompilationProvider extends Closeable {
 
     Set<String> handledExtensions();
+
+    default String getProviderKey() {
+        return getClass().getName();
+    }
 
     default Set<String> handledSourcePaths() {
         return Collections.emptySet();
@@ -23,7 +28,7 @@ public interface CompilationProvider extends Closeable {
 
     void compile(Set<File> files, Context context);
 
-    Path getSourcePath(Path classFilePath, PathsCollection sourcePaths, String classesPath);
+    Path getSourcePath(Path classFilePath, PathCollection sourcePaths, String classesPath);
 
     @Override
     default void close() throws IOException {
@@ -34,40 +39,47 @@ public interface CompilationProvider extends Closeable {
 
         private final String name;
         private final Set<File> classpath;
+        private final Set<File> reloadableClasspath;
         private final File projectDirectory;
         private final File sourceDirectory;
         private final File outputDirectory;
         private final Charset sourceEncoding;
-        private final List<String> compilerOptions;
+        private final Map<String, Set<String>> compilerOptions;
+        private final String releaseJavaVersion;
         private final String sourceJavaVersion;
         private final String targetJvmVersion;
         private final List<String> compilePluginArtifacts;
         private final List<String> compilerPluginOptions;
+        private final boolean ignoreModuleInfo;
 
         public Context(
                 String name,
                 Set<File> classpath,
+                Set<File> reloadableClasspath,
                 File projectDirectory,
                 File sourceDirectory,
                 File outputDirectory,
                 String sourceEncoding,
-                List<String> compilerOptions,
+                Map<String, Set<String>> compilerOptions,
+                String releaseJavaVersion,
                 String sourceJavaVersion,
                 String targetJvmVersion,
                 List<String> compilePluginArtifacts,
-                List<String> compilerPluginOptions) {
-
+                List<String> compilerPluginOptions, String ignoreModuleInfo) {
             this.name = name;
             this.classpath = classpath;
+            this.reloadableClasspath = reloadableClasspath;
             this.projectDirectory = projectDirectory;
             this.sourceDirectory = sourceDirectory;
             this.outputDirectory = outputDirectory;
             this.sourceEncoding = sourceEncoding == null ? StandardCharsets.UTF_8 : Charset.forName(sourceEncoding);
-            this.compilerOptions = compilerOptions == null ? new ArrayList<String>() : compilerOptions;
+            this.compilerOptions = compilerOptions == null ? new HashMap<>() : compilerOptions;
+            this.releaseJavaVersion = releaseJavaVersion;
             this.sourceJavaVersion = sourceJavaVersion;
             this.targetJvmVersion = targetJvmVersion;
             this.compilePluginArtifacts = compilePluginArtifacts;
             this.compilerPluginOptions = compilerPluginOptions;
+            this.ignoreModuleInfo = Boolean.parseBoolean(ignoreModuleInfo);
         }
 
         public String getName() {
@@ -76,6 +88,10 @@ public interface CompilationProvider extends Closeable {
 
         public Set<File> getClasspath() {
             return classpath;
+        }
+
+        public Set<File> getReloadableClasspath() {
+            return reloadableClasspath;
         }
 
         public File getProjectDirectory() {
@@ -94,8 +110,12 @@ public interface CompilationProvider extends Closeable {
             return sourceEncoding;
         }
 
-        public List<String> getCompilerOptions() {
-            return compilerOptions;
+        public Set<String> getCompilerOptions(String key) {
+            return compilerOptions.getOrDefault(key, Collections.emptySet());
+        }
+
+        public String getReleaseJavaVersion() {
+            return releaseJavaVersion;
         }
 
         public String getSourceJavaVersion() {
@@ -112,6 +132,10 @@ public interface CompilationProvider extends Closeable {
 
         public List<String> getCompilerPluginOptions() {
             return compilerPluginOptions;
+        }
+
+        public boolean ignoreModuleInfo() {
+            return ignoreModuleInfo;
         }
     }
 }

@@ -1,8 +1,11 @@
 package io.quarkus.vertx.graphql.runtime;
 
+import java.util.function.Consumer;
+
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.graphql.GraphiQLHandler;
 import io.vertx.ext.web.handler.graphql.GraphiQLHandlerOptions;
@@ -19,7 +22,7 @@ public class VertxGraphqlRecorder {
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
-                if (event.normalisedPath().length() == (event.currentRoute().getPath().length()
+                if (event.normalizedPath().length() == (event.currentRoute().getPath().length()
                         + (event.mountPoint() == null ? 0 : event.mountPoint().length() - 1))) {
                     event.response().setStatusCode(302);
                     event.response().headers().set(HttpHeaders.LOCATION, (event.mountPoint() == null ? "" : event.mountPoint())
@@ -32,4 +35,14 @@ public class VertxGraphqlRecorder {
             }
         };
     }
+
+    public Consumer<Route> routeFunction(Handler<RoutingContext> bodyHandler) {
+        return new Consumer<Route>() {
+            @Override
+            public void accept(Route route) {
+                route.handler(bodyHandler);
+            }
+        };
+    }
+
 }

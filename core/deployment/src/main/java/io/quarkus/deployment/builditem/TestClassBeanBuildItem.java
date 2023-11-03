@@ -4,7 +4,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * This is an optional build item that allows us to track additional test classes that will become beans.
- * It is only available during tests
+ * It is only available during tests.
  */
 public final class TestClassBeanBuildItem extends MultiBuildItem {
 

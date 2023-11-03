@@ -8,8 +8,8 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
-import javax.json.Json;
-import javax.json.JsonObject;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
 
 import org.junit.jupiter.api.Test;
 
@@ -25,11 +25,11 @@ class SpringDataRestTest {
 
     private static final String DOSTOEVSKY_DOB = "1821-11-11";
 
-    private static final int CRIME_AND_PUNISHMENT_ID = 2;
+    private static final int CRIME_AND_PUNISHMENT_ID = 1;
 
     private static final String CRIME_AND_PUNISHMENT_TITLE = "Crime and Punishment";
 
-    private static final int IDIOT_ID = 3;
+    private static final int IDIOT_ID = 2;
 
     private static final String IDIOT_TITLE = "Idiot";
 
@@ -172,7 +172,7 @@ class SpringDataRestTest {
                 .and().body(book.toString())
                 .when().post("/books")
                 .then().statusCode(400)
-                .and().body("parameterViolations[0].path", equalTo("add.arg0.title"))
+                .and().body("parameterViolations[0].path", equalTo("add.entity.title"))
                 .and().body("parameterViolations[0].message", equalTo("must not be blank"));
     }
 
@@ -242,7 +242,7 @@ class SpringDataRestTest {
                 .and().body(book.toString())
                 .when().put("/books/" + CRIME_AND_PUNISHMENT_ID)
                 .then().statusCode(400)
-                .and().body("parameterViolations[0].path", equalTo("update.arg1.title"))
+                .and().body("parameterViolations[0].path", equalTo("update.entity.title"))
                 .and().body("parameterViolations[0].message", equalTo("must not be blank"));
     }
 }

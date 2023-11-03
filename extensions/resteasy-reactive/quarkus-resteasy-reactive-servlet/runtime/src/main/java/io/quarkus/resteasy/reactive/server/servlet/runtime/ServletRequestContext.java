@@ -16,25 +16,25 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import javax.enterprise.event.Event;
-import javax.servlet.AsyncContext;
-import javax.servlet.ReadListener;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.SecurityContext;
+import jakarta.enterprise.event.Event;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.WriteListener;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.core.SecurityContext;
 
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
-import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 import io.netty.channel.EventLoop;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.impl.LazyValue;
@@ -45,6 +45,7 @@ import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.ResponseCommitListener;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.net.impl.ConnectionBase;
@@ -66,11 +67,11 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     Consumer<Throwable> asyncWriteHandler;
     protected Consumer<ResteasyReactiveRequestContext> preCommitTask;
 
-    public ServletRequestContext(Deployment deployment, ProvidersImpl providers,
+    public ServletRequestContext(Deployment deployment,
             HttpServletRequest request, HttpServletResponse response,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain,
             RoutingContext context, HttpServerExchange exchange) {
-        super(deployment, providers, requestContext, handlerChain, abortHandlerChain);
+        super(deployment, requestContext, handlerChain, abortHandlerChain);
         this.request = request;
         this.response = response;
         this.context = context;
@@ -113,6 +114,16 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         return this;
     }
 
+    @Override
+    protected void setQueryParamsFrom(String uri) {
+        MultiMap map = context.queryParams();
+        map.clear();
+        Map<String, List<String>> decodedParams = new QueryStringDecoder(uri).parameters();
+        for (Map.Entry<String, List<String>> entry : decodedParams.entrySet()) {
+            map.add(entry.getKey(), entry.getValue());
+        }
+    }
+
     protected void handleRequestScopeActivation() {
         super.handleRequestScopeActivation();
         QuarkusHttpUser user = (QuarkusHttpUser) context.user();
@@ -151,6 +162,11 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
                 handle.cancel(false);
             }
         };
+    }
+
+    @Override
+    public boolean resumeExternalProcessing() {
+        return false;
     }
 
     @Override
@@ -201,7 +217,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
 
     @Override
     public String getRequestNormalisedPath() {
-        return context.normalisedPath();
+        return context.normalizedPath();
     }
 
     @Override
@@ -220,7 +236,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
 
     @Override
     public String getRequestHost() {
-        return context.request().host();
+        return context.request().authority().toString();
     }
 
     @Override
@@ -230,7 +246,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         } catch (IOException e) {
             //ignore
         }
-        context.response().close();
+        context.request().connection().close();
     }
 
     @Override
@@ -300,6 +316,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         return this;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> T unwrap(Class<T> theType) {
         if (theType == RoutingContext.class) {
@@ -314,6 +331,12 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
             return (T) response;
         }
         return null;
+    }
+
+    @Override
+    public boolean isOnIoThread() {
+        //does not really apply to Servlet
+        return true;
     }
 
     @Override
@@ -375,7 +398,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
 
     @Override
     public ServerHttpResponse setResponseHeader(CharSequence name, CharSequence value) {
-        response.setHeader(name.toString(), value.toString());
+        response.setHeader(name.toString(), value != null ? value.toString() : null);
         return this;
     }
 
@@ -397,6 +420,17 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
             }
         }
         return ret;
+    }
+
+    @Override
+    public String getResponseHeader(String name) {
+        return response.getHeader(name);
+    }
+
+    @Override
+    public void removeResponseHeader(String name) {
+        // Servlet API does not support this functionality
+        throw new UnsupportedOperationException();
     }
 
     @Override

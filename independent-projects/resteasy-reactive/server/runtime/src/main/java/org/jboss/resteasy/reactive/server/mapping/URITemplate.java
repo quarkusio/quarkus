@@ -8,6 +8,8 @@ import java.util.regex.Pattern;
 
 public class URITemplate implements Dumpable, Comparable<URITemplate> {
 
+    private static final Pattern GROUP_NAME_PATTERN = Pattern.compile("^[A-Za-z][A-Za-z\\d]*$");
+
     public final String template;
 
     public final String stem;
@@ -40,6 +42,7 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
         int litChars = 0;
         int capGroups = 0;
         int complexGroups = 0;
+        int bracesCount = 0;
         StringBuilder sb = new StringBuilder();
         int state = 0; //0 = start, 1 = parsing name, 2 = parsing regex
         for (int i = 0; i < template.length(); ++i) {
@@ -50,10 +53,7 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                         state = 1;
                         if (sb.length() > 0) {
                             String literal = sb.toString();
-                            if (components.isEmpty()) {
-                                stem = literal;
-                            }
-                            components.add(new TemplateComponent(Type.LITERAL, literal, null, null, null));
+                            stem = handlePossibleStem((List<TemplateComponent>) components, stem, literal);
                         }
                         sb.setLength(0);
                     } else {
@@ -67,17 +67,19 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                         if (sb.length() > 0) {
                             capGroups++;
                             if (i + 1 == template.length() || template.charAt(i + 1) == '/') {
-                                components.add(new TemplateComponent(Type.DEFAULT_REGEX, null, sb.toString(), null, null));
+                                components
+                                        .add(new TemplateComponent(Type.DEFAULT_REGEX, null, sb.toString().trim(), null, null,
+                                                null));
                             } else {
-                                components.add(new TemplateComponent(Type.CUSTOM_REGEX, "[^/]+?", sb.toString(),
-                                        null, null));
+                                components.add(new TemplateComponent(Type.CUSTOM_REGEX, "[^/]+?", sb.toString().trim(),
+                                        null, null, null));
                             }
                         } else {
                             throw new IllegalArgumentException("Invalid template " + template);
                         }
                         sb.setLength(0);
                     } else if (c == ':') {
-                        name = sb.toString();
+                        name = sb.toString().trim();
                         sb.setLength(0);
                         state = 2;
                     } else {
@@ -85,20 +87,25 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                     }
                     break;
                 case 2:
-                    if (c == '}') {
+                    if (c == '}' && bracesCount == 0) {
                         state = 0;
                         if (sb.length() > 0) {
                             capGroups++;
                             complexGroups++;
                             components
-                                    .add(new TemplateComponent(Type.CUSTOM_REGEX, sb.toString(), name, null,
-                                            null));
+                                    .add(new TemplateComponent(Type.CUSTOM_REGEX, sb.toString().trim(), name, null,
+                                            null, null));
                         } else {
                             throw new IllegalArgumentException("Invalid template " + template);
                         }
                         sb.setLength(0);
                     } else {
                         sb.append(c);
+                        if (c == '{') {
+                            bracesCount++;
+                        } else if (c == '}') {
+                            bracesCount--;
+                        }
                     }
                     break;
             }
@@ -107,44 +114,57 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
             case 0:
                 if (sb.length() > 0) {
                     String literal = sb.toString();
-                    if (components.isEmpty()) {
-                        stem = literal;
-                    }
-                    components.add(new TemplateComponent(Type.LITERAL, literal, null, null, null));
+                    stem = handlePossibleStem(components, stem, literal);
                 }
                 break;
             case 1:
             case 2:
                 throw new IllegalArgumentException("Invalid template " + template);
         }
+        if (bracesCount > 0) {
+            throw new IllegalArgumentException("Invalid template " + template + " Unmatched { braces");
+        }
 
         //coalesce the components
         //once we have a CUSTOM_REGEX everything goes out the window, so we need to turn the remainder of the
         //template into a single CUSTOM_REGEX
+        List<String> groupAggregator = null;
         List<String> nameAggregator = null;
         StringBuilder regexAggregator = null;
         Iterator<TemplateComponent> it = components.iterator();
         while (it.hasNext()) {
             TemplateComponent component = it.next();
+
+            if (component.type == Type.CUSTOM_REGEX && nameAggregator == null) {
+                regexAggregator = new StringBuilder();
+                groupAggregator = new ArrayList<>();
+                nameAggregator = new ArrayList<>();
+            }
+
             if (nameAggregator != null) {
                 it.remove();
                 if (component.type == Type.LITERAL) {
                     regexAggregator.append(Pattern.quote(component.literalText));
-                } else if (component.type == Type.DEFAULT_REGEX) {
-                    regexAggregator.append("(?<").append(component.name).append(">[^/]+?)");
-                    nameAggregator.add(component.name);
-                } else if (component.type == Type.CUSTOM_REGEX) {
-                    regexAggregator.append("(?<").append(component.name).append(">").append(component.literalText.trim())
+                } else if (component.type == Type.DEFAULT_REGEX || component.type == Type.CUSTOM_REGEX) {
+                    String groupName = component.name;
+                    // test if the component name is a valid java groupname according to the rules outlined in java.util.Pattern#groupName
+                    // Paths allow for parameter names with characters not allowed in group names. Generate a custom one in the form group + running number when the component name alone would be invalid.
+                    if (!GROUP_NAME_PATTERN.matcher(component.name).matches()) {
+                        groupName = "group" + groupAggregator.size();
+                    }
+
+                    String regex = "[^/]+?";
+
+                    if (component.type == Type.CUSTOM_REGEX) {
+                        regex = component.literalText.trim();
+                    }
+
+                    groupAggregator.add(groupName + "");
+                    regexAggregator.append("(?<").append(groupName).append(">")
+                            .append(regex)
                             .append(")");
                     nameAggregator.add(component.name);
                 }
-            } else if (component.type == Type.CUSTOM_REGEX) {
-                it.remove();
-                regexAggregator = new StringBuilder();
-                nameAggregator = new ArrayList<>();
-                regexAggregator.append("(?<").append(component.name).append(">").append(component.literalText.trim())
-                        .append(")");
-                nameAggregator.add(component.name);
             }
         }
         if (nameAggregator != null) {
@@ -152,7 +172,7 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                 regexAggregator.append("$");
             }
             components.add(new TemplateComponent(Type.CUSTOM_REGEX, null, null, Pattern.compile(regexAggregator.toString()),
-                    nameAggregator.toArray(new String[0])));
+                    nameAggregator.toArray(new String[0]), groupAggregator.toArray(new String[0])));
         }
         this.stem = stem;
         this.literalCharacterCount = litChars;
@@ -160,6 +180,26 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
         this.capturingGroups = capGroups;
         this.complexExpressions = complexGroups;
 
+    }
+
+    private String handlePossibleStem(List<TemplateComponent> components, String stem, String literal) {
+        if (components.isEmpty()) {
+            stem = literal;
+            if (stem.endsWith("/") && stem.length() > 1) {
+                //we don't allow stem to end with a slash
+                //so if have /hello and /hello/ they can both be matched
+                //all JAX-RS paths have an implicit (/.*)? at the end of them
+                //to technically every path has an optional implicit slash
+                stem = stem.substring(0, stem.length() - 1);
+                components.add(new TemplateComponent(Type.LITERAL, stem, null, null, null, null));
+                components.add(new TemplateComponent(Type.LITERAL, "/", null, null, null, null));
+            } else {
+                components.add(new TemplateComponent(Type.LITERAL, literal, null, null, null, null));
+            }
+        } else {
+            components.add(new TemplateComponent(Type.LITERAL, literal, null, null, null, null));
+        }
+        return stem;
     }
 
     public URITemplate(String template, String stem, int literalCharacterCount,
@@ -246,20 +286,36 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
         /**
          * The names of all the capturing groups. Only used for CUSTOM_REGEX
          */
+        public final String[] groups;
+
+        /**
+         * The names of all the components. Only used for CUSTOM_REGEX
+         */
         public final String[] names;
 
-        public TemplateComponent(Type type, String literalText, String name, Pattern pattern, String[] names) {
+        public TemplateComponent(Type type, String literalText, String name, Pattern pattern, String[] names, String[] groups) {
             this.type = type;
             this.literalText = literalText;
             this.name = name;
             this.pattern = pattern;
             this.names = names;
+            this.groups = groups;
         }
 
         @Override
         public String toString() {
             return "TemplateComponent{ name: " + name + ", type: " + type + ", literalText: " + literalText + ", pattern: "
                     + pattern + "}";
+        }
+
+        public String stringRepresentation() {
+            if (type == Type.LITERAL) {
+                return literalText;
+            } else if (type == Type.DEFAULT_REGEX) {
+                return "{" + name + "}";
+            } else {
+                return "{" + name + ":" + pattern.toString() + "}";
+            }
         }
 
         @Override

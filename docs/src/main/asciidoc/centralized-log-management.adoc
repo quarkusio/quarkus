@@ -3,10 +3,12 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Centralized log management (Graylog, Logstash, Fluentd)
-
-include::./attributes.adoc[]
-:es-version: 6.8.2
+= Centralized log management (Graylog, Logstash, Fluentd)
+include::_attributes.adoc[]
+:categories: observability
+:summary: This guide explains how to centralize your logs with Logstash or Fluentd using the Graylog Extended Log Format (GELF).
+:topics: observability,logging
+:extensions: io.quarkus:quarkus-logging-gelf
 
 This guide explains how you can send your logs to a centralized log management system like Graylog, Logstash (inside the Elastic Stack or ELK - Elasticsearch, Logstash, Kibana) or
 Fluentd (inside EFK - Elasticsearch, Fluentd, Kibana).
@@ -17,33 +19,31 @@ In this guide, we will expose how to send them to an external tool using the `qu
 The `quarkus-logging-gelf` extension will add a GELF log handler to the underlying logging backend that Quarkus uses (jboss-logmanager).
 By default, it is disabled, if you enable it but still use another handler (by default the console handler is enabled), your logs will be sent to both handlers.
 
+== Prerequisites
+
+:prerequisites-docker-compose:
+include::{includes}/prerequisites.adoc[]
+
 == Example application
 
 The following examples will all be based on the same example application that you can create with the following steps.
 
-Create an application with the `quarkus-logging-gelf` extension. You can use the following Maven command to create it:
+Create an application with the `quarkus-logging-gelf` extension. You can use the following command to create it:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=gelf-logging \
-    -DclassName="org.acme.quickstart.GelfLoggingResource" \
-    -Dpath="/gelf-logging" \
-    -Dextensions="resteasy,logging-gelf"
-----
+:create-app-artifact-id: gelf-logging
+:create-app-extensions: resteasy-reactive,logging-gelf
+include::{includes}/devtools/create-app.adoc[]
 
 If you already have your Quarkus project configured, you can add the `logging-gelf` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="logging-gelf"
-----
+:add-extension-extensions: logging-gelf
+include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following dependency to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -51,13 +51,19 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-logging-gelf")
+----
+
 For demonstration purposes, we create an endpoint that does nothing but log a sentence. You don't need to do this inside your application.
 
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.jboss.logging.Logger;
 
@@ -91,7 +97,7 @@ To send logs to Graylog, you first need to launch the components that compose th
 - Elasticsearch
 - Graylog
 
-You can do this via the following docker-compose file that you can launch via `docker-compose run -d`:
+You can do this via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
 
 [source,yaml,subs="attributes"]
 ----
@@ -99,11 +105,13 @@ version: '3.2'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:{es-version}
+    image: {elasticsearch-image}
     ports:
       - "9200:9200"
     environment:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      discovery.type: "single-node"
+      cluster.routing.allocation.disk.threshold_enabled: false
     networks:
       - graylog
 
@@ -113,13 +121,17 @@ services:
       - graylog
 
   graylog:
-    image: graylog/graylog:3.1
+    image: graylog/graylog:4.3.0
     ports:
       - "9000:9000"
       - "12201:12201/udp"
       - "1514:1514"
     environment:
       GRAYLOG_HTTP_EXTERNAL_URI: "http://127.0.0.1:9000/"
+      # CHANGE ME (must be at least 16 characters)!
+      GRAYLOG_PASSWORD_SECRET: "forpasswordencryption"
+      # Password: admin
+      GRAYLOG_ROOT_PASSWORD_SHA2: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
     networks:
       - graylog
     depends_on:
@@ -172,7 +184,7 @@ Finally, launch the components that compose the Elastic Stack:
 - Logstash
 - Kibana
 
-You can do this via the following docker-compose file that you can launch via `docker-compose run -d`:
+You can do this via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
 
 [source,yaml,subs="attributes"]
 ----
@@ -181,17 +193,19 @@ version: '3.2'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:{es-version}
+    image: {elasticsearch-image}
     ports:
       - "9200:9200"
       - "9300:9300"
     environment:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      discovery.type: "single-node"
+      cluster.routing.allocation.disk.threshold_enabled: false
     networks:
       - elk
 
   logstash:
-    image: docker.elastic.co/logstash/logstash-oss:{es-version}
+    image: {logstash-image}
     volumes:
       - source: $HOME/pipelines
         target: /usr/share/logstash/pipeline
@@ -206,7 +220,7 @@ services:
       - elasticsearch
 
   kibana:
-    image: docker.elastic.co/kibana/kibana-oss:{es-version}
+    image: {kibana-image}
     ports:
       - "5601:5601"
     networks:
@@ -261,7 +275,7 @@ Finally, launch the components that compose the EFK Stack:
 - Fluentd
 - Kibana
 
-You can do this via the following docker-compose file that you can launch via `docker-compose run -d`:
+You can do this via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
 
 [source,yaml,subs="attributes"]
 ----
@@ -269,12 +283,14 @@ version: '3.2'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:{es-version}
+    image: {elasticsearch-image}
     ports:
       - "9200:9200"
       - "9300:9300"
     environment:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      discovery.type: "single-node"
+      cluster.routing.allocation.disk.threshold_enabled: false
     networks:
       - efk
 
@@ -292,7 +308,7 @@ services:
       - elasticsearch
 
   kibana:
-    image: docker.elastic.co/kibana/kibana-oss:{es-version}
+    image: {kibana-image}
     ports:
       - "5601:5601"
     networks:
@@ -347,7 +363,7 @@ Then, launch the components that compose the EFK Stack:
 - Fluentd
 - Kibana
 
-You can do this via the following docker-compose file that you can launch via `docker-compose run -d`:
+You can do this via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
 
 [source,yaml,subs="attributes"]
 ----
@@ -355,12 +371,14 @@ version: '3.2'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:{es-version}
+    image: {elasticsearch-image}
     ports:
       - "9200:9200"
       - "9300:9300"
     environment:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      discovery.type: "single-node"
+      cluster.routing.allocation.disk.threshold_enabled: false
     networks:
       - efk
 
@@ -378,7 +396,7 @@ services:
       - elasticsearch
 
   kibana:
-    image: docker.elastic.co/kibana/kibana-oss:{es-version}
+    image: {kibana-image}
     ports:
       - "5601:5601"
     networks:

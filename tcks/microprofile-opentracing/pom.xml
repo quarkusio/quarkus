@@ -13,6 +13,10 @@
     <packaging>pom</packaging>
     <name>Quarkus - TCK - MicroProfile OpenTracing Parent</name>
 
+    <properties>
+        <microprofile-opentracing-tck.version>3.0</microprofile-opentracing-tck.version>
+    </properties>
+
     <modules>
         <module>base</module>
         <module>rest-client</module>

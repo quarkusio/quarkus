@@ -1,11 +1,12 @@
 package io.quarkus.devtools.codestarts.core.strategy;
 
-import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 
 final class AppendCodestartFileStrategyHandler implements CodestartFileStrategyHandler {
 

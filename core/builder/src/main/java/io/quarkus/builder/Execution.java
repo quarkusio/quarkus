@@ -1,7 +1,8 @@
 package io.quarkus.builder;
 
 import static java.lang.Math.max;
-import static java.util.concurrent.locks.LockSupport.*;
+import static java.util.concurrent.locks.LockSupport.park;
+import static java.util.concurrent.locks.LockSupport.unpark;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,6 +40,8 @@ final class Execution {
     private volatile Thread runningThread;
     private volatile boolean done;
 
+    private final BuildMetrics metrics;
+
     static {
         try {
             Class.forName("org.jboss.threads.EnhancedQueueExecutor$1", false, Execution.class.getClassLoader());
@@ -62,6 +65,8 @@ final class Execution {
         lastStepCount.set(builder.getChain().getEndStepCount());
         if (lastStepCount.get() == 0)
             done = true;
+
+        metrics = new BuildMetrics(buildTargetName);
     }
 
     List<Diagnostic> getDiagnostics() {
@@ -78,7 +83,9 @@ final class Execution {
 
     BuildResult run() throws BuildException {
         final long start = System.nanoTime();
+        metrics.buildStarted();
         runningThread = Thread.currentThread();
+
         // run the build
         final List<StepInfo> startSteps = chain.getStartSteps();
         for (StepInfo startStep : startSteps) {
@@ -124,8 +131,11 @@ final class Execution {
         }
         if (lastStepCount.get() > 0)
             throw new BuildException("Extra steps left over", Collections.emptyList());
+
+        long duration = max(0, System.nanoTime() - start);
+        metrics.buildFinished(TimeUnit.NANOSECONDS.toMillis(duration));
         return new BuildResult(singles, multis, finalIds, Collections.unmodifiableList(diagnostics),
-                max(0, System.nanoTime() - start));
+                duration, metrics);
     }
 
     EnhancedQueueExecutor getExecutor() {
@@ -154,6 +164,10 @@ final class Execution {
 
     BuildChain getBuildChain() {
         return chain;
+    }
+
+    BuildMetrics getMetrics() {
+        return metrics;
     }
 
     void depFinished() {

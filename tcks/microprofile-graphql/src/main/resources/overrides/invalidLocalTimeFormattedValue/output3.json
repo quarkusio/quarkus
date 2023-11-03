@@ -1,0 +1,16 @@
+{
+    "errors": [
+        {
+            "message": "argument 'time' with value 'StringValue{value='Today'}' is not a valid 'Time'",
+            "locations": [
+                {
+                    "line": 2,
+                    "column": 57
+                }
+            ]
+        }
+    ],
+    "data": {
+        "startPatrollingWithCorrectDateFormat": null
+    }
+}

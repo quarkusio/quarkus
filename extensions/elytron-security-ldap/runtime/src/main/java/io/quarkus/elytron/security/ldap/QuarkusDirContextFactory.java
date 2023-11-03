@@ -2,17 +2,13 @@ package io.quarkus.elytron.security.ldap;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.time.Duration;
 import java.util.Hashtable;
 
-import javax.naming.Context;
 import javax.naming.NamingException;
-import javax.naming.NoInitialContextException;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import javax.naming.ldap.InitialLdapContext;
-import javax.naming.spi.InitialContextFactory;
-import javax.naming.spi.InitialContextFactoryBuilder;
-import javax.naming.spi.NamingManager;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
@@ -26,23 +22,23 @@ public class QuarkusDirContextFactory implements DirContextFactory {
 
     private static final String CONNECT_TIMEOUT = "com.sun.jndi.ldap.connect.timeout";
     private static final String READ_TIMEOUT = "com.sun.jndi.ldap.read.timeout";
-    private static final String SOCKET_FACTORY = "java.naming.ldap.factory.socket";
     public static final String INITIAL_CONTEXT_FACTORY = "com.sun.jndi.ldap.LdapCtxFactory";
     private static final String SECURITY_AUTHENTICATION = "simple";
-
-    private static final String DEFAULT_CONNECT_TIMEOUT = "5000"; // ms
-    private static final String DEFAULT_READ_TIMEOUT = "60000"; // ms
-    private static final String LDAPS_SCHEME = "ldaps";
 
     private final String providerUrl;
     private final String securityPrincipal;
     private final String securityCredential;
+    private final Duration connectTimeout;
+    private final Duration readTimeout;
     private final ClassLoader targetClassLoader;
 
-    public QuarkusDirContextFactory(String providerUrl, String securityPrincipal, String securityCredential) {
+    public QuarkusDirContextFactory(String providerUrl, String securityPrincipal, String securityCredential,
+            Duration connectTimeout, Duration readTimeout) {
         this.providerUrl = providerUrl;
         this.securityPrincipal = securityPrincipal;
         this.securityCredential = securityCredential;
+        this.connectTimeout = connectTimeout;
+        this.readTimeout = readTimeout;
         this.targetClassLoader = getClass().getClassLoader();
     }
 
@@ -100,8 +96,8 @@ public class QuarkusDirContextFactory implements DirContextFactory {
                 env.put(InitialDirContext.SECURITY_CREDENTIALS, securityCredential);
             }
             env.put(InitialDirContext.REFERRAL, mode == null ? ReferralMode.IGNORE.getValue() : mode.getValue());
-            env.put(CONNECT_TIMEOUT, DEFAULT_CONNECT_TIMEOUT);
-            env.put(READ_TIMEOUT, DEFAULT_READ_TIMEOUT);
+            env.put(CONNECT_TIMEOUT, "" + connectTimeout.toMillis());
+            env.put(READ_TIMEOUT, "" + readTimeout.toMillis());
 
             //            if (log.isDebugEnabled()) {
             //                log.debugf("Creating [" + InitialDirContext.class + "] with environment:");
@@ -112,10 +108,6 @@ public class QuarkusDirContextFactory implements DirContextFactory {
             InitialLdapContext initialContext;
 
             try {
-                if (!NamingManager.hasInitialContextFactoryBuilder()) {
-                    NamingManager.setInitialContextFactoryBuilder(new QuarkusInitialContextFactoryBuilder());
-                }
-
                 initialContext = new InitialLdapContext(env, null);
             } catch (NamingException ne) {
                 //                log.debugf(ne, "Could not create [%s]. Failed to connect to LDAP server.", InitialLdapContext.class);
@@ -155,21 +147,5 @@ public class QuarkusDirContextFactory implements DirContextFactory {
 
     private static <T> T doPrivileged(final PrivilegedAction<T> action) {
         return System.getSecurityManager() != null ? AccessController.doPrivileged(action) : action.run();
-    }
-
-    private static final class QuarkusInitialContextFactoryBuilder implements InitialContextFactoryBuilder {
-        @Override
-        public InitialContextFactory createInitialContextFactory(Hashtable<?, ?> environment) throws NamingException {
-            final String className = (String) environment.get(Context.INITIAL_CONTEXT_FACTORY);
-            try {
-                final ClassLoader cl = Thread.currentThread().getContextClassLoader();
-                return (InitialContextFactory) Class.forName(className, true, cl).newInstance();
-            } catch (Exception e) {
-                NoInitialContextException ne = new NoInitialContextException(
-                        "Cannot instantiate class: " + className);
-                ne.setRootCause(e);
-                throw ne;
-            }
-        }
     }
 }

@@ -1,0 +1,197 @@
+name: Podman Test Build (Linux)
+
+
+on:
+  workflow_dispatch:
+  schedule: ## Do a run daily, to check our compatibility
+    - cron: '0 1 * * *'
+
+env:
+  # Workaround testsuite locale issue
+  LANG: en_US.UTF-8
+  COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
+  NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install -DskipDocs"
+  JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dformat.skip -DskipDocs -Dquarkus.test.hang-detection-timeout=60"
+  DB_USER: hibernate_orm_test
+  DB_PASSWORD: hibernate_orm_test
+  DB_NAME: hibernate_orm_test
+  IS_PODMAN: "true"
+
+jobs:
+  build-all-the-things:
+    name: "JDK 17 Build"
+    runs-on: ubuntu-latest
+    env:
+      MAVEN_OPTS: "-Xmx2g -XX:MaxMetaspaceSize=1g"
+    # Skip main in forks
+    # Skip draft PRs and those with WIP in the subject, rerun as soon as its removed
+    if: "(github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')) && ( \
+           github.event_name != 'pull_request' || ( \
+             github.event.pull_request.draft == false && \
+             github.event.pull_request.state != 'closed' && \
+             contains(github.event.pull_request.title, 'wip ') == false && \
+             contains(github.event.pull_request.title, '[wip]') == false && \
+             (
+               github.event.action != 'edited' || \
+               contains(github.event.changes.title.from, 'wip ') || \
+               contains(github.event.changes.title.from, '[wip]') \
+             ) \
+           ) \
+         )"
+    outputs:
+      gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
+      gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Add quarkusio remote
+        shell: bash
+        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
+      - name: Reclaim Disk Space
+        if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
+        run: .github/ci-prerequisites.sh
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Get Date
+        id: get-date
+        run: |
+          echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
+        shell: bash
+      - name: Setup docker host
+        run: echo "DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock" >> "$GITHUB_ENV"
+      - name: Update podman
+        run: |
+          sudo apt-get -y purge podman
+          sudo mkdir -p /etc/apt/keyrings
+          curl -fsSL https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/xUbuntu_$(lsb_release -rs)/Release.key | gpg --dearmor | sudo tee /etc/apt/keyrings/devel_kubic_libcontainers_unstable.gpg > /dev/null
+          echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/devel_kubic_libcontainers_unstable.gpg] \
+            https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/xUbuntu_$(lsb_release -rs)/ /" \
+            | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:unstable.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get -qq -y install podman
+      # Runs a single command using the runners shell
+      - name: Check podman
+        run: docker version
+      - name: Set up testcontainers for podman
+        run:  |
+          echo ryuk.container.privileged=true > ~/.testcontainers.properties
+      - name: Cache Maven Repository
+        id: cache-maven
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          # refresh cache every month to avoid unlimited growth
+          key: q2maven-${{ steps.get-date.outputs.date }}
+      - name: Initial build
+        run: |
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dtcks -Prelocations clean install
+      - name: Verify extension dependencies
+        shell: bash
+        run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
+      - name: Get GIB arguments
+        id: get-gib-args
+        env:
+          PULL_REQUEST_BASE: ${{ github.event.pull_request.base.ref }}
+        run: |
+          # See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration (GIB)
+          # Common GIB_ARGS for all CI cases (hint: see also root pom.xml):
+          # - disableSelectedProjectsHandling: required to detect changes in jobs that use -pl
+          # - untracked: to ignore files created by jobs (and uncommitted to be consistent)
+          GIB_ARGS="-Dincremental -Dgib.disableSelectedProjectsHandling -Dgib.untracked=false -Dgib.uncommitted=false"
+          if [ -n "$PULL_REQUEST_BASE" ]
+          then
+            # The PR defines a clear merge target so just use that branch for reference, *unless*:
+            # - the current branch is a backport branch targeting some released branch like 1.10 (merge target is not main)
+            GIB_ARGS+=" -Dgib.referenceBranch=origin/$PULL_REQUEST_BASE -Dgib.disableIfReferenceBranchMatches='origin/\d+\.\d+'"
+          else
+            # No PR means the merge target is uncertain so fetch & use main of quarkusio/quarkus, *unless*:
+            # - the current branch is main or some released branch like 1.10
+            # - the current branch is a backport branch which is going to target some released branch like 1.10 (merge target is not main)
+            GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/main -Dgib.fetchReferenceBranch -Dgib.disableIfBranchMatches='main|\d+\.\d+|.*backport.*'"
+          fi
+          echo "GIB_ARGS: $GIB_ARGS"
+          echo "gib_args=${GIB_ARGS}" >> $GITHUB_OUTPUT
+      - name: Get GIB impacted modules
+        id: get-gib-impacted
+        # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
+        run: |
+          ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
+          if [ -s gib-impacted.log ]
+          then
+            GIB_IMPACTED=$(cat gib-impacted.log)
+          else
+            GIB_IMPACTED=''
+          fi
+          echo "GIB_IMPACTED: ${GIB_IMPACTED}"
+          # three steps to retain linefeeds in output for other jobs
+          # (see https://github.com/github/docs/issues/21529 and https://github.com/orgs/community/discussions/26288#discussioncomment-3876281)
+          echo 'impacted_modules<<EOF' >> $GITHUB_OUTPUT
+          echo "${GIB_IMPACTED}" >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+      - name: Stop mysql
+        if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
+        shell: bash
+        run: |
+          ss -ln
+          sudo service mysql stop || true
+      - name: Support longpaths on Windows
+        if: "startsWith(matrix.java.os-name, 'windows')"
+        run: git config --global core.longpaths true
+      - name: apt clean
+        if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
+        shell: bash
+        run: sudo apt-get clean
+      - name: Build
+        shell: bash
+        # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
+        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools -pl !docs $JVM_TEST_MAVEN_ARGS ${{ needs.build-jdk11.outputs.gib_args }}
+      - name: Delete Local Artifacts From Cache
+        shell: bash
+        run: rm -r ~/.m2/repository/io/quarkus
+      - name: Clean Gradle temp directory
+        if: always()
+        shell: bash
+        run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        shell: bash
+        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: test-reports-jvm${{matrix.java.name}}
+          path: 'test-reports.tgz'
+          retention-days: 5
+      - name: Upload build reports (if build failed)
+        uses: actions/upload-artifact@v3
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "build-reports-JVM Tests - JDK ${{matrix.java.name}}"
+          path: |
+            **/target/*-reports/TEST-*.xml
+            target/build-report.json
+            LICENSE.txt
+          retention-days: 2
+      - name: Upload gc.log
+        uses: actions/upload-artifact@v3
+        with:
+          name: "GC log - JDK ${{matrix.java.name}}"
+          path: |
+            **/windows-java-11.txt
+            !**/build/tmp/**
+          retention-days: 5
+      - name: Upload build.log (if build failed)
+        uses: actions/upload-artifact@v3
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "build-logs-JVM Tests - JDK ${{matrix.java.name}}"
+          path: |
+            **/build.log
+          retention-days: 2
+

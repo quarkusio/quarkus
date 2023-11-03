@@ -1,17 +1,15 @@
 package io.quarkus.arc.impl;
 
 import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.BeanManager;
+
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.spi.BeanContainer;
+import jakarta.enterprise.inject.spi.BeanManager;
 
 public class BeanManagerBean extends BuiltInBean<BeanManager> {
 
-    private static final Set<Type> BM_TYPES = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList(Object.class, BeanManager.class)));
+    private static final Set<Type> BM_TYPES = Set.of(Object.class, BeanContainer.class, BeanManager.class);
 
     @Override
     public Set<Type> getTypes() {

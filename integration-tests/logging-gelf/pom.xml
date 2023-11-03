@@ -142,7 +142,7 @@
                             <autoCreateCustomNetworks>true</autoCreateCustomNetworks>
                             <images>
                                 <image>
-                                    <name>docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.3</name>
+                                    <name>${elasticsearch.image}</name>
                                     <alias>elasticsearch</alias>
                                     <run>
                                         <network>
@@ -157,9 +157,27 @@
                                         </ports>
                                         <env>
                                             <discovery.type>single-node</discovery.type>
+                                            <xpack.security.enabled>false</xpack.security.enabled>
+                                            <ES_JAVA_OPTS>-Xms512m -Xmx512m</ES_JAVA_OPTS>
+                                            <!-- Disable disk-based shard allocation thresholds:
+                                                 in a single-node setup they just don't make sense,
+                                                 and lead to problems on large disks with little space left.
+                                                 See https://www.elastic.co/guide/en/elasticsearch/reference/8.9/modules-cluster.html#disk-based-shard-allocation
+                                             -->
+                                            <cluster.routing.allocation.disk.threshold_enabled>false</cluster.routing.allocation.disk.threshold_enabled>
+                                            <!-- Disable some features that are not needed in our tests and just slow down startup -->
+                                            <xpack.profiling.enabled>false</xpack.profiling.enabled>
+                                            <xpack.monitoring.templates.enabled>false</xpack.monitoring.templates.enabled>
+                                            <xpack.ml.enabled>false</xpack.ml.enabled>
+                                            <xpack.watcher.enabled>false</xpack.watcher.enabled>
+                                            <xpack.ent_search.enabled>false</xpack.ent_search.enabled>
+                                            <stack.templates.enabled>false</stack.templates.enabled>
+                                            <cluster.deprecation_indexing.enabled>false</cluster.deprecation_indexing.enabled>
+                                            <indices.lifecycle.history_index_enabled>false</indices.lifecycle.history_index_enabled>
+                                            <slm.history_index_enabled>false</slm.history_index_enabled>
                                         </env>
                                         <log>
-                                            <prefix>Elasticsearch: </prefix>
+                                            <prefix>Elasticsearch:</prefix>
                                             <date>default</date>
                                             <color>cyan</color>
                                         </log>
@@ -174,7 +192,7 @@
                                     </run>
                                 </image>
                                 <image>
-                                    <name>docker.elastic.co/logstash/logstash-oss:7.9.3</name>
+                                    <name>${logstash.image}</name>
                                     <alias>logstash</alias>
                                     <run>
                                         <network>
@@ -190,13 +208,13 @@
                                             <port>9600:9600</port>
                                         </ports>
                                         <log>
-                                            <prefix>Logstash: </prefix>
+                                            <prefix>Logstash:</prefix>
                                             <date>default</date>
-                                            <color>cyan</color>
+                                            <color>magenta</color>
                                         </log>
                                         <volumes>
                                             <bind>
-                                                <volume>${project.basedir}/src/test/resources/pipeline:/usr/share/logstash/pipeline</volume>
+                                                <volume>${project.basedir}/src/test/resources/pipeline:/usr/share/logstash/pipeline${volume.access.modifier}</volume>
                                             </bind>
                                         </volumes>
                                         <wait>
@@ -206,7 +224,7 @@
                                                 <status>200</status>
                                             </http>
                                             <!-- Starting the pipeline can be long as it needs to communicate with Elasticsearch -->
-                                            <time>45000</time>
+                                            <time>90000</time>
                                         </wait>
                                         <dependsOn>
                                             <container>elasticsearch</container>
@@ -262,9 +280,34 @@
             </activation>
             <!-- add some custom config, the rest comes from parent -->
             <properties>
-                <quarkus.native.enable-all-security-services>true</quarkus.native.enable-all-security-services>
                 <quarkus.native.enable-https-url-handler>true</quarkus.native.enable-https-url-handler>
             </properties>
+        </profile>
+        <!-- Disabled pending fix of #33090 -->
+        <profile>
+            <id>podman</id>
+            <activation>
+                <property>
+                    <name>env.IS_PODMAN</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <enforcer.skip>true</enforcer.skip>
+            </properties>
+            <build>
+            <plugins>
+                <plugin>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>docker-maven-plugin</artifactId>
+                    <configuration>
+                        <skip>true</skip>
+                    </configuration>
+                </plugin>
+            </plugins>
+            </build>
         </profile>
     </profiles>
 

@@ -8,14 +8,13 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 public class CollectionClassProcessor {
     @BuildStep
     ReflectiveClassBuildItem setupCollectionClasses() {
-        return new ReflectiveClassBuildItem(false, false,
-                ArrayList.class.getName(),
+        return ReflectiveClassBuildItem.builder(ArrayList.class.getName(),
                 HashMap.class.getName(),
                 HashSet.class.getName(),
                 LinkedList.class.getName(),
                 LinkedHashMap.class.getName(),
                 LinkedHashSet.class.getName(),
                 TreeMap.class.getName(),
-                TreeSet.class.getName());
+                TreeSet.class.getName()).build();
     }
 }

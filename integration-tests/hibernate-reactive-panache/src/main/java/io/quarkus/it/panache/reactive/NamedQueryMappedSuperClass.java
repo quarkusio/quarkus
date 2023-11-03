@@ -1,7 +1,7 @@
 package io.quarkus.it.panache.reactive;
 
-import javax.persistence.MappedSuperclass;
-import javax.persistence.NamedQuery;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.NamedQuery;
 
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 

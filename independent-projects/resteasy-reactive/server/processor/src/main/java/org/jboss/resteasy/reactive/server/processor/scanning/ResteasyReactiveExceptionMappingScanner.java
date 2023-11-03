@@ -3,7 +3,9 @@ package org.jboss.resteasy.reactive.server.processor.scanning;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
-import javax.ws.rs.Priorities;
+
+import jakarta.ws.rs.Priorities;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -13,7 +15,6 @@ import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.common.processor.JandexUtil;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
-import org.jboss.resteasy.reactive.common.util.ReflectionBeanFactoryCreator;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
@@ -26,7 +27,7 @@ public class ResteasyReactiveExceptionMappingScanner {
      * Creates a fully populated exception mapper instance, that are created via reflection.
      */
     public static ExceptionMapping createExceptionMappers(IndexView indexView, ApplicationScanningResult result) {
-        return createExceptionMappers(indexView, result, new ReflectionBeanFactoryCreator());
+        return scanForExceptionMappers(indexView, result);
     }
 
     /**
@@ -52,7 +53,7 @@ public class ResteasyReactiveExceptionMappingScanner {
                         ResteasyReactiveDotNames.EXCEPTION_MAPPER,
                         index);
                 DotName handledExceptionDotName = typeParameters.get(0).name();
-                AnnotationInstance priorityInstance = mapperClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
+                AnnotationInstance priorityInstance = mapperClass.declaredAnnotation(ResteasyReactiveDotNames.PRIORITY);
                 int priority = Priorities.USER;
                 if (priorityInstance != null) {
                     priority = priorityInstance.value().asInt();
@@ -60,13 +61,7 @@ public class ResteasyReactiveExceptionMappingScanner {
                 ResourceExceptionMapper mapper = new ResourceExceptionMapper<>();
                 mapper.setPriority(priority);
                 mapper.setClassName(mapperClass.name().toString());
-                try {
-                    Class mappedClass = Class.forName(handledExceptionDotName.toString(), false,
-                            Thread.currentThread().getContextClassLoader());
-                    exceptionMapping.addExceptionMapper(mappedClass, mapper);
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException("Unable to load mapped exception: " + handledExceptionDotName);
-                }
+                exceptionMapping.addExceptionMapper(handledExceptionDotName.toString(), mapper);
             }
         }
         return exceptionMapping;

@@ -23,16 +23,18 @@ public class Scope {
     }
 
     public void putBinding(String binding, String type) {
-        if (bindings == null)
+        if (bindings == null) {
             bindings = new HashMap<>();
-        bindings.put(binding, type);
+        }
+        bindings.put(binding, sanitizeType(type));
     }
 
     public String getBinding(String binding) {
         // we can contain null types to override outer scopes
         if (bindings != null
-                && bindings.containsKey(binding))
+                && bindings.containsKey(binding)) {
             return bindings.get(binding);
+        }
         return parentScope != null ? parentScope.getBinding(binding) : null;
     }
 
@@ -58,6 +60,25 @@ public class Scope {
 
     public void setLastPartHint(String lastPartHint) {
         this.lastPartHint = lastPartHint;
+    }
+
+    private String sanitizeType(String type) {
+        if (type != null && type.contains("?")) {
+            String upperBound = " extends ";
+            String lowerBound = " super ";
+            // ignore wildcards
+            if (type.contains(upperBound)) {
+                // upper bound
+                type = type.replace("?", "").replace(upperBound, "").trim();
+            } else if (type.contains(lowerBound)) {
+                // lower bound
+                type = type.replace("?", "").replace(lowerBound, "").trim();
+            } else {
+                // no bounds
+                type = type.replace("?", "java.lang.Object");
+            }
+        }
+        return type;
     }
 
 }

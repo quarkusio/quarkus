@@ -145,7 +145,7 @@ public class MicrometerMetricsFactory implements MetricsFactory {
         }
     }
 
-    class MicrometerTimeRecorder implements TimeRecorder {
+    static class MicrometerTimeRecorder implements TimeRecorder {
         Timer timer;
 
         MicrometerTimeRecorder(Timer timer) {

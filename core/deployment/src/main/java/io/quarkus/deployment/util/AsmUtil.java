@@ -28,6 +28,7 @@ import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
+import org.jboss.jandex.TypeVariableReference;
 import org.jboss.jandex.UnresolvedTypeVariable;
 import org.jboss.jandex.WildcardType;
 import org.objectweb.asm.MethodVisitor;
@@ -35,8 +36,6 @@ import org.objectweb.asm.Opcodes;
 
 /**
  * A collection of ASM and Jandex utilities.
- * NOTE: this has a copy in AsmUtilCopy in arc-processor with some extra methods for knowing if we need a
- * signature and getting the signature of a class.
  */
 public class AsmUtil {
 
@@ -61,11 +60,16 @@ public class AsmUtil {
             getType(Long.class),
             getType(Double.class));
     public static final Map<org.objectweb.asm.Type, org.objectweb.asm.Type> WRAPPER_TO_PRIMITIVE = new HashMap<>();
+    public static final Map<Character, String> PRIMITIVE_DESCRIPTOR_TO_PRIMITIVE_CLASS_LITERAL;
 
     static {
         for (int i = 0; i < AsmUtil.PRIMITIVES.size(); i++) {
             AsmUtil.WRAPPER_TO_PRIMITIVE.put(AsmUtil.WRAPPERS.get(i), AsmUtil.PRIMITIVES.get(i));
         }
+        PRIMITIVE_DESCRIPTOR_TO_PRIMITIVE_CLASS_LITERAL = Map.of(
+                'Z', "boolean", 'B', "byte", 'C', "char",
+                'D', "double", 'F', "float", 'I', "int",
+                'J', "long", 'S', "short");
     }
 
     public static org.objectweb.asm.Type autobox(org.objectweb.asm.Type primitive) {
@@ -73,67 +77,23 @@ public class AsmUtil {
     }
 
     /**
-     * Returns the Java bytecode signature of a given Jandex MethodInfo.
-     * If the Java compiler doesn't have to emit a signature for the method, {@code null} is returned instead.
-     *
-     * @param method the method you want the signature for
-     * @return a bytecode signature for that method, or {@code null} if signature is not required
+     * @deprecated use {@link MethodInfo#genericSignatureIfRequired()}
      */
+    @Deprecated(since = "3.1", forRemoval = true)
     public static String getSignatureIfRequired(MethodInfo method) {
-        return getSignatureIfRequired(method, ignored -> null);
+        return method.genericSignatureIfRequired();
     }
 
     /**
-     * Returns the Java bytecode signature of a given Jandex MethodInfo using the given type argument mappings.
-     * If the Java compiler doesn't have to emit a signature for the method, {@code null} is returned instead.
-     *
-     * @param method the method you want the signature for
-     * @param typeArgMapper a mapping between type argument names and their bytecode signatures
-     * @return a bytecode signature for that method, or {@code null} if signature is not required
+     * @deprecated use {@link MethodInfo#genericSignatureIfRequired(Function)}
      */
+    @Deprecated(since = "3.1", forRemoval = true)
     public static String getSignatureIfRequired(MethodInfo method, Function<String, String> typeArgMapper) {
-        if (!hasSignature(method)) {
+        if (!method.requiresGenericSignature()) {
             return null;
         }
 
         return getSignature(method, typeArgMapper);
-    }
-
-    private static boolean hasSignature(MethodInfo method) {
-        // JVMS 16, chapter 4.7.9.1. Signatures:
-        //
-        // Java compiler must emit ...
-        //
-        // A method signature for any method or constructor declaration which is either generic,
-        // or has a type variable or parameterized type as the return type or a formal parameter type,
-        // or has a type variable in a throws clause, or any combination thereof.
-
-        if (!method.typeParameters().isEmpty()) {
-            return true;
-        }
-
-        {
-            Type type = method.returnType();
-            if (type.kind() == Kind.TYPE_VARIABLE
-                    || type.kind() == Kind.UNRESOLVED_TYPE_VARIABLE
-                    || type.kind() == Kind.PARAMETERIZED_TYPE) {
-                return true;
-            }
-        }
-
-        for (Type type : method.parameters()) {
-            if (type.kind() == Kind.TYPE_VARIABLE
-                    || type.kind() == Kind.UNRESOLVED_TYPE_VARIABLE
-                    || type.kind() == Kind.PARAMETERIZED_TYPE) {
-                return true;
-            }
-        }
-
-        if (hasThrowsSignature(method)) {
-            return true;
-        }
-
-        return false;
     }
 
     private static boolean hasThrowsSignature(MethodInfo method) {
@@ -159,24 +119,9 @@ public class AsmUtil {
     }
 
     /**
-     * Returns the Java bytecode signature of a given Jandex MethodInfo using the given type argument mappings.
-     * For example, given this method:
-     *
-     * <pre>
-     * {@code
-     * public class Foo<T> {
-     *  public <R> List<R> method(int a, T t){...}
-     * }
-     * }
-     * </pre>
-     *
-     * This will return <tt>&lt;R:Ljava/lang/Object;>(ILjava/lang/Integer;)Ljava/util/List&lt;TR;>;</tt> if
-     * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
-     *
-     * @param method the method you want the signature for.
-     * @param typeArgMapper a mapping between type argument names and their bytecode signature.
-     * @return a bytecode signature for that method.
+     * @deprecated use {@link MethodInfo#genericSignature(Function)}
      */
+    @Deprecated(since = "3.1", forRemoval = true)
     public static String getSignature(MethodInfo method, Function<String, String> typeArgMapper) {
         // for grammar, see JVMS 16, chapter 4.7.9.1. Signatures
 
@@ -191,7 +136,7 @@ public class AsmUtil {
         }
 
         signature.append('(');
-        for (Type type : method.parameters()) {
+        for (Type type : method.parameterTypes()) {
             toSignature(signature, type, typeArgMapper, false);
         }
         signature.append(')');
@@ -235,26 +180,11 @@ public class AsmUtil {
     }
 
     /**
-     * Returns the Java bytecode descriptor of a given Jandex MethodInfo using the given type argument mappings.
-     * For example, given this method:
-     * 
-     * <pre>
-     * {@code
-     * public class Foo<T> {
-     *  public <R> List<R> method(int a, T t){...} 
-     * }
-     * }
-     * </pre>
-     * 
-     * This will return <tt>(ILjava/lang/Integer;)Ljava/util/List;</tt> if
-     * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
-     * 
-     * @param method the method you want the descriptor for.
-     * @param typeArgMapper a mapping between type argument names and their bytecode descriptor.
-     * @return a bytecode descriptor for that method.
+     * @deprecated use {@link MethodInfo#descriptor(Function)}
      */
+    @Deprecated(since = "3.1", forRemoval = true)
     public static String getDescriptor(MethodInfo method, Function<String, String> typeArgMapper) {
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
 
         StringBuilder descriptor = new StringBuilder("(");
         for (Type type : parameters) {
@@ -266,14 +196,9 @@ public class AsmUtil {
     }
 
     /**
-     * Returns the Java bytecode descriptor of a given Jandex Type using the given type argument mappings.
-     * For example, given this type: <tt>List&lt;T></tt>, this will return <tt>Ljava/util/List;</tt> if
-     * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
-     * 
-     * @param type the type you want the descriptor for.
-     * @param typeArgMapper a mapping between type argument names and their bytecode descriptor.
-     * @return a bytecode descriptor for that type.
+     * @deprecated use {@link Type#descriptor(Function)}
      */
+    @Deprecated(since = "3.1", forRemoval = true)
     public static String getDescriptor(Type type, Function<String, String> typeArgMapper) {
         StringBuilder sb = new StringBuilder();
         toSignature(sb, type, typeArgMapper, true);
@@ -281,14 +206,9 @@ public class AsmUtil {
     }
 
     /**
-     * Returns the Java bytecode signature of a given Jandex Type using the given type argument mappings.
-     * For example, given this type: <tt>List&lt;T></tt>, this will return <tt>Ljava/util/List&lt;Ljava/lang/Integer;>;</tt> if
-     * your {@code typeArgMapper} contains {@code T=Ljava/lang/Integer;}.
-     * 
-     * @param type the type you want the signature for.
-     * @param typeArgMapper a mapping between type argument names and their bytecode descriptor.
-     * @return a bytecode signature for that type.
+     * @deprecated use {@link org.jboss.jandex.GenericSignature#forType(Type, Function, StringBuilder)}
      */
+    @Deprecated(since = "3.1", forRemoval = true)
     public static String getSignature(Type type, Function<String, String> typeArgMapper) {
         StringBuilder sb = new StringBuilder();
         toSignature(sb, type, typeArgMapper, false);
@@ -302,7 +222,7 @@ public class AsmUtil {
                 for (int i = 0; i < arrayType.dimensions(); i++) {
                     sb.append('[');
                 }
-                toSignature(sb, arrayType.component(), typeArgMapper, erased);
+                toSignature(sb, arrayType.constituent(), typeArgMapper, erased);
                 break;
             case CLASS:
                 sb.append('L').append(type.asClassType().name().toString('/')).append(';');
@@ -380,6 +300,17 @@ public class AsmUtil {
                     sb.append("T").append(unresolvedTypeVariable.identifier()).append(";");
                 }
                 break;
+            case TYPE_VARIABLE_REFERENCE:
+                TypeVariableReference typeVariableReference = type.asTypeVariableReference();
+                String mappedSignature3 = typeArgMapper.apply(typeVariableReference.identifier());
+                if (mappedSignature3 != null) {
+                    sb.append(mappedSignature3);
+                } else if (erased) {
+                    // TODO ???
+                } else {
+                    sb.append("T").append(typeVariableReference.identifier()).append(";");
+                }
+                break;
             case VOID:
                 sb.append('V');
                 break;
@@ -407,7 +338,7 @@ public class AsmUtil {
      * Returns a return bytecode instruction suitable for the given return type descriptor. This will return
      * specialised return instructions <tt>IRETURN, LRETURN, FRETURN, DRETURN, RETURN</tt> for primitives/void,
      * and <tt>ARETURN</tt> otherwise;
-     * 
+     *
      * @param typeDescriptor the return type descriptor.
      * @return the correct bytecode return instruction for that return type descriptor.
      */
@@ -436,7 +367,7 @@ public class AsmUtil {
      * Returns a return bytecode instruction suitable for the given return Jandex Type. This will return
      * specialised return instructions <tt>IRETURN, LRETURN, FRETURN, DRETURN, RETURN</tt> for primitives/void,
      * and <tt>ARETURN</tt> otherwise;
-     * 
+     *
      * @param jandexType the return Jandex Type.
      * @return the correct bytecode return instruction for that return type descriptor.
      */
@@ -468,7 +399,7 @@ public class AsmUtil {
      * Invokes the proper LDC Class Constant instructions for the given Jandex Type. This will properly create LDC instructions
      * for array types, class/parameterized classes, and primitive types by loading their equivalent <tt>TYPE</tt>
      * constants in their box types, as well as type variables (using the first bound or Object) and Void.
-     * 
+     *
      * @param mv The MethodVisitor on which to visit the LDC instructions
      * @param jandexType the Jandex Type whose Class Constant to load.
      */
@@ -519,6 +450,7 @@ public class AsmUtil {
                     visitLdc(mv, bounds.get(0));
                 break;
             case UNRESOLVED_TYPE_VARIABLE:
+            case TYPE_VARIABLE_REFERENCE:
                 mv.visitLdcInsn(org.objectweb.asm.Type.getType(Object.class));
                 break;
             case VOID:
@@ -534,7 +466,7 @@ public class AsmUtil {
 
     /**
      * Calls the right boxing method for the given Jandex Type if it is a primitive.
-     * 
+     *
      * @param mv The MethodVisitor on which to visit the boxing instructions
      * @param jandexType The Jandex Type to box if it is a primitive.
      */
@@ -575,7 +507,7 @@ public class AsmUtil {
     /**
      * Returns the bytecode instruction to load the given Jandex Type. This returns the specialised
      * bytecodes <tt>ILOAD, DLOAD, FLOAD and LLOAD</tt> for primitives, or <tt>ALOAD</tt> otherwise.
-     * 
+     *
      * @param jandexType The Jandex Type whose load instruction to return.
      * @return The bytecode instruction to load the given Jandex Type.
      */
@@ -603,7 +535,7 @@ public class AsmUtil {
 
     /**
      * Calls the right unboxing method for the given Jandex Type if it is a primitive.
-     * 
+     *
      * @param mv The MethodVisitor on which to visit the unboxing instructions
      * @param jandexType The Jandex Type to unbox if it is a primitive.
      */
@@ -684,7 +616,7 @@ public class AsmUtil {
 
     /**
      * Returns the Jandex Types of the parameters of the given method descriptor.
-     * 
+     *
      * @param methodDescriptor a method descriptor
      * @return the list of Jandex Type objects representing the parameters of the given method descriptor.
      */
@@ -698,50 +630,22 @@ public class AsmUtil {
             char c = chars[i];
             switch (c) {
                 case 'Z':
-                    args.add(Type.create(DotName.createSimple("boolean"),
-                            dimensions > 0 ? Kind.ARRAY : Kind.PRIMITIVE));
-                    dimensions = 0;
-                    start = i + 1;
-                    break;
                 case 'B':
-                    args.add(Type.create(DotName.createSimple("byte"),
-                            dimensions > 0 ? Kind.ARRAY : Kind.PRIMITIVE));
-                    dimensions = 0;
-                    start = i + 1;
-                    break;
                 case 'C':
-                    args.add(Type.create(DotName.createSimple("char"),
-                            dimensions > 0 ? Kind.ARRAY : Kind.PRIMITIVE));
-                    dimensions = 0;
-                    start = i + 1;
-                    break;
                 case 'D':
-                    args.add(Type.create(DotName.createSimple("double"),
-                            dimensions > 0 ? Kind.ARRAY : Kind.PRIMITIVE));
-                    dimensions = 0;
-                    start = i + 1;
-                    break;
                 case 'F':
-                    args.add(Type.create(DotName.createSimple("float"),
-                            dimensions > 0 ? Kind.ARRAY : Kind.PRIMITIVE));
-                    dimensions = 0;
-                    start = i + 1;
-                    break;
                 case 'I':
-                    args.add(Type.create(DotName.createSimple("int"),
-                            dimensions > 0 ? Kind.ARRAY : Kind.PRIMITIVE));
-                    dimensions = 0;
-                    start = i + 1;
-                    break;
                 case 'J':
-                    args.add(Type.create(DotName.createSimple("long"),
-                            dimensions > 0 ? Kind.ARRAY : Kind.PRIMITIVE));
-                    dimensions = 0;
-                    start = i + 1;
-                    break;
                 case 'S':
-                    args.add(Type.create(DotName.createSimple("short"),
-                            dimensions > 0 ? Kind.ARRAY : Kind.PRIMITIVE));
+                    final Type type;
+                    if (dimensions == 0) {
+                        type = Type.create(DotName.createSimple(PRIMITIVE_DESCRIPTOR_TO_PRIMITIVE_CLASS_LITERAL.get(c)),
+                                Kind.PRIMITIVE);
+                    } else {
+                        DotName dotName = DotName.createSimple("[".repeat(dimensions) + c);
+                        type = Type.create(dotName, Kind.ARRAY);
+                    }
+                    args.add(type);
                     dimensions = 0;
                     start = i + 1;
                     break;
@@ -773,7 +677,7 @@ public class AsmUtil {
     /**
      * Returns the number of underlying bytecode parameters taken by the given Jandex parameter Type.
      * This will be 2 for doubles and longs, 1 otherwise.
-     * 
+     *
      * @param paramType the Jandex parameter Type
      * @return the number of underlying bytecode parameters required.
      */
@@ -791,7 +695,7 @@ public class AsmUtil {
     /**
      * Prints the value pushed on the stack (must be an Object) by the given <tt>valuePusher</tt>
      * to STDERR.
-     * 
+     *
      * @param mv The MethodVisitor to forward printing to.
      * @param valuePusher The function to invoke to push an Object to print on the stack.
      */
@@ -804,12 +708,12 @@ public class AsmUtil {
 
     /**
      * Copy the parameter names to the given MethodVisitor, unless we don't have parameter name info
-     * 
+     *
      * @param mv the visitor to copy to
      * @param method the method to copy from
      */
     public static void copyParameterNames(MethodVisitor mv, MethodInfo method) {
-        int parameterSize = method.parameters().size();
+        int parameterSize = method.parametersCount();
         if (parameterSize > 0) {
             // perhaps we don't have parameter names
             if (method.parameterName(0) == null)

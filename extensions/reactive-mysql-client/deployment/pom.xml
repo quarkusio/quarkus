@@ -15,6 +15,7 @@
   ~ under the License.
   -->
 
+
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -31,8 +32,7 @@
     <name>Quarkus - Reactive MySQL Client - Deployment</name>
 
     <properties>
-        <reactive-mysql.url>vertx-reactive:mysql://localhost:3306/hibernate_orm_test</reactive-mysql.url>
-        <mariadb.image>mariadb:10.4</mariadb.image>
+        <reactive-mysql.url>vertx-reactive:mysql://localhost:3308/hibernate_orm_test</reactive-mysql.url>
     </properties>
 
     <dependencies>
@@ -60,10 +60,14 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devservices-mysql</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices-mariadb</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -75,6 +79,22 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-reactive-datasource-deployment</artifactId>
+            <scope>test</scope>
+            <type>test-jar</type>
         </dependency>
     </dependencies>
 
@@ -133,9 +153,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <reactive-mysql.url>vertx-reactive:mysql://localhost:3308/hibernate_orm_test</reactive-mysql.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -144,8 +161,25 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${mariadb.image}</name>
+                                    <!-- Be aware when testing healthcheck scripts, caching of named images can cause apparently non-deterministic behaviour.
+                                    Change the name if making changes. -->
+                                    <name>healthcheck-${mariadb.image}</name>
                                     <alias>quarkus-test-mariadb</alias>
+                                    <build>
+                                        <from>${mariadb.image}</from>
+                                        <healthCheck>
+                                            <!-- The exact values for these aren't very important, but it is important they are there -->
+                                            <interval>5s</interval>
+                                            <timeout>3s</timeout>
+                                            <startPeriod>5s</startPeriod>
+                                            <retries>5</retries>
+                                            <!--  We could also use /usr/local/bin/healthcheck.sh but it seemed complicated to get the right level.
+                                            Note that mysqladmin ping returns 0 even if the password is wrong so we don't need to pass in a password, but it makes the logs cleaner-->
+                                            <cmd>
+                                                <shell>mysqladmin ping -h localhost -u root -psecret|| exit 1</shell>
+                                            </cmd>
+                                        </healthCheck>
+                                    </build>
                                     <run>
                                         <network>
                                             <mode>bridge</mode>
@@ -167,26 +201,28 @@
                                         <!-- Speed things up a bit by not actually flushing writes to disk -->
                                         <tmpfs>/var/lib/mysql</tmpfs>
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
-                                            <tcp>
-                                                <mode>direct</mode>
-                                                <ports>
-                                                    <port>3306</port>
-                                                </ports>
-                                            </tcp>
+                                            <!--   good docs found at: https://dmp.fabric8.io/#start-wait -->
+                                            <!-- the sqladmin check seems more reliable than a tcp check, especially with
+                                           diverse container runtimes -->
+                                            <healthy>true</healthy>
                                             <!-- Unfortunately booting MariaDB is slow, needs to set a generous timeout: -->
                                             <time>40000</time>
                                         </wait>
                                         <volumes>
                                             <bind>
-                                                <volume>${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d/:Z</volume>
+                                                <volume>
+                                                    ${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d${volume.access.modifier}
+                                                </volume>
+                                                <volume>
+                                                    ${project.basedir}/src/test/resources/setup.sql:/docker-entrypoint-initdb.d/setup.sql
+                                                </volume>
                                             </bind>
                                         </volumes>
                                     </run>
                                 </image>
                             </images>
-                            <!--Stops all mariadb:10.4 images currently running, not just those we just started.
-                              Useful to stop processes still running from a previously failed integration test run -->
+                            <!--     Stops all mariadb images currently running, not just those we just started.
+                                 Useful to stop processes still running from a previously failed integration test run -->
                             <allContainers>true</allContainers>
                         </configuration>
                         <executions>
@@ -195,6 +231,7 @@
                                 <phase>compile</phase>
                                 <goals>
                                     <goal>stop</goal>
+                                    <goal>build</goal>
                                     <goal>start</goal>
                                 </goals>
                             </execution>

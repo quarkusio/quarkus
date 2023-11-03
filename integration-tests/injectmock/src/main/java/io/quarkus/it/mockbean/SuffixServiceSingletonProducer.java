@@ -1,7 +1,7 @@
 package io.quarkus.it.mockbean;
 
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 public class SuffixServiceSingletonProducer {
 

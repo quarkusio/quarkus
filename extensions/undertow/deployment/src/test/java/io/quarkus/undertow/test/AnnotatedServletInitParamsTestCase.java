@@ -1,8 +1,6 @@
 package io.quarkus.undertow.test;
 
 import org.hamcrest.CoreMatchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -12,7 +10,7 @@ import io.restassured.RestAssured;
 public class AnnotatedServletInitParamsTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(AnnotatedServletInitParam.class, AnnotatedFilterInitParam.class));
 
     @Test

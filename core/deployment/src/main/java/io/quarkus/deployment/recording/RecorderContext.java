@@ -23,14 +23,15 @@ public interface RecorderContext {
     <T> void registerNonDefaultConstructor(Constructor<T> constructor, Function<T, List<Object>> parameters);
 
     /**
-     * Registers a substitution to allow objects that are not serialisable to bytecode to be substituted for an object
+     * Registers a substitution to allow objects that are not serializable to bytecode to be substituted for an object
      * that is.
      *
-     * @param from The class of the non serializable object
+     * @param from The class of the non-serializable object
      * @param to The class to serialize to
      * @param substitution The subclass of {@link ObjectSubstitution} that performs the substitution
      */
-    <F, T> void registerSubstitution(Class<F> from, Class<T> to, Class<? extends ObjectSubstitution<F, T>> substitution);
+    <F, T> void registerSubstitution(Class<F> from, Class<T> to,
+            Class<? extends ObjectSubstitution<? super F, ? super T>> substitution);
 
     /**
      * Register an object loader.
@@ -43,12 +44,14 @@ public interface RecorderContext {
      * Creates a Class instance that can be passed to a recording proxy as a substitute for a class that is not loadable
      * at processing time. At runtime the actual class will be passed into the invoked method.
      *
-     * @param name The class name
+     * @param name The fully-qualified class name
      * @return A Class instance that can be passed to a recording proxy
-     * @deprecated This construct is no longer needed since directly loading deployment/application classes at
-     *             processing time in build steps is now safe
+     * @deprecated This construct should not be needed in most use cases since directly loading deployment/application classes
+     *             at processing time in build steps is safe. However, there are use cases where this method comes in handy,
+     *             such as referring to classes that were generated in previous build steps using
+     *             {@link io.quarkus.deployment.builditem.GeneratedClassBuildItem}.
      */
-    @Deprecated
+    @Deprecated(forRemoval = false)
     Class<?> classProxy(String name);
 
     /**

@@ -1,5 +1,17 @@
 package io.quarkus.devtools.commands.handlers;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.maven.model.Model;
+
 import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog;
 import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartProjectInput;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
@@ -9,14 +21,6 @@ import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.PomTransformer;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.commons.io.FileUtils;
-import org.apache.maven.model.Model;
 
 /**
  * Instances of this class are thread-safe. They create a new project extracting all the necessary properties from an instance
@@ -24,23 +28,38 @@ import org.apache.maven.model.Model;
  */
 public class CreateExtensionCommandHandler {
 
-    public QuarkusCommandOutcome execute(MessageWriter log,
-            String groupId,
+    final String artifactId;
+    final String groupId;
+    final QuarkusExtensionCodestartProjectInput input;
+    final Path newExtensionDir;
+    final Path extensionsParentDir;
+    final Path itTestParentDir;
+    final Path bomDir;
+
+    public CreateExtensionCommandHandler(String groupId,
             String artifactId,
             QuarkusExtensionCodestartProjectInput input,
-            Path newExtensionDir)
-            throws QuarkusCommandException {
-        return execute(log, groupId, artifactId, input, newExtensionDir, null, null, null);
+            Path newExtensionDir) {
+        this(groupId, artifactId, input, newExtensionDir, null, null, null);
     }
 
-    public QuarkusCommandOutcome execute(MessageWriter log,
-            String groupId,
+    public CreateExtensionCommandHandler(String groupId,
             String artifactId,
             QuarkusExtensionCodestartProjectInput input,
             Path newExtensionDir,
             Path extensionsParentDir,
             Path itTestParentDir,
-            Path bomDir)
+            Path bomDir) {
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+        this.input = input;
+        this.newExtensionDir = newExtensionDir;
+        this.extensionsParentDir = extensionsParentDir;
+        this.itTestParentDir = itTestParentDir;
+        this.bomDir = bomDir;
+    }
+
+    public QuarkusCommandOutcome execute(MessageWriter log)
             throws QuarkusCommandException {
         try {
             final QuarkusExtensionCodestartCatalog catalog = QuarkusExtensionCodestartCatalog
@@ -50,19 +69,19 @@ public class CreateExtensionCommandHandler {
             final String extensionDirName = newExtensionDir.getFileName().toString();
             if (extensionsParentDir != null) {
                 updateExtensionsParentPom(extensionDirName, extensionsParentDir);
-                log.info(MessageIcons.OK_ICON + " New extension module '%s' added to %s", extensionDirName,
+                log.info(MessageIcons.SUCCESS_ICON + " New extension module '%s' added to %s", extensionDirName,
                         extensionsParentDir);
             }
 
             if (itTestParentDir != null) {
                 updateITParentPomAndMoveDir(extensionDirName, newExtensionDir, itTestParentDir);
-                log.info(MessageIcons.OK_ICON + " New integration test module '%s' added to %s", extensionDirName,
+                log.info(MessageIcons.SUCCESS_ICON + " New integration test module '%s' added to %s", extensionDirName,
                         itTestParentDir);
             }
 
             if (bomDir != null) {
                 updateBom(groupId, artifactId, bomDir);
-                log.info(MessageIcons.OK_ICON
+                log.info(MessageIcons.SUCCESS_ICON
                         + " The extension runtime and deployment artifacts have been added to the bom dependenciesManagement: %s",
                         bomDir);
             }
@@ -75,6 +94,10 @@ public class CreateExtensionCommandHandler {
         } catch (IOException e) {
             throw new QuarkusCommandException("Error while creating Quarkus extension: " + e.getMessage(), e);
         }
+    }
+
+    public Map<String, Object> getData() {
+        return Collections.unmodifiableMap(input.getData());
     }
 
     private void updateBom(String groupId, String artifactId, Path bomDir) throws QuarkusCommandException {

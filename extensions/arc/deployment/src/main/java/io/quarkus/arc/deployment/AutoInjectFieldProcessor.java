@@ -11,6 +11,7 @@ import java.util.List;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.processor.AnnotationsTransformer;
@@ -69,7 +70,10 @@ public class AutoInjectFieldProcessor {
             @Override
             public void transform(TransformationContext ctx) {
                 Collection<AnnotationInstance> fieldAnnotations = ctx.getAnnotations();
-                if (Modifier.isStatic(ctx.getTarget().asField().flags()) || contains(fieldAnnotations, DotNames.INJECT)
+                FieldInfo field = ctx.getTarget().asField();
+                if (Modifier.isStatic(field.flags())
+                        || Modifier.isFinal(field.flags())
+                        || contains(fieldAnnotations, DotNames.INJECT)
                         || contains(fieldAnnotations, DotNames.PRODUCES)) {
                     return;
                 }

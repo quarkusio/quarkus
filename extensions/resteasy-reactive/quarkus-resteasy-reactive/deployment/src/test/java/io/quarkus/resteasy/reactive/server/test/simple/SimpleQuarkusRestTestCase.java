@@ -1,27 +1,35 @@
 package io.quarkus.resteasy.reactive.server.test.simple;
 
+import static io.quarkus.resteasy.reactive.server.test.simple.OptionalQueryParamResource.AND;
+import static io.quarkus.resteasy.reactive.server.test.simple.OptionalQueryParamResource.HELLO;
+import static io.quarkus.resteasy.reactive.server.test.simple.OptionalQueryParamResource.NOBODY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.emptyString;
 
 import java.util.function.Supplier;
 
+import org.apache.http.HttpStatus;
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 import io.restassured.http.Headers;
 
 public class SimpleQuarkusRestTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
@@ -38,7 +46,7 @@ public class SimpleQuarkusRestTestCase {
                                     FeatureResponseFilter.class, DynamicFeatureRequestFilterWithLowPriority.class,
                                     TestFeature.class, TestDynamicFeature.class,
                                     SubResource.class, RootAResource.class, RootBResource.class,
-                                    QueryParamResource.class, HeaderParamResource.class,
+                                    QueryParamResource.class, HeaderParamResource.class, OptionalQueryParamResource.class,
                                     TestWriter.class, TestClass.class,
                                     SimpleBeanParam.class, OtherBeanParam.class, FieldInjectedResource.class,
                                     ParameterWithFromString.class, BeanParamSubClass.class, FieldInjectedSubClassResource.class,
@@ -103,6 +111,12 @@ public class SimpleQuarkusRestTestCase {
                 .then().body(Matchers.equalTo("otherSub"));
         RestAssured.get("/simple/sub")
                 .then().body(Matchers.equalTo("sub"));
+
+        RestAssured.with()
+                .contentType(ContentType.JSON)
+                .body("{\"test\": true}")
+                .patch("/simple/sub/patch/text")
+                .then().statusCode(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE);
     }
 
     @Test
@@ -183,6 +197,9 @@ public class SimpleQuarkusRestTestCase {
 
         RestAssured.get("/simple/writer/vertx-buffer")
                 .then().body(Matchers.equalTo("VERTX-BUFFER"));
+
+        RestAssured.get("/simple/writer/mutiny-buffer")
+                .then().body(Matchers.equalTo("MUTINY-BUFFER"));
     }
 
     @DisabledOnOs(OS.WINDOWS)
@@ -193,11 +210,22 @@ public class SimpleQuarkusRestTestCase {
         RestAssured.get("/simple/async/cs/fail")
                 .then().body(Matchers.equalTo("OK"))
                 .statusCode(666);
+        RestAssured.get("/simple/async/cf/ok")
+                .then().body(Matchers.equalTo("CF-OK"));
+        RestAssured.get("/simple/async/cf/fail")
+                .then().body(Matchers.equalTo("OK"))
+                .statusCode(666);
         RestAssured.get("/simple/async/uni/ok")
                 .then().body(Matchers.equalTo("UNI-OK"));
         RestAssured.get("/simple/async/uni/fail")
                 .then().body(Matchers.equalTo("OK"))
                 .statusCode(666);
+    }
+
+    @Test
+    public void testCompletableFutureBlocking() {
+        RestAssured.get("/simple/async/cf/blocking")
+                .then().body(Matchers.equalTo(Boolean.FALSE.toString()));
     }
 
     @Test
@@ -285,6 +313,34 @@ public class SimpleQuarkusRestTestCase {
 
         RestAssured.with().header("h2", "v2").get("/ctor-header")
                 .then().body(Matchers.is(emptyString()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "rest-header-list",
+            "rest-header-set",
+            "rest-header-sorted-set"
+    })
+    public void testRestHeaderUsingCollection(String path) {
+        RestAssured.with().header("header", "a", "b")
+                .get("/simple/" + path)
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .body(Matchers.equalTo("a, b"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "header-param-list",
+            "header-param-set",
+            "header-param-sorted-set"
+    })
+    public void testHeaderParamUsingCollection(String path) {
+        RestAssured.with().header("header", "a", "b")
+                .get("/simple/" + path)
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .body(Matchers.equalTo("a, b"));
     }
 
     @Test
@@ -423,5 +479,41 @@ public class SimpleQuarkusRestTestCase {
     public void testInterfaceResource() {
         RestAssured.get("/iface")
                 .then().statusCode(200).body(Matchers.equalTo("Hello"));
+    }
+
+    @Test
+    public void testQueryParamWithOptionalSingleValue() {
+        // verify with empty
+        Assertions.assertEquals(HELLO + NOBODY, RestAssured.get("/optional-query/greetings/one").asString());
+        // verify with values
+        Assertions.assertEquals(HELLO + "albert", RestAssured.given().queryParam("name", "albert")
+                .get("/optional-query/greetings/one").asString());
+    }
+
+    @Test
+    public void testQueryParamWithOptionalList() {
+        // verify with empty
+        Assertions.assertEquals(HELLO + NOBODY, RestAssured.get("/optional-query/greetings/list").asString());
+        // verify with values
+        Assertions.assertEquals(HELLO + "albert" + AND + "jose", RestAssured.given().queryParam("name", "albert", "jose")
+                .get("/optional-query/greetings/list").asString());
+    }
+
+    @Test
+    public void testQueryParamWithOptionalSet() {
+        // verify with empty
+        Assertions.assertEquals(HELLO + NOBODY, RestAssured.get("/optional-query/greetings/set").asString());
+        // verify with values
+        Assertions.assertEquals(HELLO + "albert" + AND + "jose", RestAssured.given().queryParam("name", "albert", "jose")
+                .get("/optional-query/greetings/set").asString());
+    }
+
+    @Test
+    public void testQueryParamWithOptionalSortedSet() {
+        // verify with empty
+        Assertions.assertEquals(HELLO + NOBODY, RestAssured.get("/optional-query/greetings/sortedset").asString());
+        // verify with values
+        Assertions.assertEquals(HELLO + "albert" + AND + "jose", RestAssured.given().queryParam("name", "albert", "jose")
+                .get("/optional-query/greetings/sortedset").asString());
     }
 }

@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.exclude.bar;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.test.exclude.ExcludeTypesTest.Pong;
 

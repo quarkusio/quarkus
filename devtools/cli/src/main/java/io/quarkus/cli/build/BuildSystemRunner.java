@@ -18,8 +18,10 @@ import io.quarkus.cli.common.DevOptions;
 import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
-import io.quarkus.cli.common.RegistryClientMixin;
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.cli.common.TargetQuarkusVersionGroup;
+import io.quarkus.cli.registry.RegistryClientMixin;
+import io.quarkus.cli.update.RewriteGroup;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 
@@ -33,11 +35,11 @@ public interface BuildSystemRunner {
         switch (buildTool) {
             default:
             case MAVEN:
-                return new MavenRunner(output, propertiesOptions, projectRoot);
+                return new MavenRunner(output, propertiesOptions, registryClient, projectRoot);
             case GRADLE_KOTLIN_DSL:
-                return new GradleRunner(output, propertiesOptions, projectRoot, BuildTool.GRADLE_KOTLIN_DSL);
+                return new GradleRunner(output, propertiesOptions, registryClient, projectRoot, BuildTool.GRADLE_KOTLIN_DSL);
             case GRADLE:
-                return new GradleRunner(output, propertiesOptions, projectRoot, BuildTool.GRADLE);
+                return new GradleRunner(output, propertiesOptions, registryClient, projectRoot, BuildTool.GRADLE);
             case JBANG:
                 return new JBangRunner(output, propertiesOptions, registryClient, projectRoot);
         }
@@ -58,14 +60,19 @@ public interface BuildSystemRunner {
         File wrapper = getWrapper();
         if (wrapper != null) {
             args.addFirst(wrapper.getAbsolutePath());
-            cmd.targetDirectory = wrapper.getParentFile();
         } else {
             File command = getExecutable();
             args.addFirst(command.getAbsolutePath());
-            cmd.targetDirectory = getProjectRoot().toFile();
         }
+        cmd.targetDirectory = getProjectRoot().toFile();
         cmd.arguments = args.toArray(new String[0]);
         return cmd;
+    }
+
+    default void paramsToQuarkusArgs(List<String> params, ArrayDeque<String> args) {
+        if (!params.isEmpty()) {
+            args.add("-Dquarkus.args='" + String.join(" ", params) + "'");
+        }
     }
 
     default List<String> flattenMappedProperties(Map<String, String> props) {
@@ -95,10 +102,19 @@ public interface BuildSystemRunner {
 
     Integer removeExtension(RunModeOption runMode, Set<String> extensions) throws Exception;
 
+    Integer projectInfo(boolean perModule) throws Exception;
+
+    Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite, boolean perModule)
+            throws Exception;
+
+    BuildCommandArgs prepareAction(String action, BuildOptions buildOptions, RunModeOption runMode, List<String> params);
+
     BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params);
 
-    List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, DebugOptions debugOptions,
-            List<String> params);
+    BuildCommandArgs prepareTest(BuildOptions buildOptions, RunModeOption runMode, List<String> params, String filter);
+
+    List<Supplier<BuildCommandArgs>> prepareDevTestMode(boolean devMode, DevOptions commonOptions,
+            DebugOptions debugOptions, List<String> params);
 
     Path getProjectRoot();
 

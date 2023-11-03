@@ -7,12 +7,10 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
-import javax.enterprise.event.Observes;
-import javax.inject.Singleton;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.DotName;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -31,7 +29,7 @@ public class SyntheticObserverTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyObserver.class))
             .addBuildChainCustomizer(buildCustomizer());
 
@@ -67,7 +65,7 @@ public class SyntheticObserverTest {
     @Test
     public void testSyntheticObserver() {
         MyObserver.EVENTS.clear();
-        Arc.container().beanManager().fireEvent("foo");
+        Arc.container().beanManager().getEvent().fire("foo");
         assertEquals(2, MyObserver.EVENTS.size(), "Events: " + MyObserver.EVENTS);
         assertTrue(MyObserver.EVENTS.contains("synthetic"));
         assertTrue(MyObserver.EVENTS.contains("foo_MyObserver"));

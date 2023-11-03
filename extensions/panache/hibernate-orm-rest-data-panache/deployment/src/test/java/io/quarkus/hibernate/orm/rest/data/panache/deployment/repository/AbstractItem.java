@@ -1,31 +1,17 @@
 package io.quarkus.hibernate.orm.rest.data.panache.deployment.repository;
 
-import javax.json.bind.annotation.JsonbTransient;
-import javax.persistence.ManyToOne;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MappedSuperclass;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
 
 @MappedSuperclass
 public abstract class AbstractItem<IdType extends Number> extends AbstractEntity<IdType> {
 
-    private String name;
+    public String name;
 
     @ManyToOne(optional = false)
-    private Collection collection;
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    @JsonbTransient // Avoid infinite loop when serialising
-    public Collection getCollection() {
-        return collection;
-    }
-
-    public void setCollection(Collection collection) {
-        this.collection = collection;
-    }
+    @JsonProperty(access = Access.WRITE_ONLY)
+    public Collection collection;
 }

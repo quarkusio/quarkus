@@ -12,7 +12,7 @@ import io.quarkus.bootstrap.BootstrapConstants;
  * Unlike the IDE launch use case in this case we have been able to store some info from the build phase,
  * so we don't need as many tricks.
  *
- * The launcher module has all its dependencies shaded, so it is effectively self contained. This allows deployment time
+ * The launcher module has all its dependencies shaded, so it is effectively self-contained. This allows deployment time
  * code to not leak into runtime code, as the launcher artifact is explicitly excluded from the production build via a
  * hard coded exclusion.
  */

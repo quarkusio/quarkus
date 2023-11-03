@@ -2,7 +2,9 @@ package org.jboss.resteasy.reactive.server.core.parameters.converters;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Collection;
 import java.util.Optional;
+
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 
 public class OptionalConverter implements ParameterConverter {
@@ -18,7 +20,14 @@ public class OptionalConverter implements ParameterConverter {
         if (parameter == null) {
             return Optional.empty();
         } else if (delegate != null) {
-            return Optional.ofNullable(delegate.convert(parameter));
+            Object converted = delegate.convert(parameter);
+            if (converted != null
+                    && converted instanceof Collection
+                    && ((Collection) converted).isEmpty()) {
+                return Optional.empty();
+            } else {
+                return Optional.ofNullable(converted);
+            }
         } else {
             return Optional.of(parameter);
         }
@@ -26,7 +35,9 @@ public class OptionalConverter implements ParameterConverter {
 
     @Override
     public void init(ParamConverterProviders deployment, Class<?> rawType, Type genericType, Annotation[] annotations) {
-        delegate.init(deployment, rawType, genericType, annotations);
+        if (delegate != null) {
+            delegate.init(deployment, rawType, genericType, annotations);
+        }
     }
 
     public static class OptionalSupplier implements DelegatingParameterConverterSupplier {
@@ -35,6 +46,7 @@ public class OptionalConverter implements ParameterConverter {
         public OptionalSupplier() {
         }
 
+        // invoked by reflection for BeanParam in ClassInjectorTransformer
         public OptionalSupplier(ParameterConverterSupplier delegate) {
             this.delegate = delegate;
         }

@@ -3,15 +3,13 @@ package io.quarkus.mongodb;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.metrics.Metric;
 import org.eclipse.microprofile.metrics.MetricID;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.Tag;
 import org.eclipse.microprofile.metrics.annotation.RegistryType;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -34,7 +32,7 @@ public class MongoMetricsTest extends MongoTestBase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MongoTestBase.class))
+            .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class))
             .withConfigurationResource("application-metrics-mongo.properties");
 
     @AfterEach
@@ -46,11 +44,11 @@ public class MongoMetricsTest extends MongoTestBase {
 
     @Test
     void testMetricsInitialization() {
-        // Clients are created eagerly, this metric should always be initialized to zero once connected
-        assertEquals(0L, getGaugeValueOrNull("mongodb.connection-pool.size", getTags()));
-        assertEquals(0L, getGaugeValueOrNull("mongodb.connection-pool.checked-out-count", getTags()));
+        // Clients are created lazily, this metric should not be present yet
+        assertThat(getGaugeValueOrNull("mongodb.connection-pool.size", getTags())).isNull();
+        assertThat(getGaugeValueOrNull("mongodb.connection-pool.checked-out-count", getTags())).isNull();
 
-        // Just need to execute something so that an connection is opened
+        // Just need to execute something so that a connection is opened
         String name = client.listDatabaseNames().first();
 
         assertEquals(1L, getGaugeValueOrNull("mongodb.connection-pool.size", getTags()));

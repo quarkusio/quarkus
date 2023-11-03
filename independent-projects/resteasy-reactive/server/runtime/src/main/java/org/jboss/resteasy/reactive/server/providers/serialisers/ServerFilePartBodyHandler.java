@@ -2,11 +2,12 @@ package org.jboss.resteasy.reactive.server.providers.serialisers;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.Provider;
+
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+
 import org.jboss.resteasy.reactive.FilePart;
 import org.jboss.resteasy.reactive.common.providers.serialisers.FilePartBodyHandler;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
@@ -16,7 +17,6 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 // TODO: this is very simplistic at the moment
 
-@Provider
 @Produces("*/*")
 @Consumes("*/*")
 public class ServerFilePartBodyHandler extends FilePartBodyHandler implements ServerMessageBodyWriter<FilePart> {

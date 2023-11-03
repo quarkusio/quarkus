@@ -7,15 +7,17 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
+
+import io.quarkus.it.spring.data.jpa.test.MovieRating;
 
 @Path("/movie")
 public class MovieResource {
@@ -91,7 +93,7 @@ public class MovieResource {
     @GET
     @Path("/title/like/{title}")
     @Produces("application/json")
-    public List<Object[]> someFieldsWithTitleLike(@PathParam("title") String title) {
+    public List<Movie> someFieldsWithTitleLike(@PathParam("title") String title) {
         return movieRepository.someFieldsWithTitleLike(title, Sort.by(new Sort.Order(Sort.Direction.ASC, "duration")));
     }
 
@@ -135,8 +137,8 @@ public class MovieResource {
     @GET
     @Path("/rating/forTitle/{title}")
     @Produces("application/json")
-    public MovieRepository.MovieRating titleRating(@PathParam("title") String title) {
-        MovieRepository.MovieRating result = movieRepository.findRatingByTitle(title);
+    public MovieRating titleRating(@PathParam("title") String title) {
+        MovieRating result = movieRepository.findRatingByTitle(title);
         Objects.requireNonNull(result);
         return result;
     }
@@ -144,7 +146,7 @@ public class MovieResource {
     @GET
     @Path("/rating/opt/forTitle/{title}")
     @Produces("application/json")
-    public Optional<MovieRepository.MovieRating> optionalTitleRating(@PathParam("title") String title) {
+    public Optional<MovieRating> optionalTitleRating(@PathParam("title") String title) {
         Optional result = movieRepository.findOptionalRatingByTitle(title);
         return result;
     }

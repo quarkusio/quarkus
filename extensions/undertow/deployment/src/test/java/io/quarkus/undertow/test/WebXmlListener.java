@@ -1,7 +1,7 @@
 package io.quarkus.undertow.test;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
 
 public class WebXmlListener implements ServletContextListener {
     @Override

@@ -13,6 +13,10 @@
     <artifactId>quarkus-integration-test-scala</artifactId>
     <name>Quarkus - Integration Tests - Scala</name>
 
+    <properties>
+        <scala-maven-plugin.phase>pre-integration-test</scala-maven-plugin.phase>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -76,9 +80,28 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
+            <!-- This plugin is only here to ensure it (and its dependencies) is downloaded before the actual tests,
+                 which might otherwise time out because the downloads can take quite a long time. -->
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>${scala-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>ensure-plugin-is-downloaded</id>
+                        <goals>
+                            <goal>help</goal>
+                        </goals>
+                        <phase>${scala-maven-plugin.phase}</phase>
+                        <configuration>
+                            <versionOnly>true</versionOnly>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
-    
+
     <profiles>
         <profile>
             <id>basic-test-suite</id>
@@ -89,6 +112,29 @@
             </activation>
             <properties>
                 <maven.test.skip>true</maven.test.skip>
+                <scala-maven-plugin.phase>none</scala-maven-plugin.phase>
+            </properties>
+        </profile>
+        <profile>
+            <id>skip-ITs</id>
+            <activation>
+                <property>
+                    <name>skipITs</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <properties>
+                <scala-maven-plugin.phase>none</scala-maven-plugin.phase>
+            </properties>
+        </profile>
+        <profile>
+            <id>java21</id>
+            <activation>
+                <jdk>[21,)</jdk>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
             </properties>
         </profile>
     </profiles>

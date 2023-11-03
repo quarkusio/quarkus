@@ -1,7 +1,7 @@
 package io.quarkus.it.nat.test.profile;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class DefaultTestProfileIT extends DefaultTestProfileTest {
 }

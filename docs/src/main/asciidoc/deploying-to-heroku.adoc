@@ -1,10 +1,13 @@
 ////
 This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
-https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Deploying to Heroku
-include::./attributes.adoc[]
+= Deploying to Heroku
+include::_attributes.adoc[]
+:categories: cloud
+:summary: Deploy your Quarkus applications on Heroku.
+:topics: devops,heroku,cloud,deployment
 
 In this guide you will learn how to deploy a Quarkus based web application as a web-dyno to Heroku.
 
@@ -18,11 +21,9 @@ This guide covers:
 
 == Prerequisites
 
-For this guide you need:
-
-* Roughly 1 hour for all modalities
-* JDK 11
-* Apache Maven {maven-version}
+:prerequisites-time: 1 hour for all modalities
+:prerequisites-no-graalvm:
+include::{includes}/prerequisites.adoc[]
 * https://www.heroku.com/[A Heroku Account]. Free accounts work.
 * https://devcenter.heroku.com/articles/heroku-cli[Heroku CLI installed]
 
@@ -30,7 +31,7 @@ For this guide you need:
 
 Heroku is a platform as a service (PaaS) that enables developers to build, run, and operate applications entirely in the cloud.
 It supports several languages like Java, Ruby, Node.js, Scala, Clojure, Python, PHP, and Go.
-In addition it offers a container registry that can be used to deploy prebuilt container images.
+In addition, it offers a container registry that can be used to deploy prebuilt container images.
 
 Heroku can be used in different ways to run a Quarkus application:
 
@@ -45,26 +46,13 @@ The guide assumes that you have the https://devcenter.heroku.com/articles/heroku
 
 == Common project setup
 
-This guide will take as input an application developed in the link:getting-started[Getting Started guide].
+This guide will take as input an application developed in the xref:getting-started.adoc[Getting Started guide].
 
 Make sure you have the getting-started application at hand, or clone the Git repository: `git clone {quickstarts-clone-url}`,
 or download an {quickstarts-archive-url}[archive]. The solution is located in the `getting-started` directory.
 
-Or, just generate a fresh project:
-
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=code-with-quarkus-on-heroku \
-    -DclassName="org.acme.getting.started.GreetingResource" \
-    -Dpath="/hello"
-cd code-with-quarkus-on-heroku
-git init && git add . && git commit -am "Create initial project."
-----
-
 Heroku can react on changes in your repository, run CI and redeploy your application when your code changes.
-Therefore we start with a valid repository already.
+Therefore, we start with a valid repository already.
 
 Also, make sure your Heroku CLI is working:
 
@@ -165,7 +153,7 @@ git add pom.xml
 git commit -am "Add container-image-docker extension."
 ----
 
-The image we are going to build needs to be named accordingly to work with Heroku's registry and deployment. 
+The image we are going to build needs to be named accordingly to work with Heroku's registry and deployment.
 We get the generated name via `heroku info` and pass it on to the (local) build:
 
 [source,bash]
@@ -211,7 +199,7 @@ mvn clean package\
   -Dquarkus.container-image.group=registry.heroku.com/$APP_NAME\
   -Dquarkus.container-image.name=web\
   -Dquarkus.container-image.tag=latest\
-  -Pnative\
+  -Dnative\
   -Dquarkus.native.container-build=true
 ----
 

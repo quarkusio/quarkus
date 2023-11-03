@@ -3,6 +3,7 @@ package io.quarkus.security.runtime;
 import java.lang.reflect.Constructor;
 import java.security.Provider;
 import java.security.Security;
+import java.util.Map;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -18,13 +19,21 @@ public final class SecurityProviderUtils {
     public static final String BOUNCYCASTLE_JSSE_PROVIDER_CLASS_NAME = "org.bouncycastle.jsse.provider.BouncyCastleJsseProvider";
     public static final String BOUNCYCASTLE_FIPS_PROVIDER_CLASS_NAME = "org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider";
 
+    public static final Map<String, String> SUN_PROVIDERS = Map.of("SunPKCS11", "sun.security.pkcs11.SunPKCS11");
+
     private SecurityProviderUtils() {
 
     }
 
+    public static void addProvider(String provider) {
+        addProvider(loadProvider(provider));
+    }
+
     public static void addProvider(Provider provider) {
         try {
-            Security.addProvider(provider);
+            if (Security.getProvider(provider.getName()) == null) {
+                Security.addProvider(provider);
+            }
         } catch (Exception t) {
             final String errorMessage = String.format("Security provider %s can not be added", provider.getName());
             throw new ConfigurationException(errorMessage, t);
@@ -33,7 +42,9 @@ public final class SecurityProviderUtils {
 
     public static void insertProvider(Provider provider, int index) {
         try {
-            Security.insertProviderAt(provider, index);
+            if (Security.getProvider(provider.getName()) == null) {
+                Security.insertProviderAt(provider, index);
+            }
         } catch (Exception t) {
             final String errorMessage = String.format("Security provider %s can not be inserted", provider.getName());
             throw new ConfigurationException(errorMessage, t);
@@ -42,7 +53,8 @@ public final class SecurityProviderUtils {
 
     public static Provider loadProvider(String providerClassName) {
         try {
-            return (Provider) Thread.currentThread().getContextClassLoader().loadClass(providerClassName).newInstance();
+            return (Provider) Thread.currentThread().getContextClassLoader().loadClass(providerClassName)
+                    .getDeclaredConstructor().newInstance();
         } catch (Exception t) {
             final String errorMessage = String.format("Security provider %s can not be registered", providerClassName);
             throw new ConfigurationException(errorMessage, t);

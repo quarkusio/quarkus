@@ -1,10 +1,11 @@
 package io.quarkus.devtools.codestarts.core;
 
-import io.quarkus.devtools.codestarts.CodestartStructureException;
-import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import io.quarkus.devtools.codestarts.CodestartStructureException;
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
 
 final class CodestartPathProcessor {
 

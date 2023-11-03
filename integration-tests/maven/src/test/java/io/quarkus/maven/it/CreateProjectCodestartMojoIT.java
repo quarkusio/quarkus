@@ -12,6 +12,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
@@ -44,6 +45,28 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
     private static Stream<Arguments> provideLanguages() {
         return Stream.of("java", "kotlin")
                 .flatMap(l -> Stream.of("", "resteasy", "qute").map(e -> Arguments.of(l, e)));
+    }
+
+    @Test
+    public void testCodestartOutsideCatalog() throws Exception {
+        testDir = initProject("projects/extension-codestart");
+        final Invoker invoker = initInvoker(testDir);
+
+        InvocationRequest request = new DefaultInvocationRequest();
+        request.setBatchMode(true);
+        request.setGoals(List.of("install"));
+        request.setDebug(false);
+        request.setShowErrors(true);
+        File log = new File(testDir, "install-extension-" + testDir.getName() + ".log");
+        PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
+                InvokerLogger.DEBUG);
+        invoker.setLogger(logger);
+        invoker.execute(request);
+
+        final Path generatedProjectPath = generateProject("maven", "java", "org.acme.quarkus:acme-quarkus:1.0.0-SNAPSHOT",
+                Map.of());
+        final Path codestartClass = generatedProjectPath.resolve("src/main/java/org/test/CustomCode.java");
+        assertThat(codestartClass).exists();
     }
 
     @ParameterizedTest
@@ -92,23 +115,33 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
                 "class BonjourResourceTest",
                 "\"/bonjour\"");
 
-        checkContent(generatedProjectPath.resolve("src/test/java/com/andy/NativeBonjourResourceIT.java"),
+        checkContent(generatedProjectPath.resolve("src/test/java/com/andy/BonjourResourceIT.java"),
                 "package com.andy;",
-                "class NativeBonjourResourceIT extends BonjourResourceTest");
+                "class BonjourResourceIT extends BonjourResourceTest");
     }
 
     private Path generateProject(String buildtool, String language, String extensions, Map<String, String> options)
             throws Exception {
-        String name = "project-" + buildtool + "-" + language;
+        final StringBuilder name = new StringBuilder();
+        name.append("project-").append(buildtool).append('-').append(language);
         if (extensions.isEmpty()) {
-            name += "-commandmode";
+            name.append("-commandmode");
         } else {
-            name += "-" + extensions.replace(",", "-");
+            name.append('-');
+            for (int i = 0; i < extensions.length(); ++i) {
+                char c = extensions.charAt(i);
+                if (c == ',') {
+                    c = '-';
+                } else if (c == ':') {
+                    c = '-';
+                }
+                name.append(c);
+            }
         }
         if (!options.isEmpty()) {
-            name += "-custom";
+            name.append("-custom");
         }
-        testDir = prepareTestDir(name);
+        testDir = prepareTestDir(name.toString());
         LOG.info("creating project in " + testDir.toPath().toString());
         return runCreateCommand(buildtool, extensions + (!Objects.equals(language, "java") ? "," + language : ""), options);
     }

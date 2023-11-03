@@ -27,6 +27,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-deployment-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kubernetes-client-internal-deployment</artifactId>
         </dependency>
         <dependency>
@@ -41,6 +45,10 @@
                 <exclusion>
                     <groupId>com.sun</groupId>
                     <artifactId>tools</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>kubernetes-client</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -57,6 +65,10 @@
                     <groupId>com.sun</groupId>
                     <artifactId>tools</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>kubernetes-client</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -71,6 +83,10 @@
                 <exclusion>
                     <groupId>com.sun</groupId>
                     <artifactId>tools</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>kubernetes-client</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

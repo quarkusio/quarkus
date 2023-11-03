@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -57,46 +57,52 @@ public class WebXmlParsingBuildStep {
     WebMetadataBuildItem createWebMetadata(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             Consumer<AdditionalBeanBuildItem> additionalBeanBuildItemConsumer) throws Exception {
 
-        WebMetaData result;
-        Path webXml = applicationArchivesBuildItem.getRootArchive().getChildPath(WEB_XML);
-        if (webXml != null) {
-            Set<String> additionalBeans = new HashSet<>();
+        WebMetaData result = applicationArchivesBuildItem.getRootArchive()
+                .apply(tree -> {
+                    var webXml = tree.getPath(WEB_XML);
+                    if (webXml == null) {
+                        return new WebMetaData();
+                    }
+                    Set<String> additionalBeans = new HashSet<>();
 
-            final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
-            inputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
-            MetaDataElementParser.DTDInfo dtdInfo = new MetaDataElementParser.DTDInfo();
-            inputFactory.setXMLResolver(dtdInfo);
-            try (InputStream in = Files.newInputStream(webXml)) {
-                final XMLStreamReader xmlReader = inputFactory.createXMLStreamReader(in);
-                result = WebMetaDataParser.parse(xmlReader, dtdInfo,
-                        PropertyReplacers.resolvingReplacer(new MPConfigPropertyResolver()));
-            }
-            if (result.getServlets() != null) {
-                for (ServletMetaData i : result.getServlets()) {
-                    additionalBeans.add(i.getServletClass());
-                }
-            }
-            if (result.getFilters() != null) {
-                for (FilterMetaData i : result.getFilters()) {
-                    additionalBeans.add(i.getFilterClass());
-                }
-            }
-            if (result.getListeners() != null) {
-                for (ListenerMetaData i : result.getListeners()) {
-                    additionalBeans.add(i.getListenerClass());
-                }
-            }
-            additionalBeanBuildItemConsumer
-                    .accept(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(additionalBeans).build());
-        } else {
-            result = new WebMetaData();
-        }
-        Set<WebFragmentMetaData> webFragments = parseWebFragments(applicationArchivesBuildItem);
+                    final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+                    inputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+                    MetaDataElementParser.DTDInfo dtdInfo = new MetaDataElementParser.DTDInfo();
+                    inputFactory.setXMLResolver(dtdInfo);
+                    final WebMetaData metadata;
+                    try (InputStream in = Files.newInputStream(webXml)) {
+                        final XMLStreamReader xmlReader = inputFactory.createXMLStreamReader(in);
+                        metadata = WebMetaDataParser.parse(xmlReader, dtdInfo,
+                                PropertyReplacers.resolvingExpressionReplacer(new MPConfigExpressionResolver()));
+                    } catch (IOException | XMLStreamException e) {
+                        throw new RuntimeException(e);
+                    }
+                    if (metadata.getServlets() != null) {
+                        for (ServletMetaData i : metadata.getServlets()) {
+                            additionalBeans.add(i.getServletClass());
+                        }
+                    }
+                    if (metadata.getFilters() != null) {
+                        for (FilterMetaData i : metadata.getFilters()) {
+                            additionalBeans.add(i.getFilterClass());
+                        }
+                    }
+                    if (metadata.getListeners() != null) {
+                        for (ListenerMetaData i : metadata.getListeners()) {
+                            additionalBeans.add(i.getListenerClass());
+                        }
+                    }
+                    additionalBeanBuildItemConsumer
+                            .accept(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(additionalBeans).build());
+                    return metadata;
+                });
+
+        List<WebFragmentMetaData> webFragments = parseWebFragments(applicationArchivesBuildItem);
         for (WebFragmentMetaData webFragment : webFragments) {
             //merge in any web fragments
             //at the moment this is fairly simplistic, as it does not handle all the ordering and metadata complete bits
             //of the spec. I am not sure how important this is, and it is very complex and does not 100% map to the quarkus
-            //deployment model. If there is demand for it we can look at adding it later
+            //deployment model. If there is demand for it, we can look at adding it later
 
             WebCommonMetaDataMerger.augment(result, webFragment, null, false);
         }
@@ -107,27 +113,29 @@ public class WebXmlParsingBuildStep {
     /**
      * parse web-fragment.xml
      */
-    private Set<WebFragmentMetaData> parseWebFragments(ApplicationArchivesBuildItem applicationArchivesBuildItem) {
-        Set<WebFragmentMetaData> webFragments = new LinkedHashSet<>();
+    private List<WebFragmentMetaData> parseWebFragments(ApplicationArchivesBuildItem applicationArchivesBuildItem) {
+        List<WebFragmentMetaData> webFragments = new ArrayList<>();
         for (ApplicationArchive archive : applicationArchivesBuildItem.getAllApplicationArchives()) {
-            Path webFragment = archive.getChildPath(WEB_FRAGMENT_XML);
-            if (webFragment != null && Files.isRegularFile(webFragment)) {
-                try (InputStream is = Files.newInputStream(webFragment)) {
-                    final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
-                    inputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
-                    inputFactory.setXMLResolver(NoopXMLResolver.create());
-                    XMLStreamReader xmlReader = inputFactory.createXMLStreamReader(is);
+            archive.accept(tree -> {
+                Path webFragment = tree.getPath(WEB_FRAGMENT_XML);
+                if (webFragment != null && Files.isRegularFile(webFragment)) {
+                    try (InputStream is = Files.newInputStream(webFragment)) {
+                        final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+                        inputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+                        inputFactory.setXMLResolver(NoopXMLResolver.create());
+                        XMLStreamReader xmlReader = inputFactory.createXMLStreamReader(is);
 
-                    WebFragmentMetaData webFragmentMetaData = WebFragmentMetaDataParser.parse(xmlReader,
-                            PropertyReplacers.resolvingReplacer(new MPConfigPropertyResolver()));
-                    webFragments.add(webFragmentMetaData);
+                        WebFragmentMetaData webFragmentMetaData = WebFragmentMetaDataParser.parse(xmlReader,
+                                PropertyReplacers.resolvingExpressionReplacer(new MPConfigExpressionResolver()));
+                        webFragments.add(webFragmentMetaData);
 
-                } catch (XMLStreamException e) {
-                    throw new RuntimeException("Failed to parse " + webFragment + " " + e.getLocation(), e);
-                } catch (IOException e) {
-                    throw new RuntimeException("Failed to parse " + webFragment, e);
+                    } catch (XMLStreamException e) {
+                        throw new RuntimeException("Failed to parse " + webFragment + " " + e.getLocation(), e);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to parse " + webFragment, e);
+                    }
                 }
-            }
+            });
         }
         return webFragments;
     }

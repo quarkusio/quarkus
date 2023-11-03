@@ -21,11 +21,26 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-utilities</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protoc</artifactId>
             <classifier>linux-aarch_64</classifier>
+            <type>exe</type>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protoc</artifactId>
+            <classifier>linux-ppcle_64</classifier>
+            <type>exe</type>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protoc</artifactId>
+            <classifier>linux-s390_64</classifier>
             <type>exe</type>
         </dependency>
         <dependency>
@@ -44,6 +59,12 @@
             <groupId>com.google.protobuf</groupId>
             <artifactId>protoc</artifactId>
             <classifier>osx-x86_64</classifier>
+            <type>exe</type>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protoc</artifactId>
+            <classifier>osx-aarch_64</classifier>
             <type>exe</type>
         </dependency>
         <dependency>
@@ -68,6 +89,18 @@
             <groupId>io.grpc</groupId>
             <artifactId>protoc-gen-grpc-java</artifactId>
             <type>exe</type>
+            <classifier>linux-ppcle_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>protoc-gen-grpc-java</artifactId>
+            <type>exe</type>
+            <classifier>linux-s390_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>protoc-gen-grpc-java</artifactId>
+            <type>exe</type>
             <classifier>linux-x86_32</classifier>
         </dependency>
         <dependency>
@@ -81,6 +114,12 @@
             <artifactId>protoc-gen-grpc-java</artifactId>
             <type>exe</type>
             <classifier>osx-x86_64</classifier>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>protoc-gen-grpc-java</artifactId>
+            <type>exe</type>
+            <classifier>osx-aarch_64</classifier>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
@@ -99,6 +138,17 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc-protoc-plugin</artifactId>
             <classifier>shaded</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.javaparser</groupId>
+            <artifactId>javaparser-core</artifactId>
         </dependency>
     </dependencies>
 

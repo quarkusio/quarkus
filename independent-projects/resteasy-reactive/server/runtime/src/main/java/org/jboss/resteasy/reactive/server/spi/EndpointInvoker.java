@@ -3,13 +3,13 @@ package org.jboss.resteasy.reactive.server.spi;
 /**
  * Base interface implemented by the synthetic beans that represent rest endpoints.
  *
- * @see CoroutineEndpointInvoker
+ * See org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineEndpointInvoker
  */
 public interface EndpointInvoker {
 
     /**
      * Delegates control over the bean that defines the endpoint
-     * 
+     *
      * @param instance the bean instance
      * @param parameters the method arguments
      * @return the result of the method call

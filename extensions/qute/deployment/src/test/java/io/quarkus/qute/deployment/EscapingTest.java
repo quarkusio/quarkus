@@ -4,11 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Locale;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,16 +21,18 @@ public class EscapingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(Item.class)
                     .addAsResource(new StringAsset("{text} {other} {text.raw} {text.safe} {item.foo}"),
                             "templates/foo.html")
                     .addAsResource(new StringAsset("{item} {item.raw}"),
-                            "templates/item.html")
+                            "templates/item.xhtml")
                     .addAsResource(new StringAsset("{text} {other} {text.raw} {text.safe} {item.foo}"),
                             "templates/bar.txt")
                     .addAsResource(new StringAsset("{@java.lang.String text}{text} {text.raw} {text.safe}"),
-                            "templates/validation.html"));
+                            "templates/validation.html"))
+            .overrideConfigKey("quarkus.qute.content-types.xhtml", "application/xhtml+xml")
+            .overrideConfigKey("quarkus.qute.suffixes", "qute.html,qute.txt,html,txt,xhtml");
 
     @Inject
     Template foo;
@@ -69,6 +69,13 @@ public class EscapingTest {
         assertEquals("&lt;div&gt; <div>",
                 engine.parse("{text} {text.raw}",
                         new Variant(Locale.ENGLISH, "text/html", "UTF-8")).data("text", "<div>").render());
+        assertEquals("&lt;div&gt; <div>",
+                engine.parse("{text} {text.raw}",
+                        new Variant(Locale.ENGLISH, "application/xml", "UTF-8")).data("text", "<div>").render());
+        assertEquals("&lt;div&gt; <div>",
+                engine.parse("{text} {text.raw}",
+                        new Variant(Locale.ENGLISH, "application/xhtml+xml;charset=UTF-8", "UTF-8")).data("text", "<div>")
+                        .render());
     }
 
     @TemplateData

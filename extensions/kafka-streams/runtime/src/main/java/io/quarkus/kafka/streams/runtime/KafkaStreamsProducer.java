@@ -21,12 +21,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.Admin;
@@ -67,8 +67,6 @@ public class KafkaStreamsProducer {
     private final KafkaStreams kafkaStreams;
     private final KafkaStreamsTopologyManager kafkaStreamsTopologyManager;
     private final Admin kafkaAdminClient;
-
-    // TODO Replace @Named with @Identifier when it will be integrated
 
     @Inject
     public KafkaStreamsProducer(KafkaStreamsSupport kafkaStreamsSupport, KafkaStreamsRuntimeConfig runtimeConfig,
@@ -170,20 +168,18 @@ public class KafkaStreamsProducer {
             kafkaStreams.setUncaughtExceptionHandler(uncaughtExceptionHandlerListener.get());
         }
 
-        executorService.execute(new Runnable() {
-
-            @Override
-            public void run() {
+        executorService.execute(() -> {
+            if (runtimeConfig.topicsTimeout.compareTo(Duration.ZERO) > 0) {
                 try {
-                    waitForTopicsToBeCreated(adminClient, runtimeConfig.getTrimmedTopics());
+                    waitForTopicsToBeCreated(adminClient, runtimeConfig.getTrimmedTopics(), runtimeConfig.topicsTimeout);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     return;
                 }
-                if (!shutdown) {
-                    LOGGER.debug("Starting Kafka Streams pipeline");
-                    kafkaStreams.start();
-                }
+            }
+            if (!shutdown) {
+                LOGGER.debug("Starting Kafka Streams pipeline");
+                kafkaStreams.start();
             }
         });
 
@@ -261,9 +257,9 @@ public class KafkaStreamsProducer {
             setProperty(ssl.cipherSuites, streamsProperties, SslConfigs.SSL_CIPHER_SUITES_CONFIG);
             setProperty(ssl.enabledProtocols, streamsProperties, SslConfigs.SSL_ENABLED_PROTOCOLS_CONFIG);
 
-            setStoreConfig(ssl.truststore, streamsProperties, "ssl.truststore");
-            setStoreConfig(ssl.keystore, streamsProperties, "ssl.keystore");
-            setStoreConfig(ssl.key, streamsProperties, "ssl.key");
+            setTrustStoreConfig(ssl.truststore, streamsProperties);
+            setKeyStoreConfig(ssl.keystore, streamsProperties);
+            setKeyConfig(ssl.key, streamsProperties);
 
             setProperty(ssl.keymanagerAlgorithm, streamsProperties, SslConfigs.SSL_KEYMANAGER_ALGORITHM_CONFIG);
             setProperty(ssl.trustmanagerAlgorithm, streamsProperties, SslConfigs.SSL_TRUSTMANAGER_ALGORITHM_CONFIG);
@@ -275,11 +271,28 @@ public class KafkaStreamsProducer {
         return streamsProperties;
     }
 
-    private static void setStoreConfig(StoreConfig sc, Properties properties, String key) {
-        if (sc != null) {
-            setProperty(sc.type, properties, key + ".type");
-            setProperty(sc.location, properties, key + ".location");
-            setProperty(sc.password, properties, key + ".password");
+    private static void setTrustStoreConfig(TrustStoreConfig tsc, Properties properties) {
+        if (tsc != null) {
+            setProperty(tsc.type, properties, SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG);
+            setProperty(tsc.location, properties, SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG);
+            setProperty(tsc.password, properties, SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG);
+            setProperty(tsc.certificates, properties, SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG);
+        }
+    }
+
+    private static void setKeyStoreConfig(KeyStoreConfig ksc, Properties properties) {
+        if (ksc != null) {
+            setProperty(ksc.type, properties, SslConfigs.SSL_KEYSTORE_TYPE_CONFIG);
+            setProperty(ksc.location, properties, SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG);
+            setProperty(ksc.password, properties, SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG);
+            setProperty(ksc.key, properties, SslConfigs.SSL_KEYSTORE_KEY_CONFIG);
+            setProperty(ksc.certificateChain, properties, SslConfigs.SSL_KEYSTORE_CERTIFICATE_CHAIN_CONFIG);
+        }
+    }
+
+    private static void setKeyConfig(KeyConfig kc, Properties properties) {
+        if (kc != null) {
+            setProperty(kc.password, properties, SslConfigs.SSL_KEY_PASSWORD_CONFIG);
         }
     }
 
@@ -303,13 +316,13 @@ public class KafkaStreamsProducer {
         return inetSocketAddress.getHostString() + ":" + inetSocketAddress.getPort();
     }
 
-    private static void waitForTopicsToBeCreated(Admin adminClient, Collection<String> topicsToAwait)
+    private static void waitForTopicsToBeCreated(Admin adminClient, Collection<String> topicsToAwait, Duration timeout)
             throws InterruptedException {
         Set<String> lastMissingTopics = null;
         while (!shutdown) {
             try {
                 ListTopicsResult topics = adminClient.listTopics();
-                Set<String> existingTopics = topics.names().get(10, TimeUnit.SECONDS);
+                Set<String> existingTopics = topics.names().get(timeout.toMillis(), TimeUnit.MILLISECONDS);
 
                 if (existingTopics.containsAll(topicsToAwait)) {
                     LOGGER.debug("All expected topics created: " + topicsToAwait);

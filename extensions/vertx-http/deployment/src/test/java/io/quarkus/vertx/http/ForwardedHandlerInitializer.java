@@ -1,13 +1,13 @@
 package io.quarkus.vertx.http;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.Router;
 
 @ApplicationScoped
-class ForwardedHandlerInitializer {
+public class ForwardedHandlerInitializer {
 
     public void register(@Observes Router router) {
         router.route("/forward").handler(rc -> rc.response()

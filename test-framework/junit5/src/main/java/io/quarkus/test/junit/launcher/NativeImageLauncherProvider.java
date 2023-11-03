@@ -1,24 +1,28 @@
 package io.quarkus.test.junit.launcher;
 
+import static io.quarkus.test.junit.ArtifactTypeUtil.isNativeBinary;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_HTTPS_PORT;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_PORT;
 
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
 import java.util.ServiceLoader;
 
 import org.eclipse.microprofile.config.Config;
 
+import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DefaultNativeImageLauncher;
 import io.quarkus.test.common.LauncherUtil;
 import io.quarkus.test.common.NativeImageLauncher;
+import io.quarkus.test.common.TestConfigUtil;
 
 public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
     @Override
     public boolean supportsArtifactType(String type) {
-        return "native".equals(type);
+        return isNativeBinary(type);
     }
 
     @Override
@@ -38,10 +42,13 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
             launcher.init(new NativeImageLauncherProvider.DefaultNativeImageInitContext(
                     config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
-                    ConfigUtil.waitTimeValue(config),
-                    config.getOptionalValue("quarkus.test.native-image-profile", String.class).orElse(null),
-                    ConfigUtil.argLineValue(config),
+                    TestConfigUtil.waitTimeValue(config),
+                    TestConfigUtil.integrationTestProfile(config),
+                    TestConfigUtil.argLineValue(config),
+                    TestConfigUtil.env(config),
+                    context.devServicesLaunchResult(),
                     System.getProperty("native.image.path"),
+                    config.getOptionalValue("quarkus.package.output-directory", String.class).orElse(null),
                     context.testClass()));
             return launcher;
         } else {
@@ -54,18 +61,26 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
 
         private final String nativeImagePath;
         private final Class<?> testClass;
+        private final String configuredOutputDirectory;
 
         public DefaultNativeImageInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
-                List<String> argLine,
-                String nativeImagePath, Class<?> testClass) {
-            super(httpPort, httpsPort, waitTime, testProfile, argLine);
+                List<String> argLine, Map<String, String> env,
+                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult,
+                String nativeImagePath, String configuredOutputDirectory, Class<?> testClass) {
+            super(httpPort, httpsPort, waitTime, testProfile, argLine, env, devServicesLaunchResult);
             this.nativeImagePath = nativeImagePath;
+            this.configuredOutputDirectory = configuredOutputDirectory;
             this.testClass = testClass;
         }
 
         @Override
         public String nativeImagePath() {
             return nativeImagePath;
+        }
+
+        @Override
+        public String getConfiguredOutputDirectory() {
+            return configuredOutputDirectory;
         }
 
         @Override

@@ -9,12 +9,19 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.IsolatedTestModeMain;
+import io.quarkus.runtime.LaunchMode;
 
 /**
  * The test mojo, that starts continuous testing outside of dev mode
  */
-@Mojo(name = "test", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.TEST)
+@Mojo(name = "test", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.TEST, threadSafe = true)
 public class TestMojo extends DevMojo {
+
+    @Override
+    protected LaunchMode getLaunchModeClasspath() {
+        return LaunchMode.TEST;
+    }
+
     @Override
     protected void modifyDevModeContext(MavenDevModeLauncher.Builder builder) {
         builder.entryPointCustomizer(new Consumer<DevModeContext>() {

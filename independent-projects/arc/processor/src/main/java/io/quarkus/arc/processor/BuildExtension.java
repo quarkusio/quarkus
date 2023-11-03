@@ -1,7 +1,10 @@
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.BuildExtension.SimpleKey.simpleBuiltIn;
+
 import java.util.Collection;
 import java.util.Map;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -50,21 +53,30 @@ public interface BuildExtension {
 
         // Built-in keys
         static String BUILT_IN_PREFIX = BuildExtension.class.getPackage().getName() + ".";
-        static Key<IndexView> INDEX = new SimpleKey<>(BUILT_IN_PREFIX + "index");
-        static Key<Collection<InjectionPointInfo>> INJECTION_POINTS = new SimpleKey<>(BUILT_IN_PREFIX + "injectionPoints");
-        static Key<Collection<BeanInfo>> BEANS = new SimpleKey<>(BUILT_IN_PREFIX + "beans");
-        static Key<Collection<BeanInfo>> REMOVED_BEANS = new SimpleKey<>(BUILT_IN_PREFIX + "removedBeans");
-        static Key<Collection<ObserverInfo>> OBSERVERS = new SimpleKey<>(BUILT_IN_PREFIX + "observers");
-        static Key<AnnotationStore> ANNOTATION_STORE = new SimpleKey<>(BUILT_IN_PREFIX + "annotationStore");
-        static Key<Collection<ScopeInfo>> SCOPES = new SimpleKey<>(BUILT_IN_PREFIX + "scopes");
-        static Key<Map<DotName, ClassInfo>> QUALIFIERS = new SimpleKey<>(BUILT_IN_PREFIX + "qualifiers");
-        static Key<Map<DotName, ClassInfo>> INTERCEPTOR_BINDINGS = new SimpleKey<>(BUILT_IN_PREFIX + "interceptorBindings");
-        static Key<Map<DotName, StereotypeInfo>> STEREOTYPES = new SimpleKey<>(BUILT_IN_PREFIX + "stereotypes");
+        static Key<IndexView> INDEX = simpleBuiltIn("index");
+        static Key<Collection<InjectionPointInfo>> INJECTION_POINTS = simpleBuiltIn("injectionPoints");
+        static Key<Collection<BeanInfo>> BEANS = simpleBuiltIn("beans");
+        static Key<Collection<BeanInfo>> REMOVED_BEANS = simpleBuiltIn("removedBeans");
+        static Key<Collection<ObserverInfo>> OBSERVERS = simpleBuiltIn("observers");
+        static Key<Collection<InterceptorInfo>> INTERCEPTORS = simpleBuiltIn("interceptors");
+        static Key<Collection<InterceptorInfo>> REMOVED_INTERCEPTORS = simpleBuiltIn("removedInterceptors");
+        static Key<Collection<DecoratorInfo>> DECORATORS = simpleBuiltIn("decorators");
+        static Key<Collection<DecoratorInfo>> REMOVED_DECORATORS = simpleBuiltIn("removedDecorators");
+        static Key<AnnotationStore> ANNOTATION_STORE = simpleBuiltIn("annotationStore");
+        static Key<Collection<ScopeInfo>> SCOPES = simpleBuiltIn("scopes");
+        static Key<Map<DotName, ClassInfo>> QUALIFIERS = simpleBuiltIn("qualifiers");
+        static Key<Map<DotName, ClassInfo>> INTERCEPTOR_BINDINGS = simpleBuiltIn("interceptorBindings");
+        static Key<Map<DotName, StereotypeInfo>> STEREOTYPES = simpleBuiltIn("stereotypes");
+        static Key<BeanDeployment> DEPLOYMENT = simpleBuiltIn("deployment");
 
         String asString();
     }
 
     public static class SimpleKey<V> implements Key<V> {
+
+        static <V> SimpleKey<V> simpleBuiltIn(String val) {
+            return new SimpleKey<>(BUILT_IN_PREFIX + val);
+        }
 
         private final String str;
 

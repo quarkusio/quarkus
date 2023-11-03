@@ -1,31 +1,35 @@
 package org.jboss.resteasy.reactive.server.vertx;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.vertx.core.Context;
-import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpConnection;
-import io.vertx.core.http.HttpServerRequest;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MultivaluedMap;
+
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.server.core.LazyResponse;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpServerRequest;
 
 public class ResteasyReactiveOutputStream extends OutputStream {
 
-    private static final Logger log = Logger.getLogger("io.quarkus.quarkus-rest");
+    private static final Logger log = Logger.getLogger("org.jboss.resteasy.reactive.server.vertx.ResteasyReactiveOutputStream");
     private final ResteasyReactiveRequestContext context;
     protected final HttpServerRequest request;
-    private ByteBuf pooledBuffer;
-    private long written;
+    private final AppendBuffer appendBuffer;
     private boolean committed;
 
     private boolean closed;
-    private boolean finished;
     protected boolean waitingForDrain;
     protected boolean drainHandlerRegistered;
     protected boolean first = true;
@@ -35,6 +39,9 @@ public class ResteasyReactiveOutputStream extends OutputStream {
     public ResteasyReactiveOutputStream(VertxResteasyReactiveRequestContext context) {
         this.context = context;
         this.request = context.getContext().request();
+        this.appendBuffer = AppendBuffer.withMinChunks(PooledByteBufAllocator.DEFAULT,
+                context.getDeployment().getResteasyReactiveConfig().getMinChunkSize(),
+                context.getDeployment().getResteasyReactiveConfig().getOutputBufferSize());
         request.response().exceptionHandler(new Handler<Throwable>() {
             @Override
             public void handle(Throwable event) {
@@ -45,18 +52,18 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                 request.connection().close();
                 synchronized (request.connection()) {
                     if (waitingForDrain) {
-                        request.connection().notify();
+                        request.connection().notifyAll();
                     }
                 }
             }
         });
 
-        request.response().endHandler(new Handler<Void>() {
+        context.getContext().addEndHandler(new Handler<AsyncResult<Void>>() {
             @Override
-            public void handle(Void event) {
+            public void handle(AsyncResult<Void> event) {
                 synchronized (request.connection()) {
                     if (waitingForDrain) {
-                        request.connection().notify();
+                        request.connection().notifyAll();
                     }
                 }
                 terminateResponse();
@@ -74,7 +81,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
 
     public void write(ByteBuf data, boolean last) throws IOException {
         if (last && data == null) {
-            request.response().end();
+            request.response().end((Handler<AsyncResult<Void>>) null);
             return;
         }
         //do all this in the same lock
@@ -95,11 +102,12 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                     if (last) {
                         closed = true;
                     }
+                    data.release();
                 } else {
                     if (last) {
-                        request.response().end(createBuffer(data));
+                        request.response().end(createBuffer(data), null);
                     } else {
-                        request.response().write(createBuffer(data));
+                        request.response().write(createBuffer(data), null);
                     }
                 }
             } catch (Exception e) {
@@ -146,17 +154,16 @@ public class ResteasyReactiveOutputStream extends OutputStream {
             Handler<Void> handler = new Handler<Void>() {
                 @Override
                 public void handle(Void event) {
-                    HttpConnection connection = request.connection();
-                    synchronized (connection) {
+                    synchronized (request.connection()) {
                         if (waitingForDrain) {
-                            connection.notifyAll();
+                            request.connection().notifyAll();
                         }
                         if (overflow != null) {
                             if (overflow.size() > 0) {
                                 if (closed) {
-                                    request.response().end(Buffer.buffer(overflow.toByteArray()));
+                                    request.response().end(Buffer.buffer(overflow.toByteArray()), null);
                                 } else {
-                                    request.response().write(Buffer.buffer(overflow.toByteArray()));
+                                    request.response().write(Buffer.buffer(overflow.toByteArray()), null);
                                 }
                                 overflow.reset();
                             }
@@ -196,29 +203,18 @@ public class ResteasyReactiveOutputStream extends OutputStream {
 
         int rem = len;
         int idx = off;
-        ByteBuf buffer = pooledBuffer;
         try {
-            if (buffer == null) {
-                pooledBuffer = buffer = PooledByteBufAllocator.DEFAULT.directBuffer();
-            }
             while (rem > 0) {
-                int toWrite = Math.min(rem, buffer.writableBytes());
-                buffer.writeBytes(b, idx, toWrite);
-                rem -= toWrite;
-                idx += toWrite;
-                if (!buffer.isWritable()) {
-                    ByteBuf tmpBuf = buffer;
-                    this.pooledBuffer = buffer = PooledByteBufAllocator.DEFAULT.directBuffer();
-                    writeBlocking(tmpBuf, false);
+                final int written = appendBuffer.append(b, idx, rem);
+                if (written < rem) {
+                    writeBlocking(appendBuffer.clear(), false);
                 }
+                rem -= written;
+                idx += written;
             }
         } catch (Exception e) {
-            if (buffer != null && buffer.refCnt() > 0) {
-                buffer.release();
-            }
             throw new IOException(e);
         }
-        updateWritten(len);
     }
 
     public void writeBlocking(ByteBuf buffer, boolean finished) throws IOException {
@@ -230,22 +226,45 @@ public class ResteasyReactiveOutputStream extends OutputStream {
         if (!committed) {
             committed = true;
             if (finished) {
-                if (buffer == null) {
-                    context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, "0");
-                } else {
-                    context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, "" + buffer.readableBytes());
+                if (!context.serverResponse().headWritten()) {
+                    if (buffer == null) {
+                        context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, "0");
+                    } else {
+                        context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, "" + buffer.readableBytes());
+                    }
                 }
-            } else if (!request.response().headers().contains(HttpHeaderNames.CONTENT_LENGTH)) {
-                request.response().setChunked(true);
+            } else {
+                var contentLengthSet = contentLengthSet();
+                if (contentLengthSet == ContentLengthSetResult.NOT_SET) {
+                    request.response().setChunked(true);
+                } else if (contentLengthSet == ContentLengthSetResult.IN_JAX_RS_HEADER) {
+                    // we need to make sure the content-length header is copied to Vert.x headers
+                    // otherwise we could run into a race condition: see https://github.com/quarkusio/quarkus/issues/26599
+                    Object contentLength = context.getResponse().get().getHeaders().getFirst(HttpHeaders.CONTENT_LENGTH);
+                    context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, contentLength.toString());
+                }
             }
-        }
-        if (finished) {
-            this.finished = true;
         }
     }
 
-    void updateWritten(final long len) throws IOException {
-        this.written += len;
+    private ContentLengthSetResult contentLengthSet() {
+        if (request.response().headers().contains(HttpHeaderNames.CONTENT_LENGTH)) {
+            return ContentLengthSetResult.IN_VERTX_HEADER;
+        }
+        LazyResponse lazyResponse = context.getResponse();
+        if (!lazyResponse.isCreated()) {
+            return ContentLengthSetResult.NOT_SET;
+        }
+        MultivaluedMap<String, Object> responseHeaders = lazyResponse.get().getHeaders();
+        return (responseHeaders != null) && responseHeaders.containsKey(HttpHeaders.CONTENT_LENGTH)
+                ? ContentLengthSetResult.IN_JAX_RS_HEADER
+                : ContentLengthSetResult.NOT_SET;
+    }
+
+    private enum ContentLengthSetResult {
+        NOT_SET,
+        IN_VERTX_HEADER,
+        IN_JAX_RS_HEADER
     }
 
     /**
@@ -256,15 +275,11 @@ public class ResteasyReactiveOutputStream extends OutputStream {
             throw new IOException("Stream is closed");
         }
         try {
-            if (pooledBuffer != null) {
-                writeBlocking(pooledBuffer, false);
-                pooledBuffer = null;
+            var toFlush = appendBuffer.clear();
+            if (toFlush != null) {
+                writeBlocking(toFlush, false);
             }
         } catch (Exception e) {
-            if (pooledBuffer != null) {
-                pooledBuffer.release();
-                pooledBuffer = null;
-            }
             throw new IOException(e);
         }
     }
@@ -276,12 +291,11 @@ public class ResteasyReactiveOutputStream extends OutputStream {
         if (closed)
             return;
         try {
-            writeBlocking(pooledBuffer, true);
+            writeBlocking(appendBuffer.clear(), true);
         } catch (Exception e) {
             throw new IOException(e);
         } finally {
             closed = true;
-            pooledBuffer = null;
         }
     }
 

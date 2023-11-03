@@ -2,17 +2,18 @@ package io.quarkus.it.jpa.h2.proxy;
 
 import java.io.IOException;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.transaction.Transactional;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 
+import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import io.quarkus.runtime.StartupEvent;
 
 @WebServlet(urlPatterns = "/jpa-h2/testproxy")
@@ -23,6 +24,7 @@ public class ProxyTestEndpoint extends HttpServlet {
     EntityManager entityManager;
 
     @Transactional
+    @TransactionConfiguration(timeoutFromConfigProperty = "dummy.transaction.timeout")
     public void setup(@Observes StartupEvent startupEvent) {
         Pet pet = new Pet();
         pet.setId(1);

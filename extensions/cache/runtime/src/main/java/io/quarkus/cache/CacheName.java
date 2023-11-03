@@ -8,62 +8,71 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import javax.enterprise.util.Nonbinding;
-import javax.inject.Qualifier;
+import jakarta.enterprise.util.Nonbinding;
+import jakarta.inject.Qualifier;
 
 /**
  * <p>
  * Use this annotation on a field, a constructor parameter or a method parameter to inject a {@link Cache} and interact with it
- * programmatically.
+ * programmatically e.g. store, retrieve or delete cache values.
  * </p>
  * <p>
  * Field injection example:
- * 
+ *
  * <pre>
  * {@literal @}ApplicationScoped
  * public class CachedService {
- * 
+ *
  *     {@literal @}CacheName("my-cache")
  *     Cache cache;
- *     
- *     // Interact with the cache.
+ *
+ *     String getExpensiveValue(Object key) {
+ *         {@code Uni<String>} cacheValue = cache.get(key, () -> expensiveService.getValue(key));
+ *         return cacheValue.await().indefinitely();
+ *     }
  * }
  * </pre>
- * 
+ *
  * Constructor parameter injection example:
- * 
+ *
  * <pre>
  * {@literal @}ApplicationScoped
  * public class CachedService {
- * 
+ *
  *     private Cache cache;
- * 
+ *
  *     public CachedService(@CacheName("my-cache") Cache cache) {
  *         this.cache = cache;
  *     }
- *     
- *     // Interact with the cache.
+ *
+ *     String getExpensiveValue(Object key) {
+ *         {@code Uni<String>} cacheValue = cache.get(key, () -> expensiveService.getValue(key));
+ *         return cacheValue.await().indefinitely();
+ *     }
  * }
  * </pre>
- * 
+ *
  * Method parameter injection example:
- * 
+ *
  * <pre>
  * {@literal @}ApplicationScoped
  * public class CachedService {
- * 
+ *
  *     private Cache cache;
- * 
+ *
  *     {@literal @}Inject
  *     public void setCache(@CacheName("my-cache") Cache cache) {
  *         this.cache = cache;
  *     }
- *     
- *     // Interact with the cache.
+ *
+ *     String getExpensiveValue(Object key) {
+ *         {@code Uni<String>} cacheValue = cache.get(key, () -> expensiveService.getValue(key));
+ *         return cacheValue.await().indefinitely();
+ *     }
  * }
  * </pre>
  * </p>
- * 
+ *
  * @see CacheManager
  */
 @Qualifier

@@ -14,7 +14,7 @@ public interface TestController {
 
     /**
      * Sets if test output should be displayed in the logs
-     * 
+     *
      * @param displayTestOutput
      */
     void setDisplayTestOutput(boolean displayTestOutput);
@@ -40,10 +40,17 @@ public interface TestController {
 
     /**
      * Toggles instrumentation based reload.
-     * 
+     *
      * @return <code>true</code> if this change to do instrumentation based reload
      */
     boolean toggleInstrumentation();
+
+    /**
+     * Toggles instrumentation based reload.
+     *
+     * @return <code>true</code> if this change to do instrumentation based reload
+     */
+    boolean toggleLiveReloadEnabled();
 
     /**
      * Print the current results and failures

@@ -1,13 +1,8 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ClientProxy;
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableContext;
-import io.quarkus.arc.InjectableInstance;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.WithCaching;
-import io.quarkus.arc.impl.CurrentInjectionPointProvider.InjectionPointImpl;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
 import java.lang.reflect.ParameterizedType;
@@ -16,14 +11,28 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.inject.AmbiguousResolutionException;
-import javax.enterprise.inject.UnsatisfiedResolutionException;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.enterprise.util.TypeLiteral;
-import javax.inject.Provider;
+import java.util.function.Supplier;
+
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.AmbiguousResolutionException;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.UnsatisfiedResolutionException;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ClientProxy;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.WithCaching;
 
 /**
  *
@@ -31,16 +40,105 @@ import javax.inject.Provider;
  */
 public class InstanceImpl<T> implements InjectableInstance<T> {
 
-    static <T> InstanceImpl<T> of(Type requiredType, Set<Annotation> requiredQualifiers) {
-        return new InstanceImpl<>(null, null, requiredType, requiredQualifiers,
-                new CreationalContextImpl<>(null),
-                Collections.emptySet(), null, -1);
+    public static Instance<Object> forSynthesis(CreationalContextImpl<?> creationalContext, boolean allowInjectionPointLookup) {
+        InstanceImpl<Object> result = new InstanceImpl<>(creationalContext, Object.class, Collections.emptySet(),
+                null, null, Collections.emptySet(), null, -1, false, false);
+        if (allowInjectionPointLookup) {
+            return result;
+        }
+
+        class Guard<T> implements InjectableInstance<T> {
+            private final InjectableInstance<T> delegate;
+
+            Guard(InjectableInstance<T> delegate) {
+                this.delegate = delegate;
+            }
+
+            @Override
+            public InstanceHandle<T> getHandle() {
+                return delegate.getHandle();
+            }
+
+            @Override
+            public Iterable<InstanceHandle<T>> handles() {
+                return delegate.handles();
+            }
+
+            @Override
+            public InjectableInstance<T> select(Annotation... qualifiers) {
+                return wrap(null, delegate.select(qualifiers));
+            }
+
+            @Override
+            public <U extends T> InjectableInstance<U> select(Class<U> subtype, Annotation... qualifiers) {
+                return wrap(subtype, delegate.select(subtype, qualifiers));
+            }
+
+            @Override
+            public <U extends T> InjectableInstance<U> select(TypeLiteral<U> subtype, Annotation... qualifiers) {
+                return wrap(subtype.getType(), delegate.select(subtype, qualifiers));
+            }
+
+            private <U> InjectableInstance<U> wrap(Type subtype, InjectableInstance<U> delegate) {
+                if (InjectionPoint.class.equals(subtype)) {
+                    throw new IllegalStateException("Cannot obtain InjectionPoint metadata for non-@Dependent bean");
+                }
+                return new Guard<>(delegate);
+            }
+
+            @Override
+            public void clearCache() {
+                delegate.clearCache();
+            }
+
+            @Override
+            public Iterator<T> iterator() {
+                return delegate.iterator();
+            }
+
+            @Override
+            public boolean isUnsatisfied() {
+                return delegate.isUnsatisfied();
+            }
+
+            @Override
+            public boolean isAmbiguous() {
+                return delegate.isAmbiguous();
+            }
+
+            @Override
+            public void destroy(T instance) {
+                delegate.destroy(instance);
+            }
+
+            @Override
+            public T get() {
+                return delegate.get();
+            }
+        }
+        return new Guard<>(result);
     }
 
-    private static final Annotation[] EMPTY_ANNOTATION_ARRAY = new Annotation[] {};
+    static <T> InstanceImpl<T> forGlobalEntrypoint(Type requiredType, Set<Annotation> requiredQualifiers) {
+        return new InstanceImpl<>(new CreationalContextImpl<>(null), requiredType, requiredQualifiers,
+                null, null, Collections.emptySet(), null, -1, false, true);
+    }
+
+    static <T> InstanceImpl<T> forInjection(InjectableBean<?> targetBean, Type type, Set<Annotation> qualifiers,
+            CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position,
+            boolean isTransient) {
+        return new InstanceImpl<>(creationalContext, getRequiredType(type), qualifiers,
+                type, targetBean, annotations, javaMember, position, isTransient, true);
+    }
+
+    private static <T> InstanceImpl<T> child(InstanceImpl<?> parent, Type requiredType, Set<Annotation> requiredQualifiers) {
+        return new InstanceImpl<>(parent.creationalContext, requiredType, requiredQualifiers, parent.injectionPointType,
+                parent.targetBean, parent.annotations, parent.javaMember, parent.position, parent.isTransient,
+                parent.resetCurrentInjectionPoint);
+    }
 
     private final CreationalContextImpl<?> creationalContext;
-    private final Set<InjectableBean<?>> resolvedBeans;
+    private final List<InjectableBean<?>> resolvedBeans;
 
     private final Type requiredType;
     private final Set<Annotation> requiredQualifiers;
@@ -51,35 +149,34 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
     private final Set<Annotation> annotations;
     private final Member javaMember;
     private final int position;
+    private final boolean isTransient;
+
+    private final boolean resetCurrentInjectionPoint;
 
     private final LazyValue<T> cachedGetResult;
 
-    InstanceImpl(InjectableBean<?> targetBean, Type type, Set<Annotation> qualifiers,
-            CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position) {
-        this(targetBean, type, getRequiredType(type), qualifiers, creationalContext, annotations, javaMember, position);
-    }
-
-    private InstanceImpl(InstanceImpl<?> parent, Type requiredType, Set<Annotation> requiredQualifiers) {
-        this(parent.targetBean, parent.injectionPointType, requiredType, requiredQualifiers, parent.creationalContext,
-                parent.annotations, parent.javaMember, parent.position);
-    }
-
-    InstanceImpl(InjectableBean<?> targetBean, Type injectionPointType, Type requiredType, Set<Annotation> requiredQualifiers,
-            CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position) {
-        this.injectionPointType = injectionPointType;
+    private InstanceImpl(CreationalContextImpl<?> creationalContext, Type requiredType, Set<Annotation> requiredQualifiers,
+            Type injectionPointType, InjectableBean<?> targetBean, Set<Annotation> annotations, Member javaMember,
+            int position, boolean isTransient, boolean resetCurrentInjectionPoint) {
+        this.creationalContext = creationalContext;
         this.requiredType = requiredType;
         this.requiredQualifiers = requiredQualifiers != null ? requiredQualifiers : Collections.emptySet();
-        this.creationalContext = creationalContext;
+
         if (this.requiredQualifiers.isEmpty() && Object.class.equals(requiredType)) {
             // Do not prefetch the beans for Instance<Object> with no qualifiers
             this.resolvedBeans = null;
         } else {
             this.resolvedBeans = resolve();
         }
+
+        this.injectionPointType = injectionPointType;
         this.targetBean = targetBean;
         this.annotations = annotations;
         this.javaMember = javaMember;
         this.position = position;
+        this.isTransient = isTransient;
+        this.resetCurrentInjectionPoint = resetCurrentInjectionPoint;
+
         this.cachedGetResult = isGetCached(annotations) ? new LazyValue<>(this::getInternal) : null;
     }
 
@@ -97,21 +194,21 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
     public InjectableInstance<T> select(Annotation... qualifiers) {
         Set<Annotation> newQualifiers = new HashSet<>(this.requiredQualifiers);
         Collections.addAll(newQualifiers, qualifiers);
-        return new InstanceImpl<>(this, requiredType, newQualifiers);
+        return InstanceImpl.child(this, requiredType, newQualifiers);
     }
 
     @Override
     public <U extends T> InjectableInstance<U> select(Class<U> subtype, Annotation... qualifiers) {
         Set<Annotation> newQualifiers = new HashSet<>(this.requiredQualifiers);
         Collections.addAll(newQualifiers, qualifiers);
-        return new InstanceImpl<>(this, subtype, newQualifiers);
+        return InstanceImpl.child(this, subtype, newQualifiers);
     }
 
     @Override
     public <U extends T> InjectableInstance<U> select(TypeLiteral<U> subtype, Annotation... qualifiers) {
         Set<Annotation> newQualifiers = new HashSet<>(this.requiredQualifiers);
         Collections.addAll(newQualifiers, qualifiers);
-        return new InstanceImpl<>(this, subtype.getType(), newQualifiers);
+        return InstanceImpl.child(this, subtype.getType(), newQualifiers);
     }
 
     @Override
@@ -135,8 +232,12 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
             }
             context.destroy(proxy.arc_bean());
         } else {
-            // Try to destroy a dependent instance
-            creationalContext.destroyDependentInstance(instance);
+            // First try to destroy a dependent instance
+            if (!creationalContext.removeDependentInstance(instance, true)) {
+                // If not successful then try the singleton context
+                SingletonContext singletonContext = (SingletonContext) Arc.container().getActiveContext(Singleton.class);
+                singletonContext.destroyInstance(instance);
+            }
         }
     }
 
@@ -155,23 +256,35 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         };
     }
 
-    @SuppressWarnings("unchecked")
     private <H> InstanceHandle<H> getHandle(InjectableBean<H> bean) {
-        InjectionPoint prev = InjectionPointProvider
-                .set(new InjectionPointImpl(injectionPointType, requiredType, requiredQualifiers, targetBean, annotations,
-                        javaMember, position));
-        try {
-            return ArcContainerImpl.beanInstanceHandle(bean, (CreationalContextImpl<H>) creationalContext, false,
-                    this::destroy);
-        } finally {
-            InjectionPointProvider.set(prev);
-        }
+        CreationalContextImpl<H> context = this.creationalContext.child(bean);
+        return new LazyInstanceHandle<>(bean, context, this.creationalContext, new Supplier<H>() {
+
+            @Override
+            public H get() {
+                InjectionPoint prev = null;
+                if (resetCurrentInjectionPoint) {
+                    prev = InjectionPointProvider.set(new InjectionPointImpl(injectionPointType, requiredType,
+                            requiredQualifiers, targetBean, annotations, javaMember, position, isTransient));
+                }
+                try {
+                    return bean.get(context);
+                } finally {
+                    if (resetCurrentInjectionPoint) {
+                        InjectionPointProvider.set(prev);
+                    }
+                }
+            }
+        },
+                // If @Dependent we need to remove the instance from the CC of this InjectableInstance
+                Dependent.class.equals(bean.getScope()) ? this::destroy : null);
     }
 
     @SuppressWarnings("unchecked")
     private InjectableBean<T> bean() {
-        Set<InjectableBean<?>> beans = beans();
+        List<InjectableBean<?>> beans = beans();
         if (beans.isEmpty()) {
+            ArcContainerImpl.instance().scanRemovedBeans(requiredType, requiredQualifiers.toArray(new Annotation[] {}));
             throw new UnsatisfiedResolutionException(
                     "No bean found for required type [" + requiredType + "] and qualifiers [" + requiredQualifiers + "]");
         } else if (beans.size() > 1) {
@@ -202,24 +315,28 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
 
     private T getBeanInstance(InjectableBean<T> bean) {
         CreationalContextImpl<T> ctx = creationalContext.child(bean);
-        InjectionPoint prev = InjectionPointProvider
-                .set(new InjectionPointImpl(injectionPointType, requiredType, requiredQualifiers, targetBean, annotations,
-                        javaMember, position));
+        InjectionPoint prev = null;
+        if (resetCurrentInjectionPoint) {
+            prev = InjectionPointProvider.set(new InjectionPointImpl(injectionPointType, requiredType,
+                    requiredQualifiers, targetBean, annotations, javaMember, position, isTransient));
+        }
         T instance;
         try {
             instance = bean.get(ctx);
         } finally {
-            InjectionPointProvider.set(prev);
+            if (resetCurrentInjectionPoint) {
+                InjectionPointProvider.set(prev);
+            }
         }
         return instance;
     }
 
-    private Set<InjectableBean<?>> beans() {
+    private List<InjectableBean<?>> beans() {
         return resolvedBeans != null ? resolvedBeans : resolve();
     }
 
-    private Set<InjectableBean<?>> resolve() {
-        return ArcContainerImpl.instance().getResolvedBeans(requiredType, requiredQualifiers.toArray(EMPTY_ANNOTATION_ARRAY));
+    private List<InjectableBean<?>> resolve() {
+        return Instances.resolveBeans(requiredType, requiredQualifiers);
     }
 
     class InstanceIterator implements Iterator<T> {
@@ -269,9 +386,9 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
 
     }
 
-    private static Type getRequiredType(Type type) {
-        if (type instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) type;
+    private static Type getRequiredType(final Type type) {
+        if (isParameterizedType(type)) {
+            final ParameterizedType parameterizedType = asParameterizedType(type);
             if (Provider.class.isAssignableFrom(Types.getRawType(parameterizedType.getRawType()))) {
                 return parameterizedType.getActualTypeArguments()[0];
             }

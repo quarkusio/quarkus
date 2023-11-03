@@ -12,7 +12,7 @@ public class ShutdownConfig {
 
     /**
      * The timeout to wait for running requests to finish. If this is not set then the application will exit immediately.
-     * 
+     *
      * Setting this timeout will incur a small performance penalty, as it requires active requests to be tracked.
      */
     @ConfigItem

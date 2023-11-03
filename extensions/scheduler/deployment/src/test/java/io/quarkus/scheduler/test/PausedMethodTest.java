@@ -1,16 +1,16 @@
 package io.quarkus.scheduler.test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.Priority;
-import javax.enterprise.event.Observes;
-import javax.interceptor.Interceptor;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.interceptor.Interceptor;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,14 +23,18 @@ public class PausedMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(PausedMethodTest.Jobs.class));
 
     private static final String IDENTITY = "myScheduled";
 
+    @Inject
+    Scheduler scheduler;
+
     @Test
     public void testPause() throws InterruptedException {
         assertFalse(Jobs.LATCH.await(3, TimeUnit.SECONDS));
+        assertTrue(scheduler.isPaused(IDENTITY));
     }
 
     static class Jobs {

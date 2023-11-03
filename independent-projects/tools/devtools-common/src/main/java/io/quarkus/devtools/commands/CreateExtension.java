@@ -5,6 +5,22 @@ import static io.quarkus.devtools.commands.handlers.CreateExtensionCommandHandle
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import javax.lang.model.SourceVersion;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import org.apache.maven.model.Model;
+
 import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog;
 import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData;
 import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartProjectInput;
@@ -14,17 +30,6 @@ import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.CreateExtensionCommandHandler;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.utilities.MojoUtils;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.Stack;
-import java.util.stream.Collectors;
-import javax.lang.model.SourceVersion;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.maven.model.Model;
 
 /**
  * Instances of this class are not thread-safe. They are created per invocation.
@@ -42,6 +47,7 @@ public class CreateExtension {
     public static final String DEFAULT_BOM_ARTIFACT_ID = "quarkus-bom";
     public static final String DEFAULT_BOM_VERSION = "${quarkus.version}";
     public static final String DEFAULT_VERSION = "1.0.0-SNAPSHOT";
+    public static final String DEFAULT_QUARKIVERSE_VERSION = "999-SNAPSHOT";
 
     public static final String DEFAULT_CORE_NAMESPACE_ID = "quarkus-";
 
@@ -49,15 +55,15 @@ public class CreateExtension {
 
     public static final String DEFAULT_QUARKIVERSE_PARENT_GROUP_ID = "io.quarkiverse";
     public static final String DEFAULT_QUARKIVERSE_PARENT_ARTIFACT_ID = "quarkiverse-parent";
-    public static final String DEFAULT_QUARKIVERSE_PARENT_VERSION = "7";
+    public static final String DEFAULT_QUARKIVERSE_PARENT_VERSION = "15";
     public static final String DEFAULT_QUARKIVERSE_NAMESPACE_ID = "quarkus-";
+    public static final String DEFAULT_QUARKIVERSE_GUIDE_URL = "https://quarkiverse.github.io/quarkiverse-docs/%s/dev/";
 
-    private static final String DEFAULT_SUREFIRE_PLUGIN_VERSION = "3.0.0-M5";
-    private static final String DEFAULT_COMPILER_PLUGIN_VERSION = "3.8.1";
+    private static final String DEFAULT_SUREFIRE_PLUGIN_VERSION = "3.0.0";
+    private static final String DEFAULT_COMPILER_PLUGIN_VERSION = "3.11.0";
 
     private final QuarkusExtensionCodestartProjectInputBuilder builder = QuarkusExtensionCodestartProjectInput.builder();
     private final Path baseDir;
-    private final CreateExtensionCommandHandler handler = new CreateExtensionCommandHandler();
 
     private final EnhancedDataMap data = new EnhancedDataMap();
 
@@ -66,6 +72,7 @@ public class CreateExtension {
     private String itTestRelativeDir = "integration-tests";
     private String bomRelativeDir = "bom/application";
     private String extensionsRelativeDir = "extensions";
+    private boolean withCodestart;
 
     public CreateExtension(final Path baseDir) {
         this.baseDir = requireNonNull(baseDir, "extensionDirPath is required");
@@ -85,6 +92,11 @@ public class CreateExtension {
 
     public CreateExtension extensionName(String name) {
         data.putIfNonEmptyString(EXTENSION_NAME, name);
+        return this;
+    }
+
+    public CreateExtension extensionDescription(String description) {
+        data.putIfNonEmptyString(EXTENSION_DESCRIPTION, description);
         return this;
     }
 
@@ -153,6 +165,11 @@ public class CreateExtension {
         return this;
     }
 
+    public CreateExtension withCodestart(boolean withCodestart) {
+        this.withCodestart = withCodestart;
+        return this;
+    }
+
     public CreateExtension withoutUnitTest(boolean withoutUnitTest) {
         this.builder.withoutUnitTest(withoutUnitTest);
         return this;
@@ -194,41 +211,54 @@ public class CreateExtension {
         return this;
     }
 
-    public QuarkusCommandOutcome execute() throws QuarkusCommandException {
+    public CreateExtensionCommandHandler prepare() throws QuarkusCommandException {
         final Path workingDir = resolveWorkingDir(baseDir);
         final Model baseModel = resolveModel(baseDir);
         final LayoutType layoutType = detectLayoutType(baseModel, data.getStringValue(GROUP_ID).orElse(null));
 
-        data.putIfAbsent(NAMESPACE_ID, getDefaultNamespaceId(layoutType));
-        ensureRequiredStringData(EXTENSION_ID, resolveExtensionId());
-        data.putIfAbsent(EXTENSION_NAME, toCapWords(extensionId));
-        data.putIfAbsent(NAMESPACE_NAME, computeDefaultNamespaceName(data.getRequiredStringValue(NAMESPACE_ID)));
+        String namespaceId = getDefaultNamespaceId(layoutType);
+        data.putIfAbsent(NAMESPACE_ID, namespaceId);
+        String namespaceName = computeDefaultNamespaceName(data.getRequiredStringValue(NAMESPACE_ID));
+        String resolvedExtensionId = resolveExtensionId();
+        ensureRequiredStringData(EXTENSION_ID, resolvedExtensionId);
+        data.putIfAbsent(EXTENSION_NAME, capitalize(extensionId));
+        data.putIfAbsent(NAMESPACE_NAME, namespaceName);
         data.putIfAbsent(CLASS_NAME_BASE, toCapCamelCase(extensionId));
+        data.put(EXTENSION_FULL_NAME,
+                data.getRequiredStringValue(NAMESPACE_NAME) + data.getRequiredStringValue(EXTENSION_NAME));
 
         final String runtimeArtifactId = getRuntimeArtifactIdFromData();
 
         ensureRequiredStringData(GROUP_ID, resolveGroupId(baseModel));
-        ensureRequiredStringData(VERSION, resolveVersion(baseModel));
         ensureRequiredStringData(PACKAGE_NAME,
                 resolveExtensionPackage(data.getRequiredStringValue(GROUP_ID), extensionId));
 
         final String groupId = data.getRequiredStringValue(GROUP_ID);
-        Model itTestModel;
+        final String defaultVersion;
+        final Model itTestModel;
         String extensionDirName = runtimeArtifactId;
         switch (layoutType) {
             case QUARKUS_CORE:
             case OTHER_PLATFORM:
+                defaultVersion = DEFAULT_VERSION;
                 extensionDirName = extensionId;
                 final Model extensionsParentModel = readPom(workingDir.resolve(extensionsRelativeDir));
                 data.putIfAbsent(PROPERTIES_FROM_PARENT, true);
                 ensureRequiredStringData(PARENT_GROUP_ID, resolveGroupId(extensionsParentModel));
                 ensureRequiredStringData(PARENT_ARTIFACT_ID, resolveArtifactId(extensionsParentModel));
-                ensureRequiredStringData(PARENT_VERSION, resolveVersion(extensionsParentModel));
+                ensureRequiredStringData(PARENT_VERSION, resolveVersion(extensionsParentModel, defaultVersion));
 
                 data.putIfAbsent(PARENT_RELATIVE_PATH, "../pom.xml");
                 itTestModel = readPom(workingDir.resolve(itTestRelativeDir));
+
+                if (withCodestart) {
+                    log.warn("\nExtension Codestart is not yet available for '%s' extension (skipped).\n",
+                            layoutType.toString().toLowerCase());
+                }
+
                 break;
             case QUARKIVERSE:
+                defaultVersion = DEFAULT_QUARKIVERSE_VERSION;
                 data.putIfAbsent(PARENT_GROUP_ID, DEFAULT_QUARKIVERSE_PARENT_GROUP_ID);
                 data.putIfAbsent(PARENT_ARTIFACT_ID, DEFAULT_QUARKIVERSE_PARENT_ARTIFACT_ID);
                 data.putIfAbsent(PARENT_VERSION, DEFAULT_QUARKIVERSE_PARENT_VERSION);
@@ -236,13 +266,24 @@ public class CreateExtension {
                 data.putIfAbsent(QUARKUS_BOM_ARTIFACT_ID, DEFAULT_BOM_ARTIFACT_ID);
                 data.putIfAbsent(QUARKUS_BOM_VERSION, DEFAULT_BOM_VERSION);
                 data.putIfAbsent(MAVEN_COMPILER_PLUGIN_VERSION, DEFAULT_COMPILER_PLUGIN_VERSION);
+                data.putIfAbsent(EXTENSION_GUIDE,
+                        String.format(DEFAULT_QUARKIVERSE_GUIDE_URL, resolvedExtensionId));
                 ensureRequiredStringData(QUARKUS_VERSION);
+                data.putIfAbsent(HAS_DOCS_MODULE, true);
+                data.put(EXTENSION_FULL_NAME,
+                        capitalize(data.getRequiredStringValue(NAMESPACE_ID)) + " "
+                                + data.getRequiredStringValue(EXTENSION_NAME));
+
                 // TODO: Support Quarkiverse multi extensions repo
                 builder.addCodestart(QuarkusExtensionCodestartCatalog.Code.QUARKIVERSE.key());
                 builder.addCodestart(QuarkusExtensionCodestartCatalog.Tooling.GIT.key());
-                itTestModel = getStandaloneTempModel(workingDir, runtimeArtifactId);
+                if (withCodestart) {
+                    builder.addCodestart(QuarkusExtensionCodestartCatalog.Code.EXTENSION_CODESTART.key());
+                }
+                itTestModel = getStandaloneTempModel(workingDir, runtimeArtifactId, defaultVersion);
                 break;
             default:
+                defaultVersion = DEFAULT_VERSION;
                 data.putIfAbsent(QUARKUS_BOM_GROUP_ID, DEFAULT_BOM_GROUP_ID);
                 data.putIfAbsent(QUARKUS_BOM_ARTIFACT_ID, DEFAULT_BOM_ARTIFACT_ID);
                 data.putIfAbsent(QUARKUS_BOM_VERSION, DEFAULT_BOM_VERSION);
@@ -250,15 +291,29 @@ public class CreateExtension {
                 data.putIfAbsent(MAVEN_COMPILER_PLUGIN_VERSION, DEFAULT_COMPILER_PLUGIN_VERSION);
                 ensureRequiredStringData(QUARKUS_VERSION);
 
+                if (withCodestart) {
+                    builder.addCodestart(QuarkusExtensionCodestartCatalog.Code.EXTENSION_CODESTART.key());
+                }
+
                 // In standalone mode, the base pom is used as parent for integration tests
-                itTestModel = getStandaloneTempModel(workingDir, runtimeArtifactId);
+                itTestModel = getStandaloneTempModel(workingDir, runtimeArtifactId, defaultVersion);
                 break;
         }
 
+        ensureRequiredStringData(VERSION, resolveVersion(baseModel, defaultVersion));
+
         ensureRequiredStringData(IT_PARENT_GROUP_ID, resolveGroupId(itTestModel));
         ensureRequiredStringData(IT_PARENT_ARTIFACT_ID, resolveArtifactId(itTestModel));
-        ensureRequiredStringData(IT_PARENT_VERSION, resolveVersion(itTestModel));
+        ensureRequiredStringData(IT_PARENT_VERSION, resolveVersion(itTestModel, defaultVersion));
         ensureRequiredStringData(IT_PARENT_RELATIVE_PATH, "../pom.xml");
+
+        final Optional<String> quarkusVersion = data.getStringValue(QUARKUS_VERSION);
+        // in 2.10.0.CR1 quarkus-bootstrap-maven-plugin was deprecated in favor of quarkus-extension-maven-plugin
+        if (quarkusVersion.isPresent() &&
+                new DefaultArtifactVersion("2.10.0.CR1").compareTo(new DefaultArtifactVersion(quarkusVersion.get())) > 0) {
+            // the legacy bootstrap plugin, if MAVEN_QUARKUS_EXTENSION_PLUGIN isn't set, it will default to the quarkus-extension-maven-plugin
+            data.putIfAbsent(MAVEN_QUARKUS_EXTENSION_PLUGIN, "quarkus-bootstrap-maven-plugin");
+        }
 
         builder.addData(data);
 
@@ -269,12 +324,17 @@ public class CreateExtension {
             final Path extensionsDir = workingDir.resolve(extensionsRelativeDir);
             final Path itTestDir = workingDir.resolve(itTestRelativeDir);
             final Path bomDir = workingDir.resolve(bomRelativeDir);
-            return handler.execute(log, groupId, runtimeArtifactId, builder.build(),
+            return new CreateExtensionCommandHandler(groupId, runtimeArtifactId, builder.build(),
                     extensionsDir.resolve(extensionDirName),
                     extensionsDir,
                     itTestDir, bomDir);
         }
-        return handler.execute(log, groupId, runtimeArtifactId, builder.build(), workingDir.resolve(extensionDirName));
+        return new CreateExtensionCommandHandler(groupId, runtimeArtifactId, builder.build(),
+                workingDir.resolve(extensionDirName));
+    }
+
+    public QuarkusCommandOutcome execute() throws QuarkusCommandException {
+        return prepare().execute(log);
     }
 
     private String resolveExtensionId() {
@@ -300,7 +360,7 @@ public class CreateExtension {
         if (isEmpty(namespaceId)) {
             return "";
         }
-        return toCapWords(namespaceId) + " - ";
+        return capitalize(namespaceId) + " - ";
     }
 
     public static Model resolveModel(Path dir) throws QuarkusCommandException {
@@ -316,11 +376,11 @@ public class CreateExtension {
         }
     }
 
-    private Model getStandaloneTempModel(Path workingDir, String runtimeArtifactId) {
+    private Model getStandaloneTempModel(Path workingDir, String runtimeArtifactId, String defaultVersion) {
         final Model model = new Model();
         model.setGroupId(data.getRequiredStringValue(GROUP_ID));
         model.setArtifactId(runtimeArtifactId + "-parent");
-        model.setVersion(data.getStringValue(VERSION).orElse(DEFAULT_VERSION));
+        model.setVersion(data.getStringValue(VERSION).orElse(defaultVersion));
         model.setPomFile(workingDir.resolve("pom.xml").toFile());
         return model;
     }
@@ -373,7 +433,7 @@ public class CreateExtension {
     }
 
     static String resolveExtensionPackage(String groupId, String artifactId) {
-        final Stack<String> segments = new Stack<>();
+        final Deque<String> segments = new ArrayDeque<>();
         for (String segment : groupId.split("[.\\-]+")) {
             if (segments.isEmpty() || !segments.peek().equals(segment)) {
                 segments.add(segment);
@@ -406,12 +466,12 @@ public class CreateExtension {
                 : null;
     }
 
-    static String resolveVersion(Model basePom) {
+    static String resolveVersion(Model basePom, String defaultVersion) {
         return basePom != null ? basePom.getVersion() != null ? basePom.getVersion()
                 : basePom.getParent() != null && basePom.getParent().getVersion() != null
                         ? basePom.getParent().getVersion()
-                        : DEFAULT_VERSION
-                : DEFAULT_VERSION;
+                        : defaultVersion
+                : defaultVersion;
     }
 
     static String toCapCamelCase(String name) {
@@ -425,7 +485,12 @@ public class CreateExtension {
         return sb.toString();
     }
 
-    static String toCapWords(String name) {
+    static String capitalize(String name) {
+        // do not capitalize if the string already contains upper case characters
+        if (hasUpperCaseCharacter(name)) {
+            return name;
+        }
+
         final StringBuilder sb = new StringBuilder(name.length());
         for (String segment : name.split("[.\\-]+")) {
             if (sb.length() > 0) {
@@ -439,6 +504,15 @@ public class CreateExtension {
         return sb.toString();
     }
 
+    public static boolean hasUpperCaseCharacter(String s) {
+        for (int i = 0; i < s.length(); i++) {
+            if (Character.isUpperCase(s.charAt(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static class EnhancedDataMap extends HashMap<String, Object> {
 
         public Optional<String> getStringValue(QuarkusExtensionData key) {
@@ -448,6 +522,10 @@ public class CreateExtension {
 
         public void putIfAbsent(QuarkusExtensionData dataKey, Object value) {
             this.putIfAbsent(dataKey.key(), value);
+        }
+
+        public void put(QuarkusExtensionData dataKey, Object value) {
+            this.put(dataKey.key(), value);
         }
 
         public void putIfNonEmptyString(QuarkusExtensionData dataKey, String value) {

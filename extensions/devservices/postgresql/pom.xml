@@ -28,7 +28,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit4-mock</artifactId>
+            <artifactId>quarkus-devservices-common</artifactId>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -40,12 +40,18 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.logmanager</groupId> 
-            <artifactId>jboss-logmanager-embedded</artifactId> 
-            <scope>test</scope> 
+            <groupId>org.jboss.logmanager</groupId>
+            <artifactId>jboss-logmanager</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

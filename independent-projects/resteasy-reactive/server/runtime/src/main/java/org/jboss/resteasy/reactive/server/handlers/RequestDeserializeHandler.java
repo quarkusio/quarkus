@@ -3,17 +3,20 @@ package org.jboss.resteasy.reactive.server.handlers;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.List;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.NotSupportedException;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.NoContentException;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.ReaderInterceptor;
+
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.NotSupportedException;
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.NoContentException;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.MessageBodyReader;
+import jakarta.ws.rs.ext.ReaderInterceptor;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -28,34 +31,47 @@ public class RequestDeserializeHandler implements ServerRestHandler {
 
     private final Class<?> type;
     private final Type genericType;
-    private final MediaType mediaType;
+    private final List<MediaType> acceptableMediaTypes;
     private final ServerSerialisers serialisers;
     private final int parameterIndex;
 
-    public RequestDeserializeHandler(Class<?> type, Type genericType, MediaType mediaType, ServerSerialisers serialisers,
+    public RequestDeserializeHandler(Class<?> type, Type genericType, List<MediaType> acceptableMediaTypes,
+            ServerSerialisers serialisers,
             int parameterIndex) {
         this.type = type;
         this.genericType = genericType;
-        this.mediaType = mediaType;
+        this.acceptableMediaTypes = acceptableMediaTypes;
         this.serialisers = serialisers;
         this.parameterIndex = parameterIndex;
     }
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        MediaType effectiveRequestType = mediaType;
-        String requestTypeString = requestContext.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
-        if (requestTypeString != null) {
+        requestContext.requireCDIRequestScope();
+        MediaType effectiveRequestType = null;
+        Object requestType = requestContext.getHeader(HttpHeaders.CONTENT_TYPE, true);
+        if (requestType != null) {
             try {
-                effectiveRequestType = MediaTypeHelper.withSuffixAsSubtype(MediaType.valueOf(requestTypeString));
+                effectiveRequestType = MediaType.valueOf((String) requestType);
             } catch (Exception e) {
+                log.debugv("Incorrect media type", e);
                 throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
             }
-        } else if (effectiveRequestType == null) {
+
+            // We need to verify media type for sub-resources, this mimics what is done in {@code ClassRoutingHandler}
+            if (MediaTypeHelper.getFirstMatch(
+                    acceptableMediaTypes,
+                    Collections.singletonList(effectiveRequestType)) == null) {
+                throw new NotSupportedException("The content-type header value did not match the value in @Consumes");
+            }
+        } else if (!acceptableMediaTypes.isEmpty()) {
+            effectiveRequestType = acceptableMediaTypes.get(0);
+        } else {
             effectiveRequestType = MediaType.APPLICATION_OCTET_STREAM_TYPE;
         }
         List<MessageBodyReader<?>> readers = serialisers.findReaders(null, type, effectiveRequestType, RuntimeType.SERVER);
         if (readers.isEmpty()) {
+            log.debugv("No matching MessageBodyReader found for type {0} and media type {1}", type, effectiveRequestType);
             throw new NotSupportedException();
         }
         for (MessageBodyReader<?> reader : readers) {
@@ -72,7 +88,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
                                     type, genericType, effectiveRequestType, reader, requestContext.getInputStream(),
                                     interceptors,
                                     serialisers)
-                                            .proceed();
+                                    .proceed();
                         }
                     } catch (NoContentException e) {
                         throw new BadRequestException(e);
@@ -88,7 +104,8 @@ public class RequestDeserializeHandler implements ServerRestHandler {
                 return;
             }
         }
-        throw new NotSupportedException();
+        log.debugv("No matching MessageBodyReader found for type {0} and media type {1}", type, effectiveRequestType);
+        throw new NotSupportedException("No supported MessageBodyReader found");
     }
 
     private boolean isReadable(MessageBodyReader<?> reader, ResteasyReactiveRequestContext requestContext,
@@ -104,6 +121,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
     @SuppressWarnings("unchecked")
     public Object readFrom(MessageBodyReader<?> reader, ResteasyReactiveRequestContext requestContext, MediaType requestType)
             throws IOException {
+        requestContext.requireCDIRequestScope();
         if (reader instanceof ServerMessageBodyReader) {
             return ((ServerMessageBodyReader<?>) reader).readFrom((Class) type, genericType, requestType, requestContext);
         }

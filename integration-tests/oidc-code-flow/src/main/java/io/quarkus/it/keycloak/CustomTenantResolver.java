@@ -2,9 +2,10 @@ package io.quarkus.it.keycloak;
 
 import java.util.List;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.oidc.TenantResolver;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
@@ -51,8 +52,26 @@ public class CustomTenantResolver implements TenantResolver {
             return "tenant-autorefresh";
         }
 
+        if (path.contains("tenant-refresh")) {
+            return "tenant-refresh";
+        }
+
         if (path.contains("tenant-https")) {
-            return "tenant-https";
+            if (context.getCookie("q_session_tenant-https_test") != null) {
+                context.put("reauthenticated", "true");
+                return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+            } else {
+                return "tenant-https";
+            }
+        }
+
+        if (path.contains("tenant-nonce")) {
+            if (context.getCookie("q_session_tenant-nonce") != null) {
+                context.put("reauthenticated", "true");
+                return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+            } else {
+                return "tenant-nonce";
+            }
         }
 
         if (path.contains("tenant-xhr")) {
@@ -65,11 +84,6 @@ public class CustomTenantResolver implements TenantResolver {
 
         if (path.contains("tenant-cookie-path-header")) {
             return "tenant-cookie-path-header";
-        }
-
-        if (path.contains("callback-before-wrong-redirect")) {
-            return context.getCookie("q_auth_tenant-before-wrong-redirect") == null ? "tenant-before-wrong-redirect"
-                    : "tenant-1";
         }
 
         if (path.contains("callback-after-redirect") || path.contains("callback-before-redirect")) {
@@ -88,6 +102,6 @@ public class CustomTenantResolver implements TenantResolver {
             return "tenant-2";
         }
 
-        return null;
+        return OidcUtils.DEFAULT_TENANT_ID;
     }
 }

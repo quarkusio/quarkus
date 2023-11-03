@@ -1,9 +1,9 @@
 package io.quarkus.it.mailer;
 
 import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 @QuarkusTestResource(FakeMailerTestResource.class)
 public class MailerIT extends MailerTest {
 

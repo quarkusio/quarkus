@@ -1,6 +1,6 @@
 package io.quarkus.it.rest;
 
-import javax.ws.rs.GET;
+import jakarta.ws.rs.GET;
 
 /**
  * Disabled by default as it establishes external connections.

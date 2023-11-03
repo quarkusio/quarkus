@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+
 import org.jboss.logging.Logger;
 
 /**
@@ -36,6 +37,50 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     static {
         registerAsParallelCapable();
+    }
+
+    public static List<ClassPathElement> getElements(String resourceName, boolean onlyFromCurrentClassLoader) {
+        final ClassLoader ccl = Thread.currentThread().getContextClassLoader();
+        if (!(ccl instanceof QuarkusClassLoader)) {
+            throw new IllegalStateException("The current classloader is not an instance of "
+                    + QuarkusClassLoader.class.getName() + " but " + ccl.getClass().getName());
+        }
+        return ((QuarkusClassLoader) ccl).getElementsWithResource(resourceName, onlyFromCurrentClassLoader);
+    }
+
+    public List<ClassPathElement> getAllElements(boolean onlyFromCurrentClassLoader) {
+        List<ClassPathElement> ret = new ArrayList<>();
+        if (parent instanceof QuarkusClassLoader && !onlyFromCurrentClassLoader) {
+            ret.addAll(((QuarkusClassLoader) parent).getAllElements(onlyFromCurrentClassLoader));
+        }
+        ret.addAll(elements);
+        return ret;
+    }
+
+    /**
+     * Indicates if a given class is present at runtime.
+     *
+     * @param className the name of the class.
+     */
+    public static boolean isClassPresentAtRuntime(String className) {
+        return isResourcePresentAtRuntime(className.replace('.', '/') + ".class");
+    }
+
+    /**
+     * Indicates if a given resource is present at runtime.
+     * Can also be used to check if a class is present as a class is just a regular resource.
+     *
+     * @param resourcePath the path of the resource, for instance {@code path/to/my-resources.properties} for a properties file
+     *        or {@code my/package/MyClass.class} for a class.
+     */
+    public static boolean isResourcePresentAtRuntime(String resourcePath) {
+        for (ClassPathElement cpe : QuarkusClassLoader.getElements(resourcePath, false)) {
+            if (cpe.isRuntime()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private final String name;
@@ -86,6 +131,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private volatile boolean driverLoaded;
 
     private QuarkusClassLoader(Builder builder) {
+        // Not passing the name to the parent constructor on purpose:
+        // stacktraces become very ugly if we do that.
         super(builder.parent);
         this.name = builder.name;
         this.elements = builder.elements;
@@ -95,7 +142,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         this.parent = builder.parent;
         this.parentFirst = builder.parentFirst;
         this.resettableElement = builder.resettableElement;
-        this.transformedClasses = new MemoryClassPathElement(builder.transformedClasses);
+        this.transformedClasses = new MemoryClassPathElement(builder.transformedClasses, true);
         this.aggregateParentResources = builder.aggregateParentResources;
         this.classLoaderEventListeners = builder.classLoaderEventListeners.isEmpty() ? Collections.emptyList()
                 : builder.classLoaderEventListeners;
@@ -151,7 +198,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             throw new IllegalStateException("Classloader is not resettable");
         }
         synchronized (this) {
-            this.transformedClasses = new MemoryClassPathElement(transformedClasses);
+            this.transformedClasses = new MemoryClassPathElement(transformedClasses, true);
             resettableElement.reset(generatedResources);
             state = null;
         }
@@ -166,13 +213,11 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         for (ClassLoaderEventListener l : classLoaderEventListeners) {
             l.enumeratingResourceURLs(unsanitisedName, this.name);
         }
-        boolean endsWithTrailingSlash = unsanitisedName.endsWith("/");
         ClassLoaderState state = getState();
         String name = sanitizeName(unsanitisedName);
         //for resources banned means that we don't delegate to the parent, as there can be multiple resources
         //for single resources we still respect this
         boolean banned = state.bannedResources.contains(name);
-        Set<URL> resources = new LinkedHashSet<>();
 
         //this is a big of a hack, but is necessary to prevent service leakage
         //in some situations (looking at you gradle) the parent can contain the same
@@ -196,8 +241,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         }
         //TODO: in theory resources could have been added in dev mode
         //but I don't thing this really matters for this code path
+        Set<URL> resources = new LinkedHashSet<>();
         ClassPathElement[] providers = state.loadableResources.get(name);
         if (providers != null) {
+            boolean endsWithTrailingSlash = unsanitisedName.endsWith("/");
             for (ClassPathElement element : providers) {
                 ClassPathResource res = element.getResource(name);
                 //if the requested name ends with a trailing / we make sure
@@ -304,7 +351,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         for (ClassLoaderEventListener l : classLoaderEventListeners) {
             l.gettingURLFromResource(unsanitisedName, this.name);
         }
-        boolean endsWithTrailingSlash = unsanitisedName.endsWith("/");
         String name = sanitizeName(unsanitisedName);
         ClassLoaderState state = getState();
         if (state.bannedResources.contains(name)) {
@@ -313,10 +359,16 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         //TODO: because of dev mode we iterate, to see if any resources were added
         //not for .class files though, adding them causes a restart
         //this is very important for bytebuddy performance
+        boolean endsWithTrailingSlash = unsanitisedName.endsWith("/");
         if (name.endsWith(".class") && !endsWithTrailingSlash) {
             ClassPathElement[] providers = state.loadableResources.get(name);
             if (providers != null) {
-                return providers[0].getResource(name).getUrl();
+                final ClassPathResource resource = providers[0].getResource(name);
+                if (resource == null) {
+                    throw new IllegalStateException(providers[0] + " from " + getName() + " (closed=" + this.isClosed()
+                            + ") was expected to provide " + name + " but failed");
+                }
+                return resource.getUrl();
             }
         } else {
             for (ClassPathElement i : elements) {
@@ -356,7 +408,12 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         if (name.endsWith(".class")) {
             ClassPathElement[] providers = state.loadableResources.get(name);
             if (providers != null) {
-                return new ByteArrayInputStream(providers[0].getResource(name).getData());
+                final ClassPathResource resource = providers[0].getResource(name);
+                if (resource == null) {
+                    throw new IllegalStateException(providers[0] + " from " + getName() + " (closed=" + this.isClosed()
+                            + ") was expected to provide " + name + " but failed");
+                }
+                return new ByteArrayInputStream(resource.getData());
             }
         } else {
             for (ClassPathElement i : elements) {
@@ -397,11 +454,17 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         }
     }
 
+    protected URL findResource(String name) {
+        return getResource(name);
+    }
+
+    @Override
+    protected Enumeration<URL> findResources(String name) throws IOException {
+        return getResources(name);
+    }
+
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
-        for (ClassLoaderEventListener l : classLoaderEventListeners) {
-            l.loadClass(name, this.name);
-        }
         return loadClass(name, false);
     }
 
@@ -424,10 +487,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                     return c;
                 }
                 String resourceName = sanitizeName(name).replace('.', '/') + ".class";
-                boolean parentFirst = parentFirst(resourceName, state);
                 if (state.bannedResources.contains(resourceName)) {
                     throw new ClassNotFoundException(name);
                 }
+                boolean parentFirst = parentFirst(resourceName, state);
                 if (parentFirst) {
                     try {
                         return parent.loadClass(name);
@@ -443,7 +506,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                         byte[] data = classPathElementResource.getData();
                         definePackage(name, classPathElement);
                         Class<?> cl = defineClass(name, data, 0, data.length,
-                                protectionDomains.computeIfAbsent(classPathElement, (ce) -> ce.getProtectionDomain(this)));
+                                protectionDomains.computeIfAbsent(classPathElement, ClassPathElement::getProtectionDomain));
                         if (Driver.class.isAssignableFrom(cl)) {
                             driverLoaded = true;
                         }
@@ -529,13 +592,14 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         return ret;
     }
 
-    @SuppressWarnings("unused")
     public Class<?> visibleDefineClass(String name, byte[] b, int off, int len) throws ClassFormatError {
         return super.defineClass(name, b, off, len);
     }
 
     public void addCloseTask(Runnable task) {
-        closeTasks.add(task);
+        synchronized (closeTasks) {
+            closeTasks.add(task);
+        }
     }
 
     @Override
@@ -546,7 +610,11 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             }
             closed = true;
         }
-        for (Runnable i : closeTasks) {
+        List<Runnable> tasks;
+        synchronized (closeTasks) {
+            tasks = new ArrayList<>(closeTasks);
+        }
+        for (Runnable i : tasks) {
             try {
                 i.run();
             } catch (Throwable t) {

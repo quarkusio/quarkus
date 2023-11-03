@@ -8,7 +8,7 @@ import io.quarkus.container.image.deployment.util.ImageUtil;
 public enum OpenshiftBaseNativeImage {
 
     //We only compare `repositories` so registries and tags are stripped
-    QUARKUS("quarkus/ubi-quarkus-native-binary-s2i:latest", "/home/quarkus/", "application", "QUARKUS_HOME", "QUARKUS_OPTS");
+    QUARKUS("quarkus/ubi-quarkus-native-binary-s2i:2.0", "/home/quarkus/", "application", "QUARKUS_HOME", "QUARKUS_OPTS");
 
     private final String image;
     private final String nativeBinaryDirectory;
@@ -42,7 +42,7 @@ public enum OpenshiftBaseNativeImage {
         return nativeBinaryDirectory;
     }
 
-    public String getFixedNativeNinaryName() {
+    public String getFixedNativeBinaryName() {
         return this.fixedNativeBinaryName;
     }
 

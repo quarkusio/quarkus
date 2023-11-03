@@ -1,6 +1,7 @@
 package io.quarkus.logging.gelf;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
@@ -38,7 +39,7 @@ public class GelfConfig {
 
     /**
      * Whether to post Stack-Trace to StackTrace field.
-     * 
+     *
      * @see #stackTraceThrowableReference to customize the way the Stack-Trace is handled.
      */
     @ConfigItem(defaultValue = "true")
@@ -82,7 +83,7 @@ public class GelfConfig {
     /**
      * Post additional fields.
      * You can add static fields to each log event in the following form:
-     * 
+     *
      * <pre>
      * quarkus.log.handler.gelf.additional-field.field1.value=value1
      * quarkus.log.handler.gelf.additional-field.field1.type=String
@@ -117,4 +118,17 @@ public class GelfConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean includeLocation;
+
+    /**
+     * Origin hostname
+     */
+    @ConfigItem
+    public Optional<String> originHost;
+
+    /**
+     * Bypass hostname resolution. If you didn't set the {@code originHost} property, and resolution is disabled, the value
+     * “unknown” will be used as hostname
+     */
+    @ConfigItem
+    public boolean skipHostnameResolution;
 }

@@ -1,12 +1,18 @@
 package io.quarkus.bootstrap.resolver;
 
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.UUID;
+
+import org.eclipse.aether.artifact.DefaultArtifact;
+
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 /**
  *
@@ -18,14 +24,14 @@ public class TsRepoBuilder {
         throw new IllegalStateException(message, t);
     }
 
-    public static TsRepoBuilder getInstance(BootstrapAppModelResolver resolver, Path workDir) {
+    public static TsRepoBuilder getInstance(MavenArtifactResolver resolver, Path workDir) {
         return new TsRepoBuilder(resolver, workDir);
     }
 
     protected final Path workDir;
-    private final BootstrapAppModelResolver resolver;
+    private final MavenArtifactResolver resolver;
 
-    private TsRepoBuilder(BootstrapAppModelResolver resolver, Path workDir) {
+    private TsRepoBuilder(MavenArtifactResolver resolver, Path workDir) {
         this.resolver = resolver;
         this.workDir = workDir;
     }
@@ -49,7 +55,7 @@ public class TsRepoBuilder {
         } catch (Exception e) {
             error("Failed to persist pom.xml for " + artifact, e);
         }
-        install(artifact.toPomArtifact().toAppArtifact(), pomXml);
+        install(artifact.toPomArtifact().toArtifact(), pomXml);
         if (p == null) {
             switch (artifact.type) {
                 case TsArtifact.TYPE_JAR:
@@ -71,14 +77,16 @@ public class TsRepoBuilder {
             }
         }
         if (p != null) {
-            install(artifact.toAppArtifact(), p);
+            install(artifact.toArtifact(), p);
         }
     }
 
-    protected void install(AppArtifact artifact, Path file) {
+    protected void install(ArtifactCoords artifact, Path file) {
         try {
-            resolver.install(artifact, file);
-        } catch (AppModelResolverException e) {
+            resolver.install(new DefaultArtifact(artifact.getGroupId(), artifact.getArtifactId(), artifact.getClassifier(),
+                    artifact.getType(),
+                    artifact.getVersion(), Map.of(), file.toFile()));
+        } catch (BootstrapMavenException e) {
             error("Failed to install " + artifact, e);
         }
     }

@@ -5,16 +5,21 @@ import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
@@ -33,6 +38,7 @@ import org.jboss.jandex.TypeVariable;
 public final class JandexUtil {
 
     public final static DotName DOTNAME_OBJECT = DotName.createSimple(Object.class.getName());
+    public final static DotName DOTNAME_RECORD = DotName.createSimple("java.lang.Record");
 
     private JandexUtil() {
     }
@@ -56,6 +62,15 @@ public final class JandexUtil {
             throw new RuntimeException(e);
         }
         return indexer.complete();
+    }
+
+    public static IndexView createCalculatingIndex(Path path) {
+        Index index = createIndex(path);
+        return new CalculatingIndexView(index, Thread.currentThread().getContextClassLoader(), new ConcurrentHashMap<>());
+    }
+
+    public static IndexView createCalculatingIndex(IndexView index) {
+        return new CalculatingIndexView(index, Thread.currentThread().getContextClassLoader(), new ConcurrentHashMap<>());
     }
 
     /**
@@ -132,7 +147,7 @@ public final class JandexUtil {
         }
 
         // always end at Object
-        if (DOTNAME_OBJECT.equals(name)) {
+        if (DOTNAME_OBJECT.equals(name) || DOTNAME_RECORD.equals(name)) {
             return null;
         }
 
@@ -235,7 +250,7 @@ public final class JandexUtil {
     private static boolean containsTypeParameters(Type type) {
         switch (type.kind()) {
             case ARRAY:
-                return containsTypeParameters(type.asArrayType().component());
+                return containsTypeParameters(type.asArrayType().constituent());
             case PARAMETERIZED_TYPE:
                 ParameterizedType parameterizedType = type.asParameterizedType();
                 if (parameterizedType.owner() != null
@@ -261,7 +276,7 @@ public final class JandexUtil {
         switch (type.kind()) {
             case ARRAY:
                 ArrayType arrayType = type.asArrayType();
-                return ArrayType.create(mapGenerics(arrayType.component(), mapping), arrayType.dimensions());
+                return ArrayType.create(mapGenerics(arrayType.constituent(), mapping), arrayType.dimensions());
             case CLASS:
                 return type;
             case PARAMETERIZED_TYPE:
@@ -292,25 +307,32 @@ public final class JandexUtil {
     }
 
     /**
-     * Returns the enclosing class of the given annotation instance. For field or method annotations this
-     * will return the enclosing class. For parameters, this will return the enclosing class of the enclosing
-     * method. For classes it will return the class itself.
+     * Returns the enclosing class of the given annotation instance. For field, method or record component annotations,
+     * this will return the enclosing class. For parameters, this will return the enclosing class of the enclosing
+     * method. For classes, it will return the class itself. For type annotations, it will return the class enclosing
+     * the annotated type usage.
      *
-     * @param annotationInstance the annotation whose enclosing class to look up.
-     * @return the enclosing class.
+     * @param annotationInstance the annotation whose enclosing class to look up
+     * @return the enclosing class
      */
     public static ClassInfo getEnclosingClass(AnnotationInstance annotationInstance) {
-        switch (annotationInstance.target().kind()) {
+        return getEnclosingClass(annotationInstance.target());
+    }
+
+    private static ClassInfo getEnclosingClass(AnnotationTarget annotationTarget) {
+        switch (annotationTarget.kind()) {
             case FIELD:
-                return annotationInstance.target().asField().declaringClass();
+                return annotationTarget.asField().declaringClass();
             case METHOD:
-                return annotationInstance.target().asMethod().declaringClass();
+                return annotationTarget.asMethod().declaringClass();
             case METHOD_PARAMETER:
-                return annotationInstance.target().asMethodParameter().method().declaringClass();
+                return annotationTarget.asMethodParameter().method().declaringClass();
+            case RECORD_COMPONENT:
+                return annotationTarget.asRecordComponent().declaringClass();
             case CLASS:
-                return annotationInstance.target().asClass();
+                return annotationTarget.asClass();
             case TYPE:
-                return annotationInstance.target().asType().asClass(); // TODO is it legal here or should I throw ?
+                return getEnclosingClass(annotationTarget.asType().enclosingTarget());
             default:
                 throw new RuntimeException(); // this should not occur
         }
@@ -327,7 +349,7 @@ public final class JandexUtil {
      * @throws RuntimeException if one of the superclasses is not indexed.
      */
     public static boolean isSubclassOf(IndexView index, ClassInfo info, DotName parentName) {
-        if (info.superName().equals(DOTNAME_OBJECT)) {
+        if (info.superName().equals(DOTNAME_OBJECT) || info.superName().equals(DOTNAME_RECORD)) {
             return false;
         }
         if (info.superName().equals(parentName)) {
@@ -344,29 +366,93 @@ public final class JandexUtil {
         return isSubclassOf(index, superClass, parentName);
     }
 
-    @SuppressWarnings("incomplete-switch")
-    public static String getBoxedTypeName(Type type) {
-        switch (type.kind()) {
-            case PRIMITIVE:
-                switch (type.asPrimitiveType().primitive()) {
-                    case BOOLEAN:
-                        return "java.lang.Boolean";
-                    case BYTE:
-                        return "java.lang.Byte";
-                    case CHAR:
-                        return "java.lang.Character";
-                    case DOUBLE:
-                        return "java.lang.Double";
-                    case FLOAT:
-                        return "java.lang.Float";
-                    case INT:
-                        return "java.lang.Integer";
-                    case LONG:
-                        return "java.lang.Long";
-                    case SHORT:
-                        return "java.lang.Short";
-                }
-        }
-        return type.toString();
+    /**
+     * Returns true if the given Jandex ClassInfo is a subclass of or inherits the given <tt>name</tt>.
+     *
+     * @param index the index to use to look up super classes.
+     * @param info the ClassInfo we want to check.
+     * @param name the name of the superclass or interface we want to find.
+     * @throws RuntimeException if one of the superclasses is not indexed.
+     */
+    public static boolean isImplementorOf(IndexView index, ClassInfo info, DotName name) {
+        return isImplementorOf(index, info, name, Collections.emptySet());
     }
+
+    /**
+     * Returns true if the given Jandex ClassInfo is a subclass of or inherits the given <tt>name</tt>.
+     *
+     * @param index the index to use to look up super classes.
+     * @param info the ClassInfo we want to check.
+     * @param name the name of the superclass or interface we want to find.
+     * @param additionalIgnoredSuperClasses return false if the class has any of these as a superclass.
+     * @throws RuntimeException if one of the superclasses is not indexed.
+     */
+    public static boolean isImplementorOf(IndexView index, ClassInfo info, DotName name,
+            Set<DotName> additionalIgnoredSuperClasses) {
+        // Check interfaces
+        List<DotName> interfaceNames = info.interfaceNames();
+        for (DotName interfaceName : interfaceNames) {
+            if (interfaceName.equals(name)) {
+                return true;
+            }
+        }
+
+        // Check direct hierarchy
+        DotName superDotName = info.superName();
+        if (superDotName.equals(DOTNAME_OBJECT) || superDotName.equals(DOTNAME_RECORD)
+                || additionalIgnoredSuperClasses.contains(superDotName)) {
+            return false;
+        }
+        if (info.superName().equals(name)) {
+            return true;
+        }
+
+        // climb up the hierarchy of classes
+        Type superType = info.superClassType();
+        ClassInfo superClass = index.getClassByName(superType.name());
+        if (superClass == null) {
+            // this can happen if the parent is not inside the Jandex index
+            throw new RuntimeException("The class " + superType.name() + " is not inside the Jandex index");
+        }
+        return isImplementorOf(index, superClass, name, additionalIgnoredSuperClasses);
+    }
+
+    public static boolean isAssignableFrom(DotName superType, DotName subType, IndexView index) {
+        // java.lang.Object is assignable from any type
+        if (superType.equals(DOTNAME_OBJECT)) {
+            return true;
+        }
+        // type1 is the same as type2
+        if (superType.equals(subType)) {
+            return true;
+        }
+        // type1 is a superclass
+        return findSupertypes(subType, index).contains(superType);
+    }
+
+    private static Set<DotName> findSupertypes(DotName name, IndexView index) {
+        Set<DotName> result = new HashSet<>();
+
+        Deque<DotName> workQueue = new ArrayDeque<>();
+        workQueue.add(name);
+        while (!workQueue.isEmpty()) {
+            DotName type = workQueue.poll();
+            if (result.contains(type)) {
+                continue;
+            }
+            result.add(type);
+
+            ClassInfo clazz = index.getClassByName(type);
+            if (clazz == null) {
+                continue;
+            }
+            if (clazz.superName() != null) {
+                workQueue.add(clazz.superName());
+            }
+            workQueue.addAll(clazz.interfaceNames());
+        }
+
+        return result;
+    }
+
 }

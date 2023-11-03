@@ -8,22 +8,22 @@
  * To use the active record pattern, make your entities extend {@link io.quarkus.hibernate.reactive.panache.PanacheEntity},
  * use public fields for your columns, use the existing operations defined as static methods on your entity class,
  * and define custom ones as static methods on your entity class:
- * 
+ *
  * <code><pre>
  * &#64;Entity
  * public class Person extends PanacheEntity {
  *     public String name;
  *     public LocalDate birth;
  *     public PersonStatus status;
- *     
+ *
  *     public static Person findByName(String name){
  *       return find("name", name).firstResult();
  *     }
- *     
+ *
  *     public static List&lt;Person&gt; findAlive(){
  *       return list("status", Status.Alive);
  *     }
- *     
+ *
  *     public static void deleteStefs(){
  *       delete("name", "Stef");
  *     }
@@ -49,9 +49,9 @@
  *   }
  * }
  * </pre></code>
- * 
+ *
  * <h2>Simplified queries</h2>
- * 
+ *
  * <p>
  * Normally, HQL queries are of this form: <code>from EntityName [where ...] [order by ...]</code>, with optional elements
  * at the end.
@@ -65,7 +65,7 @@
  * <code>from EntityName where &lt;singleColumnName&gt; = ?</code></li>
  * <li><code>&lt;query&gt;</code> will expand to <code>from EntityName where &lt;query&gt;</code></li>
  * </ul>
- * 
+ *
  * If your update query does not start with <code>update from</code>, we support the following additional forms:
  * </p>
  * <ul>
@@ -87,7 +87,7 @@
  *
  * We also support named queries, for Panache to know that a query is a named query and not an HQL one, you need
  * to prefix the name of the query with '#'.
- * 
+ *
  * @author Stéphane Épardaud
  */
 package io.quarkus.hibernate.reactive.panache;

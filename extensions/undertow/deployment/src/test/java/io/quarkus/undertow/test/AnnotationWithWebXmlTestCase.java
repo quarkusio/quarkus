@@ -2,9 +2,7 @@ package io.quarkus.undertow.test;
 
 import static org.hamcrest.Matchers.containsString;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -47,7 +45,7 @@ public class AnnotationWithWebXmlTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(WebXmlServlet.class, TestServlet.class,
                             WebXmlFilter.class, AnnotatedFilter.class,
                             WebXmlListener.class, AnnotatedListener.class, TestGreeter.class)

@@ -4,10 +4,10 @@ import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsDependency;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
 
-public class BasicExecutableOutputOutcomeTest extends ExecutableOutputOutcomeTestBase {
+public class BasicExecutableOutputOutcomeTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
-    protected TsArtifact modelApp() {
+    protected TsArtifact composeApplication() {
         final TsQuarkusExt coreExt = new TsQuarkusExt("core-ext");
         addToExpectedLib(coreExt.getRuntime());
 
@@ -31,7 +31,7 @@ public class BasicExecutableOutputOutcomeTest extends ExecutableOutputOutcomeTes
         final TsArtifact providedDep = TsArtifact.jar("provided-dep");
 
         final TsArtifact optionalDep = TsArtifact.jar("optional-dep");
-        addToExpectedLib(optionalDep); // TODO should direct optional deps be included?
+        addToExpectedLib(optionalDep);
 
         final TsArtifact directRtDep = TsArtifact.jar("runtime-dep");
         addToExpectedLib(directRtDep);

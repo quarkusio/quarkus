@@ -3,14 +3,17 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Simplified MongoDB with Panache and Kotlin
-
-include::./attributes.adoc[]
+= Simplified MongoDB with Panache and Kotlin
+include::_attributes.adoc[]
+:categories: data, alt-languages
+:summary: This guide covers the usage of MongoDB using active records and repositories in a Kotlin project.
 :config-file: application.properties
+:topics: data,mongodb,nosql,panache,kotlin
+:extensions: io.quarkus:quarkus-mongodb-panache-kotlin,io.quarkus:quarkus-mongodb-panache,io.quarkus:quarkus-mongodb-client
 
 MongoDB is a well known NoSQL Database that is widely used. MongoDB with Panache offers a
 new layer atop this familiar framework.  This guide will not dive in to the specifics of either as those are already
-covered in the link:mongodb-panache[MongoDB with Panache guide].  In this guide, we'll cover the Kotlin specific changes
+covered in the xref:mongodb-panache.adoc[MongoDB with Panache guide].  In this guide, we'll cover the Kotlin specific changes
 needed to use MongoDB with Panache in your Kotlin-based Quarkus applications.
 
 == First: an example
@@ -35,7 +38,7 @@ https://kotlinlang.org/docs/tutorials/kotlin-for-py/objects-and-companion-object
 [source,kotlin]
 ----
 class Person : PanacheMongoEntity() {
-    companion object: PanacheCompanion<Person> {  // <1>
+    companion object: PanacheMongoCompanion<Person> {  // <1>
         fun findByName(name: String) = find("name", name).firstResult()
         fun findAlive() = list("status", Status.Alive)
         fun deleteStefs() = delete("name", "Stef")
@@ -132,7 +135,7 @@ personRepository.delete(person);
 val allPersons = personRepository.listAll()
 
 // finding a specific person by ID
-// here we build a new ObjectId but you can also retrieve it from the existing entity after being persisted
+// here we build a new ObjectId, but you can also retrieve it from the existing entity after being persisted
 ObjectId personId = new ObjectId(idAsString);
 person = personRepository.findById(personId) ?: throw Exception("No person with that ID")
 
@@ -155,7 +158,7 @@ personRepository.deleteAll()
 val deleted = personRepository.deleteById(personId)
 
 // set the name of all living persons to 'Mortal'
-personRepository.update("name = 'Mortal' where status = ?1", Status.Alive)
+var updated = personRepository.update("name", "Mortal").where("status", Status.Alive)
 
 ----
 
@@ -169,7 +172,7 @@ val namesButEmmanuels = persons
     .filter { it != "emmanuel" }
 ----
 
-For more examples, please consult the link:mongodb-panache[Java version] for complete details.  Both APIs
+For more examples, please consult the xref:mongodb-panache.adoc[Java version] for complete details.  Both APIs
 are the same and work identically except for some Kotlin-specific tweaks to make things feel more natural to
 Kotlin developers.  These tweaks include things like better use of nullability and the lack of `Optional` on API
 methods.
@@ -180,14 +183,21 @@ To get started using MongoDB with Panache with Kotlin, you can, generally, follo
 change to configuring your project is the Quarkus artifact to include.  You can, of course, keep the Java version if you
 need but if all you need are the Kotlin APIs then include the following dependency instead:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-<dependencies>
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-mongodb-panache-kotlin</artifactId>  // <1>
-    </dependency>
-</dependencies>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-mongodb-panache-kotlin</artifactId>  // <1>
+</dependency>
+----
+<1>  Note the addition of `-kotlin` on the end.  Generally you'll only need this version but if your project will be using
+both Java and Kotlin code, you can safely include both artifacts.
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-mongodb-panache-kotlin") <1>
 ----
 <1>  Note the addition of `-kotlin` on the end.  Generally you'll only need this version but if your project will be using
 both Java and Kotlin code, you can safely include both artifacts.

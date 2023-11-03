@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.cache.runtime.CompositeCacheKey;
+import io.quarkus.cache.CompositeCacheKey;
 
 public class CompositeCacheKeyTest {
 

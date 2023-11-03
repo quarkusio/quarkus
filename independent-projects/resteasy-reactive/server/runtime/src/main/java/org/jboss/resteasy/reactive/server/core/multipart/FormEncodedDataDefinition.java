@@ -4,9 +4,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
+import java.nio.charset.StandardCharsets;
+import java.util.Set;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.util.URLUtils;
@@ -25,7 +29,7 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
     private static final Logger log = Logger.getLogger(FormEncodedDataDefinition.class);
 
     public static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
-    private String defaultEncoding = "ISO-8859-1";
+    private String defaultCharset = StandardCharsets.UTF_8.displayName();;
     private boolean forceCreation = false; //if the parser should be created even if the correct headers are missing
     private int maxParams = 1000;
     private long maxAttributeSize = 2048;
@@ -34,11 +38,11 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
     }
 
     @Override
-    public FormDataParser create(final ResteasyReactiveRequestContext exchange) {
+    public FormDataParser create(final ResteasyReactiveRequestContext exchange, Set<String> fileFormNames) {
         String mimeType = exchange.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
         if (forceCreation || (mimeType != null && mimeType.startsWith(APPLICATION_X_WWW_FORM_URLENCODED))) {
 
-            String charset = defaultEncoding;
+            String charset = defaultCharset;
             String contentType = exchange.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
             if (contentType != null) {
                 String cs = HeaderUtil.extractQuotedValueFromHeader(contentType, "charset");
@@ -52,8 +56,8 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
         return null;
     }
 
-    public String getDefaultEncoding() {
-        return defaultEncoding;
+    public String getDefaultCharset() {
+        return defaultCharset;
     }
 
     public boolean isForceCreation() {
@@ -83,8 +87,8 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
         return this;
     }
 
-    public FormEncodedDataDefinition setDefaultEncoding(final String defaultEncoding) {
-        this.defaultEncoding = defaultEncoding;
+    public FormEncodedDataDefinition setDefaultCharset(final String defaultCharset) {
+        this.defaultCharset = defaultCharset;
         return this;
     }
 
@@ -219,7 +223,7 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
         }
 
         @Override
-        public FormData parseBlocking() throws IOException {
+        public FormData parseBlocking() throws Exception {
             final FormData existing = exchange.getFormData();
             if (existing != null) {
                 return existing;

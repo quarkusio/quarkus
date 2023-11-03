@@ -23,6 +23,10 @@
             <artifactId>kubernetes-client</artifactId>
             <exclusions>
                 <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>kubernetes-httpclient-okhttp</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>javax.annotation</groupId>
                     <artifactId>javax.annotation-api</artifactId>
                 </exclusion>
@@ -35,6 +39,10 @@
                     <artifactId>jaxb-api</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-httpclient-vertx</artifactId>
         </dependency>
 
     </dependencies>

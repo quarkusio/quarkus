@@ -6,7 +6,7 @@ import io.quarkus.container.image.deployment.ContainerImageConfig;
 
 public class OpenshiftBuild implements BooleanSupplier {
 
-    private ContainerImageConfig containerImageConfig;
+    private final ContainerImageConfig containerImageConfig;
 
     OpenshiftBuild(ContainerImageConfig containerImageConfig) {
         this.containerImageConfig = containerImageConfig;

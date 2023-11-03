@@ -38,6 +38,20 @@ final class MetadataValue {
         return null;
     }
 
+    public Integer asInteger() {
+        if (val instanceof String) {
+            try {
+                return Integer.parseInt((String) val);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        if (val instanceof Integer) {
+            return (Integer) val;
+        }
+        return null;
+    }
+
     @SuppressWarnings("unchecked")
     public List<String> asStringList() {
         if (val instanceof String) {
@@ -72,7 +86,11 @@ final class MetadataValue {
         if (name == null) {
             return defaultValue;
         }
-        return T.valueOf(clazz, name.toUpperCase(Locale.ROOT).replace('-', '_'));
+        try {
+            return T.valueOf(clazz, name.toUpperCase(Locale.ROOT).replace('-', '_'));
+        } catch (IllegalArgumentException e) {
+            return defaultValue;
+        }
     }
 
 }

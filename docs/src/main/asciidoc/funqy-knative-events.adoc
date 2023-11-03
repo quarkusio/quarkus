@@ -3,12 +3,15 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Funqy Knative Events Binding
+= Funqy Knative Events Binding
+include::_attributes.adoc[]
+:categories: cloud
+:summary: This guide explains Funqy's Knative Events binding.
+:devtools-no-gradle:
+:topics: serverless,function,cloud,funqy
+:extensions: io.quarkus:quarkus-funqy-knative-events
 
-include::./attributes.adoc[]
-:extension-status: preview
-
-Quarkus Funqy link:https://knative.dev/docs/eventing[Knative Events] builds off of the link:funqy-http[Funqy HTTP] extension to allow you to
+Quarkus Funqy link:https://knative.dev/docs/eventing[Knative Events] builds off of the xref:funqy-http.adoc[Funqy HTTP] extension to allow you to
 route and process Knative Events within a Funqy function.
 
 The guide walks through quickstart code to show you how you can deploy and invoke on Funqy functions
@@ -16,13 +19,11 @@ with Knative Events.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* 60+ minutes
-* Read about link:funqy[Funqy Basics].  This is a short read!
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* Have gone through the link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/index.html[Knative Tutorial], specifically link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial-eventing/eventing-trigger-broker.html[Brokers and Triggers]
+:prerequisites-time: 1 hour
+:prerequisites-no-graalvm:
+include::{includes}/prerequisites.adoc[]
+* Read about xref:funqy.adoc[Funqy Basics].  This is a short read!
+* Have gone through the link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/index.html[Knative Tutorial], specifically link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/eventing/eventing-trigger-broker.html[Brokers and Triggers]
 
 == Setting up Knative
 
@@ -30,7 +31,7 @@ Setting up Knative locally in a Minikube environment is beyond the scope of this
 to follow  https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/index.html[this] Knative Tutorial
 put together by Red Hat.  It walks through how to set up Knative on Minikube or OpenShift in a local environment.
 
-NOTE: Specifically you should run the link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial-eventing/eventing-trigger-broker.html[Brokers and Triggers]
+NOTE: Specifically you should run the link:https://redhat-developer-demos.github.io/knative-tutorial/knative-tutorial/eventing/eventing-trigger-broker.html[Brokers and Triggers]
 tutorial as this guide requires that you can invoke on a Broker to trigger the quickstart code.
 
 == Read about Cloud Events
@@ -41,7 +42,7 @@ The Cloud Event link:https://cloudevents.io/[specification] is a good read to gi
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `funqy-knative-events-quickstart` {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart[directory].
+The solution is located in the `funqy-knative-events-quickstart` link:{quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart[directory].
 
 == The Quickstart Flow
 
@@ -65,7 +66,7 @@ Java parameters and return types of your functions.
 == The Code
 
 Let's start looking at our quickstart code so that you can understand how Knative Events map to Funqy.
-Open up {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/java/org/acme/funqy/SimpleFunctionChain.java[SimpleFunctionChain.java]
+Open up link:{quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/java/org/acme/funqy/SimpleFunctionChain.java[SimpleFunctionChain.java]
 
 The first function we'll look at is `defaultChain`.
 
@@ -104,7 +105,7 @@ public class SimpleFunctionChain {
     }
 ----
 
-The `configChain` function has its Cloud Event mapping changed by configuration within {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/resources/application.properties[application.properties].
+The `configChain` function has its Cloud Event mapping changed by configuration within link:{quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/resources/application.properties[application.properties].
 
 
 [source,properties,subs=attributes+]
@@ -117,7 +118,7 @@ quarkus.funqy.knative-events.mapping.configChain.response-source=configChain
 In this case, the configuration maps the incoming Cloud Event type `defaultChain.output` to the `configChain` function.
 The `configChain` function maps its response to the `annotated` Cloud Event type, and the Cloud Event source `configChain`.
 
-* `quarkus.funqy.knative-events.mapping.{function name}.trigger` sets the Cloud Event type that triggers a specific function
+* `quarkus.funqy.knative-events.mapping.{function name}.trigger` sets the Cloud Event type that triggers a specific function. It is possible to use the special value `*` as a catch-all value. The function will in this case be used for all event types.
 * `quarkus.funqy.knative-events.mapping.{function name}.response-type` sets the Cloud Event type of the response
 * `quarkus.funqy.knative-events.mapping.{function name}.resource-source` sets the Cloud Event source of the response
 
@@ -143,7 +144,7 @@ and the Cloud Event response.  In this example the `annotatedChain` function wil
 by the `annotated` Cloud Event type and the response will be mapped to a `lastChainLink` type
 and `annotated` Cloud Event source.
 
-So, if look at all the functions defined within `SimpleFunctionChain` you'll notice that one function triggers the next.
+So, if you look at all the functions defined within `SimpleFunctionChain` you'll notice that one function triggers the next.
 The last function that is triggered is `lastChainLink`.
 
 [source, java]
@@ -164,7 +165,7 @@ There are two things to notice about this function.  One, it has no output.  You
 required to return output.  Second, there is an additional `event` parameter to the function.
 
 If you want to know additional information about the incoming Cloud Event, you can inject the
-`CloudEvent` interface using the Funqy `@Context` annotation.  The `CloudEvent` interface exposes information
+`io.quarkus.funqy.knative.events.CloudEvent` interface using the Funqy `@Context` annotation.  The `CloudEvent` interface exposes information
 about the triggering event.
 
 [source, java]
@@ -180,10 +181,10 @@ public interface CloudEvent {
 
 == Maven
 
-If you look at the {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/pom.xml[pom],
-you'll see that it is a typical Quarkus pom that pulls in one funqy dependency
+If you look at the link:{quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/pom.xml[POM],
+you'll see that it is a typical Quarkus POM that pulls in one Funqy dependency:
 
-[source, xml]
+[source,xml]
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -195,10 +196,10 @@ you'll see that it is a typical Quarkus pom that pulls in one funqy dependency
 
 Funqy Knative Events support dev mode and unit testing using RestAssured.  You can invoke on Funqy Knative Events functions
 using the same invocation model as
-link:funqy-http[Funqy HTTP] using normal HTTP requests, or Cloud Event Binary mode, or Structured Mode.  All
+xref:funqy-http.adoc[Funqy HTTP] using normal HTTP requests, or Cloud Event Binary mode, or Structured Mode.  All
 invocation modes are supported at the same time.
 
-So, if you open up the unit test code in {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/test/java/org/acme/funqy/FunqyTest.java[FunqyTest.java]
+So, if you open up the unit test code in link:{quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/test/java/org/acme/funqy/FunqyTest.java[FunqyTest.java]
 you'll see that its simply using RestAssured to make HTTP invocations to test the functions.
 
 Funqy also works with Quarkus Dev mode!
@@ -207,10 +208,7 @@ Funqy also works with Quarkus Dev mode!
 
 First build the Java artifacts:
 
-[source,bash]
-----
-mvn clean install
-----
+include::{includes}/devtools/build.adoc[]
 
 Next, a docker image is required by Knative, so you'll need to build that next:
 
@@ -234,7 +232,7 @@ Again, make sure to replace `yourAccountName` with your docker or quay account n
 == Deploy to Kubernetes/OpenShift
 
 The first step is to set up the broker in our namespace.
-Following is an example command from the the Knative cli.
+Following is an example command from the Knative cli.
 
 [source, yaml]
 ----
@@ -246,7 +244,7 @@ The broker we have created is called `default`, this broker will receive the clo
 The broker is also referenced in the function YAML files.
 
 The second step is to define a Kubernetes/OpenShift service to point to the Docker image you created and pushed
-during build. Take a look at {quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/k8s/funqy-service.yaml[funqy-service.yaml]
+during build. Take a look at link:{quickstarts-tree-url}/funqy-quickstarts/funqy-knative-events-quickstart/src/main/k8s/funqy-service.yaml[funqy-service.yaml]
 
 [source, yaml]
 ----
@@ -320,7 +318,7 @@ kubectl apply -n knativetutorial -f src/main/k8s/lastChainLink-trigger.yaml
 == Run the demo
 
 You'll need two different terminal windows.  One to do a curl request to the Broker, the other to watch the pod log
-files so you can see the messages flowing through the Funqy function event chain.
+files, so you can see the messages flowing through the Funqy function event chain.
 
 Make sure you have the `stern` tool installed.  See the Knative Tutorial setup for information on that.  Run stern
 to look for logs outputted by our Funqy deployment
@@ -340,7 +338,7 @@ kubectl get broker default -o jsonpath='{.status.address.url}'
 This will provide you a URL similar to e.g.: `http://broker-ingress.knative-eventing.svc.cluster.local/knativetutorial/default`. Remember this URL.
 
 Next thing we need to do is ssh into our Kubernetes cluster so that we can send a curl request to our broker.
-Following command will create a simple OS pod so we can curl into our functions.
+The following command will create a simple OS pod so we can curl into our functions.
 
 [source,bash]
 ----

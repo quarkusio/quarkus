@@ -8,6 +8,8 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
  */
 public class ExceptionHandler implements ServerRestHandler {
 
+    public static final ExceptionHandler INSTANCE = new ExceptionHandler();
+
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         requestContext.mapExceptionIfPresent();

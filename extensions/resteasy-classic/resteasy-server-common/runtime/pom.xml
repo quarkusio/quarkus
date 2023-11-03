@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-server-common</artifactId>
-    <name>Quarkus - RESTEasy - Server common - Runtime</name>
+    <name>Quarkus - RESTEasy Classic - Server common - Runtime</name>
     <description>RESTEasy Server common</description>
     <dependencies>
         <dependency>
@@ -26,6 +26,10 @@
             <artifactId>quarkus-resteasy-common</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-cdi</artifactId>
+        </dependency>
+        <dependency>
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>
         </dependency>
@@ -35,7 +39,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

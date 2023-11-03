@@ -5,6 +5,7 @@ import io.vertx.ext.web.RoutingContext;
 public class RequestPathAttribute implements ExchangeAttribute {
 
     public static final String REQUEST_PATH = "%{REQUEST_PATH}";
+    public static final String REQUEST_PATH_SHORT = "%R";
 
     public static final ExchangeAttribute INSTANCE = new RequestPathAttribute();
 
@@ -31,7 +32,7 @@ public class RequestPathAttribute implements ExchangeAttribute {
 
         @Override
         public ExchangeAttribute build(final String token) {
-            return token.equals(REQUEST_PATH) ? INSTANCE : null;
+            return token.equals(REQUEST_PATH) || token.equals(REQUEST_PATH_SHORT) ? INSTANCE : null;
         }
 
         @Override

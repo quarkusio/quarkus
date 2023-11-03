@@ -8,3 +8,7 @@ metadata:
   categories:
   - "messaging"
   status: "stable"
+  config:
+  - "quarkus.kafka."
+  - "kafka."
+  - "mp.messaging."

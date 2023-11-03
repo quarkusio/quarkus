@@ -11,4 +11,7 @@ metadata:
   guide: "https://quarkus.io/guides/spring-data-rest"
   categories:
     - "compatibility"
-  status: "preview"
+  status: "stable"
+  config:
+  - "quarkus.datasource."
+  - "quarkus.hibernate-orm."

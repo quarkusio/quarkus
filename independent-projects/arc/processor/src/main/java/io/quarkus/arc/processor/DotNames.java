@@ -1,60 +1,72 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.AlternativePriority;
-import io.quarkus.arc.ArcInvocationContext;
-import io.quarkus.arc.DefaultBean;
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableInstance;
-import io.quarkus.arc.Unremovable;
-import io.quarkus.arc.VetoedProducer;
-import io.quarkus.arc.impl.ComputingCache;
 import java.io.Serializable;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Repeatable;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.annotation.Priority;
-import javax.decorator.Decorator;
-import javax.decorator.Delegate;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Initialized;
-import javax.enterprise.context.control.ActivateRequestContext;
-import javax.enterprise.event.Event;
-import javax.enterprise.event.Observes;
-import javax.enterprise.event.ObservesAsync;
-import javax.enterprise.event.TransactionPhase;
-import javax.enterprise.inject.Alternative;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.Disposes;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.Intercepted;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.Stereotype;
-import javax.enterprise.inject.TransientReference;
-import javax.enterprise.inject.Typed;
-import javax.enterprise.inject.Vetoed;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.EventMetadata;
-import javax.enterprise.inject.spi.Extension;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.enterprise.util.Nonbinding;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Provider;
-import javax.inject.Qualifier;
-import javax.inject.Singleton;
-import javax.interceptor.AroundConstruct;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InterceptorBinding;
-import javax.interceptor.InvocationContext;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Priority;
+import jakarta.decorator.Decorator;
+import jakarta.decorator.Delegate;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Initialized;
+import jakarta.enterprise.context.NormalScope;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.ObservesAsync;
+import jakarta.enterprise.event.TransactionPhase;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.Disposes;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Intercepted;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.Stereotype;
+import jakarta.enterprise.inject.TransientReference;
+import jakarta.enterprise.inject.Typed;
+import jakarta.enterprise.inject.Vetoed;
+import jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.BeanContainer;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.inject.spi.EventMetadata;
+import jakarta.enterprise.inject.spi.Extension;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.util.Nonbinding;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Provider;
+import jakarta.inject.Qualifier;
+import jakarta.inject.Scope;
+import jakarta.inject.Singleton;
+import jakarta.interceptor.AroundConstruct;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InterceptorBinding;
+import jakarta.interceptor.InvocationContext;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+
+import io.quarkus.arc.All;
+import io.quarkus.arc.ArcInvocationContext;
+import io.quarkus.arc.DefaultBean;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.NoClassInterceptors;
+import io.quarkus.arc.Unremovable;
+import io.quarkus.arc.VetoedProducer;
+import io.quarkus.arc.impl.ComputingCache;
+import io.quarkus.arc.impl.Identified;
 
 public final class DotNames {
 
@@ -67,6 +79,7 @@ public final class DotNames {
     public static final DotName DISPOSES = create(Disposes.class);
     public static final DotName QUALIFIER = create(Qualifier.class);
     public static final DotName REPEATABLE = create(Repeatable.class);
+    public static final DotName INHERITED = create(Inherited.class);
     public static final DotName NONBINDING = create(Nonbinding.class);
     public static final DotName INJECT = create(Inject.class);
     public static final DotName POST_CONSTRUCT = create(PostConstruct.class);
@@ -76,6 +89,7 @@ public final class DotNames {
     public static final DotName PROVIDER = create(Provider.class);
     public static final DotName INJECTION_POINT = create(InjectionPoint.class);
     public static final DotName INTERCEPTOR = create(Interceptor.class);
+    public static final DotName INTERCEPTOR_BEAN = create(jakarta.enterprise.inject.spi.Interceptor.class);
     public static final DotName INTERCEPTOR_BINDING = create(InterceptorBinding.class);
     public static final DotName INTERCEPTED = create(Intercepted.class);
     public static final DotName AROUND_INVOKE = create(AroundInvoke.class);
@@ -85,12 +99,14 @@ public final class DotNames {
     public static final DotName ANY = create(Any.class);
     public static final DotName BEAN = create(Bean.class);
     public static final DotName INJECTABLE_BEAN = create(InjectableBean.class);
+    public static final DotName BEAN_CONTAINER = create(BeanContainer.class);
     public static final DotName BEAN_MANAGER = create(BeanManager.class);
     public static final DotName EVENT = create(Event.class);
     public static final DotName EVENT_METADATA = create(EventMetadata.class);
     public static final DotName ALTERNATIVE = create(Alternative.class);
-    public static final DotName ALTERNATIVE_PRIORITY = create(AlternativePriority.class);
     public static final DotName DEFAULT_BEAN = create(DefaultBean.class);
+    public static final DotName SCOPE = create(Scope.class);
+    public static final DotName NORMAL_SCOPE = create(NormalScope.class);
     public static final DotName SINGLETON = create(Singleton.class);
     public static final DotName APPLICATION_SCOPED = create(ApplicationScoped.class);
     public static final DotName STEREOTYPE = create(Stereotype.class);
@@ -99,6 +115,7 @@ public final class DotNames {
     public static final DotName CLASS = create(Class.class);
     public static final DotName ENUM = create(Enum.class);
     public static final DotName EXTENSION = create(Extension.class);
+    public static final DotName BUILD_COMPATIBLE_EXTENSION = create(BuildCompatibleExtension.class);
     public static final DotName OPTIONAL = create(Optional.class);
     public static final DotName OPTIONAL_INT = create(OptionalInt.class);
     public static final DotName OPTIONAL_LONG = create(OptionalLong.class);
@@ -115,6 +132,18 @@ public final class DotNames {
     public static final DotName SERIALIZABLE = create(Serializable.class);
     public static final DotName UNREMOVABLE = create(Unremovable.class);
     public static final DotName VETOED_PRODUCER = create(VetoedProducer.class);
+    public static final DotName LIST = create(List.class);
+    public static final DotName ALL = create(All.class);
+    public static final DotName IDENTIFIED = create(Identified.class);
+    public static final DotName INSTANCE_HANDLE = create(InstanceHandle.class);
+    public static final DotName NO_CLASS_INTERCEPTORS = create(NoClassInterceptors.class);
+    public static final DotName DEPRECATED = create(Deprecated.class);
+
+    /**
+     * @deprecated use {@link KotlinUtils}; this constant will be removed at some time after Quarkus 3.6
+     */
+    @Deprecated(forRemoval = true, since = "3.0")
+    public static final DotName KOTLIN_METADATA_ANNOTATION = create("kotlin.Metadata");
 
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);
@@ -125,8 +154,6 @@ public final class DotNames {
     public static final DotName LONG = create(Long.class);
     public static final DotName SHORT = create(Short.class);
     public static final DotName STRING = create(String.class);
-
-    public static final DotName DEPRECATED = create(Deprecated.class);
 
     private DotNames() {
     }

@@ -1,16 +1,20 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.function.Function;
+
+import org.apache.maven.model.Model;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
+
+import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 
 public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?>> {
 
@@ -30,6 +34,8 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     protected Path rootProjectDir;
     protected boolean preferPomsFromWorkspace;
     protected Boolean effectiveModelBuilder;
+    protected Boolean wsModuleParentHierarchy;
+    protected Function<Path, Model> modelProvider;
 
     /**
      * Local repository location
@@ -242,6 +248,36 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     @SuppressWarnings("unchecked")
     public T setEffectiveModelBuilder(boolean effectiveModelBuilder) {
         this.effectiveModelBuilder = effectiveModelBuilder;
+        return (T) this;
+    }
+
+    /**
+     * Whether to enable initialization of the parent hierarchy for discovered
+     * {@link io.quarkus.bootstrap.workspace.WorkspaceModule}s.
+     * Enabling complete POM hierarchy is useful for project info and update use-cases but not really for runtime be it test or
+     * dev modes.
+     * <p>
+     *
+     * @param wsModuleParentHierarchy whether to initialize parents for {@link io.quarkus.bootstrap.workspace.WorkspaceModule}
+     * @return this instance
+     */
+    @SuppressWarnings("unchecked")
+    public T setWorkspaceModuleParentHierarchy(boolean wsModuleParentHierarchy) {
+        this.wsModuleParentHierarchy = wsModuleParentHierarchy;
+        return (T) this;
+    }
+
+    /**
+     * When workspace discovery is enabled, this method allows to set a POM
+     * provider that would return a {@link org.apache.maven.model.Model} for
+     * a given workspace module directory.
+     *
+     * @param modelProvider POM provider
+     * @return this instance
+     */
+    @SuppressWarnings("unchecked")
+    public T setProjectModelProvider(Function<Path, Model> modelProvider) {
+        this.modelProvider = modelProvider;
         return (T) this;
     }
 

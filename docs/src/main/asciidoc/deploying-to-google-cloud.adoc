@@ -3,9 +3,11 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Deploying to Google Cloud Platform (GCP)
-
-include::./attributes.adoc[]
+= Deploying to Google Cloud Platform (GCP)
+include::_attributes.adoc[]
+:categories: cloud
+:summary: This guide explains how to deploy a Quarkus application to Google Cloud.
+:topics: devops,google,gcp,cloud,deployment
 
 This guide covers:
 
@@ -18,22 +20,20 @@ This guide covers:
 
 == Prerequisites
 
-For this guide you need:
-
-* Roughly 1 hour for all modalities
-* JDK 11
-* Apache Maven {maven-version}
+:prerequisites-time: 1 hour for all modalities
+:prerequisites-no-graalvm:
+include::{includes}/prerequisites.adoc[]
 * https://cloud.google.com/[A Google Cloud Account].  Free accounts work.
 * https://cloud.google.com/sdk[Cloud SDK CLI Installed]
 
-This guide will take as input an application developed in the link:getting-started[Getting Started guide].
+This guide will take as input an application developed in the xref:getting-started.adoc[Getting Started guide].
 
 Make sure you have the getting-started application at hand, or clone the Git repository: `git clone {quickstarts-clone-url}`,
 or download an {quickstarts-archive-url}[archive]. The solution is located in the `getting-started` directory.
 
 == Login to Google Cloud
 
-Login to Google Cloud is necessary for deploying the application and it can be done as follows:
+Login to Google Cloud is necessary for deploying the application. It can be done as follows:
 
 [source, subs=attributes+]
 ----
@@ -44,19 +44,17 @@ gcloud auth login
 
 Quarkus supports deploying your application to Google Cloud Functions via the following extensions:
 
-- link:gcp-functions[Google Cloud Functions]: Build functions using the Google Cloud Functions API.
-- link:gcp-functions-http[Google Cloud Functions HTTP binding]: Build functions using Quarkus HTTP APIs: RESTEasy (JAX-RS),
-Undertow (Servlet), Vert.x Web, or link:funqy-http[Funqy HTTP].
-- link:funqy-gcp-functions[Funky Google Cloud Functions]: Build functions using Funqy.
+- xref:gcp-functions.adoc[Google Cloud Functions]: Build functions using the Google Cloud Functions API.
+- xref:gcp-functions-http.adoc[Google Cloud Functions HTTP binding]: Build functions using Quarkus HTTP APIs: RESTEasy Reactive (Jakarta REST),
+Undertow (Servlet), Vert.x Web, or xref:funqy-http.adoc[Funqy HTTP].
+- xref:funqy-gcp-functions.adoc[Funky Google Cloud Functions]: Build functions using Funqy.
 
 Each extension supports a specific kind of application development,
 follow the specific guides for more information on how to develop, package and deploy your applications using them.
 
 == Deploying to Google App Engine Standard
 
-We will only cover the Java 11 runtime as the Java 8 runtime uses its own Servlet engine which is not compatible with Quarkus.
-
-First of all, make sure to have an App Engine environment initialized for your Google Cloud project, if not, initialize one via `gcloud app create --project=[YOUR_PROJECT_ID]`.
+First, make sure to have an App Engine environment initialized for your Google Cloud project, if not, initialize one via `gcloud app create --project=[YOUR_PROJECT_ID]`.
 
 Then, you will need to create a `src/main/appengine/app.yaml` file, let's keep it minimalistic with only the selected engine:
 
@@ -67,16 +65,21 @@ runtime: java11
 
 This will create a default service for your App Engine application.
 
-Then, you can choose to build the application by yourself or letting `gcloud` or the Google Cloud Maven plugin build it for you.
+[NOTE]
+====
+You can also use the new Java 17 runtime by defining `runtime: java17` instead.
+====
 
-=== Building the application manually
-
-Set up your application to be packaged as an uber-jar via your `application.properties` file:
+App Engine Standard does not support the default Quarkus' specific packaging layout, therefore, you must set up your application to be packaged as an uber-jar via your `application.properties` file:
 
 [source, properties]
 ----
 quarkus.package.type=uber-jar
 ----
+
+Then, you can choose to build the application manually or delegating that responsibility to `gcloud` or the Google Cloud Maven plugin.
+
+=== Building the application manually
 
 Use Maven to build the application using `mvn clean package`, it will generate a single JAR that contains all the classes of your application including its dependencies.
 
@@ -89,16 +92,16 @@ gcloud app deploy target/getting-started-1.0.0-SNAPSHOT-runner.jar
 
 This command will upload your application jar and launch it on App Engine.
 
-When done, the output will display the URL of your application (target url), you can use it with curl or directly open it in your browser using `gcloud app browse`.
+When it’s done, the output will display the URL of your application (target url), you can use it with curl or directly open it in your browser using `gcloud app browse`.
 
 === Building the application via gcloud
 
 You can choose to let `gcloud` build your application for you, this is the simplest way to deploy to App Engine.
 
-Just launch `gcloud app deploy` in the root of your project, it will upload all your project files (the list can be reduced via the  `.gcloudignore` file),
+Then, you can just launch `gcloud app deploy` in the root of your project, it will upload all your project files (the list can be reduced via the  `.gcloudignore` file),
 package your JAR via Maven (or Gradle) and launch it on App Engine.
 
-When done, the output will display the URL of your application (target url), you can use it with curl or directly open it in your browser using `gcloud app browse`.
+When it’s done, the output will display the URL of your application (target url), you can use it with curl or directly open it in your browser using `gcloud app browse`.
 
 === Building the application via the Google Cloud Maven plugin
 
@@ -111,17 +114,16 @@ First, add the plugin to your `pom.xml`:
 <plugin>
     <groupId>com.google.cloud.tools</groupId>
     <artifactId>appengine-maven-plugin</artifactId>
-    <version>2.4.0</version>
+    <version>2.4.4</version>
     <configuration>
         <projectId>GCLOUD_CONFIG</projectId> <1>
         <version>gettingstarted</version>
-        <artifact>${project.build.directory}/getting-started-${project.version}-runner.jar</artifact> <2>
+        <artifact>${project.build.directory}/${project.artifactId}-${project.version}-runner.jar</artifact> <2>
     </configuration>
 </plugin>
 ----
-
-1. Use the default `gcloud` configuration
-2. Override the default JAR name to the one generated by the Quarkus Maven plugin
+<1> Use the default `gcloud` configuration
+<2> Override the default JAR name to the one generated by the Quarkus Maven plugin
 
 Then you would be able to use Maven to build and deploy your application to App Engine via `mvn clean package appengine:deploy`.
 
@@ -162,8 +164,8 @@ It uses Cloud Build to build your Docker image and deploy it to Google Container
 
 When done, the output will display the URL of your application (target url), you can use it with curl or directly open it in your browser using `gcloud app browse`.
 
-NOTE: App Engine Flexible custom runtimes support link:https://cloud.google.com/appengine/docs/flexible/custom-runtimes/configuring-your-app-with-app-yaml#updated_health_checks[health checks],
-it is strongly advised to provide them thanks to Quarkus link:microprofile-health[Microprofile Health] support.
+NOTE: App Engine Flexible custom runtimes support link:https://cloud.google.com/appengine/docs/flexible/reference/app-yaml?tab=java#updated_health_checks[health checks],
+it is strongly advised to provide them thanks to Quarkus xref:smallrye-health.adoc[Smallrye Health] support.
 
 == Deploying to Google Cloud Run
 
@@ -210,18 +212,23 @@ Finally, use Cloud Run to launch your application.
 
 [source, shell script]
 ----
-gcloud run deploy --image gcr.io/PROJECT-ID/helloworld --platform managed
+gcloud run deploy --image gcr.io/PROJECT-ID/helloworld
 ----
 
-Cloud run will ask you questions on the service name, the region and whether or not unauthenticated calls are allowed.
+Cloud run will ask you questions on the service name, the region and whether unauthenticated calls are allowed.
 After you answer to these questions, it will deploy your application.
 
 When the deployment is done, the output will display the URL to access your application.
+
+NOTE: Cloud Run supports link:https://cloud.google.com/run/docs/configuring/healthchecks[health checks],
+it is strongly advised to provide them thanks to Quarkus xref:smallrye-health.adoc[Smallrye Health] support.
 
 == Using Cloud SQL
 
 Google Cloud SQL provides managed instances for MySQL, PostgreSQL and Microsoft SQL Server.
 Quarkus has support for all three databases.
+
+=== Using Cloud SQL with a JDBC driver
 
 To make your applications work with Cloud SQL, you first need to use the corresponding JDBC extension, for example, for PostgreSQL,
 add the `quarkus-jdbc-postgresql` extension.
@@ -242,29 +249,50 @@ Finally, you need to configure your datasource specifically to use the socket fa
 
 [source, properties]
 ----
-quarkus.datasource.db-kind=other <1>
-quarkus.datasource.jdbc.url=jdbc:postgresql:///mydatabase <2>
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.jdbc.url=jdbc:postgresql:///mydatabase <1>
 quarkus.datasource.jdbc.driver=org.postgresql.Driver
 quarkus.datasource.username=quarkus
 quarkus.datasource.password=quarkus
-quarkus.datasource.jdbc.additional-jdbc-properties.cloudSqlInstance=project-id:gcp-region:instance <3>
-quarkus.datasource.jdbc.additional-jdbc-properties.socketFactory=com.google.cloud.sql.postgres.SocketFactory <4>
+quarkus.datasource.jdbc.additional-jdbc-properties.cloudSqlInstance=project-id:gcp-region:instance <2>
+quarkus.datasource.jdbc.additional-jdbc-properties.socketFactory=com.google.cloud.sql.postgres.SocketFactory <3>
 ----
-<1> Database kind must be 'other' as we need to skip Quarkus auto-configuration.
-<2> The JDBC URL should not include the hostname / IP of the database.
-<3> We add the `cloudSqlInstance` additional JDBC property to configure the instance id.
-<4> We add the `socketFactory` additional JDBC property to configure the socket factory used to connect to Cloud SQL,
+<1> The JDBC URL should not include the hostname / IP of the database.
+<2> We add the `cloudSqlInstance` additional JDBC property to configure the instance id.
+<3> We add the `socketFactory` additional JDBC property to configure the socket factory used to connect to Cloud SQL,
 this one is coming from the `postgres-socket-factory` dependency.
-
-NOTE: If you use Hibernate ORM, you also need to configure `quarkus.hibernate-orm.dialect=org.hibernate.dialect.PostgreSQL10Dialect`
-as Hibernate ORM would not be able to automatically detect the dialect of your database.
 
 WARNING: Using a PostgreSQL socket factory is not possible in dev mode at the moment
 due to issue link:https://github.com/quarkusio/quarkus/issues/15782[#15782].
+
+=== Using Cloud SQL with a reactive SQL client
+
+You can also use one of our reactive SQL client instead of the JDBC client.
+To do so with Cloud SQL, add the following dependency
+(adjust the classifier depending on your platform):
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-transport-native-epoll</artifactId>
+    <classifier>linux-x86_64</classifier>
+</dependency>
+----
+
+Then configure your reactive datasource with no hostname and with the Netty native transport:
+
+[source, properties]
+----
+quarkus.datasource.reactive.url=postgresql://:5432/db-name?host=/cloudsql/project-id:zone:db-name
+quarkus.vertx.prefer-native-transport=true
+----
+
+WARNING: This only works when your application is running inside a Google Cloud managed runtime like App Engine.
 
 == Going further
 
 You can find a set of extensions to access various Google Cloud Services in the Quarkiverse (a GitHub organization for Quarkus extensions maintained by the community),
 including PubSub, BigQuery, Storage, Spanner, Firestore, Secret Manager (visit the repository for an accurate list of supported services).
 
-You can find some documentation about them in the link:https://github.com/quarkiverse/quarkiverse-google-cloud-services[Quarkiverse Google Cloud Services repository].
+You can find some documentation about them in the link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-google-cloud-services/main/index.html[Quarkiverse Google Cloud Services documentation].

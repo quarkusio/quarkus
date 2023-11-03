@@ -3,21 +3,22 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Accessing application properties with Spring Boot properties API
+= Accessing application properties with Spring Boot properties API
+include::_attributes.adoc[]
+:categories: compatibility
+:summary: Use Spring Boot's `@ConfigurationProperties` in place of MicroProfile Config annotations
+:topics: spring,configuration,compatibility
+:extensions: io.quarkus:quarkus-spring-boot-properties
 
-include::./attributes.adoc[]
+If you prefer to use Spring Boot `@ConfigurationProperties` annotated class to access application properties instead of
+<<config-mappings.adoc#config-mappings,`@ConfigMapping`>> or a MicroProfile `@ConfigProperty` approach, you can do that with this extension.
 
-If you prefer to use Spring Boot `@ConfigurationProperties` annotated class to access application properties instead of a
-Quarkus native `@ConfigProperties` or a MicroProfile `@ConfigProperty` approach, you can do that with this extension.
+IMPORTANT: Spring Boot `@ConfigurationProperties` has a few limitations. For instance, `Map` injection is not
+supported. Consider using xref:config-mappings.adoc[Mapping configuration to objects].
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::{includes}/prerequisites.adoc[]
 
 == Solution
 
@@ -26,36 +27,28 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `spring-boot-properties-quickstart` {quickstarts-tree-url}/spring-boot-properties-quickstart[directory].
+The solution is located in the `spring-boot-properties-quickstart` link:{quickstarts-tree-url}/spring-boot-properties-quickstart[directory].
 
 == Creating the Maven project
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=spring-boot-properties-quickstart \
-    -DclassName="org.acme.spring.boot.properties.GreetingResource" \
-    -Dpath="/greeting" \
-    -Dextensions="resteasy,spring-boot-properties"
-cd spring-boot-properties-quickstart
-----
+:create-app-artifact-id: spring-boot-properties-quickstart
+:create-app-extensions: resteasy-reactive,spring-boot-properties
+include::{includes}/devtools/create-app.adoc[]
 
-This command generates a Maven project with a REST endpoint and imports the `spring-boot-properties` extension.
+This command generates a project and imports the `spring-boot-properties` extension.
 
 If you already have your Quarkus project configured, you can add the `spring-boot-properties` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="spring-boot-properties"
-----
+:add-extension-extensions: spring-boot-properties
+include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -63,19 +56,25 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-spring-boot-properties")
+----
+
 == GreetingController
 
-The Quarkus Maven plugin automatically generated a `GreetingResource` JAX-RS resource in the
+First, create a `GreetingResource` Jakarta REST resource in the
 `src/main/java/org/acme/spring/boot/properties/GreetingResource.java` file that looks like:
 
 [source,java]
 ----
 package org.acme.spring.boot.properties;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/hello")
 public class GreetingResource {
@@ -121,11 +120,11 @@ Now modify `GreetingResource` to start using the `GreetingProperties`:
 ----
 package org.acme.spring.boot.properties;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/greeting")
 public class GreetingResource {
@@ -145,13 +144,23 @@ Run the tests to verify that application still functions correctly.
 
 == Package and run the application
 
-Run the application with: `./mvnw compile quarkus:dev`.
+Run the application in dev mode with:
+
+include::{includes}/devtools/dev.adoc[]
+
 Open your browser to http://localhost:8080/greeting.
 
 Changing the configuration file is immediately reflected.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
-You can also generate the native executable with `./mvnw clean package -Pnative`.
+As usual, the application can be packaged using:
+
+include::{includes}/devtools/build.adoc[]
+
+And executed using `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also generate the native executable with:
+
+include::{includes}/devtools/build-native.adoc[]
 
 == Default values
 
@@ -184,11 +193,11 @@ And update the `GreetingResource` and its test `GreetingResourceTest`:
 ----
 package org.acme.spring.boot.properties;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/greeting")
 public class GreetingResource {
@@ -263,11 +272,11 @@ And update the `GreetingResource` and its test `GreetingResourceTest`:
 ----
 package org.acme.spring.boot.properties;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/greeting")
 public class GreetingResource {
@@ -357,11 +366,11 @@ greeting.message.text = hello
 ----
 package org.acme.spring.boot.properties;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/greeting")
 public class GreetingResource {
@@ -381,11 +390,11 @@ public class GreetingResource {
 
 Quarkus has more Spring compatibility features. See the following guides for more details:
 
-* link:spring-di[Quarkus - Extension for Spring DI]
-* link:spring-web[Quarkus - Extension for Spring Web]
-* link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
-* link:spring-data-rest[Quarkus - Extension for Spring Data REST]
-* link:spring-security[Quarkus - Extension for Spring Security]
-* link:spring-cloud-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
-* link:spring-cache[Quarkus - Extension for Spring Cache]
-* link:spring-scheduled[Quarkus - Extension for Spring Scheduled]
+* xref:spring-di.adoc[Quarkus - Extension for Spring DI]
+* xref:spring-web.adoc[Quarkus - Extension for Spring Web]
+* xref:spring-data-jpa.adoc[Quarkus - Extension for Spring Data JPA]
+* xref:spring-data-rest.adoc[Quarkus - Extension for Spring Data REST]
+* xref:spring-security.adoc[Quarkus - Extension for Spring Security]
+* xref:spring-cloud-config-client.adoc[Quarkus - Reading properties from Spring Cloud Config Server]
+* xref:spring-cache.adoc[Quarkus - Extension for Spring Cache]
+* xref:spring-scheduled.adoc[Quarkus - Extension for Spring Scheduled]

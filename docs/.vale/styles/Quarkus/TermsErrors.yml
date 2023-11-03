@@ -1,0 +1,13 @@
+---
+extends: substitution
+ignorecase: true
+level: error
+link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-reference.adoc
+message: "Use '%s' rather than '%s'."
+# source: Quarkus contributor guide
+action:
+  name: replace
+# swap maps tokens in form of bad: good
+swap:
+  "I(?!/O)": you
+  he|she: you

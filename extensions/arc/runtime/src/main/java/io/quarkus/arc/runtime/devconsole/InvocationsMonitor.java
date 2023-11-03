@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 @Singleton
 public class InvocationsMonitor {
@@ -28,16 +28,22 @@ public class InvocationsMonitor {
         invocations.add(invocation);
     }
 
-    public List<Invocation> getLastInvocations() {
-        List<Invocation> result = new ArrayList<>(invocations);
+    // this method should be removed when the Dev UI 1 components are removed
+    public List<Invocation> getFilteredLastInvocations() {
+        List<Invocation> result = getLastInvocations();
         if (filterOutQuarkusBeans) {
             for (Iterator<Invocation> it = result.iterator(); it.hasNext();) {
                 Invocation invocation = it.next();
-                if (invocation.getInterceptedBean().getBeanClass().getName().startsWith("io.quarkus")) {
+                if (invocation.isQuarkusBean()) {
                     it.remove();
                 }
             }
         }
+        return result;
+    }
+
+    public List<Invocation> getLastInvocations() {
+        List<Invocation> result = new ArrayList<>(invocations);
         Collections.reverse(result);
         return result;
     }

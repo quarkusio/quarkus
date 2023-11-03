@@ -42,6 +42,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-netty</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-qute</artifactId>
+        </dependency>
         <!--
         Somehow, we need this as otherwise you end up with:
         java.lang.ClassNotFoundException: io.netty.handler.codec.http2.DefaultHttp2FrameWriter
@@ -116,6 +120,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-apache-httpclient-deployment</artifactId>
+            <type>pom</type>
+            <scope>test</scope>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-qute-deployment</artifactId>
             <type>pom</type>
             <scope>test</scope>
             <version>${project.version}</version>
@@ -202,7 +219,5 @@
                 <quarkus.package.type>native</quarkus.package.type>
             </properties>
         </profile>
-
     </profiles>
-
 </project>

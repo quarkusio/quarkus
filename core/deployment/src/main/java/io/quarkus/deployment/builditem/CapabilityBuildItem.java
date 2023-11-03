@@ -2,6 +2,8 @@ package io.quarkus.deployment.builditem;
 
 import java.util.Objects;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -24,6 +26,12 @@ import io.quarkus.deployment.Capability;
  */
 public final class CapabilityBuildItem extends MultiBuildItem {
 
+    private static volatile Logger log;
+
+    private static Logger getLog() {
+        return log == null ? log = Logger.getLogger(CapabilityBuildItem.class) : log;
+    }
+
     private final String name;
     private final String provider;
 
@@ -35,13 +43,23 @@ public final class CapabilityBuildItem extends MultiBuildItem {
      */
     @Deprecated
     public CapabilityBuildItem(String name) {
-        this(name, "<unknown>");
+        this(name, StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass().getName());
+        final String msg = "An instance of " + CapabilityBuildItem.class.getName()
+                + " was created using a deprecated constructor by "
+                + provider + " to provide capability '" + name
+                + "'. Please report this issue to the extension maintainers to fix it in the future releases.";
+        final Logger log = getLog();
+        if (log.isDebugEnabled()) {
+            log.debug(msg, new Exception(msg));
+        } else {
+            log.warn(msg);
+        }
     }
 
     /**
      * <b>IMPORTANT:</b> in most cases, capability build items should not be produced by build steps of specific
      * extensions but be configured in their extension descriptors instead. Capabilities produced from
-     * extension build steps aren't available for the Quarkus dev tools. As a consequences, such capabilities
+     * extension build steps aren't available for the Quarkus dev tools. As a consequence, such capabilities
      * can not be taken into account when analyzing extension compatibility during project creation or when
      * adding new extensions to a project.
      *

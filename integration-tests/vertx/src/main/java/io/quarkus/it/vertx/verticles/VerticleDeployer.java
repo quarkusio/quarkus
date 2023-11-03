@@ -2,9 +2,9 @@ package io.quarkus.it.vertx.verticles;
 
 import java.util.concurrent.CountDownLatch;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import io.quarkus.runtime.StartupEvent;
 import io.vertx.core.DeploymentOptions;
@@ -18,7 +18,7 @@ public class VerticleDeployer {
     Vertx vertx;
 
     public void init(@Observes StartupEvent ev) {
-        CountDownLatch latch = new CountDownLatch(5);
+        CountDownLatch latch = new CountDownLatch(6);
         vertx.deployVerticle(BareVerticle::new, new DeploymentOptions().setConfig(new JsonObject()
                 .put("id", "bare")))
                 .subscribe().with(x -> latch.countDown());
@@ -34,6 +34,11 @@ public class VerticleDeployer {
         vertx.deployVerticle(MutinyAsyncVerticle.class.getName(), new DeploymentOptions().setConfig(new JsonObject()
                 .put("id", "mutiny-classname")))
                 .subscribe().with(x -> latch.countDown());
+
+        vertx.deployVerticle(MdcVerticle.class.getName(), new DeploymentOptions().setConfig(new JsonObject()
+                .put("id", "mdc")))
+                .subscribe().with(x -> latch.countDown());
+
         latch.countDown();
     }
 

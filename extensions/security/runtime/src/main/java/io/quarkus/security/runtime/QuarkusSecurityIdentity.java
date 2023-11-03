@@ -81,7 +81,7 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
     @Override
     public Uni<Boolean> checkPermission(Permission permission) {
         if (permissionCheckers.isEmpty()) {
-            return Uni.createFrom().item(true);
+            return Uni.createFrom().item(false);
         }
         List<Uni<Boolean>> results = new ArrayList<>(permissionCheckers.size());
         for (Function<Permission, Uni<Boolean>> checker : permissionCheckers) {
@@ -91,7 +91,7 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
             }
         }
         if (results.isEmpty()) {
-            return Uni.createFrom().item(true);
+            return Uni.createFrom().item(false);
         }
         if (results.size() == 1) {
             return results.get(0);
@@ -127,6 +127,13 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
                 .addAttributes(identity.getAttributes())
                 .addCredentials(identity.getCredentials())
                 .addRoles(identity.getRoles())
+                .addPermissionChecker(new Function<Permission, Uni<Boolean>>() {
+                    @Override
+                    public Uni<Boolean> apply(Permission permission) {
+                        // sustain previous permission checks
+                        return identity.checkPermission(permission);
+                    }
+                })
                 .setPrincipal(identity.getPrincipal())
                 .setAnonymous(identity.isAnonymous());
         return builder;
@@ -217,8 +224,25 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         }
 
         /**
+         * Adds a permission check functions.
+         *
+         * @param functions The permission check functions
+         * @return This builder
+         * @see #addPermissionChecker(Function)
+         */
+        public Builder addPermissionCheckers(List<Function<Permission, Uni<Boolean>>> functions) {
+            if (built) {
+                throw new IllegalStateException();
+            }
+            if (functions != null) {
+                permissionCheckers.addAll(functions);
+            }
+            return this;
+        }
+
+        /**
          * Sets an anonymous identity status.
-         * 
+         *
          * @param anonymous the anonymous status
          * @return This builder
          */

@@ -2,7 +2,6 @@ package io.quarkus.elytron.security.ldap;
 
 import static org.hamcrest.Matchers.equalTo;
 
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.elytron.security.ldap.rest.ParametrizedPathsResource;
@@ -13,6 +12,7 @@ import io.quarkus.elytron.security.ldap.rest.TestApplication;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.ldap.LdapServerTestResource;
 import io.restassured.RestAssured;
+import io.restassured.specification.RequestSpecification;
 
 /**
  * Tests of BASIC authentication mechanism with the minimal config required
@@ -29,32 +29,39 @@ public abstract class LdapSecurityRealmTest {
     // Basic @ServletSecurity tests
     @Test()
     public void testSecureAccessFailure() {
-        RestAssured.when().get("/servlet-secured").then()
-                .statusCode(401);
+        RestAssured.given().redirects().follow(false).get("/servlet-secured").then()
+                .statusCode(getAuthFailureStatusCode());
+    }
+
+    protected int getAuthFailureStatusCode() {
+        return 401;
     }
 
     @Test()
-    @Tag("failsOnJDK16")
     public void testNotSearchingRecursiveFailure() {
-        RestAssured.given().auth().preemptive().basic("subUser", "subUserPassword")
-                .when().get("/servlet-secured").then()
-                .statusCode(401);
+        setupAuth("subUser", "subUserPassword")
+                .when().redirects().follow(false).get("/servlet-secured").then()
+                .statusCode(getAuthFailureStatusCode());
     }
 
     @Test()
-    @Tag("failsOnJDK16")
     public void testSecureRoleFailure() {
-        RestAssured.given().auth().preemptive().basic("noRoleUser", "noRoleUserPassword")
+        setupAuth("noRoleUser", "noRoleUserPassword")
                 .when().get("/servlet-secured").then()
                 .statusCode(403);
     }
 
     @Test()
-    @Tag("failsOnJDK16")
     public void testSecureAccessSuccess() {
-        RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
-                .when().get("/servlet-secured").then()
+        String username = "standardUser";
+        String password = "standardUserPassword";
+        RequestSpecification requestSpec = setupAuth(username, password);
+        requestSpec.when().get("/servlet-secured").then()
                 .statusCode(200);
+    }
+
+    protected RequestSpecification setupAuth(String username, String password) {
+        return RestAssured.given().auth().preemptive().basic(username, password);
     }
 
     /**
@@ -62,17 +69,16 @@ public abstract class LdapSecurityRealmTest {
      */
     @Test
     public void testJaxrsGetFailure() {
-        RestAssured.when().get("/jaxrs-secured/roles-class").then()
-                .statusCode(401);
+        RestAssured.given().redirects().follow(false).get("/jaxrs-secured/roles-class").then()
+                .statusCode(getAuthFailureStatusCode());
     }
 
     /**
      * Test access a secured jaxrs resource with authentication, but no authorization. should see 403 error code.
      */
     @Test
-    @Tag("failsOnJDK16")
     public void testJaxrsGetRoleFailure() {
-        RestAssured.given().auth().preemptive().basic("noRoleUser", "noRoleUserPassword")
+        setupAuth("noRoleUser", "noRoleUserPassword")
                 .when().get("/jaxrs-secured/roles-class").then()
                 .statusCode(403);
     }
@@ -81,9 +87,8 @@ public abstract class LdapSecurityRealmTest {
      * Test access a secured jaxrs resource with authentication, and authorization. should see 200 success code.
      */
     @Test
-    @Tag("failsOnJDK16")
     public void testJaxrsGetRoleSuccess() {
-        RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
+        setupAuth("standardUser", "standardUserPassword")
                 .when().get("/jaxrs-secured/roles-class").then()
                 .statusCode(200);
     }
@@ -92,17 +97,15 @@ public abstract class LdapSecurityRealmTest {
      * Test access a secured jaxrs resource with authentication, and authorization. should see 200 success code.
      */
     @Test
-    @Tag("failsOnJDK16")
     public void testJaxrsPathAdminRoleSuccess() {
-        RestAssured.given().auth().preemptive().basic("adminUser", "adminUserPassword")
+        setupAuth("adminUser", "adminUserPassword")
                 .when().get("/jaxrs-secured/parameterized-paths/my/banking/admin").then()
                 .statusCode(200);
     }
 
     @Test
-    @Tag("failsOnJDK16")
     public void testJaxrsPathAdminRoleFailure() {
-        RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
+        setupAuth("standardUser", "standardUserPassword")
                 .when().get("/jaxrs-secured/parameterized-paths/my/banking/admin").then()
                 .statusCode(403);
     }
@@ -111,9 +114,8 @@ public abstract class LdapSecurityRealmTest {
      * Test access a secured jaxrs resource with authentication, and authorization. should see 200 success code.
      */
     @Test
-    @Tag("failsOnJDK16")
     public void testJaxrsPathUserRoleSuccess() {
-        RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
+        setupAuth("standardUser", "standardUserPassword")
                 .when().get("/jaxrs-secured/parameterized-paths/my/banking/view").then()
                 .statusCode(200);
     }
@@ -122,18 +124,16 @@ public abstract class LdapSecurityRealmTest {
      * Test access a secured jaxrs resource with authentication, and authorization. should see 200 success code.
      */
     @Test
-    @Tag("failsOnJDK16")
     public void testJaxrsUserRoleSuccess() {
-        RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
+        setupAuth("standardUser", "standardUserPassword")
                 .when().get("/jaxrs-secured/subject/secured").then()
                 .statusCode(200)
                 .body(equalTo("standardUser"));
     }
 
     @Test
-    @Tag("failsOnJDK16")
     public void testJaxrsInjectedPrincipalSuccess() {
-        RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
+        setupAuth("standardUser", "standardUserPassword")
                 .when().get("/jaxrs-secured/subject/principal-secured").then()
                 .statusCode(200)
                 .body(equalTo("standardUser"));
@@ -154,17 +154,16 @@ public abstract class LdapSecurityRealmTest {
      */
     @Test
     public void testJaxrsGetDenyAllWithoutAuth() {
-        RestAssured.when().get("/jaxrs-secured/subject/denied").then()
-                .statusCode(401);
+        RestAssured.given().redirects().follow(false).get("/jaxrs-secured/subject/denied").then()
+                .statusCode(getAuthFailureStatusCode());
     }
 
     /**
      * Test access a @DenyAll secured jaxrs resource with authentication. should see a 403 success code.
      */
     @Test
-    @Tag("failsOnJDK16")
     public void testJaxrsGetDenyAllWithAuth() {
-        RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
+        setupAuth("standardUser", "standardUserPassword")
                 .when().get("/jaxrs-secured/subject/denied").then()
                 .statusCode(403);
     }

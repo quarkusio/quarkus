@@ -13,6 +13,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
+import io.quarkus.it.spring.data.jpa.test.MovieRating;
+
 /**
  * Demonstrated the use @Query
  */
@@ -30,7 +32,7 @@ public interface MovieRepository extends CrudRepository<Movie, Long> {
     List<Movie> withRatingAndDurationLargerThan(@Param("duration") int duration, @Param("rating") String rating);
 
     @Query("from Movie where title like concat('%', ?1, '%')")
-    List<Object[]> someFieldsWithTitleLike(String title, Sort sort);
+    List<Movie> someFieldsWithTitleLike(String title, Sort sort);
 
     @Modifying
     @Query("delete from Movie where rating = :rating")
@@ -75,12 +77,6 @@ public interface MovieRepository extends CrudRepository<Movie, Long> {
         String getRating();
 
         Long getCount();
-    }
-
-    interface MovieRating {
-        String getTitle();
-
-        String getRating();
     }
 
     interface MovieProjection {

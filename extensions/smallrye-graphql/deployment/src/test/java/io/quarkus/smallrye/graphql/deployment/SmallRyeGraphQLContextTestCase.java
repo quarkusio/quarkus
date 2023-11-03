@@ -9,9 +9,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.graphql.GraphQLApi;
@@ -19,21 +18,18 @@ import org.eclipse.microprofile.graphql.Name;
 import org.eclipse.microprofile.graphql.Query;
 import org.eclipse.microprofile.graphql.Source;
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 import io.smallrye.graphql.api.Context;
 
 public class SmallRyeGraphQLContextTestCase extends AbstractGraphQLTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Dummy.class, ContextPropagationResource.class));
 
     @Test
@@ -45,8 +41,8 @@ public class SmallRyeGraphQLContextTestCase extends AbstractGraphQLTest {
                 "}");
 
         RestAssured.given().when()
-                .accept(ContentType.JSON)
-                .contentType(ContentType.JSON)
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
                 .body(request)
                 .post("/graphql")
                 .then()
@@ -68,8 +64,8 @@ public class SmallRyeGraphQLContextTestCase extends AbstractGraphQLTest {
                 "}");
 
         RestAssured.given().when()
-                .accept(ContentType.JSON)
-                .contentType(ContentType.JSON)
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
                 .body(request)
                 .post("/graphql")
                 .then()
@@ -91,8 +87,8 @@ public class SmallRyeGraphQLContextTestCase extends AbstractGraphQLTest {
                 "}");
 
         RestAssured.given().when()
-                .accept(ContentType.JSON)
-                .contentType(ContentType.JSON)
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
                 .body(request)
                 .post("/graphql")
                 .then()
@@ -114,8 +110,8 @@ public class SmallRyeGraphQLContextTestCase extends AbstractGraphQLTest {
                 "}");
 
         RestAssured.given().when()
-                .accept(ContentType.JSON)
-                .contentType(ContentType.JSON)
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
                 .body(request)
                 .post("/graphql")
                 .then()
@@ -128,7 +124,6 @@ public class SmallRyeGraphQLContextTestCase extends AbstractGraphQLTest {
     }
 
     @GraphQLApi
-    @ApplicationScoped
     public static class ContextPropagationResource {
 
         @Inject

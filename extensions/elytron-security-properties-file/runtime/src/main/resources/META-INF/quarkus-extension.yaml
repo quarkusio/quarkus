@@ -8,3 +8,5 @@ metadata:
     - "security"
   status: "stable"
   guide: "https://quarkus.io/guides/security-properties"
+  config:
+  - "quarkus.security.users."

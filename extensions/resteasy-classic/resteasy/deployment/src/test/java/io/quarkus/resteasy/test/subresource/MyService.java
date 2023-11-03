@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.test.subresource;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class MyService {

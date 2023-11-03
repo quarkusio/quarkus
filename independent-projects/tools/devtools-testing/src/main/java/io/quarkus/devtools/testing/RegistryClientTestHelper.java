@@ -1,47 +1,77 @@
 package io.quarkus.devtools.testing;
 
-import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.config.RegistriesConfigLocator;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
+import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.config.RegistriesConfigLocator;
+
 public class RegistryClientTestHelper {
+
+    public static void enableRegistryClientTestConfig(String quarkusBomGroupId, String quarkusBomVersion) {
+        enableRegistryClientTestConfig(getConfigBaseDir(), System.getProperties(), quarkusBomGroupId, quarkusBomVersion);
+    }
 
     public static void enableRegistryClientTestConfig() {
         enableRegistryClientTestConfig(System.getProperties());
     }
 
     public static void enableRegistryClientTestConfig(Properties properties) {
-        enableRegistryClientTestConfig(Paths.get("").normalize().toAbsolutePath().resolve("target"),
-                properties);
+        enableRegistryClientTestConfig(getConfigBaseDir(), properties);
+    }
+
+    private static Path getConfigBaseDir() {
+        return Paths.get("").normalize().toAbsolutePath().resolve("target");
     }
 
     public static void enableRegistryClientTestConfig(Path outputDir, Properties properties) {
-        final String projectVersion = System.getProperty("project.version");
-        if (projectVersion == null) {
-            throw new IllegalStateException("System property project.version isn't set");
+        final String quarkusBomVersion = System.getProperty("project.version");
+        final String quarkusBomGroupId = System.getProperty("project.groupId");
+        enableRegistryClientTestConfig(outputDir, properties, quarkusBomGroupId, quarkusBomVersion);
+    }
+
+    public static void enableRegistryClientTestConfig(Path outputDir, Properties properties, String quarkusBomGroupId,
+            String quarkusBomVersion) {
+        if (quarkusBomVersion == null) {
+            throw new IllegalStateException("quarkusBomVersion isn't set");
+        }
+        if (quarkusBomGroupId == null) {
+            throw new IllegalStateException("quarkusBomGroupId isn't set");
         }
 
         final Path toolsConfigPath = outputDir.resolve(RegistriesConfigLocator.CONFIG_RELATIVE_PATH);
 
-        final ArtifactCoords bom = new ArtifactCoords("io.quarkus", "quarkus-bom", null, "pom", projectVersion);
+        final ArtifactCoords bom = ArtifactCoords.pom(quarkusBomGroupId, "quarkus-bom", quarkusBomVersion);
 
         TestRegistryClientBuilder.newInstance()
                 .baseDir(toolsConfigPath.getParent())
                 //.debug()
                 .newRegistry("test.quarkus.registry")
                 .newPlatform(bom.getGroupId())
-                .newStream(projectVersion)
-                .newRelease(projectVersion)
-                .quarkusVersion(projectVersion)
+                .newStream(quarkusBomVersion)
+                .newRelease(quarkusBomVersion)
+                .quarkusVersion(quarkusBomVersion)
                 .addMemberBom(bom)
                 .registry()
                 .clientBuilder()
                 .build();
 
+        enableExistingConfig(properties, toolsConfigPath);
+    }
+
+    public static void reenableRegistryClientTestConfig() {
+        final Path toolsConfigPath = getConfigBaseDir().resolve(RegistriesConfigLocator.CONFIG_RELATIVE_PATH);
+        if (Files.exists(toolsConfigPath)) {
+            enableExistingConfig(System.getProperties(), toolsConfigPath);
+        }
+        enableRegistryClientTestConfig();
+    }
+
+    private static void enableExistingConfig(Properties properties, final Path toolsConfigPath) {
         properties.setProperty(RegistriesConfigLocator.CONFIG_FILE_PATH_PROPERTY, toolsConfigPath.toString());
         properties.setProperty("quarkusRegistryClient", "true");
         QuarkusProjectHelper.reset();

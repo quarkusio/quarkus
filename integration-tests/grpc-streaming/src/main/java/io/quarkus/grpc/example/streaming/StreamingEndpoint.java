@@ -1,8 +1,10 @@
 package io.quarkus.grpc.example.streaming;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
@@ -18,6 +20,7 @@ public class StreamingEndpoint {
     MutinyStreamingGrpc.MutinyStreamingStub streaming;
 
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
     public Multi<String> invokeSource() {
         return streaming.source(Empty.newBuilder().build())
                 .onItem().transform(Item::getValue);
@@ -34,6 +37,7 @@ public class StreamingEndpoint {
 
     @GET
     @Path("/{max}")
+    @Produces(MediaType.APPLICATION_JSON)
     public Multi<String> invokePipe(@PathParam("max") int max) {
         Multi<Item> inputs = Multi.createFrom().range(0, max)
                 .map(i -> Integer.toString(i))

@@ -1,8 +1,9 @@
 package io.quarkus.kafka.streams.runtime;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -23,11 +24,15 @@ public class KafkaStreamsTopologyManager {
     }
 
     public Set<String> getMissingTopics(Collection<String> topicsToCheck) throws InterruptedException {
-        HashSet<String> missing = new HashSet<>(topicsToCheck);
+        return getMissingTopics(topicsToCheck, Duration.ofSeconds(10)); // keep defaults
+    }
+
+    public Set<String> getMissingTopics(Collection<String> topicsToCheck, Duration timeout) throws InterruptedException {
+        Set<String> missing = new LinkedHashSet<>(topicsToCheck);
 
         try {
             ListTopicsResult topics = adminClient.listTopics();
-            Set<String> topicNames = topics.names().get(10, TimeUnit.SECONDS);
+            Set<String> topicNames = topics.names().get(timeout.toMillis(), TimeUnit.MILLISECONDS);
 
             if (topicNames.containsAll(topicsToCheck)) {
                 return Collections.emptySet();

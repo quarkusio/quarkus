@@ -41,13 +41,15 @@ import com.google.common.io.Files;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.tools.ToolsConstants;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
  */
 @DisableForNative
 public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
+
+    private DevModeClient devModeClient = new DevModeClient();
 
     private Invoker invoker;
     private RunningInvoker running;
@@ -84,17 +86,23 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         assertThat(new File(testDir, "src/main/docker/Dockerfile.jvm")).isFile();
 
         Model model = loadPom(testDir);
+
+        assertThat(model.getName()).isNull();
+        assertThat(model.getDescription()).isNull();
+
         final DependencyManagement dependencyManagement = model.getDependencyManagement();
         final List<Dependency> dependencies = dependencyManagement.getDependencies();
         assertThat(dependencies.stream()
                 .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
                         && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
                         && d.getScope().equals("import")
-                        && d.getType().equals("pom"))).isTrue();
+                        && d.getType().equals("pom")))
+                .isTrue();
 
         assertThat(
-                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")
-                        && d.getVersion() == null)).isTrue();
+                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy-reactive")
+                        && d.getVersion() == null))
+                .isTrue();
 
         assertThat(model.getProfiles()).hasSize(1);
         assertThat(model.getProfiles().get(0).getId()).isEqualTo("native");
@@ -111,6 +119,34 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
                 .returns(LogManager.class.getName(), from(Xpp3Dom::getValue));
         assertThat(surefireSystemProperties.getChild("maven.home"))
                 .returns("${maven.home}", from(Xpp3Dom::getValue));
+    }
+
+    @Test
+    public void testProjectGenerationFromScratchWithNameAndDescription() throws MavenInvocationException, IOException {
+        testDir = initEmptyProject("projects/project-generation-name-description");
+        assertThat(testDir).isDirectory();
+        invoker = initInvoker(testDir);
+
+        Properties properties = new Properties();
+        properties.put("projectGroupId", "org.acme");
+        properties.put("projectArtifactId", "acme");
+        properties.put("projectVersion", "1.0.0-SNAPSHOT");
+        properties.put("projectName", "My name");
+        properties.put("projectDescription", "My description");
+
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isZero();
+
+        // As the directory is not empty (log) navigate to the artifactID directory
+        testDir = new File(testDir, "acme");
+
+        assertThat(new File(testDir, "pom.xml")).isFile();
+
+        Model model = loadPom(testDir);
+
+        assertThat(model.getName()).isEqualTo("My name");
+        assertThat(model.getDescription()).isEqualTo("My description");
     }
 
     @Test
@@ -277,15 +313,18 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
                 .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
                         && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
                         && d.getScope().equals("import")
-                        && d.getType().equals("pom"))).isTrue();
+                        && d.getType().equals("pom")))
+                .isTrue();
 
         assertThat(
                 model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")
-                        && d.getVersion() == null)).isTrue();
+                        && d.getVersion() == null))
+                .isTrue();
 
         assertThat(model.getDependencies().stream()
                 .anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-smallrye-metrics")
-                        && d.getVersion() == null)).isTrue();
+                        && d.getVersion() == null))
+                .isTrue();
     }
 
     @Test
@@ -312,10 +351,6 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         assertThat(new File(testDir, "gradlew")).isFile();
         assertThat(new File(testDir, "gradle/wrapper")).isDirectory();
         assertThat(new File(testDir, "src/main/kotlin")).isDirectory();
-
-        File gradleProperties = new File(testDir, "gradle.properties");
-        assertThat(gradleProperties).isFile();
-        check(gradleProperties, "org.gradle.logging.level=INFO");
 
         check(new File(testDir, "src/main/kotlin/org/acme/MyResource.kt"), "package org.acme");
 
@@ -351,14 +386,44 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
                 .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
                         && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
                         && d.getScope().equals("import")
-                        && d.getType().equals("pom"))).isTrue();
+                        && d.getType().equals("pom")))
+                .isTrue();
 
         assertThat(
                 model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")
-                        && d.getVersion() == null)).isTrue();
+                        && d.getVersion() == null))
+                .isTrue();
 
         assertThat(model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("commons-io")
                 && d.getVersion().equalsIgnoreCase("2.5"))).isTrue();
+    }
+
+    @Test
+    public void testBadArtifactId() throws Exception {
+        testDir = initEmptyProject("projects/project-generation-with-bad-artifact-id");
+        assertThat(testDir).isDirectory();
+        invoker = initInvoker(testDir);
+
+        Properties properties = new Properties();
+        properties.put("projectArtifactId", "acme,fail");
+        properties.put("extensions", "resteasy,commons-io:commons-io:2.5");
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isNotZero();
+    }
+
+    @Test
+    public void testBadGroupId() throws Exception {
+        testDir = initEmptyProject("projects/project-generation-with-bad-group-id");
+        assertThat(testDir).isDirectory();
+        invoker = initInvoker(testDir);
+
+        Properties properties = new Properties();
+        properties.put("projectGroupId", "acme,fail");
+        properties.put("extensions", "resteasy,commons-io:commons-io:2.5");
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isNotZero();
     }
 
     @Test
@@ -391,6 +456,80 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
                 .read();
         configs.forEach(conf -> Assertions.assertTrue(file.contains(conf)));
 
+    }
+
+    @Test
+    public void testProjectGenerationFromScratchWithJava11() throws MavenInvocationException, IOException {
+        testDir = initEmptyProject("projects/project-generation-with-java11");
+        assertThat(testDir).isDirectory();
+        invoker = initInvoker(testDir);
+
+        Properties properties = new Properties();
+        properties.put("javaVersion", "11");
+
+        InvocationResult result = setup(properties);
+        assertThat(result.getExitCode()).isZero();
+
+        testDir = new File(testDir, "code-with-quarkus");
+        assertThat(new File(testDir, "pom.xml")).isFile();
+        assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
+                .contains("maven.compiler.release>11<");
+    }
+
+    @Test
+    public void testProjectGenerationFromScratchWithJava17() throws MavenInvocationException, IOException {
+        testDir = initEmptyProject("projects/project-generation-with-java17");
+        assertThat(testDir).isDirectory();
+        invoker = initInvoker(testDir);
+
+        Properties properties = new Properties();
+        properties.put("javaVersion", "17");
+
+        InvocationResult result = setup(properties);
+        assertThat(result.getExitCode()).isZero();
+
+        testDir = new File(testDir, "code-with-quarkus");
+        assertThat(new File(testDir, "pom.xml")).isFile();
+        assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
+                .contains("maven.compiler.release>17<");
+    }
+
+    @Test
+    public void testProjectGenerationFromScratchWithGradleJava11() throws MavenInvocationException, IOException {
+        testDir = initEmptyProject("projects/project-generation-with-gradle-java11");
+        assertThat(testDir).isDirectory();
+        invoker = initInvoker(testDir);
+
+        Properties properties = new Properties();
+        properties.put("javaVersion", "11");
+        properties.put("buildTool", "gradle");
+
+        InvocationResult result = setup(properties);
+        assertThat(result.getExitCode()).isZero();
+
+        testDir = new File(testDir, "code-with-quarkus");
+        assertThat(new File(testDir, "build.gradle")).isFile();
+        assertThat(FileUtils.readFileToString(new File(testDir, "build.gradle"), "UTF-8"))
+                .contains("sourceCompatibility = JavaVersion.VERSION_11");
+    }
+
+    @Test
+    public void testProjectGenerationFromScratchWithGradleJava17() throws MavenInvocationException, IOException {
+        testDir = initEmptyProject("projects/project-generation-with-gradle-java17");
+        assertThat(testDir).isDirectory();
+        invoker = initInvoker(testDir);
+
+        Properties properties = new Properties();
+        properties.put("javaVersion", "17");
+        properties.put("buildTool", "gradle");
+
+        InvocationResult result = setup(properties);
+        assertThat(result.getExitCode()).isZero();
+
+        testDir = new File(testDir, "code-with-quarkus");
+        assertThat(new File(testDir, "build.gradle")).isFile();
+        assertThat(FileUtils.readFileToString(new File(testDir, "build.gradle"), "UTF-8"))
+                .contains("sourceCompatibility = JavaVersion.VERSION_17");
     }
 
     /**
@@ -451,12 +590,13 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         mvnRunProps.setProperty("debug", "false");
         running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap(), mvnRunProps);
 
-        String resp = DevModeTestUtils.getHttpResponse();
+        String resp = devModeClient.getHttpResponse();
 
-        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
+        assertThat(resp).containsIgnoringCase("Congratulations!").containsIgnoringCase("application")
+                .containsIgnoringCase("org.acme")
                 .containsIgnoringCase("1.0.0-SNAPSHOT");
 
-        String greeting = DevModeTestUtils.getHttpResponse("/hello");
+        String greeting = devModeClient.getHttpResponse("/hello");
         assertThat(greeting).containsIgnoringCase("hello");
     }
 

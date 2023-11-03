@@ -3,8 +3,10 @@ package org.jboss.resteasy.reactive.common.headers;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.RuntimeDelegate;
+
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.RuntimeDelegate;
+
 import org.jboss.resteasy.reactive.common.util.HeaderParameterParser;
 
 /**
@@ -14,8 +16,8 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
     public static final MediaTypeHeaderDelegate INSTANCE = new MediaTypeHeaderDelegate();
     private static final int MAX_MT_CACHE_SIZE = 200;
     private static final char[] quotedChars = "()<>@,;:\\\"/[]?= \t\r\n".toCharArray();
-    private static final Map<String, MediaType> map = new ConcurrentHashMap<String, MediaType>();
-    private static final Map<MediaType, String> reverseMap = new ConcurrentHashMap<MediaType, String>();
+    private static final Map<String, MediaType> map = new ConcurrentHashMap<>();
+    private static final Map<MediaType, String> reverseMap = new ConcurrentHashMap<>();
 
     protected static boolean isValid(String str) {
         if (str == null || str.length() == 0)
@@ -55,7 +57,7 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
                 reverseMap.clear();
             }
             map.put(type, result);
-            reverseMap.put(result, type);
+            reverseMap.put(result, internalToString(result));
         }
         return result;
     }
@@ -78,6 +80,9 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
         } else {
             major = type.substring(0, typeIndex);
             if (paramIndex > -1) {
+                if (typeIndex + 1 > paramIndex) {
+                    throw new IllegalArgumentException("Failed to parse media type " + type);
+                }
                 subtype = type.substring(typeIndex + 1, paramIndex);
             } else {
                 subtype = type.substring(typeIndex + 1);
@@ -141,10 +146,10 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
         return result;
     }
 
-    private String internalToString(MediaType type) {
-        StringBuilder buf = new StringBuilder();
+    private static String internalToString(MediaType type) {
+        StringBuilder buf = new StringBuilder(type.getType().length() + type.getSubtype().length() + 1);
 
-        buf.append(type.getType().toLowerCase()).append("/").append(type.getSubtype().toLowerCase());
+        buf.append(type.getType().toLowerCase()).append('/').append(type.getSubtype().toLowerCase());
         if (type.getParameters() == null || type.getParameters().size() == 0)
             return buf.toString();
         for (String name : type.getParameters().keySet()) {

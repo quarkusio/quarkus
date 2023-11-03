@@ -1,21 +1,19 @@
 package io.quarkus.qute;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
 public class IncludeTest {
 
     @Test
     public void testInclude() {
-        Engine engine = Engine.builder().addSectionHelper(new IncludeSectionHelper.Factory())
-                .addSectionHelper(new InsertSectionHelper.Factory())
-                .addValueResolver(ValueResolvers.thisResolver())
-                .build();
+        Engine engine = Engine.builder().addDefaults().build();
 
         engine.putTemplate("super", engine.parse("{this}: {#insert header}default header{/insert}"));
         assertEquals("HEADER: super header",
@@ -24,10 +22,7 @@ public class IncludeTest {
 
     @Test
     public void testMultipleInserts() {
-        Engine engine = Engine.builder().addSectionHelper(new IncludeSectionHelper.Factory())
-                .addSectionHelper(new InsertSectionHelper.Factory())
-                .addValueResolver(ValueResolvers.thisResolver())
-                .build();
+        Engine engine = Engine.builder().addDefaults().build();
 
         engine.putTemplate("super",
                 engine.parse("{#insert header}default header{/insert} AND {#insert content}default content{/insert}"));
@@ -39,10 +34,7 @@ public class IncludeTest {
 
     @Test
     public void testIncludeSimpleData() {
-        Engine engine = Engine.builder().addSectionHelper(new IncludeSectionHelper.Factory())
-                .addSectionHelper(new InsertSectionHelper.Factory())
-                .addValueResolver(ValueResolvers.mapResolver())
-                .build();
+        Engine engine = Engine.builder().addDefaults().build();
 
         Map<String, String> data = new HashMap<>();
         data.put("name", "Al");
@@ -65,7 +57,8 @@ public class IncludeTest {
         Engine engine = Engine.builder().addDefaults().build();
         engine.putTemplate("foo", engine.parse("{#insert snippet}empty{/insert}"));
         assertEquals("1.2.3.4.5.",
-                engine.parse("{#for i in 5}{#include foo}{#snippet}{count}.{/snippet} this should be ingored {/include}{/for}")
+                engine.parse(
+                        "{#for i in 5}{#include foo}{#snippet}{i_count}.{/snippet} this should be ingored {/include}{/for}")
                         .render());
     }
 
@@ -114,7 +107,10 @@ public class IncludeTest {
     public void testInsertParam() {
         Engine engine = Engine.builder().addDefaults().build();
         engine.putTemplate("super", engine.parse("{#insert header}default header{/insert} and {#insert footer}{that}{/}"));
-        assertEquals("1 and 1", engine.parse("{#include 'super' that=foo}{#header}{that}{/}{/}").data("foo", 1).render());
+        Template foo = engine.parse("{#include 'super' that=foo}{#header}{that}{/}{/}");
+        // foo, that
+        assertEquals(2, foo.getExpressions().size());
+        assertEquals("1 and 1", foo.data("foo", 1).render());
     }
 
     @Test
@@ -144,12 +140,115 @@ public class IncludeTest {
     public void testAmbiguousInserts() {
         Engine engine = Engine.builder().addDefaults().build();
         engine.putTemplate("super", engine.parse("{#insert header}default header{/insert}"));
-        try {
-            engine.parse("{#include super}{#header}1{/}{#header}2{/}{/}");
-            fail();
-        } catch (TemplateException expected) {
-            assertTrue(expected.getMessage().contains("Multiple blocks"));
-        }
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> engine.parse("{#include super}{#header}1{/}{#header}2{/}{/}"))
+                .withMessage(
+                        "Rendering error: multiple blocks define the content for the {#insert} section of name [header]")
+                .hasFieldOrProperty("origin")
+                .hasFieldOrProperty("code");
+    }
+
+    @Test
+    public void testInsertInLoop() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("super", engine.parse("{#for i in 5}{#insert row}No row{/}{/for}"));
+        assertEquals("1:2:3:4:5:", engine.parse("{#include super}{#row}{i}:{/row}{/}").render());
+    }
+
+    @Test
+    public void testTagAndInsertConflict() {
+        Engine engine = Engine.builder().addDefaults().addSectionHelper(new UserTagSectionHelper.Factory("row", "row")).build();
+        engine.putTemplate("row", engine.parse("{foo}"));
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> engine.parse("{#insert}{/}\n{#insert row /}"))
+                .withMessage(
+                        "Parser error: {#insert} defined in the {#include} conflicts with an existing section/tag: row")
+                .hasFieldOrProperty("origin")
+                .hasFieldOrProperty("code");
+    }
+
+    @Test
+    public void testIncludeNotFound() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> engine.parse("{#include super}{#header}super header{/header}{/include}", null, "foo.html")
+                        .render())
+                .withMessage(
+                        "Rendering error in template [foo.html] line 1: included template [super] not found")
+                .hasFieldOrProperty("origin")
+                .hasFieldOrProperty("code");
+    }
+
+    @Test
+    public void testIsolated() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("foo", engine.parse("{val ?: 'bar'}"));
+        assertEquals("bar", engine.parse("{#include foo _isolated /}").data("val", "baz").render());
+    }
+
+    @Test
+    public void testFragment() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("foo", engine.parse("---{#fragment bar}{val}{/fragment}---"));
+        Template baz = engine.parse(
+                "{#fragment nested}NESTED{/fragment} {#include foo$bar val=1 /} {#include baz$nested /}");
+        engine.putTemplate("baz", baz);
+        assertEquals("NESTED 1 NESTED", baz.render());
+    }
+
+    @Test
+    public void testIgnoreFragments() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("foo$bar", engine.parse("{val}"));
+        Template baz = engine.parse("{#include foo$bar val=1 _ignoreFragments=true /}");
+        engine.putTemplate("baz", baz);
+        assertEquals("1", baz.render());
+    }
+
+    @Test
+    public void testInvalidFragment() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("foo", engine.parse("foo"));
+        TemplateException expected = assertThrows(TemplateException.class,
+                () -> engine.parse("{#include foo$foo_and_bar /}", null, "bum.html").render());
+        assertEquals(IncludeSectionHelper.Code.FRAGMENT_NOT_FOUND, expected.getCode());
+        assertEquals(
+                "Rendering error in template [bum.html] line 1: fragment [foo_and_bar] not found in the included template [foo]",
+                expected.getMessage());
+
+        expected = assertThrows(TemplateException.class,
+                () -> engine.parse("{#include foo$foo-and_bar /}", null, "bum.html").render());
+        assertEquals(IncludeSectionHelper.Code.INVALID_FRAGMENT_ID, expected.getCode());
+        assertEquals(
+                "Rendering error in template [bum.html] line 1: invalid fragment identifier [foo-and_bar]",
+                expected.getMessage());
+    }
+
+    @Test
+    public void testOptionalEndTag() {
+        Engine engine = Engine.builder().addDefaults().build();
+
+        engine.putTemplate("super", engine.parse("{#insert header}default header{/insert}::{#insert}{/}"));
+        assertEquals("super header:: body",
+                engine.parse("{#include super}{#header}super header{/header} body").render());
+        assertEquals("super header:: 1",
+                engine.parse("{#let foo = 1}{#include super}{#header}super header{/header} {foo}").render());
+        assertEquals("default header:: 1",
+                engine.parse("{#include super}{#let foo=1} {foo}").render());
+    }
+
+    @Test
+    public void testIsolation() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .strictRendering(false)
+                .build();
+
+        Template foo = engine.parse("{name}");
+        engine.putTemplate("foo", foo);
+        assertEquals("Dorka", engine.parse("{#include foo /}").data("name", "Dorka").render());
+        assertEquals("Dorka", engine.parse("{#include foo _unisolated /}").data("name", "Dorka").render());
+        assertEquals("NOT_FOUND", engine.parse("{#include foo _isolated /}").data("name", "Dorka").render());
     }
 
 }

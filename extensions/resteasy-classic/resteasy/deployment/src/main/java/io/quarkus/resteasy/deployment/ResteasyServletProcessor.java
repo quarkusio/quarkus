@@ -7,14 +7,11 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import javax.servlet.DispatcherType;
-import javax.ws.rs.core.Application;
+import jakarta.servlet.DispatcherType;
+import jakarta.ws.rs.core.Application;
 
 import org.jboss.logging.Logger;
 import org.jboss.metadata.web.spec.ServletMappingMetaData;
-import org.jboss.resteasy.microprofile.config.FilterConfigSourceImpl;
-import org.jboss.resteasy.microprofile.config.ServletConfigSourceImpl;
-import org.jboss.resteasy.microprofile.config.ServletContextConfigSourceImpl;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 
 import io.quarkus.deployment.Capabilities;
@@ -56,9 +53,8 @@ public class ResteasyServletProcessor {
             BuildProducer<io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
             HttpRootPathBuildItem httpRootPathBuildItem) {
         if (resteasyServerConfig.isPresent()) {
-            String rp = resteasyServerConfig.get().getRootPath();
-            String rootPath = httpRootPathBuildItem.resolvePath(rp.startsWith("/") ? rp.substring(1) : rp);
-            String defaultPath = httpRootPathBuildItem.resolvePath(resteasyServerConfig.get().getPath());
+            String rootPath = httpRootPathBuildItem.relativePath(resteasyServerConfig.get().getRootPath());
+            String defaultPath = resteasyServerConfig.get().getPath();
 
             deprecatedResteasyJaxrsConfig.produce(new ResteasyJaxrsConfigBuildItem(defaultPath));
             resteasyJaxrsConfig
@@ -93,17 +89,14 @@ public class ResteasyServletProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ServletInitParamBuildItem> servletInitParameters,
             Optional<ServletContextPathBuildItem> servletContextPathBuildItem,
-            ResteasyInjectionReadyBuildItem resteasyInjectionReady) throws Exception {
+            ResteasyInjectionReadyBuildItem resteasyInjectionReady) {
+
         if (!capabilities.isPresent(Capability.SERVLET)) {
             return;
         }
         feature.produce(new FeatureBuildItem(Feature.RESTEASY));
 
         if (resteasyServerConfig.isPresent()) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                    ServletConfigSourceImpl.class,
-                    ServletContextConfigSourceImpl.class,
-                    FilterConfigSourceImpl.class));
             String path = resteasyServerConfig.get().getPath();
 
             //if JAX-RS is installed at the root location we use a filter, otherwise we use a Servlet and take over the whole mapped path
@@ -113,12 +106,14 @@ public class ResteasyServletProcessor {
                         .addFilterServletNameMapping("default", DispatcherType.FORWARD)
                         .addFilterServletNameMapping("default", DispatcherType.INCLUDE).setAsyncSupported(true)
                         .build());
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ResteasyFilter.class.getName()));
+                reflectiveClass.produce(
+                        ReflectiveClassBuildItem.builder(ResteasyFilter.class.getName()).build());
             } else {
                 String mappingPath = getMappingPath(path);
                 servlet.produce(ServletBuildItem.builder(JAX_RS_SERVLET_NAME, ResteasyServlet.class.getName())
                         .setLoadOnStartup(1).addMapping(mappingPath).setAsyncSupported(true).build());
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, HttpServlet30Dispatcher.class.getName()));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(HttpServlet30Dispatcher.class.getName())
+                        .build());
             }
 
             for (Entry<String, String> initParameter : resteasyServerConfig.get().getInitParameters().entrySet()) {

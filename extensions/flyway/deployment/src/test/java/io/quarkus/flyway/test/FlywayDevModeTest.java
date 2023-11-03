@@ -2,8 +2,6 @@ package io.quarkus.flyway.test;
 
 import java.util.function.Function;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -14,13 +12,13 @@ import io.restassured.RestAssured;
 /**
  * Flyway needs a datasource to work.
  * This tests assures, that an error occurs,
- * as soon as the default flyway configuration points to an missing default datasource.
+ * as soon as the default flyway configuration points to a missing default datasource.
  */
 public class FlywayDevModeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(DevModeTestEndpoint.class)
                     .addAsResource("db/migration/V1.0.0__Quarkus.sql")
                     .addAsResource("config-empty.properties", "application.properties"));

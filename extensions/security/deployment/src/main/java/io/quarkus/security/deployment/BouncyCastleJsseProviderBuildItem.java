@@ -1,8 +1,10 @@
 package io.quarkus.security.deployment;
 
-import io.quarkus.builder.item.SimpleBuildItem;
+import java.util.Objects;
 
-public final class BouncyCastleJsseProviderBuildItem extends SimpleBuildItem {
+import io.quarkus.builder.item.MultiBuildItem;
+
+public final class BouncyCastleJsseProviderBuildItem extends MultiBuildItem {
     private final boolean inFipsMode;
 
     public BouncyCastleJsseProviderBuildItem() {
@@ -17,4 +19,18 @@ public final class BouncyCastleJsseProviderBuildItem extends SimpleBuildItem {
         return inFipsMode;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        BouncyCastleJsseProviderBuildItem that = (BouncyCastleJsseProviderBuildItem) o;
+        return inFipsMode == that.inFipsMode;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(inFipsMode);
+    }
 }

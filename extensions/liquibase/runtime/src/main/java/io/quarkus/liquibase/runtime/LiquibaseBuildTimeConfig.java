@@ -15,7 +15,7 @@ public final class LiquibaseBuildTimeConfig {
 
     /**
      * Gets the default build time configuration
-     * 
+     *
      * @return the liquibase build time default configuration
      */
     public static LiquibaseBuildTimeConfig defaultConfig() {

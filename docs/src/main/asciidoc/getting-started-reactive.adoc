@@ -4,8 +4,10 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Getting Started With Reactive
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: getting-started,reactive
+:summary: Learn more about developing reactive applications with Quarkus.
+:topics: getting-started,reactive
 
 _Reactive_ is a set of principles to build robust, efficient, and concurrent applications and systems.
 These principles let you handle more load than traditional approaches while using the resources (CPU and memory) more efficiently while also reacting to failures gracefully.
@@ -15,7 +17,7 @@ Since the beginning, _Reactive_ has been an essential tenet of the Quarkus archi
 It includes many reactive features and offers a broad ecosystem.
 
 This guide is not an in-depth article about what _Reactive_ is and how Quarkus enables reactive architectures.
-If you want to read more about these topics, refer to xref:quarkus-reactive-architecture.adoc[], which provides an overview of the Quarkus reactive ecosystem.
+If you want to read more about these topics, refer to the xref:quarkus-reactive-architecture.adoc[Reactive Architecture guide], which provides an overview of the Quarkus reactive ecosystem.
 
 In this guide, we will get you started with some reactive features of Quarkus.
 We are going to implement a simple CRUD application.
@@ -30,12 +32,7 @@ This guide will help you with:
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* around 15 minutes
-* your favorite IDE
-* Java 11+ installed with `JAVA_HOME` configured appropriately.
-* Apache Maven {maven-version}
+include::{includes}/prerequisites.adoc[]
 
 NOTE: Verify that Maven is using the Java version you expect.
 If you have multiple JDKs installed, make sure Maven is using the expected one.
@@ -125,9 +122,9 @@ Let's start with the `Fruit` entity.Create the `src/main/java/org/acme/hibernate
 ----
 package org.acme.hibernate.orm.panache;
 
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
 
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;  // <1>
 
@@ -140,7 +137,7 @@ public class Fruit extends PanacheEntity {
 
 }
 ----
-1. Make sure you import the reactive variant of `PanacheEntity`.
+<1> Make sure you import the reactive variant of `PanacheEntity`.
 
 This class represents `Fruits`.
 It's a straightforward entity with a single field (`name`).
@@ -150,7 +147,7 @@ It interacts with the database without blocking the thread.
 In addition, this reactive `PanacheEntity` proposes a reactive API.
 We will use this API to implement the REST endpoint.
 
-Before going further, open the `src/main/resource/application.properties` file and add:
+Before going further, open the `src/main/resources/application.properties` file and add:
 
 [source, properties]
 ----
@@ -164,9 +161,10 @@ In the same directory, create an `import.sql` file, which inserts a few fruits, 
 
 [source, text]
 ----
-INSERT INTO fruit(id, name) VALUES (nextval('hibernate_sequence'), 'Cherry');
-INSERT INTO fruit(id, name) VALUES (nextval('hibernate_sequence'), 'Apple');
-INSERT INTO fruit(id, name) VALUES (nextval('hibernate_sequence'), 'Banana');
+INSERT INTO fruit(id, name) VALUES (1, 'Cherry');
+INSERT INTO fruit(id, name) VALUES (2, 'Apple');
+INSERT INTO fruit(id, name) VALUES (3, 'Banana');
+ALTER SEQUENCE fruit_seq RESTART WITH 4;
 ----
 
 In a terminal, launch the application in dev mode using: `./mvnw quarkus:dev`.
@@ -186,8 +184,8 @@ Create the `src/main/java/org/acme/hibernate/orm/panache/FruitResource.java` fil
 ----
 package org.acme.hibernate.orm.panache;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.Path;
 
 @Path("/fruits")
 @ApplicationScoped
@@ -253,22 +251,15 @@ The `create` method allows adding a new fruit to the database:
 [source, java]
 ----
 @POST
-public Uni<Response> create(Fruit fruit) {
-    return Panache.<Fruit>withTransaction(fruit::persist)
-            .onItem().transform(inserted -> Response.created(URI.create("/fruits/" + inserted.id)).build());
+public Uni<RestResponse<Fruit>> create(Fruit fruit) {
+    return Panache.withTransaction(fruit::persist).replaceWith(RestResponse.status(CREATED, fruit));
 }
 ----
 
 The code is a bit more involved.
-To write to a database, we need a transaction.
-So we use `Panache.withTransaction` to get one (asynchronously) and call the `persist` method when we receive the transaction.
-The `persist` method is also returning a `Uni`.
-This `Uni` emits the result of the insertion of the fruit in the database.
-Once the insertion completes (and that's our continuation), we create a `201 CREATED` response.
-RESTEasy Reactive automatically reads the request body as JSON and creates the `Fruit` instance.
-
-NOTE: The `.onItem().transform(...)` can be replaced with `.map(...)`.
-`map` is a shortcut.
+To write to a database, we need a transaction, therefore we use `Panache.withTransaction` to obtain one (asynchronously) and proceed to call the `persist` method.
+The `persist` method returns a `Uni` that emits the result of the insertion of the fruit in the database.
+Once the insertion completes (which plays the role of the continuation), we create a `201 CREATED` HTTP response.
 
 If you have https://curl.se/[curl] on your machine, you can try the endpoint using:
 
@@ -289,7 +280,17 @@ The fact that the application is reactive does not change anything.
 
 In https://github.com/quarkusio/quarkus-quickstarts/blob/main/hibernate-reactive-panache-quickstart/src/test/java/org/acme/hibernate/orm/panache/FruitsEndpointTest.java[FruitsEndpointTest.java] you can see how the test for the fruit application can be implemented.
 
-Packaging and running the application does not change either.The `./mvnw package` and `./mvnw package -Pnative` to generate a native executable works as usual.You can also package the application in a container.
+Packaging and running the application does not change either.
+
+You can use the following command as usual:
+
+include::{includes}/devtools/build.adoc[]
+
+or to build a native executable:
+
+include::{includes}/devtools/build-native.adoc[]
+
+You can also package the application in a container.
 
 To run the application, don’t forget to start a database and provide the configuration to your application.
 
@@ -297,10 +298,10 @@ For example, you can use Docker to run your database:
 
 [source, bash]
 ----
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 \
+docker run -it --rm=true \
     --name postgres-quarkus -e POSTGRES_USER=quarkus \
     -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=fruits \
-    -p 5432:5432 postgres:13.1
+    -p 5432:5432 postgres:14.1
 ----
 
 Then, launch the application using:
@@ -326,7 +327,7 @@ Or, if you packaged your application as native executable, use:
 ----
 
 The parameters passed to the application are described in the datasource guide.
-There are other ways to configure the application - please check the link:config-reference#configuration_sources[configuration guide] to have an overview of the possibilities (such as env variable, .env files and so on).
+There are other ways to configure the application - please check the xref:config-reference.adoc#configuration-sources[configuration guide] to have an overview of the possibilities (such as env variable, .env files and so on).
 
 == Going further
 

@@ -24,7 +24,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-deployment</artifactId>
+            <artifactId>quarkus-vertx-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -36,7 +36,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jackson-deployment</artifactId>
+            <artifactId>quarkus-devservices-deployment</artifactId>
         </dependency>
         <!-- Test dependencies -->
         <dependency>
@@ -57,6 +57,17 @@
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-core</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.sun.activation</groupId>
+                    <artifactId>jakarta.activation</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>angus-activation</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -149,9 +160,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <keycloak.url>http://localhost:8180/auth</keycloak.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -160,7 +168,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${keycloak.docker.image}</name>
+                                    <name>${keycloak.docker.legacy.image}</name>
                                     <alias>quarkus-test-keycloak</alias>
                                     <run>
                                         <ports>
@@ -176,7 +184,7 @@
                                             <color>cyan</color>
                                         </log>
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
+                                            <!-- good docs found at: https://dmp.fabric8.io/#build-healthcheck -->
                                             <http>
                                                 <url>http://localhost:8180</url>
                                             </http>
@@ -224,6 +232,5 @@
                 </plugins>
             </build>
         </profile>
-
     </profiles>
 </project>

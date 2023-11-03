@@ -1,6 +1,6 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
-name: "Scheduler - tasks"
+name: "Scheduler"
 metadata:
   keywords:
   - "scheduler"
@@ -10,3 +10,5 @@ metadata:
   categories:
   - "miscellaneous"
   status: "stable"
+  config:
+  - "quarkus.scheduler."

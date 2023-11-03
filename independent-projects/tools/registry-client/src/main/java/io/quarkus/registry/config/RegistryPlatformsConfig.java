@@ -1,5 +1,7 @@
 package io.quarkus.registry.config;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
+
 /**
  * Configuration related to the resolution of catalogs of available platforms.
  */
@@ -14,4 +16,30 @@ public interface RegistryPlatformsConfig extends RegistryArtifactConfig {
      * @return true if the registry will be able to handle platform descriptor requests, otherwise - false
      */
     Boolean getExtensionCatalogsIncluded();
+
+    default Mutable mutable() {
+        return new RegistryPlatformsConfigImpl.Builder(this);
+    }
+
+    interface Mutable extends RegistryPlatformsConfig, RegistryArtifactConfig.Mutable {
+
+        @Override
+        RegistryPlatformsConfig.Mutable setArtifact(ArtifactCoords artifact);
+
+        @Override
+        RegistryPlatformsConfig.Mutable setDisabled(boolean disabled);
+
+        RegistryPlatformsConfig.Mutable setExtensionCatalogsIncluded(Boolean extensionCatalogsIncluded);
+
+        /** @return an immutable copy of this config */
+        @Override
+        RegistryPlatformsConfig build();
+    }
+
+    /**
+     * @return a new mutable instance
+     */
+    static Mutable builder() {
+        return new RegistryPlatformsConfigImpl.Builder();
+    }
 }

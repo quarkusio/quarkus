@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import io.vertx.core.buffer.Buffer;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -8,15 +7,20 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyWriter;
-import javax.ws.rs.ext.WriterInterceptor;
-import javax.ws.rs.ext.WriterInterceptorContext;
+
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+import jakarta.ws.rs.ext.WriterInterceptor;
+import jakarta.ws.rs.ext.WriterInterceptorContext;
+
+import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
+
+import io.vertx.core.buffer.Buffer;
 
 public class ClientWriterInterceptorContextImpl extends AbstractClientInterceptorContextImpl
         implements WriterInterceptorContext {
@@ -25,6 +29,7 @@ public class ClientWriterInterceptorContextImpl extends AbstractClientIntercepto
     boolean done = false;
     private int index = 0;
     private OutputStream outputStream = baos;
+    private final RestClientRequestContext clientRequestContext;
     private final Serialisers serialisers;
     private final ConfigurationImpl configuration;
     // as the interceptors can change the type or mediaType, when that happens we need to find a new reader/writer
@@ -40,8 +45,9 @@ public class ClientWriterInterceptorContextImpl extends AbstractClientIntercepto
     public ClientWriterInterceptorContextImpl(WriterInterceptor[] writerInterceptors, MessageBodyWriter writer,
             Annotation[] annotations, Class<?> entityClass, Type entityType, Object entity,
             MediaType mediaType, MultivaluedMap<String, String> headers, Map<String, Object> properties,
-            Serialisers serialisers, ConfigurationImpl configuration) {
+            RestClientRequestContext clientRequestContext, Serialisers serialisers, ConfigurationImpl configuration) {
         super(annotations, entityClass, entityType, mediaType, properties);
+        this.clientRequestContext = clientRequestContext;
         this.interceptors = writerInterceptors;
         this.writer = writer;
         this.entity = entity;
@@ -63,6 +69,15 @@ public class ClientWriterInterceptorContextImpl extends AbstractClientIntercepto
                 }
                 effectiveWriter = newWriters.get(0);
             }
+
+            if (effectiveWriter instanceof ClientRestHandler) {
+                try {
+                    ((ClientRestHandler) effectiveWriter).handle(clientRequestContext);
+                } catch (Exception e) {
+                    throw new WebApplicationException("Can't inject the client request context", e);
+                }
+            }
+
             effectiveWriter.writeTo(entity, entityClass, entityType,
                     annotations, mediaType, headers, outputStream);
             outputStream.close();

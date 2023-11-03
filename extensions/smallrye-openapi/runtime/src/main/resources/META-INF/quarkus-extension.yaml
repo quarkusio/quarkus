@@ -10,3 +10,8 @@ metadata:
   categories:
   - "web"
   status: "stable"
+  config:
+  - "quarkus.smallrye-openapi."
+  - "smallrye.openapi."
+  - "mp.openapi."
+  - "quarkus.swagger-ui."

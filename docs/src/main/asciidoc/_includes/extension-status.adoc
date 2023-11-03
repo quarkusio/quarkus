@@ -1,0 +1,23 @@
+[NOTE]
+====
+This technology is considered {extension-status}.
+
+ifeval::["{extension-status}" == "experimental"]
+In _experimental_ mode, early feedback is requested to mature the idea.
+There is no guarantee of stability nor long term presence in the platform until the solution matures.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+endif::[]
+ifeval::["{extension-status}" == "preview"]
+In _preview_, backward compatibility and presence in the ecosystem is not guaranteed.
+Specific improvements might require changing configuration or APIs, and plans to become _stable_ are under way.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+endif::[]
+ifeval::["{extension-status}" == "stable"]
+Being _stable_, backward compatibility and presence in the ecosystem are taken very seriously.
+endif::[]
+ifeval::["{extension-status}" == "deprecated"]
+Being _deprecated_ means that this extension is likely to be replaced or removed in a future version of Quarkus.
+endif::[]
+
+For a full list of possible statuses, check our https://quarkus.io/faq/#what-are-the-extension-statuses[FAQ entry].
+====

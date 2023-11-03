@@ -32,7 +32,7 @@
             <artifactId>smallrye-mutiny-vertx-mail-client</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.subethamail</groupId>
+            <groupId>com.github.davidmoten</groupId>
             <artifactId>subethasmtp</artifactId>
             <scope>test</scope>
             <exclusions>
@@ -44,11 +44,15 @@
                     <groupId>com.google.code.findbugs</groupId>
                     <artifactId>jsr305</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.sun.activation</groupId>
+                    <artifactId>jakarta.activation</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.sun.activation</groupId>
-            <artifactId>jakarta.activation</artifactId>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>angus-activation</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -67,7 +71,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

@@ -8,6 +8,7 @@ metadata:
   - "reactive"
   - "RXJava"
   - "Reactor"
+  guide: "https://quarkus.io/guides/mutiny-primer"
   categories:
   - "reactive"
-  status: "preview"
+  status: "stable"

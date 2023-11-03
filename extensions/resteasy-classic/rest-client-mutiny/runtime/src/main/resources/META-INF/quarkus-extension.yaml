@@ -1,6 +1,6 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
-name: "Mutiny support for REST Client"
+name: "RESTEasy Classic's REST Client Mutiny support"
 metadata:
   keywords:
   - "rest-client-mutiny"
@@ -11,4 +11,4 @@ metadata:
   categories:
   - "web"
   - "reactive"
-  status: "preview"
+  status: "deprecated"

@@ -1,8 +1,8 @@
 package io.quarkus.arc.test.interceptors;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.Dependent;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
 
 @Lifecycle
 @Dependent

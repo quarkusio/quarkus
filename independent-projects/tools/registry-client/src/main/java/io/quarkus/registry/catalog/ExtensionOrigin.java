@@ -1,6 +1,9 @@
 package io.quarkus.registry.catalog;
 
-import io.quarkus.maven.ArtifactCoords;
+import java.util.Map;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.json.JsonBuilder;
 
 public interface ExtensionOrigin {
 
@@ -28,4 +31,37 @@ public interface ExtensionOrigin {
      * @return true in case the origin is a platform, otherwise - false
      */
     boolean isPlatform();
+
+    /**
+     * @return optional metadata attached to the origin
+     */
+    Map<String, Object> getMetadata();
+
+    default Mutable mutable() {
+        return new ExtensionOriginImpl.Builder(this);
+    }
+
+    interface Mutable extends ExtensionOrigin, JsonBuilder<ExtensionOrigin> {
+
+        Mutable setId(String id);
+
+        Mutable setPlatform(boolean platform);
+
+        Mutable setBom(ArtifactCoords bom);
+
+        Mutable setMetadata(Map<String, Object> metadata);
+
+        Mutable setMetadata(String name, Object value);
+
+        Mutable removeMetadata(String key);
+
+        ExtensionOrigin build();
+    }
+
+    /**
+     * @return a new mutable instance
+     */
+    static Mutable builder() {
+        return new ExtensionOriginImpl.Builder();
+    }
 }

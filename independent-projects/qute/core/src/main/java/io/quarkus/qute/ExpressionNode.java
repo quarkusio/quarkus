@@ -2,42 +2,59 @@ package io.quarkus.qute;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
+
+import org.jboss.logging.Logger;
 
 /**
  * This node holds a single expression such as {@code foo.bar}.
  */
-class ExpressionNode implements TemplateNode, Function<Object, CompletionStage<ResultNode>> {
+class ExpressionNode implements TemplateNode {
+
+    private static final Logger LOG = Logger.getLogger("io.quarkus.qute.nodeResolve");
 
     final ExpressionImpl expression;
     private final Engine engine;
-    private final Origin origin;
+    private final boolean traceLevel;
+    private final boolean hasEngineResultMappers;
+    private final boolean unrestrictedCompletionStages;
 
-    public ExpressionNode(ExpressionImpl expression, Engine engine, Origin origin) {
+    ExpressionNode(ExpressionImpl expression, Engine engine) {
         this.expression = expression;
         this.engine = engine;
-        this.origin = origin;
+        this.traceLevel = LOG.isTraceEnabled();
+        this.hasEngineResultMappers = !engine.getResultMappers().isEmpty();
+        this.unrestrictedCompletionStages = CompletionStageSupport.UNRESTRICTED;
     }
 
     @Override
     public CompletionStage<ResultNode> resolve(ResolutionContext context) {
-        return context.evaluate(expression).thenCompose(this);
+        if (traceLevel) {
+            LOG.tracef("Resolve {%s} started:%s", expression.toOriginalString(), expression.getOrigin());
+        }
+        return context.evaluate(expression).thenCompose(this::toResultNode);
     }
 
-    @Override
-    public CompletionStage<ResultNode> apply(Object result) {
+    CompletionStage<ResultNode> toResultNode(Object result) {
+        if (traceLevel) {
+            LOG.tracef("Resolve {%s} completed:%s", expression.toOriginalString(), expression.getOrigin());
+        }
         if (result instanceof ResultNode) {
             return CompletedStage.of((ResultNode) result);
-        } else if (result instanceof CompletionStage) {
-            return ((CompletionStage<?>) result).thenCompose(this);
+        } else if (result instanceof CompletableFuture) {
+            return (CompletableFuture<ResultNode>) ((CompletionStage<?>) result).thenCompose(this::toResultNode);
+        } else if (result instanceof CompletedStage) {
+            return (CompletableFuture<ResultNode>) ((CompletionStage<?>) result).thenCompose(this::toResultNode);
+        } else if (unrestrictedCompletionStages && result instanceof CompletionStage) {
+            return ((CompletionStage<?>) result).thenCompose(this::toResultNode);
         } else {
             return CompletedStage.of(new SingleResultNode(result, this));
         }
     }
 
     public Origin getOrigin() {
-        return origin;
+        return expression.getOrigin();
     }
 
     @Override
@@ -58,6 +75,14 @@ class ExpressionNode implements TemplateNode, Function<Object, CompletionStage<R
         StringBuilder builder = new StringBuilder();
         builder.append("ExpressionNode [expression=").append(expression).append("]");
         return builder.toString();
+    }
+
+    boolean hasEngineResultMappers() {
+        return hasEngineResultMappers;
+    }
+
+    String mapResult(Object result) {
+        return engine.mapResult(result, expression);
     }
 
 }

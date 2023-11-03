@@ -1,27 +1,22 @@
 package io.quarkus.qute;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.concurrent.CompletionStage;
+
 import org.junit.jupiter.api.Test;
 
 public class NamespaceResolversTest {
 
     @Test
     public void testMultipleSamePriority() {
-        try {
-            Engine.builder().addNamespaceResolver(NamespaceResolver.builder("foo").resolve(e -> {
-                return null;
-            }).build()).addNamespaceResolver(NamespaceResolver.builder("foo").resolve(e -> {
-                return null;
-            }).build());
-            fail();
-        } catch (IllegalArgumentException expected) {
-            assertTrue(expected.getMessage()
-                    .startsWith("Namespace [foo] may not be handled by multiple resolvers of the same priority [1]:"));
-        }
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> Engine.builder()
+                        .addNamespaceResolver(NamespaceResolver.builder("foo").resolve(e -> null).build())
+                        .addNamespaceResolver(NamespaceResolver.builder("foo").resolve(e -> null).build()))
+                .withMessageStartingWith("Namespace [foo] may not be handled by multiple resolvers of the same priority [1]:");
     }
 
     @Test
@@ -37,43 +32,42 @@ public class NamespaceResolversTest {
     @Test
     public void testMultipleAndNotFound() {
         Engine engine = Engine.builder().addValueResolver(new ReflectionValueResolver())
-                .addNamespaceResolver(NamespaceResolver.builder("foo").resolve(e -> {
-                    return "foo1";
-                }).build()).addNamespaceResolver(NamespaceResolver.builder("foo").priority(50).resolve(e -> {
-                    // This one should we used first but returns NOT_FOUND and so the other resolver is used
-                    return Results.NotFound.from(e);
-                }).build()).build();
+                .addNamespaceResolver(NamespaceResolver.builder("foo").resolve(e -> "foo1").build())
+                // This one should we used first but returns NOT_FOUND and so the other resolver is used
+                .addNamespaceResolver(NamespaceResolver.builder("foo").priority(50).resolve(Results.NotFound::from).build())
+                .build();
         assertEquals("FOO1", engine.parse("{foo:baz.toUpperCase}").render());
     }
 
     @Test
     public void testInvalidNamespace() {
-        try {
-            Engine.builder().addNamespaceResolver(NamespaceResolver.builder("foo:").resolve(ec -> "foo").build());
-            fail();
-        } catch (TemplateException expected) {
-            assertTrue(expected.getMessage()
-                    .contains("[foo:] is not a valid namespace"));
-        }
-        try {
-            Engine.builder().addNamespaceResolver(new NamespaceResolver() {
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> Engine.builder()
+                        .addNamespaceResolver(NamespaceResolver.builder("foo:").resolve(ec -> "foo").build()))
+                .withMessageContaining("[foo:] is not a valid namespace");
 
-                @Override
-                public CompletionStage<Object> resolve(EvalContext context) {
-                    return null;
-                }
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> Engine.builder().addNamespaceResolver(new NamespaceResolver() {
+                    @Override
+                    public CompletionStage<Object> resolve(EvalContext context) {
+                        return null;
+                    }
 
-                @Override
-                public String getNamespace() {
-                    return "$#%$%#$%";
-                }
+                    @Override
+                    public String getNamespace() {
+                        return "$#%$%#$%";
+                    }
+                }))
+                .withMessageContaining("[$#%$%#$%] is not a valid namespace");
+    }
 
-            });
-            fail();
-        } catch (TemplateException expected) {
-            assertTrue(expected.getMessage()
-                    .contains("[$#%$%#$%] is not a valid namespace"));
-        }
+    @Test
+    public void testNoNamespaceFound() {
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> Engine.builder().addDefaults().build().parse("{charlie:name}", null, "alpha.html").render())
+                .withMessage(
+                        "Rendering error in template [alpha.html] line 1: No namespace resolver found for [charlie] in expression {charlie:name}")
+                .hasFieldOrProperty("code");
     }
 
 }

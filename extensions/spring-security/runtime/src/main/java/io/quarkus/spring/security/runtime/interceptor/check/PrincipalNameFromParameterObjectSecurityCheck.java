@@ -6,11 +6,12 @@ import io.quarkus.arc.Arc;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
+import io.quarkus.security.spi.runtime.MethodDescription;
+import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.spring.security.runtime.interceptor.accessor.StringPropertyAccessor;
 
 /**
- * Instances of this classes are created in order to check if the value of property of method parameter
+ * Instances of these classes are created in order to check if the value of property of method parameter
  * inside a Spring Security expression matches the principal name
  *
  * Access to the property of the object is performed by delegating to a purpose generated
@@ -45,12 +46,21 @@ public class PrincipalNameFromParameterObjectSecurityCheck implements SecurityCh
 
     @Override
     public void apply(SecurityIdentity identity, Method method, Object[] parameters) {
+        doApply(identity, parameters, method.getDeclaringClass().getName(), method.getName());
+    }
+
+    @Override
+    public void apply(SecurityIdentity identity, MethodDescription methodDescription, Object[] parameters) {
+        doApply(identity, parameters, methodDescription.getClassName(), methodDescription.getMethodName());
+    }
+
+    private void doApply(SecurityIdentity identity, Object[] parameters, String className, String methodName) {
         if (index > parameters.length - 1) {
-            throw genericNotApplicableException(method);
+            throw genericNotApplicableException(className, methodName);
         }
         Object parameterValue = parameters[index];
         if (!expectedParameterClass.equals(parameterValue.getClass())) {
-            throw genericNotApplicableException(method);
+            throw genericNotApplicableException(className, methodName);
         }
 
         String parameterValueStr = getStringValue(parameterValue);
@@ -69,8 +79,9 @@ public class PrincipalNameFromParameterObjectSecurityCheck implements SecurityCh
         return Arc.container().instance(stringPropertyAccessorClass).get().access(parameterValue, propertyName);
     }
 
-    private IllegalStateException genericNotApplicableException(Method method) {
+    private IllegalStateException genericNotApplicableException(String className, String methodName) {
         return new IllegalStateException(
-                "PrincipalNameFromParameterObjectSecurityCheck with index " + index + " cannot be applied to " + method);
+                "PrincipalNameFromParameterObjectSecurityCheck with index " + index + " cannot be applied to '" + className
+                        + "#" + methodName + "'");
     }
 }

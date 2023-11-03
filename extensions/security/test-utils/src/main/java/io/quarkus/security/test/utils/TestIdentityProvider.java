@@ -2,7 +2,7 @@ package io.quarkus.security.test.utils;
 
 import java.util.Optional;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -35,6 +35,7 @@ public class TestIdentityProvider implements IdentityProvider<UsernamePasswordAu
                 .setPrincipal(new QuarkusPrincipal(ident.username))
                 .addRoles(ident.roles)
                 .addCredential(request.getPassword())
+                .addPermissionCheckers(ident.permissionCheckers)
                 .build();
         return Uni.createFrom().item(identity);
     }

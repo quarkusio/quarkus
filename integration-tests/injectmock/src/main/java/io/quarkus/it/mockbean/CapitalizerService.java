@@ -1,8 +1,8 @@
 package io.quarkus.it.mockbean;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.inject.Singleton;
 
-@ApplicationScoped
+@Singleton
 public class CapitalizerService {
 
     public String capitalize(String input) {

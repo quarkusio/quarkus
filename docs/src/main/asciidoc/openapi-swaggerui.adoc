@@ -3,21 +3,19 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using OpenAPI and Swagger UI
-
-include::./attributes.adoc[]
+= Using OpenAPI and Swagger UI
+include::_attributes.adoc[]
+:categories: web
+:summary: This guide explains how to use the OpenAPI extension to generate an OpenAPI descriptor and get a Swagger UI frontend to test your REST endpoints.
+:topics: rest,openapi,swagger-ui,dev-ui
+:extensions: io.quarkus:quarkus-smallrye-openapi
 
 This guide explains how your Quarkus application can expose its API description through an OpenAPI specification and
 how you can test it via a user-friendly UI named Swagger UI.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -31,29 +29,20 @@ However, you can skip right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `openapi-swaggerui-quickstart` {quickstarts-tree-url}/openapi-swaggerui-quickstart[directory].
+The solution is located in the `openapi-swaggerui-quickstart` link:{quickstarts-tree-url}/openapi-swaggerui-quickstart[directory].
 
 == Creating the Maven project
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=openapi-swaggerui-quickstart \
-    -DclassName="org.acme.openapi.swaggerui.FruitResource" \
-    -Dpath="/fruits" \
-    -Dextensions="resteasy,resteasy-jackson"
-cd openapi-swaggerui-quickstart
-----
-
-This command generates the Maven project with a `/fruits` REST endpoint.
+:create-app-artifact-id: openapi-swaggerui-quickstart
+:create-app-extensions: resteasy-reactive-jackson
+include::{includes}/devtools/create-app.adoc[]
 
 == Expose a REST Resource
 
-We will create a `Fruit` bean and a `FruitResouce` REST resource
-(feel free to take a look to the link:rest-json[Writing JSON REST services guide] if your want more details on how to build a REST API with Quarkus).
+We will create a `Fruit` bean and a `FruitResource` REST resource
+(feel free to take a look to the xref:rest-json.adoc[Writing JSON REST services guide] if your want more details on how to build a REST API with Quarkus).
 
 [source,java]
 ----
@@ -78,10 +67,10 @@ public class Fruit {
 ----
 package org.acme.openapi.swaggerui;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.Path;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Set;
@@ -115,7 +104,7 @@ public class FruitResource {
 }
 ----
 
-As we changed the API, we also need to update the test:
+You can also create a test:
 
 [source,java]
 ----
@@ -124,7 +113,7 @@ package org.acme.openapi.swaggerui;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
@@ -176,18 +165,17 @@ public class FruitResourceTest {
 Quarkus provides the https://github.com/smallrye/smallrye-open-api/[Smallrye OpenAPI] extension compliant with the
 https://github.com/eclipse/microprofile-open-api/[MicroProfile OpenAPI]
 specification in order to generate your API
-https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md[OpenAPI v3 specification].
+https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.0.md[OpenAPI v3 specification].
 
 You just need to add the `openapi` extension to your Quarkus application:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="quarkus-smallrye-openapi"
-----
+:add-extension-extensions: quarkus-smallrye-openapi
+include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -195,12 +183,15 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-openapi")
+----
+
 Now, we are ready to run our application:
 
-[source,bash]
-----
-./mvnw compile quarkus:dev
-----
+include::{includes}/devtools/dev.adoc[]
 
 Once your application is started, you can make a request to the default `/q/openapi` endpoint:
 
@@ -260,6 +251,16 @@ quarkus.smallrye-openapi.path=/swagger
 ----
 ====
 
+[NOTE]
+====
+You can request the OpenAPI in JSON format using the `format` query parameter. For example:
+[source, properties]
+----
+/q/openapi?format=json
+----
+====
+
+
 Hit `CTRL+C` to stop the application.
 
 == Providing Application Level OpenAPI Annotations
@@ -272,9 +273,9 @@ There are some MicroProfile OpenAPI annotations which describe global API inform
 * Contact Information
 * License
 
-All of this information (and more) can be included in your Java code by using appropriate OpenAPI annotations 
-on a JAX-RS `Application` class.  Because a JAX-RS `Application` class is not required in Quarkus, you will
-likely have to create one.  It can simply be an empty class that extends `javax.ws.rs.core.Application`.  This
+All of this information (and more) can be included in your Java code by using appropriate OpenAPI annotations
+on a Jakarta REST `Application` class.  Because a Jakarta REST `Application` class is not required in Quarkus, you will
+likely have to create one.  It can simply be an empty class that extends `jakarta.ws.rs.core.Application`.  This
 empty class can then be annotated with various OpenAPI annotations such as `@OpenAPIDefinition`.  For example:
 
 [source, java]
@@ -285,7 +286,7 @@ empty class can then be annotated with various OpenAPI annotations such as `@Ope
             @Tag(name="gasket", description="Operations related to gaskets")
     },
     info = @Info(
-        title="Example API", 
+        title="Example API",
         version = "1.0.1",
         contact = @Contact(
             name = "Example API Support",
@@ -300,7 +301,7 @@ public class ExampleApiApplication extends Application {
 ----
 
 Another option, that is a feature provided by SmallRye and not part of the specification, is to use configuration to add this global API information.
-This way, you do not need to have a JAX-RS `Application` class, and you can name the API differently per environment.
+This way, you do not need to have a Jakarta REST `Application` class, and you can name the API differently per environment.
 
 For example, add the following to your `application.properties`:
 
@@ -328,7 +329,7 @@ The static file to serve must be a valid document conforming to the https://swag
 An OpenAPI document that conforms to the  OpenAPI Specification is itself a valid JSON object, that can be represented in `yaml` or `json` formats.
 
 To see this in action, we'll put OpenAPI documentation under `META-INF/openapi.yaml` for our `/fruits` endpoints.
-Quarkus also supports alternative <<open-document-paths, OpenAPI document paths>> if you prefer.
+Quarkus also supports alternative <<open-document-paths,OpenAPI document paths>> if you prefer.
 
 [source,yaml]
 ----
@@ -405,7 +406,7 @@ Live reload of static OpenAPI document is supported during development. A modifi
 
 == Changing the OpenAPI version
 
-By default, when the document is generated, the OpenAPI version used will be `3.0.3`. If you use a static file as mentioned above, the version in the file 
+By default, when the document is generated, the OpenAPI version used will be `3.0.3`. If you use a static file as mentioned above, the version in the file
 will be used. You can also define the version in SmallRye using the following configuration:
 
 [source, properties]
@@ -417,7 +418,7 @@ This might be useful if your API goes through a Gateway that needs a certain ver
 
 == Auto-generation of Operation Id
 
-The https://swagger.io/docs/specification/paths-and-operations/[Operation Id] can be set using the `@Operation` annotation, and is in many cases useful when using a tool to generate a client stub from the schema. 
+The https://swagger.io/docs/specification/paths-and-operations/[Operation Id] can be set using the `@Operation` annotation, and is in many cases useful when using a tool to generate a client stub from the schema.
 The Operation Id is typically used for the method name in the client stub. In SmallRye, you can auto-generate this Operation Id by using the following configuration:
 
 [source, properties]
@@ -441,7 +442,7 @@ Now you do not need to use the `@Operation` annotation. While generating the doc
 |Use the class name plus the method name.
 |===
 
-[[dev-mode]]]
+[[dev-mode]]
 == Use Swagger UI for development
 
 When building APIs, developers want to test them quickly. https://swagger.io/tools/swagger-ui/[Swagger UI] is a great tool
@@ -502,6 +503,33 @@ You can also interact with your API in order to quickly test it.
 image:openapi-swaggerui-guide-screenshot02.png[alt=Interact with your API]
 
 Hit `CTRL+C` to stop the application.
+
+=== Styling
+You can style the swagger ui by supplying your own logo and css.
+
+==== Logo
+
+To supply your own logo, you need to place a file called `logo.png` in `src/main/resources/META-INF/branding`.
+
+This will set the logo for all UIs (not just swagger ui), so in this case also GraphQL-UI and Health-UI (if included).
+
+If you only want to apply this logo to swagger-ui (and not globally to all UIs) call the file `smallrye-open-api-ui.png`
+rather than `logo.png`.
+
+==== CSS
+
+To supply your own css that override/enhance style in the html, you need to place a file called `style.css` in `src/main/resources/META-INF/branding`.
+
+This will add that css to all UIs (not just swagger ui), so in this case also GraphQL-UI and Health-UI (if included).
+
+If you only want to apply this style to swagger-ui (and not globally to all UIs) call the file `smallrye-open-api-ui.css`
+rather than `style.css`.
+
+For more information on styling, read this blog entry: https://quarkus.io/blog/stylish-api/
+
+=== Cross Origin Resource Sharing
+
+If you plan to consume this application from a Single Page Application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide for more details.
 
 == Configuration Reference
 

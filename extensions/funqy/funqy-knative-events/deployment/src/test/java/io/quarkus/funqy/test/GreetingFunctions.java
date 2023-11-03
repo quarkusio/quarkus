@@ -4,7 +4,7 @@ import java.time.Duration;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import io.quarkus.funqy.Funq;
 import io.smallrye.mutiny.Uni;

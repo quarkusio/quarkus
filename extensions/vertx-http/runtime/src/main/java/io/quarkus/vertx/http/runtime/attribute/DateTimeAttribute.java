@@ -13,7 +13,7 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class DateTimeAttribute implements ExchangeAttribute {
 
-    private static final String COMMON_LOG_PATTERN = "[dd/MMM/yyyy:HH:mm:ss Z]";
+    private static final String COMMON_LOG_PATTERN = "'['dd/MMM/yyyy:HH:mm:ss Z']'";
 
     public static final String DATE_TIME_SHORT = "%t";
     public static final String DATE_TIME = "%{DATE_TIME}";

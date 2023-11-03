@@ -1,12 +1,17 @@
 package io.quarkus.amazon.lambda.http.deployment;
 
-import org.jboss.logging.Logger;
+import static io.vertx.core.file.impl.FileResolverImpl.CACHE_DIR_BASE_PROP_NAME;
+
+import org.jboss.jandex.DotName;
 
 import io.quarkus.amazon.lambda.deployment.LambdaUtil;
 import io.quarkus.amazon.lambda.deployment.ProvidedAmazonLambdaHandlerBuildItem;
+import io.quarkus.amazon.lambda.http.AwsHttpContextProducers;
 import io.quarkus.amazon.lambda.http.DefaultLambdaIdentityProvider;
 import io.quarkus.amazon.lambda.http.LambdaHttpAuthenticationMechanism;
+import io.quarkus.amazon.lambda.http.LambdaHttpConfig;
 import io.quarkus.amazon.lambda.http.LambdaHttpHandler;
+import io.quarkus.amazon.lambda.http.LambdaHttpRecorder;
 import io.quarkus.amazon.lambda.http.model.AlbContext;
 import io.quarkus.amazon.lambda.http.model.ApiGatewayAuthorizerContext;
 import io.quarkus.amazon.lambda.http.model.ApiGatewayRequestIdentity;
@@ -18,19 +23,27 @@ import io.quarkus.amazon.lambda.http.model.ErrorModel;
 import io.quarkus.amazon.lambda.http.model.Headers;
 import io.quarkus.amazon.lambda.http.model.MultiValuedTreeMap;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.runtime.LaunchMode;
+import io.quarkus.resteasy.reactive.server.spi.ContextTypeBuildItem;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
-import io.vertx.core.file.impl.FileResolver;
 
 public class AmazonLambdaHttpProcessor {
-    private static final Logger log = Logger.getLogger(AmazonLambdaHttpProcessor.class);
+    private static final DotName AWS_PROXY_REQUEST_CONTEXT = DotName.createSimple(AwsProxyRequestContext.class);
+
+    @BuildStep
+    public void setupCDI(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
+        builder.addBeanClasses(AwsHttpContextProducers.class).setUnremovable();
+        additionalBeans.produce(builder.build());
+    }
 
     @BuildStep
     public void setupSecurity(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
@@ -46,8 +59,14 @@ public class AmazonLambdaHttpProcessor {
     }
 
     @BuildStep
-    public RequireVirtualHttpBuildItem requestVirtualHttp(LaunchModeBuildItem launchMode) {
-        return launchMode.getLaunchMode() == LaunchMode.NORMAL ? RequireVirtualHttpBuildItem.MARKER : null;
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void setupConfig(LambdaHttpConfig config, LambdaHttpRecorder recorder) {
+        recorder.setConfig(config);
+    }
+
+    @BuildStep
+    public RequireVirtualHttpBuildItem requestVirtualHttp() {
+        return RequireVirtualHttpBuildItem.ALWAYS_VIRTUAL;
     }
 
     @BuildStep
@@ -58,8 +77,7 @@ public class AmazonLambdaHttpProcessor {
     @BuildStep
     public void registerReflectionClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
         reflectiveClassBuildItemBuildProducer
-                .produce(new ReflectiveClassBuildItem(true, true, true,
-                        AlbContext.class,
+                .produce(ReflectiveClassBuildItem.builder(AlbContext.class,
                         ApiGatewayAuthorizerContext.class,
                         ApiGatewayRequestIdentity.class,
                         AwsProxyRequest.class,
@@ -68,7 +86,7 @@ public class AmazonLambdaHttpProcessor {
                         CognitoAuthorizerClaims.class,
                         ErrorModel.class,
                         Headers.class,
-                        MultiValuedTreeMap.class));
+                        MultiValuedTreeMap.class).methods().fields().build());
     }
 
     /**
@@ -76,7 +94,7 @@ public class AmazonLambdaHttpProcessor {
      */
     @BuildStep
     void setTempDir(BuildProducer<SystemPropertyBuildItem> systemProperty) {
-        systemProperty.produce(new SystemPropertyBuildItem(FileResolver.CACHE_DIR_BASE_PROP_NAME, "/tmp/quarkus"));
+        systemProperty.produce(new SystemPropertyBuildItem(CACHE_DIR_BASE_PROP_NAME, "/tmp/quarkus"));
     }
 
     @BuildStep
@@ -94,5 +112,12 @@ public class AmazonLambdaHttpProcessor {
         output = LambdaUtil.copyResource("http/sam.native.yaml")
                 .replace("${lambdaName}", lambdaName);
         LambdaUtil.writeFile(target, "sam.native.yaml", output);
+    }
+
+    @BuildStep
+    public void resteasyReactiveIntegration(BuildProducer<ContextTypeBuildItem> contextTypeProducer,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeanProducer) {
+        contextTypeProducer.produce(new ContextTypeBuildItem(AWS_PROXY_REQUEST_CONTEXT));
+        unremovableBeanProducer.produce(UnremovableBeanBuildItem.beanTypes(AWS_PROXY_REQUEST_CONTEXT));
     }
 }

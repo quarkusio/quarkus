@@ -8,6 +8,7 @@ import org.bson.conversions.Bson;
 import com.mongodb.ReadPreference;
 import com.mongodb.client.model.Collation;
 
+import io.quarkus.mongodb.panache.common.reactive.runtime.CommonReactivePanacheQueryImpl;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.panache.common.Page;
@@ -102,6 +103,12 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
     @Override
     public <T extends Entity> ReactivePanacheQuery<T> withReadPreference(ReadPreference readPreference) {
         delegate.withReadPreference(readPreference);
+        return (ReactivePanacheQuery<T>) this;
+    }
+
+    @Override
+    public <T extends Entity> ReactivePanacheQuery<T> withBatchSize(int batchSize) {
+        delegate.withBatchSize(batchSize);
         return (ReactivePanacheQuery<T>) this;
     }
 

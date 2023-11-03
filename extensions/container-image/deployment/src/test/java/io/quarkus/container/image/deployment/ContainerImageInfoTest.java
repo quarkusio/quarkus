@@ -116,13 +116,14 @@ public class ContainerImageInfoTest {
         SmallRyeConfig src = builder.build();
         BuildTimeConfigurationReader.ReadResult readResult = reader.readConfiguration(src);
         ContainerImageConfig containerImageConfig = (ContainerImageConfig) readResult
-                .requireRootObjectForClass(ContainerImageConfig.class);
+                .requireObjectForClass(ContainerImageConfig.class);
 
         ApplicationInfoBuildItem app = new ApplicationInfoBuildItem(Optional.of(APP_NAME), Optional.of(APP_VERSION));
         Capabilities capabilities = new Capabilities(Collections.emptySet());
         BuildProducer<ContainerImageInfoBuildItem> containerImage = actualImageConfig -> actualContainerImageInfo = actualImageConfig;
         ContainerImageProcessor processor = new ContainerImageProcessor();
-        processor.publishImageInfo(app, containerImageConfig, capabilities, containerImage);
+        processor.publishImageInfo(app, containerImageConfig, Optional.empty(), Optional.empty(), Optional.empty(),
+                capabilities, containerImage);
     }
 
     private void thenImageIs(String expectedImage) {

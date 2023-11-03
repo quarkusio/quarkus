@@ -3,13 +3,6 @@ package io.quarkus.devtools.project.buildfile;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
-import io.quarkus.devtools.project.extensions.ExtensionInstallPlan;
-import io.quarkus.devtools.project.extensions.ExtensionManager;
-import io.quarkus.devtools.project.extensions.Extensions;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
-import io.quarkus.registry.catalog.Extension;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -20,6 +13,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import io.quarkus.devtools.project.extensions.ExtensionInstallPlan;
+import io.quarkus.devtools.project.extensions.ExtensionManager;
+import io.quarkus.devtools.project.extensions.Extensions;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public abstract class BuildFile implements ExtensionManager {
 

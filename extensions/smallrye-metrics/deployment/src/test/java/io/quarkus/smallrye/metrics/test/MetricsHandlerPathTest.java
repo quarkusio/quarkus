@@ -1,7 +1,5 @@
 package io.quarkus.smallrye.metrics.test;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,7 +14,7 @@ public class MetricsHandlerPathTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
+            .withEmptyApplication()
             .overrideConfigKey("quarkus.http.root-path", "/custom")
             .overrideConfigKey("quarkus.http.non-application-root-path", "/framework");
 

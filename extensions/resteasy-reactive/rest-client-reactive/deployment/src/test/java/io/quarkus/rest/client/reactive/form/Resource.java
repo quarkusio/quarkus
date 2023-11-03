@@ -1,12 +1,12 @@
 package io.quarkus.rest.client.reactive.form;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.RestForm;
 
@@ -29,5 +29,13 @@ public class Resource {
             @RestForm String subParam2) {
         return Response.ok(String.format("sub rootParam1:%s,rootParam2:%s,subParam1:%s,subParam2:%s",
                 rootParam1, rootParam2, subParam1, subParam2)).build();
+    }
+
+    @POST
+    @Path("/types")
+    public Response getWithTypes(@RestForm String text, @RestForm int number, @RestForm Integer wrapNumber,
+            @RestForm Mode mode) {
+        return Response.ok(String.format("root text:%s,number:%s,wrapNumber:%s,mode:%s", text, number, wrapNumber, mode))
+                .build();
     }
 }

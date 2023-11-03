@@ -19,12 +19,11 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
             HttpHeaderNames.WWW_AUTHENTICATE, OidcConstants.BEARER_SCHEME);
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
-            IdentityProviderManager identityProviderManager) {
-        String token = extractBearerToken(context, resolver.resolveConfig(context));
-
+            IdentityProviderManager identityProviderManager, OidcTenantConfig oidcTenantConfig) {
+        String token = extractBearerToken(context, oidcTenantConfig);
         // if a bearer token is provided try to authenticate
         if (token != null) {
-            return authenticate(identityProviderManager, context, new AccessTokenCredential(token, context));
+            return authenticate(identityProviderManager, context, new AccessTokenCredential(token));
         }
         return Uni.createFrom().nullItem();
     }

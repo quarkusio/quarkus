@@ -9,42 +9,45 @@ import java.lang.reflect.Type;
 import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.MessageBodyWriter;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Form;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.MessageBodyReader;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 
-public class FormUrlEncodedProvider implements MessageBodyWriter<MultivaluedMap>, MessageBodyReader<MultivaluedMap> {
+public class FormUrlEncodedProvider implements MessageBodyWriter<Form>, MessageBodyReader<Form> {
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return MultivaluedMap.class.equals(type);
+        return Form.class.equals(type);
     }
 
-    public MultivaluedMap readFrom(Class<MultivaluedMap> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+    public Form readFrom(Class<Form> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
         return doReadFrom(mediaType, entityStream);
     }
 
-    protected MultivaluedMap<String, String> doReadFrom(MediaType mediaType, InputStream entityStream) throws IOException {
+    protected Form doReadFrom(MediaType mediaType, InputStream entityStream) throws IOException {
         String charset = MessageReaderUtil.charsetFromMediaType(mediaType);
-        return Encode.decode(FormUrlEncodedProvider.parseForm(entityStream, mediaType), charset);
+        return new Form(Encode.decode(FormUrlEncodedProvider.parseForm(entityStream, mediaType), charset));
     }
 
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return MultivaluedMap.class.isAssignableFrom(type);
+        return Form.class.isAssignableFrom(type);
     }
 
-    public void writeTo(MultivaluedMap multivaluedMap, Class<?> type, Type genericType, Annotation[] annotations,
+    public void writeTo(Form form, Class<?> type, Type genericType, Annotation[] annotations,
             MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
             throws IOException, WebApplicationException {
         String chartSet = MessageReaderUtil.charsetFromMediaType(mediaType);
-        entityStream.write(multiValuedMapToString(multivaluedMap, chartSet).getBytes(chartSet));
+        entityStream.write(formToString(form, chartSet).getBytes(chartSet));
     }
 
-    protected String multiValuedMapToString(MultivaluedMap data, String charset) throws UnsupportedEncodingException {
-        MultivaluedMap<String, String> formData = (MultivaluedMap<String, String>) data;
+    protected String formToString(Form data, String charset) throws UnsupportedEncodingException {
+        MultivaluedMap<String, String> formData = data.asMap();
         boolean first = true;
         StringBuilder sb = new StringBuilder();
         for (Map.Entry<String, List<String>> entry : formData.entrySet()) {

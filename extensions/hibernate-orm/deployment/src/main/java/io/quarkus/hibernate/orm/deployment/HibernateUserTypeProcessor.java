@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -12,9 +11,11 @@ import org.jboss.jandex.IndexView;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
+@BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public final class HibernateUserTypeProcessor {
     private static final String TYPE_VALUE = "type";
     private static final String TYPE_CLASS_VALUE = "typeClass";
@@ -26,20 +27,6 @@ public final class HibernateUserTypeProcessor {
         final Set<String> userTypes = new HashSet<>();
 
         Collection<AnnotationInstance> typeAnnotationInstances = index.getAnnotations(ClassNames.TYPE);
-        Collection<AnnotationInstance> typeDefinitionAnnotationInstances = index.getAnnotations(ClassNames.TYPE_DEFINITION);
-        Collection<AnnotationInstance> typeDefinitionsAnnotationInstances = index.getAnnotations(ClassNames.TYPE_DEFINITIONS);
-
-        userTypes.addAll(getUserTypes(typeDefinitionAnnotationInstances));
-
-        for (AnnotationInstance typeDefinitionAnnotationInstance : typeDefinitionsAnnotationInstances) {
-            final AnnotationValue typeDefinitionsAnnotationValue = typeDefinitionAnnotationInstance.value();
-
-            if (typeDefinitionsAnnotationValue == null) {
-                continue;
-            }
-
-            userTypes.addAll(getUserTypes(Arrays.asList(typeDefinitionsAnnotationValue.asNestedArray())));
-        }
 
         for (AnnotationInstance typeAnnotationInstance : typeAnnotationInstances) {
             final AnnotationValue typeValue = typeAnnotationInstance.value(TYPE_VALUE);
@@ -56,7 +43,8 @@ public final class HibernateUserTypeProcessor {
         }
 
         if (!userTypes.isEmpty()) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, userTypes.toArray(new String[] {})));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(userTypes.toArray(new String[] {})).methods().fields().build());
         }
     }
 

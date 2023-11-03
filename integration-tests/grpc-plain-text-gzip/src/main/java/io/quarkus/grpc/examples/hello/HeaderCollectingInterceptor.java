@@ -1,6 +1,6 @@
 package io.quarkus.grpc.examples.hello;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.grpc.CallOptions;
 import io.grpc.Channel;
@@ -11,7 +11,9 @@ import io.grpc.ForwardingClientCallListener;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.internal.GrpcUtil;
+import io.quarkus.grpc.GlobalInterceptor;
 
+@GlobalInterceptor
 @ApplicationScoped
 public class HeaderCollectingInterceptor implements ClientInterceptor {
     private volatile String encoding;

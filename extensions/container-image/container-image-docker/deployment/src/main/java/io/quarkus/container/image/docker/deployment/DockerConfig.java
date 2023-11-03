@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
+import io.quarkus.runtime.annotations.ConfigDocSection;
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -12,21 +15,23 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class DockerConfig {
 
     /**
-     * Path to the the JVM Dockerfile.
-     * If not set ${project.root}/src/main/docker/Dockerfile.jvm will be used
+     * Path to the JVM Dockerfile.
      * If set to an absolute path then the absolute path will be used, otherwise the path
-     * will be considered relative to the project root
+     * will be considered relative to the project root.
+     * If not set src/main/docker/Dockerfile.jvm will be used.
      */
     @ConfigItem
+    @ConfigDocDefault("src/main/docker/Dockerfile.jvm")
     public Optional<String> dockerfileJvmPath;
 
     /**
-     * Path to the the JVM Dockerfile.
-     * If not set ${project.root}/src/main/docker/Dockerfile.native will be used
+     * Path to the native Dockerfile.
      * If set to an absolute path then the absolute path will be used, otherwise the path
-     * will be considered relative to the project root
+     * will be considered relative to the project root.
+     * If not set src/main/docker/Dockerfile.native will be used.
      */
     @ConfigItem
+    @ConfigDocDefault("src/main/docker/Dockerfile.native")
     public Optional<String> dockerfileNativePath;
 
     /**
@@ -42,8 +47,67 @@ public class DockerConfig {
     public Optional<List<String>> cacheFrom;
 
     /**
-     * Name of binary used to execute the docker commands.
+     * The networking mode for the RUN instructions during build
      */
-    @ConfigItem(defaultValue = "docker")
-    public String executableName;
+    @ConfigItem
+    public Optional<String> network;
+
+    /**
+     * Name of binary used to execute the docker commands.
+     * This setting can override the global container runtime detection.
+     */
+    @ConfigItem
+    public Optional<String> executableName;
+
+    /**
+     * Additional arbitrary arguments passed to the executable when building the container image.
+     */
+    @ConfigItem
+    public Optional<List<String>> additionalArgs;
+
+    /**
+     * Configuration for Docker Buildx options
+     */
+    @ConfigItem
+    @ConfigDocSection
+    public DockerBuildxConfig buildx;
+
+    /**
+     * Configuration for Docker Buildx options. These are only relevant if using Docker Buildx
+     * (https://docs.docker.com/buildx/working-with-buildx/#build-multi-platform-images) to build multi-platform (or
+     * cross-platform)
+     * images.
+     * If any of these configurations are set, it will add {@code buildx} to the {@code executableName}.
+     */
+    @ConfigGroup
+    public static class DockerBuildxConfig {
+        /**
+         * Which platform(s) to target during the build. See
+         * https://docs.docker.com/engine/reference/commandline/buildx_build/#platform
+         */
+        @ConfigItem
+        public Optional<List<String>> platform;
+
+        /**
+         * Sets the export action for the build result. See
+         * https://docs.docker.com/engine/reference/commandline/buildx_build/#output. Note that any filesystem paths need to be
+         * absolute paths,
+         * not relative from where the command is executed from.
+         */
+        @ConfigItem
+        public Optional<String> output;
+
+        /**
+         * Set type of progress output ({@code auto}, {@code plain}, {@code tty}). Use {@code plain} to show container output
+         * (default “{@code auto}”). See https://docs.docker.com/engine/reference/commandline/buildx_build/#progress
+         */
+        @ConfigItem
+        public Optional<String> progress;
+
+        boolean useBuildx() {
+            return platform.filter(p -> !p.isEmpty()).isPresent() ||
+                    output.isPresent() ||
+                    progress.isPresent();
+        }
+    }
 }

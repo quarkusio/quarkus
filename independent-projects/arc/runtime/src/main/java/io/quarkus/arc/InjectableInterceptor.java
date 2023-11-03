@@ -1,7 +1,6 @@
 package io.quarkus.arc;
 
-import javax.enterprise.inject.spi.Interceptor;
-import javax.enterprise.inject.spi.Prioritized;
+import jakarta.enterprise.inject.spi.Interceptor;
 
 /**
  * Quarkus representation of an interceptor bean.
@@ -9,7 +8,7 @@ import javax.enterprise.inject.spi.Prioritized;
  *
  * @param <T>
  */
-public interface InjectableInterceptor<T> extends InjectableBean<T>, Interceptor<T>, Prioritized {
+public interface InjectableInterceptor<T> extends InjectableBean<T>, Interceptor<T> {
 
     @Override
     default Kind getKind() {

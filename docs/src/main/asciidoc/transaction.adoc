@@ -3,14 +3,19 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Using Transactions in Quarkus
+= Using transactions in Quarkus
+include::_attributes.adoc[]
+:diataxis-type: reference
+:categories: data,getting-started
+:topics: data,jpa,jta,transactions,narayana
+:extensions: io.quarkus:quarkus-narayana-jta
 
-include::./attributes.adoc[]
+The `quarkus-narayana-jta` extension provides a Transaction Manager that coordinates and expose transactions to your applications as described in the link: https://jakarta.ee/specifications/transactions/[Jakarta Transactions] specification, formerly known as Java Transaction API (JTA).
 
-Quarkus comes with a Transaction Manager and uses it to coordinate and expose transactions to your applications.
-Each extension dealing with persistence will integrate with it for you.
-And you will explicitly interact with transactions via CDI.
-This guide will walk you through all that.
+When discussing Quarkus transactions, this guide refers to Jakarta Transactions transaction style and uses only the term _transaction_ to address them.
+
+Also, Quarkus does not support distributed transactions.
+This means that models that propagate transaction context, such as link:https://download.oracle.com/otndocs/jcp/7309-jts-1.0-spec-oth-JSpec/[Java Transaction Service] (JTS), REST-AT, WS-Atomic Transaction, and others, are not supported by the `narayana-jta` extension.
 
 == Setting it up
 
@@ -18,9 +23,10 @@ You don't need to worry about setting it up most of the time as extensions needi
 Hibernate ORM for example will include the transaction manager and set it up properly.
 
 You might need to add it as a dependency explicitly if you are using transactions directly without Hibernate ORM for example.
-Add the following to your `pom.xml`:
+Add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -28,13 +34,20 @@ Add the following to your `pom.xml`:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-narayana-jta")
+----
+
 == Starting and stopping transactions: defining your boundaries
 
-You can define your transaction boundaries the easy way, or the less easy way :)
+You can define your transaction boundaries either declaratively with `@Transactional` or programmatically with `QuarkusTransaction`. You can also use
+the JTA `UserTransaction` API directly, however this is less user-friendly than `QuarkusTransaction`.
 
 === Declarative approach
 
-The easiest way to define your transaction boundaries is to use the `@Transactional` annotation on your entry method (`javax.transaction.Transactional`).
+The easiest way to define your transaction boundaries is to use the `@Transactional` annotation on your entry method (`jakarta.transaction.Transactional`).
 
 [source,java]
 ----
@@ -59,7 +72,7 @@ public class SantaClausService {
 ----
 
 <1> This annotation defines your transaction boundaries and will wrap this call within a transaction.
-<2> A `RuntimeException` crossing the transaction boundaries will rollback the transaction.
+<2> A `RuntimeException` crossing the transaction boundaries will roll back the transaction.
 
 `@Transactional` can be used to control transaction boundaries on any CDI bean at the method level or at the class level to ensure every method is transactional.
 That includes REST endpoints.
@@ -111,7 +124,7 @@ public class SantaClausService {
 <2> Programmatically decide to set the transaction for rollback.
 
 
-=== Transaction Configuration
+=== Transaction configuration
 
 Advanced configuration of the transaction is possible with the use of the `@TransactionConfiguration` annotation that is set in addition to the standard `@Transactional` annotation on your entry method or at the class level.
 
@@ -128,8 +141,8 @@ The configuration defined on a method takes precedence over the configuration de
 If your `@Transactional`-annotated method returns a reactive value, such as:
 
 - `CompletionStage` (from the JDK)
-- `Publisher` (from  Reactive-Streams)
-- Any type which can be converted to one of the two previous types using Reactive Type Converters
+- `Publisher` (from Reactive-Streams)
+- Any type that can be converted to one of the two previous types using Reactive Type Converters
 
 then the behaviour is a bit different, because the transaction will not be terminated until the
 returned reactive value is terminated. In effect, the returned reactive value will be listened to
@@ -140,9 +153,106 @@ This allows your reactive methods to keep on working on the transaction asynchro
 work is really done, and not just until the reactive method returns.
 
 If you need to propagate your transaction context across your reactive pipeline, please see the
-link:context-propagation[Context Propagation guide].
+xref:context-propagation.adoc[Context Propagation guide].
 
-=== API approach
+=== Programmatic approach
+
+You can use static methods on `QuarkusTransaction` to define transaction boundaries. This provides two different options,
+a functional approach that allows you to run a lambda within the scope of a transaction, or by using explicit `begin`,
+`commit` and `rollback` methods.
+
+[source,java]
+----
+import io.quarkus.narayana.jta.QuarkusTransaction;
+import io.quarkus.narayana.jta.RunOptions;
+
+public class TransactionExample {
+
+    public void beginExample() {
+        QuarkusTransaction.begin();
+        //do work
+        QuarkusTransaction.commit();
+
+        QuarkusTransaction.begin(QuarkusTransaction.beginOptions()
+                .timeout(10));
+        //do work
+        QuarkusTransaction.rollback();
+    }
+
+    public void runnerExample() {
+        QuarkusTransaction.requiringNew().run(() -> {
+            //do work
+        });
+        QuarkusTransaction.joiningExisting().run(() -> {
+            //do work
+        });
+
+        int result = QuarkusTransaction.requiringNew()
+                .timeout(10)
+                .exceptionHandler((throwable) -> {
+                    if (throwable instanceof SomeException) {
+                        return RunOptions.ExceptionResult.COMMIT;
+                    }
+                    return TransactionExceptionResult.ROLLBACK;
+                })
+                .call(() -> {
+                    //do work
+                    return 0;
+                });
+    }
+}
+----
+
+The above example shows a few different ways the API can be used.
+
+The first method simply calls begin, does some work and commits it.
+This created transaction is tied to the CDI request scope, so if it is still active when the request scope is destroyed then it will
+be automatically rolled back. This removes the need to explicitly catch exceptions and call `rollback`, and acts as a safety net
+against inadvertent transaction leaks, however it does mean that this can only be used when the request scope is active. The second
+example in the method calls begin with a timeout option, and then rolls back the transaction.
+
+The second method shows the use of lambda scoped transactions with `QuarkusTransaction.runner(...)`;
+the first example just runs a `Runnable` within a new transaction,
+the second does the same but joining the existing transaction (if any),
+and the third calls a `Callable` with some specific options.
+In particular the `exceptionHandler` method can be used to control if the transaction is rolled back or not on exception.
+
+The following semantics are supported:
+
+
+`QuarkusTransaction.disallowingExisting()`/`DISALLOW_EXISTING`::
+
+ If a transaction is already associated with the current thread a `QuarkusTransactionException` will be thrown,
+ otherwise a new transaction is started, and follows all the normal lifecycle rules.
+
+`QuarkusTransaction.joiningExisting()`/`JOIN_EXISTING`::
+
+If no transaction is active then a new transaction will be started, and committed when the method ends.
+If an exception is thrown the exception handler registered by `#exceptionHandler(Function)` will be called to
+decide if the TX should be committed or rolled back.
+If an existing transaction is active then the method is run in the context of the existing transaction. If an
+exception is thrown the exception handler will be called, however
+a result of `ExceptionResult#ROLLBACK` will result in the TX marked as rollback only, while a result of
+`ExceptionResult#COMMIT` will result in no action being taken.
+
+`QuarkusTransaction.requiringNew()`/`REQUIRE_NEW`::
+
+If an existing transaction is already associated with the current thread then the transaction is suspended,
+then a new transaction is started which follows all the normal lifecycle rules,
+and when it's complete the original transaction is resumed.
+Otherwise, a new transaction is started, and follows all the normal lifecycle rules.
+
+`QuarkusTransaction.suspendingExisting()`/`SUSPEND_EXISTING`::
+
+If no transaction is active then these semantics are basically a no-op.
+If a transaction is active then it is suspended, and resumed after the task is run.
+The exception handler will never be consulted when these semantics are in use, specifying both an exception handler and
+these semantics are considered an error.
+These semantics allows for code to easily be run outside the scope of a transaction.
+
+
+
+=== Legacy API approach
 
 The less easy way is to inject a `UserTransaction` and use the various transaction demarcation methods.
 
@@ -179,7 +289,7 @@ You cannot use `UserTransaction` in a method having a transaction started by a `
 == Configuring the transaction timeout
 You can configure the default transaction timeout, the timeout that applies to all transactions managed by the transaction manager, via the property `quarkus.transaction-manager.default-transaction-timeout`, specified as a duration.
 
-include::duration-format-note.adoc[]
+include::{includes}/duration-format-note.adoc[]
 
 The default value is 60 seconds.
 
@@ -198,6 +308,113 @@ The node name identifier needs to be unique per transaction manager deployment.
 And the node identifier needs to be stable over the transaction manager restarts.
 
 The node name identifier may be configured via the property `quarkus.transaction-manager.node-name`.
+
+[[transaction-scope]]
+== Using `@TransactionScoped` to bind CDI beans to the transaction lifecycle
+
+You can define beans that live for as long as a transaction,
+and through CDI lifecycle events perform actions when a transaction starts and ends.
+
+Just assign the transaction xref:cdi.adoc#bean-scope[scope] to such beans using the `@TransactionScoped` annotation:
+
+[source,java]
+----
+@TransactionScoped
+public class MyTransactionScopedBean {
+
+    // The bean's state is bound to a specific transaction,
+    // and restored even after suspending then resuming the transaction.
+    int myData;
+
+    @PostConstruct
+    void onBeginTransaction() {
+        // This gets invoked after a transaction begins.
+    }
+
+    @PreDestroy
+    void onBeforeEndTransaction() {
+        // This gets invoked before a transaction ends (commit or rollback).
+    }
+}
+----
+
+Alternatively, if you don't necessarily need to hold state during the transaction,
+and just want to react to transaction start/end events,
+you can simply declare event listeners in a differently scoped bean:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyTransactionEventListeningBean {
+
+    void onBeginTransaction(@Observes @Initialized(TransactionScoped.class) Object event) {
+        // This gets invoked when a transaction begins.
+    }
+
+    void onBeforeEndTransaction(@Observes @BeforeDestroyed(TransactionScoped.class) Object event) {
+        // This gets invoked before a transaction ends (commit or rollback).
+    }
+
+    void onAfterEndTransaction(@Observes @Destroyed(TransactionScoped.class) Object event) {
+        // This gets invoked after a transaction ends (commit or rollback).
+    }
+}
+----
+
+NOTE: The `event` object represents the transaction ID, and defines `toString()`/`equals()`/`hashCode()` accordingly.
+
+TIP: In listener methods, you can access more information about the transaction in progress by accessing the `TransactionManager`,
+which is a CDI bean and can be ``@Inject``ed.
+
+[[jdbcstore]]
+== Configure storing of Quarkus transaction logs in a database
+
+In cloud environments where persistent storage is not available, such as when application containers are unable to use persistent volumes, you can configure the transaction management to store transaction logs in a database by using a Java Database Connectivity (JDBC) datasource.
+
+However, in cloud-native apps, using a database to store transaction logs has additional requirements.
+The `narayana-jta` extension, which manages these transactions, requires stable storage, a unique reusable node identifier, and a steady IP address to work correctly.
+While the JDBC object store provides a stable storage, users must still plan how to meet the other two requirements.
+
+Quarkus, after you evaluate whether using a database to store transaction logs is right for you, allows the following JDBC-specific configuration of the object store included in `quarkus.transaction-manager.object-store._<property>_` properties, where _<property>_ can be:
+
+* `type` (_string_): Configure this property to `jdbc` to enable usage of a Quarkus JDBC datasource for storing transaction logs.
+The default value is `file-system`.
+
+* `datasource` (_string_): Specify the name of the datasource for the transaction log storage.
+If no value is provided for the `datasource` property, Quarkus uses the xref:datasource.adoc#configure-datasources[default datasource].
+
+* `create-table` (_boolean_): When set to `true`, the transaction log table gets automatically created if it does not already exist.
+The default value is `false`.
+
+* `drop-table` (_boolean_): When set to `true`, the tables are dropped on startup if they already exist.
+The default value is `false`.
+
+* `table-prefix` (string): Specify the prefix for a related table name.
+The default value is `quarkus_`.
+
+For more configuration information, see the *Narayana JTA - Transaction manager* section of the Quarkus xref:all-config.adoc[All configuration options] reference.
+
+.Additional information:
+
+* Create the transaction log table during the initial setup by setting the `create-table` property to `true`.
+
+* JDBC datasources and ActiveMQ Artemis allow the enlistment and automatically register the `XAResourceRecovery`.
+
+** JDBC datasources is part of `quarkus-agroal`, and it needs to use `quarkus.datasource.jdbc.transactions=XA`.
+** ActiveMQ Artemis is part of `quarkus-pooled-jms`, and it needs to use `quarkus.pooled-jms.transaction=XA`.
+
+* To ensure data integrity in case of application crashes or failures, enable the transaction crash recovery with the `quarkus.transaction-manager.enable-recovery=true` configuration.
+
+[NOTE]
+====
+To work around the current known issue of link:https://issues.redhat.com/browse/AG-209[Agroal having a different view on running transaction checks], set the datasource transaction type for the datasource responsible for writing the transaction logs to `disabled`:
+
+----
+quarkus.datasource.TX_LOG.jdbc.transactions=disabled
+----
+
+This example uses TX_LOG as the datasource name.
+====
 
 == Why always having a transaction manager?
 
@@ -220,7 +437,7 @@ Wrong. +
 First off, just disable the transaction by marking your transaction boundary with `@Transactional(NOT_SUPPORTED)` (or `NEVER` or `SUPPORTS` depending on the semantic you want). +
 Second, it's again fairy tale that not using transaction is faster.
 The answer is, it depends on your DB and how many SQL SELECTs you are making.
-No transaction means the DB does have a single operation transaction context anyways. +
+No transaction means the DB does have a single operation transaction context anyway. +
 Third, when you do several SELECTs, it's better to wrap them in a single transaction because they will all be consistent with one another.
 Say your DB represents your car dashboard, you can see the number of kilometers remaining and the fuel gauge level.
 By reading it in one transaction, they will be consistent.
@@ -232,9 +449,9 @@ Why do you prefer JTA vs Hibernate's transaction management API::
 Managing the transactions manually via `entityManager.getTransaction().begin()` and friends lead to a butt ugly code with tons of try catch finally that people get wrong.
 Transactions are also about JMS and other database access, so one API makes more sense.
 
-It's a mess because I don't know if my JPA persistence unit is using `JTA` or `Resource-level` Transaction::
+It's a mess because I don't know if my Jakarta Persistence persistence unit is using `JTA` or `Resource-level` Transaction::
 
 It's not a mess in Quarkus :)
-Resource-level was introduced to support JPA in a non managed environment.
-But Quarkus is both lean and a managed environment so we can safely always assume we are in JTA mode.
+Resource-level was introduced to support Jakarta Persistence in a non-managed environment.
+But Quarkus is both lean and a managed environment, so we can safely always assume we are in JTA mode.
 The end result is that the difficulties of running Hibernate ORM + CDI + a transaction manager in Java SE mode are solved by Quarkus.

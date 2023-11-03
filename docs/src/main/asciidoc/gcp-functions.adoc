@@ -3,23 +3,23 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Google Cloud Functions (Serverless)
+= Google Cloud Functions (Serverless)
 :extension-status: preview
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: cloud
+:summary: This guide explains how you can deploy Quarkus-based Google Cloud Functions.
+:topics: google,gcp,serverless,function,cloud
+:extensions: io.quarkus:quarkus-google-cloud-functions
 
 The `quarkus-google-cloud-functions` extension allows you to use Quarkus to build your Google Cloud Functions.
 Your functions can use injection annotations from CDI or Spring and other Quarkus facilities as you need them.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* JDK 11 (Google Cloud Functions requires JDK 11)
-* Apache Maven {maven-version}
+:prerequisites-no-graalvm:
+include::{includes}/prerequisites.adoc[]
 * https://cloud.google.com/[A Google Cloud Account].  Free accounts work.
 * https://cloud.google.com/sdk[Cloud SDK CLI Installed]
 
@@ -32,7 +32,7 @@ If you don't want to follow all these steps, you can go right to the completed e
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `google-cloud-functions-quickstart` {quickstarts-tree-url}/google-cloud-functions-quickstart[directory].
+The solution is located in the `google-cloud-functions-quickstart` link:{quickstarts-tree-url}/google-cloud-functions-quickstart[directory].
 
 
 == Creating the Maven Deployment Project
@@ -40,26 +40,13 @@ The solution is located in the `google-cloud-functions-quickstart` {quickstarts-
 Create an application with the `quarkus-google-cloud-functions` extension.
 You can use the following Maven command to create it:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=google-cloud-functions \
-    -DclassName="org.acme.quickstart.GreetingResource" \
-    -Dpath="/hello" \
-    -Dextensions="resteasy,google-cloud-functions"
-----
-
-Now, let's remove what's not needed inside the generated application:
-
-- Remove the dependency `io.quarkus:quarkus-resteasy` from your `pom.xml` file.
-- Remove the generated `org.acme.quickstart.GreetingResource` class.
-- Remove the `index.html` from `resources/META-INF/resources` or it will be picked up instead of your Function.
-- Remove the existing tests.
+:create-app-artifact-id: google-cloud-functions
+:create-app-extensions: google-cloud-functions
+include::{includes}/devtools/create-app.adoc[]
 
 == Login to Google Cloud
 
-Login to Google Cloud is necessary for deploying the application and it can be done as follows:
+Login to Google Cloud is necessary for deploying the application. It can be done as follows:
 
 [source,bash,subs=attributes+]
 ----
@@ -68,12 +55,15 @@ gcloud auth login
 
 == Creating the functions
 
-For this example project, we will create three functions, one `HttpFunction`, one `BackgroundFunction` (Storage event) and one `RawBackgroundFunction` (PubSub event).
+For this example project, we will create four functions, one `HttpFunction`, one `BackgroundFunction` (Storage event),
+one `RawBackgroundFunction` (PubSub event) and one `CloudEventsFunction` (storage event using the Cloud Events specification).
+
+NOTE: Quarkus supports Cloud Functions gen 1 and gen 2. For an overview of Cloud Functions gen 2 see https://cloud.google.com/functions/docs/2nd-gen/overview[this page] on the Google Cloud Functions documentation. To use gen 2 you must add the `--gen2` parameter.
 
 == Choose Your Function
 
-The `quarkus-google-cloud-functions` extension scans your project for a class that directly implements the Google Cloud `HttpFunction`, `BackgroundFunction` or `RawBackgroundFunction` interface.
-It must find a class in your project that implements one of these interfaces or it will throw a build time failure.
+The `quarkus-google-cloud-functions` extension scans your project for a class that directly implements the Google Cloud `HttpFunction`, `BackgroundFunction`, `RawBackgroundFunction` or `CloudEventsFunction` interface.
+It must find a class in your project that implements one of these interfaces, or it will throw a build time failure.
 If it finds more than one function classes, a build time exception will also be thrown.
 
 Sometimes, though, you might have a few related functions that share code and creating multiple maven modules is just
@@ -105,14 +95,10 @@ public class TestHttpFunction implements HttpFunction {
 
 [source,java]
 ----
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 import java.io.Writer;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.HttpRequest;
 import com.google.cloud.functions.HttpResponse;
@@ -130,12 +116,11 @@ public class HttpFunctionTest implements HttpFunction { // <3>
     }
 }
 ----
-
-1. The `@Named` annotation allows to name the CDI bean to be used by the `quarkus.google-cloud-functions.function` property, this is optional.
-2. The function must be a CDI bean
-3. This is a regular Google Cloud Function implementation, so it needs to implement `com.google.cloud.functions.HttpFunction`.
-4. Injection works inside your function.
-5. This is standard Google Cloud Function implementation, nothing fancy here.
+<1> The `@Named` annotation allows to name the CDI bean to be used by the `quarkus.google-cloud-functions.function` property, this is optional.
+<2> The function must be a CDI bean
+<3> This is a regular Google Cloud Function implementation, so it needs to implement `com.google.cloud.functions.HttpFunction`.
+<4> Injection works inside your function.
+<5> This is standard Google Cloud Function implementation, nothing fancy here.
 
 === The BackgroundFunction
 
@@ -143,9 +128,9 @@ This `BackgroundFunction` is triggered by a Storage event, you can use any event
 
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.Context;
 import io.quarkus.gcp.function.test.service.GreetingService;
@@ -168,13 +153,12 @@ public class BackgroundFunctionStorageTest implements BackgroundFunction<Backgro
     }
 }
 ----
-
-1. The `@Named` annotation allows to name the CDI bean to be used by the `quarkus.google-cloud-functions.function` property, this is optional.
-2. The function must be a CDI bean
-3. This is a regular Google Cloud Function implementation, so it needs to implement `com.google.cloud.functions.BackgroundFunction`.
-4. Injection works inside your function.
-5. This is standard Google Cloud Function implementation, nothing fancy here.
-6. This is the class the event will be deserialized to.
+<1> The `@Named` annotation allows to name the CDI bean to be used by the `quarkus.google-cloud-functions.function` property, this is optional.
+<2> The function must be a CDI bean
+<3> This is a regular Google Cloud Function implementation, so it needs to implement `com.google.cloud.functions.BackgroundFunction`.
+<4> Injection works inside your function.
+<5> This is standard Google Cloud Function implementation, nothing fancy here.
+<6> This is the class the event will be deserialized to.
 
 === The RawBackgroundFunction
 
@@ -182,9 +166,9 @@ This `RawBackgroundFunction` is triggered by a PubSub event, you can use any eve
 
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import com.google.cloud.functions.Context;
 import com.google.cloud.functions.RawBackgroundFunction;
 import io.quarkus.gcp.function.test.service.GreetingService;
@@ -192,7 +176,7 @@ import io.quarkus.gcp.function.test.service.GreetingService;
 @Named("rawPubSubTest") // <1>
 @ApplicationScoped // <2>
 public class RawBackgroundFunctionPubSubTest implements RawBackgroundFunction { // <3>
-@Inject GreetingService greetingService; // <4>
+    @Inject GreetingService greetingService; // <4>
 
     @Override
     public void accept(String event, Context context) throws Exception { // <5>
@@ -201,20 +185,64 @@ public class RawBackgroundFunctionPubSubTest implements RawBackgroundFunction { 
     }
 }
 ----
+<1> The `@Named` annotation allows to name the CDI bean to be used by the `quarkus.google-cloud-functions.function` property, this is optional.
+<2> The function must be a CDI bean
+<3> This is a regular Google Cloud Function implementation, so it needs to implement `com.google.cloud.functions.RawBackgroundFunction`.
+<4> Injection works inside your function.
+<5> This is standard Google Cloud Function implementation, nothing fancy here.
 
-1. The `@Named` annotation allows to name the CDI bean to be used by the `quarkus.google-cloud-functions.function` property, this is optional.
-2. The function must be a CDI bean
-3. This is a regular Google Cloud Function implementation, so it needs to implement `com.google.cloud.functions.RawBackgroundFunction`.
-4. Injection works inside your function.
-5. This is standard Google Cloud Function implementation, nothing fancy here.
+=== The CloudEventsFunction
+
+WARNING: `CloudEventsFunction` is a feature of Cloud Functions gen 2 only.
+
+This `CloudEventsFunction` is triggered by a Cloud Events Storage event, you can use any Cloud Events supported by Google Cloud instead.
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+
+import com.google.cloud.functions.CloudEventsFunction;
+
+import io.cloudevents.CloudEvent;
+import io.quarkus.gcp.function.test.service.GreetingService;
+
+@Named("cloudEventTest") // <1>
+@ApplicationScoped // <2>
+public class CloudEventStorageTest implements CloudEventsFunction { // <3>
+    @Inject
+    GreetingService greetingService;  // <4>
+
+    @Override
+    public void accept(CloudEvent cloudEvent) throws Exception { // <5>
+        System.out.println("Receive event Id: " + cloudEvent.getId());
+        System.out.println("Receive event Subject: " + cloudEvent.getSubject());
+        System.out.println("Receive event Type: " + cloudEvent.getType());
+        System.out.println("Receive event Data: " + new String(cloudEvent.getData().toBytes())); // <6>
+        System.out.println("Be polite, say " + greetingService.hello());
+    }
+}
+----
+<1> The `@Named` annotation allows to name the CDI bean to be used by the `quarkus.google-cloud-functions.function` property, this is optional.
+<2> The function must be a CDI bean
+<3> This is a regular Google Cloud Function implementation, so it needs to implement `com.google.cloud.functions.CloudEventsFunction`.
+<4> Injection works inside your function.
+<5> This is standard Google Cloud Function implementation, nothing fancy here except that it receives a `io.cloudevents.CloudEvent`.
+<6> This is the storage event inside the Cloud Events.
 
 == Build and Deploy to Google Cloud
 
-To build your application, you can package it using the standard `mvn clean package` command.
+To build your application, you can package it using the standard command:
+
+include::{includes}/devtools/build.adoc[]
 
 The result of the previous command is a single JAR file inside the `target/deployment` repository that contains classes and dependencies of the project.
 
-Then you will be able to use `gcloud functions deploy` command to deploy your function to Google Cloud.
+Then you will be able to use `gcloud` to deploy your function to Google Cloud.
+The `gcloud` command will be different depending on which event triggers your function.
+
+NOTE: We will use the Java 17 runtime but you can switch to the Java 11 runtime by using `--runtime=java11` instead of `--runtime=java17` on the deploy commands.
 
 [WARNING]
 ====
@@ -234,7 +262,7 @@ This is an example command to deploy your `HttpFunction` to Google Cloud:
 ----
 gcloud functions deploy quarkus-example-http \
   --entry-point=io.quarkus.gcp.functions.QuarkusHttpFunction \
-  --runtime=java11 --trigger-http --source=target/deployment
+  --runtime=java17 --trigger-http --allow-unauthenticated --source=target/deployment
 ----
 
 [IMPORTANT]
@@ -261,7 +289,7 @@ it needs to use `--trigger-event google.storage.object.finalize` and the `--trig
 gcloud functions deploy quarkus-example-storage \
     --entry-point=io.quarkus.gcp.functions.QuarkusBackgroundFunction \
     --trigger-resource quarkus-hello --trigger-event google.storage.object.finalize \
-    --runtime=java11 --source=target/deployment
+    --runtime=java17 --source=target/deployment
 ----
 
 [IMPORTANT]
@@ -269,7 +297,7 @@ gcloud functions deploy quarkus-example-storage \
 The entry point must always be set to `io.quarkus.gcp.functions.QuarkusBackgroundFunction` as this is the class that integrates Cloud Functions with Quarkus.
 ====
 
-To trigger the event, you can send a file to the GCS `quarkus-hello` bucket or you can use gcloud to simulate one:
+To trigger the event, you can send a file to the GCS `quarkus-hello` bucket, or you can use gcloud to simulate one:
 
 [source,bash]
 ----
@@ -287,7 +315,7 @@ it needs to use `--trigger-event google.pubsub.topic.publish` and the `--trigger
 ----
 gcloud functions deploy quarkus-example-pubsub \
   --entry-point=io.quarkus.gcp.functions.QuarkusBackgroundFunction \
-  --runtime=java11 --trigger-resource hello_topic --trigger-event google.pubsub.topic.publish --source=target/deployment
+  --runtime=java17 --trigger-resource hello_topic --trigger-event google.pubsub.topic.publish --source=target/deployment
 ----
 
 [IMPORTANT]
@@ -295,35 +323,58 @@ gcloud functions deploy quarkus-example-pubsub \
 The entry point must always be set to `io.quarkus.gcp.functions.QuarkusBackgroundFunction` as this is the class that integrates Cloud Functions with Quarkus.
 ====
 
-To trigger the event, you can send a file to the `hello_topic` topic or you can use gcloud to simulate one:
+To trigger the event, you can send a file to the `hello_topic` topic, or you can use gcloud to simulate one:
 
 [source,bash]
 ----
 gcloud functions call quarkus-example-pubsub --data '{"data":{"greeting":"world"}}'
 ----
 
-== Testing locally
+=== The CloudEventsFunction
 
-The easiest way to locally test your function is using the Cloud Function invoker JAR.
+WARNING: `CloudEventsFunction` is a feature of Cloud Functions gen 2 only.
+
+This is an example command to deploy your `CloudEventsFunction` to Google Cloud, as the function is triggered by a Storage event,
+it needs to use `--trigger-bucket` parameter with the name of a previously created bucket:
+
+[source,bash]
+----
+gcloud functions deploy quarkus-example-cloud-event --gen2 \
+  --entry-point=io.quarkus.gcp.functions.QuarkusCloudEventsFunction \
+  --runtime=java17 --trigger-bucket=example-cloud-event --source=target/deployment
+----
+
+[IMPORTANT]
+====
+The entry point must always be set to `io.quarkus.gcp.functions.QuarkusCloudEventsFunction` as this is the class that integrates Cloud Functions with Quarkus.
+====
+
+To trigger the event, you can send a file to the GCS `example-cloud-event` bucket.
+
+== Running locally
+
+The easiest way to locally run your function is using the Cloud Function invoker JAR.
 
 You can download it via Maven using the following command:
 
-[source,bash]
+[source,bash,subs="attributes"]
 ----
 mvn dependency:copy \
-  -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.2' \
+  -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:{gcf-invoker-version}' \
   -DoutputDirectory=.
 ----
 
-Before using the invoker, you first need to build your function via `mvn package`.
+Before using the invoker, you first need to build your function via:
+
+include::{includes}/devtools/build.adoc[]
 
 === The HttpFunction
 
-To test an `HttpFunction`, you can use this command to launch your function locally.
+For an `HttpFunction`, you can use this command to launch your function locally.
 
-[source,bash]
+[source,bash,subs="attributes"]
 ----
-java -jar java-function-invoker-1.0.2.jar \
+java -jar java-function-invoker-{gcf-invoker-version}.jar \
   --classpath target/google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.QuarkusHttpFunction
 ----
@@ -336,9 +387,9 @@ Your endpoints will be available on http://localhost:8080.
 
 For background functions, you launch the invoker with a target class of `io.quarkus.gcp.functions.BackgroundFunction`.
 
-[source,bash]
+[source,bash,subs="attributes"]
 ----
-java -jar java-function-invoker-1.0.2.jar \
+java -jar java-function-invoker-{gcf-invoker-version}.jar \
   --classpath target/google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.QuarkusBackgroundFunction
 ----
@@ -358,9 +409,9 @@ This will call your Storage background function with an event `{"name":"hello.tx
 
 For background functions, you launch the invoker with a target class of `io.quarkus.gcp.functions.BackgroundFunction`.
 
-[source,bash]
+[source,bash,subs="attributes"]
 ----
-java -jar java-function-invoker-1.0.2.jar \
+java -jar java-function-invoker-{gcf-invoker-version}.jar \
   --classpath target/google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
   --target io.quarkus.gcp.functions.QuarkusBackgroundFunction
 ----
@@ -375,3 +426,217 @@ curl localhost:8080 -d '{"data":{"greeting":"world"}}'
 ----
 
 This will call your PubSub background function with a PubSubMessage `{"greeting":"world"}`.
+
+=== The CloudEventsFunction
+
+IMPORTANT: `CloudEventsFunction` is a feature of Cloud Function gen 2 only.
+
+For cloud events functions, you launch the invoker with a target class of `io.quarkus.gcp.functions.QuarkusCloudEventsFunction`.
+
+[source,bash,subs="attributes"]
+----
+java -jar java-function-invoker-{gcf-invoker-version}.jar \
+  --classpath target/google-cloud-functions-1.0.0-SNAPSHOT-runner.jar \
+  --target io.quarkus.gcp.functions.QuarkusCloudEventsFunction
+----
+
+IMPORTANT: The `--classpath` parameter needs to be set to the previously packaged JAR that contains your function class and all Quarkus related classes.
+
+Then you can call your cloud events function via an HTTP call with a payload containing the event:
+
+[source,bash]
+----
+curl localhost:8080 \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "ce-id: 123451234512345" \
+  -H "ce-specversion: 1.0" \
+  -H "ce-time: 2020-01-02T12:34:56.789Z" \
+  -H "ce-type: google.cloud.storage.object.v1.finalized" \
+  -H "ce-source: //storage.googleapis.com/projects/_/buckets/MY-BUCKET-NAME" \
+  -H "ce-subject: objects/MY_FILE.txt" \
+  -d '{
+        "bucket": "MY_BUCKET",
+        "contentType": "text/plain",
+        "kind": "storage#object",
+        "md5Hash": "...",
+        "metageneration": "1",
+        "name": "MY_FILE.txt",
+        "size": "352",
+        "storageClass": "MULTI_REGIONAL",
+        "timeCreated": "2020-04-23T07:38:57.230Z",
+        "timeStorageClassUpdated": "2020-04-23T07:38:57.230Z",
+        "updated": "2020-04-23T07:38:57.230Z"
+      }'
+----
+
+This will call your cloud events function with an event on the `"MY_FILE.txt` file.
+
+== Testing your function
+
+Quarkus provides built-in support for testing your Google Cloud functions via the `quarkus-test-google-cloud-functions` dependency.
+
+To use it, you must add the following test dependency in your `pom.xml`.
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-google-cloud-functions</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+This extension provides a `@WithFunction` annotation that can be used to annotate `@QuarkusTest` test cases to start a Cloud Function invoker before you test cases and stop it at the end.
+This annotation must be configured with the type of the function you want to launch, and optionally the name of the function in case you have multiple functions inside your application.
+
+=== The HttpFunction
+
+[source,java]
+----
+import static io.restassured.RestAssured.when;
+import static org.hamcrest.Matchers.is;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.google.cloud.functions.test.FunctionType;
+import io.quarkus.google.cloud.functions.test.WithFunction;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest // <1>
+@WithFunction(FunctionType.HTTP) // <2>
+class HttpFunctionTestCase {
+    @Test
+    public void test() {
+        when()
+                .get()
+                .then()
+                .statusCode(200)
+                .body(is("Hello World!")); // <3>
+    }
+}
+----
+
+1. This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
+2. `@WithFunction(FunctionType.HTTP)` indicates to launch the function as an HTTP function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
+3. REST-assured is used to test the function, `Hello World!` will be sent to it via the invoker.
+
+=== The BackgroundFunction
+
+[source,java]
+----
+import static io.restassured.RestAssured.given;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.google.cloud.functions.test.FunctionType;
+import io.quarkus.google.cloud.functions.test.WithFunction;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest // <1>
+@WithFunction(FunctionType.BACKGROUND) // <2>
+class BackgroundFunctionStorageTestCase {
+    @Test
+    public void test() {
+        given()
+                .body("{\"data\":{\"name\":\"hello.txt\"}}") // <3>
+                .when()
+                .post()
+                .then()
+                .statusCode(200);
+    }
+}
+----
+
+1. This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
+2. `@WithFunction(FunctionType.BACKGROUND)` indicates to launch the function as a background function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
+3. REST-assured is used to test the function, `{"name":"hello.txt"}` will be sent to it via the invoker.
+
+=== The RawBackgroundFunction
+
+[source,java]
+----
+import static io.restassured.RestAssured.given;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.google.cloud.functions.test.FunctionType;
+import io.quarkus.google.cloud.functions.test.WithFunction;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest // <1>
+@WithFunction(FunctionType.RAW_BACKGROUND) // <2>
+class RawBackgroundFunctionPubSubTestCase {
+    @Test
+    public void test() {
+        given()
+                .body("{\"data\":{\"name\":\"hello.txt\"}}") // <3>
+                .when()
+                .post()
+                .then()
+                .statusCode(200);
+    }
+}
+----
+
+1. This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
+2. `@WithFunction(FunctionType.RAW_BACKGROUND)` indicates to launch the function as a raw background function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
+3. REST-assured is used to test the function, `{"name":"hello.txt"}` will be sent to it via the invoker.
+
+=== The CloudEventsFunction
+
+WARNING: Cloud Events Function is a feature of Cloud Functions gen 2 only.
+
+[source,java]
+----
+import static io.restassured.RestAssured.given;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.google.cloud.functions.test.FunctionType;
+import io.quarkus.google.cloud.functions.test.WithFunction;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest // <1>
+@WithFunction(FunctionType.CLOUD_EVENTS) // <2>
+class CloudEventStorageTestCase {
+    @Test
+    public void test() {
+        // test the function using RestAssured
+        given()
+                .body("{\n" + // <3>
+                        "        \"bucket\": \"MY_BUCKET\",\n" +
+                        "        \"contentType\": \"text/plain\",\n" +
+                        "        \"kind\": \"storage#object\",\n" +
+                        "        \"md5Hash\": \"...\",\n" +
+                        "        \"metageneration\": \"1\",\n" +
+                        "        \"name\": \"MY_FILE.txt\",\n" +
+                        "        \"size\": \"352\",\n" +
+                        "        \"storageClass\": \"MULTI_REGIONAL\",\n" +
+                        "        \"timeCreated\": \"2020-04-23T07:38:57.230Z\",\n" +
+                        "        \"timeStorageClassUpdated\": \"2020-04-23T07:38:57.230Z\",\n" +
+                        "        \"updated\": \"2020-04-23T07:38:57.230Z\"\n" +
+                        "      }")
+                .header("ce-specversion", "1.0") // <4>
+                .header("ce-id", "1234567890")
+                .header("ce-type", "google.cloud.storage.object.v1.finalized")
+                .header("ce-source", "//storage.googleapis.com/projects/_/buckets/MY-BUCKET-NAME")
+                .header("ce-subject", "objects/MY_FILE.txt")
+                .when()
+                .post()
+                .then()
+                .statusCode(200);
+    }
+}
+----
+
+1. This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
+2. `@WithFunction(FunctionType.CLOUD_EVENTS)` indicates to launch the function as a cloud events function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
+3. REST-assured is used to test the function, this payload that describe a storage event will be sent to it via the invoker.
+4. The cloud events headers must be sent via HTTP headers.
+
+== What's next?
+
+If you are looking for Jakarta REST, Servlet or Vert.x support for Google Cloud Functions, we have it thanks to our xref:gcp-functions-http.adoc[Google Cloud Functions HTTP binding].
+
+If you are looking for a provider-agnostic implementation of your Google Cloud Functions, we have it thanks to our xref:funqy-gcp-functions.adoc[Funqy Google Cloud Functions extension].

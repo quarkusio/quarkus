@@ -1,0 +1,15 @@
+---
+extends: substitution
+ignorecase: true
+level: suggestion
+link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-reference.adoc
+message: "Depending on the context, consider using '%s' rather than '%s'."
+# source: Quarkus contributor guide
+action:
+  name: replace
+swap:
+  in order to: "Be concise: use 'to' rather than"
+  needs? to: "Rewrite the sentence, or use 'must', instead of"
+  note that: "Be concise: rewrite the sentence to not use"
+  recommend: "using more direct instructions"
+  respectively: "Rewrite the sentence to be more precise, instead of using"

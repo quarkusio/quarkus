@@ -2,8 +2,8 @@ package io.quarkus.mongodb.panache.bug10812;
 
 import org.bson.codecs.pojo.annotations.BsonProperty;
 
-import io.quarkus.mongodb.panache.MongoEntity;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
+import io.quarkus.mongodb.panache.common.MongoEntity;
 
 @MongoEntity(collection = "TheBookEntity")
 public class Bug10812BookDefaultClientNameEntity extends PanacheMongoEntity {

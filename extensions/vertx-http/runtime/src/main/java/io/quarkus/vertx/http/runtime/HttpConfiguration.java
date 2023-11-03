@@ -45,6 +45,13 @@ public class HttpConfiguration {
     public String host;
 
     /**
+     * Used when {@code QuarkusIntegrationTest} is meant to execute against an application that is already running and
+     * listening on the host specified by this property.
+     */
+    @ConfigItem
+    public Optional<String> testHost;
+
+    /**
      * Enable listening to host:port
      */
     @ConfigItem(defaultValue = "true")
@@ -63,24 +70,11 @@ public class HttpConfiguration {
     public int testSslPort;
 
     /**
-     * If this is true then the address, scheme etc will be set from headers forwarded by the proxy server, such as
-     * {@code X-Forwarded-For}. This should only be set if you are behind a proxy that sets these headers.
-     * 
-     * @deprecated use quarkus.http.proxy.proxy-address-forwarding instead.
+     * Used when {@code QuarkusIntegrationTest} is meant to execute against an application that is already running
+     * to configure the test to use SSL.
      */
-    @Deprecated
     @ConfigItem
-    public Optional<Boolean> proxyAddressForwarding;
-
-    /**
-     * If this is true and proxy address forwarding is enabled then the standard {@code Forwarded} header will be used,
-     * rather than the more common but not standard {@code X-Forwarded-For}.
-     * 
-     * @deprecated use quarkus.http.proxy.allow-forwarded instead.
-     */
-    @Deprecated
-    @ConfigItem
-    public Optional<Boolean> allowForwarded;
+    public Optional<Boolean> testSslEnabled;
 
     /**
      * If insecure (i.e. http rather than https) requests are allowed. If this is {@code enabled}
@@ -102,6 +96,14 @@ public class HttpConfiguration {
     public boolean http2;
 
     /**
+     * Enables or Disable the HTTP/2 Push feature.
+     * This setting can be used to disable server push. The server will not send a {@code PUSH_PROMISE} frame if it
+     * receives this parameter set to @{code false}.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean http2PushEnabled;
+
+    /**
      * The CORS config
      */
     public CORSConfig cors;
@@ -110,6 +112,18 @@ public class HttpConfiguration {
      * The SSL config
      */
     public ServerSslConfig ssl;
+
+    /**
+     * The Static Resources config
+     */
+    public StaticResourcesConfig staticResources;
+
+    /**
+     * When set to {@code true}, the HTTP server automatically sends `100 CONTINUE`
+     * response when the request expects it (with the `Expect: 100-Continue` header).
+     */
+    @ConfigItem(defaultValue = "false", name = "handle-100-continue-automatically")
+    public boolean handle100ContinueAutomatically;
 
     /**
      * The number if IO threads used to perform IO. This will be automatically set to a reasonable value based on
@@ -182,6 +196,20 @@ public class HttpConfiguration {
     public boolean tcpFastOpen;
 
     /**
+     * The accept backlog, this is how many connections can be waiting to be accepted before connections start being rejected
+     */
+    @ConfigItem(defaultValue = "-1")
+    public int acceptBacklog;
+
+    /**
+     * Set the SETTINGS_INITIAL_WINDOW_SIZE HTTP/2 setting.
+     * Indicates the sender's initial window size (in octets) for stream-level flow control.
+     * The initial value is {@code 2^16-1} (65,535) octets.
+     */
+    @ConfigItem
+    public OptionalInt initialWindowSize;
+
+    /**
      * Path to a unix domain socket
      */
     @ConfigItem(defaultValue = "/var/run/io.quarkus.app.socket")
@@ -201,7 +229,9 @@ public class HttpConfiguration {
     @ConfigItem
     public boolean recordRequestStartTime;
 
-    AccessLogConfig accessLog;
+    public AccessLogConfig accessLog;
+
+    public TrafficShapingConfig trafficShaping;
 
     /**
      * Configuration that allows setting the same site attributes for cookies.
@@ -210,17 +240,30 @@ public class HttpConfiguration {
     public Map<String, SameSiteCookieConfig> sameSiteCookie;
 
     /**
-     * If responses should be compressed.
-     *
-     * Note that this will attempt to compress all responses, to avoid compressing
-     * already compressed content (such as images) you need to set the following header:
-     * 
-     * Content-Encoding: identity
-     * 
-     * Which will tell vert.x not to compress the response.
+     * Provides a hint (optional) for the default content type of responses generated for
+     * the errors not handled by the application.
+     * <p>
+     * If the client requested a supported content-type in request headers
+     * (e.g. "Accept: application/json", "Accept: text/html"),
+     * Quarkus will use that content type.
+     * <p>
+     * Otherwise, it will default to the content type configured here.
+     * </p>
      */
     @ConfigItem
-    public boolean enableCompression;
+    public Optional<PayloadHint> unhandledErrorContentTypeDefault;
+
+    /**
+     * Additional HTTP Headers always sent in the response
+     */
+    @ConfigItem
+    public Map<String, HeaderConfig> header;
+
+    /**
+     * Additional HTTP configuration per path
+     */
+    @ConfigItem
+    public Map<String, FilterConfig> filter;
 
     public ProxyConfig proxy;
 
@@ -236,5 +279,10 @@ public class HttpConfiguration {
         ENABLED,
         REDIRECT,
         DISABLED;
+    }
+
+    public enum PayloadHint {
+        JSON,
+        HTML,
     }
 }

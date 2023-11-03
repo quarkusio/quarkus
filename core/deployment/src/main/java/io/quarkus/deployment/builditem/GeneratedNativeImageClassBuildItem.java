@@ -3,7 +3,7 @@ package io.quarkus.deployment.builditem;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * A generated class that is only applicable to native images
+ * A generated class that is only applicable to native images.
  */
 public final class GeneratedNativeImageClassBuildItem extends MultiBuildItem {
     final String name;

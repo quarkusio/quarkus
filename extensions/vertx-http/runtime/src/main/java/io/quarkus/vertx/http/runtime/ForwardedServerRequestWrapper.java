@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.util.Map;
+import java.util.Set;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
@@ -24,12 +25,12 @@ import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.http.StreamPriority;
 import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.vertx.core.http.impl.HttpServerRequestWrapper;
+import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 
-class ForwardedServerRequestWrapper implements HttpServerRequest, HttpServerRequestInternal {
-
-    private final HttpServerRequestInternal delegate;
+public class ForwardedServerRequestWrapper extends HttpServerRequestWrapper implements HttpServerRequest {
     private final ForwardedParser forwardedParser;
 
     private boolean modified;
@@ -40,9 +41,10 @@ class ForwardedServerRequestWrapper implements HttpServerRequest, HttpServerRequ
     private String uri;
     private String absoluteURI;
 
-    ForwardedServerRequestWrapper(HttpServerRequest request, ForwardingProxyOptions forwardingProxyOptions) {
-        delegate = (HttpServerRequestInternal) request;
-        forwardedParser = new ForwardedParser(delegate, forwardingProxyOptions);
+    public ForwardedServerRequestWrapper(HttpServerRequest request, ForwardingProxyOptions forwardingProxyOptions,
+            TrustedProxyCheck trustedProxyCheck) {
+        super((HttpServerRequestInternal) request);
+        forwardedParser = new ForwardedParser(delegate, forwardingProxyOptions, trustedProxyCheck);
     }
 
     void changeTo(HttpMethod method, String uri) {
@@ -191,11 +193,17 @@ class ForwardedServerRequestWrapper implements HttpServerRequest, HttpServerRequ
     }
 
     @Override
+    public HostAndPort authority() {
+        return forwardedParser.authority();
+    }
+
+    @Override
     public SocketAddress localAddress() {
         return delegate.localAddress();
     }
 
     @Override
+    @Deprecated
     public X509Certificate[] peerCertificateChain() throws SSLPeerUnverifiedException {
         return delegate.peerCertificateChain();
     }
@@ -312,8 +320,24 @@ class ForwardedServerRequestWrapper implements HttpServerRequest, HttpServerRequ
     }
 
     @Override
+    @Deprecated
     public Map<String, Cookie> cookieMap() {
         return delegate.cookieMap();
+    }
+
+    @Override
+    public Cookie getCookie(String name, String domain, String path) {
+        return delegate.getCookie(name, domain, path);
+    }
+
+    @Override
+    public Set<Cookie> cookies(String name) {
+        return delegate.cookies(name);
+    }
+
+    @Override
+    public Set<Cookie> cookies() {
+        return delegate.cookies();
     }
 
     @Override
@@ -369,5 +393,16 @@ class ForwardedServerRequestWrapper implements HttpServerRequest, HttpServerRequ
     @Override
     public DecoderResult decoderResult() {
         return delegate.decoderResult();
+    }
+
+    @Override
+    public HttpServerRequest setParamsCharset(String charset) {
+        delegate.setParamsCharset(charset);
+        return this;
+    }
+
+    @Override
+    public String getParamsCharset() {
+        return delegate.getParamsCharset();
     }
 }

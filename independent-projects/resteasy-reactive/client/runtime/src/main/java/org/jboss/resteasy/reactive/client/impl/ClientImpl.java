@@ -1,7 +1,44 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CAPTURE_STACKTRACE;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_POOL_SIZE;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_TTL;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECT_TIMEOUT;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.KEEP_ALIVE_ENABLED;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_HEADER_SIZE;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_INITIAL_LINE_LENGTH;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.MAX_REDIRECTS;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.NAME;
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.SHARED;
+
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.Invocation.Builder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Link;
+import jakarta.ws.rs.core.UriBuilder;
+
+import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.api.ClientLogger;
+import org.jboss.resteasy.reactive.client.api.LoggingScope;
+import org.jboss.resteasy.reactive.client.handlers.RedirectHandler;
+import org.jboss.resteasy.reactive.client.spi.ClientContext;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
+import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 
 import io.netty.channel.EventLoopGroup;
 import io.vertx.core.AsyncResult;
@@ -38,33 +75,16 @@ import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetServerOptions;
+import io.vertx.core.net.SSLOptions;
 import io.vertx.core.shareddata.SharedData;
 import io.vertx.core.spi.VerticleFactory;
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.Invocation.Builder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Link;
-import javax.ws.rs.core.UriBuilder;
-import org.jboss.resteasy.reactive.client.spi.ClientContext;
-import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
-import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
-import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 
 public class ClientImpl implements Client {
 
+    private static final Logger log = Logger.getLogger(ClientImpl.class);
+
     private static final int DEFAULT_CONNECT_TIMEOUT = 15000;
+    private static final int DEFAULT_CONNECTION_POOL_SIZE = 20;
 
     final ClientContext clientContext;
     final boolean closeVertx;
@@ -76,14 +96,16 @@ public class ClientImpl implements Client {
     final HandlerChain handlerChain;
     final Vertx vertx;
     private final MultiQueryParamMode multiQueryParamMode;
+    private final String userAgent;
 
     public ClientImpl(HttpClientOptions options, ConfigurationImpl configuration, ClientContext clientContext,
             HostnameVerifier hostnameVerifier,
             SSLContext sslContext, boolean followRedirects,
-            MultiQueryParamMode multiQueryParamMode) {
+            MultiQueryParamMode multiQueryParamMode,
+            LoggingScope loggingScope,
+            ClientLogger clientLogger, String userAgent) {
+        this.userAgent = userAgent;
         configuration = configuration != null ? configuration : new ConfigurationImpl(RuntimeType.CLIENT);
-        // TODO: ssl context
-        // TODO: hostnameVerifier
         this.configuration = configuration;
         this.clientContext = clientContext;
         this.hostnameVerifier = hostnameVerifier;
@@ -113,8 +135,84 @@ public class ClientImpl implements Client {
         if (maxRedirects != null) {
             options.setMaxRedirects((Integer) maxRedirects);
         }
-        this.httpClient = this.vertx.createHttpClient(options);
-        handlerChain = new HandlerChain(followRedirects);
+
+        Object maxHeaderSize = configuration.getProperty(MAX_HEADER_SIZE);
+        if (maxHeaderSize != null) {
+            options.setMaxHeaderSize((Integer) maxHeaderSize);
+        }
+
+        Object maxInitialLineLength = configuration.getProperty(MAX_INITIAL_LINE_LENGTH);
+        if (maxInitialLineLength != null) {
+            options.setMaxInitialLineLength((Integer) maxInitialLineLength);
+        }
+
+        Object connectionTTL = configuration.getProperty(CONNECTION_TTL);
+        if (connectionTTL != null) {
+            options.setKeepAliveTimeout((int) connectionTTL);
+            options.setHttp2KeepAliveTimeout((int) connectionTTL);
+        }
+
+        Object connectionPoolSize = configuration.getProperty(CONNECTION_POOL_SIZE);
+        if (connectionPoolSize == null) {
+            connectionPoolSize = DEFAULT_CONNECTION_POOL_SIZE;
+        } else {
+            log.debugf("Setting connectionPoolSize to %d", connectionPoolSize);
+        }
+        options.setMaxPoolSize((int) connectionPoolSize);
+        options.setHttp2MaxPoolSize((int) connectionPoolSize);
+
+        Object keepAliveEnabled = configuration.getProperty(KEEP_ALIVE_ENABLED);
+        if (keepAliveEnabled != null) {
+            Boolean enabled = (Boolean) keepAliveEnabled;
+            options.setKeepAlive(enabled);
+
+            if (!enabled) {
+                log.debug("keep alive disabled");
+            }
+        }
+
+        if (loggingScope == LoggingScope.ALL) {
+            options.setLogActivity(true);
+        }
+
+        Object name = configuration.getProperty(NAME);
+        if (name != null) {
+            log.debugf("Setting client name to %s", name);
+            options.setName((String) name);
+        }
+
+        Object shared = configuration.getProperty(SHARED);
+        if (shared != null && (boolean) shared) {
+            log.debugf("Sharing of the HTTP client '%s' enabled", options.getName());
+            options.setShared(true);
+        }
+
+        httpClient = this.vertx.createHttpClient(options);
+
+        RedirectHandler redirectHandler = configuration.getFromContext(RedirectHandler.class);
+        if (redirectHandler != null) {
+            httpClient.redirectHandler(new WrapperVertxRedirectHandlerImpl(redirectHandler));
+        }
+
+        if (loggingScope != LoggingScope.NONE) {
+            Function<HttpClientResponse, Future<RequestOptions>> defaultRedirectHandler = httpClient.redirectHandler();
+            httpClient.redirectHandler(response -> {
+                clientLogger.logResponse(response, true);
+                return defaultRedirectHandler.apply(response);
+            });
+        }
+
+        handlerChain = new HandlerChain(isCaptureStacktrace(configuration), options.getMaxChunkSize(), followRedirects,
+                loggingScope,
+                clientContext.getMultipartResponsesData(), clientLogger);
+    }
+
+    private boolean isCaptureStacktrace(ConfigurationImpl configuration) {
+        Object captureStacktraceObj = configuration.getProperty(CAPTURE_STACKTRACE);
+        if (captureStacktraceObj == null) {
+            return false;
+        }
+        return (boolean) captureStacktraceObj;
     }
 
     public ClientContext getClientContext() {
@@ -135,6 +233,10 @@ public class ClientImpl implements Client {
     void abortIfClosed() {
         if (isClosed)
             throw new IllegalStateException("Client is closed");
+    }
+
+    public String getUserAgent() {
+        return userAgent;
     }
 
     @Override
@@ -394,8 +496,18 @@ public class ClientImpl implements Client {
         }
 
         @Override
+        public long setPeriodic(long initialDelay, long delay, Handler<Long> handler) {
+            return getDelegate().setPeriodic(initialDelay, delay, handler);
+        }
+
+        @Override
         public TimeoutStream periodicStream(long l) {
             return getDelegate().periodicStream(l);
+        }
+
+        @Override
+        public TimeoutStream periodicStream(long initialDelay, long delay) {
+            return getDelegate().periodicStream(initialDelay, delay);
         }
 
         @Override
@@ -546,18 +658,21 @@ public class ClientImpl implements Client {
         }
 
         @Override
+        @Deprecated
         public <T> void executeBlocking(Handler<Promise<T>> blockingCodeHandler, boolean ordered,
                 Handler<AsyncResult<T>> asyncResultHandler) {
             getDelegate().executeBlocking(blockingCodeHandler, ordered, asyncResultHandler);
         }
 
         @Override
+        @Deprecated
         public <T> void executeBlocking(Handler<Promise<T>> blockingCodeHandler,
                 Handler<AsyncResult<T>> asyncResultHandler) {
             getDelegate().executeBlocking(blockingCodeHandler, asyncResultHandler);
         }
 
         @Override
+        @Deprecated
         public <T> Future<T> executeBlocking(Handler<Promise<T>> blockingCodeHandler, boolean ordered) {
             return getDelegate().executeBlocking(blockingCodeHandler, ordered);
         }
@@ -596,6 +711,11 @@ public class ClientImpl implements Client {
         @Override
         public boolean isNativeTransportEnabled() {
             return getDelegate().isNativeTransportEnabled();
+        }
+
+        @Override
+        public Throwable unavailableNativeTransportCause() {
+            return getDelegate().unavailableNativeTransportCause();
         }
 
         @Override
@@ -727,6 +847,11 @@ public class ClientImpl implements Client {
             public Future<WebSocket> webSocketAbs(String url, MultiMap headers, WebsocketVersion version,
                     List<String> subProtocols) {
                 return getDelegate().webSocketAbs(url, headers, version, subProtocols);
+            }
+
+            @Override
+            public Future<Void> updateSSLOptions(SSLOptions options) {
+                return getDelegate().updateSSLOptions(options);
             }
 
             @Override

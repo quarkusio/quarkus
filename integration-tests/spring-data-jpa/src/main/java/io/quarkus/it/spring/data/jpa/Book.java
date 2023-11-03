@@ -1,7 +1,7 @@
 package io.quarkus.it.spring.data.jpa;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 @Entity
 public class Book extends NamedEntity {

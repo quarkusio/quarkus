@@ -1,8 +1,6 @@
 package io.quarkus.panache.common.deployment.visitors;
 
-import static io.quarkus.deployment.util.AsmUtil.getDescriptor;
 import static io.quarkus.deployment.util.AsmUtil.getLoadOpcode;
-import static io.quarkus.deployment.util.AsmUtil.getSignature;
 import static io.quarkus.deployment.util.AsmUtil.unboxIfRequired;
 import static io.quarkus.gizmo.Gizmo.ASM_API_VERSION;
 import static io.quarkus.panache.common.deployment.PanacheConstants.DOTNAME_GENERATE_BRIDGE;
@@ -42,6 +40,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
@@ -55,7 +54,7 @@ import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.TypeBundle;
 
 /**
- * kotlinc compiles default methods in to the implementing classes so we need to elide them first and then we can
+ * kotlinc compiles default methods in to the implementing classes, so we need to elide them first, and then we can
  * generate new methods like we do elsewhere.
  */
 public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
@@ -63,7 +62,9 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     public static final String NULLABLE_DESCRIPTOR = "Lorg/jetbrains/annotations/Nullable;";
     public static final ByteCodeType OBJECT = new ByteCodeType(Object.class);
     protected static final ByteCodeType CLASS = new ByteCodeType(Class.class);
-    protected final Function<String, String> argMapper;
+    private static final String CTOR_METHOD_NAME = "<init>";
+    private static final String CLINIT_METHOD_NAME = "<clinit>";
+    protected final Function<String, Type> argMapper;
     protected final ClassInfo classInfo;
     protected final ByteCodeType entityUpperBound;
     protected final Map<String, ByteCodeType> typeArguments = new HashMap<>();
@@ -96,8 +97,8 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         argMapper = type -> {
             ByteCodeType byteCodeType = typeArguments.get(type);
             return byteCodeType != null
-                    ? byteCodeType.descriptor()
-                    : type;
+                    ? byteCodeType.get()
+                    : null;
         };
 
         collectMethods(classInfo);
@@ -125,7 +126,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
 
     protected void addNullityChecks(MethodVisitor mv, MethodInfo method) {
         int index = 1;
-        for (Type methodParameter : method.parameters()) {
+        for (Type methodParameter : method.parameterTypes()) {
             org.objectweb.asm.Type parameter = asmType(methodParameter);
             if (isNotPrimitiveId(methodParameter)) {
                 mv.visitVarInsn(parameter.getOpcode(ILOAD), index);
@@ -141,7 +142,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     private void loadArguments(MethodVisitor mv, MethodInfo method) {
         mv.visitLdcInsn(typeArguments.get("Entity").type());
         int index = 1;
-        for (Type methodParameter : method.parameters()) {
+        for (Type methodParameter : method.parameterTypes()) {
             org.objectweb.asm.Type parameter = asmType(methodParameter);
             mv.visitVarInsn(parameter.getOpcode(ILOAD), index);
             // long and double take two slots and have size == 2.  others, size == 1
@@ -160,11 +161,11 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     }
 
     private void annotateParamsWithNotNull(MethodVisitor mv, MethodInfo method) {
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
         if (parameters.size() != 0) {
             mv.visitAnnotableParameterCount(parameters.size(), false);
             for (int i = 0; i < parameters.size(); i++) {
-                if (isNotPrimitiveId(method.parameters().get(i))) {
+                if (isNotPrimitiveId(method.parameterType(i))) {
                     mv.visitParameterAnnotation(i, NOT_NULL_DESCRIPTOR, false);
                 }
             }
@@ -181,7 +182,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         return primitive;
     }
 
-    protected String bridgeMethodDescriptor(MethodInfo method, Function<String, String> mapper) {
+    protected String bridgeMethodDescriptor(MethodInfo method, Function<String, Type> mapper) {
         StringJoiner joiner = new StringJoiner("", "(", ")");
         descriptors(method, joiner);
 
@@ -197,9 +198,9 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         if (erased) {
             returnType = entityUpperBound.descriptor();
         } else {
-            returnType = getDescriptor(method.returnType(), mapper);
+            returnType = method.returnType().descriptor(mapper);
         }
-        return joiner.toString() + returnType;
+        return joiner + returnType;
     }
 
     private void checkCast(MethodVisitor mv, Type returnType, String operationReturnType) {
@@ -219,9 +220,9 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         if (classInfo != null && !classInfo.name().equals(baseType.dotName())) {
             classInfo.methods()
                     .forEach(method -> {
-                        String descriptor = getDescriptor(method, m -> {
+                        String descriptor = method.descriptor(m -> {
                             ByteCodeType byteCodeType = typeArguments.get(m);
-                            return byteCodeType != null ? byteCodeType.descriptor() : OBJECT.descriptor();
+                            return byteCodeType != null ? byteCodeType.get() : OBJECT.get();
                         });
                         MethodInfo prior = definedMethods.put(method.name() + descriptor, method);
                         if (prior != null && !isBridgeMethod(method)) {
@@ -229,19 +230,21 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                                     "mappings: \n\t%s\n\t%s\n\t%s", method, descriptor, prior));
                         }
                     });
-            collectMethods(indexView.getClassByName(classInfo.superName()));
+            DotName superName = classInfo.superName();
+            if (superName != null) {
+                collectMethods(indexView.getClassByName(superName));
+            }
         }
     }
 
     private String desc(String name) {
         String s = name.replace(".", "/");
-        s = s.startsWith("L") || s.startsWith("[") ? s : "L" + s + ";";
-        return s;
+        return s.startsWith("[") ? s : "L" + s + ";";
     }
 
     private void descriptors(MethodInfo method, StringJoiner joiner) {
         ByteCodeType id = typeArguments.get("Id");
-        for (Type parameter : method.parameters()) {
+        for (Type parameter : method.parameterTypes()) {
             if (!id.isPrimitive() && parameter.name().equals(id.dotName())) {
                 joiner.add(OBJECT.descriptor());
             } else {
@@ -290,7 +293,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                 .replace("java.util.List", "kotlin.collections.List")));
 
         mv.visitMethodInsn(INVOKESPECIAL, "java/lang/NullPointerException",
-                "<init>", "(Ljava/lang/String;)V", false);
+                CTOR_METHOD_NAME, "(Ljava/lang/String;)V", false);
         mv.visitInsn(ATHROW);
         mv.visitLabel(label);
         mv.visitFrame(Opcodes.F_SAME1, 0, null, 1, new Object[] { "java/lang/Object" });
@@ -313,12 +316,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                 .forEach(method -> {
                     AnnotationInstance generateBridge = method.annotation(DOTNAME_GENERATE_BRIDGE);
                     if (generateBridge != null) {
-                        definedMethods.remove(method.name() + getDescriptor(method, m -> m));
-                        AnnotationValue typeErased = generateBridge.value("targetReturnTypeErased");
-                        if (typeErased != null && typeErased.asBoolean()) {
-                            definedMethods.remove(method.name()
-                                    + bridgeMethodDescriptor(method, type -> type));
-                        }
+                        definedMethods.remove(method.name() + method.descriptor());
                     }
                 });
     }
@@ -326,7 +324,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     private void generate(MethodInfo method) {
         // Note: we can't use SYNTHETIC here because otherwise Mockito will never mock these methods
         MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC, method.name(),
-                getDescriptor(method, argMapper), getSignature(method, argMapper), null);
+                method.descriptor(argMapper), method.genericSignature(argMapper), null);
 
         AsmUtil.copyParameterNames(mv, method);
         for (PanacheMethodCustomizer customizer : methodCustomizers) {
@@ -348,8 +346,8 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     private void emitLocalVariablesTable(MethodVisitor mv, MethodInfo method) {
         mv.visitLabel(addLabel());
         mv.visitLocalVariable("this", desc(classInfo.name().toString()), null, startLabel(), endLabel(), 0);
-        for (int i = 0; i < method.parameters().size(); i++) {
-            Type type = method.parameters().get(i);
+        for (int i = 0; i < method.parametersCount(); i++) {
+            Type type = method.parameterType(i);
             String typeName = type instanceof TypeVariable
                     ? this.typeArguments.get(((TypeVariable) type).identifier()).descriptor()
                     : desc(type.name().toString());
@@ -365,7 +363,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                 descriptor,
                 null,
                 null);
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
         AsmUtil.copyParameterNames(mv, method);
         mv.visitCode();
         // this
@@ -388,7 +386,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
             }
         }
 
-        String targetDescriptor = getDescriptor(method, name -> typeArguments.get(name).descriptor());
+        String targetDescriptor = method.descriptor(name -> typeArguments.get(name).get());
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
                 classInfo.name().toString().replace('.', '/'),
                 method.name(),
@@ -413,7 +411,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         // this
         mv.visitIntInsn(Opcodes.ALOAD, 0);
         mv.visitIntInsn(typeArguments.get("Id").type().getOpcode(ILOAD), 1);
-        String targetDescriptor = getDescriptor(method, name -> typeArguments.get(name).descriptor());
+        String targetDescriptor = method.descriptor(name -> typeArguments.get(name).get());
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
                 classInfo.name().toString().replace('.', '/'),
                 method.name(),
@@ -430,10 +428,12 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
 
         StringJoiner joiner = new StringJoiner("", "(", ")");
         joiner.add(CLASS.descriptor());
-        descriptors(method, joiner);
+        for (Type parameter : method.parameterTypes()) {
+            joiner.add(parameter.kind() == Kind.TYPE_VARIABLE ? OBJECT.descriptor() : parameter.descriptor(argMapper));
+        }
 
         Type returnType = method.returnType();
-        String descriptor = getDescriptor(returnType, argMapper);
+        String descriptor = returnType.descriptor(argMapper);
         String key = returnType.kind() == Type.Kind.TYPE_VARIABLE
                 ? returnType.asTypeVariable().identifier()
                 : returnType.name().toString();
@@ -467,7 +467,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         if (methodParameter.kind() == Type.Kind.TYPE_VARIABLE) {
             parameter = typeArguments.get(methodParameter.asTypeVariable().identifier()).type();
         } else {
-            parameter = getType(getDescriptor(methodParameter, s -> null));
+            parameter = getType(methodParameter.descriptor());
         }
         return parameter;
     }
@@ -484,7 +484,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
             case TYPE_VARIABLE:
                 return OBJECT.descriptor();
             default:
-                String value = getDescriptor(parameter, argMapper);
+                String value = parameter.descriptor(argMapper);
                 return erasures.getOrDefault(value, value);
         }
     }
@@ -492,7 +492,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     private boolean needsJvmBridge(MethodInfo method) {
         if (needsJvmBridge(method.returnType()))
             return true;
-        for (Type paramType : method.parameters()) {
+        for (Type paramType : method.parameterTypes()) {
             if (needsJvmBridge(paramType))
                 return true;
         }
@@ -537,6 +537,13 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                 .orElse(null);
         if (methodInfo != null && !methodInfo.hasAnnotation(DOTNAME_GENERATE_BRIDGE)) {
             return super.visitMethod(access, name, descriptor, signature, exceptions);
+        } else if (name.contains("$")) {
+            //some agents such as jacoco add new methods, they generally have $ in the name
+            return super.visitMethod(access, name, descriptor, signature, exceptions);
+        } else if (name.equals(CTOR_METHOD_NAME) || name.equals(CLINIT_METHOD_NAME)) {
+            //Arc can add no-args constructors to support intercepted beans
+            // Logging with Panache can add a class initializer
+            return super.visitMethod(access, name, descriptor, signature, exceptions);
         }
         return null;
     }
@@ -544,28 +551,25 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     @Override
     public void visitEnd() {
         for (MethodInfo method : indexView.getClassByName(baseType.dotName()).methods()) {
-            String descriptor = getDescriptor(method, type -> typeArguments.getOrDefault(type, OBJECT).descriptor());
-            if (!definedMethods.containsKey(method.name() + descriptor)) {
-                AnnotationInstance bridge = method.annotation(DOTNAME_GENERATE_BRIDGE);
-                if (bridge != null) {
+            String descriptor = method.descriptor(type -> typeArguments.getOrDefault(type, OBJECT).get());
+            AnnotationInstance bridge = method.annotation(DOTNAME_GENERATE_BRIDGE);
+            if (!definedMethods.containsKey(method.name() + descriptor) && bridge != null) {
+                generate(method);
+                if (needsJvmBridge(method)) {
+                    String bridgeDescriptor = bridgeMethodDescriptor(method, type -> {
+                        ByteCodeType mapped = typeArguments.get(type);
+                        return mapped != null ? mapped.get() : null;
+                    });
+                    if (!definedMethods.containsKey(method.name() + bridgeDescriptor)) {
+                        generateBridge(method, bridgeDescriptor);
+                    }
 
-                    generate(method);
-                    if (needsJvmBridge(method)) {
-                        String bridgeDescriptor = bridgeMethodDescriptor(method, type -> {
-                            ByteCodeType mapped = typeArguments.get(type);
-                            return mapped != null ? mapped.descriptor() : type;
-                        });
-                        if (!definedMethods.containsKey(method.name() + bridgeDescriptor)) {
-                            generateBridge(method, bridgeDescriptor);
-                        }
-
-                        AnnotationValue targetReturnTypeErased = bridge.value("targetReturnTypeErased");
-                        if (typeArguments.get("Id").isPrimitive() && targetReturnTypeErased != null
-                                && targetReturnTypeErased.asBoolean()) {
-                            if (method.parameters().size() == 1
-                                    && method.parameters().get(0).asTypeVariable().identifier().equals("Id")) {
-                                generatePrimitiveBridge(method, descriptor);
-                            }
+                    AnnotationValue targetReturnTypeErased = bridge.value("targetReturnTypeErased");
+                    if (typeArguments.get("Id").isPrimitive() && targetReturnTypeErased != null
+                            && targetReturnTypeErased.asBoolean()) {
+                        if (method.parametersCount() == 1
+                                && method.parameterType(0).asTypeVariable().identifier().equals("Id")) {
+                            generatePrimitiveBridge(method, descriptor);
                         }
                     }
                 }

@@ -1,10 +1,5 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.ContextCreator;
-import io.quarkus.arc.InjectableContext;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +8,14 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.enterprise.context.NormalScope;
+
+import jakarta.enterprise.context.NormalScope;
+
+import io.quarkus.arc.ContextCreator;
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 
 /**
  * Custom context configurator.
@@ -77,7 +79,7 @@ public final class ContextConfigurator {
      * <p>
      * It is possible to change this behavior. However, in such case the registrator is responsible for the correct
      * implementation of {@link InjectableContext#isNormal()}.
-     * 
+     *
      * @return self
      */
     public ContextConfigurator normal() {
@@ -89,7 +91,7 @@ public final class ContextConfigurator {
      * <p>
      * It is possible to change this behavior. However, in such case the registrator is responsible for the correct
      * implementation of {@link InjectableContext#isNormal()}.
-     * 
+     *
      * @return self
      */
     public ContextConfigurator normal(boolean value) {

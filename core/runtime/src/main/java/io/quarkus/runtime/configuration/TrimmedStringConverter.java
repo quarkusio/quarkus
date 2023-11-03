@@ -10,8 +10,15 @@ public class TrimmedStringConverter implements Converter<String> {
     @Override
     public String convert(String s) {
         if (s == null) {
-            return s;
+            return null;
         }
-        return s.trim();
+
+        String trimmedString = s.trim();
+
+        if (trimmedString.isEmpty()) {
+            return null;
+        }
+
+        return trimmedString;
     }
 }

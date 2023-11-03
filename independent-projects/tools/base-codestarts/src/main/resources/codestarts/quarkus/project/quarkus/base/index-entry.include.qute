@@ -1,7 +1,6 @@
-        <div class="provided-code">
-            <h3>{title}</h3>
-            <p>{description}</p>
-            {#if path}<p><code>@Path: <a href="{path}" class="path-link" target="_blank">{path}</a></code></p>{/if}
-            {#if related-guide-section}<p><a href="{related-guide-section}" class="guide-link" target="_blank">Related guide section...</a></p>{/if}
+        <li class="provided-code">
+            <b>{title}</b>&nbsp;{description}
+            {#if path}<br />&rsaquo; <code>@Path: <a href="{path}" class="path-link" target="_blank">{path}</a></code>{/if}
+            {#if related-guide-section}<br />&rsaquo; <a href="{related-guide-section}" class="guide-link" target="_blank">Related guide</a>{/if}
             {#insert body}{/}
-        </div>
+        </li>

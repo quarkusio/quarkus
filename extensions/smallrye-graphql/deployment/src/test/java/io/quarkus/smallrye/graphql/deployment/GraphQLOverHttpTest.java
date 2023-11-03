@@ -1,14 +1,13 @@
 package io.quarkus.smallrye.graphql.deployment;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.hamcrest.CoreMatchers;
 import org.jboss.logging.Logger;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -28,7 +27,7 @@ public class GraphQLOverHttpTest extends AbstractGraphQLTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(GraphQLOverHttpApi.class, User.class)
                     .addAsResource(new StringAsset(getPropertyAsString(configuration())), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
@@ -78,6 +77,25 @@ public class GraphQLOverHttpTest extends AbstractGraphQLTest {
     }
 
     @Test
+    public void httpPostWithMultipleAcceptHeaders() throws Exception {
+
+        Map<String, String> queryparams = new HashMap<>();
+        queryparams.put("query", "query ($id: ID!) {  user(id:$id) {    id    name  surname}}");
+
+        String variables = "{\"id\": \"1\"}";
+
+        String request = "query ($id: ID!) {\n" +
+                "  user(id:$id) {\n" +
+                "    name\n" +
+                "  }\n" +
+                "}";
+
+        post(request, queryparams, variables,
+                "{\"data\":{\"user\":{\"id\":\"1\",\"name\":\"Koos\",\"surname\":\"van der Merwe\"}}}",
+                List.of(MEDIATYPE_JSON, MEDIATYPE_TEXT));
+    }
+
+    @Test
     public void httpPostWithVariablesQueryParamTest() throws Exception {
 
         String request = "query ($id: ID!) {\n" +
@@ -121,13 +139,18 @@ public class GraphQLOverHttpTest extends AbstractGraphQLTest {
     }
 
     private void post(String request, Map<String, ?> queryparams, String variables, String expected) {
+        post(request, queryparams, variables, expected, List.of(MEDIATYPE_JSON));
+    }
+
+    private void post(String request, Map<String, ?> queryparams, String variables, String expected,
+            List<String> acceptHeaders) {
         RequestSpecification requestSpecification = RestAssured.given();
         if (queryparams != null) {
             requestSpecification = requestSpecification.queryParams(queryparams);
         }
 
         requestSpecification.when()
-                .accept(MEDIATYPE_JSON)
+                .accept(String.join(",", acceptHeaders))
                 .contentType(MEDIATYPE_JSON)
                 .body(getPayload(request, variables))
                 .post("/graphql")

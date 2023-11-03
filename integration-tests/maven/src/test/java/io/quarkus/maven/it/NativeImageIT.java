@@ -19,10 +19,12 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 @EnableForNative
 public class NativeImageIT extends MojoTestBase {
+
+    private DevModeClient devModeClient = new DevModeClient();
 
     /**
      * Tests that the {@code java.library.path} can be overridden/configurable by passing the system property
@@ -35,8 +37,8 @@ public class NativeImageIT extends MojoTestBase {
         final File testDir = initProject("projects/native-image-app", "projects/native-image-app-output");
         final RunningInvoker running = new RunningInvoker(testDir, false);
 
-        // trigger mvn package -Pnative -Dquarkus.ssl.native=true
-        final String[] mvnArgs = new String[] { "package", "-DskipTests", "-Pnative", "-Dquarkus.ssl.native=true" };
+        // trigger mvn package -Dnative -Dquarkus.ssl.native=true
+        final String[] mvnArgs = new String[] { "package", "-DskipTests", "-Dnative", "-Dquarkus.ssl.native=true" };
         final MavenProcessInvocationResult result = running.execute(Arrays.asList(mvnArgs), Collections.emptyMap());
         await().atMost(10, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         final String processLog = running.log();
@@ -60,7 +62,7 @@ public class NativeImageIT extends MojoTestBase {
         final Process nativeImageRunWithAdditionalLibPath = runNativeImage(nativeImageRunner,
                 new String[] { "-Djava.library.path=" + tmpDir.toString() });
         try {
-            final String response = DevModeTestUtils.getHttpResponse("/hello/javaLibraryPath");
+            final String response = devModeClient.getHttpResponse("/hello/javaLibraryPath");
             Assertions.assertTrue(response.contains(tmpDir.toString()),
                     "Response " + response + " for java.library.path was expected to contain the " + tmpDir + ", but didn't");
         } finally {

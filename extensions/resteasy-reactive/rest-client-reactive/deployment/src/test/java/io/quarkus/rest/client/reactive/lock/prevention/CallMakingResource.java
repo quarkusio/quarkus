@@ -2,14 +2,16 @@ package io.quarkus.rest.client.reactive.lock.prevention;
 
 import java.util.concurrent.CompletionStage;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
 
 @Path("/non-blocking")
+@NonBlocking
 public class CallMakingResource {
 
     @RestClient

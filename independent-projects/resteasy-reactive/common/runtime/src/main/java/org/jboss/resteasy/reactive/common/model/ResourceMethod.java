@@ -3,9 +3,12 @@ package org.jboss.resteasy.reactive.common.model;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
+
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.Produces;
+
 import org.jboss.resteasy.reactive.RestSseElementType;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 
 /**
  * A representation of a REST endpoint. This is passed directly to recorders so must be bytecode serializable.
@@ -30,10 +33,11 @@ public class ResourceMethod {
     private String[] produces;
 
     /**
-     * The value of the {@link RestSseElementType} annotation, if none is specified on the method
+     * The value of the {@link RestStreamElementType} or the {@link RestSseElementType} annotation, if none is specified on the
+     * method
      * then this represents the value inherited from the class level, or null if not specified.
      */
-    private String sseElementType;
+    private String streamElementType;
 
     /**
      * The value of the {@link Consumes} annotation, if none is specified on the method
@@ -56,14 +60,44 @@ public class ResourceMethod {
 
     private boolean blocking;
 
+    private boolean runOnVirtualThread;
+
     private boolean suspended;
 
     private boolean isSse;
 
     private boolean isFormParamRequired;
 
-    private boolean isMultipart;
+    private Set<String> fileFormNames;
+
     private List<ResourceMethod> subResourceMethods;
+
+    private boolean encoded;
+
+    public ResourceMethod() {
+    }
+
+    public ResourceMethod(String httpMethod, String path, String[] produces, String streamElementType, String[] consumes,
+            Set<String> nameBindingNames, String name, String returnType, String simpleReturnType, MethodParameter[] parameters,
+            boolean blocking, boolean suspended, boolean isSse, boolean isFormParamRequired,
+            List<ResourceMethod> subResourceMethods, boolean encoded) {
+        this.httpMethod = httpMethod;
+        this.path = path;
+        this.produces = produces;
+        this.streamElementType = streamElementType;
+        this.consumes = consumes;
+        this.nameBindingNames = nameBindingNames;
+        this.name = name;
+        this.returnType = returnType;
+        this.simpleReturnType = simpleReturnType;
+        this.parameters = parameters;
+        this.blocking = blocking;
+        this.suspended = suspended;
+        this.isSse = isSse;
+        this.isFormParamRequired = isFormParamRequired;
+        this.subResourceMethods = subResourceMethods;
+        this.encoded = encoded;
+    }
 
     public boolean isResourceLocator() {
         return httpMethod == null;
@@ -154,8 +188,17 @@ public class ResourceMethod {
         return blocking;
     }
 
+    public boolean isRunOnVirtualThread() {
+        return runOnVirtualThread;
+    }
+
     public ResourceMethod setBlocking(boolean blocking) {
         this.blocking = blocking;
+        return this;
+    }
+
+    public ResourceMethod setRunOnVirtualThread(boolean runOnVirtualThread) {
+        this.runOnVirtualThread = runOnVirtualThread;
         return this;
     }
 
@@ -186,22 +229,31 @@ public class ResourceMethod {
         return this;
     }
 
-    public boolean isMultipart() {
-        return isMultipart;
+    public Set<String> getFileFormNames() {
+        return fileFormNames;
     }
 
-    public ResourceMethod setMultipart(boolean isMultipart) {
-        this.isMultipart = isMultipart;
+    public ResourceMethod setFileFormNames(Set<String> fileFormNames) {
+        this.fileFormNames = fileFormNames;
         return this;
     }
 
-    public ResourceMethod setSseElementType(String sseElementType) {
-        this.sseElementType = sseElementType;
+    public ResourceMethod setStreamElementType(String streamElementType) {
+        this.streamElementType = streamElementType;
         return this;
     }
 
-    public String getSseElementType() {
-        return sseElementType;
+    public String getStreamElementType() {
+        return streamElementType;
+    }
+
+    public boolean isEncoded() {
+        return encoded;
+    }
+
+    public ResourceMethod setEncoded(boolean encoded) {
+        this.encoded = encoded;
+        return this;
     }
 
     @Override

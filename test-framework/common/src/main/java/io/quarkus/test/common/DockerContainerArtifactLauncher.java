@@ -1,5 +1,7 @@
 package io.quarkus.test.common;
 
+import java.util.Map;
+
 public interface DockerContainerArtifactLauncher extends ArtifactLauncher<DockerContainerArtifactLauncher.DockerInitContext> {
 
     interface DockerInitContext extends InitContext {
@@ -7,5 +9,11 @@ public interface DockerContainerArtifactLauncher extends ArtifactLauncher<Docker
         String containerImage();
 
         boolean pullRequired();
+
+        Map<Integer, Integer> additionalExposedPorts();
+
+        Map<String, String> labels();
+
+        Map<String, String> volumeMounts();
     }
 }

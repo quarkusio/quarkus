@@ -5,14 +5,14 @@ import static io.quarkus.kafka.streams.runtime.KafkaStreamsPropertiesUtil.buildK
 import java.io.IOException;
 import java.util.Properties;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.apache.kafka.common.serialization.Serdes.ByteArraySerde;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.DefaultProductionExceptionHandler;
 import org.apache.kafka.streams.errors.LogAndFailExceptionHandler;
-import org.apache.kafka.streams.processor.DefaultPartitionGrouper;
 import org.apache.kafka.streams.processor.FailOnInvalidTimestamp;
+import org.apache.kafka.streams.processor.internals.DefaultKafkaClientSupplier;
 import org.apache.kafka.streams.processor.internals.StreamsPartitionAssignor;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Status;
@@ -20,6 +20,7 @@ import org.rocksdb.util.Environment;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -31,8 +32,8 @@ import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
-import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.deployment.pkg.steps.NativeImageBuildStep;
+import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsProducer;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRecorder;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
@@ -41,20 +42,23 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class KafkaStreamsProcessor {
 
+    public static final String DEFAULT_PARTITION_GROUPER = "org.apache.kafka.streams.processor.DefaultPartitionGrouper";
+
     @BuildStep
-    void build(BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(Feature.KAFKA_STREAMS);
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses,
             BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized,
             BuildProducer<NativeImageResourceBuildItem> nativeLibs,
             LaunchModeBuildItem launchMode,
-            NativeConfig config) throws IOException {
-
-        feature.produce(new FeatureBuildItem(Feature.KAFKA_STREAMS));
-
+            NativeImageRunnerBuildItem nativeImageRunner) throws IOException {
         registerClassesThatAreLoadedThroughReflection(reflectiveClasses, launchMode);
         registerClassesThatAreAccessedViaJni(jniRuntimeAccessibleClasses);
-        addSupportForRocksDbLib(nativeLibs, config);
+        addSupportForRocksDbLib(nativeLibs, nativeImageRunner);
         enableLoadOfNativeLibs(reinitialized);
     }
 
@@ -65,16 +69,33 @@ class KafkaStreamsProcessor {
     }
 
     private void registerCompulsoryClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, StreamsPartitionAssignor.class));
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, DefaultPartitionGrouper.class));
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, DefaultProductionExceptionHandler.class));
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, FailOnInvalidTimestamp.class));
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, true,
-                org.apache.kafka.streams.processor.internals.assignment.HighAvailabilityTaskAssignor.class));
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, true,
-                org.apache.kafka.streams.processor.internals.assignment.StickyTaskAssignor.class));
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, true,
-                org.apache.kafka.streams.processor.internals.assignment.FallbackPriorTaskAssignor.class));
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(StreamsPartitionAssignor.class)
+                .build());
+        if (QuarkusClassLoader.isClassPresentAtRuntime(DEFAULT_PARTITION_GROUPER)) {
+            // Class DefaultPartitionGrouper deprecated in Kafka 2.8.x and removed in 3.0.0
+            reflectiveClasses.produce(
+                    ReflectiveClassBuildItem.builder(DEFAULT_PARTITION_GROUPER)
+                            .build());
+        }
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(DefaultKafkaClientSupplier.class)
+                .build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(DefaultProductionExceptionHandler.class)
+                .build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(FailOnInvalidTimestamp.class)
+                .build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder(org.apache.kafka.streams.processor.internals.assignment.HighAvailabilityTaskAssignor.class)
+                .methods().fields().build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder(org.apache.kafka.streams.processor.internals.assignment.StickyTaskAssignor.class)
+                .methods().fields().build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder(org.apache.kafka.streams.processor.internals.assignment.FallbackPriorTaskAssignor.class)
+                .methods().fields().build());
+        // See https://github.com/quarkusio/quarkus/issues/23404
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder("org.apache.kafka.streams.processor.internals.StateDirectory$StateDirectoryProcessFile")
+                .methods().fields().build());
     }
 
     private void registerClassesThatClientMaySpecify(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -97,7 +118,8 @@ class KafkaStreamsProcessor {
     }
 
     private void registerDefaultExceptionHandler(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, LogAndFailExceptionHandler.class));
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(LogAndFailExceptionHandler.class)
+                .build());
     }
 
     private void registerDefaultSerdes(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -121,9 +143,10 @@ class KafkaStreamsProcessor {
                 .produce(new JniRuntimeAccessBuildItem(true, false, false, RocksDBException.class, Status.class));
     }
 
-    private void addSupportForRocksDbLib(BuildProducer<NativeImageResourceBuildItem> nativeLibs, NativeConfig nativeConfig) {
+    private void addSupportForRocksDbLib(BuildProducer<NativeImageResourceBuildItem> nativeLibs,
+            NativeImageRunnerBuildItem nativeImageRunnerFactory) {
         // for RocksDB, either add linux64 native lib when targeting containers
-        if (NativeImageBuildStep.isContainerBuild(nativeConfig)) {
+        if (nativeImageRunnerFactory.isContainerBuild()) {
             nativeLibs.produce(new NativeImageResourceBuildItem("librocksdbjni-linux64.so"));
         }
         // otherwise the native lib of the platform this build runs on
@@ -137,7 +160,8 @@ class KafkaStreamsProcessor {
     }
 
     private void registerClassName(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, String defaultKeySerdeClass) {
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, defaultKeySerdeClass));
+        reflectiveClasses.produce(
+                ReflectiveClassBuildItem.builder(defaultKeySerdeClass).build());
     }
 
     private boolean allDefaultSerdesAreDefinedInProperties(String defaultKeySerdeClass, String defaultValueSerdeClass) {
@@ -145,7 +169,8 @@ class KafkaStreamsProcessor {
     }
 
     private void registerDefaultSerde(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, false, ByteArraySerde.class));
+        reflectiveClasses.produce(
+                ReflectiveClassBuildItem.builder(ByteArraySerde.class).build());
     }
 
     @BuildStep
@@ -161,7 +186,7 @@ class KafkaStreamsProcessor {
                 .supplier(recorder.kafkaStreamsSupportSupplier(kafkaStreamsProperties))
                 .done());
 
-        // make the producer an unremoveable bean
+        // make the producer an unremovable bean
         additionalBeans
                 .produce(AdditionalBeanBuildItem.builder().addBeanClasses(KafkaStreamsProducer.class).setUnremovable().build());
     }

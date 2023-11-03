@@ -3,22 +3,26 @@ package io.quarkus.arc.test.resolution;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.util.AbstractList;
+import java.util.List;
+
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Singleton;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
-import java.io.IOException;
-import java.util.AbstractList;
-import java.util.List;
-import javax.enterprise.util.TypeLiteral;
-import javax.inject.Singleton;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class RuntimeResolutionTest {
 
     @RegisterExtension
-    public ArcTestContainer container = new ArcTestContainer(MyList.class);
+    public ArcTestContainer container = new ArcTestContainer(MyList.class, ArrayProducer.class);
 
     @SuppressWarnings("serial")
     @Test
@@ -29,6 +33,11 @@ public class RuntimeResolutionTest {
         });
         assertTrue(list.isAvailable());
         assertEquals(Integer.valueOf(7), list.get().get(1));
+
+        InstanceHandle<MyList[]> array = arc.instance(MyList[].class);
+        assertTrue(array.isAvailable());
+        assertEquals(1, array.get().length);
+        assertEquals(Integer.valueOf(7), array.get()[0].get(1));
     }
 
     @Singleton
@@ -46,4 +55,12 @@ public class RuntimeResolutionTest {
 
     }
 
+    @Singleton
+    static class ArrayProducer {
+        @Produces
+        @Singleton
+        MyList[] produce() {
+            return new MyList[] { new MyList() };
+        }
+    }
 }

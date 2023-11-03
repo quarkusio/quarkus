@@ -5,7 +5,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Makes it possible to register annotations that should be considered interceptor bindings but are not annotated with
- * {@code javax.interceptor.InterceptorBinding}.
+ * {@code jakarta.interceptor.InterceptorBinding}.
  */
 public final class InterceptorBindingRegistrarBuildItem extends MultiBuildItem {
 

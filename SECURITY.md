@@ -10,11 +10,13 @@ You can find our guidelines here regarding our policy and security disclosure.
 
 ## Reporting security issues
 
+:warning: Do NOT report security issues in our public bug tracker.
+
 Please report any security issues you find in Quarkus to:
 
     security at quarkus.io
 
-Anyone can post to this list. The subscribers are only trusted individuals from the Quarkus community who will handle the resolution of any reported security issues in confidence. In your report, please note how you would like to be credited for discovering the issue and the details of any embargo you would like to impose. Currently the security response teams for the following distributions are subscribed to this list and will respond to your report:
+Anyone can post to this list. The subscribers are only trusted individuals from the Quarkus community who will handle the resolution of any reported security issues in confidence. In your report, please note how you would like to be credited for discovering the issue and the details of any embargo you would like to impose. Currently, the security response teams for the following distributions are subscribed to this list and will respond to your report:
 
 * [Red Hat](https://access.redhat.com/security/team/contact/)
 
@@ -32,14 +34,15 @@ We appreciate you following these industry accepted guidelines, which gives time
 
 The community will fix security bugs for the latest major.minor version published at <https://quarkus.io/get-started/>.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| latest 1.x   | :white_check_mark: |
-| older 1.x | :x:                |
-| < 1.0 | :x:                |
+| Version      | Supported          |
+| ------------ | ------------------ |
+| Latest 3.x   | :white_check_mark: |
+| 3.2 LTS      | :white_check_mark: |
+| Older 3.x    | :x:                |
+| < 3          | :x:                |
 
-We may fix the vulnerability to older versions depending on the severity of the issue and the age of the release, but we are only committing to the latest version released.
+We may fix the vulnerability to older versions depending on the severity of the issue and the age of the release, but we are only committing to the versions documented above.
 
 ## Handling security issues
 
-If you represent a Quarkus extension or a Quarkus platform, you are welcome to subscribe to the security at quarkus.io mailing list. Your subscription will only be approved if you can demonstrate that you will handle issues in confidence and properly credit reporters for discovering issues (e.g. experience with embargoe process).
+If you represent a Quarkus extension or a Quarkus platform, you are welcome to subscribe to the security at quarkus.io mailing list. Your subscription will only be approved if you can demonstrate that you will handle issues in confidence and properly credit reporters for discovering issues (e.g. experience with embargo process).

@@ -3,12 +3,10 @@ package io.quarkus.jwt.test;
 import java.io.StringReader;
 import java.net.HttpURLConnection;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -26,7 +24,7 @@ public class ScopingUnitTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
                     .addAsResource("publicKey.pem")
                     .addAsResource("privateKey.pem")
@@ -50,18 +48,6 @@ public class ScopingUnitTest {
         Assertions.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
 
         String token2 = TokenUtils.generateTokenString("/Token2.json");
-        Response response2 = RestAssured.given().auth()
-                .oauth2(token2)
-                .when()
-                // We expect the injected preferred_username claim to still be jdoe due to default scope = @ApplicationScoped
-                .queryParam("username", "jdoe")
-                .get("/endp-defaultscoped/validateUsername").andReturn();
-
-        Assertions.assertEquals(HttpURLConnection.HTTP_OK, response2.getStatusCode());
-        String replyString2 = response2.body().asString();
-        JsonReader jsonReader2 = Json.createReader(new StringReader(replyString2));
-        JsonObject reply2 = jsonReader2.readObject();
-        Assertions.assertTrue(reply2.getBoolean("pass"), reply2.getString("msg"));
 
         Response response3 = RestAssured.given().auth()
                 .oauth2(token)

@@ -37,4 +37,21 @@ public class LiteralSupportTest {
         assertEquals("foo", LiteralSupport.getLiteralValue("\"foo\""));
     }
 
+    @Test
+    public void testLiteralsInTemplate() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("OK", engine.parse("{#if 0 < 0.2f}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if 1 < 2.222D}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if 1 > -2.2F}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if 'foo' != 'bar'}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if 'foo' == 'foo'}OK{#else}NOK{/if}").render());
+        assertEquals("OK", engine.parse("{#if 'foo' == false}NOK{#else}OK{/if}").render());
+    }
+
+    @Test
+    public void testNonLiteral() {
+        assertEquals(Results.NotFound.EMPTY, LiteralSupport.getLiteralValue("'foo'.ping()"));
+        assertEquals(Results.NotFound.EMPTY, LiteralSupport.getLiteralValue("foo.bar"));
+    }
+
 }

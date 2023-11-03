@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
@@ -23,7 +23,7 @@ public class QuarkusExceptionHandler implements ExceptionHandler {
     public static final String ERROR_ID = "quarkus.error.id";
 
     /**
-     * we don't want to generate a new UUID each time as it is slowish. Instead we just generate one based one
+     * we don't want to generate a new UUID each time as it is slowish. Instead, we just generate one based one
      * and then use a counter.
      */
     private static final String BASE_ID = UUID.randomUUID().toString() + "-";

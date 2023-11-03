@@ -27,7 +27,7 @@ public class JTASessionOpener {
         }
     }
 
-    private static SessionBuilder<?> createOptions(SessionFactory sessionFactory) {
+    private static SessionBuilder createOptions(SessionFactory sessionFactory) {
         return sessionFactory.withOptions()
                 .autoClose(true) // .owner() is deprecated as well, so it looks like we need to rely on deprecated code...
                 .connectionHandlingMode(
@@ -36,15 +36,15 @@ public class JTASessionOpener {
     }
 
     private final SessionFactory sessionFactory;
-    private final SessionBuilder<?> cachedOptions;
+    private final SessionBuilder cachedOptions;
 
-    public JTASessionOpener(SessionFactory sessionFactory, SessionBuilder<?> cachedOptions) {
+    public JTASessionOpener(SessionFactory sessionFactory, SessionBuilder cachedOptions) {
         this.sessionFactory = sessionFactory;
         this.cachedOptions = cachedOptions;
     }
 
     public Session openSession() {
-        SessionBuilder<?> options = cachedOptions != null ? cachedOptions : createOptions(sessionFactory);
+        SessionBuilder options = cachedOptions != null ? cachedOptions : createOptions(sessionFactory);
         return options.openSession();
     }
 }

@@ -1,6 +1,6 @@
 package io.quarkus.it.mockbean;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 /**
  * This gets removed removed by Arc since it's not being used in the application,

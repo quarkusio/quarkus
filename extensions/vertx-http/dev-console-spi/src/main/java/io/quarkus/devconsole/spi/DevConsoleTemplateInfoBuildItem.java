@@ -10,7 +10,10 @@ import io.quarkus.deployment.util.ArtifactInfoUtil;
  * Information that can be directly displayed in dev console templates, using the info: prefix
  * <p>
  * This is scoped to the extension that produced it, to prevent namespace clashes
+ *
+ * @deprecated as part of the removal of the old Dev UI
  */
+@Deprecated
 public final class DevConsoleTemplateInfoBuildItem extends MultiBuildItem {
 
     private final String name;

@@ -1,27 +1,79 @@
 package io.quarkus.it.keycloak;
 
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
+import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-@Path("/api/admin/bearer")
+@Path("/api/admin")
 public class AdminResource {
 
     @Inject
     SecurityIdentity identity;
 
+    @Path("bearer")
     @GET
     @RolesAllowed("admin")
     @Produces(MediaType.APPLICATION_JSON)
     public String admin() {
+        return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-required-algorithm")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String adminRequiredAlgorithm() {
+        return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-azure")
+    @GET
+    @Authenticated
+    @Produces(MediaType.APPLICATION_JSON)
+    public String adminAzure() {
+        return "Issuer:" + ((JsonWebToken) identity.getPrincipal()).getIssuer();
+    }
+
+    @Path("bearer-no-introspection")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String adminNoIntrospection() {
+        return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-role-claim-path")
+    @GET
+    @RolesAllowed("custom")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String adminCustomRolePath() {
+        return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-key-without-kid-thumbprint")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String adminNoKidandThumprint() {
+        return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-wrong-role-path")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String adminWrongRolePath() {
         return "granted:" + identity.getRoles();
     }
 }

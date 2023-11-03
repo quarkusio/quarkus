@@ -2,7 +2,7 @@ package io.quarkus.kafka.client.serialization;
 
 import java.util.Map;
 
-import javax.json.bind.Jsonb;
+import jakarta.json.bind.Jsonb;
 
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;

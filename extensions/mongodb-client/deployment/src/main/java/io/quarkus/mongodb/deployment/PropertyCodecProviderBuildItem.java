@@ -11,7 +11,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
  */
 public final class PropertyCodecProviderBuildItem extends SimpleBuildItem {
 
-    private List<String> propertyCodecProviderClassNames;
+    private final List<String> propertyCodecProviderClassNames;
 
     public PropertyCodecProviderBuildItem(List<String> codecProviderClassNames) {
         this.propertyCodecProviderClassNames = codecProviderClassNames;

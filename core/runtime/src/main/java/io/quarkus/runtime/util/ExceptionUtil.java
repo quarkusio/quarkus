@@ -28,10 +28,10 @@ public class ExceptionUtil {
     }
 
     /**
-     * Returns a "upside down" stacktrace of the {@code exception} with the root
+     * Returns an "upside down" stacktrace of the {@code exception} with the root
      * cause showing up first in the stacktrace.
      * <em>Note:</em> This is a relatively expensive method because it creates additional
-     * exceptions and manipulates their stacktraces. Care should be taken to determine whether
+     * exceptions and manipulates their stacktrace. Care should be taken to determine whether
      * usage of this method is necessary.
      *
      * @param exception The exception

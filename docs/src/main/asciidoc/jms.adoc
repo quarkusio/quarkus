@@ -3,38 +3,35 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using JMS
-include::./attributes.adoc[]
+= Using JMS
+include::_attributes.adoc[]
+:categories: messaging
+:summary: This guide demonstrates how your Quarkus application can use JMS messaging with AMQP 1.0 using Apache Qpid JMS, or using Apache ActiveMQ Artemis JMS.
 :extension-status: preview
-
+:topics: messaging,jms,artemis,qpid,activemq
+:extensions: org.amqphub.quarkus:quarkus-qpid-jms,io.quarkiverse.artemis:quarkus-artemis-jms
 
 This guide demonstrates how your Quarkus application can use JMS messaging via the
 Apache Qpid JMS AMQP client, or alternatively the Apache ActiveMQ Artemis JMS client.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::{includes}/prerequisites.adoc[]
 * A running Artemis server, or Docker to start one
-* GraalVM, or Docker, installed if you want to run in native mode.
 
 == Architecture
 
 In this guide, we are going to generate (random) prices in one component.
 These prices are written to a queue (`prices`) using a JMS client.
 Another component reads from the `prices` queue and stores the latest price.
-The data can be fetched from a browser using a fetch button from a JAX-RS resource.
+The data can be fetched from a browser using a fetch button from a Jakarta REST resource.
 
 
 The guide can be used either via the Apache Qpid JMS AMQP client as detailed immediately below, or
 alternatively with the Apache ActiveMQ Artemis JMS client given some different configuration
-as <<artemis-jms, detailed later>>.
+as <<artemis-jms,detailed later>>.
 
 [#qpid-jms-amqp]
 == Qpid JMS - AMQP
@@ -57,19 +54,14 @@ or download an https://github.com/amqphub/quarkus-qpid-jms-quickstart/archive/ma
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=jms-quickstart \
-    -DclassName="org.acme.jms.PriceResource" \
-    -Dpath="/prices" \
-    -Dextensions="resteasy,qpid-jms"
-cd jms-quickstart
-----
+:create-app-artifact-id: jms-quickstart
+:create-app-extensions: resteasy-reactive,qpid-jms
+include::{includes}/devtools/create-app.adoc[]
 
-This command generates a Maven project, with its pom.xml importing the quarkus-qpid-jms extension:
-[source,xml]
+This command generates a new project importing the quarkus-qpid-jms extension:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>org.amqphub.quarkus</groupId>
@@ -77,15 +69,21 @@ This command generates a Maven project, with its pom.xml importing the quarkus-q
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("org.amqphub.quarkus:quarkus-qpid-jms")
+----
+
 [#starting-the-broker]
 === Starting the broker
 
-Then, we need an AMQP broker. In this case we will use an ActiveMQ Artemis server.
-You can follow the instructions from the https://activemq.apache.org/components/artemis/[Apache Artemis web site] or start a broker via docker:
+Then, we need an AMQP broker. In this case we will use an Apache ActiveMQ Artemis server.
+You can follow the instructions from the https://activemq.apache.org/components/artemis/[Apache Artemis website] or start a broker via docker using the https://artemiscloud.io/[ArtemisCloud] container image:
 
 [source,bash]
 ----
-docker run -it --rm -p 8161:8161 -p 61616:61616 -p 5672:5672 -e ARTEMIS_USERNAME=quarkus -e ARTEMIS_PASSWORD=quarkus vromero/activemq-artemis:2.11.0-alpine
+docker run -it --rm -p 8161:8161 -p 61616:61616 -p 5672:5672 -e AMQ_USER=quarkus -e AMQ_PASSWORD=quarkus quay.io/artemiscloud/activemq-artemis-broker:1.0.21
 ----
 
 === The price producer
@@ -101,12 +99,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
-import javax.jms.ConnectionFactory;
-import javax.jms.JMSContext;
-import javax.jms.Session;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.JMSContext;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
@@ -133,7 +130,7 @@ public class PriceProducer implements Runnable {
 
     @Override
     public void run() {
-        try (JMSContext context = connectionFactory.createContext(Session.AUTO_ACKNOWLEDGE)) {
+        try (JMSContext context = connectionFactory.createContext(JMSContext.AUTO_ACKNOWLEDGE)) {
             context.createProducer().send(context.createQueue("prices"), Integer.toString(random.nextInt(100)));
         }
     }
@@ -152,15 +149,14 @@ package org.acme.jms;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
-import javax.jms.ConnectionFactory;
-import javax.jms.JMSConsumer;
-import javax.jms.JMSContext;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.Session;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.JMSConsumer;
+import jakarta.jms.JMSContext;
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
@@ -192,7 +188,7 @@ public class PriceConsumer implements Runnable {
 
     @Override
     public void run() {
-        try (JMSContext context = connectionFactory.createContext(Session.AUTO_ACKNOWLEDGE)) {
+        try (JMSContext context = connectionFactory.createContext(JMSContext.AUTO_ACKNOWLEDGE)) {
             JMSConsumer consumer = context.createConsumer(context.createQueue("prices"));
             while (true) {
                 Message message = consumer.receive();
@@ -208,18 +204,18 @@ public class PriceConsumer implements Runnable {
 
 === The price resource
 
-Finally, let's create a simple JAX-RS resource to show the last price.
+Finally, let's create a simple Jakarta REST resource to show the last price.
 Create the `src/main/java/org/acme/jms/PriceResource.java` file with the following content:
 
 [source, java]
 ----
 package org.acme.jms;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 /**
  * A simple resource showing the last price.
@@ -304,10 +300,7 @@ More detail about the configuration are available in the https://github.com/amqp
 If you followed the instructions, you should have the Artemis server running.
 Then, you just need to run the application using:
 
-[source,bash]
-----
-./mvnw compile quarkus:dev
-----
+include::{includes}/devtools/dev.adoc[]
 
 Open `http://localhost:8080/prices.html` in your browser.
 
@@ -315,16 +308,11 @@ Open `http://localhost:8080/prices.html` in your browser.
 
 You can build the native executable with:
 
-[source,bash]
-----
-./mvnw package -Pnative
-----
+include::{includes}/devtools/build-native.adoc[]
 
 Or, if you don't have GraalVM installed, you can instead use Docker to build the native executable using:
-[source,bash]
-----
-./mvnw package -Pnative -Dquarkus.native.container-build=true
-----
+
+include::{includes}/devtools/build-native-container.adoc[]
 
 and then run with:
 
@@ -343,7 +331,7 @@ Open `http://localhost:8080/prices.html` in your browser.
 
 The above steps detailed using the Qpid JMS AMQP client, however the guide can also be used
 with the Artemis JMS client. Many of the individual steps are exactly as previously
-<<qpid-jms-amqp, detailed above for Qpid JMS>>. The individual component code is the same.
+<<qpid-jms-amqp,detailed above for Qpid JMS>>. The individual component code is the same.
 The only differences are in the dependency for the initial project creation, and the
 configuration properties used. These changes are detailed below and should be substituted
 for the equivalent step during the sequence above.
@@ -354,30 +342,31 @@ You can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The Artemis JMS solution is located in the `jms-quickstart` {quickstarts-tree-url}/jms-quickstart[directory].
+The Artemis JMS solution is located in the `jms-quickstart` link:{quickstarts-tree-url}/jms-quickstart[directory].
 
 === Creating the Maven Project
 
 Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=jms-quickstart \
-    -DclassName="org.acme.jms.PriceResource" \
-    -Dpath="/prices" \
-    -Dextensions="resteasy,artemis-jms"
-cd jms-quickstart
-----
+:create-app-artifact-id: jms-quickstart
+:create-app-extensions: resteasy-reactive,artemis-jms
+include::{includes}/devtools/create-app.adoc[]
 
-This creates a Maven project, with its pom.xml importing the quarkus-artemis-jms extension:
-[source,xml]
+This creates a new project importing the quarkus-artemis-jms extension:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-artemis-jms</artifactId>
+    <groupId>io.quarkiverse.artemis</groupId>
+    <artifactId>quarkus-artemis-jms</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkiverse.artemis:quarkus-artemis-jms")
 ----
 
 With the project created, you can resume from <<starting-the-broker>> in the detailed steps above
@@ -401,4 +390,5 @@ With the Artemis properties configured, you can resume the steps above from <<ge
 
 === Configuration Reference
 
-include::{generated-dir}/config/quarkus-artemis-core.adoc[opts=optional, leveloffset=+1]
+To know more about how to configure the Artemis JMS client, have a look at https://quarkiverse.github.io/quarkiverse-docs/quarkus-artemis/dev/index.html[the documentation of the extension].
+

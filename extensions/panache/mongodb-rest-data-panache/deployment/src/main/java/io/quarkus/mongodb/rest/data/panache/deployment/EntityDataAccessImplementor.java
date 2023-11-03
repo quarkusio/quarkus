@@ -3,6 +3,7 @@ package io.quarkus.mongodb.rest.data.panache.deployment;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.util.List;
+import java.util.Map;
 
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ResultHandle;
@@ -25,21 +26,49 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
                 ofMethod(entityClassName, "findById", PanacheMongoEntityBase.class, Object.class), id);
     }
 
+    /**
+     * Implements <code>Entity.findAll().page(page).list()</code>
+     */
     @Override
     public ResultHandle findAll(BytecodeCreator creator, ResultHandle page) {
-        ResultHandle query = creator.invokeStaticMethod(ofMethod(entityClassName, "findAll", PanacheQuery.class));
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query,
+        ResultHandle panacheQuery = creator.invokeStaticMethod(ofMethod(entityClassName, "findAll", PanacheQuery.class));
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery,
                 page);
-        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), query);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), panacheQuery);
+    }
+
+    /**
+     * Implements <code>Entity.findAll(sort).page(page).list()</code>
+     */
+    @Override
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort) {
+        ResultHandle panacheQuery = creator.invokeStaticMethod(
+                ofMethod(entityClassName, "findAll", PanacheQuery.class, Sort.class),
+                sort);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery,
+                page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), panacheQuery);
     }
 
     @Override
-    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort) {
-        ResultHandle query = creator.invokeStaticMethod(
-                ofMethod(entityClassName, "findAll", PanacheQuery.class, Sort.class), sort);
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query,
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams) {
+        ResultHandle panacheQuery = creator.invokeStaticMethod(
+                ofMethod(entityClassName, "find", PanacheQuery.class, String.class, Map.class),
+                query, queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery,
                 page);
-        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), query);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), panacheQuery);
+    }
+
+    @Override
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort, ResultHandle query,
+            ResultHandle queryParams) {
+        ResultHandle panacheQuery = creator.invokeStaticMethod(
+                ofMethod(entityClassName, "find", PanacheQuery.class, String.class, Sort.class, Map.class),
+                query, sort, queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery,
+                page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), panacheQuery);
     }
 
     @Override

@@ -1,19 +1,25 @@
 package io.quarkus.runtime.logging;
 
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Filter;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 import org.jboss.logging.Logger;
+import org.jboss.logmanager.ExtLogRecord;
 
 public class LogCleanupFilter implements Filter {
 
-    private Map<String, LogCleanupFilterElement> filterElements = new HashMap<>();
+    final Map<String, LogCleanupFilterElement> filterElements = new HashMap<>();
+    public static final String SHUTDOWN_MESSAGE = " [Error Occurred After Shutdown]";
 
-    public LogCleanupFilter(List<LogCleanupFilterElement> filterElements) {
+    private final LoggingSetupRecorder.ShutdownNotifier shutdownNotifier;
+
+    public LogCleanupFilter(Collection<LogCleanupFilterElement> filterElements,
+            LoggingSetupRecorder.ShutdownNotifier shutdownNotifier) {
+        this.shutdownNotifier = shutdownNotifier;
         for (LogCleanupFilterElement element : filterElements) {
             this.filterElements.put(element.getLoggerName(), element);
         }
@@ -21,6 +27,18 @@ public class LogCleanupFilter implements Filter {
 
     @Override
     public boolean isLoggable(LogRecord record) {
+
+        //we also use this filter to add a warning about errors generated after shutdown
+        if (record.getLevel().intValue() >= org.jboss.logmanager.Level.ERROR.intValue() && shutdownNotifier.shutdown) {
+            if (!record.getMessage().endsWith(SHUTDOWN_MESSAGE)) {
+                if (record instanceof ExtLogRecord) {
+                    ExtLogRecord elr = (ExtLogRecord) record;
+                    elr.setMessage(record.getMessage() + SHUTDOWN_MESSAGE, elr.getFormatStyle());
+                } else {
+                    record.setMessage(record.getMessage() + SHUTDOWN_MESSAGE);
+                }
+            }
+        }
         // Only allow filtering messages of warning level and lower
         if (record.getLevel().intValue() > Level.WARNING.intValue()) {
             return true;

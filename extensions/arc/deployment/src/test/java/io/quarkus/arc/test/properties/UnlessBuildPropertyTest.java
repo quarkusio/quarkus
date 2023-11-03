@@ -3,14 +3,12 @@ package io.quarkus.arc.test.properties;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.CDI;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,7 +20,7 @@ public class UnlessBuildPropertyTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Producer.class, AnotherProducer.class,
                             GreetingBean.class, PingBean.class, PongBean.class, FooBean.class, BarBean.class))
             .overrideConfigKey("some.prop1", "v1")
@@ -76,7 +74,8 @@ public class UnlessBuildPropertyTest {
         }
     }
 
-    @UnlessBuildProperty(name = "some.prop1", stringValue = "v1") // won't be enabled because the values don't match
+    @UnlessBuildProperty(name = "some.prop1", stringValue = "v1") // won't be enabled because the value matches
+    @UnlessBuildProperty(name = "some.prop1", stringValue = "v")
     @Singleton
     static class PongBean {
 
@@ -115,6 +114,7 @@ public class UnlessBuildPropertyTest {
 
         @Produces
         @UnlessBuildProperty(name = "some.prop1", stringValue = "v")
+        @UnlessBuildProperty(name = "some.prop2", stringValue = "v")
         GreetingBean matchingValueGreetingBean(FooBean fooBean) {
             return new GreetingBean() {
 

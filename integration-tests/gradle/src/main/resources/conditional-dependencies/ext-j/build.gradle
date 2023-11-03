@@ -1,0 +1,18 @@
+allprojects {
+    group 'org.acme.j'
+    version '1.0-SNAPSHOT'
+
+    apply plugin: 'java'
+    apply plugin: 'maven-publish'
+
+    repositories {
+        mavenLocal {
+            content {
+                includeGroup 'org.acme' // for dependencies built in this test
+                includeGroupByRegex 'io.quarkus.*'
+                includeGroup 'org.hibernate.orm'
+            }
+        }
+        mavenCentral()
+    }
+}

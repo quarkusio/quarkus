@@ -3,9 +3,8 @@ package io.quarkus.resteasy.reactive.server.test.security;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -20,12 +19,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DenyAllJaxRsTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(PermitAllResource.class, UnsecuredResource.class,
                             TestIdentityProvider.class,
                             TestIdentityController.class,
-                            UnsecuredSubResource.class)
-                    .addAsResource(new StringAsset("quarkus.resteasy-reactive.deny-unannotated-endpoints = true\n"),
+                            UnsecuredSubResource.class, HelloResource.class)
+                    .addAsResource(new StringAsset("quarkus.security.jaxrs.deny-unannotated-endpoints = true\n"),
                             "application.properties"));
 
     @BeforeAll
@@ -39,6 +38,18 @@ public class DenyAllJaxRsTest {
     public void shouldDenyUnannotated() {
         String path = "/unsecured/defaultSecurity";
         assertStatus(path, 403, 401);
+    }
+
+    @Test
+    public void shouldDenyUnannotatedNonBlocking() {
+        String path = "/unsecured/defaultSecurityNonBlocking";
+        assertStatus(path, 403, 401);
+    }
+
+    @Test
+    public void shouldPermitPermitAllMethodNonBlocking() {
+        String path = "/permitAll/defaultSecurityNonBlocking";
+        assertStatus(path, 200, 200);
     }
 
     @Test
@@ -68,6 +79,15 @@ public class DenyAllJaxRsTest {
     public void shouldAllowPermitAllClass() {
         String path = "/permitAll/sub/subMethod";
         assertStatus(path, 200, 200);
+    }
+
+    @Test
+    public void testServerExceptionMapper() {
+        given()
+                .get("/hello")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("unauthorizedExceptionMapper"));
     }
 
     private void assertStatus(String path, int status, int anonStatus) {

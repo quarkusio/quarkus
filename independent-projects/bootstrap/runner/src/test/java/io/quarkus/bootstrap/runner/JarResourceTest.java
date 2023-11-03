@@ -7,12 +7,15 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 /**
  * Tests {@link JarResource}
@@ -25,12 +28,31 @@ public class JarResourceTest {
      */
     @Test
     public void testResourceURLEncoding() throws Exception {
+        testInternal("test");
+    }
+
+    /**
+     * As above but with a question mark in the path
+     * <p>
+     * Disabled on windows as such paths are not allowed
+     */
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    public void testResourceURLEncodingWithQuestionMark() throws Exception {
+        testInternal("test?dir");
+    }
+
+    /**
+     * Tests that the URL(s) returned from {@link JarResource#getResourceURL(String)} are properly encoded and can be used
+     * to open connection to the URL to read data
+     */
+    private void testInternal(String path) throws Exception {
         final JavaArchive jar = ShrinkWrap.create(JavaArchive.class);
         final String[] files = new String[] { "a.txt", "a b.txt", ",;~!@#$%^&().txt" };
         for (final String file : files) {
             jar.add(new StringAsset("hello"), file);
         }
-        final Path testDir = Files.createTempDirectory("test");
+        final Path testDir = Files.createTempDirectory(path);
         // create a child dir with special characters
         final Path specialCharDir = Files.createDirectory(Paths.get(testDir.toString(), ",;~!@#$%^&()"));
         final Path jarFilePath = Files.createTempFile(specialCharDir, "test", "quarkus-test.jar");

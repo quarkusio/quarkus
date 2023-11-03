@@ -3,8 +3,8 @@ package io.quarkus.it.websocket;
 import java.io.IOException;
 import java.io.Writer;
 
-import javax.websocket.Encoder;
-import javax.websocket.EndpointConfig;
+import jakarta.websocket.Encoder;
+import jakarta.websocket.EndpointConfig;
 
 public class ClientDtoEncoder implements Encoder.TextStream<Dto> {
     @Override

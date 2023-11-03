@@ -4,7 +4,7 @@ public class MessageFormat {
 
     public static final String RED = "\u001B[91m";
     public static final String GREEN = "\u001b[32m";
-    public static final String BLUE = "\u001b[34m";
+    public static final String BLUE = "\u001b[94m";
     public static final String RESET = "\u001b[39m";
     public static final String UNDERLINE = "\u001b[4m";
     public static final String NO_UNDERLINE = "\u001b[24m";

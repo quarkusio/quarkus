@@ -1,0 +1,26 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'io.quarkus.extension'
+}
+
+dependencies {
+    implementation platform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+}
+
+quarkusExtension {
+    deploymentArtifact = "org.acme:ext-b-deployment:1.0-SNAPSHOT"
+    dependencyConditions = ["org.acme:ext-c::jar"]
+    conditionalDependencies = ["org.acme:ext-e::jar:1.0-SNAPSHOT"]
+}
+
+publishing {
+    publications {
+        mavenJave(MavenPublication) {
+            groupId = 'org.acme'
+            artifactId = 'ext-b'
+            version = '1.0-SNAPSHOT'
+            from components.java
+        }
+    }
+}

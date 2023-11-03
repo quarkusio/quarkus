@@ -96,7 +96,7 @@ public final class URIDecoder {
 
     /**
      * Helper to decode half of a hexadecimal number from a string.
-     * 
+     *
      * @param c The ASCII character of the hexadecimal number to decode.
      *        Must be in the range {@code [0-9a-fA-F]}.
      * @return The hexadecimal value represented in the ASCII character

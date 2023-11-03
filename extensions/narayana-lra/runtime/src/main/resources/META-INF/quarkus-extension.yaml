@@ -1,0 +1,16 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Narayana LRA - LRA Participant Support"
+metadata:
+  keywords:
+  - "narayana-lra"
+  - "narayana"
+  - "lra"
+  - "compensations"
+  - "transactions"
+  - "transaction"
+  - "saga"
+  guide: "https://quarkus.io/guides/lra"
+  categories:
+  - "data"
+  status: "preview"

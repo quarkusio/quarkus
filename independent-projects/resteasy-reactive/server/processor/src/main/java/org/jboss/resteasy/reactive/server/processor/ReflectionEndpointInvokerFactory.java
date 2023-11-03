@@ -1,8 +1,10 @@
 package org.jboss.resteasy.reactive.server.processor;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.Supplier;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.PrimitiveType;
@@ -22,11 +24,18 @@ public class ReflectionEndpointInvokerFactory implements EndpointInvokerFactory 
                 try {
                     Class<?> clazz = Class.forName(currentMethod.declaringClass().name().toString(), false,
                             Thread.currentThread().getContextClassLoader());
-                    Method meth = clazz.getDeclaredMethod(currentMethod.name(), toParamArray(currentMethod.parameters()));
+                    Method meth = clazz.getDeclaredMethod(currentMethod.name(), toParamArray(currentMethod.parameterTypes()));
                     return new EndpointInvoker() {
                         @Override
                         public Object invoke(Object instance, Object[] parameters) throws Exception {
-                            return meth.invoke(instance, parameters);
+                            try {
+                                return meth.invoke(instance, parameters);
+                            } catch (InvocationTargetException e) {
+                                if (e.getCause() instanceof Exception) {
+                                    throw (Exception) e.getCause();
+                                }
+                                throw e;
+                            }
                         }
                     };
                 } catch (Exception e) {

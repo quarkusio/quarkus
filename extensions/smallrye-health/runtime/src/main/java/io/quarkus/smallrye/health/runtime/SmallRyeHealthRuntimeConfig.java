@@ -1,5 +1,8 @@
 package io.quarkus.smallrye.health.runtime;
 
+import java.util.Map;
+
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -12,4 +15,26 @@ public class SmallRyeHealthRuntimeConfig {
      */
     @ConfigItem(name = "ui.enable", defaultValue = "true")
     boolean enable;
+
+    /**
+     * Additional top-level properties to be included in the resulting JSON object.
+     */
+    @ConfigItem(name = "additional.property")
+    Map<String, String> additionalProperties;
+
+    /**
+     * Specifications of checks that can be disabled.
+     */
+    @ConfigItem
+    Map<String, Enabled> check;
+
+    @ConfigGroup
+    public static final class Enabled {
+
+        /**
+         * Whether the HealthCheck should be enabled.
+         */
+        @ConfigItem
+        boolean enabled;
+    }
 }

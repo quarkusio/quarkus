@@ -1,0 +1,5 @@
+quarkus:
+  prop:
+    yaml: 'yaml'
+  package:
+    type: legacy-jar

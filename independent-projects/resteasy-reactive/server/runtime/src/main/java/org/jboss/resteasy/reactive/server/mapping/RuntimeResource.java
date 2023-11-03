@@ -3,7 +3,9 @@ package org.jboss.resteasy.reactive.server.mapping;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.MediaType;
+
+import jakarta.ws.rs.core.MediaType;
+
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
@@ -28,11 +30,12 @@ public class RuntimeResource {
     private final Class<?>[] parameterTypes;
     private final Type returnType;
     private final boolean blocking;
+    private final boolean runOnVirtualThread;
     private final Class<?> resourceClass;
     private final ResteasyReactiveResourceInfo lazyMethod;
     private final Map<String, Integer> pathParameterIndexes;
     private final Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score;
-    private final MediaType sseElementType;
+    private final MediaType streamElementType;
     private final Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> classExceptionMappers;
 
     public RuntimeResource(String httpMethod, URITemplate path, URITemplate classPath, ServerMediaType produces,
@@ -40,9 +43,10 @@ public class RuntimeResource {
             EndpointInvoker invoker,
             BeanFactory<Object> endpointFactory, ServerRestHandler[] handlerChain, String javaMethodName,
             Class<?>[] parameterTypes,
-            Type returnType, boolean blocking, Class<?> resourceClass, ResteasyReactiveResourceInfo lazyMethod,
+            Type returnType, boolean blocking, boolean runOnVirtualThread, Class<?> resourceClass,
+            ResteasyReactiveResourceInfo lazyMethod,
             Map<String, Integer> pathParameterIndexes, Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score,
-            MediaType sseElementType,
+            MediaType streamElementType,
             Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> classExceptionMappers) {
         this.httpMethod = httpMethod;
         this.path = path;
@@ -56,11 +60,12 @@ public class RuntimeResource {
         this.parameterTypes = parameterTypes;
         this.returnType = returnType;
         this.blocking = blocking;
+        this.runOnVirtualThread = runOnVirtualThread;
         this.resourceClass = resourceClass;
         this.lazyMethod = lazyMethod;
         this.pathParameterIndexes = pathParameterIndexes;
         this.score = score;
-        this.sseElementType = sseElementType;
+        this.streamElementType = streamElementType;
         this.classExceptionMappers = classExceptionMappers;
     }
 
@@ -104,6 +109,10 @@ public class RuntimeResource {
         return blocking;
     }
 
+    public boolean isRunOnVirtualThread() {
+        return runOnVirtualThread;
+    }
+
     public Class<?> getResourceClass() {
         return resourceClass;
     }
@@ -120,13 +129,13 @@ public class RuntimeResource {
         return new ResteasyReactiveSimplifiedResourceInfo(javaMethodName, resourceClass, parameterTypes);
     }
 
-    public MediaType getSseElementType() {
-        return sseElementType;
+    public MediaType getStreamElementType() {
+        return streamElementType;
     }
 
     /**
      * The @Path that is present on the class itself
-     * 
+     *
      * @return
      */
     public URITemplate getClassPath() {

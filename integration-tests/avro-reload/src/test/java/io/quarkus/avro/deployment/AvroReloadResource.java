@@ -4,8 +4,8 @@ import static java.util.stream.Collectors.joining;
 
 import java.util.Arrays;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import test.Level;
 import test.PrivacyImport;

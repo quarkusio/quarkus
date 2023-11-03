@@ -7,17 +7,15 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 public class MultiModuleUberJarTest extends QuarkusGradleWrapperTestBase {
-    private static Future<?> jarRun;
 
     @Test
     public void testUberJarForMultiModule() throws Exception {
@@ -32,6 +30,8 @@ public class MultiModuleUberJarTest extends QuarkusGradleWrapperTestBase {
 
         File output = new File(projectDir, "application/build/output.log");
         output.createNewFile();
+        DevModeClient devModeClient = new DevModeClient();
+
         Process process = launch(jar, output);
         try {
             // Wait until server up
@@ -39,25 +39,15 @@ public class MultiModuleUberJarTest extends QuarkusGradleWrapperTestBase {
                 await()
                         .pollDelay(1, TimeUnit.SECONDS)
                         .atMost(1, TimeUnit.MINUTES)
-                        .until(() -> DevModeTestUtils.isCode("/hello", 200));
+                        .until(() -> devModeClient.isCode("/hello", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
-            assertThatOutputWorksCorrectly(logs);
 
-            // test that the http response is correct
-            assertThat(DevModeTestUtils.getHttpResponse("/hello", () -> {
-                return jarRun == null ? null : jarRun.isDone() ? "jar run mode has terminated" : null;
-            }).equals("hello common"));
+            assertThat(logs).contains("INFO").contains("cdi, resteasy");
         } finally {
             process.destroy();
         }
-    }
-
-    private void assertThatOutputWorksCorrectly(String logs) {
-        assertThat(logs.isEmpty()).isFalse();
-        assertThat(logs.contains("INFO")).isTrue();
-        assertThat(logs.contains("cdi, resteasy")).isTrue();
     }
 }

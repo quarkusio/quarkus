@@ -9,3 +9,5 @@ metadata:
   categories:
   - "security"
   status: "stable"
+  config:
+  - "quarkus.security.jdbc."

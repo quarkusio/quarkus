@@ -1,35 +1,41 @@
 package io.quarkus.qute.deployment.extensions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Map;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
+import io.quarkus.qute.TemplateException;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class TimeTemplateExtensionsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset(
                             "{now.format('d uuuu')}:{nowLocalDate.format('d MMM uuuu',myLocale)}:{time:format(nowDate,'d MMM uuuu',myLocale)}:{time:format(nowCalendar,'d uuuu')}"),
                             "templates/foo.html"));
 
     @Inject
     Template foo;
+
+    @Inject
+    Engine engine;
 
     @Test
     public void testFormat() {
@@ -44,6 +50,18 @@ public class TimeTemplateExtensionsTest {
                 .data("nowDate", nowDate)
                 .data("nowCalendar", nowCal)
                 .data("myLocale", Locale.ENGLISH).render());
+    }
+
+    @Test
+    public void testInvalidParameter() {
+        try {
+            // input.birthday cannot be resolved
+            engine.parse("{time:format(input.birthday, 'uuuu')}").data("input", Map.of("name", "Quarkus Qute")).render();
+            fail();
+        } catch (TemplateException expected) {
+            assertTrue(expected.getMessage().startsWith("Rendering error: Property \"birthday\" not found on the base object"),
+                    expected.getMessage());
+        }
     }
 
 }

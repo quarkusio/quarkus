@@ -19,6 +19,10 @@
             <artifactId>readline</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.aesh</groupId>
+            <artifactId>aesh</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>
@@ -31,12 +35,16 @@
             <artifactId>gizmo</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss</groupId>
+            <groupId>io.smallrye</groupId>
             <artifactId>jandex</artifactId>
         </dependency>
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-commons</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -54,7 +62,21 @@
                     <groupId>org.eclipse.sisu</groupId>
                     <artifactId>org.eclipse.sisu.inject</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>listenablefuture</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bootstrap-gradle-resolver</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -122,13 +144,41 @@
     <build>
         <plugins>
             <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <!-- Give tests a hint to not use containers, by default -->
+                        <avoid-containers>true</avoid-containers>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            <plugin>
                 <artifactId>maven-enforcer-plugin</artifactId>
-
                 <executions>
                     <execution>
                         <id>enforce-test-deps-junit-scope</id>
                         <configuration>
                             <skip>true</skip>
+                        </configuration>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>enforce-quarkus-core-deployment</id>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <!-- findbugs is not required at runtime -->
+                                        <exclude>com.google.code.findbugs:jsr305</exclude>
+                                        <!-- com.google.guava:listenablefuture is empty and the ListenableFuture class is available in Guava -->
+                                        <exclude>com.google.guava:listenablefuture</exclude>
+                                        <!-- let's avoid having commons-io crawling into quarkus-core -->
+                                        <exclude>commons-io:commons-io</exclude>
+                                    </excludes>
+                                </bannedDependencies>
+                            </rules>
                         </configuration>
                         <goals>
                             <goal>enforce</goal>
@@ -148,6 +198,69 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>de.thetaphi</groupId>
+                <artifactId>forbiddenapis</artifactId>
+                <executions>
+                    <execution>
+                        <id>verify-forbidden-apis</id>
+                        <configuration>
+                            <signaturesFiles>
+                                <signaturesFile>./banned-signatures.txt</signaturesFile>
+                                <signaturesFile>${maven.multiModuleProjectDirectory}/.forbiddenapis/banned-signatures-common.txt</signaturesFile>
+                            </signaturesFiles>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>com.gradle</groupId>
+                    <artifactId>gradle-enterprise-maven-extension</artifactId>
+                    <configuration>
+                        <gradleEnterprise>
+                            <!--
+                            For now, do not store the output of the maven-compiler-plugin as we generate the config doc.
+                            Ideally, we would register them as additional output but their organization is too messy for now.
+                            -->
+                            <plugins combine.children="append">
+                                <plugin>
+                                    <artifactId>maven-compiler-plugin</artifactId>
+                                    <outputs>
+                                        <notCacheableBecause>the extension config doc generation tool shares data across all extensions</notCacheableBecause>
+                                    </outputs>
+                                </plugin>
+                            </plugins>
+                        </gradleEnterprise>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
+
+    <profiles>
+        <profile>
+            <id>test-native-container-build</id>
+            <activation>
+                <property>
+                    <name>start-containers</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <!-- Enable the container-based tests -->
+                                <avoid-containers>false</avoid-containers>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

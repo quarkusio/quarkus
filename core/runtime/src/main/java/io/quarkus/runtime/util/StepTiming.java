@@ -1,5 +1,10 @@
 package io.quarkus.runtime.util;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.concurrent.TimeUnit;
+
 import io.quarkus.runtime.StartupContext;
 
 public class StepTiming {
@@ -14,17 +19,22 @@ public class StepTiming {
     }
 
     public static void configureStart() {
-        stepTimingStart = System.currentTimeMillis();
+        stepTimingStart = System.nanoTime();
     }
 
     public static void printStepTime(StartupContext startupContext) {
         if (!stepTimingEnabled) {
             return;
         }
-        long stepTimingStop = System.currentTimeMillis();
         String currentBuildStepName = startupContext.getCurrentBuildStepName();
-        System.out
-                .println("Build step " + currentBuildStepName + " completed in: " + (stepTimingStop - stepTimingStart) + "ms");
-        stepTimingStart = System.currentTimeMillis();
+        System.out.printf("%1$tF %1$tT,%1$tL Build step %2$s completed in: %3$sms%n",
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.systemDefault()),
+                currentBuildStepName,
+                duration(System.nanoTime(), stepTimingStart));
+        stepTimingStart = System.nanoTime();
+    }
+
+    private static long duration(long ended, long started) {
+        return TimeUnit.MILLISECONDS.convert(ended - started, TimeUnit.NANOSECONDS);
     }
 }

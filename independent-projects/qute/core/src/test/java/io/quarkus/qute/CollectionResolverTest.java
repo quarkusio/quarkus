@@ -1,10 +1,11 @@
 package io.quarkus.qute;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 public class CollectionResolverTest {
@@ -37,18 +38,10 @@ public class CollectionResolverTest {
                 engine.parse("{#each list.take(1)}{it},{/each}").data("list", list).render());
         assertEquals("Roman,Matej,",
                 engine.parse("{#each list.takeLast(2)}{it},{/each}").data("list", list).render());
-        try {
-            assertEquals("3",
-                    engine.parse("{list.take(12).size}").data("list", list).render());
-            fail();
-        } catch (IndexOutOfBoundsException expected) {
-        }
-        try {
-            assertEquals("3",
-                    engine.parse("{list.take(-1).size}").data("list", list).render());
-            fail();
-        } catch (IndexOutOfBoundsException expected) {
-        }
+        assertThatExceptionOfType(IndexOutOfBoundsException.class)
+                .isThrownBy(() -> engine.parse("{list.take(12).size}").data("list", list).render());
+        assertThatExceptionOfType(IndexOutOfBoundsException.class)
+                .isThrownBy(() -> engine.parse("{list.take(-1).size}").data("list", list).render());
     }
 
 }

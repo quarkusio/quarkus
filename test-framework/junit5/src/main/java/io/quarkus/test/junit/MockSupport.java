@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
+import io.quarkus.runtime.MockedThroughWrapper;
+
 class MockSupport {
 
     private static final Deque<List<Object>> contexts = new ArrayDeque<>();
@@ -16,14 +18,20 @@ class MockSupport {
     }
 
     static void popContext() {
+        if (contexts.isEmpty()) {
+            return; // can happen on error in QuarkusTestResourceLifecycleManagers etc.
+        }
         List<Object> val = contexts.pop();
         for (Object i : val) {
             try {
-                i.getClass().getDeclaredMethod("arc$clearMock").invoke(i);
+                if (i instanceof MockedThroughWrapper) {
+                    ((MockedThroughWrapper) i).clearMock();
+                } else {
+                    i.getClass().getDeclaredMethod("arc$clearMock").invoke(i);
 
-                // Enable all observers declared on the mocked bean
-                mockObservers(i, false);
-
+                    // Enable all observers declared on the mocked bean
+                    mockObservers(i, false);
+                }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -37,16 +45,22 @@ class MockSupport {
             throw new IllegalStateException("No test in progress");
         }
         try {
-            Method setMethod = instance.getClass().getDeclaredMethod("arc$setMock", Object.class);
-            setMethod.invoke(instance, mock);
-            inst.add(instance);
+            if (instance instanceof MockedThroughWrapper) {
+                ((MockedThroughWrapper) instance).setMock(mock);
+                inst.add(instance);
+            } else {
 
-            // Disable all observers declared on the mocked bean
-            mockObservers(instance, true);
+                Method setMethod = instance.getClass().getDeclaredMethod("arc$setMock", Object.class);
+                setMethod.invoke(instance, mock);
+                inst.add(instance);
 
+                // Disable all observers declared on the mocked bean
+                mockObservers(instance, true);
+            }
         } catch (Exception e) {
             throw new RuntimeException(instance
-                    + " is not a normal scoped CDI bean, make sure the bean is a normal scope like @ApplicationScoped or @RequestScoped");
+                    + " is not a normal scoped CDI bean, make sure the bean is a normal scope like @ApplicationScoped or @RequestScoped",
+                    e);
 
         }
     }

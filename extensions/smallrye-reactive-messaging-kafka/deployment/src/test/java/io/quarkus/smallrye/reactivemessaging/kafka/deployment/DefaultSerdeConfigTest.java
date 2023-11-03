@@ -6,16 +6,26 @@ import static org.assertj.core.groups.Tuple.tuple;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
+import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.specific.AvroGenerated;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.Headers;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.Serializer;
+import org.assertj.core.api.Assert;
 import org.assertj.core.groups.Tuple;
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -31,34 +41,107 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.common.MapBackedConfigSource;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.operators.multi.split.MultiSplitter;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.smallrye.reactive.messaging.Targeted;
+import io.smallrye.reactive.messaging.TargetedMessages;
 import io.smallrye.reactive.messaging.kafka.KafkaRecord;
+import io.smallrye.reactive.messaging.kafka.KafkaRecordBatch;
 import io.smallrye.reactive.messaging.kafka.Record;
+import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 public class DefaultSerdeConfigTest {
     private static void doTest(Tuple[] expectations, Class<?>... classesToIndex) {
-        List<RunTimeConfigurationDefaultBuildItem> configs = new ArrayList<>();
+        doTest(null, expectations, classesToIndex);
+    }
 
-        DefaultSerdeDiscoveryState discovery = new DefaultSerdeDiscoveryState(index(classesToIndex)) {
+    private static void doTest(Config customConfig, Tuple[] expectations, Class<?>... classesToIndex) {
+        doTest(customConfig, expectations, Collections.emptyList(), Collections.emptyList(), classesToIndex);
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static void doTest(Config customConfig, Tuple[] expectations,
+            List<Function<String, Assert>> generatedNames,
+            List<Function<String, Assert>> reflectiveNames, Class<?>... classesToIndex) {
+        List<RunTimeConfigurationDefaultBuildItem> configs = new ArrayList<>();
+        List<GeneratedClassBuildItem> generated = new ArrayList<>();
+        List<ReflectiveClassBuildItem> reflective = new ArrayList<>();
+
+        List<Class<?>> classes = new ArrayList<>(Arrays.asList(classesToIndex));
+        classes.add(Incoming.class);
+        classes.add(Outgoing.class);
+        DefaultSerdeDiscoveryState discovery = new DefaultSerdeDiscoveryState(index(classes)) {
             @Override
-            boolean isKafkaConnector(boolean incoming, String channelName) {
+            Config getConfig() {
+                return customConfig != null ? customConfig : super.getConfig();
+            }
+
+            @Override
+            boolean isKafkaConnector(List<ConnectorManagedChannelBuildItem> list, boolean incoming, String channelName) {
                 return true;
             }
         };
-        new SmallRyeReactiveMessagingKafkaProcessor().discoverDefaultSerdeConfig(discovery, configs::add);
+        try {
+            new SmallRyeReactiveMessagingKafkaProcessor().discoverDefaultSerdeConfig(discovery, Collections.emptyList(),
+                    configs::add,
+                    (generatedNames == null) ? null : generated::add,
+                    (reflectiveNames == null) ? null : reflective::add);
 
-        assertThat(configs)
-                .extracting(RunTimeConfigurationDefaultBuildItem::getKey, RunTimeConfigurationDefaultBuildItem::getValue)
-                .containsExactlyInAnyOrder(expectations);
+            assertThat(configs)
+                    .extracting(RunTimeConfigurationDefaultBuildItem::getKey, RunTimeConfigurationDefaultBuildItem::getValue)
+                    .allSatisfy(tuple -> {
+                        Object[] e = tuple.toArray();
+                        String key = (String) e[0];
+                        String value = (String) e[1];
+                        assertThat(Arrays.stream(expectations).filter(t -> key.equals(t.toArray()[0])))
+                                .hasSize(1)
+                                .satisfiesOnlyOnce(t -> {
+                                    Object o = t.toArray()[1];
+                                    if (o instanceof String) {
+                                        assertThat(value).isEqualTo((String) o);
+                                    } else {
+                                        ((Function<String, Assert>) o).apply(value);
+                                    }
+                                });
+                    });
+
+            assertThat(generated)
+                    .extracting(GeneratedClassBuildItem::getName)
+                    .allSatisfy(s -> assertThat(generatedNames).satisfiesOnlyOnce(c -> c.apply(s)));
+
+            assertThat(reflective)
+                    .flatExtracting(ReflectiveClassBuildItem::getClassNames)
+                    .allSatisfy(s -> assertThat(reflectiveNames).satisfiesOnlyOnce(c -> c.apply(s)));
+        } finally {
+            // must not leak the lazily-initialized Config instance associated to the system classloader
+            if (customConfig == null) {
+                QuarkusConfigFactory.setConfig(null);
+            }
+        }
     }
 
-    private static IndexView index(Class<?>... classes) {
+    Function<String, Assert> assertMatches(String regex) {
+        return s -> assertThat(s).matches(regex);
+    }
+
+    Function<String, Assert> assertStartsWith(String starts) {
+        return s -> assertThat(s).startsWith(starts);
+    }
+
+    private static IndexView index(List<Class<?>> classes) {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
             try {
@@ -733,21 +816,378 @@ public class DefaultSerdeConfigTest {
     // ---
 
     @Test
+    public void avroDtoInGenericRecordOut() {
+        // @formatter:off
+        Tuple[] expectations = {
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel2.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel3.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel4.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel5.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel6.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel7.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel8.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel9.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel10.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel11.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel12.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+
+                tuple("mp.messaging.incoming.channel13.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel13.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.incoming.channel14.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel14.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.incoming.channel15.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel15.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.incoming.channel16.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel16.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.incoming.channel17.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel17.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.incoming.channel18.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel18.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.incoming.channel19.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel19.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.incoming.channel20.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel20.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.incoming.channel21.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel21.apicurio.registry.use-specific-avro-reader", "true"),
+
+                tuple("mp.messaging.incoming.channel22.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel22.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel23.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel24.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel24.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel25.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel26.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel26.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel27.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel28.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel28.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel29.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel30.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel30.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel31.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel32.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel32.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel33.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel34.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel34.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel35.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel36.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel36.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel37.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel38.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel38.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel39.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel40.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel40.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel41.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel42.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel42.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel43.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel44.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel44.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel45.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel46.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel46.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel47.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel48.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel48.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel49.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel50.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel50.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel51.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel52.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel52.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel53.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+
+                tuple("mp.messaging.incoming.channel54.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel54.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel55.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel56.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel56.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel57.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel58.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel58.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel59.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel60.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel60.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel61.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel62.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel62.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel63.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.incoming.channel64.value.deserializer", "io.apicurio.registry.serde.avro.AvroKafkaDeserializer"),
+                tuple("mp.messaging.incoming.channel64.apicurio.registry.use-specific-avro-reader", "true"),
+                tuple("mp.messaging.outgoing.channel65.value.serializer",   "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+        };
+        // @formatter:on
+
+        doTest(expectations, AvroDto.class, AvroDtoInGenericRecordOut.class);
+    }
+
+    private static class AvroDtoInGenericRecordOut {
+        // @Outgoing
+
+        @Outgoing("channel1")
+        Publisher<Message<GenericRecord>> method1() {
+            return null;
+        }
+
+        @Outgoing("channel2")
+        Publisher<GenericRecord> method2() {
+            return null;
+        }
+
+        @Outgoing("channel3")
+        PublisherBuilder<Message<GenericRecord>> method3() {
+            return null;
+        }
+
+        @Outgoing("channel4")
+        PublisherBuilder<GenericRecord> method4() {
+            return null;
+        }
+
+        @Outgoing("channel5")
+        Multi<Message<GenericRecord>> method5() {
+            return null;
+        }
+
+        @Outgoing("channel6")
+        Multi<GenericRecord> method6() {
+            return null;
+        }
+
+        @Outgoing("channel7")
+        Message<GenericRecord> method7() {
+            return null;
+        }
+
+        @Outgoing("channel8")
+        GenericRecord method8() {
+            return null;
+        }
+
+        @Outgoing("channel9")
+        CompletionStage<Message<GenericRecord>> method9() {
+            return null;
+        }
+
+        @Outgoing("channel10")
+        CompletionStage<GenericRecord> method10() {
+            return null;
+        }
+
+        @Outgoing("channel11")
+        Uni<Message<GenericRecord>> method11() {
+            return null;
+        }
+
+        @Outgoing("channel12")
+        Uni<GenericRecord> method12() {
+            return null;
+        }
+
+        // @Incoming
+
+        @Incoming("channel13")
+        Subscriber<Message<AvroDto>> method13() {
+            return null;
+        }
+
+        @Incoming("channel14")
+        Subscriber<AvroDto> method14() {
+            return null;
+        }
+
+        @Incoming("channel15")
+        SubscriberBuilder<Message<AvroDto>, Void> method15() {
+            return null;
+        }
+
+        @Incoming("channel16")
+        SubscriberBuilder<AvroDto, Void> method16() {
+            return null;
+        }
+
+        @Incoming("channel17")
+        void method17(AvroDto msg) {
+        }
+
+        @Incoming("channel18")
+        CompletionStage<?> method18(Message<AvroDto> msg) {
+            return null;
+        }
+
+        @Incoming("channel19")
+        CompletionStage<?> method19(AvroDto payload) {
+            return null;
+        }
+
+        @Incoming("channel20")
+        Uni<?> method20(Message<AvroDto> msg) {
+            return null;
+        }
+
+        @Incoming("channel21")
+        Uni<?> method21(AvroDto payload) {
+            return null;
+        }
+
+        // @Incoming @Outgoing
+
+        @Incoming("channel22")
+        @Outgoing("channel23")
+        Processor<Message<AvroDto>, Message<GenericRecord>> method22() {
+            return null;
+        }
+
+        @Incoming("channel24")
+        @Outgoing("channel25")
+        Processor<AvroDto, GenericRecord> method23() {
+            return null;
+        }
+
+        @Incoming("channel26")
+        @Outgoing("channel27")
+        ProcessorBuilder<Message<AvroDto>, Message<GenericRecord>> method24() {
+            return null;
+        }
+
+        @Incoming("channel28")
+        @Outgoing("channel29")
+        ProcessorBuilder<AvroDto, GenericRecord> method25() {
+            return null;
+        }
+
+        @Incoming("channel30")
+        @Outgoing("channel31")
+        Publisher<Message<GenericRecord>> method26(Message<AvroDto> msg) {
+            return null;
+        }
+
+        @Incoming("channel32")
+        @Outgoing("channel33")
+        Publisher<GenericRecord> method27(AvroDto payload) {
+            return null;
+        }
+
+        @Incoming("channel34")
+        @Outgoing("channel35")
+        PublisherBuilder<Message<GenericRecord>> method28(Message<AvroDto> msg) {
+            return null;
+        }
+
+        @Incoming("channel36")
+        @Outgoing("channel37")
+        PublisherBuilder<GenericRecord> method29(AvroDto payload) {
+            return null;
+        }
+
+        @Incoming("channel38")
+        @Outgoing("channel39")
+        Multi<Message<GenericRecord>> method30(Message<AvroDto> msg) {
+            return null;
+        }
+
+        @Incoming("channel40")
+        @Outgoing("channel41")
+        Multi<GenericRecord> method31(AvroDto payload) {
+            return null;
+        }
+
+        @Incoming("channel42")
+        @Outgoing("channel43")
+        Message<GenericRecord> method32(Message<AvroDto> msg) {
+            return null;
+        }
+
+        @Incoming("channel44")
+        @Outgoing("channel45")
+        GenericRecord method33(AvroDto payload) {
+            return null;
+        }
+
+        @Incoming("channel46")
+        @Outgoing("channel47")
+        CompletionStage<Message<GenericRecord>> method34(Message<AvroDto> msg) {
+            return null;
+        }
+
+        @Incoming("channel48")
+        @Outgoing("channel49")
+        CompletionStage<GenericRecord> method35(AvroDto payload) {
+            return null;
+        }
+
+        @Incoming("channel50")
+        @Outgoing("channel51")
+        Uni<Message<GenericRecord>> method36(Message<AvroDto> msg) {
+            return null;
+        }
+
+        @Incoming("channel52")
+        @Outgoing("channel53")
+        Uni<GenericRecord> method37(AvroDto payload) {
+            return null;
+        }
+
+        // @Incoming @Outgoing stream manipulation
+
+        @Incoming("channel54")
+        @Outgoing("channel55")
+        Publisher<Message<GenericRecord>> method38(Publisher<Message<AvroDto>> msg) {
+            return null;
+        }
+
+        @Incoming("channel56")
+        @Outgoing("channel57")
+        Publisher<GenericRecord> method39(Publisher<AvroDto> payload) {
+            return null;
+        }
+
+        @Incoming("channel58")
+        @Outgoing("channel59")
+        PublisherBuilder<Message<GenericRecord>> method40(PublisherBuilder<Message<AvroDto>> msg) {
+            return null;
+        }
+
+        @Incoming("channel60")
+        @Outgoing("channel61")
+        PublisherBuilder<GenericRecord> method41(PublisherBuilder<AvroDto> payload) {
+            return null;
+        }
+
+        @Incoming("channel62")
+        @Outgoing("channel63")
+        Multi<Message<GenericRecord>> method42(Multi<Message<AvroDto>> msg) {
+            return null;
+        }
+
+        @Incoming("channel64")
+        @Outgoing("channel65")
+        Multi<GenericRecord> method43(Multi<AvroDto> payload) {
+            return null;
+        }
+    }
+
+    // ---
+
+    @Test
     public void jacksonDtoInVertxJsonObjectOut() {
         // @formatter:off
         Tuple[] expectations = {
-                tuple("mp.messaging.outgoing.channel1.value.serializer", "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
-                tuple("mp.messaging.outgoing.channel2.value.serializer", "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
-                tuple("mp.messaging.outgoing.channel3.value.serializer", "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
-                tuple("mp.messaging.outgoing.channel4.value.serializer", "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
-                tuple("mp.messaging.outgoing.channel5.value.serializer", "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
-                tuple("mp.messaging.outgoing.channel6.value.serializer", "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
-                tuple("mp.messaging.outgoing.channel7.value.serializer", "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
-                tuple("mp.messaging.outgoing.channel8.value.serializer", "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
-                tuple("mp.messaging.outgoing.channel9.value.serializer", "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
-                tuple("mp.messaging.outgoing.channel10.value.serializer", "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
-                tuple("mp.messaging.outgoing.channel11.value.serializer", "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
-                tuple("mp.messaging.outgoing.channel12.value.serializer", "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel2.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel3.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel4.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel5.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel6.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel7.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel8.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel9.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel10.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel11.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel12.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
 
                 tuple("mp.messaging.incoming.channel13.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
                 tuple("mp.messaging.incoming.channel14.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
@@ -760,60 +1200,60 @@ public class DefaultSerdeConfigTest {
                 tuple("mp.messaging.incoming.channel21.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
 
                 tuple("mp.messaging.incoming.channel22.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel23.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel23.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel24.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel25.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel25.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel26.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel27.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel27.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel28.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel29.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel29.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel30.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel31.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel31.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel32.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel33.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel33.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel34.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel35.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel35.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel36.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel37.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel37.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel38.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel39.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel39.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel40.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel41.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel41.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel42.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel43.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel43.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel44.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel45.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel45.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel46.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel47.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel47.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel48.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel49.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel49.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel50.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel51.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel51.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel52.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel53.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel53.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
 
                 tuple("mp.messaging.incoming.channel54.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel55.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel55.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel56.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel57.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel57.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel58.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel59.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel59.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel60.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel61.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel61.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel62.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel63.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel63.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
                 tuple("mp.messaging.incoming.channel64.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$JacksonDtoDeserializer"),
-                tuple("mp.messaging.outgoing.channel65.value.serializer",   "io.vertx.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel65.value.serializer",   "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
         };
         // @formatter:on
 
         doTest(expectations, JacksonDto.class, JacksonDtoDeserializer.class, JacksonDtoInVertxJsonObjectOut.class);
     }
 
-    private static class JacksonDto {
+    static class JacksonDto {
     }
 
-    private static class JacksonDtoDeserializer extends ObjectMapperDeserializer<JacksonDto> {
+    static class JacksonDtoDeserializer extends ObjectMapperDeserializer<JacksonDto> {
         public JacksonDtoDeserializer() {
             super(JacksonDto.class);
         }
@@ -1150,10 +1590,10 @@ public class DefaultSerdeConfigTest {
         doTest(expectations, JsonbDto.class, JsonbDtoSerializer.class, KafkaBytesInJsonbDtoOut.class);
     }
 
-    private static class JsonbDto {
+    static class JsonbDto {
     }
 
-    private static class JsonbDtoSerializer extends JsonbSerializer<JsonbDto> {
+    static class JsonbDtoSerializer extends JsonbSerializer<JsonbDto> {
         @Override
         public byte[] serialize(String topic, Headers headers, JsonbDto data) {
             return null;
@@ -1842,30 +2282,30 @@ public class DefaultSerdeConfigTest {
                 tuple("mp.messaging.outgoing.channel10.key.serializer",    "org.apache.kafka.common.serialization.ShortSerializer"),
                 tuple("mp.messaging.outgoing.channel10.value.serializer",  "org.apache.kafka.common.serialization.ByteArraySerializer"),
 
-                tuple("mp.messaging.incoming.channel11.value.deserializer",  "io.vertx.kafka.client.serialization.JsonArrayDeserializer"),
-                tuple("mp.messaging.incoming.channel12.value.deserializer", "io.vertx.kafka.client.serialization.JsonArrayDeserializer"),
+                tuple("mp.messaging.incoming.channel11.value.deserializer",  "io.quarkus.kafka.client.serialization.JsonArrayDeserializer"),
+                tuple("mp.messaging.incoming.channel12.value.deserializer", "io.quarkus.kafka.client.serialization.JsonArrayDeserializer"),
                 tuple("mp.messaging.incoming.channel13.key.deserializer",   "org.apache.kafka.common.serialization.FloatDeserializer"),
-                tuple("mp.messaging.incoming.channel13.value.deserializer", "io.vertx.kafka.client.serialization.JsonArrayDeserializer"),
+                tuple("mp.messaging.incoming.channel13.value.deserializer", "io.quarkus.kafka.client.serialization.JsonArrayDeserializer"),
                 tuple("mp.messaging.incoming.channel14.key.deserializer",   "org.apache.kafka.common.serialization.FloatDeserializer"),
-                tuple("mp.messaging.incoming.channel14.value.deserializer", "io.vertx.kafka.client.serialization.JsonArrayDeserializer"),
+                tuple("mp.messaging.incoming.channel14.value.deserializer", "io.quarkus.kafka.client.serialization.JsonArrayDeserializer"),
                 tuple("mp.messaging.incoming.channel15.key.deserializer",   "org.apache.kafka.common.serialization.FloatDeserializer"),
-                tuple("mp.messaging.incoming.channel15.value.deserializer", "io.vertx.kafka.client.serialization.JsonArrayDeserializer"),
-                tuple("mp.messaging.incoming.channel16.value.deserializer", "io.vertx.kafka.client.serialization.JsonArrayDeserializer"),
-                tuple("mp.messaging.incoming.channel17.value.deserializer", "io.vertx.kafka.client.serialization.JsonArrayDeserializer"),
+                tuple("mp.messaging.incoming.channel15.value.deserializer", "io.quarkus.kafka.client.serialization.JsonArrayDeserializer"),
+                tuple("mp.messaging.incoming.channel16.value.deserializer", "io.quarkus.kafka.client.serialization.JsonArrayDeserializer"),
+                tuple("mp.messaging.incoming.channel17.value.deserializer", "io.quarkus.kafka.client.serialization.JsonArrayDeserializer"),
                 tuple("mp.messaging.incoming.channel18.key.deserializer",   "org.apache.kafka.common.serialization.FloatDeserializer"),
-                tuple("mp.messaging.incoming.channel18.value.deserializer", "io.vertx.kafka.client.serialization.JsonArrayDeserializer"),
+                tuple("mp.messaging.incoming.channel18.value.deserializer", "io.quarkus.kafka.client.serialization.JsonArrayDeserializer"),
                 tuple("mp.messaging.incoming.channel19.key.deserializer",   "org.apache.kafka.common.serialization.FloatDeserializer"),
-                tuple("mp.messaging.incoming.channel19.value.deserializer", "io.vertx.kafka.client.serialization.JsonArrayDeserializer"),
+                tuple("mp.messaging.incoming.channel19.value.deserializer", "io.quarkus.kafka.client.serialization.JsonArrayDeserializer"),
                 tuple("mp.messaging.incoming.channel20.key.deserializer",   "org.apache.kafka.common.serialization.FloatDeserializer"),
-                tuple("mp.messaging.incoming.channel20.value.deserializer", "io.vertx.kafka.client.serialization.JsonArrayDeserializer"),
-                tuple("mp.messaging.incoming.channel21.value.deserializer", "io.vertx.kafka.client.serialization.JsonArrayDeserializer"),
-                tuple("mp.messaging.incoming.channel22.value.deserializer", "io.vertx.kafka.client.serialization.JsonArrayDeserializer"),
+                tuple("mp.messaging.incoming.channel20.value.deserializer", "io.quarkus.kafka.client.serialization.JsonArrayDeserializer"),
+                tuple("mp.messaging.incoming.channel21.value.deserializer", "io.quarkus.kafka.client.serialization.JsonArrayDeserializer"),
+                tuple("mp.messaging.incoming.channel22.value.deserializer", "io.quarkus.kafka.client.serialization.JsonArrayDeserializer"),
                 tuple("mp.messaging.incoming.channel23.key.deserializer",   "org.apache.kafka.common.serialization.FloatDeserializer"),
-                tuple("mp.messaging.incoming.channel23.value.deserializer", "io.vertx.kafka.client.serialization.JsonArrayDeserializer"),
+                tuple("mp.messaging.incoming.channel23.value.deserializer", "io.quarkus.kafka.client.serialization.JsonArrayDeserializer"),
                 tuple("mp.messaging.incoming.channel24.key.deserializer",   "org.apache.kafka.common.serialization.FloatDeserializer"),
-                tuple("mp.messaging.incoming.channel24.value.deserializer", "io.vertx.kafka.client.serialization.JsonArrayDeserializer"),
+                tuple("mp.messaging.incoming.channel24.value.deserializer", "io.quarkus.kafka.client.serialization.JsonArrayDeserializer"),
                 tuple("mp.messaging.incoming.channel25.key.deserializer",   "org.apache.kafka.common.serialization.FloatDeserializer"),
-                tuple("mp.messaging.incoming.channel25.value.deserializer", "io.vertx.kafka.client.serialization.JsonArrayDeserializer"),
+                tuple("mp.messaging.incoming.channel25.value.deserializer", "io.quarkus.kafka.client.serialization.JsonArrayDeserializer"),
         };
         // @formatter:on
 
@@ -2015,7 +2455,6 @@ public class DefaultSerdeConfigTest {
 
         @Incoming("channel2")
         void channel2Duplicate(JacksonDto jacksonDto) {
-
         }
 
         @Channel("channel3")
@@ -2023,7 +2462,6 @@ public class DefaultSerdeConfigTest {
 
         @Incoming("channel3")
         void channel3Duplicate(Record<Integer, JacksonDto> jacksonDto) {
-
         }
 
         @Channel("channel4")
@@ -2032,7 +2470,455 @@ public class DefaultSerdeConfigTest {
         @Outgoing("channel4")
         ProducerRecord<String, Integer> method4() {
             return null;
+        }
+    }
+
+    @Test
+    void produceBatchConfigWithSerdeAutodetect() {
+        // @formatter:off
+        Tuple[] expectations = {
+                tuple("mp.messaging.incoming.channel1.value.deserializer", JacksonDtoDeserializer.class.getName()),
+                tuple("mp.messaging.incoming.channel1.batch", "true"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", JacksonDtoDeserializer.class.getName()),
+                tuple("mp.messaging.incoming.channel2.batch", "true"),
+                tuple("mp.messaging.incoming.channel3.key.deserializer", "org.apache.kafka.common.serialization.IntegerDeserializer"),
+                tuple("mp.messaging.incoming.channel3.value.deserializer", JacksonDtoDeserializer.class.getName()),
+                tuple("mp.messaging.incoming.channel3.batch", "true"),
+                tuple("mp.messaging.incoming.channel4.key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"),
+                tuple("mp.messaging.incoming.channel4.value.deserializer", JacksonDtoDeserializer.class.getName()),
+                tuple("mp.messaging.incoming.channel4.batch", "true"),
+                tuple("mp.messaging.incoming.channel5.key.deserializer", "org.apache.kafka.common.serialization.IntegerDeserializer"),
+                tuple("mp.messaging.incoming.channel5.value.deserializer", JacksonDtoDeserializer.class.getName()),
+                tuple("mp.messaging.incoming.channel5.batch", "true"),
+                tuple("mp.messaging.incoming.channel6.key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"),
+                tuple("mp.messaging.incoming.channel6.value.deserializer", JacksonDtoDeserializer.class.getName()),
+                tuple("mp.messaging.incoming.channel6.batch", "true"),
+                tuple("mp.messaging.incoming.channel7.value.deserializer", JacksonDtoDeserializer.class.getName()),
+                tuple("mp.messaging.incoming.channel7.batch", "true"),
+                tuple("mp.messaging.incoming.channel8.value.deserializer", JacksonDtoDeserializer.class.getName()),
+                tuple("mp.messaging.incoming.channel8.batch", "true"),
+                tuple("mp.messaging.incoming.channel9.batch", "true"),
+                tuple("mp.messaging.incoming.channel10.batch", "true"),
         };
+        // @formatter:on
+
+        doTest(expectations, JacksonDto.class, JacksonDtoDeserializer.class, BatchChannels.class);
+    }
+
+    private static class BatchChannels {
+
+        @Channel("channel1")
+        Multi<List<JacksonDto>> channel1;
+
+        @Incoming("channel2")
+        void channel2(List<JacksonDto> jacksonDto) {
+        }
+
+        @Channel("channel3")
+        Multi<KafkaRecordBatch<Integer, JacksonDto>> channel3;
+
+        @Incoming("channel4")
+        void channel4(KafkaRecordBatch<String, JacksonDto> jacksonDto) {
+        }
+
+        @Channel("channel5")
+        Multi<ConsumerRecords<Integer, JacksonDto>> channel5;
+
+        @Incoming("channel6")
+        void channel6(ConsumerRecords<String, JacksonDto> jacksonDto) {
+        }
+
+        @Channel("channel7")
+        Multi<Message<List<JacksonDto>>> channel7;
+
+        @Incoming("channel8")
+        void channel8(Message<List<JacksonDto>> jacksonDto) {
+        }
+
+        @Channel("channel9") // Not supported
+        Multi<List<Message<JacksonDto>>> channel9;
+
+        @Incoming("channel10") // Not supported
+        void channel10(List<Message<JacksonDto>> jacksonDto) {
+        }
 
     }
+
+    // ---
+
+    @Test
+    public void connectorConfigNotOverridden() {
+        // @formatter:off
+        Tuple[] expectations1 = {
+                // "mp.messaging.outgoing.channel1.key.serializer" NOT expected, connector config exists
+                tuple("mp.messaging.outgoing.channel1.value.serializer",   "org.apache.kafka.common.serialization.StringSerializer"),
+
+                tuple("mp.messaging.incoming.channel2.key.deserializer",   "org.apache.kafka.common.serialization.LongDeserializer"),
+                // "mp.messaging.incoming.channel2.value.deserializer" NOT expected, connector config exists
+
+                tuple("mp.messaging.incoming.channel3.key.deserializer",   "org.apache.kafka.common.serialization.LongDeserializer"),
+                // "mp.messaging.incoming.channel3.value.deserializer" NOT expected, connector config exists
+                // "mp.messaging.outgoing.channel4.key.serializer" NOT expected, connector config exists
+                tuple("mp.messaging.outgoing.channel4.value.serializer",   "org.apache.kafka.common.serialization.StringSerializer"),
+        };
+
+        Tuple[] expectations2 = {
+                tuple("mp.messaging.outgoing.channel1.key.serializer",   "org.apache.kafka.common.serialization.LongSerializer"),
+                // "mp.messaging.outgoing.channel1.value.serializer" NOT expected, connector config exists
+
+                // "mp.messaging.incoming.channel2.key.deserializer" NOT expected, connector config exists
+                tuple("mp.messaging.incoming.channel2.value.deserializer",   "org.apache.kafka.common.serialization.StringDeserializer"),
+
+                // "mp.messaging.incoming.channel3.key.deserializer" NOT expected, connector config exists
+                tuple("mp.messaging.incoming.channel3.value.deserializer",   "org.apache.kafka.common.serialization.StringDeserializer"),
+                tuple("mp.messaging.outgoing.channel4.key.serializer",   "org.apache.kafka.common.serialization.LongSerializer"),
+                // "mp.messaging.outgoing.channel4.value.serializer" NOT expected, connector config exists
+        };
+        // @formatter:on
+
+        doTest(new SmallRyeConfigBuilder()
+                .withSources(new MapBackedConfigSource("test", Map.of(
+                        "mp.messaging.connector.smallrye-kafka.key.serializer", "foo.Bar",
+                        "mp.messaging.connector.smallrye-kafka.value.deserializer", "foo.Baz")) {
+                })
+                .build(), expectations1, ConnectorConfigNotOverriden.class);
+
+        doTest(new SmallRyeConfigBuilder()
+                .withSources(new MapBackedConfigSource("test", Map.of(
+                        "mp.messaging.connector.smallrye-kafka.key.deserializer", "foo.Bar",
+                        "mp.messaging.connector.smallrye-kafka.value.serializer", "foo.Baz")) {
+                })
+                .build(), expectations2, ConnectorConfigNotOverriden.class);
+    }
+
+    private static class ConnectorConfigNotOverriden {
+        @Outgoing("channel1")
+        Record<Long, String> method1() {
+            return null;
+        }
+
+        @Incoming("channel2")
+        CompletionStage<?> method2(Record<Long, String> msg) {
+            return null;
+        }
+
+        @Incoming("channel3")
+        @Outgoing("channel4")
+        Record<Long, String> method3(Record<Long, String> msg) {
+            return null;
+        }
+    }
+
+    // ---
+
+    @Test
+    public void genericSerdeImplementationAutoDetect() {
+        // @formatter:off
+
+        Tuple[] expectations1 = {
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "org.apache.kafka.common.serialization.LongSerializer"),
+                tuple("mp.messaging.incoming.channel2.key.deserializer", "org.apache.kafka.common.serialization.LongDeserializer"),
+                tuple("mp.messaging.incoming.channel3.value.deserializer", assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Deserializer_")),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", "io.quarkus.kafka.client.serialization.JsonObjectDeserializer"),
+        };
+
+        var generated1 = List.of(assertStartsWith("io/quarkus/smallrye/reactivemessaging/kafka/deployment/DefaultSerdeConfigTest$CustomDto_Deserializer_"));
+        var reflective1 = List.of(assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Deserializer_"));
+
+        Tuple[] expectations2 = {
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MySerializer"),
+
+                tuple("mp.messaging.incoming.channel2.key.deserializer", "org.apache.kafka.common.serialization.LongDeserializer"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MyDeserializer"),
+
+                tuple("mp.messaging.incoming.channel3.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDtoDeserializer"),
+        };
+
+        Tuple[] expectations3 = {
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MySerializer"),
+
+                tuple("mp.messaging.incoming.channel2.key.deserializer", "org.apache.kafka.common.serialization.LongDeserializer"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MyDeserializer"),
+
+                tuple("mp.messaging.incoming.channel3.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MyObjectMapperDeserializer"),
+        };
+        Tuple[] expectations4 = {
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "org.apache.kafka.common.serialization.LongSerializer"),
+
+                tuple("mp.messaging.incoming.channel2.key.deserializer", "org.apache.kafka.common.serialization.LongDeserializer"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MyDeserializer"),
+
+                tuple("mp.messaging.incoming.channel3.value.deserializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MyObjectMapperDeserializer"),
+        };
+        // @formatter:on
+
+        doTest(null, expectations1, generated1, reflective1, CustomSerdeImplementation.class, CustomDto.class);
+
+        doTest(expectations2, CustomSerdeImplementation.class, CustomDto.class,
+                MySerializer.class,
+                MyDeserializer.class, MyObjectMapperDeserializer.class, CustomDtoDeserializer.class);
+
+        doTest(expectations3, CustomSerdeImplementation.class, CustomDto.class,
+                MySerializer.class,
+                MyDeserializer.class, MyObjectMapperDeserializer.class);
+
+        doTest(expectations4, CustomSerdeImplementation.class, CustomDto.class,
+                MyWrongSerializer.class, CustomInterface.class,
+                MyDeserializer.class, MyObjectMapperDeserializer.class);
+    }
+
+    private static class CustomDto {
+
+    }
+
+    private interface CustomInterface<T> {
+
+    }
+
+    private static class MyWrongSerializer implements Serializer<Integer>, CustomInterface<Long> {
+
+        @Override
+        public byte[] serialize(String topic, Integer data) {
+            return new byte[0];
+        }
+    }
+
+    private static class MySerializer implements Serializer<Long>, CustomInterface<Long> {
+
+        @Override
+        public byte[] serialize(String topic, Long data) {
+            return new byte[0];
+        }
+    }
+
+    private static class MyDeserializer implements Deserializer<JsonObject> {
+
+        @Override
+        public JsonObject deserialize(String topic, byte[] data) {
+            return null;
+        }
+    }
+
+    private static class MyObjectMapperDeserializer extends ObjectMapperDeserializer<CustomDto> {
+
+        public MyObjectMapperDeserializer() {
+            super(CustomDto.class);
+        }
+    }
+
+    private static class CustomDtoDeserializer implements Deserializer<CustomDto> {
+
+        @Override
+        public CustomDto deserialize(String topic, byte[] data) {
+            return null;
+        }
+    }
+
+    private static class CustomSerdeImplementation {
+        @Outgoing("channel1")
+        Multi<Long> method1() {
+            return null;
+        }
+
+        @Incoming("channel2")
+        void method2(Record<Long, JsonObject> msg) {
+
+        }
+
+        @Incoming("channel3")
+        void method3(CustomDto payload) {
+
+        }
+    }
+
+    @Test
+    void kafkaTransactions() {
+        // @formatter:off
+        Tuple[] expectations = {
+                tuple("mp.messaging.outgoing.tx.value.serializer", "org.apache.kafka.common.serialization.StringSerializer"),
+                tuple("mp.messaging.outgoing.tx.transactional.id", "${quarkus.application.name}-tx"),
+                tuple("mp.messaging.outgoing.tx.enable.idempotence", "true"),
+                tuple("mp.messaging.outgoing.tx.acks", "all"),
+        };
+        doTest(expectations, TransactionalProducer.class);
+
+    }
+
+    private static class TransactionalProducer {
+
+        @Channel("tx")
+        KafkaTransactions<String> kafkaTransactions;
+
+    }
+
+    @Test
+    void repeatableIncomings() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.incoming.channel1.value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"),
+                tuple("mp.messaging.incoming.channel3.value.deserializer", "io.quarkus.kafka.client.serialization.JsonObjectDeserializer"),
+                tuple("mp.messaging.incoming.channel4.value.deserializer", "io.quarkus.kafka.client.serialization.JsonObjectDeserializer"),
+        };
+        doTest(expectations, RepeatableIncomingsChannels.class);
+    }
+
+
+    private static class RepeatableIncomingsChannels {
+
+        @Incoming("channel1")
+        @Incoming("channel2")
+        void method1(String msg) {
+
+        }
+
+        @Incoming("channel3")
+        @Incoming("channel4")
+        void method2(JsonObject msg) {
+
+        }
+
+    }
+
+    @Test
+    void repeatableOutgoings() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "org.apache.kafka.common.serialization.StringSerializer"),
+                tuple("mp.messaging.outgoing.channel2.value.serializer", "org.apache.kafka.common.serialization.StringSerializer"),
+                tuple("mp.messaging.outgoing.channel3.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel4.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel5.value.serializer", "org.apache.kafka.common.serialization.LongSerializer"),
+                tuple("mp.messaging.outgoing.channel6.value.serializer", "org.apache.kafka.common.serialization.LongSerializer"),
+        };
+        doTest(expectations, RepeatableOutgoingsChannels.class);
+    }
+
+    private static class RepeatableOutgoingsChannels {
+
+        @Outgoing("channel1")
+        @Outgoing("channel2")
+        String method1() {
+            return null;
+        }
+
+        @Outgoing("channel3")
+        @Outgoing("channel4")
+        JsonObject method2() {
+            return null;
+        }
+
+        enum T {
+
+        }
+
+        @Outgoing("channel5")
+        @Outgoing("channel6")
+        MultiSplitter<Long, T> method3() {
+            return null;
+        }
+
+    }
+
+    @Test
+    void channelNameContainingDot() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.incoming.\"new.channel\".key.deserializer", "org.apache.kafka.common.serialization.IntegerDeserializer"),
+                tuple("mp.messaging.incoming.\"new.channel\".value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"),
+                tuple("mp.messaging.outgoing.\"new.channel.out\".key.serializer", "org.apache.kafka.common.serialization.LongSerializer"),
+                tuple("mp.messaging.outgoing.\"new.channel.out\".value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.\"new.channel.out\".transactional.id", "${quarkus.application.name}-new.channel.out"),
+                tuple("mp.messaging.outgoing.\"new.channel.out\".enable.idempotence", "true"),
+                tuple("mp.messaging.outgoing.\"new.channel.out\".acks", "all"),
+        };
+        doTest(expectations, ChannelContainingDot.class);
+    }
+
+
+    private static class ChannelContainingDot {
+
+        @Incoming("new.channel")
+        void method1(KafkaRecord<Integer, String> msg) {
+
+        }
+
+        @Channel("new.channel.out")
+        KafkaTransactions<ProducerRecord<Long, JsonObject>> transactions;
+
+    }
+
+    @Test
+    void deadLetterQueue() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.incoming.channel1.value.deserializer",
+                        assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Deserializer_")),
+                tuple("mp.messaging.incoming.channel1.dead-letter-queue.value.serializer",
+                        assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Serializer_")),
+                tuple("mp.messaging.incoming.channel2.key.deserializer",
+                        assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Deserializer_")),
+                tuple("mp.messaging.incoming.channel2.value.deserializer",
+                        assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Deserializer_")),
+                tuple("mp.messaging.incoming.channel2.dead-letter-queue.key.serializer",
+                        assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Serializer_")),
+                tuple("mp.messaging.incoming.channel2.dead-letter-queue.value.serializer",
+                        assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Serializer_")),
+        };
+        var generated = List.of(
+                assertStartsWith("io/quarkus/smallrye/reactivemessaging/kafka/deployment/DefaultSerdeConfigTest$CustomDto_Deserializer_"),
+                assertStartsWith("io/quarkus/smallrye/reactivemessaging/kafka/deployment/DefaultSerdeConfigTest$CustomDto_Serializer_")
+        );
+        var reflective = List.of(
+                assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Deserializer_"),
+                assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Serializer_")
+        );
+        doTest(new SmallRyeConfigBuilder()
+                .withSources(new MapBackedConfigSource("test", Map.of(
+                        "mp.messaging.incoming.channel1.failure-strategy", "dead-letter-queue",
+                        "mp.messaging.incoming.channel2.failure-strategy", "delayed-retry-topic")) {
+                })
+                .build(), expectations, generated, reflective, DeadLetterQueue.class);
+    }
+
+    private static class DeadLetterQueue {
+
+        @Incoming("channel1")
+        void method1(CustomDto msg) {
+
+        }
+
+        @Incoming("channel2")
+        void method2(Record<CustomDto, CustomDto> msg) {
+
+        }
+
+    }
+
+
+    @Test
+    void targetedOutgoings() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.incoming.channel1.value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"),
+        };
+        doTest(expectations, TargetedOutgoings.class);
+    }
+
+
+    private static class TargetedOutgoings {
+
+        @Incoming("channel1")
+        @Outgoing("out1")
+        @Outgoing("out2")
+        Targeted method1(String msg) {
+            return null;
+        }
+
+        @Incoming("channel2")
+        @Outgoing("out3")
+        @Outgoing("out4")
+        TargetedMessages method2(String msg) {
+            return null;
+        }
+
+    }
+
+
 }

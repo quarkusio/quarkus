@@ -7,6 +7,8 @@ import java.lang.annotation.Target;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import io.quarkus.test.common.DevServicesContext;
+
 /**
  * Annotation that indicates that this test should be run the result of the Quarkus build.
  * That means that if a jar was created, that jar is launched using {@code java -jar ...}
@@ -28,7 +30,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * {@link @QuarkusTest} so the test class structure must take this into account.
  */
 @Target(ElementType.TYPE)
-@ExtendWith({ DisabledOnIntegrationTestCondition.class, QuarkusTestExtension.class, QuarkusIntegrationTestExtension.class })
+@ExtendWith({ DisabledOnIntegrationTestCondition.class, QuarkusIntegrationTestExtension.class })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface QuarkusIntegrationTest {
+
+    /**
+     * If used as a field of class annotated with {@link QuarkusIntegrationTest}, the field is populated
+     * with an implementation that allows accessing contextual test information
+     *
+     * @deprecated Use {@link DevServicesContext} instead.
+     */
+    @Deprecated
+    interface Context extends DevServicesContext {
+
+    }
+
 }

@@ -1,0 +1,16 @@
+{
+    "include": [
+        {
+            "category": "Main",
+            "timeout": 50,
+            "test-modules": "virtual-threads-disabled, grpc-virtual-threads, mailer-virtual-threads, redis-virtual-threads, rest-client-reactive-virtual-threads, resteasy-reactive-virtual-threads, vertx-event-bus-virtual-threads, scheduler-virtual-threads, quartz-virtual-threads",
+            "os-name": "ubuntu-latest"
+        },
+        {
+            "category": "Messaging",
+            "timeout": 45,
+            "test-modules": "amqp-virtual-threads, jms-virtual-threads, kafka-virtual-threads",
+            "os-name": "ubuntu-latest"
+        }
+    ]
+}

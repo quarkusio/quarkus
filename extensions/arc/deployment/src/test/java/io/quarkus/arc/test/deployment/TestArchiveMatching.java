@@ -7,7 +7,8 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACT;
 
 public class TestArchiveMatching {
 
@@ -18,8 +19,8 @@ public class TestArchiveMatching {
     @Test
     public void testMatch() {
 
-        AppArtifactKey key = AppArtifactKey.fromString(GROUP_ID + ":" + ARTIFACT_ID);
-        AppArtifactKey keyWithClassifier = AppArtifactKey.fromString(GROUP_ID + ":" + ARTIFACT_ID + ":" + CLASSIFIER);
+        ArtifactKey key = GACT.fromString(GROUP_ID + ":" + ARTIFACT_ID);
+        ArtifactKey keyWithClassifier = GACT.fromString(GROUP_ID + ":" + ARTIFACT_ID + ":" + CLASSIFIER);
 
         assertTrue(archiveMatches(key, GROUP_ID, ARTIFACT_ID, Optional.empty()));
         assertFalse(archiveMatches(key, GROUP_ID, ARTIFACT_ID, Optional.of(CLASSIFIER)));

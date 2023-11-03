@@ -1,7 +1,7 @@
 package io.quarkus.grpc.client.interceptors;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.spi.Prioritized;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.Prioritized;
 
 import io.grpc.CallOptions;
 import io.grpc.Channel;
@@ -11,11 +11,11 @@ import io.grpc.ForwardingClientCall;
 import io.grpc.ForwardingClientCallListener;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
+import io.quarkus.grpc.GlobalInterceptor;
 
+@GlobalInterceptor
 @ApplicationScoped
 public class MySecondClientInterceptor implements ClientInterceptor, Prioritized {
-
-    private volatile long callTime;
 
     @Override
     public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method,
@@ -28,17 +28,13 @@ public class MySecondClientInterceptor implements ClientInterceptor, Prioritized
                         new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
 
                             @Override
-                            protected Listener<RespT> delegate() {
-                                callTime = System.nanoTime();
-                                return super.delegate();
+                            public void onMessage(RespT message) {
+                                Calls.add(MySecondClientInterceptor.class);
+                                super.onMessage(message);
                             }
                         }, headers);
             }
         };
-    }
-
-    public long getLastCall() {
-        return callTime;
     }
 
     @Override

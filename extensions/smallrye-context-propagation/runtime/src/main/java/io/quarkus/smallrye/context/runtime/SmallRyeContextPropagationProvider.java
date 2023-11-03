@@ -1,8 +1,8 @@
 package io.quarkus.smallrye.context.runtime;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.context.ThreadContext;
 
@@ -16,7 +16,8 @@ public class SmallRyeContextPropagationProvider {
     @Singleton
     @DefaultBean
     public SmallRyeThreadContext getAllThreadContext() {
-        return (SmallRyeThreadContext) ThreadContext.builder().propagated(ThreadContext.ALL_REMAINING).cleared().unchanged()
+        // Make sure we use the default values, which use the MP Config keys to allow users to override them
+        return (SmallRyeThreadContext) ThreadContext.builder()
                 .build();
     }
 

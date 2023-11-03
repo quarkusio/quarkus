@@ -1,13 +1,14 @@
 package io.quarkus.devtools.codestarts.core.strategy;
 
-import io.quarkus.devtools.codestarts.CodestartResource.Source;
-import io.quarkus.devtools.codestarts.CodestartStructureException;
-import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+
+import io.quarkus.devtools.codestarts.CodestartResource.Source;
+import io.quarkus.devtools.codestarts.CodestartStructureException;
+import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 
 final class FailOnDuplicateCodestartFileStrategyHandler implements DefaultCodestartFileStrategyHandler {
 
@@ -39,6 +40,8 @@ final class FailOnDuplicateCodestartFileStrategyHandler implements DefaultCodest
                             + targetPath);
         }
         Files.createDirectories(targetPath.getParent());
+
         source.copyTo(targetPath);
     }
+
 }

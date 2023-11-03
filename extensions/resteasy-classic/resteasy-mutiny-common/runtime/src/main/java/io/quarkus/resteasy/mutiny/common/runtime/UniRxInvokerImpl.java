@@ -3,10 +3,10 @@ package io.quarkus.resteasy.mutiny.common.runtime;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
-import javax.ws.rs.client.CompletionStageRxInvoker;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.client.CompletionStageRxInvoker;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.Response;
 
 import io.smallrye.mutiny.Uni;
 

@@ -3,19 +3,22 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using the event bus
-
-include::./attributes.adoc[]
+= Using the event bus
+include::_attributes.adoc[]
+:categories: messaging
+:summary: This guide explains how different beans can interact using the event bus.
+:topics: messaging,event-bus,vert.x
+:extensions: io.quarkus:quarkus-vertx
 
 Quarkus allows different beans to interact using asynchronous events, thus promoting loose-coupling.
 The messages are sent to _virtual addresses_.
 It offers 3 types of delivery mechanism:
 
-- point-to-point - send the message, one consumer receives it. If several consumers listen to the address, a round robin is applied;
+- point-to-point - send the message, one consumer receives it. If several consumers listen to the address, a round-robin is applied;
 - publish/subscribe - publish a message, all the consumers listening to the address are receiving the message;
 - request/reply - send the message and expect a response. The receiver can respond to the message in an asynchronous-fashion
 
-All these delivery mechanism are non-blocking, and are providing one of the fundamental brick to build reactive applications.
+All these delivery mechanisms are non-blocking, and are providing one of the fundamental brick to build reactive applications.
 
 NOTE: The asynchronous message passing feature allows replying to messages which is not supported by Reactive Messaging.
 However, it is limited to single-event behavior (no stream) and to local messages.
@@ -23,34 +26,33 @@ However, it is limited to single-event behavior (no stream) and to local message
 == Installing
 
 This mechanism uses the Vert.x EventBus, so you need to enable the `vertx` extension to use this feature.
-If you are creating a new project, set the `extensions` parameter are follows:
+If you are creating a new project, set the `extensions` parameter as follows:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=vertx-quickstart \
-    -Dextensions="vertx,resteasy-mutiny" \
-    -DnoExamples
-cd vertx-quickstart
-----
+:create-app-artifact-id: vertx-quickstart
+:create-app-extensions: vertx,resteasy-reactive
+include::{includes}/devtools/create-app.adoc[]
 
 If you have an already created project, the `vertx` extension can be added to an existing Quarkus project with
 the `add-extension` command:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="vertx,resteasy-mutiny"
-----
+:add-extension-extensions: vertx
+include::{includes}/devtools/extension-add.adoc[]
 
-Otherwise, you can manually add this to the dependencies section of your `pom.xml` file:
+Otherwise, you can manually add this to the dependencies section of your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-vertx</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-vertx")
 ----
 
 == Consuming events
@@ -63,7 +65,7 @@ package org.acme.vertx;
 
 import io.quarkus.vertx.ConsumeEvent;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class GreetingService {
@@ -101,6 +103,7 @@ void consumeBlocking(String message) {
 ----
 
 When using `@Blocking`, it ignores the value of the `blocking` attribute of `@ConsumeEvent`.
+See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture documentation] for further details on this topic.
 ====
 
 Asynchronous processing is also possible by returning either an `io.smallrye.mutiny.Uni` or a `java.util.concurrent.CompletionStage`:
@@ -111,7 +114,7 @@ package org.acme.vertx;
 
 import io.quarkus.vertx.ConsumeEvent;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import io.smallrye.mutiny.Uni;
@@ -179,16 +182,23 @@ public Uni<String> consume2(String name) {
 [NOTE]
 ====
 You can inject an `executor` if you use the Context Propagation extension:
-[source, code]
+[source, java]
 ----
-@Inject Executor executor;
+@Inject ManagedExecutor executor;
+----
+
+Alternatively, you can use the default Quarkus worker pool using:
+
+[source, java]
+----
+Executor executor = Infrastructure.getDefaultWorkerPool();
 ----
 ====
 
 === Implementing fire and forget interactions
 
 You don't have to reply to received messages.
-Typically for a _fire and forget_ interaction, the messages are consumed and the sender does not need to know about it.
+Typically, for a _fire and forget_ interaction, the messages are consumed and the sender does not need to know about it.
 To implement this, your consumer method just returns `void`
 
 [source,java]
@@ -231,13 +241,12 @@ package org.acme.vertx;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.core.eventbus.Message;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/async")
 public class EventResource {
@@ -248,7 +257,7 @@ public class EventResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("{name}")
-    public Uni<String> greeting(@PathParam String name) {
+    public Uni<String> greeting(String name) {
         return bus.<String>request("greeting", name)        // <2>
                 .onItem().transform(Message::body);
     }
@@ -261,41 +270,40 @@ The `EventBus` object provides methods to:
 
 1. `send` a message to a specific address - one single consumer receives the message.
 2. `publish` a message to a specific address - all consumers receive the messages.
-3. `send` a message and expect reply
+3. `send` a message and expect reply asynchronously
+4. `send` a message and expect reply in a blocking manner
 
 [source, java]
 ----
 // Case 1
-bus.sendAndForget("greeting", name)
+bus.<String>requestAndForget("greeting", name);
 // Case 2
-bus.publish("greeting", name)
+bus.publish("greeting", name);
 // Case 3
 Uni<String> response = bus.<String>request("address", "hello, how are you?")
         .onItem().transform(Message::body);
+// Case 4
+String response = bus.<String>requestAndAwait("greeting", name).body();
 ----
 
 == Putting things together - bridging HTTP and messages
 
 Let's revisit a greeting HTTP endpoint and use asynchronous message passing to delegate the call to a separated bean.
 It uses the request/reply dispatching mechanism.
-Instead of implementing the business logic inside the JAX-RS endpoint, we are sending a message.
+Instead of implementing the business logic inside the Jakarta REST endpoint, we are sending a message.
 This message is consumed by another bean and the response is sent using the _reply_ mechanism.
 
 First create a new project using:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=vertx-http-quickstart \
-    -Dextensions="vertx" \
-    -DnoExamples
-cd vertx-http-quickstart
-----
+:create-app-artifact-id: vertx-http-quickstart
+:create-app-extensions: vertx,resteasy-reactive
+include::{includes}/devtools/create-app.adoc[]
 
-You can already start the application in _dev mode_ using `./mvnw compile quarkus:dev`.
+You can already start the application in _dev mode_ using:
 
-Then, creates a new JAX-RS resource with the following content:
+include::{includes}/devtools/dev.adoc[]
+
+Then, creates a new Jakarta REST resource with the following content:
 
 [source,java]
 .src/main/java/org/acme/vertx/EventResource.java
@@ -305,13 +313,12 @@ package org.acme.vertx;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.core.eventbus.Message;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/async")
 public class EventResource {
@@ -322,7 +329,7 @@ public class EventResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("{name}")
-    public Uni<String> greeting(@PathParam String name) {
+    public Uni<String> greeting(String name) {
         return bus.<String>request("greeting", name)            // <1>
                 .onItem().transform(Message::body);            // <2>
     }
@@ -341,7 +348,7 @@ package org.acme.vertx;
 
 import io.quarkus.vertx.ConsumeEvent;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class GreetingService {
@@ -373,17 +380,11 @@ To better understand, let's detail how the HTTP request/response has been handle
 
 This application can be packaged using:
 
-[source,bash]
-----
-./mvnw clean package
-----
+include::{includes}/devtools/build.adoc[]
 
 You can also compile it as a native executable with:
 
-[source,bash]
-----
-./mvnw clean package -Pnative
-----
+include::{includes}/devtools/build-native.adoc[]
 
 == Using codecs
 
@@ -396,7 +397,7 @@ So you can exchange objects as follows:
 @GET
 @Produces(MediaType.TEXT_PLAIN)
 @Path("{name}")
-public Uni<String> greeting(@PathParam String name) {
+public Uni<String> greeting(String name) {
     return bus.<String>request("greeting", new MyName(name))
         .onItem().transform(Message::body);
 }
@@ -414,7 +415,7 @@ If you want to use a specific codec, you need to explicitly set it on both ends:
 @GET
 @Produces(MediaType.TEXT_PLAIN)
 @Path("{name}")
-public Uni<String> greeting(@PathParam String name) {
+public Uni<String> greeting(String name) {
     return bus.<String>request("greeting", name,
         new DeliveryOptions().setCodecName(MyNameCodec.class.getName())) // <1>
         .onItem().transform(Message::body);
@@ -425,5 +426,5 @@ Uni<String> greeting(MyName name) {
     return Uni.createFrom().item(() -> "Hello "+name.getName());
 }
 ----
-1. Set the name of the codec to use to send the message
-2. Set the codec to use to receive the message
+<1> Set the name of the codec to use to send the message
+<2> Set the codec to use to receive the message

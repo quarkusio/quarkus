@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.runtime.cdi;
 import org.hibernate.resource.beans.container.spi.BeanContainer;
 import org.hibernate.resource.beans.container.spi.ContainedBean;
 import org.hibernate.resource.beans.internal.FallbackBeanInstanceProducer;
+import org.hibernate.resource.beans.spi.BeanInstanceProducer;
 import org.hibernate.resource.beans.spi.ManagedBean;
 import org.hibernate.resource.beans.spi.ManagedBeanRegistry;
 
@@ -30,21 +31,32 @@ public class QuarkusManagedBeanRegistry implements ManagedBeanRegistry {
 
     @Override
     public <T> ManagedBean<T> getBean(Class<T> beanClass) {
-        return new ContainedBeanManagedBeanAdapter<>(beanClass,
-                beanContainer.getBean(beanClass, QuarkusBeanContainerLifecycleOptions.INSTANCE,
-                        FallbackBeanInstanceProducer.INSTANCE));
+        return getBean(beanClass, FallbackBeanInstanceProducer.INSTANCE);
     }
 
     @Override
     public <T> ManagedBean<T> getBean(String beanName, Class<T> beanContract) {
-        return new ContainedBeanManagedBeanAdapter<>(beanContract,
-                beanContainer.getBean(beanName, beanContract, QuarkusBeanContainerLifecycleOptions.INSTANCE,
-                        FallbackBeanInstanceProducer.INSTANCE));
+        return getBean(beanName, beanContract, FallbackBeanInstanceProducer.INSTANCE);
     }
 
     @Override
     public BeanContainer getBeanContainer() {
         return beanContainer;
+    }
+
+    @Override
+    public <T> ManagedBean<T> getBean(Class<T> beanClass, BeanInstanceProducer fallbackBeanInstanceProducer) {
+        return new ContainedBeanManagedBeanAdapter<>(beanClass,
+                beanContainer.getBean(beanClass, QuarkusBeanContainerLifecycleOptions.INSTANCE,
+                        fallbackBeanInstanceProducer));
+    }
+
+    @Override
+    public <T> ManagedBean<T> getBean(String beanName, Class<T> beanContract,
+            BeanInstanceProducer fallbackBeanInstanceProducer) {
+        return new ContainedBeanManagedBeanAdapter<>(beanContract,
+                beanContainer.getBean(beanName, beanContract, QuarkusBeanContainerLifecycleOptions.INSTANCE,
+                        fallbackBeanInstanceProducer));
     }
 
     private static class ContainedBeanManagedBeanAdapter<B> implements ManagedBean<B> {
@@ -88,4 +100,5 @@ public class QuarkusManagedBeanRegistry implements ManagedBeanRegistry {
             return false;
         }
     }
+
 }

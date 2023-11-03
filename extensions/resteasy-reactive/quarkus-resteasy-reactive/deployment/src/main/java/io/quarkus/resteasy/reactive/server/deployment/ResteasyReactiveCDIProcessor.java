@@ -1,28 +1,39 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.APPLICATION_PATH;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTEXT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PROVIDER;
+
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.ws.rs.BeanParam;
+import jakarta.ws.rs.BeanParam;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.server.injection.ContextProducers;
+import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.server.runtime.QuarkusContextProducers;
+import io.quarkus.resteasy.reactive.server.spi.SubResourcesAsBeansBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.JaxrsFeatureBuildItem;
 
@@ -32,7 +43,8 @@ public class ResteasyReactiveCDIProcessor {
     AutoInjectAnnotationBuildItem contextInjection(
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer) {
         additionalBeanBuildItemBuildProducer
-                .produce(AdditionalBeanBuildItem.builder().addBeanClasses(ContextProducers.class, QuarkusContextProducers.class)
+                .produce(AdditionalBeanBuildItem.builder()
+                        .addBeanClasses(ContextProducers.class, QuarkusContextProducers.class)
                         .build());
         return new AutoInjectAnnotationBuildItem(ResteasyReactiveServerDotNames.CONTEXT,
                 DotName.createSimple(BeanParam.class.getName()));
@@ -41,13 +53,51 @@ public class ResteasyReactiveCDIProcessor {
     @BuildStep
     void beanDefiningAnnotations(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
         beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(ResteasyReactiveDotNames.PATH, BuiltinScope.SINGLETON.getName()));
+                .produce(new BeanDefiningAnnotationBuildItem(PATH, BuiltinScope.SINGLETON.getName()));
         beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(ResteasyReactiveDotNames.APPLICATION_PATH,
+                .produce(new BeanDefiningAnnotationBuildItem(APPLICATION_PATH,
                         BuiltinScope.SINGLETON.getName()));
         beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(ResteasyReactiveDotNames.PROVIDER,
+                .produce(new BeanDefiningAnnotationBuildItem(PROVIDER,
                         BuiltinScope.SINGLETON.getName()));
+    }
+
+    @BuildStep
+    void unremovableContextMethodParams(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            BuildProducer<UnremovableBeanBuildItem> producer) {
+
+        if (resourceScanningResultBuildItem.isEmpty()) {
+            return;
+        }
+
+        Collection<ClassInfo> resourceClasses = resourceScanningResultBuildItem.get().getResult().getScannedResources()
+                .values();
+        for (ClassInfo resourceClass : resourceClasses) {
+            if (resourceClass.annotationsMap().containsKey(CONTEXT)) {
+                for (AnnotationInstance instance : resourceClass.annotationsMap().get(CONTEXT)) {
+                    if (instance.target().kind() != AnnotationTarget.Kind.METHOD_PARAMETER) {
+                        continue;
+                    }
+                    producer.produce(UnremovableBeanBuildItem
+                            .beanTypes(instance.target().asMethodParameter().type().name()));
+                }
+            }
+        }
+    }
+
+    @BuildStep
+    void subResourcesAsBeans(ResourceScanningResultBuildItem setupEndpointsResult,
+            List<SubResourcesAsBeansBuildItem> subResourcesAsBeans,
+            BuildProducer<AdditionalBeanBuildItem> producer) {
+        if (subResourcesAsBeans.isEmpty() || setupEndpointsResult.getResult().getPossibleSubResources().isEmpty()) {
+            return;
+        }
+
+        List<String> classNames = new ArrayList<>(setupEndpointsResult.getResult().getPossibleSubResources().size());
+        for (DotName subResourceClass : setupEndpointsResult.getResult().getPossibleSubResources().keySet()) {
+            classNames.add(subResourceClass.toString());
+        }
+        producer.produce(new AdditionalBeanBuildItem(classNames.toArray(new String[0])));
     }
 
     // when an interface is annotated with @Path and there is only one implementation of it that is not annotated with @Path,
@@ -84,6 +134,7 @@ public class ResteasyReactiveCDIProcessor {
 
     @BuildStep
     void additionalBeans(List<DynamicFeatureBuildItem> additionalDynamicFeatures,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<JaxrsFeatureBuildItem> featureBuildItems,
             BuildProducer<AdditionalBeanBuildItem> additionalBean) {
 
@@ -91,11 +142,19 @@ public class ResteasyReactiveCDIProcessor {
         for (DynamicFeatureBuildItem dynamicFeature : additionalDynamicFeatures) {
             if (dynamicFeature.isRegisterAsBean()) {
                 additionalProviders.addBeanClass(dynamicFeature.getClassName());
+            } else {
+                reflectiveClassBuildItemBuildProducer
+                        .produce(ReflectiveClassBuildItem.builder(dynamicFeature.getClassName())
+                                .build());
             }
         }
-        for (JaxrsFeatureBuildItem dynamicFeature : featureBuildItems) {
-            if (dynamicFeature.isRegisterAsBean()) {
-                additionalProviders.addBeanClass(dynamicFeature.getClassName());
+        for (JaxrsFeatureBuildItem feature : featureBuildItems) {
+            if (feature.isRegisterAsBean()) {
+                additionalProviders.addBeanClass(feature.getClassName());
+            } else {
+                reflectiveClassBuildItemBuildProducer
+                        .produce(ReflectiveClassBuildItem.builder(feature.getClassName())
+                                .build());
             }
         }
         additionalBean.produce(additionalProviders.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());

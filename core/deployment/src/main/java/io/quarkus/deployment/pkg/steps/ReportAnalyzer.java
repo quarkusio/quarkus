@@ -97,7 +97,7 @@ public class ReportAnalyzer {
      * and does a more meaningful analysis of what is causing a type to be retained.
      *
      * In particular for virtual or interface methods that have multiple implementations what is calling this method
-     * is not really important, its what caused this particular instance of the class to be created that is important
+     * is not really important, it is what caused this particular instance of the class to be created that is important
      * (e.g. if you have an instance of Runnable, you don't care about all the different parts that call runnable, you
      * care about what created this particular instance).
      *

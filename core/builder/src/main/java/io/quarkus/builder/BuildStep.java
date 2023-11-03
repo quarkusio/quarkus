@@ -16,6 +16,15 @@ public interface BuildStep {
     void execute(BuildContext context);
 
     /**
+     * The identifier should be unique for a build chain.
+     *
+     * @return the identifier
+     */
+    default String getId() {
+        return toString();
+    }
+
+    /**
      * The empty build step, which immediately succeeds.
      */
     BuildStep EMPTY = context -> {

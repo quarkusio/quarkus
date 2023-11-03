@@ -1,6 +1,6 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
-name: "RESTEasy Qute"
+name: "RESTEasy Classic Qute"
 metadata:
   keywords:
   - "templating"
@@ -9,10 +9,12 @@ metadata:
   guide: "https://quarkus.io/guides/qute"
   categories:
   - "web"
-  status: "experimental"
+  status: "stable"
   codestart:
     name: "resteasy-qute"
     languages:
       - "java"
       - "kotlin"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
+  config:
+  - "quarkus.qute."

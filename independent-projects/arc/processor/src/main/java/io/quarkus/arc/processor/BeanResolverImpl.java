@@ -7,8 +7,8 @@ import static org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE;
 import static org.jboss.jandex.Type.Kind.TYPE_VARIABLE;
 import static org.jboss.jandex.Type.Kind.WILDCARD_TYPE;
 
-import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -16,7 +16,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.enterprise.inject.AmbiguousResolutionException;
+
+import jakarta.enterprise.inject.AmbiguousResolutionException;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.Type;
@@ -24,9 +26,11 @@ import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.jandex.WildcardType;
 
+import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
+
 class BeanResolverImpl implements BeanResolver {
 
-    private final BeanDeployment beanDeployment;
+    protected final BeanDeployment beanDeployment;
 
     private final Map<TypeAndQualifiers, List<BeanInfo>> resolved;
 
@@ -36,16 +40,9 @@ class BeanResolverImpl implements BeanResolver {
     }
 
     @Override
-    public Set<BeanInfo> resolveBeans(Type requiredType, AnnotationInstance... requiredQualifiers) {
+    public Set<BeanInfo> resolveBeans(Type requiredType, Set<AnnotationInstance> requiredQualifiers) {
         Objects.requireNonNull(requiredType, "Required type must not be null");
-        Set<AnnotationInstance> qualifiers;
-        if (requiredQualifiers.length == 0) {
-            qualifiers = Collections.emptySet();
-        } else {
-            qualifiers = new HashSet<>();
-            Collections.addAll(qualifiers, requiredQualifiers);
-        }
-        TypeAndQualifiers typeAndQualifiers = new TypeAndQualifiers(requiredType, qualifiers);
+        TypeAndQualifiers typeAndQualifiers = new TypeAndQualifiers(requiredType, requiredQualifiers);
         // Note that this method must not cache the results beacause it can be used before synthetic components are registered
         List<BeanInfo> beans = findMatching(typeAndQualifiers);
         Set<BeanInfo> ret;
@@ -75,14 +72,47 @@ class BeanResolverImpl implements BeanResolver {
         }
     }
 
+    @Override
+    public boolean matches(BeanInfo bean, TypeAndQualifiers typeAndQualifiers) {
+        return matches(bean, typeAndQualifiers.type, typeAndQualifiers.qualifiers);
+    }
+
+    @Override
+    public boolean matches(BeanInfo bean, Type requiredType, Set<AnnotationInstance> requiredQualifiers) {
+        // Bean has all the required qualifiers and a bean type that matches the required type
+        return matchesType(bean, requiredType) && Beans.hasQualifiers(bean, requiredQualifiers);
+    }
+
+    @Override
+    public boolean matchesType(BeanInfo bean, Type requiredType) {
+        BeanResolver beanResolver = getBeanResolver(bean);
+        for (Type beanType : bean.getTypes()) {
+            if (beanResolver.matches(requiredType, beanType)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean hasQualifier(Collection<AnnotationInstance> qualifiers, AnnotationInstance requiredQualifier) {
+        return Beans.hasQualifier(beanDeployment, requiredQualifier, qualifiers);
+    }
+
+    protected BeanResolver getBeanResolver(BeanInfo bean) {
+        return bean.getDeployment().beanResolver;
+    }
+
     List<BeanInfo> resolve(TypeAndQualifiers typeAndQualifiers) {
         return resolved.computeIfAbsent(typeAndQualifiers, this::findMatching);
     }
 
     private List<BeanInfo> findMatching(TypeAndQualifiers typeAndQualifiers) {
         List<BeanInfo> resolved = new ArrayList<>();
-        for (BeanInfo b : beanDeployment.getBeans()) {
-            if (Beans.matches(b, typeAndQualifiers)) {
+        //optimisation for the simple class case
+        Collection<BeanInfo> potentialBeans = potentialBeans(typeAndQualifiers.type);
+        for (BeanInfo b : potentialBeans) {
+            if (matches(b, typeAndQualifiers)) {
                 resolved.add(b);
             }
         }
@@ -91,15 +121,24 @@ class BeanResolverImpl implements BeanResolver {
 
     List<BeanInfo> findTypeMatching(Type type) {
         List<BeanInfo> resolved = new ArrayList<>();
-        for (BeanInfo b : beanDeployment.getBeans()) {
-            if (Beans.matchesType(b, type)) {
+        //optimisation for the simple class case
+        Collection<BeanInfo> potentialBeans = potentialBeans(type);
+        for (BeanInfo b : potentialBeans) {
+            if (matchesType(b, type)) {
                 resolved.add(b);
             }
         }
         return resolved.isEmpty() ? Collections.emptyList() : resolved;
     }
 
-    boolean matches(Type requiredType, Type beanType) {
+    Collection<BeanInfo> potentialBeans(Type type) {
+        if ((type.kind() == CLASS || type.kind() == PARAMETERIZED_TYPE) && !type.name().equals(DotNames.OBJECT)) {
+            return beanDeployment.getBeansByRawType(type.name());
+        }
+        return beanDeployment.getBeans();
+    }
+
+    public boolean matches(Type requiredType, Type beanType) {
         return matchesNoBoxing(Types.box(requiredType), Types.box(beanType));
     }
 
@@ -111,7 +150,7 @@ class BeanResolverImpl implements BeanResolver {
         if (ARRAY.equals(requiredType.kind())) {
             if (ARRAY.equals(beanType.kind())) {
                 // Array types are considered to match only if their element types are identical
-                return matchesNoBoxing(requiredType.asArrayType().component(), beanType.asArrayType().component());
+                return matchesNoBoxing(requiredType.asArrayType().constituent(), beanType.asArrayType().constituent());
             }
         } else if (CLASS.equals(requiredType.kind())) {
             if (CLASS.equals(beanType.kind())) {
@@ -146,19 +185,19 @@ class BeanResolverImpl implements BeanResolver {
                     throw new IllegalArgumentException("Invalid argument combination " + requiredType + "; " + beanType);
                 }
                 for (int i = 0; i < requiredTypeArguments.size(); i++) {
-                    if (!parametersMatch(requiredTypeArguments.get(i), beanTypeArguments.get(i))) {
+                    if (!matchTypeArguments(requiredTypeArguments.get(i), beanTypeArguments.get(i))) {
                         return false;
                     }
                 }
                 return true;
             }
         } else if (WILDCARD_TYPE.equals(requiredType.kind())) {
-            return parametersMatch(requiredType, beanType);
+            return matchTypeArguments(requiredType, beanType);
         }
         return false;
     }
 
-    boolean parametersMatch(Type requiredParameter, Type beanParameter) {
+    public boolean matchTypeArguments(Type requiredParameter, Type beanParameter) {
         if (isActualType(requiredParameter) && isActualType(beanParameter)) {
             /*
              * the required type parameter and the bean type parameter are actual types with identical raw type, and, if the
@@ -243,13 +282,20 @@ class BeanResolverImpl implements BeanResolver {
         bounds = getUppermostBounds(bounds);
         stricterBounds = getUppermostBounds(stricterBounds);
         for (Type bound : bounds) {
-            for (Type stricterBound : stricterBounds) {
-                if (!beanDeployment.getAssignabilityCheck().isAssignableFrom(bound, stricterBound)) {
-                    return false;
-                }
+            if (!isAssignableFromAtLeastOne(bound, stricterBounds)) {
+                return false;
             }
         }
         return true;
+    }
+
+    boolean isAssignableFromAtLeastOne(Type type1, List<Type> types2) {
+        for (Type type2 : types2) {
+            if (beanDeployment.getAssignabilityCheck().isAssignableFrom(type1, type2)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     boolean lowerBoundsOfWildcardMatch(Type parameter, WildcardType requiredParameter) {

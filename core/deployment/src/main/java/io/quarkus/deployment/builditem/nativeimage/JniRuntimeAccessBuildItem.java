@@ -15,17 +15,8 @@ public final class JniRuntimeAccessBuildItem extends MultiBuildItem {
     private final boolean constructors;
     private final boolean methods;
     private final boolean fields;
-    private final boolean finalFieldsWriteable;
 
-    public JniRuntimeAccessBuildItem(boolean constructors, boolean methods, boolean fields, Class<?>... classes) {
-        this(constructors, methods, fields, false, classes);
-    }
-
-    public JniRuntimeAccessBuildItem(boolean constructors, boolean methods, boolean fields, String... className) {
-        this(constructors, methods, fields, false, className);
-    }
-
-    public JniRuntimeAccessBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWriteable,
+    public JniRuntimeAccessBuildItem(boolean constructors, boolean methods, boolean fields,
             Class<?>... classes) {
         List<String> names = new ArrayList<>();
         for (Class<?> i : classes) {
@@ -38,10 +29,9 @@ public final class JniRuntimeAccessBuildItem extends MultiBuildItem {
         this.constructors = constructors;
         this.methods = methods;
         this.fields = fields;
-        this.finalFieldsWriteable = finalFieldsWriteable;
     }
 
-    public JniRuntimeAccessBuildItem(boolean constructors, boolean methods, boolean fields, boolean finalFieldsWriteable,
+    public JniRuntimeAccessBuildItem(boolean constructors, boolean methods, boolean fields,
             String... className) {
         for (String i : className) {
             if (i == null) {
@@ -52,7 +42,6 @@ public final class JniRuntimeAccessBuildItem extends MultiBuildItem {
         this.constructors = constructors;
         this.methods = methods;
         this.fields = fields;
-        this.finalFieldsWriteable = finalFieldsWriteable;
     }
 
     public List<String> getClassNames() {
@@ -71,7 +60,4 @@ public final class JniRuntimeAccessBuildItem extends MultiBuildItem {
         return fields;
     }
 
-    public boolean isFinalFieldsWriteable() {
-        return finalFieldsWriteable;
-    }
 }

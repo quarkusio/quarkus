@@ -3,9 +3,11 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using the Cassandra Client
-
-include::./attributes.adoc[]
+= Using the Cassandra Client
+include::_attributes.adoc[]
+:categories: data
+:summary: This guide covers how to use the Apache Cassandra NoSQL database in Quarkus.
+:topics: data,cassandra
 
 Apache Cassandra® is a free and open-source, distributed, wide column store, NoSQL database
 management system designed to handle large amounts of data across many commodity servers, providing
@@ -13,18 +15,11 @@ high availability with no single point of failure.
 
 In this guide, we will see how you can get your REST services to use a Cassandra database.
 
-include::./platform-include.adoc[]
+include::{includes}/platform-include.adoc[]
 
 == Prerequisites
 
-To complete this quickstart guide, you need:
-
-* an IDE;
-* JDK 11+ installed with `JAVA_HOME` configured appropriately;
-* link:https://www.graalvm.org/[GraalVM] installed with the `GRAALVM_HOME` environment variable
-configured appropriately, if you want to
-link:https://quarkus.io/guides/building-native-image[use the native mode];
-* Apache Maven {maven-version} 
+include::{includes}/prerequisites.adoc[]
 * A running link:https://cassandra.apache.org[Apache Cassandra],
 link:https://www.datastax.fr/products/datastax-enterprise[DataStax Enterprise] (DSE) or
 link:https://astra.datastax.com[DataStax Astra] database; or alternatively, a fresh Docker
@@ -52,7 +47,7 @@ We recommend that you follow the instructions in the next sections and create th
 by step. However, you can go right to the completed example.
 
 The solution is located in the
-link:https://github.com/datastax/cassandra-quarkus/tree/master/quickstart[quickstart directory] of
+link:https://github.com/datastax/cassandra-quarkus/tree/main/quickstart[quickstart directory] of
 the Cassandra Quarkus extension GitHub repository.
 
 == Creating a Blank Maven Project
@@ -125,7 +120,7 @@ Note also the special return type of the `findAll` method,
 link:https://docs.datastax.com/en/drivers/java/latest/com/datastax/oss/driver/api/core/PagingIterable.html[`PagingIterable`]:
 it's the base type of result sets returned by the driver.
 
-Finally, let's create the a Mapper interface:
+Finally, let's create a Mapper interface:
 
 [source,java]
 ----
@@ -137,10 +132,93 @@ public interface FruitMapper {
 ----
 
 The `@Mapper` annotation is yet another annotation recognized by the DataStax Object Mapper. A
-mapper is responsible for constructing instances of DAOs – in this case, out mapper is constructing
+mapper is responsible for constructing DAO instances – in this case, out mapper is constructing
 an instance of our only DAO, `FruitDao`.
 
-== Creating a Service & JSON REST Endpoint
+Think of the mapper interface as a factory for DAO beans. If you intend to construct and inject a
+specific DAO bean in your own code, then you first must add a `@DaoFactory` method for it in a
+`@Mapper` interface.
+
+TIP: `@DaoFactory` method names are irrelevant.
+
+`@DaoFactory` methods should return beans of the following types:
+
+- Any `@Dao`-annotated interface, e.g. `FruitDao`;
+- A `CompletionStage` of any `@Dao`-annotated interface, e.g. `CompletionStage<FruitDao>`.
+- A `Uni` of any `@Dao`-annotated interface, e.g. `Uni<FruitDao>`.
+
+TIP: `Uni` is a type from the Mutiny library, which is the reactive programming library used by
+Quarkus. This will be explained in more detail in the "Reactive Programming" section below.
+
+== Generating the DAO and mapper implementations
+
+As you probably guessed already, we are not going to implement the interfaces above. Instead, the
+Object Mapper will generate such implementations for us.
+
+The Object Mapper is composed of 2 pieces:
+
+1. A (compile-time) annotation processor that scans the classpath for classes annotated with
+`@Mapper`, `@Dao` or `@Entity`, and generates code and CQL queries for them; and
+2. A runtime module that contains the logic to execute the generated queries.
+
+Therefore, enabling the Object Mapper requires two steps:
+
+1. Declare the `cassandra-quarkus-mapper-processor` annotation processor. With Maven, this is done
+by modifying the compiler plugin configuration in the project's `pom.xml` file as follows:
+
+[source,xml]
+----
+<plugin>
+  <artifactId>maven-compiler-plugin</artifactId>
+  <version>3.10.1</version>
+  <configuration>
+    <source>${java.version}</source>
+    <target>${java.version}</target>
+    <annotationProcessorPaths>
+      <path>
+        <groupId>com.datastax.oss.quarkus</groupId>
+        <artifactId>cassandra-quarkus-mapper-processor</artifactId>
+        <version>${cassandra-quarkus.version}</version>
+      </path>
+    </annotationProcessorPaths>
+  </configuration>
+</plugin>
+----
+
+With Gradle, this is done by adding the following line to the `build.gradle` file:
+
+[source,groovy]
+----
+annotationProcessor "com.datastax.oss.quarkus:cassandra-quarkus-mapper-processor:${cassandra-quarkus.version}"
+----
+
+IMPORTANT: Verify that you are enabling the right annotation processor! The Cassandra driver ships
+with its Object Mapper annotation processor, called `java-driver-mapper-processor`. But the
+Cassandra Quarkus extension also ships with its own annotation processor:
+`cassandra-quarkus-mapper-processor`, which has more capabilities than the driver's. This annotation
+processor is the only one suitable for use in a Quarkus application, so check that this is the one
+in use. Also, never use both annotation processors together.
+
+[start=2]
+1. Declare the `java-driver-mapper-runtime` dependency in compile scope in the project's `pom.xml`
+   file as follows:
+
+[source,xml]
+----
+<dependency>
+  <groupId>com.datastax.oss</groupId>
+  <artifactId>java-driver-mapper-runtime</artifactId>
+</dependency>
+----
+
+IMPORTANT: Although this module is called "runtime", it must be declared in compile scope.
+
+If your project is correctly set up, you should now be able to compile it without errors, and you
+should see the generated code in the `target/generated-sources/annotations` directory (if you are
+using Maven). It's not required to get familiar with the generated code though, as it is mostly
+internal machinery to interact with the database.
+
+== Creating a service & JSON REST endpoint
 
 Now let's create a `FruitService` that will be the business layer of our application and store/load
 the fruits from the Cassandra database.
@@ -163,19 +241,20 @@ public class FruitService {
 ----
 
 Note how the service is being injected a `FruitDao` instance. This DAO instance is injected
-automatically.
+automatically, thanks to the generated implementations.
 
 The Cassandra Quarkus extension allows you to inject any of the following beans in your own
 components:
 
 - All `@Mapper`-annotated interfaces in your project.
-- All `@Dao`-annotated interfaces in your project, as long as they are produced by a corresponding
-`@DaoFactory`-annotated method declared in a mapper interface from your project.
+- You can also inject a `CompletionStage` or `Uni` of any `@Mapper`-annotated interface.
+- Any bean returned by a `@DaoFactory` method (see above for possible bean types).
 - The
 link:https://javadoc.io/doc/com.datastax.oss.quarkus/cassandra-quarkus-client/latest/com/datastax/oss/quarkus/runtime/api/session/QuarkusCqlSession.html[`QuarkusCqlSession`]
 bean: this application-scoped, singleton bean is your main entry point to the Cassandra client; it
 is a specialized Cassandra driver session instance with a few methods tailored especially for
 Quarkus. Read its javadocs carefully!
+- You can also inject `CompletionStage<QuarkusCqlSession>` or `Uni<QuarkusCqlSession>`.
 
 In our example, both `FruitMapper` and `FruitDao` could be injected anywhere. We chose to inject
 `FruitDao` in `FruitService`.
@@ -236,7 +315,7 @@ public class FruitDto {
 }
 ----
 
-The translation to and from JSON is done automatically by the Quarkus RestEasy extension, which is
+The translation to and from JSON is done automatically by the Quarkus RESTEasy Reactive extension, which is
 included in this guide's pom.xml file. If you want to add it manually to your application, add the
 below snippet to your application's ppm.xml file:
 
@@ -244,11 +323,11 @@ below snippet to your application's ppm.xml file:
 ----
 <dependency>
   <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-resteasy</artifactId>
+  <artifactId>quarkus-resteasy-reactive</artifactId>
 </dependency>
 <dependency>
   <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-resteasy-jsonb</artifactId>
+  <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
 </dependency>
 ----
 
@@ -417,7 +496,7 @@ TIP:  If you are not familiar with Mutiny, please check xref:mutiny-primer.adoc[
 
 Let's rewrite our application using reactive programming with Mutiny.
 
-First, let's to declare another DAO interface that works in a reactive way:
+First, let's declare another DAO interface that works in a reactive way:
 
 [source,java]
 ----
@@ -521,16 +600,7 @@ NOTE: The `getAll()` method above returns `Multi`, and the `add()` method return
 are the same Mutiny types that we met before; they are automatically recognized by the Quarkus
 reactive REST API, so we don't need to convert them into JSON ourselves.
 
-To effectively integrate the reactive logic with the REST API, your application needs to declare a
-dependency to the Quarkus RestEasy Mutiny extension:
-
-[source,xml]
-----
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-resteasy-mutiny</artifactId>
-</dependency>
-----
+RESTEasy Reactive natively supports the Mutiny reactive types e.g. `Uni` and `Multi`.
 
 This dependency is already included in this guide's pom.xml, but if you are starting a new project
 from scratch, make sure to include it.
@@ -624,11 +694,9 @@ framework you plan to use.
 
 === Enabling Metrics with Micrometer
 
-Micrometer is the recommended metrics framework in Quarkus applications since Quarkus 1.9.
+Micrometer is the recommended metrics framework in Quarkus applications.
 
 To enable Micrometer metrics in your application, you need to add the following to your pom.xml.
-
-For Quarkus 1.11+:
 
 [source,xml]
 ----
@@ -639,24 +707,6 @@ For Quarkus 1.11+:
 <dependency>
   <groupId>io.quarkus</groupId>
   <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
-</dependency>
-----
-
-For Quarkus < 1.11:
-
-[source,xml]
-----
-<dependency>
-  <groupId>com.datastax.oss</groupId>
-  <artifactId>java-driver-metrics-micrometer</artifactId>
-</dependency>
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-micrometer</artifactId>
-</dependency>
-<dependency>
-  <groupId>io.micrometer</groupId>
-  <artifactId>micrometer-registry-prometheus</artifactId>
 </dependency>
 ----
 
@@ -681,7 +731,7 @@ Remove any dependency to Micrometer from your pom.xml, then add the following on
 === Enabling Cassandra Metrics
 
 Even when metrics are enabled in your application, the Cassandra client will not report any metrics,
-unless you opt-in for this feature. So your next step is to enable Cassandra metrics in your
+unless you opt in for this feature. So your next step is to enable Cassandra metrics in your
 `application.properties` file.
 
 [source,properties]
@@ -740,8 +790,7 @@ until your application actually connects and hits the database for the first tim
 
 == Running in native mode
 
-If you installed GraalVM, you can link:https://quarkus.io/guides/building-native-image[build a
-native image] using:
+If you installed GraalVM, you can xref:building-native-image.adoc[build a native image] using:
 
 [source,shell]
 ----
@@ -758,17 +807,19 @@ you can run the native executable as follows:
 
 You can then point your browser to `http://localhost:8080/fruits.html` and use your application.
 
-== Eager vs Lazy Initialization
+== Choosing between eager and lazy initialization
 
-This extension allows you to inject either:
+As explained above, this extension allows you to inject many types of beans:
 
-- a `QuarkusCqlSession` bean;
-- or the asynchronous version of this bean, that is, `CompletionStage<QuarkusCqlSession>`;
-- or the reactive version of this bean, that is, `Uni<QuarkusCqlSession>`.
+- A simple bean like `QuarkusCqlSession` or `FruitDao`;
+- The asynchronous version of that bean, for example `CompletionStage<QuarkusCqlSession>` or
+  `CompletionStage<FruitDao>;
+- The reactive version of that bean, for example `Uni<QuarkusCqlSession>` or `Uni<FruitDao>`.
 
-The most straightforward approach is obviously to inject `QuarkusCqlSession` directly. This should
-work just fine for most applications; however, the `QuarkusCqlSession` bean needs to be initialized
-before it can be used, and this process is blocking.
+The most straightforward approach is obviously to inject the bean directly. This should work just
+fine for most applications. However, the `QuarkusCqlSession` bean, and all DAO beans that depend on
+it, might take some time to initialize before they can be used for the first time, and this process
+is blocking.
 
 Fortunately, it is possible to control when the initialization should happen: the
 `quarkus.cassandra.init.eager-init` parameter determines if the `QuarkusCqlSession` bean should be
@@ -779,21 +830,21 @@ that needs to interact with the Cassandra database.
 
 Using lazy initialization speeds up your application startup time, and avoids startup failures if
 the Cassandra database is not available. However, it could also prove dangerous if your code is
-fully asynchronous, e.g. if you are using https://quarkus.io/guides/reactive-routes[reactive
-routes]: indeed, the lazy initialization could accidentally happen on a thread that is not allowed
+fully non-blocking, for example if it uses xref:reactive-routes.adoc[reactive routes].
+Indeed, the lazy initialization could accidentally happen on a thread that is not allowed
 to block, such as a Vert.x event loop thread. Therefore, setting `quarkus.cassandra.init.eager-init`
 to `false` and injecting `QuarkusCqlSession` should be avoided in these contexts.
 
-If you want to use Vert.x (or any other reactive framework) and keep the lazy initialization
-behavior, you should instead inject only `CompletionStage<QuarkusCqlSession>` or
-`Uni<QuarkusCqlSession>`. When injecting these beans, the initialization process will be triggered
-lazily, but it will happen in the background, in a non-blocking way, leveraging the Vert.x event
-loop. This way you don't risk blocking the Vert.x thread.
+If you want to use Vert.x (or any other non-blocking framework) and keep the lazy initialization
+behavior, you should instead inject only a `CompletionStage` or a `Uni` of the desired bean. When
+injecting these beans, the initialization process will be triggered lazily, but it will happen in
+the background, in a non-blocking way, leveraging the Vert.x event loop. This way you don't risk
+blocking the Vert.x thread.
 
 Alternatively, you can set `quarkus.cassandra.init.eager-init` to true: in this case the session
-bean will be initialized eagerly during application startup, on the Quarkus main thread. This would
-eliminate any risk of blocking a Vert.x thread, at the cost of making your startup time (much)
-longer.
+bean and all DAO beans will be initialized eagerly during application startup, on the Quarkus main
+thread. This would eliminate any risk of blocking a Vert.x thread, at the cost of making your
+startup time (much) longer.
 
 == Conclusion
 

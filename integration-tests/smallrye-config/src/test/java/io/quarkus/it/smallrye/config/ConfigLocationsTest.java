@@ -1,7 +1,7 @@
 package io.quarkus.it.smallrye.config;
 
 import static io.restassured.RestAssured.given;
-import static javax.ws.rs.core.Response.Status.OK;
+import static jakarta.ws.rs.core.Response.Status.OK;
 import static org.hamcrest.Matchers.equalTo;
 
 import org.junit.jupiter.api.Test;
@@ -10,6 +10,7 @@ import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 public class ConfigLocationsTest {
+
     @Test
     void locations() {
         given()
@@ -23,6 +24,15 @@ public class ConfigLocationsTest {
                 .then()
                 .statusCode(OK.getStatusCode())
                 .body("value", equalTo("1234"));
+    }
+
+    @Test
+    void fileSystemLocation() {
+        given()
+                .get("/config/{name}", "fs.key1")
+                .then()
+                .statusCode(OK.getStatusCode())
+                .body("value", equalTo("value1"));
     }
 
     @Test

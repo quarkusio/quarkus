@@ -9,11 +9,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.UriBuilderException;
-import javax.ws.rs.ext.RuntimeDelegate;
+
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriBuilderException;
+import jakarta.ws.rs.ext.RuntimeDelegate;
+
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.PathHelper;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
@@ -64,6 +66,7 @@ public class UriBuilderImpl extends UriBuilder {
     private String fragment;
     private String ssp;
     private String authority;
+    private boolean encode = true;
 
     private MultiQueryParamMode queryParamMode = MultiQueryParamMode.MULTI_PAIRS;
 
@@ -79,6 +82,7 @@ public class UriBuilderImpl extends UriBuilder {
         impl.ssp = ssp;
         impl.authority = authority;
         impl.queryParamMode = queryParamMode;
+        impl.encode = encode;
 
         return impl;
     }
@@ -348,6 +352,11 @@ public class UriBuilderImpl extends UriBuilder {
         return this;
     }
 
+    public UriBuilder encode(boolean encode) {
+        this.encode = encode;
+        return this;
+    }
+
     protected static String paths(boolean encode, String basePath, String... segments) {
         String path = basePath;
         if (path == null)
@@ -383,7 +392,7 @@ public class UriBuilderImpl extends UriBuilder {
     public UriBuilder path(String segment) throws IllegalArgumentException {
         if (segment == null)
             throw new IllegalArgumentException("path is null");
-        path = paths(true, path, segment);
+        path = paths(encode, path, segment);
         return this;
     }
 
@@ -427,7 +436,7 @@ public class UriBuilderImpl extends UriBuilder {
         }
         Path ann = method.getAnnotation(Path.class);
         if (ann != null) {
-            path = paths(true, path, ann.value());
+            path = paths(encode, path, ann.value());
         } else {
             throw new IllegalArgumentException("Method not annotated with @Path");
         }
@@ -550,7 +559,7 @@ public class UriBuilderImpl extends UriBuilder {
         }
         if (path != null) {
             StringBuilder tmp = new StringBuilder();
-            replaceParameter(paramMap, fromEncodedMap, isTemplate, path, tmp, encodeSlash);
+            replaceParameter(paramMap, fromEncodedMap, isTemplate, path, tmp, encode, encodeSlash);
             if (userInfo != null || host != null) {
                 if (tmp.length() > 0 && tmp.charAt(0) != '/')
                     builder.append("/");
@@ -603,6 +612,11 @@ public class UriBuilderImpl extends UriBuilder {
 
     protected StringBuilder replaceParameter(Map<String, ? extends Object> paramMap, boolean fromEncodedMap, boolean isTemplate,
             String string, StringBuilder builder, boolean encodeSlash) {
+        return replaceParameter(paramMap, fromEncodedMap, isTemplate, string, builder, true, encodeSlash);
+    }
+
+    protected StringBuilder replaceParameter(Map<String, ? extends Object> paramMap, boolean fromEncodedMap, boolean isTemplate,
+            String string, StringBuilder builder, boolean encode, boolean encodeSlash) {
         if (string.indexOf('{') == -1) {
             return builder.append(string);
         }
@@ -622,7 +636,11 @@ public class UriBuilderImpl extends UriBuilder {
             }
             Object value = paramMap.get(param);
             String stringValue = value != null ? value.toString() : null;
-            if (stringValue != null) {
+            if (stringValue == null) {
+                throw new IllegalArgumentException("Template parameter null: " + param);
+            }
+
+            if (encode) {
                 if (!fromEncodedMap) {
                     if (encodeSlash)
                         stringValue = Encode.encodePathSegmentAsIs(stringValue);
@@ -634,11 +652,10 @@ public class UriBuilderImpl extends UriBuilder {
                     else
                         stringValue = Encode.encodePathSaveEncodings(stringValue);
                 }
-                builder.append(stringValue);
-                start = matcher.end();
-            } else {
-                throw new IllegalArgumentException("Template parameter null: " + param);
             }
+
+            builder.append(stringValue);
+            start = matcher.end();
         }
         builder.append(string, start, string.length());
         return builder;
@@ -879,12 +896,32 @@ public class UriBuilderImpl extends UriBuilder {
             throw new IllegalArgumentException("Name parameter is null");
         if (values == null)
             throw new IllegalArgumentException("Values parameter is null");
+
+        String queryParamName = encode ? Encode.encodeQueryParamAsIs(name) : name;
+        if (queryParamMode == MultiQueryParamMode.COMMA_SEPARATED) {
+            sb.append(queryParamName).append("=");
+        }
         for (Object value : values) {
             if (value == null)
                 throw new IllegalArgumentException("Value is null");
+
             sb.append(prefix);
-            prefix = "&";
-            sb.append(Encode.encodeQueryParamAsIs(name)).append("=").append(Encode.encodeQueryParamAsIs(value.toString()));
+            String queryParamValue = encode ? Encode.encodeQueryParamAsIs(value.toString()) : value.toString();
+            switch (queryParamMode) {
+                case MULTI_PAIRS:
+                    prefix = "&";
+                    sb.append(queryParamName).append("=").append(queryParamValue);
+                    break;
+                case COMMA_SEPARATED:
+                    prefix = ",";
+                    sb.append(queryParamValue);
+                    break;
+                case ARRAY_PAIRS:
+                    prefix = "&";
+                    String queryParamConnector = arrayPairsConnector(values);
+                    sb.append(queryParamName).append(queryParamConnector).append(queryParamValue);
+                    break;
+            }
         }
 
         query = sb.toString();
@@ -905,32 +942,39 @@ public class UriBuilderImpl extends UriBuilder {
         if (values == null)
             throw new IllegalArgumentException("Values parameter is null");
 
+        String queryParamName = encode ? Encode.encodeQueryParam(name) : name;
         if (queryParamMode == MultiQueryParamMode.COMMA_SEPARATED) {
-            sb.append(Encode.encodeQueryParam(name)).append("=");
+            sb.append(queryParamName).append("=");
         }
         for (Object value : values) {
             if (value == null)
                 throw new IllegalArgumentException("Value is null");
 
             sb.append(prefix);
+            String queryParamValue = encode ? Encode.encodeQueryParam(value.toString()) : value.toString();
             switch (queryParamMode) {
                 case MULTI_PAIRS:
                     prefix = "&";
-                    sb.append(Encode.encodeQueryParam(name)).append("=").append(Encode.encodeQueryParam(value.toString()));
+                    sb.append(queryParamName).append("=").append(queryParamValue);
                     break;
                 case COMMA_SEPARATED:
                     prefix = ",";
-                    sb.append(Encode.encodeQueryParam(value.toString()));
+                    sb.append(queryParamValue);
                     break;
                 case ARRAY_PAIRS:
                     prefix = "&";
-                    sb.append(Encode.encodeQueryParam(name)).append("[]=").append(Encode.encodeQueryParam(value.toString()));
+                    String queryParamConnector = arrayPairsConnector(values);
+                    sb.append(queryParamName).append(queryParamConnector).append(queryParamValue);
                     break;
             }
         }
 
         query = sb.toString();
         return this;
+    }
+
+    private String arrayPairsConnector(Object[] values) {
+        return values.length == 1 ? "=" : "[]=";
     }
 
     public UriBuilder replaceQueryParam(String name, Object... values) throws IllegalArgumentException {

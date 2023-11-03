@@ -1,6 +1,6 @@
 package io.quarkus.security.test.cdi.app.denied.unnanotated;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com

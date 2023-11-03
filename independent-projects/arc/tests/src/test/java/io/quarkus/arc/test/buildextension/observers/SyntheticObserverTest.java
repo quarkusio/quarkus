@@ -3,21 +3,24 @@ package io.quarkus.arc.test.buildextension.observers;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.literal.NamedLiteral;
+import jakarta.enterprise.inject.spi.EventContext;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.processor.ObserverRegistrar;
 import io.quarkus.arc.test.ArcTestContainer;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.literal.NamedLiteral;
-import javax.enterprise.inject.spi.EventContext;
-import javax.inject.Named;
-import javax.inject.Singleton;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class SyntheticObserverTest {
 
@@ -52,13 +55,13 @@ public class SyntheticObserverTest {
     @Test
     public void testSyntheticObserver() {
         MyObserver.EVENTS.clear();
-        Arc.container().beanManager().fireEvent("foo");
+        Arc.container().beanManager().getEvent().fire("foo");
         assertEquals(2, MyObserver.EVENTS.size(), "Events: " + MyObserver.EVENTS);
         assertTrue(MyObserver.EVENTS.contains("foo"));
         assertTrue(MyObserver.EVENTS.contains("foo_MyObserver"));
 
         MyObserver.EVENTS.clear();
-        Arc.container().beanManager().fireEvent("foo", NamedLiteral.of("bla"));
+        Arc.container().beanManager().getEvent().select(String.class, NamedLiteral.of("bla")).fire("foo");
         assertEquals(3, MyObserver.EVENTS.size(), "Events: " + MyObserver.EVENTS);
         assertTrue(MyObserver.EVENTS.contains("foo"));
         assertTrue(MyObserver.EVENTS.contains("foo_MyObserver"));

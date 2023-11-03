@@ -9,8 +9,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -19,15 +22,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.quarkus.utilities.OS;
 import io.smallrye.config.SmallRyeConfig;
 
 public final class LauncherUtil {
+
+    public static final int LOG_CHECK_INTERVAL = 50;
 
     private LauncherUtil() {
     }
@@ -35,24 +40,41 @@ public final class LauncherUtil {
     public static Config installAndGetSomeConfig() {
         final SmallRyeConfig config = ConfigUtils.configBuilder(false, LaunchMode.NORMAL).build();
         QuarkusConfigFactory.setConfig(config);
-        final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
-        try {
-            final Config installed = cpr.getConfig();
-            if (installed != config) {
-                cpr.releaseConfig(installed);
-            }
-        } catch (IllegalStateException ignored) {
-        }
         return config;
     }
 
     /**
      * Launches a process using the supplied arguments and makes sure the process's output is drained to standard out
+     * <p>
+     * Implementation detail: Avoid using ProcessBuilder's redirect here because it causes problems with Maven Failsafe
+     * as can be seen in <a href="https://github.com/quarkusio/quarkus/issues/33229">here</a>
      */
-    static Process launchProcess(List<String> args) throws IOException {
-        Process process = Runtime.getRuntime().exec(args.toArray(new String[0]));
+    static Process launchProcessAndDrainIO(List<String> args, Map<String, String> env) throws IOException {
+        Process process = launchProcess(args, env);
         new Thread(new ProcessReader(process.getInputStream())).start();
         new Thread(new ProcessReader(process.getErrorStream())).start();
+        return process;
+    }
+
+    /**
+     * Launches a process using the supplied arguments but does drain the IO
+     */
+    static Process launchProcess(List<String> args, Map<String, String> env) throws IOException {
+        Process process;
+        if (env.isEmpty()) {
+            process = Runtime.getRuntime().exec(args.toArray(new String[0]));
+        } else {
+            Map<String, String> currentEnv = System.getenv();
+            Map<String, String> finalEnv = new HashMap<>(currentEnv);
+            finalEnv.putAll(env);
+            String[] envArray = new String[finalEnv.size()];
+            int i = 0;
+            for (var entry : finalEnv.entrySet()) {
+                envArray[i] = entry.getKey() + "=" + entry.getValue();
+                i++;
+            }
+            process = Runtime.getRuntime().exec(args.toArray(new String[0]), envArray);
+        }
         return process;
     }
 
@@ -62,6 +84,8 @@ public final class LauncherUtil {
      * If the wait time is exceeded an {@code IllegalStateException} is thrown.
      */
     static ListeningAddress waitForCapturedListeningData(Process quarkusProcess, Path logFile, long waitTimeSeconds) {
+        ensureProcessIsAlive(quarkusProcess);
+
         CountDownLatch signal = new CountDownLatch(1);
         AtomicReference<ListeningAddress> resultReference = new AtomicReference<>();
         CaptureListeningDataReader captureListeningDataReader = new CaptureListeningDataReader(logFile,
@@ -82,16 +106,35 @@ public final class LauncherUtil {
         }
     }
 
+    private static void ensureProcessIsAlive(Process quarkusProcess) {
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException ignored) {
+            throw new RuntimeException(
+                    "Interrupted while waiting to determine the status of process '" + quarkusProcess.pid() + "'.");
+        }
+        if (!quarkusProcess.isAlive()) {
+            int exit = quarkusProcess.exitValue();
+            String message = "Unable to successfully launch process '" + quarkusProcess.pid() + "'. Exit code is: '"
+                    + exit + "'.";
+            if (OS.determineOS().equals(OS.MAC) && exit == 126) {
+                message += System.lineSeparator()
+                        + "This may be caused by building the native binary in a Linux container while the host is macOS.";
+            }
+            throw new RuntimeException(message);
+        }
+    }
+
     /**
      * Try to destroy the process normally a few times
      * and resort to forceful destruction if necessary
      */
-    private static void destroyProcess(Process quarkusProcess) {
+    static void destroyProcess(Process quarkusProcess) {
         quarkusProcess.destroy();
         int i = 0;
         while (i++ < 10) {
             try {
-                Thread.sleep(500);
+                Thread.sleep(LOG_CHECK_INTERVAL);
             } catch (InterruptedException ignored) {
 
             }
@@ -103,6 +146,30 @@ public final class LauncherUtil {
         if (quarkusProcess.isAlive()) {
             quarkusProcess.destroyForcibly();
         }
+    }
+
+    static void destroyProcess(ProcessHandle quarkusProcess) {
+        try {
+            CompletableFuture<ProcessHandle> exit = quarkusProcess.onExit();
+            if (!quarkusProcess.destroy()) {
+                quarkusProcess.destroyForcibly();
+                return;
+            }
+            exit.get(LOG_CHECK_INTERVAL * 10, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+        }
+        if (quarkusProcess.isAlive()) {
+            quarkusProcess.destroyForcibly();
+        }
+    }
+
+    static void destroyProcess(Process process, boolean children) {
+        if (!children) {
+            destroyProcess(process);
+            return;
+        }
+        process.descendants().forEach((p) -> destroyProcess(p));
+        destroyProcess(process);
     }
 
     static Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> createStartedFunction() {
@@ -162,10 +229,13 @@ public final class LauncherUtil {
      * process is listening
      */
     static void updateConfigForPort(Integer effectivePort) {
-        System.setProperty("quarkus.http.port", effectivePort.toString()); //set the port as a system property in order to have it applied to Config
-        System.setProperty("quarkus.http.test-port", effectivePort.toString()); // needed for RestAssuredManager
-        installAndGetSomeConfig(); // reinitialize the configuration to make sure the actual port is used
-        System.setProperty("test.url", TestHTTPResourceManager.getUri());
+        if (effectivePort != null) {
+            System.setProperty("quarkus.http.port", effectivePort.toString()); //set the port as a system property in order to have it applied to Config
+            System.setProperty("quarkus.http.test-port", effectivePort.toString()); // needed for RestAssuredManager
+            installAndGetSomeConfig(); // reinitialize the configuration to make sure the actual port is used
+            System.clearProperty("test.url"); // make sure the old value does not interfere with setting the new one
+            System.setProperty("test.url", TestHTTPResourceManager.getUri());
+        }
     }
 
     /**
@@ -178,7 +248,8 @@ public final class LauncherUtil {
         private final Duration waitTime;
         private final CountDownLatch signal;
         private final AtomicReference<ListeningAddress> resultReference;
-        private final Pattern listeningRegex = Pattern.compile("Listening on:\\s+(https?)://\\S*:(\\d+)");
+        private final Pattern listeningRegex = Pattern.compile("Listening on:\\s+(https?)://[^:]*:(\\d+)");
+        private final Pattern startedRegex = Pattern.compile(".*Quarkus .* started in \\d+.*s.*");
 
         public CaptureListeningDataReader(Path processOutput, Duration waitTime, CountDownLatch signal,
                 AtomicReference<ListeningAddress> resultReference) {
@@ -191,14 +262,26 @@ public final class LauncherUtil {
         @Override
         public void run() {
             if (!ensureProcessOutputFileExists()) {
+                unableToDetermineData("Log file '" + processOutput.toAbsolutePath() + "' was not created. "
+                        + "Check if the options quarkus.log.level and quarkus.log.file.level are at least INFO (or more verbose).");
                 return;
             }
 
             long bailoutTime = System.currentTimeMillis() + waitTime.toMillis();
             try (BufferedReader reader = new BufferedReader(new FileReader(processOutput.toFile()))) {
+                long timeStarted = Long.MAX_VALUE;
+                boolean started = false;
+                // generally, we want to start as soon as info about Quarkus having started is printed
+                // but just in case the line with http host and port is printed later, let's wait a bit more
                 while (true) {
                     if (reader.ready()) { // avoid blocking as the input is a file which continually gets more data added
                         String line = reader.readLine();
+
+                        if (startedRegex.matcher(line).matches()) {
+                            timeStarted = System.currentTimeMillis();
+                            started = true;
+                        }
+
                         Matcher regexMatcher = listeningRegex.matcher(line);
                         if (regexMatcher.find()) {
                             dataDetermined(regexMatcher.group(1), Integer.valueOf(regexMatcher.group(2)));
@@ -211,17 +294,27 @@ public final class LauncherUtil {
                         }
                     } else {
                         //wait until there is more of the file for us to read
-                        try {
-                            Thread.sleep(500);
-                        } catch (InterruptedException e) {
-                            unableToDetermineData(
-                                    "Thread interrupted while waiting for more data to become available in proccess output file: "
-                                            + processOutput.toAbsolutePath().toString());
+
+                        long now = System.currentTimeMillis();
+                        // if we have seen info that the app is started in the log a while ago
+                        // or waiting the next check interval will exceed the bailout time, it's time to finish waiting:
+                        if (now + LOG_CHECK_INTERVAL > bailoutTime || now - 2 * LOG_CHECK_INTERVAL > timeStarted) {
+                            if (started) {
+                                dataDetermined(null, null); // no http, all is null
+                            } else {
+                                unableToDetermineData("Waited " + waitTime.getSeconds() + " seconds for " + processOutput
+                                        + " to contain info about the listening port and protocol but no such info was found. "
+                                        + "Check if the options quarkus.log.level and quarkus.log.file.level are at least INFO (or more verbose).");
+                            }
                             return;
                         }
-                        if (System.currentTimeMillis() > bailoutTime) {
-                            unableToDetermineData("Waited " + waitTime.getSeconds() + "seconds for " + processOutput
-                                    + " to contain info about the listening port and protocol but no such info was found");
+
+                        try {
+                            Thread.sleep(LOG_CHECK_INTERVAL);
+                        } catch (InterruptedException e) {
+                            unableToDetermineData(
+                                    "Thread interrupted while waiting for more data to become available in process output file: "
+                                            + processOutput.toAbsolutePath());
                             return;
                         }
                     }
@@ -233,8 +326,8 @@ public final class LauncherUtil {
         }
 
         private boolean ensureProcessOutputFileExists() {
-            int i = 0;
-            while (i++ < 25) {
+            long bailoutTime = System.currentTimeMillis() + waitTime.toMillis();
+            while (System.currentTimeMillis() < bailoutTime) {
                 if (Files.exists(processOutput)) {
                     return true;
                 } else {

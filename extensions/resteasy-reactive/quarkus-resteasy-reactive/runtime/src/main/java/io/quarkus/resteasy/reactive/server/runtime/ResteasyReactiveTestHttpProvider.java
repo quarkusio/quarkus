@@ -5,7 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 import java.util.function.Function;
 
-import javax.ws.rs.Path;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;

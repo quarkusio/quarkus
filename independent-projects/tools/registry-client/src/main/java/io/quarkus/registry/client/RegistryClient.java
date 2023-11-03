@@ -7,5 +7,5 @@ package io.quarkus.registry.client;
  * the other way around - provide only non-platform extensions but not platforms.
  */
 public interface RegistryClient extends RegistryNonPlatformExtensionsResolver, RegistryPlatformExtensionsResolver,
-        RegistryPlatformsResolver, RegistryConfigResolver {
+        RegistryPlatformsResolver, RegistryConfigResolver, RegistryCache {
 }

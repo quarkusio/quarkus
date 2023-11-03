@@ -1,6 +1,5 @@
 package io.quarkus.panache.common.deployment.visitors;
 
-import static io.quarkus.deployment.util.AsmUtil.getDescriptor;
 import static io.quarkus.deployment.util.AsmUtil.unboxIfRequired;
 import static io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassOperationGenerationVisitor.OBJECT;
 import static io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassOperationGenerationVisitor.recursivelyFindEntityTypeArguments;
@@ -46,7 +45,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
     // set of name + "/" + descriptor
     protected Set<String> userMethods = new HashSet<>();
     private final TypeBundle typeBundle;
-    protected Function<String, String> argMapper;
+    protected Function<String, org.jboss.jandex.Type> argMapper;
     protected ByteCodeType entityUpperBound;
     private final Map<String, String> erasures = new HashMap<>();
 
@@ -85,8 +84,8 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
         argMapper = type -> {
             ByteCodeType byteCodeType = typeArguments.get(type);
             return byteCodeType != null
-                    ? byteCodeType.descriptor()
-                    : type;
+                    ? byteCodeType.get()
+                    : null;
         };
 
     }
@@ -123,7 +122,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
     public void visitEnd() {
         for (MethodInfo method : panacheRepositoryBaseClassInfo.methods()) {
             // Do not generate a method that already exists
-            String descriptor = getDescriptor(method, type -> typeArguments.getOrDefault(type, OBJECT).descriptor());
+            String descriptor = method.descriptor(type -> typeArguments.getOrDefault(type, OBJECT).get());
             if (!userMethods.contains(method.name() + "/" + descriptor)) {
                 AnnotationInstance bridge = method.annotation(PanacheConstants.DOTNAME_GENERATE_BRIDGE);
                 if (bridge != null) {
@@ -140,7 +139,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
     private boolean needsJvmBridge(MethodInfo method) {
         if (needsJvmBridge(method.returnType()))
             return true;
-        for (org.jboss.jandex.Type paramType : method.parameters()) {
+        for (org.jboss.jandex.Type paramType : method.parameterTypes()) {
             if (needsJvmBridge(paramType))
                 return true;
         }
@@ -157,7 +156,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
 
     protected void generateJvmBridge(MethodInfo method) {
         // get a bounds-erased descriptor
-        String descriptor = AsmUtil.getDescriptor(method, name -> null);
+        String descriptor = method.descriptor();
         // make sure we need a bridge
         if (!userMethods.contains(method.name() + "/" + descriptor)) {
             MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE,
@@ -165,7 +164,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
                     descriptor,
                     null,
                     null);
-            List<org.jboss.jandex.Type> parameters = method.parameters();
+            List<org.jboss.jandex.Type> parameters = method.parameterTypes();
             AsmUtil.copyParameterNames(mv, method);
             mv.visitCode();
             // this
@@ -188,7 +187,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
                 }
             }
 
-            String targetDescriptor = AsmUtil.getDescriptor(method, argMapper);
+            String targetDescriptor = method.descriptor(argMapper);
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
                     daoBinaryName,
                     method.name(),
@@ -203,13 +202,13 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
 
     protected void generateModelBridge(MethodInfo method, AnnotationInstance bridge) {
         // JpaOperations erases the Id type to Object
-        List<org.jboss.jandex.Type> parameters = method.parameters();
+        List<org.jboss.jandex.Type> parameters = method.parameterTypes();
 
         // Note: we can't use SYNTHETIC here because otherwise Mockito will never mock these methods
         MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC,
                 method.name(),
-                AsmUtil.getDescriptor(method, argMapper),
-                AsmUtil.getSignature(method, argMapper),
+                method.descriptor(argMapper),
+                method.genericSignature(argMapper),
                 null);
         AsmUtil.copyParameterNames(mv, method);
         mv.visitCode();
@@ -239,7 +238,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
         descriptors(method, joiner);
 
         org.jboss.jandex.Type returnType = method.returnType();
-        String descriptor = getDescriptor(returnType, argMapper);
+        String descriptor = returnType.descriptor(argMapper);
         String key = returnType.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE
                 ? returnType.asTypeVariable().identifier()
                 : returnType.name().toString();
@@ -261,7 +260,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
     }
 
     private void descriptors(MethodInfo method, StringJoiner joiner) {
-        for (org.jboss.jandex.Type parameter : method.parameters()) {
+        for (org.jboss.jandex.Type parameter : method.parameterTypes()) {
             if (parameter.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE
                     || method.name().endsWith("ById")
                             && parameter.name().equals(typeArguments.get("Id").dotName())) {
@@ -280,7 +279,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
                 descriptor = OBJECT.descriptor();
                 break;
             default:
-                String value = getDescriptor(parameter, argMapper);
+                String value = parameter.descriptor(argMapper);
                 descriptor = erasures.getOrDefault(value, value);
         }
         return descriptor;

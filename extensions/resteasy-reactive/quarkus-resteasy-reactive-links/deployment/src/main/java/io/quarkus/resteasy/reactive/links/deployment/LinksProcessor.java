@@ -1,35 +1,46 @@
 package io.quarkus.resteasy.reactive.links.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT_NAME;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
+import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.resteasy.reactive.links.RestLinksResponseFilter;
+import io.quarkus.resteasy.reactive.common.deployment.JaxRsResourceIndexBuildItem;
 import io.quarkus.resteasy.reactive.links.runtime.GetterAccessorsContainer;
 import io.quarkus.resteasy.reactive.links.runtime.GetterAccessorsContainerRecorder;
 import io.quarkus.resteasy.reactive.links.runtime.LinkInfo;
 import io.quarkus.resteasy.reactive.links.runtime.LinksContainer;
 import io.quarkus.resteasy.reactive.links.runtime.LinksProviderRecorder;
 import io.quarkus.resteasy.reactive.links.runtime.RestLinksProviderProducer;
-import io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveDeploymentInfoBuildItem;
+import io.quarkus.resteasy.reactive.links.runtime.hal.HalServerResponseFilter;
+import io.quarkus.resteasy.reactive.links.runtime.hal.ResteasyReactiveHalService;
+import io.quarkus.resteasy.reactive.server.deployment.ResteasyReactiveResourceMethodEntriesBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerResponseFilterBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 
@@ -43,18 +54,23 @@ final class LinksProcessor {
     }
 
     @BuildStep
+    MethodScannerBuildItem linksSupport() {
+        return new MethodScannerBuildItem(new LinksMethodScanner());
+    }
+
+    @BuildStep
     @Record(STATIC_INIT)
-    void initializeLinksProvider(CombinedIndexBuildItem indexBuildItem,
-            ResteasyReactiveDeploymentInfoBuildItem deploymentInfoBuildItem,
+    void initializeLinksProvider(JaxRsResourceIndexBuildItem indexBuildItem,
+            ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntriesBuildItem,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformersProducer,
             BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
             GetterAccessorsContainerRecorder getterAccessorsContainerRecorder,
             LinksProviderRecorder linksProviderRecorder) {
-        IndexView index = indexBuildItem.getIndex();
+        IndexView index = indexBuildItem.getIndexView();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClassesProducer, true);
 
         // Initialize links container
-        LinksContainer linksContainer = getLinksContainer(index, deploymentInfoBuildItem);
+        LinksContainer linksContainer = getLinksContainer(resourceMethodEntriesBuildItem, index);
         // Implement getters to access link path parameter values
         RuntimeValue<GetterAccessorsContainer> getterAccessorsContainer = implementPathParameterValueGetters(
                 index, classOutput, linksContainer, getterAccessorsContainerRecorder, bytecodeTransformersProducer);
@@ -69,15 +85,50 @@ final class LinksProcessor {
     }
 
     @BuildStep
-    CustomContainerResponseFilterBuildItem registerRestLinksResponseFilter() {
-        return new CustomContainerResponseFilterBuildItem(RestLinksResponseFilter.class.getName());
+    @Produce(ArtifactResultBuildItem.class)
+    void validateJsonNeededForHal(Capabilities capabilities,
+            ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntriesBuildItem) {
+        boolean isHalSupported = capabilities.isPresent(Capability.HAL);
+        if (isHalSupported && isHalMediaTypeUsedInAnyResource(resourceMethodEntriesBuildItem.getEntries())) {
+
+            if (!capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JSONB) && !capabilities.isPresent(
+                    Capability.RESTEASY_REACTIVE_JSON_JACKSON)) {
+
+                throw new IllegalStateException("Cannot generate HAL endpoints without "
+                        + "either 'quarkus-resteasy-reactive-jsonb' or 'quarkus-resteasy-reactive-jackson'");
+            }
+        }
     }
 
-    private LinksContainer getLinksContainer(IndexView index,
-            ResteasyReactiveDeploymentInfoBuildItem deploymentInfoBuildItem) {
-        LinksContainerFactory linksContainerFactory = new LinksContainerFactory(index);
-        return linksContainerFactory.getLinksContainer(
-                deploymentInfoBuildItem.getDeploymentInfo().getResourceClasses());
+    @BuildStep
+    void addHalSupport(Capabilities capabilities,
+            BuildProducer<CustomContainerResponseFilterBuildItem> customResponseFilters,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        boolean isHalSupported = capabilities.isPresent(Capability.HAL);
+        if (isHalSupported) {
+            customResponseFilters.produce(
+                    new CustomContainerResponseFilterBuildItem(HalServerResponseFilter.class.getName()));
+
+            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ResteasyReactiveHalService.class));
+        }
+    }
+
+    private boolean isHalMediaTypeUsedInAnyResource(List<ResteasyReactiveResourceMethodEntriesBuildItem.Entry> entries) {
+        for (ResteasyReactiveResourceMethodEntriesBuildItem.Entry entry : entries) {
+            for (String mediaType : entry.getResourceMethod().getProduces()) {
+                if (RestMediaType.APPLICATION_HAL_JSON.equals(mediaType)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private LinksContainer getLinksContainer(ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntriesBuildItem,
+            IndexView index) {
+        LinksContainerFactory linksContainerFactory = new LinksContainerFactory();
+        return linksContainerFactory.getLinksContainer(resourceMethodEntriesBuildItem.getEntries(), index);
     }
 
     /**
@@ -95,19 +146,47 @@ final class LinksProcessor {
             for (LinkInfo linkInfo : linkInfos) {
                 String entityType = linkInfo.getEntityType();
                 for (String parameterName : linkInfo.getPathParameters()) {
+                    DotName className = DotName.createSimple(entityType);
+                    FieldInfoSupplier byParamName = new FieldInfoSupplier(c -> c.field(parameterName), className, index);
+
                     // We implement a getter inside a class that has the required field.
-                    // We later map that getter's accessor with a entity type.
+                    // We later map that getter's accessor with an entity type.
                     // If a field is inside a parent class, the getter accessor will be mapped to each subclass which
                     // has REST links that need access to that field.
-                    FieldInfo fieldInfo = getFieldInfo(index, DotName.createSimple(entityType), parameterName);
-                    GetterMetadata getterMetadata = new GetterMetadata(fieldInfo);
-                    if (!implementedGetters.contains(getterMetadata)) {
-                        implementGetterWithAccessor(classOutput, bytecodeTransformersProducer, getterMetadata);
-                        implementedGetters.add(getterMetadata);
+
+                    FieldInfo fieldInfo = byParamName.get();
+                    if ((fieldInfo == null) && parameterName.equals("id")) {
+                        // this is a special case where we want to go through the fields of the class
+                        // and see if any is annotated with any sort of @Id annotation
+                        // N.B. as this module does not depend on any other module that could supply this @Id annotation
+                        // (like Panache), we need this general lookup
+                        FieldInfoSupplier byIdAnnotation = new FieldInfoSupplier(
+                                c -> {
+                                    for (FieldInfo field : c.fields()) {
+                                        List<AnnotationInstance> annotationInstances = field.annotations();
+                                        for (AnnotationInstance annotationInstance : annotationInstances) {
+                                            if (annotationInstance.name().toString().endsWith("persistence.Id")) {
+                                                return field;
+                                            }
+                                        }
+                                    }
+                                    return null;
+                                },
+                                className,
+                                index);
+                        fieldInfo = byIdAnnotation.get();
                     }
 
-                    getterAccessorsContainerRecorder.addAccessor(getterAccessorsContainer,
-                            entityType, parameterName, getterMetadata.getGetterAccessorName());
+                    if (fieldInfo != null) {
+                        GetterMetadata getterMetadata = new GetterMetadata(fieldInfo);
+                        if (!implementedGetters.contains(getterMetadata)) {
+                            implementGetterWithAccessor(classOutput, bytecodeTransformersProducer, getterMetadata);
+                            implementedGetters.add(getterMetadata);
+                        }
+
+                        getterAccessorsContainerRecorder.addAccessor(getterAccessorsContainer,
+                                entityType, getterMetadata.getFieldName(), getterMetadata.getGetterAccessorName());
+                    }
                 }
             }
         }
@@ -126,22 +205,37 @@ final class LinksProcessor {
         getterAccessorImplementor.implement(classOutput, getterMetadata);
     }
 
-    /**
-     * Find a field info by name inside a class.
-     * This is a recursive method that looks through the class hierarchy until the field throws an error if it's not.
-     */
-    private FieldInfo getFieldInfo(IndexView index, DotName className, String fieldName) {
-        ClassInfo classInfo = index.getClassByName(className);
-        if (classInfo == null) {
-            throw new RuntimeException(String.format("Class '%s' was not found", className));
+    private static class FieldInfoSupplier implements Supplier<FieldInfo> {
+
+        private final Function<ClassInfo, FieldInfo> strategy;
+        private final DotName className;
+        private final IndexView index;
+
+        public FieldInfoSupplier(Function<ClassInfo, FieldInfo> strategy, DotName className, IndexView index) {
+            this.strategy = strategy;
+            this.className = className;
+            this.index = index;
         }
-        FieldInfo fieldInfo = classInfo.field(fieldName);
-        if (fieldInfo != null) {
-            return fieldInfo;
+
+        @Override
+        public FieldInfo get() {
+            return findFieldRecursively(className);
         }
-        if (classInfo.superName() != null) {
-            return getFieldInfo(index, classInfo.superName(), fieldName);
+
+        private FieldInfo findFieldRecursively(DotName className) {
+            ClassInfo classInfo = index.getClassByName(className);
+            if (classInfo == null) {
+                throw new RuntimeException(String.format("Class '%s' was not found", className));
+            }
+            FieldInfo result = strategy.apply(classInfo);
+            if (result != null) {
+                return result;
+            }
+            if (classInfo.superName() != null && !classInfo.superName().equals(OBJECT_NAME)) {
+                return findFieldRecursively(classInfo.superName());
+            }
+            return null;
         }
-        throw new RuntimeException(String.format("Class '%s' field '%s' was not found", className, fieldName));
     }
+
 }

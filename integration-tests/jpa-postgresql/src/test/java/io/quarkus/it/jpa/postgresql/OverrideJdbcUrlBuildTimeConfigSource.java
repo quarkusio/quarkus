@@ -2,7 +2,7 @@ package io.quarkus.it.jpa.postgresql;
 
 import java.util.HashMap;
 
-import javax.annotation.Priority;
+import jakarta.annotation.Priority;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
@@ -25,7 +25,7 @@ public class OverrideJdbcUrlBuildTimeConfigSource extends MapBackedConfigSource 
 
         boolean isBuildTime = false;
         for (ConfigSource configSource : ConfigProvider.getConfig().getConfigSources()) {
-            if (configSource.getClass().getSimpleName().equals("BuildTimeEnvConfigSource")) {
+            if (configSource.getName().equals("PropertiesConfigSource[source=Build system]")) {
                 isBuildTime = true;
                 break;
             }

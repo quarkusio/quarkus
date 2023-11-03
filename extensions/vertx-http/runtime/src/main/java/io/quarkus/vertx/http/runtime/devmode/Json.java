@@ -81,7 +81,7 @@ public final class Json {
 
     abstract static class JsonBuilder<T> {
 
-        protected boolean ignoreEmptyBuilders = false;
+        protected final boolean ignoreEmptyBuilders;
 
         /**
          *
@@ -332,7 +332,7 @@ public final class Json {
      *
      * @param value
      * @return escaped value
-     * @see <a href="http://www.ietf.org/rfc/rfc4627.txt">http://www.ietf.org/rfc/rfc4627.txt</a>
+     * @see <a href="https://www.ietf.org/rfc/rfc4627.txt">https://www.ietf.org/rfc/rfc4627.txt</a>
      */
     static String escape(String value) {
         StringBuilder builder = new StringBuilder();

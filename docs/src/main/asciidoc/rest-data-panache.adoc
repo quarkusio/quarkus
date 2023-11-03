@@ -3,81 +3,180 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Generating JAX-RS resources with Panache
-
-include::./attributes.adoc[]
-:extension-status: experimental
+= Generating Jakarta REST resources with Panache
+include::_attributes.adoc[]
+:categories: web
+:summary: Hibernate ORM REST Data with Panache simplifies the creation of CRUD applications based on Jakarta REST and Hibernate ORM.
+:topics: rest,hibernate-orm,panache,mongodb,sql,jdbc,nosql
+:extensions: io.quarkus:quarkus-hibernate-orm-rest-data-panache,io.quarkus:quarkus-hibernate-reactive-rest-data-panache,io.quarkus:quarkus-mongodb-rest-data-panache
 
 A lot of web applications are monotonous CRUD applications with REST APIs that are tedious to write.
 To streamline this task, REST Data with Panache extension can generate the basic CRUD endpoints for your entities and repositories.
 
 While this extension is still experimental and provides a limited feature set, we hope to get an early feedback for it.
-Currently this extension supports Hibernate ORM and MongoDB with Panache and can generate CRUD resources that work with `application/json` and `application/hal+json` content.
-
-include::./status-include.adoc[]
+Currently, this extension supports Hibernate ORM and MongoDB with Panache and can generate CRUD resources that work with `application/json` and `application/hal+json` content.
 
 == Setting up REST Data with Panache
 
+Quarkus provides the following extensions to set up REST Data with Panache.
+Please, check out the next compatibility table to use the right one according to the technology you are using:
+
+.Compatibility Table
+|===
+|Extension |Hibernate | RESTEasy
+
+|<<hr-hibernate-orm,quarkus-hibernate-orm-rest-data-panache>>
+|`ORM`
+|`Classic and Reactive`
+
+|<<hr-hibernate-reactive,quarkus-hibernate-reactive-rest-data-panache>>
+|`Reactive`
+|`Reactive`
+
+|<<hr-mongodb,quarkus-mongodb-rest-data-panache>>
+|`ORM`
+|`Classic and Reactive`
+|===
+
+[[hr-hibernate-orm]]
 === Hibernate ORM
 
-* Add the required dependencies to your `pom.xml`
+* Add the required dependencies to your build file
 ** Hibernate ORM REST Data with Panache extension (`quarkus-hibernate-orm-rest-data-panache`)
 ** A JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
-** One of the RESTEasy JSON serialization extensions (`quarkus-resteasy-jackson` or `quarkus-resteasy-jsonb`)
+** One of the RESTEasy JSON serialization extensions (the extension supports both RESTEasy Classic and RESTEasy Reactive)
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
-<dependencies>
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-hibernate-orm-rest-data-panache</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-jdbc-postgresql</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy-jackson</artifactId>
-    </dependency>
-</dependencies>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-hibernate-orm-rest-data-panache</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-jdbc-postgresql</artifactId>
+</dependency>
+
+<!-- Use this if you are using RESTEasy Reactive -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+</dependency>
+
+<!-- Use this if you are going to use RESTEasy Classic -->
+<!--
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-jackson</artifactId>
+</dependency>
+-->
 ----
 
-* Implement the Panache entities and/or repositories as explained in the link:hibernate-orm-panache[Hibernate ORM with Panache guide].
-* Define the interfaces for generation as explained in the resource generation section.
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-hibernate-orm-rest-data-panache")
+implementation("io.quarkus:quarkus-jdbc-postgresql")
 
-=== MongoDB
+// Use this if you are using RESTEasy Reactive
+implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
+
+// Use this if you are going to use RESTEasy Classic
+// implementation("io.quarkus:quarkus-resteasy-jackson")
+----
+
+* Implement the Panache entities and/or repositories as explained in the xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] guide.
+* Define the interfaces for generation as explained in the <<hr-generating-resources>> section.
+
+To see the Hibernate ORM REST Data with Panache in action, you can check out the link:{quickstarts-tree-url}/hibernate-orm-rest-data-panache-quickstart[hibernate-orm-rest-data-panache-quickstart] quickstart.
+
+[[hr-hibernate-reactive]]
+=== Hibernate Reactive
 
 * Add the required dependencies to your `pom.xml`
-** MongoDB REST Data with Panache extension (`quarkus-mongodb-rest-data-panache`)
-** One of the RESTEasy JSON serialization extensions (`quarkus-resteasy-jackson` or `quarkus-resteasy-jsonb`)
+** Hibernate Reactive REST Data with Panache extension (`quarkus-hibernate-reactive-rest-data-panache`)
+** A Vert.x reactive database driver extension (`quarkus-reactive-pg-client`, `quarkus-reactive-mysql-client`, ...)
+** One of the RESTEasy Reactive serialization extensions (`quarkus-resteasy-reactive-jsonb`, `quarkus-resteasy-reactive-jackson`, ...)
 
 [source,xml]
 ----
 <dependencies>
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-mongodb-rest-data-panache</artifactId>
+        <artifactId>quarkus-hibernate-reactive-rest-data-panache</artifactId>
     </dependency>
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy-jackson</artifactId>
+        <artifactId>quarkus-reactive-pg-client</artifactId>
+    </dependency>
+   <!-- Use this if you are using RESTEasy Reactive Jackson for serialization -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
     </dependency>
 </dependencies>
 ----
 
-* Implement the Panache entities and/or repositories as explained in the link:mongodb-panache[MongoDB with Panache guide].
-* Define the interfaces for generation as explained in the resource generation section.
+* Implement the Panache entities and/or repositories as explained in the xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache] guide.
+* Define the interfaces for generation as explained in the <<hr-generating-resources,resource generation>> section.
 
+[[hr-mongodb]]
+=== MongoDB
+
+* Add the required dependencies to your build file
+** MongoDB REST Data with Panache extension (`quarkus-mongodb-rest-data-panache`)
+** One of the RESTEasy JSON serialization extensions (`quarkus-resteasy-reactive-jackson` or `quarkus-resteasy-reactive-jsonb`)
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-mongodb-rest-data-panache</artifactId>
+</dependency>
+
+<!-- Use this if you are using RESTEasy Reactive -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+</dependency>
+
+<!-- Use this if you are going to use RESTEasy Classic -->
+<!--
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-jackson</artifactId>
+</dependency>
+-->
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-mongodb-rest-data-panache")
+
+// Use this if you are using RESTEasy Reactive
+implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
+
+// Use this if you are going to use RESTEasy Classic
+// implementation("io.quarkus:quarkus-resteasy-jackson")
+----
+
+* Implement the Panache entities and/or repositories as explained in the xref:mongodb-panache.adoc[MongoDB with Panache] guide.
+* Define the interfaces for generation as explained in the <<hr-generating-resources,resource generation>> section.
+
+[[hr-generating-resources]]
 == Generating resources
 
-REST Data with Panache generates JAX-RS resources based on the interfaces available in your application.
+REST Data with Panache generates Jakarta REST resources based on the interfaces available in your application.
 For each entity and repository that you want to generate, provide a resource interface.
-_Do not implement these interfaces and don't provide custom methods because they will be ignored._ You can, however, override the methods from the extended interface in order to customize them (see the section at the end).
+_Do not implement these interfaces and don't provide custom methods because they will be ignored._
+You can, however, override the methods from the extended interface in order to customize them (see the section at the end).
 
 === PanacheEntityResource
 
-If your application has an entity (e.g. `Person`) that extends either `PanacheEntity` or `PanacheEntityBase` class, you could instruct REST Data with Panache to generate its JAX-RS resource with the following interface:
+If your application has an entity (e.g. `Person`) that extends either `PanacheEntity` or `PanacheEntityBase` class, you could instruct REST Data with Panache to generate its Jakarta REST resource with the following interface:
 
 [source,java]
 ----
@@ -87,7 +186,7 @@ public interface PeopleResource extends PanacheEntityResource<Person, Long> {
 
 === PanacheRepositoryResource
 
-If your application has a simple entity (e.g. `Person`) and a repository (e.g. `PersonRepository`) that implements either `PanacheRepository` or `PanacheRepositoryBase` interface, you could instruct REST Data with Panache to generate its JAX-RS resource with the following interface:
+If your application has a simple entity (e.g. `Person`) and a repository (e.g. `PersonRepository`) that implements either `PanacheRepository` or `PanacheRepositoryBase` interface, you could instruct REST Data with Panache to generate its Jakarta REST resource with the following interface:
 
 [source,java]
 ----
@@ -97,7 +196,7 @@ public interface PeopleResource extends PanacheRepositoryResource<PersonReposito
 
 === PanacheMongoEntityResource
 
-If your application has an entity (e.g. `Person`) that extends either `PanacheMongoEntity` or `PanacheMongoEntityBase` class, you could instruct REST Data with Panache to generate its JAX-RS resource with the following interface:
+If your application has an entity (e.g. `Person`) that extends either `PanacheMongoEntity` or `PanacheMongoEntityBase` class, you could instruct REST Data with Panache to generate its Jakarta REST resource with the following interface:
 
 [source,java]
 ----
@@ -107,7 +206,7 @@ public interface PeopleResource extends PanacheMongoEntityResource<Person, Long>
 
 === PanacheMongoRepositoryResource
 
-If your application has a simple entity (e.g. `Person`) and a repository (e.g. `PersonRepository`) that implements either `PanacheMongoRepository` or `PanacheMongoRepositoryBase` interface, you could instruct REST Data with Panache to generate its JAX-RS resource with the following interface:
+If your application has a simple entity (e.g. `Person`) and a repository (e.g. `PersonRepository`) that implements either `PanacheMongoRepository` or `PanacheMongoRepositoryBase` interface, you could instruct REST Data with Panache to generate its Jakarta REST resource with the following interface:
 
 [source,java]
 ----
@@ -121,7 +220,7 @@ The generated resources will be functionally equivalent for both entities and re
 The only difference being the particular data access pattern and data storage in use.
 
 If you have defined one of the `PeopleResource` interfaces mentioned above, this extension will generate its implementation using a particular data access strategy.
-The implemented class then will be used by a generated JAX-RS resource, which will look like this:
+The implemented class then will be used by a generated Jakarta REST resource, which will look like this:
 
 [source,java]
 ----
@@ -149,6 +248,12 @@ public class PeopleResourceJaxRs { // The actual class name is going to be uniqu
         Sort sort = getSortFromQuery(sortQuery);
         List<Person> people = resource.list(page, sort);
         // ... build a response with page links and return a 200 response with a list
+    }
+
+    @GET
+    @Path("/count")
+    public long count() {
+        return resource.count();
     }
 
     @Transactional
@@ -188,6 +293,7 @@ public class PeopleResourceJaxRs { // The actual class name is going to be uniqu
 == Resource customisation
 
 REST Data with Panache provides a `@ResourceProperties` and `@MethodProperties` annotations that can be used to customize certain features of the resource.
+
 It can be used in your resource interface:
 
 [source,java]
@@ -208,6 +314,7 @@ public interface PeopleResource extends PanacheEntityResource<Person, Long> {
 
 * `exposed` - whether resource could be exposed. A global resource property that can be overridden for each method. Default is `true`.
 * `path` - resource base path. Default path is a hyphenated lowercase resource name without a suffix of `resource` or `controller`.
+* `rolesAllowed` - List of the security roles permitted to access the resources. It needs a Quarkus Security extension to be present, otherwise it will be ignored. Default is empty.
 * `paged` - whether collection responses should be paged or not.
 First, last, previous and next page URIs are included in the response headers if they exist.
 Request page index and size are taken from the `page` and `size` query parameters that default to `0` and `20` respectively.
@@ -220,10 +327,50 @@ Default is `false`.
 
 * `exposed` - does not expose a particular HTTP verb when set to `false`. Default is `true`.
 * `path` - operation path (this is appended to the resource base path). Default is an empty string.
+* `rolesAllowed` - List of the security roles permitted to access this operation. It needs a Quarkus Security extension to be present, otherwise it will be ignored. Default is empty.
 
-== Query parameters
+== Adding additional methods to the generated resource
 
-REST Data with Panache supports the following query parameters with the generated resources.
+You can add additional methods to the generated resources by the REST Data with Panache extension by adding these methods to the resource interface, for example:
+
+[source,java]
+----
+@ResourceProperties
+public interface PeopleResource extends PanacheEntityResource<Person, Long> {
+    @GET
+    @Path("/name/{name}")
+    @Produces("application/json")
+    default List<Person> findByName(@PathParam("name") String name) {
+        return Person.find("name = :name", Collections.singletonMap("name", name)).list();
+    }
+}
+----
+
+And this method will be exposed along with the generated methods using `http://localhost:8080/people/name/Johan`.
+
+== Securing endpoints
+
+REST Data with Panache will use the Security annotations within the package `jakarta.annotation.security` that are defined on your resource interfaces:
+
+[source,java]
+----
+
+import jakarta.annotation.security.DenyAll;
+import jakarta.annotation.security.RolesAllowed;
+
+@DenyAll
+@ResourceProperties
+public interface PeopleResource extends PanacheEntityResource<Person, Long> {
+    @RolesAllowed("superuser")
+    boolean delete(Long id);
+}
+----
+
+Additionally, if you are only interested in specifying the roles that are allowed to use the resources, the `@ResourceProperties` and `@MethodProperties` annotations have the field `rolesAllowed` to list the security roles permitted to access the resource or operation.
+
+== Query parameters to list entities
+
+REST Data with Panache supports the following query parameters to get the list of entities:
 
 * `page` - a page number which should be returned by a list operation.
 It applies to the paged resources only and is a number starting with 0. Default is 0.
@@ -232,6 +379,80 @@ It applies to the paged resources only and is a number starting with 1. Default 
 * `sort` - a comma separated list of fields which should be used for sorting a result of a list operation.
 Fields are sorted in the ascending order unless they're prefixed with a `-`.
 E.g. `?sort=name,-age` will sort the result by the name ascending by the age descending.
+* `namedQuery` - a named query that should be configured at entity level using the annotation `@NamedQuery`.
+
+For example, if you want to get two `People` entities in the first page, you should call `http://localhost:8080/people?page=0&size=2`, and the response should look like:
+
+[source,json]
+----
+[
+  {
+    "id": 1,
+    "name": "John Johnson",
+    "birth": "1988-01-10"
+  },
+  {
+    "id": 2,
+    "name": "Peter Peterson",
+    "birth": "1986-11-20"
+  }
+]
+----
+
+Additionally, you can also filter by the entity fields by adding a query param with the name of the field and the value, for example, calling `http://localhost:8080/people?name=Peter Peterson` would return:
+
+[source,json]
+----
+[
+  {
+    "id": 2,
+    "name": "Peter Peterson",
+    "birth": "1986-11-20"
+  }
+]
+----
+
+IMPORTANT: Filtering by fields is only supported for String, Boolean, Character, Double, Float, Integer, Long, Short, Byte and the primitive types.
+
+== Complex filtering to list entities using @NamedQuery
+
+You can specify a named query to filter when listing the entities. For example, having the following named query in your entity:
+
+[source,java]
+----
+@Entity
+@NamedQuery(name = "Person.containsInName", query = "from Person where name like CONCAT('%', CONCAT(:name, '%'))")
+public class Person extends PanacheEntity {
+  String name;
+}
+----
+
+In this example, we have added a named query to list all the persons that contains some text in the `name` field.
+
+Next, we can set a query param `namedQuery` when listing the entities using the generated resource with the name of the named query that we want to use, for example, calling `http://localhost:8080/people?namedQuery=Person.containsInName&name=ter` would return all the persons which name contains the text "ter".
+
+For more information about how named queries work, go to the xref:hibernate-orm-panache.adoc#named-queries[Hibernate ORM] guide or to the xref:hibernate-reactive-panache.adoc#named-queries[Hibernate Reactive] guide.
+
+== Resource Method Before/After Listeners
+
+REST Data with Panache supports the subscription to the following resource method hooks:
+
+* Before/After add resource
+* Before/After update resource
+* Before/After delete resource
+
+To register your resource method listener, you need to provide a bean that implements the interface `RestDataResourceMethodListener`, for example:
+
+[source,java]
+----
+@ApplicationScoped
+public class PeopleRestDataResourceMethodListener implements RestDataResourceMethodListener<Person> {
+    @Override
+    public void onBeforeAdd(Person person) {
+        System.out.println("Before Save Person: " + person.name);
+    }
+}
+----
 
 == Response body examples
 
@@ -378,3 +599,35 @@ Both responses would also contain these headers:
 * Link: < http://example.com/people?page=1&size=2 >; rel="next"
 
 A `previous` link header (and hal link) would not be included, because the previous page does not exist.
+
+== Include/Exclude Jakarta REST classes
+
+=== Using Build time conditions
+
+Quarkus enables the inclusion or exclusion of Jakarta REST Resources, Providers and Features directly thanks to build time conditions in the same that it does for CDI beans.
+Thus, the REST Data with Panache interfaces can be annotated with profile conditions (`@io.quarkus.arc.profile.IfBuildProfile` or `@io.quarkus.arc.profile.UnlessBuildProfile`) and/or with property conditions (`io.quarkus.arc.properties.IfBuildProperty` or `io.quarkus.arc.properties.UnlessBuildProperty`) to indicate to Quarkus at build time under which conditions the generated Jakarta REST classes should be included.
+
+In the following example, Quarkus will include the generated resource from the `PeopleResource` interface if and only if the build profile `app1` has been enabled.
+
+[source,java]
+----
+@IfBuildProfile("app1")
+public interface PeopleResource extends PanacheEntityResource<Person, Long> {
+}
+----
+
+
+=== Using a runtime property
+
+IMPORTANT: This option is only available when using the RESTEasy Reactive Quarkus extension.
+
+Quarkus can also conditionally disable the generated Jakarta REST Resources based on the value of runtime properties using the `@io.quarkus.resteasy.reactive.server.EndpointDisabled` annotation.
+
+In the following example, Quarkus will exclude the generated resource from the `PeopleResource` interface at runtime if the application has `some.property` configured to `"disable"`.
+
+[source,java]
+----
+@EndpointDisabled(name = "some.property", stringValue = "disable")
+public interface PeopleResource extends PanacheEntityResource<Person, Long> {
+}
+----

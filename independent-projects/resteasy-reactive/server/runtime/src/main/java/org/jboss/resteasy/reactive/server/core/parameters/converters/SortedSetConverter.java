@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
+
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 
 public class SortedSetConverter implements ParameterConverter {
@@ -47,12 +48,18 @@ public class SortedSetConverter implements ParameterConverter {
         delegate.init(deployment, rawType, genericType, annotations);
     }
 
+    @Override
+    public boolean isForSingleObjectContainer() {
+        return true;
+    }
+
     public static class SortedSetSupplier implements DelegatingParameterConverterSupplier {
         private ParameterConverterSupplier delegate;
 
         public SortedSetSupplier() {
         }
 
+        // invoked by reflection for BeanParam in ClassInjectorTransformer
         public SortedSetSupplier(ParameterConverterSupplier delegate) {
             this.delegate = delegate;
         }

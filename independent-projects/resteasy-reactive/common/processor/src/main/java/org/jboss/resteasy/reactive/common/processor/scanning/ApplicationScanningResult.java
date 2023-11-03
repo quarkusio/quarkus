@@ -1,8 +1,11 @@
 package org.jboss.resteasy.reactive.common.processor.scanning;
 
 import java.util.Set;
-import javax.ws.rs.core.Application;
+
+import jakarta.ws.rs.core.Application;
+
 import org.jboss.jandex.ClassInfo;
+import org.jboss.resteasy.reactive.common.processor.BlockingDefault;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 public final class ApplicationScanningResult {
@@ -14,11 +17,11 @@ public final class ApplicationScanningResult {
     final boolean filterClasses;
     final Application application;
     final ClassInfo selectedAppClass;
-    final boolean blocking;
+    final BlockingDefault blocking;
 
     public ApplicationScanningResult(Set<String> allowedClasses, Set<String> singletonClasses, Set<String> excludedClasses,
             Set<String> globalNameBindings, boolean filterClasses, Application application,
-            ClassInfo selectedAppClass, boolean blocking) {
+            ClassInfo selectedAppClass, BlockingDefault blocking) {
         this.allowedClasses = allowedClasses;
         this.singletonClasses = singletonClasses;
         this.excludedClasses = excludedClasses;
@@ -31,23 +34,25 @@ public final class ApplicationScanningResult {
 
     public KeepProviderResult keepProvider(ClassInfo providerClass) {
         if (filterClasses) {
-            // we don't care about provider annotations, they're manually registered (but for the server only)
             if (allowedClasses.isEmpty()) {
-                // we only have only classes to exclude
-                return excludedClasses.contains(providerClass.name().toString()) ? KeepProviderResult.DISCARD
-                        : KeepProviderResult.SERVER_ONLY;
+                // we have only classes to exclude
+                if (excludedClasses.contains(providerClass.name().toString())) {
+                    return KeepProviderResult.DISCARD;
+                }
+            } else {
+                // we don't care about provider annotations, they're manually registered (but for the server only)
+                return allowedClasses.contains(providerClass.name().toString()) ? KeepProviderResult.SERVER_ONLY
+                        : KeepProviderResult.DISCARD;
             }
-            return allowedClasses.contains(providerClass.name().toString()) ? KeepProviderResult.SERVER_ONLY
-                    : KeepProviderResult.DISCARD;
         }
-        return providerClass.classAnnotation(ResteasyReactiveDotNames.PROVIDER) != null ? KeepProviderResult.NORMAL
+        return providerClass.declaredAnnotation(ResteasyReactiveDotNames.PROVIDER) != null ? KeepProviderResult.NORMAL
                 : KeepProviderResult.DISCARD;
     }
 
     public boolean keepClass(String className) {
         if (filterClasses) {
             if (allowedClasses.isEmpty()) {
-                // we only have only classes to exclude
+                // we have only classes to exclude
                 return !excludedClasses.contains(className);
             }
             return allowedClasses.contains(className);
@@ -83,7 +88,7 @@ public final class ApplicationScanningResult {
         return selectedAppClass;
     }
 
-    public boolean isBlocking() {
+    public BlockingDefault getBlockingDefault() {
         return blocking;
     }
 

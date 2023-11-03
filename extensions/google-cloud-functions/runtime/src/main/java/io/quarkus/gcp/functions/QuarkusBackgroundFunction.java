@@ -60,8 +60,9 @@ public final class QuarkusBackgroundFunction implements RawBackgroundFunction {
                     if (method.getName().equals("accept")) {
                         // the first parameter of the accept method is the event, we need to register it's type to
                         // be able to deserialize to it to mimic what a BackgroundFunction does
-                        if (method.getParameterTypes()[0] != Object.class) {// FIXME we have two accept methods !!!
-                            parameterType = method.getParameterTypes()[0];
+                        Class<?>[] parameterTypes = method.getParameterTypes();
+                        if (parameterTypes[0] != Object.class) {// FIXME we have two accept methods !!!
+                            parameterType = parameterTypes[0];
                         }
                     }
                 }

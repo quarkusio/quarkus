@@ -10,8 +10,6 @@ import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 
 import org.apache.activemq.artemis.protocol.amqp.broker.ProtonProtocolManagerFactory;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -23,7 +21,7 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class AmqpDevModeNoHttpTest {
     @RegisterExtension
     static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Producer.class, Consumer.class,
                             AnonymousAmqpBroker.class, ProtonProtocolManagerFactory.class)
                     .addAsResource("broker.xml")

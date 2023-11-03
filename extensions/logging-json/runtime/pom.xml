@@ -28,7 +28,7 @@
 
         <dependency>
             <groupId>org.jboss.logmanager</groupId>
-            <artifactId>jboss-logmanager-embedded</artifactId>
+            <artifactId>jboss-logmanager</artifactId>
         </dependency>
     </dependencies>
 
@@ -36,11 +36,12 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <runnerParentFirstArtifacts>
                         <!-- Needed because org.jboss.logmanager.formatters.JsonFormatter loads javax.json.Json in its constructor -->
-                        <runnerParentFirstArtifact>org.glassfish:jakarta.json</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.eclipse.parsson:parsson</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>jakarta.json:jakarta.json-api</runnerParentFirstArtifact>
                     </runnerParentFirstArtifacts>
                 </configuration>
             </plugin>

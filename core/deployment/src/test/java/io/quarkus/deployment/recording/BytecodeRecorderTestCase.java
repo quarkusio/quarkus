@@ -1,5 +1,6 @@
 package io.quarkus.deployment.recording;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -138,6 +139,30 @@ public class BytecodeRecorderTestCase {
     }
 
     @Test
+    public void testJobDetails() throws Exception {
+        runTest(generator -> {
+            assertThatCode(() -> {
+                generator.registerNonDefaultConstructor(
+                        JobParameter.class.getDeclaredConstructor(String.class, String.class, Object.class),
+                        jobParameter -> Arrays.asList(
+                                jobParameter.getClassName(),
+                                jobParameter.getActualClassName(),
+                                jobParameter.getObject()));
+                generator.registerNonDefaultConstructor(
+                        JobDetails.class.getDeclaredConstructor(String.class, String.class, String.class, List.class),
+                        jobDetails -> Arrays.asList(
+                                jobDetails.getClassName(),
+                                jobDetails.getStaticFieldName(),
+                                jobDetails.getMethodName(),
+                                jobDetails.getJobParameters()));
+            }).doesNotThrowAnyException();
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.bean(new JobDetails("A string", null, "methodName", List.of(JobParameter.JobContext)));
+        }, new JobDetails("A string", null, "methodName", List.of(JobParameter.JobContext)));
+
+    }
+
+    @Test
     public void testValidationFails() throws Exception {
         Assertions.assertThrows(RuntimeException.class, () -> {
             runTest(generator -> {
@@ -166,8 +191,10 @@ public class BytecodeRecorderTestCase {
             IgnoredProperties ignoredProperties = new IgnoredProperties();
             ignoredProperties.setNotIgnored("Shows up");
             ignoredProperties.setIgnoredField("Does not show up");
+            ignoredProperties.setAnotherIgnoredField("Does not show up either");
+            ignoredProperties.setCustomIgnoredField("Does not show up either");
             recorder.ignoredProperties(ignoredProperties);
-        }, new IgnoredProperties("Shows up", null));
+        }, new IgnoredProperties("Shows up", null, null, null));
     }
 
     @Test
@@ -188,11 +215,7 @@ public class BytecodeRecorderTestCase {
     @Test
     public void testLargeCollection() throws Exception {
 
-        List<TestJavaBean> beans = new ArrayList<>();
-        for (int i = 0; i < 10000; ++i) {
-            beans.add(new TestJavaBean("A string", 99));
-        }
-
+        List<TestJavaBean> beans = Collections.nCopies(100000, new TestJavaBean("A string", 99));
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.list(beans);
@@ -280,7 +303,7 @@ public class BytecodeRecorderTestCase {
             recorder.add(instance);
             recorder.add(instance);
             recorder.result(instance);
-        }, new TestJavaBean(null, 2));
+        }, new TestJavaBean(null, 2, 2));
     }
 
     @Test
@@ -291,6 +314,19 @@ public class BytecodeRecorderTestCase {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.bean(bean);
         }, new TestConstructorBean("John", "Citizen").setAge(30));
+
+        runTest(generator -> {
+            OtherTestConstructorBean bean = new OtherTestConstructorBean("Jane", "Citizen");
+            bean.setAge(30);
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.bean(bean);
+        }, new OtherTestConstructorBean("Jane", "Citizen").setAge(30));
+
+        runTest(generator -> {
+            TestSingleConstructorBean bean = new TestSingleConstructorBean("Jane", "Citizen", 30);
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.bean(bean);
+        }, new TestSingleConstructorBean("Jane", "Citizen", 30));
     }
 
     @Test
@@ -341,19 +377,19 @@ public class BytecodeRecorderTestCase {
     public void testJavaBeanWithBoolean() throws Exception {
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
-            TestJavaBeanWithBoolean newBean = new TestJavaBeanWithBoolean(true, true, true);
+            TestJavaBeanWithBoolean newBean = new TestJavaBeanWithBoolean(true, true, true, true);
             recorder.bean(newBean);
-        }, new TestJavaBeanWithBoolean(true, true, true));
+        }, new TestJavaBeanWithBoolean(true, true, true, true));
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
-            TestJavaBeanWithBoolean newBean = new TestJavaBeanWithBoolean(false, false, false);
+            TestJavaBeanWithBoolean newBean = new TestJavaBeanWithBoolean(false, false, false, false);
             recorder.bean(newBean);
-        }, new TestJavaBeanWithBoolean(false, false, false));
+        }, new TestJavaBeanWithBoolean(false, false, false, false));
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
-            TestJavaBeanWithBoolean newBean = new TestJavaBeanWithBoolean(true, null, null);
+            TestJavaBeanWithBoolean newBean = new TestJavaBeanWithBoolean(true, null, null, null);
             recorder.bean(newBean);
-        }, new TestJavaBeanWithBoolean(true, null, null));
+        }, new TestJavaBeanWithBoolean(true, null, null, null));
     }
 
     void runTest(Consumer<BytecodeRecorderImpl> generator, Object... expected) throws Exception {
@@ -363,7 +399,7 @@ public class BytecodeRecorderTestCase {
         generator.accept(recorder);
         recorder.writeBytecode(new TestClassOutput(tcl));
 
-        StartupTask task = (StartupTask) tcl.loadClass(TEST_CLASS).newInstance();
+        StartupTask task = (StartupTask) tcl.loadClass(TEST_CLASS).getDeclaredConstructor().newInstance();
         task.deploy(new StartupContext());
         assertEquals(expected.length, TestRecorder.RESULT.size());
         for (Object i : expected) {
@@ -381,6 +417,28 @@ public class BytecodeRecorderTestCase {
                 assertEquals(i, TestRecorder.RESULT.poll());
             }
         }
+    }
+
+    @Test
+    public void testConstantInjection() throws Exception {
+        runTest(generator -> {
+            generator.registerConstant(TestJavaBean.class, new TestJavaBean("Some string", 42));
+            TestRecorderWithTestJavaBeanInjectedInConstructor recorder = generator
+                    .getRecordingProxy(TestRecorderWithTestJavaBeanInjectedInConstructor.class);
+            recorder.retrieveConstant();
+        }, new TestJavaBean("Some string", 42));
+    }
+
+    @Test
+    public void testConstantInjectionAndSubstitution() throws Exception {
+        runTest(generator -> {
+            generator.registerConstant(NonSerializable.class, new NonSerializable("Some string", 42));
+            generator.registerSubstitution(NonSerializable.class, NonSerializable.Serialized.class,
+                    NonSerializable.Substitution.class);
+            TestRecorderWithNonSerializableInjectedInConstructor recorder = generator
+                    .getRecordingProxy(TestRecorderWithNonSerializableInjectedInConstructor.class);
+            recorder.retrieveConstant();
+        }, new NonSerializable("Some string", 42));
     }
 
     private static class TestClassOutput implements ClassOutput {

@@ -844,7 +844,7 @@ public interface ReactiveMongoCollection<T> {
      * Removes at most one document from the collection that matches the given filter.
      * If no documents match, the collection is not modified.
      *
-     * @param filter the query filter to apply the the delete operation
+     * @param filter the query filter to apply to the delete operation
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
      */
@@ -854,7 +854,7 @@ public interface ReactiveMongoCollection<T> {
      * Removes at most one document from the collection that matches the given filter.
      * If no documents match, the collection is not modified.
      *
-     * @param filter the query filter to apply the the delete operation
+     * @param filter the query filter to apply to the delete operation
      * @param options the options to apply to the delete operation
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
@@ -866,7 +866,7 @@ public interface ReactiveMongoCollection<T> {
      * If no documents match, the collection is not modified.
      *
      * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply the the delete operation
+     * @param filter the query filter to apply to the delete operation
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
      */
@@ -877,7 +877,7 @@ public interface ReactiveMongoCollection<T> {
      * If no documents match, the collection is not modified.
      *
      * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply the the delete operation
+     * @param filter the query filter to apply to the delete operation
      * @param options the options to apply to the delete operation
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
@@ -888,7 +888,7 @@ public interface ReactiveMongoCollection<T> {
      * Removes all documents from the collection that match the given query filter. If no documents match, the
      * collection is not modified.
      *
-     * @param filter the query filter to apply the the delete operation
+     * @param filter the query filter to apply to the delete operation
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
      */
@@ -898,7 +898,7 @@ public interface ReactiveMongoCollection<T> {
      * Removes all documents from the collection that match the given query filter. If no documents match, the
      * collection is not modified.
      *
-     * @param filter the query filter to apply the the delete operation
+     * @param filter the query filter to apply to the delete operation
      * @param options the options to apply to the delete operation
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
@@ -910,7 +910,7 @@ public interface ReactiveMongoCollection<T> {
      * collection is not modified.
      *
      * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply the the delete operation
+     * @param filter the query filter to apply to the delete operation
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
      */
@@ -921,7 +921,7 @@ public interface ReactiveMongoCollection<T> {
      * collection is not modified.
      *
      * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply the the delete operation
+     * @param filter the query filter to apply to the delete operation
      * @param options the options to apply to the delete operation
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
@@ -931,7 +931,7 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Replace a document in the collection according to the specified arguments.
      *
-     * @param filter the query filter to apply the the replace operation
+     * @param filter the query filter to apply to the replace operation
      * @param replacement the replacement document
      * @return a {@link Uni} receiving the {@link UpdateResult}
      */
@@ -940,7 +940,7 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Replace a document in the collection according to the specified arguments.
      *
-     * @param filter the query filter to apply the the replace operation
+     * @param filter the query filter to apply to the replace operation
      * @param replacement the replacement document
      * @param options the options to apply to the replace operation
      * @return a {@link Uni} receiving the {@link UpdateResult}
@@ -951,7 +951,7 @@ public interface ReactiveMongoCollection<T> {
      * Replace a document in the collection according to the specified arguments.
      *
      * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply the the replace operation
+     * @param filter the query filter to apply to the replace operation
      * @param replacement the replacement document
      * @return a {@link Uni} receiving the {@link UpdateResult}
      */
@@ -961,7 +961,7 @@ public interface ReactiveMongoCollection<T> {
      * Replace a document in the collection according to the specified arguments.
      *
      * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply the the replace operation
+     * @param filter the query filter to apply to the replace operation
      * @param replacement the replacement document
      * @param options the options to apply to the replace operation
      * @return a {@link Uni} receiving the {@link UpdateResult}
@@ -1102,7 +1102,7 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Atomically find a document and replace it.
      *
-     * @param filter the query filter to apply the the replace operation
+     * @param filter the query filter to apply to the replace operation
      * @param replacement the replacement document
      * @return a {@link Uni} completed with the document that was replaced. Depending on the value of the
      *         {@code returnOriginal}
@@ -1115,7 +1115,7 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Atomically find a document and replace it.
      *
-     * @param filter the query filter to apply the the replace operation
+     * @param filter the query filter to apply to the replace operation
      * @param replacement the replacement document
      * @param options the options to apply to the operation
      * @return a {@link Uni} completed with the document that was replaced. Depending on the value of the
@@ -1130,7 +1130,7 @@ public interface ReactiveMongoCollection<T> {
      * Atomically find a document and replace it.
      *
      * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply the the replace operation
+     * @param filter the query filter to apply to the replace operation
      * @param replacement the replacement document
      * @return a {@link Uni} completed with the document that was replaced. Depending on the value of the
      *         {@code returnOriginal}
@@ -1144,7 +1144,7 @@ public interface ReactiveMongoCollection<T> {
      * Atomically find a document and replace it.
      *
      * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply the the replace operation
+     * @param filter the query filter to apply to the replace operation
      * @param replacement the replacement document
      * @param options the options to apply to the operation
      * @return a {@link Uni} completed with the document that was replaced. Depending on the value of the

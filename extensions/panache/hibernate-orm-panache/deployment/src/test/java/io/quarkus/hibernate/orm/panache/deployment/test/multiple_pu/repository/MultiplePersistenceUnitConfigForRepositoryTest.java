@@ -1,8 +1,6 @@
 package io.quarkus.hibernate.orm.panache.deployment.test.multiple_pu.repository;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class MultiplePersistenceUnitConfigForRepositoryTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Issue11842Entity.class, Issue11842Repository.class, Issue11842Resource.class, FirstEntity.class)
                     .addAsResource("application-multiple-persistence-units-for-repository.properties",
                             "application.properties"));

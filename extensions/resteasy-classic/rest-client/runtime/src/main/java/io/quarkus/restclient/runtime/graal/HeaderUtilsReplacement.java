@@ -7,7 +7,7 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 /**
- * @author <a href="http://kenfinnigan.me">Ken Finnigan</a>
+ * @author <a href="https://kenfinnigan.me/">Ken Finnigan</a>
  */
 @TargetClass(className = "org.jboss.resteasy.microprofile.client.header.HeaderUtils")
 final class HeaderUtilsReplacement {

@@ -29,7 +29,7 @@ import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 public class MojoTestBase {
 
@@ -128,7 +128,7 @@ public class MojoTestBase {
     }
 
     public static void filter(File input, Map<String, String> variables) throws IOException {
-        DevModeTestUtils.filter(input, variables);
+        DevModeClient.filter(input, variables);
     }
 
     public Map<String, String> getEnv() {
@@ -146,7 +146,7 @@ public class MojoTestBase {
         assertThat(logs.contains(infoLogLevel)).isTrue();
         Predicate<String> datePattern = Pattern.compile("\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2},\\d{3}").asPredicate();
         assertThat(datePattern.test(logs)).isTrue();
-        assertThat(logs.contains("cdi, resteasy, smallrye-context-propagation, websockets")).isTrue();
+        assertThat(logs.contains("cdi, resteasy, smallrye-context-propagation, vertx, websockets")).isTrue();
         assertThat(logs.contains("JBoss Threads version")).isFalse();
     }
 

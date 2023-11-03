@@ -1,187 +1,232 @@
 package org.jboss.resteasy.reactive.server.core;
 
-import io.smallrye.common.annotation.Blocking;
-import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
-import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveAsyncExceptionMapper;
-import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveExceptionMapper;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
+@SuppressWarnings({ "unchecked", "unused" })
 public class ExceptionMapping {
 
-    private static final Logger log = Logger.getLogger(ExceptionMapping.class);
-
-    private final Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers = new HashMap<>();
+    /**
+     * The idea behind having two different maps is the following:
+     * Under normal circumstances, mappers are added to the first map,
+     * and we don't need to track multiple mappings because the priority is enough
+     * to distinguish.
+     *
+     * However, in the case where ExceptionMapper classes may not be active at runtime
+     * (due to the presence of conditional bean annotations), then we need to track
+     * all the possible mappings and at runtime determine the one with the lowest priority
+     * value that is active.
+     */
+    final Map<String, ResourceExceptionMapper<? extends Throwable>> mappers = new HashMap<>();
+    // this is going to be used when there are mappers that are removable at runtime
+    final Map<String, List<ResourceExceptionMapper<? extends Throwable>>> runtimeCheckMappers = new HashMap<>();
 
     /**
      * Exceptions that indicate an blocking operation was performed on an IO thread.
      * <p>
      * We have a special log message for this.
      */
-    private final Set<Class<? extends Throwable>> blockingProblemExceptionClasses = new HashSet<>(
-            Arrays.asList(BlockingNotAllowedException.class));
+    final List<Predicate<Throwable>> blockingProblemPredicates = new ArrayList<>();
+    final List<Predicate<Throwable>> nonBlockingProblemPredicate = new ArrayList<>();
+    final Set<String> unwrappedExceptions = new HashSet<>();
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    public void mapException(Throwable throwable, ResteasyReactiveRequestContext context) {
-        Class<?> klass = throwable.getClass();
-        boolean isWebApplicationException = throwable instanceof WebApplicationException;
-        Response response = null;
-        if (isWebApplicationException) {
-            response = ((WebApplicationException) throwable).getResponse();
-        }
-        if (response != null && response.hasEntity()) {
-            context.setResult(response);
-            return;
-        }
-
-        // we match superclasses only if not a WebApplicationException according to spec 3.3.4 Exceptions
-        ExceptionMapper exceptionMapper = getExceptionMapper((Class<Throwable>) klass, context);
-        if (exceptionMapper != null) {
-            context.requireCDIRequestScope();
-            if (exceptionMapper instanceof ResteasyReactiveAsyncExceptionMapper) {
-                ((ResteasyReactiveAsyncExceptionMapper) exceptionMapper).asyncResponse(throwable,
-                        new AsyncExceptionMapperContextImpl(context));
-                logBlockingErrorIfRequired(throwable, context);
-                return;
-            } else if (exceptionMapper instanceof ResteasyReactiveExceptionMapper) {
-                response = ((ResteasyReactiveExceptionMapper) exceptionMapper).toResponse(throwable, context);
-            } else {
-                response = exceptionMapper.toResponse(throwable);
-            }
-            context.setResult(response);
-            logBlockingErrorIfRequired(throwable, context);
-            return;
-        }
-        if (isWebApplicationException) {
-            context.setResult(response);
-            logBlockingErrorIfRequired(throwable, context);
-            return;
-        }
-        if (throwable instanceof IOException) {
-            log.debugf(throwable,
-                    "IOError processing HTTP request to %s failed, the client likely terminated the connection.",
-                    context.serverRequest().getRequestAbsoluteUri());
-        } else {
-            log.error("Request failed ", throwable);
-        }
-        logBlockingErrorIfRequired(throwable, context);
-        context.handleUnmappedException(throwable);
+    public void addBlockingProblem(Class<? extends Throwable> throwable) {
+        blockingProblemPredicates.add(new ExceptionTypePredicate(throwable));
     }
 
-    private void logBlockingErrorIfRequired(Throwable throwable, ResteasyReactiveRequestContext context) {
-        boolean blockingProblem = isBlockingProblem(throwable);
-        if (blockingProblem) {
-            log.error("A blocking operation occurred on the IO thread. This likely means you need to annotate "
-                    + context.getTarget().getResourceClass().getName() + "#" + context.getTarget().getJavaMethodName() + "("
-                    + Arrays.stream(context.getTarget().getParameterTypes()).map(Objects::toString)
-                            .collect(Collectors.joining(", "))
-                    + ") with @"
-                    + Blocking.class.getName()
-                    + ". Alternatively you can annotate the class " + context.getTarget().getResourceClass().getName()
-                    + " to make every method on the class blocking, or annotate your sub class of the "
-                    + Application.class.getName() + " class to make the whole application blocking");
-        }
+    public void addBlockingProblem(Predicate<Throwable> predicate) {
+        blockingProblemPredicates.add(predicate);
     }
 
-    private boolean isBlockingProblem(Throwable throwable) {
-        Throwable e = throwable;
-        Set<Throwable> seen = new HashSet<>();
-        while (e != null) {
-            if (seen.contains(e)) {
-                return false;
-            }
-            seen.add(e);
-            if (blockingProblemExceptionClasses.contains(e.getClass())) {
-                return true;
-            }
-            e = e.getCause();
-        }
-        return false;
+    public void addNonBlockingProblem(Class<? extends Throwable> throwable) {
+        nonBlockingProblemPredicate.add(new ExceptionTypePredicate(throwable));
     }
 
-    /**
-     * Return the proper Exception that handles {@param throwable} or {@code null}
-     * if none is found.
-     * First checks if the Resource class that contained the Resource method contained class-level exception mappers
-     */
-    public <T extends Throwable> ExceptionMapper<T> getExceptionMapper(Class<T> clazz, ResteasyReactiveRequestContext context) {
-        Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> classExceptionMappers = getClassExceptionMappers(
-                context);
-        if ((classExceptionMappers != null) && !classExceptionMappers.isEmpty()) {
-            ExceptionMapper<T> result = doGetExceptionMapper(clazz, classExceptionMappers);
-            if (result != null) {
-                return result;
-            }
-        }
-        return doGetExceptionMapper(clazz, mappers);
+    public void addNonBlockingProblem(Predicate<Throwable> predicate) {
+        nonBlockingProblemPredicate.add(predicate);
     }
 
-    private Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> getClassExceptionMappers(
-            ResteasyReactiveRequestContext context) {
-        if (context == null) {
-            return null;
-        }
-        return context.getTarget() != null ? context.getTarget().getClassExceptionMappers() : null;
+    public void addUnwrappedException(String className) {
+        unwrappedExceptions.add(className);
     }
 
-    @SuppressWarnings("unchecked")
-    private <T extends Throwable> ExceptionMapper<T> doGetExceptionMapper(Class<T> clazz,
-            Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers) {
-        Class<?> klass = clazz;
-        do {
-            ResourceExceptionMapper<? extends Throwable> mapper = mappers.get(klass);
-            if (mapper != null) {
-                return (ExceptionMapper<T>) mapper.getFactory()
-                        .createInstance().getInstance();
-            }
-            klass = klass.getSuperclass();
-        } while (klass != null);
-
-        return null;
+    public Set<String> getUnwrappedExceptions() {
+        return unwrappedExceptions;
     }
 
-    public void addBlockingProblem(Class<? extends Throwable> clazz) {
-        blockingProblemExceptionClasses.add(clazz);
+    public List<Predicate<Throwable>> getBlockingProblemPredicates() {
+        return blockingProblemPredicates;
     }
 
-    public <T extends Throwable> void addExceptionMapper(Class<T> exceptionClass, ResourceExceptionMapper<T> mapper) {
+    public List<Predicate<Throwable>> getNonBlockingProblemPredicate() {
+        return nonBlockingProblemPredicate;
+    }
+
+    public <T extends Throwable> void addExceptionMapper(String exceptionClass, ResourceExceptionMapper<T> mapper) {
         ResourceExceptionMapper<? extends Throwable> existing = mappers.get(exceptionClass);
         if (existing != null) {
             if (existing.getPriority() < mapper.getPriority()) {
-                //already a higher priority mapper
+                // we already have a lower priority mapper registered
                 return;
+            } else {
+                mappers.remove(exceptionClass);
+                List<ResourceExceptionMapper<?>> list = new ArrayList<>(2);
+                list.add(mapper);
+                list.add(existing);
+                runtimeCheckMappers.put(exceptionClass, list);
+            }
+        } else {
+            var list = runtimeCheckMappers.get(exceptionClass);
+            if (list == null) {
+                if (mapper.getDiscardAtRuntime() == null) {
+                    mappers.put(exceptionClass, mapper);
+                } else {
+                    list = new ArrayList<>(1);
+                    list.add(mapper);
+                    runtimeCheckMappers.put(exceptionClass, list);
+                }
+            } else {
+                list.add(mapper);
+                Collections.sort(list);
             }
         }
-        mappers.put(exceptionClass, mapper);
-    }
-
-    public Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> getMappers() {
-        return mappers;
-    }
-
-    public Set<Class<? extends Throwable>> getBlockingProblemExceptionClasses() {
-        return blockingProblemExceptionClasses;
     }
 
     public void initializeDefaultFactories(Function<String, BeanFactory<?>> factoryCreator) {
-        for (Map.Entry<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> entry : mappers.entrySet()) {
-            if (entry.getValue().getFactory() == null) {
-                entry.getValue().setFactory((BeanFactory) factoryCreator.apply(entry.getValue().getClassName()));
+        for (var resourceExceptionMapper : mappers.values()) {
+            if (resourceExceptionMapper.getFactory() == null) {
+                resourceExceptionMapper.setFactory((BeanFactory) factoryCreator.apply(resourceExceptionMapper.getClassName()));
             }
+        }
+        for (var list : runtimeCheckMappers.values()) {
+            for (var resourceExceptionMapper : list) {
+                if (resourceExceptionMapper.getFactory() == null) {
+                    resourceExceptionMapper
+                            .setFactory((BeanFactory) factoryCreator.apply(resourceExceptionMapper.getClassName()));
+                }
+            }
+        }
+    }
+
+    public Map<String, ResourceExceptionMapper<? extends Throwable>> getMappers() {
+        return mappers;
+    }
+
+    public Map<String, List<ResourceExceptionMapper<? extends Throwable>>> getRuntimeCheckMappers() {
+        return runtimeCheckMappers;
+    }
+
+    public Map<String, ResourceExceptionMapper<? extends Throwable>> effectiveMappers() {
+        if (runtimeCheckMappers.isEmpty()) {
+            return mappers;
+        }
+        Map<String, ResourceExceptionMapper<? extends Throwable>> result = new HashMap<>();
+        for (var entry : runtimeCheckMappers.entrySet()) {
+            String exceptionClass = entry.getKey();
+            var list = entry.getValue();
+            for (var resourceExceptionMapper : list) {
+                if (resourceExceptionMapper.getDiscardAtRuntime() == null) {
+                    result.put(exceptionClass, resourceExceptionMapper);
+                    break;
+                } else {
+                    if (!resourceExceptionMapper.getDiscardAtRuntime().get()) {
+                        result.put(exceptionClass, resourceExceptionMapper);
+                        break;
+                    }
+                }
+            }
+        }
+        result.putAll(mappers);
+        return result;
+    }
+
+    public void replaceDiscardAtRuntimeIfBeanIsUnavailable(Function<String, Supplier<Boolean>> function) {
+        if (runtimeCheckMappers.isEmpty()) {
+            return;
+        }
+        for (var list : runtimeCheckMappers.values()) {
+            for (var resourceExceptionMapper : list) {
+                if (resourceExceptionMapper
+                        .getDiscardAtRuntime() instanceof ResourceExceptionMapper.DiscardAtRuntimeIfBeanIsUnavailable) {
+                    var discardAtRuntimeIfBeanIsUnavailable = (ResourceExceptionMapper.DiscardAtRuntimeIfBeanIsUnavailable) resourceExceptionMapper
+                            .getDiscardAtRuntime();
+                    resourceExceptionMapper
+                            .setDiscardAtRuntime(function.apply(discardAtRuntimeIfBeanIsUnavailable.getBeanClass()));
+                }
+            }
+        }
+    }
+
+    public static class ExceptionTypePredicate implements Predicate<Throwable> {
+
+        private Class<? extends Throwable> throwable;
+
+        // needed for bytecode recording
+        public ExceptionTypePredicate() {
+        }
+
+        public ExceptionTypePredicate(Class<? extends Throwable> throwable) {
+            this.throwable = throwable;
+        }
+
+        public Class<? extends Throwable> getThrowable() {
+            return throwable;
+        }
+
+        public void setThrowable(Class<? extends Throwable> throwable) {
+            this.throwable = throwable;
+        }
+
+        @Override
+        public boolean test(Throwable t) {
+            return t.getClass().equals(throwable);
+        }
+    }
+
+    public static class ExceptionTypeAndMessageContainsPredicate implements Predicate<Throwable> {
+
+        private Class<? extends Throwable> throwable;
+        private String messagePart;
+
+        // needed for bytecode recording
+        public ExceptionTypeAndMessageContainsPredicate() {
+        }
+
+        public ExceptionTypeAndMessageContainsPredicate(Class<? extends Throwable> throwable, String messagePart) {
+            this.throwable = throwable;
+            this.messagePart = messagePart;
+        }
+
+        public Class<? extends Throwable> getThrowable() {
+            return throwable;
+        }
+
+        public void setThrowable(Class<? extends Throwable> throwable) {
+            this.throwable = throwable;
+        }
+
+        public String getMessagePart() {
+            return messagePart;
+        }
+
+        public void setMessagePart(String messagePart) {
+            this.messagePart = messagePart;
+        }
+
+        @Override
+        public boolean test(Throwable t) {
+            return t.getClass().equals(throwable) && t.getMessage().contains(messagePart);
         }
     }
 }

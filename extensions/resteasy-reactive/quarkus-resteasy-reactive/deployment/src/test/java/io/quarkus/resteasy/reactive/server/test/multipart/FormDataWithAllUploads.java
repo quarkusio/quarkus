@@ -2,7 +2,7 @@ package io.quarkus.resteasy.reactive.server.test.multipart;
 
 import java.util.List;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
@@ -18,7 +18,7 @@ public class FormDataWithAllUploads extends FormDataBase {
     @PartType(MediaType.TEXT_PLAIN)
     private Status status;
 
-    @RestForm
+    @RestForm(FileUpload.ALL)
     private List<FileUpload> uploads;
 
     public String getName() {

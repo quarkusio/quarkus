@@ -13,6 +13,10 @@
     <name>Quarkus - TCK - MicroProfile Metrics Parent</name>
     <packaging>pom</packaging>
 
+    <properties>
+        <microprofile-metrics-tck.version>4.0.1</microprofile-metrics-tck.version>
+    </properties>
+
     <modules>
         <module>api</module>
         <module>rest</module>

@@ -15,8 +15,8 @@
 
     <properties>
         <mssqldb.url>jdbc:sqlserver://localhost:1433;databaseName=tempdb</mssqldb.url>
-        <mssqldb.sa-password>ActuallyRequired11Complexity</mssqldb.sa-password>
-        <mssqldb.image>mcr.microsoft.com/mssql/server:2019-CU8-ubuntu-16.04</mssqldb.image>
+        <!-- Careful: SQL Server refuses to work with trivial passwords. -->
+        <mssqldb.sa-password>yourStrong(!)Password</mssqldb.sa-password>
     </properties>
 
     <dependencies>
@@ -43,8 +43,18 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -175,11 +185,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <mssqldb.url>jdbc:sqlserver://localhost:1433;databaseName=tempdb</mssqldb.url>
-                <!-- Careful: SQL Server refuses to work with trivial passwords. -->
-                <mssqldb.sa-password>ActuallyRequired11Complexity</mssqldb.sa-password>
-            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -188,7 +193,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${mssqldb.image}</name>
+                                    <name>${mssql.image}</name>
                                     <alias>quarkus-test-mssqldb</alias>
                                     <run>
                                         <ports>
@@ -196,7 +201,7 @@
                                         </ports>
                                         <env>
                                             <ACCEPT_EULA>Y</ACCEPT_EULA>
-                                            <SA_PASSWORD>ActuallyRequired11Complexity</SA_PASSWORD>
+                                            <SA_PASSWORD>yourStrong(!)Password</SA_PASSWORD>
                                         </env>
                                         <log>
                                             <prefix>MS SQL Server:</prefix>

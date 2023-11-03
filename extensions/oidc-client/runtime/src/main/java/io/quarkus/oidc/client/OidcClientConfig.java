@@ -41,6 +41,13 @@ public class OidcClientConfig extends OidcCommonConfig {
     @ConfigItem
     public Optional<Duration> refreshTokenTimeSkew = Optional.empty();
 
+    /**
+     * If the access token 'expires_in' property should be checked as an absolute time value
+     * as opposed to a duration relative to the current time.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean absoluteExpiresIn;
+
     public Grant grant = new Grant();
 
     @ConfigGroup
@@ -64,7 +71,11 @@ public class OidcClientConfig extends OidcCommonConfig {
              * at least 'subject_token' parameter which must be passed to OidcClient at the token request time.
              */
             EXCHANGE("urn:ietf:params:oauth:grant-type:token-exchange"),
-
+            /**
+             * 'urn:ietf:params:oauth:grant-type:jwt-bearer' grant requiring an OIDC client authentication as well as
+             * at least an 'assertion' parameter which must be passed to OidcClient at the token request time.
+             */
+            JWT("urn:ietf:params:oauth:grant-type:jwt-bearer"),
             /**
              * 'refresh_token' grant requiring an OIDC client authentication and a refresh token.
              * Note, OidcClient supports this grant by default if an access token acquisition response contained a refresh
@@ -74,7 +85,12 @@ public class OidcClientConfig extends OidcCommonConfig {
              * If 'quarkus.oidc-client.grant-type' is set to 'refresh' then `OidcClient` will only support refreshing the
              * tokens.
              */
-            REFRESH("refresh_token");
+            REFRESH("refresh_token"),
+            /**
+             * 'urn:openid:params:grant-type:ciba' grant requiring an OIDC client authentication as well as 'auth_req_id'
+             * parameter which must be passed to OidcClient at the token request time.
+             */
+            CIBA("urn:openid:params:grant-type:ciba");
 
             private String grantType;
 
@@ -106,10 +122,16 @@ public class OidcClientConfig extends OidcCommonConfig {
         public String refreshTokenProperty = OidcConstants.REFRESH_TOKEN_VALUE;
 
         /**
-         * Refresh token property name in a token grant response
+         * Access token expiry property name in a token grant response
          */
         @ConfigItem(defaultValue = OidcConstants.EXPIRES_IN)
         public String expiresInProperty = OidcConstants.EXPIRES_IN;
+
+        /**
+         * Refresh token expiry property name in a token grant response
+         */
+        @ConfigItem(defaultValue = OidcConstants.REFRESH_EXPIRES_IN)
+        public String refreshExpiresInProperty = OidcConstants.REFRESH_EXPIRES_IN;
 
         public Type getType() {
             return type;
@@ -142,6 +164,14 @@ public class OidcClientConfig extends OidcCommonConfig {
         public void setExpiresInProperty(String expiresInProperty) {
             this.expiresInProperty = expiresInProperty;
         }
+
+        public String getRefreshExpiresInProperty() {
+            return refreshExpiresInProperty;
+        }
+
+        public void setRefreshExpiresInProperty(String refreshExpiresInProperty) {
+            this.refreshExpiresInProperty = refreshExpiresInProperty;
+        }
     }
 
     /**
@@ -158,6 +188,12 @@ public class OidcClientConfig extends OidcCommonConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean earlyTokensAcquisition = true;
+
+    /**
+     * Custom HTTP headers which have to be sent to the token endpoint
+     */
+    @ConfigItem
+    public Map<String, String> headers;
 
     public Optional<String> getId() {
         return id;
@@ -197,5 +233,29 @@ public class OidcClientConfig extends OidcCommonConfig {
 
     public void setRefreshTokenTimeSkew(Duration refreshTokenTimeSkew) {
         this.refreshTokenTimeSkew = Optional.of(refreshTokenTimeSkew);
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public void setHeaders(Map<String, String> headers) {
+        this.headers = headers;
+    }
+
+    public boolean isAbsoluteExpiresIn() {
+        return absoluteExpiresIn;
+    }
+
+    public void setAbsoluteExpiresIn(boolean absoluteExpiresIn) {
+        this.absoluteExpiresIn = absoluteExpiresIn;
+    }
+
+    public void setGrant(Grant grant) {
+        this.grant = grant;
+    }
+
+    public Grant getGrant() {
+        return grant;
     }
 }

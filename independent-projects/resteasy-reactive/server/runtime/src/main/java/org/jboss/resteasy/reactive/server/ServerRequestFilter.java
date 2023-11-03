@@ -1,20 +1,22 @@
 package org.jboss.resteasy.reactive.server;
 
-import io.smallrye.common.annotation.Blocking;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.UriInfo;
+
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.UriInfo;
+
+import io.smallrye.common.annotation.Blocking;
 
 /**
- * When used on a method, then an implementation of {@link javax.ws.rs.container.ContainerRequestFilter} is generated
+ * When used on a method, then an implementation of {@link jakarta.ws.rs.container.ContainerRequestFilter} is generated
  * that calls the annotated method with the proper arguments
  * <p>
  * The idea behind using this is to make it much to write a {@code ServerRequestFilter} as all the necessary information
@@ -64,10 +66,11 @@ import javax.ws.rs.core.UriInfo;
  * <li>{@code Optional<Response>} or {@code Optional<RestResponse>} should be used when filtering does not need to perform any
  * blocking operations but the filter
  * might abort processing - in this case processing is aborted when the {@code Optional} contains a {@code Response} payload.
- * <li>{@code Uni<Void>} should be used when filtering needs to perform a blocking operations but the filter cannot abort
+ * <li>{@code Uni<Void>} should be used when filtering needs to perform a non-blocking operation but the filter cannot abort
  * processing.
  * Note that {@code Uni<Void>} can easily be produced using: {@code Uni.createFrom().nullItem()}
- * <li>{@code Uni<Response>} or {@code Uni<RestResponse>} should be used when filtering needs to perform a blocking operations
+ * <li>{@code Uni<Response>} or {@code Uni<RestResponse>} should be used when filtering needs to perform a non-blocking
+ * operation
  * and the filter
  * might abort processing - in this case processing is aborted when the {@code Uni} contains a {@code Response} payload.
  * </ul>
@@ -86,7 +89,9 @@ public @interface ServerRequestFilter {
     int priority() default Priorities.USER;
 
     /**
-     * Whether or not the filter is a pre-matching filter
+     * Whether the filter is a pre-matching filter
+     *
+     * Note that this setting and {@link ServerRequestFilter#readBody()} cannot be both set to true.
      */
     boolean preMatching() default false;
 
@@ -99,4 +104,18 @@ public @interface ServerRequestFilter {
      * For this to work, this filter must be run before any of the filters when non-blocking is not required.
      */
     boolean nonBlocking() default false;
+
+    /**
+     * If set to {@code true}, the filter will be run after the body has been fully read but before any deserialization takes
+     * place.
+     *
+     * Note that this change only affects Resource Methods that do result in reading the message body. For all other
+     * Resource Methods that the filter applies to, it will be executed in normal fashion.
+     *
+     * Also note that this setting and {@link ServerRequestFilter#preMatching()} cannot be both set to true.
+     *
+     * @deprecated use {@link WithFormRead} on your filter to force reading the form values before your filter is invoked.
+     */
+    @Deprecated
+    boolean readBody() default false;
 }

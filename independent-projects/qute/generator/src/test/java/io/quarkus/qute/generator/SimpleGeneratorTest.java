@@ -3,10 +3,6 @@ package io.quarkus.qute.generator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.quarkus.qute.Engine;
-import io.quarkus.qute.EngineBuilder;
-import io.quarkus.qute.TestEvalContext;
-import io.quarkus.qute.ValueResolver;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -16,6 +12,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
@@ -27,6 +24,13 @@ import org.jboss.jandex.Type.Kind;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.qute.Engine;
+import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.NamespaceResolver;
+import io.quarkus.qute.Resolver;
+import io.quarkus.qute.TestEvalContext;
+import io.quarkus.qute.ValueResolver;
+
 public class SimpleGeneratorTest {
 
     static Set<String> generatedTypes = new HashSet<>();
@@ -35,8 +39,7 @@ public class SimpleGeneratorTest {
     public static void init() throws IOException {
         TestClassOutput classOutput = new TestClassOutput();
         Index index = index(MyService.class, PublicMyService.class, BaseService.class, MyItem.class, String.class,
-                CompletionStage.class,
-                List.class);
+                CompletionStage.class, List.class, MyEnum.class);
         ClassInfo myServiceClazz = index.getClassByName(DotName.createSimple(MyService.class.getName()));
         ValueResolverGenerator generator = ValueResolverGenerator.builder().setIndex(index).setClassOutput(classOutput)
                 .addClass(myServiceClazz)
@@ -44,6 +47,7 @@ public class SimpleGeneratorTest {
                 .addClass(index.getClassByName(DotName.createSimple(MyItem.class.getName())))
                 .addClass(index.getClassByName(DotName.createSimple(String.class.getName())))
                 .addClass(index.getClassByName(DotName.createSimple(List.class.getName())))
+                .addClass(index.getClassByName(DotName.createSimple(MyEnum.class.getName())))
                 .build();
 
         generator.generate();
@@ -53,15 +57,15 @@ public class SimpleGeneratorTest {
         MethodInfo extensionMethod = index.getClassByName(DotName.createSimple(MyService.class.getName())).method(
                 "getDummy", Type.create(myServiceClazz.name(), Kind.CLASS), PrimitiveType.INT,
                 Type.create(DotName.createSimple(String.class.getName()), Kind.CLASS));
-        extensionMethodGenerator.generate(extensionMethod, null, null, null);
+        extensionMethodGenerator.generate(extensionMethod, null, List.of(), null, null);
         extensionMethod = index.getClassByName(DotName.createSimple(MyService.class.getName())).method(
                 "getDummy", Type.create(myServiceClazz.name(), Kind.CLASS), PrimitiveType.INT,
                 PrimitiveType.LONG);
-        extensionMethodGenerator.generate(extensionMethod, null, null, null);
+        extensionMethodGenerator.generate(extensionMethod, null, List.of(), null, null);
         extensionMethod = index.getClassByName(DotName.createSimple(MyService.class.getName())).method(
                 "getDummyVarargs", Type.create(myServiceClazz.name(), Kind.CLASS), PrimitiveType.INT,
                 Type.create(DotName.createSimple("[L" + String.class.getName() + ";"), Kind.ARRAY));
-        extensionMethodGenerator.generate(extensionMethod, null, null, null);
+        extensionMethodGenerator.generate(extensionMethod, null, List.of(), null, null);
         generatedTypes.addAll(extensionMethodGenerator.getGeneratedTypes());
     }
 
@@ -101,10 +105,16 @@ public class SimpleGeneratorTest {
 
         EngineBuilder builder = Engine.builder().addDefaults();
         for (String generatedType : generatedTypes) {
-            builder.addValueResolver(newResolver(generatedType));
+            if (generatedType.contains(ValueResolverGenerator.NAMESPACE_SUFFIX)) {
+                builder.addNamespaceResolver((NamespaceResolver) newResolver(generatedType));
+            } else {
+                builder.addValueResolver((ValueResolver) newResolver(generatedType));
+            }
         }
         Engine engine = builder.build();
         assertEquals(" FOO ", engine.parse("{#if isActive} {name.toUpperCase} {/if}").render(new MyService()));
+        assertEquals(" FOO ", engine.parse("{#if isActiveObject} {name.toUpperCase} {/if}").render(new MyService()));
+        assertEquals("", engine.parse("{#if isActiveObjectNull} {name.toUpperCase} {/if}").render(new MyService()));
         assertEquals(" FOO ", engine.parse("{#if active} {name.toUpperCase} {/if}").render(new MyService()));
         assertEquals(" FOO ", engine.parse("{#if !hasItems} {name.toUpperCase} {/if}").render(new MyService()));
         assertEquals(" FOO ", engine.parse("{#if !items} {name.toUpperCase} {/if}").render(new MyService()));
@@ -130,9 +140,37 @@ public class SimpleGeneratorTest {
         assertEquals("5",
                 engine.parse("{#each service.getDummyVarargs(5)}{it}{/}").data("service", new MyService())
                         .render());
+        assertEquals("BAR::", engine.parse("{myEnum}::{myEnumNull}").render(new MyService()));
+
+        // Namespace resolvers
+        assertEquals("OK", engine.parse("{#if enum is MyEnum:BAR}OK{/if}").data("enum", MyEnum.BAR).render());
+        assertEquals("one", engine.parse("{MyEnum:valueOf('ONE').name}").render());
+        assertEquals("10", engine.parse("{io_quarkus_qute_generator_MyService:getDummy(5)}").render());
     }
 
-    private ValueResolver newResolver(String className)
+    @Test
+    public void testArrays() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("1,2,3,4,5,6,7,8,9,10,", engine.parse("{#for i in 10}{i_count},{/for}").render());
+        assertEquals("0,1,2,3,4,5,6,7,8,9,", engine.parse("{#for i in 10}{i_index},{/for}").render());
+        assertEquals("odd,even,odd,even,odd,even,odd,even,odd,even,",
+                engine.parse("{#for i in 10}{i_indexParity},{/for}").render());
+        assertEquals("true,false,true,false,true,",
+                engine.parse("{#for i in 5}{i_odd},{/for}").render());
+        assertEquals("false,true,false,true,false,",
+                engine.parse("{#for i in 5}{i_even},{/for}").render());
+        { //these two are not documented in the guide (https://quarkus.io/guides/qute-reference)
+            assertEquals("true,false,true,false,true,",
+                    engine.parse("{#for i in 5}{i_isOdd},{/for}").render());
+            assertEquals("false,true,false,true,false,",
+                    engine.parse("{#for i in 5}{i_isEven},{/for}").render());
+        }
+        assertEquals("true,true,true,true,false,", engine.parse("{#for i in 5}{i_hasNext},{/for}").render());
+        assertEquals("false,false,false,false,true,", engine.parse("{#for i in 5}{i_isLast},{/for}").render());
+        assertEquals("true,false,false,false,false,", engine.parse("{#for i in 5}{i_isFirst},{/for}").render());
+    }
+
+    private Resolver newResolver(String className)
             throws ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException,
             InvocationTargetException, NoSuchMethodException, SecurityException {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -140,7 +178,7 @@ public class SimpleGeneratorTest {
             cl = SimpleGeneratorTest.class.getClassLoader();
         }
         Class<?> clazz = cl.loadClass(className);
-        return (ValueResolver) clazz.getDeclaredConstructor().newInstance();
+        return (Resolver) clazz.getDeclaredConstructor().newInstance();
     }
 
     static Index index(Class<?>... classes) throws IOException {

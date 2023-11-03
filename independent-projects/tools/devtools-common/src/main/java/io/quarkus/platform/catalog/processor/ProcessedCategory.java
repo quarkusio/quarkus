@@ -2,13 +2,14 @@ package io.quarkus.platform.catalog.processor;
 
 import static io.quarkus.registry.catalog.Category.MD_PINNED;
 
-import io.quarkus.registry.catalog.Category;
-import io.quarkus.registry.catalog.Extension;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import io.quarkus.registry.catalog.Category;
+import io.quarkus.registry.catalog.Extension;
 
 public final class ProcessedCategory {
     private final Category category;
@@ -34,7 +35,7 @@ public final class ProcessedCategory {
     private Comparator<Extension> extensionsComparator() {
         final List<String> pinnedList = MetadataValue.get(category.getMetadata(), MD_PINNED).asStringList();
         return Comparator.<Extension> comparingInt(e -> getPinnedIndex(pinnedList, e))
-                .thenComparing(Extension::getName);
+                .thenComparing(Extension::getName, String.CASE_INSENSITIVE_ORDER);
     }
 
     private int getPinnedIndex(List<String> pinnedList, Extension e) {

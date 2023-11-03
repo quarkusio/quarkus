@@ -15,7 +15,7 @@ import org.bson.codecs.pojo.TypeWithTypeParameters;
  * This class is an example of a PropertyCodecProvider, it handle the Optional type for the POJO Codec.
  * It is used to test that the mongodb-client extension correctly register all PropertyCodecProvider within the POJO Codec.
  *
- * See: http://mongodb.github.io/mongo-java-driver/3.12/bson/pojos/#generics-support
+ * See: https://mongodb.github.io/mongo-java-driver/3.12/bson/pojos/#generics-support
  */
 public class OptionalPropertyCodecProvider implements PropertyCodecProvider {
     @Override

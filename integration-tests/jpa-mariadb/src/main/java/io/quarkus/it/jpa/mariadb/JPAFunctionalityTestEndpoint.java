@@ -2,21 +2,26 @@ package io.quarkus.it.jpa.mariadb;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.EntityTransaction;
-import javax.persistence.PersistenceUnit;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.sql.DataSource;
+
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Basic test running JPA with the MariaDB database.
@@ -25,13 +30,16 @@ import javax.servlet.http.HttpServletResponse;
 @WebServlet(name = "JPATestBootstrapEndpoint", urlPatterns = "/jpa-mariadb/testfunctionality")
 public class JPAFunctionalityTestEndpoint extends HttpServlet {
 
-    @PersistenceUnit(unitName = "templatePU")
+    @Inject
     EntityManagerFactory entityManagerFactory;
+
+    @Inject
+    DataSource ds;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
-            doStuffWithHibernate(entityManagerFactory);
+            doStuffWithHibernate(entityManagerFactory, ds);
         } catch (Exception e) {
             reportException("An error occurred while performing Hibernate operations", e, resp);
         }
@@ -41,7 +49,7 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
     /**
      * Lists the various operations we want to test for:
      */
-    private static void doStuffWithHibernate(EntityManagerFactory entityManagerFactory) {
+    private static void doStuffWithHibernate(EntityManagerFactory entityManagerFactory, DataSource ds) throws SQLException {
 
         //Cleanup any existing data:
         deleteAllPerson(entityManagerFactory);
@@ -51,6 +59,9 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
 
         //Load all persons and run some checks on the query results:
         verifyListOfExistingPersons(entityManagerFactory);
+
+        //Try to use prepared statement with setObject:
+        verifyGetPersonUsingSetObject(ds);
 
         //Try a JPA named query:
         verifyJPANamedQuery(entityManagerFactory);
@@ -150,4 +161,18 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
         writer.append("\n\t");
     }
 
+    private static void verifyGetPersonUsingSetObject(final DataSource ds) throws SQLException {
+        getExistingPersonUsingSetObject(ds);
+    }
+
+    private static void getExistingPersonUsingSetObject(DataSource ds) throws SQLException {
+        try (PreparedStatement ps = ds.getConnection().prepareStatement("select * from Person as p where p.name = ?")) {
+            ps.setObject(1, "Quarkus");
+            final ResultSet resultSet = ps.executeQuery();
+
+            if (!resultSet.next()) {
+                throw new RuntimeException("Person Quarkus doesn't exist when it should");
+            }
+        }
+    }
 }

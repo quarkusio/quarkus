@@ -6,9 +6,10 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-include::./attributes.adoc[]
-
-= Quarkus - Build Items
+= Build Items
+include::_attributes.adoc[]
+:categories: writing-extensions
+:summary: Explore all the BuildItems you can consume/produce in your extensions.
 
 Here you can find a list of Build Items and the extension that provides them:
 

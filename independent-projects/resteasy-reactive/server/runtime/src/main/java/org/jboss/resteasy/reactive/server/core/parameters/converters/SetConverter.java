@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 
 public class SetConverter implements ParameterConverter {
@@ -43,12 +44,18 @@ public class SetConverter implements ParameterConverter {
         delegate.init(deployment, rawType, genericType, annotations);
     }
 
+    @Override
+    public boolean isForSingleObjectContainer() {
+        return true;
+    }
+
     public static class SetSupplier implements DelegatingParameterConverterSupplier {
         private ParameterConverterSupplier delegate;
 
         public SetSupplier() {
         }
 
+        // invoked by reflection for BeanParam in ClassInjectorTransformer
         public SetSupplier(ParameterConverterSupplier delegate) {
             this.delegate = delegate;
         }

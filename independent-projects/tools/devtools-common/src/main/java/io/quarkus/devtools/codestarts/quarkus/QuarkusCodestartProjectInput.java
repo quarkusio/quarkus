@@ -2,12 +2,13 @@ package io.quarkus.devtools.codestarts.quarkus;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.Collection;
+import java.util.Set;
+
 import io.quarkus.devtools.codestarts.CodestartProjectInput;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.AppContent;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.maven.ArtifactCoords;
-import java.util.Collection;
-import java.util.Set;
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 public final class QuarkusCodestartProjectInput extends CodestartProjectInput {
     private final BuildTool buildTool;

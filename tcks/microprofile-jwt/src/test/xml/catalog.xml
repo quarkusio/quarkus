@@ -1,0 +1,4 @@
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
+    <!-- The xml plugin chokes on the redirect, so re-map it to directly https -->
+    <system systemId="http://testng.org/testng-1.0.dtd" uri="https://testng.org/testng-1.0.dtd"/>
+</catalog>

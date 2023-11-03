@@ -17,19 +17,24 @@ package io.quarkus.container.image.jib.deployment;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.stream.Stream;
 
 import com.google.cloud.tools.jib.api.JavaContainerBuilder;
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath;
 import com.google.cloud.tools.jib.api.buildplan.FileEntriesLayer;
 import com.google.cloud.tools.jib.api.buildplan.FilePermissions;
-import com.google.cloud.tools.jib.filesystem.DirectoryWalker;
 
 /**
  * Copied almost verbatim from Jib's {@code com.google.cloud.tools.jib.plugins.common.JavaContainerBuilderHelper}
@@ -63,38 +68,44 @@ final class ContainerBuilderHelper {
             pathMatchers.put(
                     FileSystems.getDefault().getPathMatcher("glob:" + entry.getKey()), entry.getValue());
         }
-
-        new DirectoryWalker(sourceDirectory)
-                .filterRoot()
-                .walk(
-                        localPath -> {
-                            AbsoluteUnixPath pathOnContainer = targetDirectory.resolve(sourceDirectory.relativize(localPath));
-                            Instant modificationTime = modificationTimeProvider.apply(localPath, pathOnContainer);
-                            FilePermissions permissions = extraDirectoryPermissions.get(pathOnContainer.toString());
-                            if (permissions == null) {
-                                // Check for matching globs
-                                Path containerPath = Paths.get(pathOnContainer.toString());
-                                for (Map.Entry<PathMatcher, FilePermissions> entry : pathMatchers.entrySet()) {
-                                    if (entry.getKey().matches(containerPath)) {
-                                        builder.addEntry(
-                                                localPath, pathOnContainer, entry.getValue(), modificationTime);
-                                        return;
-                                    }
+        try (Stream<Path> stream = Files.list(sourceDirectory)) {
+            final Iterator<Path> i = stream.iterator();
+            while (i.hasNext()) {
+                Files.walkFileTree(i.next(), new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult visitFile(Path localPath, BasicFileAttributes attrs)
+                            throws IOException {
+                        AbsoluteUnixPath pathOnContainer = targetDirectory.resolve(sourceDirectory.relativize(localPath));
+                        Instant modificationTime = modificationTimeProvider.apply(localPath, pathOnContainer);
+                        FilePermissions permissions = extraDirectoryPermissions.get(pathOnContainer.toString());
+                        if (permissions == null) {
+                            // Check for matching globs
+                            Path containerPath = Paths.get(pathOnContainer.toString());
+                            for (Map.Entry<PathMatcher, FilePermissions> entry : pathMatchers.entrySet()) {
+                                if (entry.getKey().matches(containerPath)) {
+                                    builder.addEntry(
+                                            localPath, pathOnContainer, entry.getValue(), modificationTime);
+                                    return FileVisitResult.CONTINUE;
                                 }
-
-                                // Add with default permissions
-                                if (localPath.toFile().canExecute()) {
-                                    // make sure the file or directory can be executed
-                                    builder.addEntry(localPath, pathOnContainer, FilePermissions.fromOctalString("755"),
-                                            modificationTime);
-                                } else {
-                                    builder.addEntry(localPath, pathOnContainer, modificationTime);
-                                }
-                            } else {
-                                // Add with explicit permissions
-                                builder.addEntry(localPath, pathOnContainer, permissions, modificationTime);
                             }
-                        });
+
+                            // Add with default permissions
+                            if (localPath.toFile().canExecute()) {
+                                // make sure the file or directory can be executed
+                                builder.addEntry(localPath, pathOnContainer, FilePermissions.fromOctalString("755"),
+                                        modificationTime);
+                            } else {
+                                builder.addEntry(localPath, pathOnContainer, modificationTime);
+                            }
+                        } else {
+                            // Add with explicit permissions
+                            builder.addEntry(localPath, pathOnContainer, permissions, modificationTime);
+                        }
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
+            }
+        }
         return builder.build();
     }
 }

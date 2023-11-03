@@ -9,16 +9,19 @@ plugins {
 {/include}
 
 allOpen {
+    {#if quarkus.platform.version.startsWith("2.") or quarkus.platform.version.startsWith("1.")}
     annotation("javax.ws.rs.Path")
     annotation("javax.enterprise.context.ApplicationScoped")
+    annotation("javax.persistence.Entity")
+    {#else}
+    annotation("jakarta.ws.rs.Path")
+    annotation("jakarta.enterprise.context.ApplicationScoped")
+    annotation("jakarta.persistence.Entity")
+    {/if}
     annotation("io.quarkus.test.junit.QuarkusTest")
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    {#if java.version == "11"}
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_11.toString()
-    {#else}
-    kotlinOptions.jvmTarget = JavaVersion.VERSION_1_8.toString()
-    {/if}
+    kotlinOptions.jvmTarget = JavaVersion.VERSION_{java.version}.toString()
     kotlinOptions.javaParameters = true
 }

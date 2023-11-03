@@ -6,12 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.StringWriter;
 
-import javax.json.bind.Jsonb;
-import javax.json.bind.JsonbBuilder;
-import javax.transaction.Transactional;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
+import jakarta.transaction.Transactional;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
-import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -64,7 +63,7 @@ public class PanacheFunctionalityTest {
                         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><person><id>666</id><name>Eddie</name><serialisationTrick>1</serialisationTrick><status>DECEASED</status></person>"));
     }
 
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Test
     public void testPanacheInTest() {
         Assertions.assertEquals(0, Person.count());
@@ -86,6 +85,11 @@ public class PanacheFunctionalityTest {
     }
 
     @Test
+    public void testSortByNullPrecedence() {
+        RestAssured.when().get("/test/testSortByNullPrecedence").then().body(is("OK"));
+    }
+
+    @Test
     public void testJaxbAnnotationTransfer() {
         RestAssured.when()
                 .get("/test/testJaxbAnnotationTransfer")
@@ -94,13 +98,13 @@ public class PanacheFunctionalityTest {
     }
 
     /**
-     * _PanacheEntityBase_ has the method _isPersistent_. This method is used by Jackson to serialize the attribute *peristent*
+     * _PanacheEntityBase_ has the method _isPersistent_. This method is used by Jackson to serialize the attribute *persistent*
      * in the JSON which is not intended. This test ensures that the attribute *persistent* is not generated when using Jackson.
      *
      * This test does not interact with the Quarkus application itself. It is just using the Jackson ObjectMapper with a
      * PanacheEntity. Thus this test is disabled in native mode. The test code runs the JVM and not native.
      */
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Test
     public void jacksonDeserializationIgnoresPersistentAttribute() throws JsonProcessingException {
         // set Up
@@ -121,7 +125,7 @@ public class PanacheFunctionalityTest {
     /**
      * This test is disabled in native mode as there is no interaction with the quarkus integration test endpoint.
      */
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Test
     public void jaxbDeserializationHasAllFields() throws JsonProcessingException, JAXBException {
         // set Up
@@ -193,14 +197,14 @@ public class PanacheFunctionalityTest {
                         + PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME + "\",result=\"miss\"}"));
     }
 
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Transactional
     @Test
     void testBug7102InOneTransaction() {
         testBug7102();
     }
 
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     @Test
     public void testBug7102() {
         Person person = createBug7102();
@@ -228,5 +232,10 @@ public class PanacheFunctionalityTest {
     @Transactional
     Person getBug7102(Long id) {
         return Person.findById(id);
+    }
+
+    @Test
+    public void testEnhancement27184DeleteDetached() {
+        RestAssured.when().get("/test/testEnhancement27184DeleteDetached").then().body(is("OK"));
     }
 }

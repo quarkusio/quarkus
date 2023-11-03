@@ -5,15 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,7 +22,7 @@ public class FailingUnitTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(FailingHealthCheck.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
     @Inject
@@ -35,6 +33,7 @@ public class FailingUnitTest {
     public void testHealthServlet() {
         RestAssured.when().get("/q/health/live").then().statusCode(503);
         RestAssured.when().get("/q/health/ready").then().statusCode(503);
+        RestAssured.when().get("/q/health/started").then().statusCode(503);
         RestAssured.when().get("/q/health").then().statusCode(503);
     }
 

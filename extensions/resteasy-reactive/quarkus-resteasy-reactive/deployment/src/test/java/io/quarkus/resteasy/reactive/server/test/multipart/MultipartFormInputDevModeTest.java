@@ -19,7 +19,7 @@ public class MultipartFormInputDevModeTest {
 
     @RegisterExtension
     static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
@@ -74,7 +74,7 @@ public class MultipartFormInputDevModeTest {
                 .post("/multipart/" + path + "/2")
                 .then()
                 .statusCode(200)
-                .body(equalTo("Alice - true - 50 - WORKING - text/html - true - true"));
+                .body(equalTo("Alice - true - 50 - WORKING - true - true - true"));
     }
 
 }

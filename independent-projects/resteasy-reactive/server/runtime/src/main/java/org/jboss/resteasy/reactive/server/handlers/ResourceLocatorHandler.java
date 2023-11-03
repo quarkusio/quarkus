@@ -8,9 +8,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.container.CompletionCallback;
-import javax.ws.rs.core.Response;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.container.CompletionCallback;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
@@ -47,7 +49,7 @@ public class ResourceLocatorHandler implements ServerRestHandler {
                 //TODO: we should make sure ArC always picks up these classes and makes them beans
                 //but until we get a bug report about it lets not worry for now, as I don't think anyone
                 //really uses this
-                locator = locatorClass.newInstance();
+                locator = locatorClass.getDeclaredConstructor().newInstance();
             }
         } else {
             locatorClass = locator.getClass();
@@ -106,10 +108,10 @@ public class ResourceLocatorHandler implements ServerRestHandler {
         List<Map<String, RequestMapper<RuntimeResource>>> results = new ArrayList<>();
         Set<Class<?>> seen = new HashSet<>();
         findTargetRecursive(locatorClass, results, seen);
-        Map<String, List<RequestMapper.RequestPath<RuntimeResource>>> newMapper = new HashMap<>();
+        Map<String, ArrayList<RequestMapper.RequestPath<RuntimeResource>>> newMapper = new HashMap<>();
         for (Map<String, RequestMapper<RuntimeResource>> i : results) {
             for (Map.Entry<String, RequestMapper<RuntimeResource>> entry : i.entrySet()) {
-                List<RequestMapper.RequestPath<RuntimeResource>> list = newMapper.get(entry.getKey());
+                ArrayList<RequestMapper.RequestPath<RuntimeResource>> list = newMapper.get(entry.getKey());
                 if (list == null) {
                     newMapper.put(entry.getKey(), list = new ArrayList<>());
                 }
@@ -117,7 +119,7 @@ public class ResourceLocatorHandler implements ServerRestHandler {
             }
         }
         Map<String, RequestMapper<RuntimeResource>> finalResult = new HashMap<>();
-        for (Map.Entry<String, List<RequestMapper.RequestPath<RuntimeResource>>> i : newMapper.entrySet()) {
+        for (Map.Entry<String, ArrayList<RequestMapper.RequestPath<RuntimeResource>>> i : newMapper.entrySet()) {
             finalResult.put(i.getKey(), new RequestMapper<RuntimeResource>(i.getValue()));
         }
         //it does not matter if this is computed twice

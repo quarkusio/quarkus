@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.customexceptions;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 @Singleton
 public class SomeBean {

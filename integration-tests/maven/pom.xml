@@ -26,16 +26,15 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.spec.javax.ws.rs</groupId>
-            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-bom-quarkus-platform-descriptor</artifactId>
             <version>${project.version}</version>
-            <type>json</type>
-            <classifier>${project.version}</classifier>
+            <type>pom</type>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>
@@ -55,10 +54,26 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-dev-ui-tests</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-project-core-extension-codestarts</artifactId>
             <type>pom</type>
             <scope>test</scope>
+            <version>${project.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>
@@ -71,7 +86,7 @@
     <build>
         <testResources>
             <testResource>
-                <directory>src/test/resources</directory>
+                <directory>src/test/resources-filtered</directory>
                 <filtering>true</filtering>
             </testResource>
         </testResources>
@@ -141,13 +156,12 @@
                 <plugins>
                     <plugin>
                         <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-platform-descriptor-json-plugin</artifactId>
-                        <version>${project.version}</version>
+                        <artifactId>quarkus-platform-bom-maven-plugin</artifactId>
                         <executions>
                             <execution>
                                 <phase>test</phase>
                                 <goals>
-                                    <goal>validate-extensions-json</goal>
+                                    <goal>validate-extension-catalog</goal>
                                 </goals>
                                 <configuration>
                                     <skip>${skipTests}</skip>

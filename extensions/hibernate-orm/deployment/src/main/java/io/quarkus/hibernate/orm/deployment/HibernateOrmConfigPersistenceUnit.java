@@ -2,17 +2,23 @@ package io.quarkus.hibernate.orm.deployment;
 
 import java.nio.charset.Charset;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
 
-import org.hibernate.engine.query.spi.QueryPlanCache;
+import org.hibernate.annotations.TimeZoneStorageType;
+import org.hibernate.id.enhanced.StandardOptimizerDescriptor;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 @ConfigGroup
 public class HibernateOrmConfigPersistenceUnit {
@@ -22,11 +28,15 @@ public class HibernateOrmConfigPersistenceUnit {
      * <p>
      * If undefined, it will use the default datasource.
      */
+    @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> datasource;
 
     /**
      * The packages in which the entities affected to this persistence unit are located.
      */
+    @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<Set<String>> packages;
 
     /**
@@ -38,8 +48,12 @@ public class HibernateOrmConfigPersistenceUnit {
 
     // @formatter:off
     /**
-     * Name of the file containing the SQL statements to execute when Hibernate ORM starts.
-     * Its default value differs depending on the Quarkus launch mode:
+     * Path to a file containing the SQL statements to execute when Hibernate ORM starts.
+     *
+     * The file is retrieved from the classpath resources,
+     * so it must be located in the resources directory (e.g. `src/main/resources`).
+     *
+     * The default value for this setting differs depending on the Quarkus launch mode:
      *
      * * In dev and test modes, it defaults to `import.sql`.
      *   Simply add an `import.sql` file in the root of your resources directory
@@ -70,7 +84,8 @@ public class HibernateOrmConfigPersistenceUnit {
      */
     // @formatter:on
     @ConfigItem(defaultValueDocumentation = "import.sql in DEV, TEST ; no-file otherwise")
-    public Optional<String> sqlLoadScript;
+    @ConvertWith(TrimmedStringConverter.class)
+    public Optional<List<String>> sqlLoadScript;
 
     /**
      * The size of the batches used when loading entities and collections.
@@ -102,6 +117,7 @@ public class HibernateOrmConfigPersistenceUnit {
      * Class name of the Hibernate PhysicalNamingStrategy implementation
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> physicalNamingStrategy;
 
     /**
@@ -110,6 +126,7 @@ public class HibernateOrmConfigPersistenceUnit {
      * Class name of the Hibernate ImplicitNamingStrategy implementation
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> implicitNamingStrategy;
 
     /**
@@ -129,6 +146,7 @@ public class HibernateOrmConfigPersistenceUnit {
      * @asciidoclet
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> metadataBuilderContributor;
 
     /**
@@ -138,7 +156,15 @@ public class HibernateOrmConfigPersistenceUnit {
      * Pass `no-file` to force Hibernate ORM to ignore `META-INF/orm.xml`.
      */
     @ConfigItem(defaultValueDocumentation = "META-INF/orm.xml if it exists; no-file otherwise")
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<Set<String>> mappingFiles;
+
+    /**
+     * Mapping configuration.
+     */
+    @ConfigItem
+    @ConfigDocSection
+    public HibernateOrmConfigPersistenceUnitMapping mapping;
 
     /**
      * Query related configuration.
@@ -171,6 +197,7 @@ public class HibernateOrmConfigPersistenceUnit {
     /**
      * Caching configuration
      */
+    @ConfigItem
     @ConfigDocSection
     public Map<String, HibernateOrmConfigPersistenceUnitCache> cache;
 
@@ -180,6 +207,12 @@ public class HibernateOrmConfigPersistenceUnit {
     @ConfigItem
     @ConfigDocSection
     public HibernateOrmConfigPersistenceUnitDiscriminator discriminator;
+
+    /**
+     * Config related to identifier quoting.
+     */
+    @ConfigItem(defaultValue = "none")
+    public HibernateOrmConfigPersistenceUnitQuoteIdentifiers quoteIdentifiers;
 
     /**
      * The default in Quarkus is for 2nd level caching to be enabled,
@@ -193,13 +226,21 @@ public class HibernateOrmConfigPersistenceUnit {
     public boolean secondLevelCachingEnabled;
 
     /**
+     * Bean Validation configuration.
+     */
+    @ConfigItem
+    public HibernateOrmConfigPersistenceValidation validation;
+
+    /**
      * Defines the method for multi-tenancy (DATABASE, NONE, SCHEMA). The complete list of allowed values is available in the
-     * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/MultiTenancyStrategy.html[Hibernate ORM JavaDoc].
+     * https://javadoc.io/doc/org.hibernate/hibernate-core/5.6.10.Final/org/hibernate/MultiTenancyStrategy.html[Hibernate ORM
+     * JavaDoc].
      * The type DISCRIMINATOR is currently not supported. The default value is NONE (no multi-tenancy).
      *
      * @asciidoclet
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> multitenant;
 
     /**
@@ -207,7 +248,20 @@ public class HibernateOrmConfigPersistenceUnit {
      * if not set.
      */
     @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> multitenantSchemaDatasource;
+
+    /**
+     * If hibernate is not auto generating the schema, and Quarkus is running in development mode
+     * then Quarkus will attempt to validate the database after startup and print a log message if
+     * there are any problems.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean validateInDevMode;
+
+    @ConfigItem(generateDocumentation = false)
+    @ConfigDocMapKey("full-property-key")
+    public Map<String, String> unsupportedProperties = new HashMap<>();
 
     public boolean isAnyPropertySet() {
         return datasource.isPresent() ||
@@ -219,6 +273,7 @@ public class HibernateOrmConfigPersistenceUnit {
                 physicalNamingStrategy.isPresent() ||
                 implicitNamingStrategy.isPresent() ||
                 metadataBuilderContributor.isPresent() ||
+                mapping.isAnyPropertySet() ||
                 query.isAnyPropertySet() ||
                 database.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||
@@ -227,29 +282,39 @@ public class HibernateOrmConfigPersistenceUnit {
                 multitenant.isPresent() ||
                 multitenantSchemaDatasource.isPresent() ||
                 fetch.isAnyPropertySet() ||
-                discriminator.isAnyPropertySet();
+                discriminator.isAnyPropertySet() ||
+                quoteIdentifiers.isAnyPropertySet() ||
+                !unsupportedProperties.isEmpty();
     }
 
     @ConfigGroup
     public static class HibernateOrmConfigPersistenceUnitDialect {
 
         /**
-         * Class name of the Hibernate ORM dialect. The complete list of bundled dialects is available in the
+         * Class name of the Hibernate ORM dialect.
+         *
+         * The complete list of bundled dialects is available in the
          * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/dialect/package-summary.html[Hibernate ORM
          * JavaDoc].
          *
-         * [NOTE]
-         * ====
-         * Not all the dialects are supported in GraalVM native executables: we currently provide driver extensions for
-         * PostgreSQL,
-         * MariaDB, Microsoft SQL Server and H2.
-         * ====
+         * Setting the dialect directly is only recommended as a last resort:
+         * most popular databases have a corresponding Quarkus extension,
+         * allowing Quarkus to select the dialect automatically,
+         * in which case you do not need to set the dialect at all,
+         * though you may want to set
+         * xref:datasource.adoc#quarkus-datasource_quarkus.datasource.db-version[`quarkus.datasource.db-version`] as
+         * high as possible
+         * to benefit from the best performance and latest features.
+         *
+         * If your database does not have a corresponding Quarkus extension,
+         * you will need to set the dialect directly.
+         * In that case, keep in mind that the JDBC driver and Hibernate ORM dialect
+         * may not work properly in GraalVM native executables.
          *
          * @asciidoclet
          */
-        // TODO should it be dialects
-        //TODO should it be shortcuts like "postgresql" "h2" etc
-        @ConfigItem(name = ConfigItem.PARENT)
+        @ConfigItem(name = ConfigItem.PARENT, defaultValueDocumentation = "selected automatically for most popular databases")
+        @ConvertWith(TrimmedStringConverter.class)
         public Optional<String> dialect;
 
         /**
@@ -260,10 +325,166 @@ public class HibernateOrmConfigPersistenceUnit {
          * @asciidoclet
          */
         @ConfigItem
+        @ConvertWith(TrimmedStringConverter.class)
         public Optional<String> storageEngine;
 
         public boolean isAnyPropertySet() {
             return dialect.isPresent() || storageEngine.isPresent();
+        }
+    }
+
+    /**
+     * Mapping-related configuration.
+     */
+    @ConfigGroup
+    public static class HibernateOrmConfigPersistenceUnitMapping {
+        /**
+         * Timezone configuration.
+         */
+        @ConfigItem
+        public Timezone timezone;
+
+        /**
+         * Optimizer configuration.
+         */
+        @ConfigItem
+        public Id id;
+
+        @ConfigGroup
+        public static class Timezone {
+            /**
+             * How to store timezones in the database by default
+             * for properties of type `OffsetDateTime` and `ZonedDateTime`.
+             *
+             * This default may be overridden on a per-property basis using `@TimeZoneStorage`.
+             *
+             * NOTE: Properties of type `OffsetTime` are https://hibernate.atlassian.net/browse/HHH-16287[not affected by this
+             * setting].
+             *
+             * `default`::
+             * Equivalent to `native` if supported, `normalize-utc` otherwise.
+             * `auto`::
+             * Equivalent to `native` if supported, `column` otherwise.
+             * `native`::
+             * Stores the timestamp and timezone in a column of type `timestamp with time zone`.
+             * +
+             * Only available on some databases/dialects;
+             * if not supported, an exception will be thrown during static initialization.
+             * `column`::
+             * Stores the timezone in a separate column next to the timestamp column.
+             * +
+             * Use `@TimeZoneColumn` on the relevant entity property to customize the timezone column.
+             * `normalize-utc`::
+             * Does not store the timezone, and loses timezone information upon persisting.
+             * +
+             * Instead, normalizes the value to a timestamp in the UTC timezone.
+             * `normalize`::
+             * Does not store the timezone, and loses timezone information upon persisting.
+             * +
+             * Instead, normalizes the value:
+             * * upon persisting to the database, to a timestamp in the JDBC timezone
+             * set through `quarkus.hibernate-orm.jdbc.timezone`,
+             * or the JVM default timezone if not set.
+             * * upon reading back from the database, to the JVM default timezone.
+             * +
+             * Use this to get the legacy behavior of Quarkus 2 / Hibernate ORM 5 or older.
+             *
+             * @asciidoclet
+             */
+            @ConfigItem(name = "default-storage", defaultValueDocumentation = "default")
+            public Optional<TimeZoneStorageType> timeZoneDefaultStorage;
+        }
+
+        @ConfigGroup
+        public static class Id {
+            /**
+             * Optimizer configuration.
+             */
+            @ConfigItem
+            public Optimizer optimizer;
+
+            @ConfigGroup
+            public static class Optimizer {
+                /**
+                 * The optimizer to apply to identifier generators
+                 * whose optimizer is not configured explicitly.
+                 *
+                 * Only relevant for table- and sequence-based identifier generators.
+                 * Other generators, such as UUID-based generators, will ignore this setting.
+                 *
+                 * The optimizer is responsible for pooling new identifier values,
+                 * in order to reduce the frequency of database calls to retrieve those values
+                 * and thereby improve performance.
+                 *
+                 * @asciidoclet
+                 */
+                @ConfigItem(name = "default", defaultValueDocumentation = "pooled-lo")
+                // Note this needs to be a build-time property due to
+                // org.hibernate.boot.internal.InFlightMetadataCollectorImpl.handleIdentifierValueBinding
+                // which may call (indirectly) org.hibernate.id.enhanced.SequenceStructure.buildSequence
+                // whose output depends on org.hibernate.id.enhanced.SequenceStructure.applyIncrementSizeToSourceValues
+                // which is determined by the optimizer.
+                public Optional<IdOptimizerType> idOptimizerDefault;
+            }
+        }
+
+        public boolean isAnyPropertySet() {
+            return timezone.timeZoneDefaultStorage.isPresent()
+                    || id.optimizer.idOptimizerDefault.isPresent();
+        }
+
+    }
+
+    public enum IdOptimizerType {
+        /**
+         * Assumes the value retrieved from the table/sequence is the lower end of the pool.
+         *
+         * Upon retrieving value `N`, the new pool of identifiers will go from `N` to `N + <allocation size> - 1`, inclusive.
+         * `pooled`::
+         * Assumes the value retrieved from the table/sequence is the higher end of the pool.
+         * +
+         * Upon retrieving value `N`, the new pool of identifiers will go from `N - <allocation size>` to `N + <allocation size>
+         * - 1`, inclusive.
+         * +
+         * The first value, `1`, is handled differently to avoid negative identifiers.
+         * +
+         * Use this to get the legacy behavior of Quarkus 2 / Hibernate ORM 5 or older.
+         * `none`::
+         * No optimizer, resulting in a database call each and every time an identifier value is needed from the generator.
+         * +
+         * Not recommended in production environments:
+         * may result in degraded performance and/or frequent gaps in identifier values.
+         *
+         * @asciidoclet
+         */
+        POOLED_LO(StandardOptimizerDescriptor.POOLED_LO),
+        /**
+         * Assumes the value retrieved from the table/sequence is the higher end of the pool.
+         *
+         * Upon retrieving value `N`, the new pool of identifiers will go from `N - <allocation size>` to `N + <allocation size>
+         * - 1`, inclusive.
+         *
+         * The first value, `1`, is handled differently to avoid negative identifiers.
+         *
+         * Use this to get the legacy behavior of Quarkus 2 / Hibernate ORM 5 or older.
+         *
+         * @asciidoclet
+         */
+        POOLED(StandardOptimizerDescriptor.POOLED),
+        /**
+         * No optimizer, resulting in a database call each and every time an identifier value is needed from the generator.
+         *
+         * Not recommended in production environments:
+         * may result in degraded performance and/or frequent gaps in identifier values.
+         *
+         * @asciidoclet
+         */
+        NONE(StandardOptimizerDescriptor.NONE);
+
+        public final String configName;
+
+        IdOptimizerType(StandardOptimizerDescriptor delegate) {
+            configName = delegate.getExternalName();
         }
     }
 
@@ -280,7 +501,7 @@ public class HibernateOrmConfigPersistenceUnit {
 
         /**
          * The maximum size of the query plan cache.
-         * see #{@value QueryPlanCache#DEFAULT_QUERY_PLAN_MAX_COUNT}
+         * see #{@value org.hibernate.cfg.AvailableSettings#QUERY_PLAN_CACHE_MAX_SIZE}
          */
         @ConfigItem(defaultValue = "2048")
         public int queryPlanCacheMaxSize;
@@ -295,9 +516,16 @@ public class HibernateOrmConfigPersistenceUnit {
         @ConfigItem(defaultValue = "none")
         public NullOrdering defaultNullOrdering;
 
+        /**
+         * Enables IN clause parameter padding which improves statement caching.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean inClauseParameterPadding;
+
         public boolean isAnyPropertySet() {
             return queryPlanCacheMaxSize != DEFAULT_QUERY_PLAN_CACHE_MAX_SIZE
-                    || defaultNullOrdering != NullOrdering.NONE;
+                    || defaultNullOrdering != NullOrdering.NONE
+                    || !inClauseParameterPadding;
         }
     }
 
@@ -305,18 +533,6 @@ public class HibernateOrmConfigPersistenceUnit {
     public static class HibernateOrmConfigPersistenceUnitDatabase {
 
         private static final String DEFAULT_CHARSET = "UTF-8";
-
-        /**
-         * The default catalog to use for the database objects.
-         */
-        @ConfigItem
-        public Optional<String> defaultCatalog;
-
-        /**
-         * The default schema to use for the database objects.
-         */
-        @ConfigItem
-        public Optional<String> defaultSchema;
 
         /**
          * The charset of the database.
@@ -328,14 +544,15 @@ public class HibernateOrmConfigPersistenceUnit {
 
         /**
          * Whether Hibernate should quote all identifiers.
+         *
+         * @deprecated {@link #quoteIdentifiers} should be used to configure quoting strategy.
          */
         @ConfigItem
+        @Deprecated
         public boolean globallyQuotedIdentifiers;
 
         public boolean isAnyPropertySet() {
-            return defaultCatalog.isPresent()
-                    || defaultSchema.isPresent()
-                    || !DEFAULT_CHARSET.equals(charset.name())
+            return !DEFAULT_CHARSET.equals(charset.name())
                     || globallyQuotedIdentifiers;
         }
     }
@@ -345,8 +562,11 @@ public class HibernateOrmConfigPersistenceUnit {
 
         /**
          * The time zone pushed to the JDBC driver.
+         *
+         * See `quarkus.hibernate-orm.mapping.timezone.default-storage`.
          */
         @ConfigItem
+        @ConvertWith(TrimmedStringConverter.class)
         public Optional<String> timezone;
 
         /**
@@ -363,34 +583,6 @@ public class HibernateOrmConfigPersistenceUnit {
 
         public boolean isAnyPropertySet() {
             return timezone.isPresent() || statementFetchSize.isPresent() || statementBatchSize.isPresent();
-        }
-    }
-
-    @ConfigGroup
-    public static class HibernateOrmConfigPersistenceUnitLog {
-
-        /**
-         * Show SQL logs and format them nicely.
-         * <p>
-         * Setting it to true is obviously not recommended in production.
-         */
-        @ConfigItem
-        public boolean sql;
-
-        /**
-         * Format the SQL logs if SQL log is enabled
-         */
-        @ConfigItem(defaultValue = "true")
-        public boolean formatSql;
-
-        /**
-         * Whether JDBC warnings should be collected and logged.
-         */
-        @ConfigItem(defaultValueDocumentation = "depends on dialect")
-        public Optional<Boolean> jdbcWarnings;
-
-        public boolean isAnyPropertySet() {
-            return sql || !formatSql || jdbcWarnings.isPresent();
         }
     }
 
@@ -455,6 +647,27 @@ public class HibernateOrmConfigPersistenceUnit {
 
     }
 
+    @ConfigGroup
+    public static class HibernateOrmConfigPersistenceUnitQuoteIdentifiers {
+
+        /**
+         * Identifiers can be quoted using one of the available strategies.
+         * <p>
+         * Set to {@code none} by default, meaning no identifiers will be quoted. If set to {@code all}, all identifiers and
+         * column
+         * definitions will be quoted. Additionally, setting it to {@code all-except-column-definitions} will skip the column
+         * definitions, which can usually be required when they exist, or else use the option {@code only-keywords} to quote
+         * only
+         * identifiers deemed SQL keywords by the Hibernate ORM dialect.
+         */
+        @ConfigItem(defaultValue = "none")
+        public IdentifierQuotingStrategy strategy;
+
+        public boolean isAnyPropertySet() {
+            return strategy != IdentifierQuotingStrategy.NONE;
+        }
+    }
+
     /**
      * Discriminator configuration.
      *
@@ -474,4 +687,22 @@ public class HibernateOrmConfigPersistenceUnit {
             return ignoreExplicitForJoined;
         }
     }
+
+    public enum IdentifierQuotingStrategy {
+        NONE,
+        ALL,
+        ALL_EXCEPT_COLUMN_DEFINITIONS,
+        ONLY_KEYWORDS
+    }
+
+    @ConfigGroup
+    public static class HibernateOrmConfigPersistenceValidation {
+
+        /**
+         * Enables the Bean Validation integration.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean enabled;
+    }
+
 }

@@ -22,6 +22,10 @@
       <artifactId>quarkus-vertx-http-deployment</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
+    </dependency>
+    <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-smallrye-openapi-spi</artifactId>
     </dependency>
@@ -61,19 +65,16 @@
       <groupId>io.smallrye</groupId>
       <artifactId>smallrye-open-api-vertx</artifactId>
     </dependency>
+
+    <!-- Test -->
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy-deployment</artifactId>
+      <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-spring-web-deployment</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-vertx-web-deployment</artifactId>
+      <artifactId>quarkus-reactive-routes-deployment</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -84,6 +85,16 @@
     <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.ws.rs</groupId>
+      <artifactId>jakarta.ws.rs-api</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

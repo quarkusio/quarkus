@@ -2,10 +2,8 @@ package io.quarkus.micrometer.deployment.export;
 
 import java.util.Set;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -22,10 +20,12 @@ public class NoDefaultPrometheusTest {
             .setFlatClassPath(true)
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
+            .overrideConfigKey("quarkus.micrometer.binder.jvm", "true")
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.export.prometheus.default-registry", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Util.class,
                             PrometheusRegistryProcessor.REGISTRY_CLASS,
                             SecondPrometheusProvider.class));
@@ -49,6 +49,9 @@ public class NoDefaultPrometheusTest {
                 "Should be PrometheusMeterRegistry");
         Assertions.assertEquals(subPromRegistry, promRegistry,
                 "Should be the same bean as the PrometheusMeterRegistry. Found " + subRegistries);
+
+        Assertions.assertNotNull(registry.find("jvm.info").counter(),
+                "JVM Info counter should be present, found: " + registry.getMeters());
 
         String result = promRegistry.scrape();
         Assertions.assertTrue(result.contains("customKey=\"customValue\""),

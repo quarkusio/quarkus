@@ -5,8 +5,8 @@ import static org.hamcrest.Matchers.nullValue;
 
 import java.util.function.Supplier;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.NoCache;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -21,7 +21,7 @@ public class NoCacheOnMethodsTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
@@ -30,37 +30,53 @@ public class NoCacheOnMethodsTest {
             });
 
     @Test
-    public void testWith() {
-        RestAssured.get("/test/with")
+    public void testWithFields() {
+        RestAssured.get("/test/withFields")
                 .then()
                 .statusCode(200)
-                .body(equalTo("with"))
+                .body(equalTo("withFields"))
                 .header("Cache-Control", "no-cache=\"f1\", no-cache=\"f2\"");
     }
 
     @Test
-    public void testWithout() {
-        RestAssured.get("/test/without")
+    public void testWithoutFields() {
+        RestAssured.get("/test/withoutFields")
                 .then()
                 .statusCode(200)
-                .body(equalTo("without"))
+                .body(equalTo("withoutFields"))
+                .header("Cache-Control", "no-cache");
+    }
+
+    @Test
+    public void testWithoutAnnotation() {
+        RestAssured.get("/test/withoutAnnotation")
+                .then()
+                .statusCode(200)
+                .body(equalTo("withoutAnnotation"))
                 .header("Cache-Control", nullValue());
     }
 
     @Path("test")
     public static class ResourceWithNoCache {
 
-        @Path("with")
+        @Path("withFields")
         @GET
         @NoCache(fields = { "f1", "f2" })
-        public String with() {
-            return "with";
+        public String withFields() {
+            return "withFields";
         }
 
-        @Path("without")
+        @Path("withoutFields")
         @GET
-        public String without() {
-            return "without";
+        @NoCache
+        public String withoutFields() {
+            return "withoutFields";
+        }
+
+        @Path("withoutAnnotation")
+        @GET
+        public String withoutAnnotation() {
+            return "withoutAnnotation";
         }
     }
 }

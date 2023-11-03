@@ -16,18 +16,37 @@ import java.security.cert.Certificate;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
+
+import io.quarkus.paths.DirectoryPathTree;
+import io.quarkus.paths.OpenPathTree;
 
 /**
  * A class path element that represents a file on the file system
+ *
+ * @deprecated in favor of {@link PathTreeClassPathElement}
  */
+@Deprecated
 public class DirectoryClassPathElement extends AbstractClassPathElement {
 
     private final Path root;
+    private final boolean runtime;
 
-    public DirectoryClassPathElement(Path root) {
+    public DirectoryClassPathElement(Path root, boolean runtime) {
         assert root != null : "root is null";
         this.root = root.normalize();
+        this.runtime = runtime;
+    }
+
+    @Override
+    public <T> T apply(Function<OpenPathTree, T> func) {
+        return func.apply(new DirectoryPathTree(root));
+    }
+
+    @Override
+    public boolean isRuntime() {
+        return runtime;
     }
 
     @Override
@@ -141,7 +160,7 @@ public class DirectoryClassPathElement extends AbstractClassPathElement {
     }
 
     @Override
-    public ProtectionDomain getProtectionDomain(ClassLoader classLoader) {
+    public ProtectionDomain getProtectionDomain() {
         URL url = null;
         try {
             URI uri = root.toUri();
@@ -150,8 +169,7 @@ public class DirectoryClassPathElement extends AbstractClassPathElement {
             throw new RuntimeException("Unable to create protection domain for " + root, e);
         }
         CodeSource codesource = new CodeSource(url, (Certificate[]) null);
-        ProtectionDomain protectionDomain = new ProtectionDomain(codesource, null, classLoader, null);
-        return protectionDomain;
+        return new ProtectionDomain(codesource, null);
     }
 
     @Override

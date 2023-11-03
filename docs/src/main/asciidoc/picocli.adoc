@@ -3,37 +3,42 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Command Mode with Picocli
-:extension-status: experimental
-
-include::./attributes.adoc[]
+= Command Mode with Picocli
+include::_attributes.adoc[]
+:categories: command-line
+:summary: Simplify command line applications creation with the Picocli extension.
+:topics: command-line,cli,picocli
+:extensions: io.quarkus:quarkus-picocli
 
 https://picocli.info/[Picocli] is an open source tool for creating rich command line applications.
 
 Quarkus provides support for using Picocli. This guide contains examples of `picocli` extension usage.
 
-include::./status-include.adoc[]
+IMPORTANT: If you are not familiar with the Quarkus Command Mode, consider reading the xref:command-mode-reference.adoc[Command Mode reference guide] first.
 
-IMPORTANT: If you are not familiar with the Quarkus Command Mode, consider reading the link:command-mode-reference[Command Mode reference guide] first.
-
-== Configuration
+== Extension
 
 Once you have your Quarkus project configured you can add the `picocli` extension
 to your project by running the following command in your project base directory.
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="picocli"
-----
+:add-extension-extensions: picocli
+include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-picocli</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-picocli")
 ----
 
 == Simple command line application
@@ -46,8 +51,8 @@ package com.acme.picocli;
 
 import picocli.CommandLine;
 
-import javax.enterprise.context.Dependent;
-import javax.inject.Inject;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
 
 @CommandLine.Command // <1>
 public class HelloCommand implements Runnable {
@@ -78,7 +83,7 @@ class GreetingService {
 <2> All classes annotated with `picocli.CommandLine.Command` are registered as CDI beans.
 
 IMPORTANT: Beans with `@CommandLine.Command` should not use proxied scopes (e.g. do not use `@ApplicationScope`)
-because Picocli will not be able set field values in such beans. This extension will register classes with `@CommandLine.Command` annotation
+because Picocli will not be able to set field values in such beans. This extension will register classes with `@CommandLine.Command` annotation
 using `@Depended` scope. If you need to use proxied scope, then annotate setter and not field, for example:
 [source,java]
 ----
@@ -143,8 +148,8 @@ import io.quarkus.picocli.runtime.PicocliCommandLineFactory;
 import io.quarkus.picocli.runtime.annotations.TopCommand;
 import picocli.CommandLine;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 
 @TopCommand
 @CommandLine.Command
@@ -206,7 +211,7 @@ This event will be generated in `QuarkusApplication` class created by this exten
 ----
 @CommandLine.Command
 public class EntryCommand implements Runnable {
-    
+
     @CommandLine.Option(names = "-c", description = "JDBC connection string")
     String connectionString;
 
@@ -239,7 +244,7 @@ class DatasourceConfiguration {
 
 == Providing own QuarkusMain
 
-You can also provide your own application entry point annotated with `QuarkusMain` (as described in link:command-mode-reference[Command Mode reference guide]).
+You can also provide your own application entry point annotated with `QuarkusMain` (as described in xref:command-mode-reference.adoc[Command Mode reference guide]).
 
 [source,java]
 ----
@@ -249,7 +254,7 @@ import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import picocli.CommandLine;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @QuarkusMain
 @CommandLine.Command(name = "demo", mixinStandardHelpOptions = true)
@@ -289,6 +294,83 @@ For Gradle, you need to add the following in `dependencies` section of the `buil
 annotationProcessor enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
 annotationProcessor 'info.picocli:picocli-codegen'
 ----
+
+== Development Mode
+
+In the development mode, i.e. when running `mvn quarkus:dev`, the application is executed and restarted every time the `Space bar` key is pressed. You can also pass arguments to your command line app via the `quarkus.args` system property, e.g. `mvn quarkus:dev -Dquarkus.args='--help'` and `mvn quarkus:dev -Dquarkus.args='-c -w --val 1'`.
+
+== Kubernetes support
+
+Once you have your command line application, you can also generate the resources necessary to install and use this application in Kubernetes by adding the `kubernetes` extension. To install the `kubernetes` extension, run the following command in your project base directory.
+
+:add-extension-extensions: kubernetes
+include::{includes}/devtools/extension-add.adoc[]
+
+This will add the following to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-kubernetes</artifactId>
+</dependency>
+----
+
+And, next, build the application with:
+
+include::{includes}/devtools/build.adoc[]
+
+The Kubernetes extension will detect the presence of the Picocli extension and hence generate a https://kubernetes.io/docs/concepts/workloads/controllers/job/[Job] resource instead of a https://kubernetes.io/docs/concepts/workloads/controllers/deployment/[Deployment] resource in the `target/kubernetes/` directory.
+
+IMPORTANT: If you don't want to generate a Job resource, you can specify the resource you want to generate using the property `quarkus.kubernetes.deployment-kind`. For example, if you want to generate a Deployment resource, use `quarkus.kubernetes.deployment-kind=Deployment`.
+
+Moreover, you can provide the arguments that will be used by the Kubernetes job via the property `quarkus.kubernetes.arguments`. For example, after adding the property `quarkus.kubernetes.arguments=A,B` and building your project, the following Job resource will be generated:
+
+[source,yaml]
+----
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app.kubernetes.io/name: app
+    app.kubernetes.io/version: 0.1-SNAPSHOT
+  name: app
+spec:
+  completionMode: NonIndexed
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: app
+      app.kubernetes.io/version: 0.1-SNAPSHOT
+  suspend: false
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: app
+        app.kubernetes.io/version: 0.1-SNAPSHOT
+    spec:
+      containers:
+        - args:
+            - A
+            - B
+          env:
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          image: docker.io/user/app:0.1-SNAPSHOT
+          imagePullPolicy: Always
+          name: app
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+      restartPolicy: OnFailure
+      terminationGracePeriodSeconds: 10
+
+----
+
+Finally, the Kubernetes job will be launched every time it is installed in Kubernetes. You can know more about how to run Kubernetes jobs in this https://kubernetes.io/docs/concepts/workloads/controllers/job/#running-an-example-job[document].
+
 
 == Configuration Reference
 

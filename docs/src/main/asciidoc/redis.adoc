@@ -3,32 +3,29 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using the Redis Client
+= Using the Redis Client
 :extension-status: preview
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: data
+:topics: data,redis,nosql
+:extensions: io.quarkus:quarkus-redis-client
+:summary: This guide covers how to use a Redis datastore in Quarkus.
 
 This guide demonstrates how your Quarkus application can connect to a Redis server using the Redis Client extension.
 
-include::./status-include.adoc[]
+include::{includes}/extension-status.adoc[]
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* A running Redis server, or Docker Compose to start one
-* GraalVM installed if you want to run in native mode.
+include::{includes}/prerequisites.adoc[]
+* A working Docker environment
 
 == Architecture
 
 In this guide, we are going to expose a simple Rest API to increment numbers by using the https://redis.io/commands/incrby[`INCRBY`] command.
-Along the way, we'll see how to use other Redis commands like `GET`, `SET`, `DEL` and `KEYS`.
+Along the way, we'll see how to use other Redis commands like `GET`, `SET` (from the string group), `DEL` and `KEYS` (from the key group).
 
-We'll be using the Quarkus Redis Client extension to connect to our Redis Server. The extension is implemented on top of the https://vertx.io/docs/vertx-redis-client/java/[Vert.x Redis Client],
-providing an asynchronous and non-blocking way to connect to Redis.
+We'll be using the Quarkus Redis extension to connect to interact with Redis.
 
 == Solution
 
@@ -37,36 +34,28 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `redis-quickstart` {quickstarts-tree-url}/redis-quickstart[directory].
+The solution is located in the `redis-quickstart` link:{quickstarts-tree-url}/redis-quickstart[directory].
 
 == Creating the Maven Project
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=redis-quickstart \
-    -Dextensions="redis-client,resteasy-jackson,resteasy-mutiny" \
-    -DnoExamples
-cd redis-quickstart
-----
+:create-app-artifact-id: redis-quickstart
+:create-app-extensions: redis-client,resteasy-reactive-jackson
+include::{includes}/devtools/create-app.adoc[]
 
-This command generates a Maven project, importing the Redis extension.
-
+This command generates a new project, importing the Redis extension.
 
 If you already have your Quarkus project configured, you can add the `redis-client` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="redis-client"
-----
+:add-extension-extensions: redis-client
+include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -74,38 +63,11 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
-
-== Starting the Redis server
-
-Then, we need to start a Redis instance (if you do not have one already) using the following command:
-
-[source, bash]
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
 ----
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name redis_quarkus_test -p 6379:6379 redis:5.0.6
+implementation("io.quarkus:quarkus-redis-client")
 ----
-
-[NOTE]
-====
-If you use xref:redis-dev-services.adoc[Dev Services for Redis], launching the container manually is not necessary!
-====
-
-== Configuring Redis properties
-
-Once we have the Redis server running, we need to configure the Redis connection properties.
-This is done in the `application.properties` configuration file. Edit it to the following content:
-
-[source,properties]
-----
-quarkus.redis.hosts=redis://localhost:6379 <1>
-----
-
-1. Configure Redis hosts to connect to. Here we connect to the Redis server we started in the previous section
-
-[NOTE]
-====
-This is needed if you are not using xref:redis-dev-services.adoc[Dev Services for Redis]
-====
-
 
 == Creating the Increment POJO
 
@@ -118,9 +80,9 @@ package org.acme.redis;
 
 public class Increment {
     public String key; // <1>
-    public int value; // <2>
+    public long value; // <2>
 
-    public Increment(String key, int value) {
+    public Increment(String key, long value) {
         this.key = key;
         this.value = value;
     }
@@ -129,76 +91,85 @@ public class Increment {
     }
 }
 ----
-
-1. The key that will be used as the Redis key
-2. The value held by the Redis key
+<1> The key that will be used as the Redis key
+<2> The value held by the Redis key
 
 
 == Creating the Increment Service
 
 We are going to create an `IncrementService` class which will play the role of a Redis client.
-With this class, we'll be able to perform the `SET`, `GET` , `DELET`, `KEYS` and `INCRBY` Redis commands.
+With this class, we'll be able to perform the `SET`, `GET` , `DEL`, `KEYS` and `INCRBY` Redis commands.
 
 Create the `src/main/java/org/acme/redis/IncrementService.java` file, with the following content:
 
-[source, java]
+[source,java]
 ----
 package org.acme.redis;
 
-import io.quarkus.redis.client.RedisClient;
-import io.quarkus.redis.client.reactive.ReactiveRedisClient;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
+import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.datasource.keys.KeyCommands;
+import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
+import io.quarkus.redis.datasource.string.StringCommands;
 import io.smallrye.mutiny.Uni;
 
-import io.vertx.mutiny.redis.client.Response;
+@ApplicationScoped
+public class IncrementService {
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+    // This quickstart demonstrates both the imperative
+    // and reactive Redis data sources
+    // Regular applications will pick one of them.
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+    private ReactiveKeyCommands<String> keyCommands; // <1>
+    private ValueCommands<String, Long> countCommands; // <2>
 
-@Singleton
-class IncrementService {
+    public IncrementService(RedisDataSource ds, ReactiveRedisDataSource reactive) { // <3>
+        countCommands = ds.value(Long.class); // <4>
+        keyCommands = reactive.key();  // <5>
 
-    @Inject
-    RedisClient redisClient; // <1>
+    }
 
-    @Inject
-    ReactiveRedisClient reactiveRedisClient; // <2>
+
+    long get(String key) {
+        Long value = countCommands.get(key); // <6>
+        if (value == null) {
+            return 0L;
+        }
+        return value;
+    }
+
+    void set(String key, Long value) {
+        countCommands.set(key, value); // <7>
+    }
+
+    void increment(String key, Long incrementBy) {
+        countCommands.incrby(key, incrementBy); // <8>
+    }
 
     Uni<Void> del(String key) {
-        return reactiveRedisClient.del(Arrays.asList(key))
-                .map(response -> null);
-    }
-
-    String get(String key) {
-        return redisClient.get(key).toString();
-    }
-
-    void set(String key, Integer value) {
-        redisClient.set(Arrays.asList(key, value.toString()));
-    }
-
-    void increment(String key, Integer incrementBy) {
-        redisClient.incrby(key, incrementBy.toString());
+        return keyCommands.del(key) // <9>
+            .replaceWithVoid();
     }
 
     Uni<List<String>> keys() {
-        return reactiveRedisClient
-                .keys("*")
-                .map(response -> {
-                    List<String> result = new ArrayList<>();
-                    for (Response r : response) {
-                        result.add(r.toString());
-                    }
-                    return result;
-                });
+        return keyCommands.keys("*"); // <10>
     }
 }
+
 ----
-1. Inject the Redis synchronous client
-2. Inject the Reactive Redis client
+<1> The field use to manipulate keys
+<2> The field use to manipulate the counter
+<3> Inject both the imperative and reactive data sources
+<4> Retrieve the commands to manipulate the counters
+<5> Retrieve the commands to manipulate the keys
+<6> Retrieve the value associated with the given key. It `null`, returns 0.
+<7> Set the value associated with the given key
+<8> Increment the value associated with the given key
+<9> Delete a key (and its associated value)
+<10> List all the keys
 
 == Creating the Increment Resource
 
@@ -208,13 +179,12 @@ Create the `src/main/java/org/acme/redis/IncrementResource.java` file, with the 
 ----
 package org.acme.redis;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.POST;
-import javax.ws.rs.DELETE;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.DELETE;
 import java.util.List;
 
 import io.smallrye.mutiny.Uni;
@@ -238,27 +208,38 @@ public class IncrementResource {
 
     @GET
     @Path("/{key}")
-    public Increment get(@PathParam("key") String key) {
-        return new Increment(key, Integer.valueOf(service.get(key)));
+    public Increment get(String key) {
+        return new Increment(key, service.get(key));
     }
 
     @PUT
     @Path("/{key}")
-    public void increment(@PathParam("key") String key, Integer value) {
+    public void increment(String key, long value) {
         service.increment(key, value);
     }
 
     @DELETE
     @Path("/{key}")
-    public Uni<Void> delete(@PathParam("key") String key) {
+    public Uni<Void> delete(String key) {
         return service.del(key);
     }
 }
 ----
 
-== Modifying the test class
+== Creating the test class
 
-Edit the `src/test/java/org/acme/redis/IncrementResourceTest.java` file to the following content:
+Edit the `pom.xml` file to add the following dependency:
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.rest-assured</groupId>
+    <artifactId>rest-assured</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+Create the `src/test/java/org/acme/redis/IncrementResourceTest.java` file with the following content:
 
 [source, java]
 ----
@@ -401,10 +382,7 @@ public class IncrementResourceTest {
 If you followed the instructions, you should have the Redis server running.
 Then, you just need to run the application using:
 
-[source,bash]
-----
-./mvnw quarkus:dev
-----
+include::{includes}/devtools/dev.adoc[]
 
 Open another terminal and run the `curl http://localhost:8080/increments` command.
 
@@ -420,8 +398,7 @@ a key.
 ----
 curl -X POST -H "Content-Type: application/json" -d '{"key":"first","value":10}' http://localhost:8080/increments <1>
 ----
-
-1. We create the first increment, with the key `first` and an initial value of `10`.
+<1> We create the first increment, with the key `first` and an initial value of `10`.
 
 Running the above command should return the result below:
 
@@ -452,8 +429,7 @@ To retrieve an increment using its key, we will have to run the below command:
 ----
 curl http://localhost:8080/increments/first <1>
 ----
-
-1. Running this command, should return the following result:
+<1> Running this command, should return the following result:
 
 [source, json]
 ----
@@ -471,8 +447,7 @@ To increment a value, run the following command:
 ----
 curl -X PUT -H "Content-Type: application/json" -d '27' http://localhost:8080/increments/first <1>
 ----
-
-1. Increment the `first` value by 27.
+<1> Increment the `first` value by 27.
 
 Now, running the command `curl http://localhost:8080/increments/first` should return the following result:
 
@@ -483,8 +458,7 @@ Now, running the command `curl http://localhost:8080/increments/first` should re
   "value": 37 <1>
 }
 ----
-
-1. We see that the value of the `first` key is now `37` which is exactly the result of `10 + 27`, quick maths.
+<1> We see that the value of the `first` key is now `37` which is exactly the result of `10 + 27`, quick maths.
 
 === Deleting a key
 
@@ -494,10 +468,28 @@ Use the command below, to delete an increment given its key.
 ----
 curl -X DELETE  http://localhost:8080/increments/first <1>
 ----
-
-1. Delete the `first` increment.
+<1> Delete the `first` increment.
 
 Now, running the command `curl http://localhost:8080/increments` should return an empty list `[]`
+
+== Configuring for production
+
+At this point, Quarkus uses the Redis Dev Service to run a Redis server and configure the application.
+However, in production, you will run your own Redis (or used a Cloud offering).
+
+Let's start a Redis server on the port 6379 using:
+
+[source, shell]
+----
+docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name redis_quarkus_test -p 6379:6379 redis:5.0.6
+----
+
+Then, open the `src/main/resources/application.properties` file and add:
+
+[source, properties]
+----
+%prod.quarkus.redis.hosts=redis://localhost:6379
+----
 
 == Packaging and running in JVM mode
 
@@ -505,12 +497,9 @@ You can run the application as a conventional jar file.
 
 First, we will need to package it:
 
-[source,bash]
-----
-./mvnw package
-----
+include::{includes}/devtools/build.adoc[]
 
-NOTE: This command will start a Redis instance to execute the tests. Thus your Redis containers need to be stopped.
+NOTE: This command will start a Redis instance to execute the tests.
 
 Then run it:
 
@@ -530,10 +519,7 @@ Compiling a native executable takes a bit longer, as GraalVM performs additional
 steps to remove unnecessary codepaths. Use the  `native` profile to compile a
 native executable:
 
-[source,bash]
-----
-./mvnw package -Pnative
-----
+include::{includes}/devtools/build-native.adoc[]
 
 Once the build is finished, you can run the executable with:
 
@@ -542,80 +528,6 @@ Once the build is finished, you can run the executable with:
 ./target/redis-quickstart-1.0.0-SNAPSHOT-runner
 ----
 
-== Connection Health Check
+== Going further
 
-If you are using the `quarkus-smallrye-health` extension, `quarkus-vertx-redis` will automatically add a readiness health check
-to validate the connection to the Redis server.
-
-So when you access the `/q/health/ready` endpoint of your application you will have information about the connection validation status.
-
-This behavior can be disabled by setting the `quarkus.redis.health.enabled` property to `false` in your `application.properties`.
-
-[[multiple-clients-configuration]]
-== Multiple Redis Clients
-
-The Redis extension allows you to configure multiple clients.
-Using several clients works the same way as having a single client.
-
-[source,properties]
-----
-quarkus.redis.hosts=redis://localhost:6379
-quarkus.redis.second.hosts=redis://localhost:6379
-----
-
-Notice there's an extra bit in the key (the `second` segment).
-The syntax is as follows: `quarkus.redis.[optional name.][redis configuration property]`.
-If the name is omitted, it configures the default client.
-
-=== Named Redis client Injection
-
-When using multiple clients, you can select the client to inject using the `io.quarkus.redis.client.RedisClientName` qualifier.
-Using the above properties to configure three different clients, you can also inject each one as follows:
-
-[source,java,indent=0]
-----
-@Inject
-RedisClient defaultRedisClient;
-
-@Inject
-@RedisClientName("second")
-RedisClient redisClient2;
-
-@Inject
-@RedisClientName("second")
-ReactiveRedisClient reactiveClient2;
-----
-
-=== Creating Clients Programmatically
-
-The `RedisClient` and `ReactiveRedisClient` provide factory methods to create clients programmatically.
-The client to be created are configured using the usual <<config-reference,Redis configuration>>.
-
-[NOTE]
-====
-This is useful to create a client dynamically in a non-CDI bean e.g a link:hibernate-orm-panache.adoc[Panache entity].
-Or to create a different client when running in pub/sub mode. This mode requires two different connections
-because once a connection invokes a subscriber mode then it cannot be used for running other commands
-than the command to leave that mode.
-====
-
-The below code snippet shows how we can create dynamic clients using the configurations in <<multiple-clients-configuration>>.
-[source,java,indent=0]
-----
-// creating default redis client
-RedisClient defaultRedisClient = RedisClient.createClient();
-
-// creating named redis client whose configuration name is "second"
-RedisClient namedRedisClient = RedisClient.createClient("second");
-
-// creating a default reactive redis client
-ReactiveRedisClient defaultReactiveRedisClient = ReactiveRedisClient.createClient();
-
-// creating a named reactive redis client whose configuration name is "second"
-ReactiveRedisClient namedReactiveRedisClient = ReactiveRedisClient.createClient("second");
-----
-
-[[config-reference]]
-== Configuration Reference
-
-include::{generated-dir}/config/quarkus-redis-client.adoc[opts=optional, leveloffset=+1]
+To learn more about the Quarkus Redis extension, check xref:redis-reference.adoc[the Redis extension reference guide].

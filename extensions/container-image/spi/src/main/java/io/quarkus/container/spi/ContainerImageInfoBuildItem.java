@@ -18,6 +18,8 @@ public final class ContainerImageInfoBuildItem extends SimpleBuildItem {
      * The container registry to use
      */
     public final Optional<String> registry;
+    public final Optional<String> username;
+    public final Optional<String> password;
 
     private final String imagePrefix;
     private final String repository;
@@ -26,8 +28,11 @@ public final class ContainerImageInfoBuildItem extends SimpleBuildItem {
 
     private final Set<String> additionalTags;
 
-    public ContainerImageInfoBuildItem(Optional<String> registry, String repository, String tag, List<String> additionalTags) {
+    public ContainerImageInfoBuildItem(Optional<String> registry, Optional<String> username, Optional<String> password,
+            String repository, String tag, List<String> additionalTags) {
         this.registry = registry;
+        this.username = username;
+        this.password = password;
         this.repository = repository;
 
         StringBuilder sb = new StringBuilder();
@@ -38,9 +43,12 @@ public final class ContainerImageInfoBuildItem extends SimpleBuildItem {
         this.additionalTags = new HashSet<>(additionalTags);
     }
 
-    public ContainerImageInfoBuildItem(Optional<String> registry, Optional<String> group, String name, String tag,
+    public ContainerImageInfoBuildItem(Optional<String> registry, Optional<String> username, Optional<String> password,
+            Optional<String> group, String name, String tag,
             List<String> additionalTags) {
         this.registry = registry;
+        this.username = username;
+        this.password = password;
 
         StringBuilder imagePrefixSB = new StringBuilder();
         StringBuilder repositorySB = new StringBuilder();
@@ -54,6 +62,14 @@ public final class ContainerImageInfoBuildItem extends SimpleBuildItem {
 
     public Optional<String> getRegistry() {
         return registry;
+    }
+
+    public Optional<String> getUsername() {
+        return username;
+    }
+
+    public Optional<String> getPassword() {
+        return password;
     }
 
     public String getImage() {

@@ -3,23 +3,28 @@ package io.quarkus.test;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.ServiceLoader;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.function.Consumer;
@@ -28,7 +33,6 @@ import java.util.function.Supplier;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
-import java.util.stream.Collectors;
 
 import org.jboss.logmanager.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -40,18 +44,20 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
+import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.api.extension.ParameterResolutionException;
+import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
+import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.classloading.ClassLoaderEventListener;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildException;
@@ -59,14 +65,17 @@ import io.quarkus.builder.BuildStep;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runner.bootstrap.StartupActionImpl;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
-import io.quarkus.test.common.GroovyCacheCleaner;
+import io.quarkus.runtime.logging.JBossVersion;
+import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
@@ -75,14 +84,16 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
  */
 public class QuarkusUnitTest
         implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback,
-        InvocationInterceptor {
+        InvocationInterceptor, ParameterResolver {
 
     public static final String THE_BUILD_WAS_EXPECTED_TO_FAIL = "The build was expected to fail";
+    private static final String APP_ROOT = "app-root";
 
     private static final Logger rootLogger;
     private Handler[] originalHandlers;
 
     static {
+        JBossVersion.disableVersionLogging();
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
         rootLogger = (Logger) LogManager.getLogManager().getLogger("");
     }
@@ -92,6 +103,8 @@ public class QuarkusUnitTest
     private Path deploymentDir;
     private Consumer<Throwable> assertException;
     private Supplier<JavaArchive> archiveProducer;
+    private List<JavaArchive> additionalDependencies = new ArrayList<>();
+
     private List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
     private Runnable afterUndeployListener;
 
@@ -102,12 +115,14 @@ public class QuarkusUnitTest
     private Timer timeoutTimer;
     private volatile TimerTask timeoutTask;
     private Properties customApplicationProperties;
+    private Map<String, String> customRuntimeApplicationProperties;
     private Runnable beforeAllCustomizer;
     private Runnable afterAllCustomizer;
     private CuratedApplication curatedApplication;
     private RunningQuarkusApplication runningQuarkusApplication;
+    private QuarkusClassLoader quarkusUnitTestClassLoader;
     private ClassLoader originalClassLoader;
-    private List<AppArtifact> forcedDependencies = Collections.emptyList();
+    private List<Dependency> forcedDependencies = Collections.emptyList();
 
     private boolean useSecureConnection;
 
@@ -119,7 +134,15 @@ public class QuarkusUnitTest
     private boolean flatClassPath;
     private List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
 
+    private List<Object> testMethodInvokers;
+
+    private List<Consumer<QuarkusBootstrap.Builder>> bootstrapCustomizers = new ArrayList<>();
+
     public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
+        return setExpectedException(expectedException, false);
+    }
+
+    public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException, boolean logMessage) {
         return assertException(t -> {
             Throwable i = t;
             boolean found = false;
@@ -130,8 +153,10 @@ public class QuarkusUnitTest
                 }
                 i = i.getCause();
             }
-
-            assertTrue(found, "Build failed with wrong exception, expected " + expectedException + " but got " + t);
+            if (found && logMessage) {
+                System.out.println("Build failed with the expected exception:" + i);
+            }
+            assertTrue(found, "Build failed with a wrong exception, expected " + expectedException + " but got " + t);
         });
     }
 
@@ -160,10 +185,69 @@ public class QuarkusUnitTest
         return archiveProducer;
     }
 
+    /**
+     *
+     * @param archiveProducer
+     * @return self
+     * @see #withApplicationRoot(Consumer)
+     */
     public QuarkusUnitTest setArchiveProducer(Supplier<JavaArchive> archiveProducer) {
-        Objects.requireNonNull(archiveProducer);
-        this.archiveProducer = archiveProducer;
+        this.archiveProducer = Objects.requireNonNull(archiveProducer);
         return this;
+    }
+
+    /**
+     * Customize the application root.
+     *
+     * @param applicationRootConsumer
+     * @return self
+     */
+    public QuarkusUnitTest withApplicationRoot(Consumer<JavaArchive> applicationRootConsumer) {
+        Objects.requireNonNull(applicationRootConsumer);
+        return setArchiveProducer(() -> {
+            JavaArchive jar = ShrinkWrap.create(JavaArchive.class);
+            applicationRootConsumer.accept(jar);
+            return jar;
+        });
+    }
+
+    /**
+     * Use an empty application for the test
+     *
+     * @return self
+     */
+    public QuarkusUnitTest withEmptyApplication() {
+        return withApplicationRoot(new Consumer<JavaArchive>() {
+            @Override
+            public void accept(JavaArchive javaArchive) {
+
+            }
+        });
+    }
+
+    /**
+     * Add the java archive as an additional dependency. This dependency is always considered an application archive, even if it
+     * would not otherwise be one.
+     *
+     * @param archive
+     * @return self
+     */
+    public QuarkusUnitTest addAdditionalDependency(JavaArchive archive) {
+        this.additionalDependencies.add(Objects.requireNonNull(archive));
+        return this;
+    }
+
+    /**
+     * Add the java archive as an additional dependency. This dependency is always considered an application archive, even if it
+     * would not otherwise be one.
+     *
+     * @param dependencyConsumer
+     * @return self
+     */
+    public QuarkusUnitTest withAdditionalDependency(Consumer<JavaArchive> dependencyConsumer) {
+        JavaArchive dependency = ShrinkWrap.create(JavaArchive.class);
+        Objects.requireNonNull(dependencyConsumer).accept(dependency);
+        return addAdditionalDependency(dependency);
     }
 
     public QuarkusUnitTest addBuildChainCustomizer(Consumer<BuildChainBuilder> customizer) {
@@ -189,21 +273,13 @@ public class QuarkusUnitTest
     /**
      * If this test should use a single ClassLoader to load all the classes.
      *
-     * This is sometimes nessesary when testing Quarkus itself, and we want the test classes
+     * This is sometimes necessary when testing Quarkus itself, and we want the test classes
      * and Quarkus classes to be in the same CL.
      *
      */
     public QuarkusUnitTest setFlatClassPath(boolean flatClassPath) {
         this.flatClassPath = flatClassPath;
         return this;
-    }
-
-    public List<LogRecord> getLogRecords() {
-        return inMemoryLogHandler.records;
-    }
-
-    public void clearLogRecords() {
-        inMemoryLogHandler.clearRecords();
     }
 
     public QuarkusUnitTest assertLogRecords(Consumer<List<LogRecord>> assertLogRecords) {
@@ -231,7 +307,7 @@ public class QuarkusUnitTest
      * Provides a convenient way to either add additional dependencies to the application (if it doesn't already contain a
      * dependency), or override a version (if the dependency already exists)
      */
-    public QuarkusUnitTest setForcedDependencies(List<AppArtifact> forcedDependencies) {
+    public QuarkusUnitTest setForcedDependencies(List<Dependency> forcedDependencies) {
         this.forcedDependencies = forcedDependencies;
         return this;
     }
@@ -255,7 +331,16 @@ public class QuarkusUnitTest
         return this;
     }
 
-    private void exportArchive(Path deploymentDir, Class<?> testClass) {
+    /**
+     * An advanced option that allows tests to customize the {@link QuarkusBootstrap.Builder} that will be used to create the
+     * {@link CuratedApplication}
+     */
+    public QuarkusUnitTest addBootstrapCustomizer(Consumer<QuarkusBootstrap.Builder> consumer) {
+        this.bootstrapCustomizers.add(consumer);
+        return this;
+    }
+
+    private void exportArchives(Path deploymentDir, Class<?> testClass) {
         try {
             JavaArchive archive = getArchiveProducerOrDefault();
             Class<?> c = testClass;
@@ -267,7 +352,11 @@ public class QuarkusUnitTest
             if (customApplicationProperties != null) {
                 archive.add(new PropertiesAsset(customApplicationProperties), "application.properties");
             }
-            archive.as(ExplodedExporter.class).exportExplodedInto(deploymentDir.toFile());
+            archive.as(ExplodedExporter.class).exportExplodedInto(deploymentDir.resolve(APP_ROOT).toFile());
+
+            for (JavaArchive dependency : additionalDependencies) {
+                dependency.as(ExplodedExporter.class).exportExplodedInto(deploymentDir.resolve(dependency.getName()).toFile());
+            }
 
             //debugging code
             ExportUtil.exportToQuarkusDeploymentPath(archive);
@@ -287,14 +376,14 @@ public class QuarkusUnitTest
     @Override
     public void interceptBeforeAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        runExtensionMethod(invocationContext);
+        runExtensionMethod(invocationContext, extensionContext, false);
         invocation.skip();
     }
 
     @Override
     public void interceptBeforeEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
-        runExtensionMethod(invocationContext);
+        runExtensionMethod(invocationContext, extensionContext, true);
         invocation.skip();
     }
 
@@ -302,7 +391,7 @@ public class QuarkusUnitTest
     public void interceptAfterEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
         if (assertException == null) {
-            runExtensionMethod(invocationContext);
+            runExtensionMethod(invocationContext, extensionContext, true);
             invocation.skip();
         } else {
             invocation.proceed();
@@ -313,7 +402,7 @@ public class QuarkusUnitTest
     public void interceptAfterAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
         if (assertException == null) {
-            runExtensionMethod(invocationContext);
+            runExtensionMethod(invocationContext, extensionContext, false);
         }
         invocation.skip();
     }
@@ -322,7 +411,7 @@ public class QuarkusUnitTest
     public void interceptTestMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
         if (assertException == null) {
-            runExtensionMethod(invocationContext);
+            runExtensionMethod(invocationContext, extensionContext, true);
         }
         invocation.skip();
     }
@@ -331,30 +420,85 @@ public class QuarkusUnitTest
     public void interceptTestTemplateMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
         if (assertException == null) {
-            runExtensionMethod(invocationContext);
+            runExtensionMethod(invocationContext, extensionContext, false);
         }
         invocation.skip();
     }
 
-    private void runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext) throws Throwable {
+    private void runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext,
+            boolean testMethodInvokersAllowed) throws Throwable {
         Method newMethod = null;
         Class<?> c = actualTestClass;
-        while (c != Object.class) {
-            try {
-                newMethod = c.getDeclaredMethod(invocationContext.getExecutable().getName(),
-                        invocationContext.getExecutable().getParameterTypes());
-                break;
-            } catch (NoSuchMethodException e) {
-                //ignore
+        while ((c != Object.class) && newMethod == null) {
+            Method[] declaredMethods = c.getDeclaredMethods();
+            for (Method declaredMethod : declaredMethods) {
+                if (!declaredMethod.getName().equals(invocationContext.getExecutable().getName())) {
+                    continue;
+                }
+                boolean parametersMatch = true;
+                for (Class<?> declaredMethodParameterType : declaredMethod.getParameterTypes()) {
+                    boolean parameterTypeFound = false;
+                    for (Class<?> executionContextParameterType : invocationContext.getExecutable().getParameterTypes()) {
+                        if (declaredMethodParameterType.getName().equals(executionContextParameterType.getName())) {
+                            parameterTypeFound = true;
+                            break;
+                        }
+                    }
+                    if (!parameterTypeFound) {
+                        parametersMatch = false;
+                        break;
+                    }
+                }
+                if (parametersMatch) {
+                    newMethod = declaredMethod;
+                    break;
+                }
             }
             c = c.getSuperclass();
         }
         if (newMethod == null) {
             throw new RuntimeException("Could not find method " + invocationContext.getExecutable() + " on test class");
         }
+
+        Object testMethodInvokerToUse = null;
+        if (testMethodInvokersAllowed) {
+            for (Object testMethodInvoker : testMethodInvokers) {
+                boolean supportsMethod = (boolean) testMethodInvoker.getClass()
+                        .getMethod("supportsMethod", Class.class, Method.class).invoke(testMethodInvoker,
+                                extensionContext.getRequiredTestClass(), invocationContext.getExecutable());
+                if (supportsMethod) {
+                    testMethodInvokerToUse = testMethodInvoker;
+                    break;
+                }
+            }
+        }
+
         try {
             newMethod.setAccessible(true);
-            newMethod.invoke(actualTestInstance, invocationContext.getArguments().toArray());
+            if (testMethodInvokerToUse != null) {
+                List<Object> effectiveArguments = new ArrayList<>(invocationContext.getArguments().size());
+                Class<?>[] parameterTypes = newMethod.getParameterTypes();
+                if (parameterTypes.length != invocationContext.getArguments().size()) {
+                    throw new IllegalStateException(
+                            "Improper integration of '" + testMethodInvokerToUse.getClass() + "' detected");
+                }
+                for (int i = 0; i < invocationContext.getArguments().size(); i++) {
+                    Object originalValue = invocationContext.getArguments().get(i);
+                    if ((originalValue == null)
+                            && (testMethodInvokerHandlesParamType(testMethodInvokerToUse, parameterTypes[i].getName()))) {
+                        effectiveArguments
+                                .add(testMethodInvokerParamInstance(testMethodInvokerToUse, parameterTypes[i].getName()));
+                    } else {
+                        effectiveArguments.add(originalValue);
+                    }
+                }
+                testMethodInvokerToUse.getClass()
+                        .getMethod("invoke", Object.class, Method.class, List.class, String.class)
+                        .invoke(testMethodInvokerToUse, actualTestInstance, newMethod, effectiveArguments,
+                                extensionContext.getRequiredTestClass().getName());
+            } else {
+                newMethod.invoke(actualTestInstance, invocationContext.getArguments().toArray());
+            }
         } catch (InvocationTargetException e) {
             throw e.getCause();
         } catch (IllegalAccessException e) {
@@ -364,6 +508,8 @@ public class QuarkusUnitTest
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        TestConfigUtil.cleanUp();
+        GroovyClassValue.disable();
         //set the right launch mode in the outer CL, used by the HTTP host config source
         ProfileManager.setLaunchMode(LaunchMode.TEST);
         if (beforeAllCustomizer != null) {
@@ -395,10 +541,13 @@ public class QuarkusUnitTest
             PropertyTestUtil.setLogFileProperty();
         }
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
+
+        ExclusivityChecker.checkTestType(extensionContext, QuarkusUnitTest.class);
+
         TestResourceManager testResourceManager = (TestResourceManager) store.get(TestResourceManager.class.getName());
         if (testResourceManager == null) {
             testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
-            testResourceManager.init();
+            testResourceManager.init(null);
             testResourceManager.start();
             TestResourceManager tm = testResourceManager;
             store.put(TestResourceManager.class.getName(), testResourceManager);
@@ -416,7 +565,7 @@ public class QuarkusUnitTest
         try {
             deploymentDir = Files.createTempDirectory("quarkus-unit-test");
 
-            exportArchive(deploymentDir, testClass);
+            exportArchives(deploymentDir, testClass);
 
             List<Consumer<BuildChainBuilder>> customizers = new ArrayList<>(buildChainCustomizers);
 
@@ -466,36 +615,49 @@ public class QuarkusUnitTest
                         + " other beans may also be removed and injection may not work as expected");
             }
 
-            final Path testLocation = PathTestHelper.getTestClassesLocation(testClass);
-
             try {
+                final Path testLocation = PathTestHelper.getTestClassesLocation(testClass);
+                final Path projectDir = Path.of("").normalize().toAbsolutePath();
                 QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
-                        .setApplicationRoot(deploymentDir)
+                        .setBaseName(extensionContext.getDisplayName() + " (QuarkusUnitTest)")
+                        .setApplicationRoot(deploymentDir.resolve(APP_ROOT))
                         .setMode(QuarkusBootstrap.Mode.TEST)
                         .addExcludedPath(testLocation)
-                        .setProjectRoot(testLocation)
+                        .setProjectRoot(projectDir)
+                        .setTargetDirectory(PathTestHelper.getProjectBuildDir(projectDir, testLocation))
                         .setFlatClassPath(flatClassPath)
-                        .setForcedDependencies(forcedDependencies.stream().map(d -> new AppDependency(d, "compile"))
-                                .collect(Collectors.toList()));
+                        .setForcedDependencies(forcedDependencies);
+                for (JavaArchive dependency : additionalDependencies) {
+                    builder.addAdditionalApplicationArchive(
+                            new AdditionalDependency(deploymentDir.resolve(dependency.getName()), false, true));
+                }
                 if (!forcedDependencies.isEmpty()) {
                     //if we have forced dependencies we can't use the cache
                     //as it can screw everything up
                     builder.setDisableClasspathCache(true);
                 }
                 if (!allowTestClassOutsideDeployment) {
-                    builder
-                            .setBaseClassLoader(
-                                    QuarkusClassLoader
-                                            .builder("QuarkusUnitTest ClassLoader", getClass().getClassLoader(), false)
-                                            .addClassLoaderEventListeners(this.classLoadListeners)
-                                            .addBannedElement(ClassPathElement.fromPath(testLocation)).build());
+                    quarkusUnitTestClassLoader = QuarkusClassLoader
+                            .builder("QuarkusUnitTest ClassLoader for " + extensionContext.getDisplayName(),
+                                    getClass().getClassLoader(), false)
+                            .addClassLoaderEventListeners(this.classLoadListeners)
+                            .addBannedElement(ClassPathElement.fromPath(testLocation, true)).build();
+                    builder.setBaseClassLoader(quarkusUnitTestClassLoader);
                 }
                 builder.addClassLoaderEventListeners(this.classLoadListeners);
+
+                for (Consumer<QuarkusBootstrap.Builder> bootstrapCustomizer : bootstrapCustomizers) {
+                    bootstrapCustomizer.accept(builder);
+                }
                 curatedApplication = builder.build().bootstrap();
 
                 StartupActionImpl startupAction = new AugmentActionImpl(curatedApplication, customizers, classLoadListeners)
                         .createInitialRuntimeApplication();
-                startupAction.overrideConfig(testResourceManager.getConfigProperties());
+                Map<String, String> overriddenConfig = new HashMap<>(testResourceManager.getConfigProperties());
+                if (customRuntimeApplicationProperties != null) {
+                    overriddenConfig.putAll(customRuntimeApplicationProperties);
+                }
+                startupAction.overrideConfig(overriddenConfig);
                 runningQuarkusApplication = startupAction
                         .run(commandLineParameters);
                 //we restore the CL at the end of the test
@@ -512,6 +674,9 @@ public class QuarkusUnitTest
                     Class<?> resM = runningQuarkusApplication.getClassLoader()
                             .loadClass(TestHTTPResourceManager.class.getName());
                     resM.getDeclaredMethod("inject", Object.class).invoke(null, actualTestInstance);
+
+                    populateTestMethodInvokers(startupAction.getClassLoader());
+
                 } catch (Exception e) {
                     throw new TestInstantiationException("Failed to create test instance", e);
                 }
@@ -563,11 +728,13 @@ public class QuarkusUnitTest
     public void afterAll(ExtensionContext extensionContext) throws Exception {
         actualTestClass = null;
         actualTestInstance = null;
+        List<LogRecord> records = null;
         if (assertLogRecords != null) {
-            assertLogRecords.accept(inMemoryLogHandler.records);
+            records = new ArrayList<>(inMemoryLogHandler.records);
         }
         rootLogger.setHandlers(originalHandlers);
         inMemoryLogHandler.clearRecords();
+        inMemoryLogHandler.setFilter(null);
 
         try {
             if (runningQuarkusApplication != null) {
@@ -585,8 +752,13 @@ public class QuarkusUnitTest
             System.clearProperty("test.url");
             Thread.currentThread().setContextClassLoader(originalClassLoader);
             originalClassLoader = null;
+            if (quarkusUnitTestClassLoader != null) {
+                quarkusUnitTestClassLoader.close();
+                quarkusUnitTestClassLoader = null;
+            }
             timeoutTask.cancel();
             timeoutTask = null;
+            timeoutTimer.cancel();
             timeoutTimer = null;
             if (deploymentDir != null) {
                 FileUtil.deleteDirectory(deploymentDir);
@@ -595,9 +767,12 @@ public class QuarkusUnitTest
             if (afterAllCustomizer != null) {
                 afterAllCustomizer.run();
             }
+            ClearCache.clearAnnotationCache();
+            TestConfigUtil.cleanUp();
         }
-        ClearCache.clearAnnotationCache();
-        GroovyCacheCleaner.clearGroovyCache();
+        if (records != null) {
+            assertLogRecords.accept(records);
+        }
     }
 
     @Override
@@ -649,12 +824,16 @@ public class QuarkusUnitTest
             customApplicationProperties = new Properties();
         }
         try {
-            try (InputStream in = ClassLoader.getSystemResourceAsStream(resourceName)) {
+            URL systemResource = ClassLoader.getSystemResource(resourceName);
+            if (systemResource == null) {
+                throw new FileNotFoundException("Resource '" + resourceName + "' not found");
+            }
+            try (InputStream in = systemResource.openStream()) {
                 customApplicationProperties.load(in);
             }
             return this;
         } catch (IOException e) {
-            throw new RuntimeException("Could not load resource: '" + resourceName + "'");
+            throw new UncheckedIOException("Could not load resource: '" + resourceName + "'", e);
         }
     }
 
@@ -664,5 +843,107 @@ public class QuarkusUnitTest
         }
         customApplicationProperties.put(propertyKey, propertyValue);
         return this;
+    }
+
+    public QuarkusUnitTest overrideRuntimeConfigKey(final String propertyKey, final String propertyValue) {
+        if (customRuntimeApplicationProperties == null) {
+            customRuntimeApplicationProperties = new HashMap<>();
+        }
+        customRuntimeApplicationProperties.put(propertyKey, propertyValue);
+        return this;
+    }
+
+    @Override
+    public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
+            throws ParameterResolutionException {
+        boolean isConstructor = parameterContext.getDeclaringExecutable() instanceof Constructor;
+        if (isConstructor) {
+            return true;
+        }
+        if (!(parameterContext.getDeclaringExecutable() instanceof Method)) {
+            return false;
+        }
+        if (testMethodInvokers == null) {
+            return false;
+        }
+        for (Object testMethodInvoker : testMethodInvokers) {
+            boolean handlesMethodParamType = testMethodInvokerHandlesParamType(testMethodInvoker,
+                    parameterContext.getParameter().getType().getName());
+            if (handlesMethodParamType) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * We don't actually have to resolve the parameter (thus the default values in the implementation)
+     * since the class instance that is passed to JUnit isn't really used.
+     * The actual test instance that is used is the one that is pulled from Arc, which of course will already have its
+     * constructor parameters properly resolved
+     */
+    @Override
+    public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
+            throws ParameterResolutionException {
+        if ((parameterContext.getDeclaringExecutable() instanceof Method) && (testMethodInvokers != null)) {
+            for (Object testMethodInvoker : testMethodInvokers) {
+                if (testMethodInvokerHandlesParamType(testMethodInvoker,
+                        parameterContext.getParameter().getType().getName())) {
+                    return null; // don't return the actual value since it leads to class loading issues
+                }
+            }
+        }
+        String className = parameterContext.getParameter().getType().getName();
+        switch (className) {
+            case "boolean":
+                return false;
+            case "byte":
+            case "short":
+            case "int":
+                return 0;
+            case "long":
+                return 0L;
+            case "float":
+                return 0.0f;
+            case "double":
+                return 0.0d;
+            case "char":
+                return '\u0000';
+            default:
+                return null;
+        }
+    }
+
+    // we need to use reflection because the instances of TestMethodInvoker are loaded from the QuarkusClassLoader
+    private boolean testMethodInvokerHandlesParamType(Object testMethodInvoker, String parameterTypeName) {
+        try {
+            return (boolean) testMethodInvoker.getClass().getMethod("handlesMethodParamType", String.class)
+                    .invoke(testMethodInvoker, parameterTypeName);
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new IllegalStateException("Unable to determine if TestMethodInvoker supports parameter", e);
+        }
+    }
+
+    // we need to use reflection because the instances of TestMethodInvoker are loaded from the QuarkusClassLoader
+    private Object testMethodInvokerParamInstance(Object testMethodInvoker, String parameterTypeName) {
+        try {
+            return testMethodInvoker.getClass().getMethod("methodParamInstance", String.class)
+                    .invoke(testMethodInvoker, parameterTypeName);
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new IllegalStateException("Unable to obtain instance of parameter using TestMethodInvoker", e);
+        }
+    }
+
+    private void populateTestMethodInvokers(ClassLoader quarkusClassLoader) {
+        testMethodInvokers = new ArrayList<>();
+        try {
+            ServiceLoader<?> loader = ServiceLoader.load(quarkusClassLoader.loadClass(TestMethodInvoker.class.getName()),
+                    quarkusClassLoader);
+            for (Object testMethodInvoker : loader) {
+                testMethodInvokers.add(testMethodInvoker);
+            }
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

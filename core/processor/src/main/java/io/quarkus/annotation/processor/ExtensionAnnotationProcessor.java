@@ -1,5 +1,7 @@
 package io.quarkus.annotation.processor;
 
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_GROUP;
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_MAPPING;
 import static javax.lang.model.util.ElementFilter.constructorsIn;
 import static javax.lang.model.util.ElementFilter.fieldsIn;
 import static javax.lang.model.util.ElementFilter.methodsIn;
@@ -25,6 +27,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
@@ -37,9 +41,12 @@ import javax.annotation.processing.Filer;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -73,12 +80,15 @@ import io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil;
 public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     private static final Pattern REMOVE_LEADING_SPACE = Pattern.compile("^ ", Pattern.MULTILINE);
+    private static final String QUARKUS_GENERATED = "io.quarkus.Generated";
 
     private final ConfigDocWriter configDocWriter = new ConfigDocWriter();
     private final ConfigDocItemScanner configDocItemScanner = new ConfigDocItemScanner();
     private final Set<String> generatedAccessors = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
     private final Set<String> generatedJavaDocs = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
     private final boolean generateDocs = !(Boolean.getBoolean("skipDocs") || Boolean.getBoolean("quickly"));
+
+    private final Map<String, Boolean> ANNOTATION_USAGE_TRACKER = new ConcurrentHashMap<>();
 
     public ExtensionAnnotationProcessor() {
     }
@@ -121,23 +131,31 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         for (TypeElement annotation : annotations) {
             switch (annotation.getQualifiedName().toString()) {
                 case Constants.ANNOTATION_BUILD_STEP:
+                    trackAnnotationUsed(Constants.ANNOTATION_BUILD_STEP);
                     processBuildStep(roundEnv, annotation);
                     break;
                 case Constants.ANNOTATION_CONFIG_GROUP:
+                    trackAnnotationUsed(Constants.ANNOTATION_CONFIG_GROUP);
                     processConfigGroup(roundEnv, annotation);
                     break;
                 case Constants.ANNOTATION_CONFIG_ROOT:
+                    trackAnnotationUsed(Constants.ANNOTATION_CONFIG_ROOT);
                     processConfigRoot(roundEnv, annotation);
                     break;
                 case Constants.ANNOTATION_RECORDER:
-                case Constants.ANNOTATION_TEMPLATE:
+                    trackAnnotationUsed(Constants.ANNOTATION_RECORDER);
                     processRecorder(roundEnv, annotation);
+                    break;
+                case Constants.ANNOTATION_CONFIG_MAPPING:
+                    trackAnnotationUsed(Constants.ANNOTATION_CONFIG_MAPPING);
                     break;
             }
         }
     }
 
     void doFinish() {
+        validateAnnotationUsage();
+
         final Filer filer = processingEnv.getFiler();
         final FileObject tempResource;
         try {
@@ -243,7 +261,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         try {
             if (generateDocs) {
                 final Set<ConfigDocGeneratedOutput> outputs = configDocItemScanner
-                        .scanExtensionsConfigurationItems(javaDocProperties);
+                        .scanExtensionsConfigurationItems(javaDocProperties, isAnnotationUsed(ANNOTATION_CONFIG_MAPPING));
                 for (ConfigDocGeneratedOutput output : outputs) {
                     DocGeneratorUtil.sort(output.getConfigDocItems()); // sort before writing
                     configDocWriter.writeAllExtensionConfigDocumentation(output);
@@ -254,6 +272,21 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             return;
 
         }
+    }
+
+    private void validateAnnotationUsage() {
+        if (isAnnotationUsed(Constants.ANNOTATION_BUILD_STEP) && isAnnotationUsed(Constants.ANNOTATION_RECORDER)) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                    "Detected use of @Recorder annotation in 'deployment' module. Classes annotated with @Recorder must be part of the extension's 'runtime' module");
+        }
+    }
+
+    private boolean isAnnotationUsed(String annotation) {
+        return ANNOTATION_USAGE_TRACKER.getOrDefault(annotation, false);
+    }
+
+    private void trackAnnotationUsed(String annotation) {
+        ANNOTATION_USAGE_TRACKER.put(annotation, true);
     }
 
     private void writeListResourceFile(Collection<String> crListClasses, FileObject listResource) throws IOException {
@@ -304,6 +337,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
             final String binaryName = processingEnv.getElementUtils().getBinaryName(clazz).toString();
             if (processorClassNames.add(binaryName)) {
+                validateRecordBuildSteps(clazz);
                 recordConfigJavadoc(clazz);
                 generateAccessor(clazz);
                 final StringBuilder rbn = getRelativeBinaryName(clazz, new StringBuilder());
@@ -320,6 +354,56 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 }
             }
         }
+    }
+
+    private void validateRecordBuildSteps(TypeElement clazz) {
+        for (Element e : clazz.getEnclosedElements()) {
+            if (e.getKind() != ElementKind.METHOD) {
+                continue;
+            }
+            ExecutableElement ex = (ExecutableElement) e;
+            if (!isAnnotationPresent(ex, Constants.ANNOTATION_BUILD_STEP)) {
+                continue;
+            }
+            if (!isAnnotationPresent(ex, Constants.ANNOTATION_RECORD)) {
+                continue;
+            }
+
+            boolean hasRecorder = false;
+            boolean allTypesResolvable = true;
+            for (VariableElement parameter : ex.getParameters()) {
+                String parameterClassName = parameter.asType().toString();
+                TypeElement parameterTypeElement = processingEnv.getElementUtils().getTypeElement(parameterClassName);
+                if (parameterTypeElement == null) {
+                    allTypesResolvable = false;
+                } else {
+                    if (isAnnotationPresent(parameterTypeElement, Constants.ANNOTATION_RECORDER)) {
+                        if (parameterTypeElement.getModifiers().contains(Modifier.FINAL)) {
+                            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                                    "Class '" + parameterTypeElement.getQualifiedName()
+                                            + "' is annotated with @Recorder and therefore cannot be made as a final class.");
+                        } else if (getPackageName(clazz).equals(getPackageName(parameterTypeElement))) {
+                            processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING,
+                                    "Build step class '" + clazz.getQualifiedName()
+                                            + "' and recorder '" + parameterTypeElement
+                                            + "' share the same package. This is highly discouraged as it can lead to unexpected results.");
+                        }
+                        hasRecorder = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasRecorder && allTypesResolvable) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Build Step '" + clazz.getQualifiedName() + "#"
+                        + ex.getSimpleName()
+                        + "' which is annotated with '@Record' does not contain a method parameter whose type is annotated with '@Recorder'.");
+            }
+        }
+    }
+
+    private Name getPackageName(TypeElement clazz) {
+        return processingEnv.getElementUtils().getPackageOf(clazz).getQualifiedName();
     }
 
     private StringBuilder getRelativeBinaryName(TypeElement te, StringBuilder b) {
@@ -348,32 +432,91 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         String className = clazz.getQualifiedName().toString();
         if (!generatedJavaDocs.add(className))
             return;
-        final Properties javadocProps = new Properties();
+        Properties javadocProps = new Properties();
         for (Element e : clazz.getEnclosedElements()) {
             switch (e.getKind()) {
                 case FIELD: {
-                    if (isAnnotationPresent(e, Constants.ANNOTATION_CONFIG_ITEM, Constants.ANNOTATION_CONFIG_DOC_SECTION)) {
+                    if (isDocumentedConfigItem(e)) {
                         processFieldConfigItem((VariableElement) e, javadocProps, className);
                     }
                     break;
                 }
                 case CONSTRUCTOR: {
                     final ExecutableElement ex = (ExecutableElement) e;
-                    if (hasParameterAnnotated(ex, Constants.ANNOTATION_CONFIG_ITEM, Constants.ANNOTATION_CONFIG_DOC_SECTION)) {
+                    if (hasParameterDocumentedConfigItem(ex)) {
                         processCtorConfigItem(ex, javadocProps, className);
                     }
                     break;
                 }
                 case METHOD: {
                     final ExecutableElement ex = (ExecutableElement) e;
-                    if (hasParameterAnnotated(ex, Constants.ANNOTATION_CONFIG_ITEM, Constants.ANNOTATION_CONFIG_DOC_SECTION)) {
+                    if (hasParameterDocumentedConfigItem(ex)) {
                         processMethodConfigItem(ex, javadocProps, className);
+                    }
+                    break;
+                }
+                case ENUM:
+                    e
+                            .getEnclosedElements()
+                            .stream()
+                            .filter(e1 -> e1.getKind() == ElementKind.ENUM_CONSTANT)
+                            .forEach(ec -> processEnumConstant(ec, javadocProps, className));
+                    break;
+                default:
+            }
+        }
+        writeJavadocProperties(clazz, javadocProps);
+    }
+
+    private void recordMappingJavadoc(TypeElement clazz) {
+        String className = clazz.getQualifiedName().toString();
+        if (!generatedJavaDocs.add(className))
+            return;
+        if (!isAnnotationPresent(clazz, ANNOTATION_CONFIG_MAPPING)) {
+            if (generateDocs) {
+                configDocItemScanner.addConfigGroups(clazz);
+            }
+        }
+        Properties javadocProps = new Properties();
+        recordMappingJavadoc(clazz, javadocProps);
+        writeJavadocProperties(clazz, javadocProps);
+    }
+
+    private void recordMappingJavadoc(final TypeElement clazz, final Properties javadocProps) {
+        String className = clazz.getQualifiedName().toString();
+        for (Element e : clazz.getEnclosedElements()) {
+            switch (e.getKind()) {
+                case INTERFACE: {
+                    recordMappingJavadoc(((TypeElement) e));
+                    break;
+                }
+
+                case METHOD: {
+                    if (!isConfigMappingMethodIgnored(e)) {
+                        processMethodConfigMapping((ExecutableElement) e, javadocProps, className);
                     }
                     break;
                 }
                 default:
             }
         }
+    }
+
+    private boolean isEnclosedByMapping(Element clazz) {
+        if (clazz.getKind().equals(ElementKind.INTERFACE)) {
+            Element enclosingElement = clazz.getEnclosingElement();
+            if (enclosingElement.getKind().equals(ElementKind.INTERFACE)) {
+                if (isAnnotationPresent(enclosingElement, ANNOTATION_CONFIG_MAPPING)) {
+                    return true;
+                } else {
+                    isEnclosedByMapping(enclosingElement);
+                }
+            }
+        }
+        return false;
+    }
+
+    private void writeJavadocProperties(final TypeElement clazz, final Properties javadocProps) {
         if (javadocProps.isEmpty())
             return;
         final PackageElement pkg = processingEnv.getElementUtils().getPackageOf(clazz);
@@ -396,11 +539,18 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         javadocProps.put(className + Constants.DOT + field.getSimpleName().toString(), getRequiredJavadoc(field));
     }
 
+    private void processEnumConstant(Element field, Properties javadocProps, String className) {
+        String javaDoc = getJavadoc(field);
+        if (javaDoc != null && !javaDoc.isBlank()) {
+            javadocProps.put(className + Constants.DOT + field.getSimpleName().toString(), javaDoc);
+        }
+    }
+
     private void processCtorConfigItem(ExecutableElement ctor, Properties javadocProps, String className) {
         final String docComment = getRequiredJavadoc(ctor);
         final StringBuilder buf = new StringBuilder();
         appendParamTypes(ctor, buf);
-        javadocProps.put(className + Constants.DOT + buf.toString(), docComment);
+        javadocProps.put(className + Constants.DOT + buf, docComment);
     }
 
     private void processMethodConfigItem(ExecutableElement method, Properties javadocProps, String className) {
@@ -408,7 +558,58 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         final StringBuilder buf = new StringBuilder();
         buf.append(method.getSimpleName().toString());
         appendParamTypes(method, buf);
-        javadocProps.put(className + Constants.DOT + buf.toString(), docComment);
+        javadocProps.put(className + Constants.DOT + buf, docComment);
+    }
+
+    private void processMethodConfigMapping(ExecutableElement method, Properties javadocProps, String className) {
+        if (method.getModifiers().contains(Modifier.ABSTRACT)) {
+            // Skip toString method, because mappings can include it and generate it
+            if (method.getSimpleName().contentEquals("toString") && method.getParameters().size() == 0) {
+                return;
+            }
+
+            String docComment = getRequiredJavadoc(method);
+            javadocProps.put(className + Constants.DOT + method.getSimpleName().toString(), docComment);
+
+            // Find groups without annotation
+            TypeMirror returnType = method.getReturnType();
+            if (TypeKind.DECLARED.equals(returnType.getKind())) {
+                DeclaredType declaredType = (DeclaredType) returnType;
+                if (!isAnnotationPresent(declaredType.asElement(), ANNOTATION_CONFIG_GROUP)) {
+                    TypeElement type = unwrapConfigGroup(returnType);
+                    if (type != null && ElementKind.INTERFACE.equals(type.getKind())) {
+                        recordMappingJavadoc(type);
+                        configDocItemScanner.addConfigGroups(type);
+                    }
+                }
+            }
+        }
+    }
+
+    private TypeElement unwrapConfigGroup(TypeMirror typeMirror) {
+        if (typeMirror == null) {
+            return null;
+        }
+
+        DeclaredType declaredType = (DeclaredType) typeMirror;
+        String name = declaredType.asElement().toString();
+        List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
+        if (typeArguments.size() == 0) {
+            if (!name.startsWith("java.")) {
+                return (TypeElement) declaredType.asElement();
+            }
+        } else if (typeArguments.size() == 1) {
+            if (name.equals(Optional.class.getName()) ||
+                    name.equals(List.class.getName()) ||
+                    name.equals(Set.class.getName())) {
+                return unwrapConfigGroup(typeArguments.get(0));
+            }
+        } else if (typeArguments.size() == 2) {
+            if (name.equals(Map.class.getName())) {
+                return unwrapConfigGroup(typeArguments.get(1));
+            }
+        }
+        return null;
     }
 
     private void processConfigGroup(RoundEnvironment roundEnv, TypeElement annotation) {
@@ -416,7 +617,11 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         for (TypeElement i : typesIn(roundEnv.getElementsAnnotatedWith(annotation))) {
             if (groupClassNames.add(i.getQualifiedName().toString())) {
                 generateAccessor(i);
-                recordConfigJavadoc(i);
+                if (isEnclosedByMapping(i) || i.getKind().equals(ElementKind.INTERFACE)) {
+                    recordMappingJavadoc(i);
+                } else {
+                    recordConfigJavadoc(i);
+                }
                 if (generateDocs) {
                     configDocItemScanner.addConfigGroups(i);
                 }
@@ -442,14 +647,18 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             final String binaryName = processingEnv.getElementUtils().getBinaryName(clazz).toString();
             if (rootClassNames.add(binaryName)) {
                 // new class
-                recordConfigJavadoc(clazz);
-                generateAccessor(clazz);
+                if (isAnnotationPresent(clazz, ANNOTATION_CONFIG_MAPPING)) {
+                    recordMappingJavadoc(clazz);
+                } else if (isAnnotationPresent(clazz, Constants.ANNOTATION_CONFIG_ROOT)) {
+                    recordConfigJavadoc(clazz);
+                    generateAccessor(clazz);
+                }
                 final StringBuilder rbn = getRelativeBinaryName(clazz, new StringBuilder());
                 try {
                     final FileObject itemResource = processingEnv.getFiler().createResource(
                             StandardLocation.SOURCE_OUTPUT,
                             pkg.getQualifiedName().toString(),
-                            rbn.toString() + ".cr",
+                            rbn + ".cr",
                             clazz);
                     writeResourceFile(binaryName, itemResource);
                 } catch (IOException e1) {
@@ -503,13 +712,14 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         }
         final JClassDef classDef = sourceFile._class(JMod.PUBLIC | JMod.FINAL, className);
         classDef.constructor(JMod.PRIVATE); // no construction
+        classDef.annotate(QUARKUS_GENERATED).value("Quarkus annotation processor");
         final JAssignableExpr instanceName = JExprs.name(Constants.INSTANCE_SYM);
         boolean isEnclosingClassPublic = clazz.getModifiers().contains(Modifier.PUBLIC);
         // iterate fields
         boolean generationNeeded = false;
         for (VariableElement field : fieldsIn(clazz.getEnclosedElements())) {
             final Set<Modifier> mods = field.getModifiers();
-            if (mods.contains(Modifier.PRIVATE) || mods.contains(Modifier.STATIC)) {
+            if (mods.contains(Modifier.PRIVATE) || mods.contains(Modifier.STATIC) || mods.contains(Modifier.FINAL)) {
                 // skip it
                 continue;
             }
@@ -625,11 +835,21 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     }
 
     private String getRequiredJavadoc(Element e) {
+        String javaDoc = getJavadoc(e);
+
+        if (javaDoc == null) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                    "Unable to find javadoc for config item " + e.getEnclosingElement() + " " + e, e);
+            return "";
+        }
+        return javaDoc;
+    }
+
+    private String getJavadoc(Element e) {
         String docComment = processingEnv.getElementUtils().getDocComment(e);
 
         if (docComment == null) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Unable to find javadoc for config item " + e, e);
-            return "";
+            return null;
         }
 
         // javax.lang.model keeps the leading space after the "*" so we need to remove it.
@@ -637,9 +857,51 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         return REMOVE_LEADING_SPACE.matcher(docComment).replaceAll("").trim();
     }
 
-    private static boolean hasParameterAnnotated(ExecutableElement ex, String... annotationNames) {
+    private static boolean isDocumentedConfigItem(Element element) {
+        boolean hasAnnotation = false;
+        for (AnnotationMirror annotationMirror : element.getAnnotationMirrors()) {
+            String annotationName = ((TypeElement) annotationMirror.getAnnotationType().asElement())
+                    .getQualifiedName().toString();
+            if (Constants.ANNOTATION_CONFIG_ITEM.equals(annotationName)) {
+                hasAnnotation = true;
+                Object generateDocumentation = getAnnotationAttribute(annotationMirror, "generateDocumentation()");
+                if (generateDocumentation != null && !(Boolean) generateDocumentation) {
+                    // Documentation is explicitly disabled
+                    return false;
+                }
+            } else if (Constants.ANNOTATION_CONFIG_DOC_SECTION.equals(annotationName)) {
+                hasAnnotation = true;
+            }
+        }
+        return hasAnnotation;
+    }
+
+    private static boolean isConfigMappingMethodIgnored(Element element) {
+        for (AnnotationMirror annotationMirror : element.getAnnotationMirrors()) {
+            String annotationName = ((TypeElement) annotationMirror.getAnnotationType().asElement())
+                    .getQualifiedName().toString();
+            if (Constants.ANNOTATION_CONFIG_DOC_IGNORE.equals(annotationName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Object getAnnotationAttribute(AnnotationMirror annotationMirror, String attributeName) {
+        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationMirror
+                .getElementValues().entrySet()) {
+            final String key = entry.getKey().toString();
+            final Object value = entry.getValue().getValue();
+            if (attributeName.equals(key)) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private static boolean hasParameterDocumentedConfigItem(ExecutableElement ex) {
         for (VariableElement param : ex.getParameters()) {
-            if (isAnnotationPresent(param, annotationNames)) {
+            if (isDocumentedConfigItem(param)) {
                 return true;
             }
         }

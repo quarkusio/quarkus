@@ -1,10 +1,12 @@
 package io.quarkus.it.keycloak;
 
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.Path;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -36,11 +38,28 @@ public class FrontendResource {
     }
 
     @GET
+    @Path("jwt-token-propagation-with-augmentation")
+    @RolesAllowed("tester")
+    public String userNameJwtTokenPropagationWithSecIdentityAugmentation() {
+        checkIssuerAndAudience();
+        return jwtTokenPropagationService.getUserName();
+    }
+
+    @GET
     @Path("access-token-propagation")
     @RolesAllowed("user")
     public String userNameAccessTokenPropagation() {
         checkIssuerAndAudience();
         return accessTokenPropagationService.getUserName();
+    }
+
+    @POST
+    @Path("access-token-propagation")
+    @RolesAllowed("user")
+    @Consumes("application/json")
+    public String userNameAccessTokenPropagationPost(User user) {
+        checkIssuerAndAudience();
+        return accessTokenPropagationService.echoUserName(user.getName());
     }
 
     private void checkIssuerAndAudience() {

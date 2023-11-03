@@ -1,0 +1,259 @@
+---
+extends: capitalization
+level: suggestion
+link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-reference.adoc
+match: $sentence
+message: "Use sentence-style capitalization in '%s'."
+scope: heading
+# source: Quarkus contributor guide
+indicators:
+  - ":"
+exceptions:
+  - Apache
+  - API
+  - AWS
+  - Agroal
+  - Annobin
+  - Ansible
+  - Antora
+  - AppData
+  - AsciiDoc
+  - Asciidoctor
+  - AssertJ
+  - AWS
+  - Azure
+  - Basic authentication
+  - Basic HTTP authentication
+  - BOM
+  - Bierner
+  - Bitbucket
+  - BOM
+  - Bonjour
+  - Bouncy Castle
+  - Btrfs
+  - Bugzilla
+  - CDs
+  - CR
+  - CRD
+  - CRDs
+  - CRs
+  - Camel
+  - CapEx
+  - CentOS
+  - Ceph
+  - Certificate Authorities
+  - Che-Theia
+  - Ciphertext
+  - Civetweb
+  - ClassLoader
+  - Classloader
+  - Cloud
+  - Cloudbursting
+  - Cloudwashing
+  - CodeReady
+  - Community
+  - ConfigMap
+  - ConfigMaps
+  - Containerfile
+  - Containerfiles
+  - Cookiecutter
+  - Ctrl
+  - Cygmon
+  - DNS
+  - DaemonSet
+  - Datadog
+  - Dev
+  - DevOps
+  - DevWorkspace
+  - Dex
+  - Docker
+  - Dockerfile
+  - Dockerfiles
+  - Dotnet
+  - Dyninst
+  - Eclipse
+  - Electron
+  - Endevor
+  - Endian
+  - Esprima
+  - Exif
+  - Fabrice
+  - Failsafe
+  - Fernflower
+  - Flathub
+  - Flatpak
+  - Flatpak Builder
+  - Fluentd
+  - Fortran
+  - Funqy
+  - gRPC
+  - GCC
+  - GTKplus
+  - GUI
+  - Git
+  - GitHub
+  - GitHub Action
+  - GitLab
+  - GitLab Code Quality
+  - Gluster
+  - GraalVM
+  - Gradle
+  - GraphQL
+  - Graylog
+  - Grayscale
+  - GTK
+  - HTTP
+  - HTTPS
+  - Hashicorp
+  - Helgrind
+  - Helm
+  - Hibernate
+  - Homebrew
+  - IBM
+  - IBM Cloud
+  - ID
+  - IDE
+  - IDEs
+  - IDs
+  - IPSec
+  - ISeries
+  - InfiniBand
+  - Infinispan
+  - Intelephense
+  - IntelliJ
+  - Istio
+  - Itanium
+  - JAR file
+  - JBang
+  - JUnit
+  - JVM
+  - Jakarta
+  - Jandex
+  - Java
+  - Jave
+  - JBoss Log Manager
+  - JBoss Logging
+  - JetBrains
+  - Jira
+  - Jolokia
+  - Joyent
+  - Kibana
+  - Kind
+  - Knative
+  - Knowledgebase
+  - Kogito
+  - Kompose
+  - Kubespray
+  - Kylin
+  - Laravel
+  - Logstash
+  - Lombok
+  - Makefile
+  - Mandrel
+  - Mattermost
+  - Maven
+  - MicroProfile
+  - Microsoft
+  - Middleware
+  - Minikube
+  - Minishift
+  - Mirantis
+  - Mockito
+  - MongoDB
+  - MySQL
+  - Nagios
+  - Narayana
+  - Neoverse
+  - NetcoredebugOutput
+  - Netty
+  - Newdoc
+  - Nginx
+  - Node.js
+  - NuGet
+  - OAuth
+  - ORM
+  - OmniSharp
+  - OpEx
+  - OpenID Connect
+  - OpenJDK
+  - OpenRewrite
+  - OpenShift
+  - OpenTracing
+  - PHP
+  - Podman
+  - Podman Desktop
+  - PostScript
+  - PostgreSQL
+  - PowerPC
+  - PowerShell
+  - Productize
+  - Productized
+  - Prometheus
+  - Proof Key for Code Exchange
+  - Pytorch
+  - Qt
+  - Quarkiverse
+  - Quarkus
+  - Qute
+  - RESTEasy
+  - Red Hat
+  - RedBoot
+  - Redis
+  - Redistributions
+  - SCM
+  - SDK
+  - SELinux
+  - SVG
+  - Sakila
+  - Semeru
+  - Shadowman
+  - SmallRye
+  - Software Development Kit
+  - Software Development Kits
+  - Spotify
+  - StarOffice
+  - Suchow
+  - SysV
+  - System
+  - Technology Preview
+  - Tekton
+  - Telekom
+  - Tensorflow
+  - Texinfo
+  - Toolset
+  - Traefik
+  - URI
+  - URIs
+  - URL
+  - URLs
+  - Uber
+  - UltraSPARC
+  - Vale
+  - Valgrind
+  - Velero
+  - Vert.x
+  - Vineflower
+  - WebAuthn
+  - WebSocket
+  - Webview
+  - Webviews
+  - Wildfly
+  - Window Maker
+  - Windows
+  - Windows Subsystem for Linux
+  - Woopra
+  - Wordpress
+  - XEmacs
+  - Yana
+  - Yeoman
+  - Zowe
+  - cgroup
+  - eServer
+  - mutual TLS
+  - mTLS
+  - qeth
+  - startx
+  - vNIC
+  - vNUMA
+  - xDS
+  - xterm

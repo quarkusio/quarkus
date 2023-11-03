@@ -16,15 +16,15 @@ public class TestScopeManager {
         }
     }
 
-    public static void setup(boolean isNativeImageTest) {
+    public static void setup(boolean isIntegrationTest) {
         for (TestScopeSetup i : SCOPE_MANAGERS) {
-            i.setup(isNativeImageTest);
+            i.setup(isIntegrationTest);
         }
     }
 
-    public static void tearDown(boolean isNativeImageTest) {
+    public static void tearDown(boolean isIntegrationTest) {
         for (TestScopeSetup i : SCOPE_MANAGERS) {
-            i.tearDown(isNativeImageTest);
+            i.tearDown(isIntegrationTest);
         }
     }
 }

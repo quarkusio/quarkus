@@ -2,6 +2,8 @@ package io.quarkus.mailer;
 
 import java.io.File;
 
+import io.quarkus.mailer.reactive.ReactiveMailer;
+import io.quarkus.qute.TemplateInstance;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -10,7 +12,7 @@ import io.smallrye.mutiny.Uni;
 public interface MailTemplate {
 
     /**
-     * 
+     *
      * @return a new template instance
      */
     MailTemplateInstance instance();
@@ -34,45 +36,103 @@ public interface MailTemplate {
      */
     interface MailTemplateInstance {
 
-        MailTemplateInstance mail(Mail mail);
+        default MailTemplateInstance mail(Mail mail) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance to(String... to);
+        default MailTemplateInstance to(String... to) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance cc(String... cc);
+        default MailTemplateInstance cc(String... cc) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance bcc(String... bcc);
+        default MailTemplateInstance bcc(String... bcc) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance subject(String subject);
+        default MailTemplateInstance subject(String subject) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance from(String from);
+        default MailTemplateInstance from(String from) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance replyTo(String replyTo);
+        default MailTemplateInstance replyTo(String replyTo) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance replyTo(String... replyTo);
+        default MailTemplateInstance replyTo(String... replyTo) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance bounceAddress(String bounceAddress);
+        default MailTemplateInstance bounceAddress(String bounceAddress) {
+            throw new UnsupportedOperationException();
+        }
 
-        MailTemplateInstance addInlineAttachment(String name, File file, String contentType, String contentId);
+        default MailTemplateInstance addInlineAttachment(String name, File file, String contentType, String contentId) {
+            throw new UnsupportedOperationException();
+        }
+
+        default MailTemplateInstance addInlineAttachment(String name, byte[] data, String contentType, String contentId) {
+            throw new UnsupportedOperationException();
+        }
+
+        default MailTemplateInstance addAttachment(String name, File file, String contentType) {
+            throw new UnsupportedOperationException();
+        }
+
+        default MailTemplateInstance addAttachment(String name, byte[] data, String contentType) {
+            throw new UnsupportedOperationException();
+        }
 
         /**
-         * 
+         *
          * @param key
          * @param value
          * @return self
          * @see io.quarkus.qute.TemplateInstance#data(String, Object)
          */
-        MailTemplateInstance data(String key, Object value);
+        default MailTemplateInstance data(String key, Object value) {
+            throw new UnsupportedOperationException();
+        }
 
         /**
-         * 
+         *
          * @param key
          * @param value
          * @return self
          * @see io.quarkus.qute.TemplateInstance#setAttribute(String, Object)
          */
-        MailTemplateInstance setAttribute(String key, Object value);
+        default MailTemplateInstance setAttribute(String key, Object value) {
+            throw new UnsupportedOperationException();
+        }
 
-        Uni<Void> send();
+        /**
+         * Sends all e-mail definitions based on available template variants, i.e. {@code text/html} and {@code text/plain}
+         * template variants.
+         *
+         * @return a {@link Uni} indicating when the mails have been sent
+         * @see ReactiveMailer#send(Mail...)
+         */
+        default Uni<Void> send() {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * The returned instance does not represent a specific template but a delegating template.
+         * <p>
+         * You can select the corresponding variant via {@link TemplateInstance#setAttribute(String, Object)} where the
+         * attribute key is {@link TemplateInstance#SELECTED_VARIANT}. If no variant is selected, the default instance is used.
+         *
+         * @return the underlying template instance
+         */
+        default TemplateInstance templateInstance() {
+            throw new UnsupportedOperationException();
+        }
+
     }
 
 }

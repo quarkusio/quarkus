@@ -28,6 +28,7 @@ public class SpanDataSerializer extends StdSerializer<SpanData> {
         jsonGenerator.writeStringField("kind", spanData.getKind().name());
         jsonGenerator.writeBooleanField("ended", spanData.hasEnded());
 
+        jsonGenerator.writeStringField("parentSpanId", spanData.getParentSpanContext().getSpanId());
         jsonGenerator.writeStringField("parent_spanId", spanData.getParentSpanContext().getSpanId());
         jsonGenerator.writeStringField("parent_traceId", spanData.getParentSpanContext().getTraceId());
         jsonGenerator.writeBooleanField("parent_remote", spanData.getParentSpanContext().isRemote());

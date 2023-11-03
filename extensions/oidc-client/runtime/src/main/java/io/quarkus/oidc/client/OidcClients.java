@@ -11,14 +11,14 @@ public interface OidcClients extends Closeable {
 
     /**
      * Returns a default {@link OidcClient}.
-     * 
+     *
      * @return {@link OidcClient}
      */
     OidcClient getClient();
 
     /**
      * Returns an {@link OidcClient} with a specific id.
-     * 
+     *
      * @param id {@link OidcClient} id
      * @return {@link OidcClient}
      */

@@ -9,3 +9,6 @@ metadata:
   categories:
   - "compatibility"
   status: "stable"
+  config:
+  - "quarkus.datasource."
+  - "quarkus.hibernate-orm."

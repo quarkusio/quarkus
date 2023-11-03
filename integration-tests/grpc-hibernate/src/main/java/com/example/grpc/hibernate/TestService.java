@@ -2,9 +2,11 @@ package com.example.grpc.hibernate;
 
 import java.util.List;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
+
+import org.jboss.logging.Logger;
 
 import com.example.test.Test;
 import com.example.test.TestOuterClass;
@@ -16,6 +18,10 @@ import io.smallrye.mutiny.Uni;
 
 @GrpcService
 public class TestService implements Test {
+
+    @Inject
+    Logger log;
+
     private static final TestOuterClass.Empty EMPTY = TestOuterClass.Empty.getDefaultInstance();
 
     @Inject
@@ -39,7 +45,6 @@ public class TestService implements Test {
     }
 
     @Override
-    @Blocking
     @Transactional
     public Uni<TestOuterClass.Empty> clear(TestOuterClass.Empty request) {
         contextChecker.newContextId("TestService#clear");
@@ -54,8 +59,13 @@ public class TestService implements Test {
         contextChecker.newContextId("TestService#getAll");
         List<Item> items = entityManager.createQuery("from Item", Item.class)
                 .getResultList();
+        // todo: remove logging
+        log.infof("returning items: %s", items);
+
         return Multi.createFrom().iterable(items)
-                .map(i -> TestOuterClass.Item.newBuilder().setText(i.text).build());
+                .map(i -> TestOuterClass.Item.newBuilder().setText(i.text).build())
+                .onItem().invoke(item -> log.infof("emitting %s", item))
+                .onCompletion().invoke(() -> log.info("completed emission"));
     }
 
     @Override

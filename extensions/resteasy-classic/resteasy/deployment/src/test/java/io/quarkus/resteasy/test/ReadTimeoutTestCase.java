@@ -7,9 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.awaitility.Awaitility;
 import org.awaitility.core.ThrowingRunnable;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -21,7 +19,7 @@ public class ReadTimeoutTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset("quarkus.http.read-timeout=0.5S"), "application.properties")
                     .addClasses(PostEndpoint.class));
 
@@ -33,12 +31,12 @@ public class ReadTimeoutTestCase {
         PostEndpoint.invoked = false;
 
         //make sure incomplete writes do not block threads
-        //and that incoplete data is not delivered to the endpoint
+        //and that incomplete data is not delivered to the endpoint
         Socket socket = new Socket(url.getHost(), url.getPort());
         socket.getOutputStream().write(
                 "POST /post HTTP/1.1\r\nHost: localhost\r\nContent-length:9\r\n\r\n12345".getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().flush();
-        Thread.sleep(600);
+        Thread.sleep(1200);
         socket.getOutputStream().write(
                 "6789".getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().flush();
@@ -53,7 +51,7 @@ public class ReadTimeoutTestCase {
         PostEndpoint.invoked = false;
 
         //make sure incomplete writes do not block threads
-        //and that incoplete data is not delivered to the endpoint
+        //and that incomplete data is not delivered to the endpoint
         Socket socket = new Socket(url.getHost(), url.getPort());
         socket.getOutputStream().write(
                 "POST /post HTTP/1.1\r\nHost: localhost\r\nContent-length:9\r\n\r\n12345".getBytes(StandardCharsets.UTF_8));

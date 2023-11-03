@@ -59,6 +59,10 @@ public class TestRecorder {
         RESULT.add(bean);
     }
 
+    public void bean(JobDetails jobDetails) {
+        RESULT.add(jobDetails);
+    }
+
     public void bean(TestJavaBeanWithBoolean bean) {
         RESULT.add(bean);
     }
@@ -69,9 +73,18 @@ public class TestRecorder {
 
     public void add(RuntimeValue<TestJavaBean> bean) {
         bean.getValue().setIval(bean.getValue().getIval() + 1);
+        bean.getValue().setBoxedIval(bean.getValue().getBoxedIval() + 1);
     }
 
     public void bean(TestConstructorBean bean) {
+        RESULT.add(bean);
+    }
+
+    public void bean(OtherTestConstructorBean bean) {
+        RESULT.add(bean);
+    }
+
+    public void bean(TestSingleConstructorBean bean) {
         RESULT.add(bean);
     }
 

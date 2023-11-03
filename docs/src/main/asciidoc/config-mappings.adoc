@@ -4,13 +4,14 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Mapping configuration to objects
-
-include::./attributes.adoc[]
-
+include::_attributes.adoc[]
+:categories: core
+:summary: Group multiple configuration properties into an object.
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-:toc:
+:topics: configuration
+:extensions: io.quarkus:quarkus-core
 
 With config mappings it is possible to group multiple configuration properties in a single interface that
 share the same prefix.
@@ -18,13 +19,13 @@ share the same prefix.
 [[config-mappings]]
 == `@ConfigMapping`
 
-A config mapping requires an interface with minimal metadata configuration and annotated with the
+A config mapping requires a public interface with minimal metadata configuration and annotated with the
 `@io.smallrye.config.ConfigMapping` annotation.
 
 [source,java]
 ----
 @ConfigMapping(prefix = "server")
-interface Server {
+public interface Server {
     String host();
 
     int port();
@@ -37,6 +38,37 @@ prefix, and the method name with `.` (dot) as the separator.
 
 NOTE: If a mapping fails to match a configuration property a `NoSuchElementException` is thrown, unless the mapped
 element is an `Optional`.
+
+=== Registration
+
+When a Quarkus application starts, a config mapping can be registered twice. One time for _STATIC INIT_ and a second
+time for _RUNTIME INIT_:
+
+==== STATIC INIT
+
+Quarkus starts some of its services during static initialization, and `Config` is usually one of the first things that
+is created. In certain situations it may not be possible to correctly initialize a config mapping. For instance, if the
+mapping requires values from a custom `ConfigSource`. For this reason, any config mapping requires the annotation
+`@io.quarkus.runtime.configuration.StaticInitSafe` to mark the mapping as safe to be used at this stage. Learn more
+about xref:config-extending-support.adoc#custom-config-source[registration] of a custom `ConfigSource`.
+
+===== Example
+
+[source,java]
+----
+@StaticInitSafe
+@ConfigMapping(prefix = "server")
+public interface Server {
+    String host();
+
+    int port();
+}
+----
+
+==== RUNTIME INIT
+
+The _RUNTIME INIT_ stage happens after _STATIC INIT_. There are no restrictions at this stage, and any config mapping
+is added to the `Config` instance as expected.
 
 === Retrieval
 
@@ -109,7 +141,7 @@ name mapping and use the name supplied in the annotation:
 [source,java]
 ----
 @ConfigMapping(prefix = "server")
-interface Server {
+public interface Server {
     @WithName("name")
     String host();
 
@@ -126,7 +158,7 @@ server.port=8080
 
 ==== `@WithParentName`
 
-The `@WithParent` annotation allows to configurations mapping to inherit its container name, simplifying the
+The `@WithParentName` annotation allows to configurations mapping to inherit its container name, simplifying the
 configuration property name required to match the mapping:
 
 [source,java]
@@ -169,7 +201,7 @@ Method names in camelCase map to kebab-case property names:
 [source,java]
 ----
 @ConfigMapping(prefix = "server")
-interface Server {
+public interface Server {
     String theHost();
 
     int thePort();
@@ -202,7 +234,7 @@ server.theHost=localhost
 server.thePort=8080
 ----
 
-The `@ConfigMapping` annotation support the following naming stategies:
+The `@ConfigMapping` annotation support the following naming strategies:
 
 - `KEBAB_CASE` (default) - The method name is derived by replacing case changes with a dash to map the configuration property.
 - `VERBATIM` - The method name is used as is to map the configuration property.
@@ -286,7 +318,7 @@ public interface Optionals {
 }
 ----
 
-In this case, the mapping won't fail if there are not configuration properties to match the mapping.
+In this case, the mapping won't fail if there is no configuration property to match the mapping.
 
 ==== `@WithConverter`
 
@@ -403,7 +435,7 @@ public interface Defaults {
 ----
 
 No configuration properties required. The `Defaults.foo()` will return the value `foo` and `Defaults.bar()` will return
-thevalue `bar`.
+the value `bar`.
 
 === Validation
 
@@ -413,7 +445,7 @@ values:
 [source,java]
 ----
 @ConfigMapping(prefix = "server")
-interface Server {
+public interface Server {
     @Size(min = 2, max = 20)
     String host();
 
@@ -422,7 +454,8 @@ interface Server {
 }
 ----
 
-WARNING: For validation to work, the `quarkus-hibernate-validator` extension is required.
+WARNING: For validation to work, the `quarkus-hibernate-validator` extension is required, and it is performed
+automatically.
 
 === Mocking
 
@@ -438,242 +471,86 @@ public class ServerMockProducer {
     @Produces
     @ApplicationScoped
     @io.quarkus.test.Mock
-    AppConfig appConfig() {
-        return config.unwrap(SmallRyeConfig.class).getConfigMapping(ServerMock.class);
+    Server server() {
+        return config.unwrap(SmallRyeConfig.class).getConfigMapping(Server.class);
     }
 }
 ----
 
-The `ServerMock` can be injected as a mock into a Quarkus test class:
+The `Server` can be injected as a mock into a Quarkus test class with `@InjectMock`:
 
 [source,java]
 ----
 @QuarkusTest
 class ServerMockTest {
     @InjectMock
-    ServerMock serverMock;
+    Server server;
 
     @Test
     void localhost() {
-        Mockito.when(serverMock.host()).thenReturn("localhost");
-        assertEquals("localhost", serverMock.host());
+        Mockito.when(server.host()).thenReturn("localhost");
+        assertEquals("localhost", server.host());
     }
 }
 ----
 
-[[config-properties]]
-== [.line-through]#`@ConfigProperties`# (Deprecated)
+NOTE: The mock is just an empty shell without any actual configuration values.
 
-IMPORTANT: This feature will be removed soon, please update your code base and use `@ConfigMapping` instead.
-
-The `@io.quarkus.arc.config.ConfigProperties` annotation is able to group multiple related configuration values in its
-own class:
+If the goal is to only mock certain configuration values and retain the original configuration, the mocking instance
+requires a spy:
 
 [source,java]
 ----
-package org.acme.config;
+@ConfigMapping(prefix = "app")
+public interface AppConfig {
+    @WithDefault("app")
+    String name();
 
-import io.quarkus.arc.config.ConfigProperties;
-import java.util.Optional;
+    Info info();
 
-@ConfigProperties(prefix = "greeting") <1>
-public class GreetingConfiguration {
-
-    private String message;
-    private String suffix = "!"; <2>
-    private Optional<String> name;
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public String getSuffix() {
-        return suffix;
-    }
-
-    public void setSuffix(String suffix) {
-        this.suffix = suffix;
-    }
-
-    public Optional<String> getName() {
-        return name;
-    }
-
-    public void setName(Optional<String> name) {
-        this.name = name;
+    interface Info {
+        @WithDefault("alias")
+        String alias();
+        @WithDefault("10")
+        Integer count();
     }
 }
-----
-<1> `prefix` is optional. If not set then the prefix to be used will be determined by the class name. In this case it
-would still be `greeting` (since the `Configuration` suffix is removed). If the class were named
-`GreetingExtraConfiguration` then the resulting default prefix would be `greeting-extra`.
-<2> `!` will be the default value if `greeting.suffix` is not set.
 
-Inject the `GreetingResource` with CDI `@Inject`:
-
-[source,java]
-----
-@Inject
-GreetingConfiguration greetingConfiguration;
-----
-
-Another alternative style provided by Quarkus is to create `GreetingConfiguration` as an interface:
-
-[source,java]
-----
-package org.acme.config;
-
-import io.quarkus.arc.config.ConfigProperties;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import java.util.Optional;
-
-@ConfigProperties(prefix = "greeting")
-public interface GreetingConfiguration {
-
-    @ConfigProperty(name = "message") <1>
-    String message();
-
-    @ConfigProperty(defaultValue = "!")
-    String getSuffix(); <2>
-
-    Optional<String> getName(); <3>
-}
-----
-<1> The `@ConfigProperty` annotation is needed because the name of the configuration property that the method
-corresponds does not follow the getter method naming conventions.
-<2> In this case since `name` is not set, the corresponding property will be `greeting.suffix`.
-<3> It is unnecessary to specify the `@ConfigProperty` annotation because the method name follows the getter method
-naming conventions (`greeting.name` being the corresponding property) and no default value is required.
-
-When using `@ConfigProperties` on a class or an interface, if the value of one of its fields is not provided, the
-application startup will fail, and a `javax.enterprise.inject.spi.DeploymentException` will be thrown. This does not
-apply to `Optional` fields and fields with a default value.
-
-=== Additional notes on @ConfigProperties
-
-When using a regular class annotated with `@ConfigProperties` the class doesn't necessarily have to declare getters and
-setters. Having simple public non-final fields is valid as well.
-
-Furthermore, the configuration classes support nested object configuration. Suppose there was a need to have an extra
-layer of greeting configuration named `content` that would contain a few fields:
-
-[source,java]
-----
-@ConfigProperties(prefix = "greeting")
-public class GreetingConfiguration {
-
-    public String message;
-    public String suffix = "!";
-    public Optional<String> name;
-    public ContentConfig content; <1>
-
-    public static class ContentConfig {
-        public Integer prizeAmount;
-        public List<String> recipients;
-    }
-}
-----
-<1> The name of the field (not the class name) will determine the name of the properties that are bound to the object.
-
-Setting the properties would occur in the normal manner:
-
-.application.properties
-[source,properties]
-----
-greeting.message = hello
-greeting.name = quarkus
-greeting.content.prize-amount=10
-greeting.content.recipients=Jane,John
-----
-
-Furthermore, classes annotated with `@ConfigProperties` can be annotated with Bean Validation annotations:
-
-[source,java]
-----
-@ConfigProperties(prefix = "greeting")
-public class GreetingConfiguration {
-
-    @Size(min = 20)
-    public String message;
-    public String suffix = "!";
-
-}
-----
-
-WARNING: For validation to work, the `quarkus-hibernate-validator` extension is required.
-
-=== Using same ConfigProperties with different prefixes
-
-Quarkus also supports the use of the same `@ConfigProperties` object with different prefixes for each injection point
-using the `io.quarkus.arc.config.@ConfigPrefix` annotation. If `GreetingConfiguration` from above needs to be used for
-both the `greeting` prefix and the `other` prefix:
-
-[source,java]
-----
-@ConfigProperties(prefix = "greeting")
-public class GreetingConfiguration {
-
-    @Size(min = 20)
-    public String message;
-    public String suffix = "!";
-
-}
-----
-
-[source,java]
-----
-@ApplicationScoped
-public class SomeBean {
-
-    @Inject <1>
-    GreetingConfiguration greetingConfiguration;
-
-    @ConfigPrefix("other") <2>
-    GreetingConfiguration otherConfiguration;
-
-}
-----
-<1> At this injection point `greetingConfiguration` will use the `greeting` prefix since that is what has been defined
-on `@ConfigProperties`.
-<2> At this injection point `otherConfiguration` will use the `other` prefix from `@ConfigPrefix` instead of the
-`greeting` prefix. Notice that in this case `@Inject` is not required.
-
-=== Combining ConfigProperties with build time conditions
-
-Quarkus allows you to define conditions evaluated at build time (`@IfBuildProfile`, `@UnlessBuildProfile`,
-`@IfBuildProperty` and `@UnlessBuildProperty`) to enable or not the annotations `@ConfigProperties` and `@ConfigPrefix`
-which gives you a very flexible way to map your configuration.
-
-Let's assume that the configuration of a service is mapped thanks to a `@ConfigProperties` and you don't need this part
-of the configuration for your tests as it will be mocked, in that case you can define a build time condition like in
-the next example:
-
-`ServiceConfiguration.java`
-[source,java]
-----
-@UnlessBuildProfile("test") <1>
-@ConfigProperties
-public class ServiceConfiguration {
-    public String user;
-    public String password;
-}
-----
-<1> The annotation `@ConfigProperties` is considered if and only if the active profile is not `test`.
-
-`SomeBean.java`
-[source,java]
-----
-@ApplicationScoped
-public class SomeBean {
-
+public static class AppConfigProducer {
     @Inject
-    Instance<ServiceConfiguration> serviceConfiguration; <1>
+    Config config;
 
+    @Produces
+    @ApplicationScoped
+    @io.quarkus.test.Mock
+    AppConfig appConfig() {
+        AppConfig appConfig = config.unwrap(SmallRyeConfig.class).getConfigMapping(AppConfig.class);
+        AppConfig appConfigSpy = Mockito.spy(appConfig);
+        AppConfig.Info infoSpy = Mockito.spy(appConfig.info());
+        Mockito.when(appConfigSpy.info()).thenReturn(infoSpy);
+        return appConfigSpy;
+    }
 }
 ----
-<1> As the configuration of the service could be missing, we need to use `Instance<ServiceConfiguration>` as type at
-the injection point.
+
+The `AppConfig` can be injected as a mock into a Quarkus test class with `@Inject`:
+
+[source,java]
+----
+@QuarkusTest
+class AppConfigTest {
+    @Inject
+    AppConfig appConfig;
+
+    @Test
+    void localhost() {
+        Mockito.when(appConfig.name()).thenReturn("mocked-app");
+        assertEquals("mocked-app", server.host());
+
+        Mockito.when(appConfig.info().alias()).thenReturn("mocked-alias");
+        assertEquals("mocked-alias", server.info().alias());
+    }
+}
+----
+
+NOTE: Nested elements need to be spied individually by Mockito.

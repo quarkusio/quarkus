@@ -7,14 +7,17 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -22,18 +25,23 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.apache.maven.shared.utils.cli.CommandLineUtils;
+import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
+import io.quarkus.deployment.util.CommandLineUtil;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.util.JavaVersionUtil;
 import io.quarkus.utilities.JavaBinFinder;
 
 public abstract class QuarkusDevModeLauncher {
+    final Pattern validDebug = Pattern.compile("^(true|false|client|[0-9]+)$");
+    final Pattern validPort = Pattern.compile("^-?[0-9]+$");
 
     public class Builder<R extends QuarkusDevModeLauncher, B extends Builder<R, B>> {
 
@@ -144,14 +152,20 @@ public abstract class QuarkusDevModeLauncher {
         }
 
         @SuppressWarnings("unchecked")
-        public B compilerOption(String option) {
-            compilerOptions.add(option);
+        public B compilerOptions(String name, List<String> options) {
+            compilerOptions.compute(name, (key, value) -> {
+                if (value == null) {
+                    return new HashSet<>(options);
+                }
+                value.addAll(options);
+                return value;
+            });
             return (B) this;
         }
 
         @SuppressWarnings("unchecked")
-        public B compilerOptions(List<String> options) {
-            compilerOptions.addAll(options);
+        public B compilerOptions(Map<String, Set<String>> options) {
+            compilerOptions.putAll(options);
             return (B) this;
         }
 
@@ -164,6 +178,12 @@ public abstract class QuarkusDevModeLauncher {
         @SuppressWarnings("unchecked")
         public B compilerPluginOptions(List<String> options) {
             compilerPluginOptions = options;
+            return (B) this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public B releaseJavaVersion(String releaseJavaVersion) {
+            QuarkusDevModeLauncher.this.releaseJavaVersion = releaseJavaVersion;
             return (B) this;
         }
 
@@ -209,18 +229,19 @@ public abstract class QuarkusDevModeLauncher {
             return (B) this;
         }
 
+        @SuppressWarnings("unchecked")
         public B entryPointCustomizer(Consumer<DevModeContext> consumer) {
             QuarkusDevModeLauncher.this.entryPointCustomizer = consumer;
             return (B) this;
         }
 
         @SuppressWarnings("unchecked")
-        public B localArtifact(AppArtifactKey localArtifact) {
+        public B localArtifact(ArtifactKey localArtifact) {
             localArtifacts.add(localArtifact);
             return (B) this;
         }
 
-        public boolean isLocal(AppArtifactKey artifact) {
+        public boolean isLocal(ArtifactKey artifact) {
             return localArtifacts.contains(artifact);
         }
 
@@ -230,13 +251,6 @@ public abstract class QuarkusDevModeLauncher {
             return (B) this;
         }
 
-        public boolean isTestsPresent() {
-            if (main == null) {
-                return false;
-            }
-            return main.getTest().isPresent();
-        }
-
         @SuppressWarnings("unchecked")
         public B dependency(ModuleInfo module) {
             dependencies.add(module);
@@ -244,14 +258,26 @@ public abstract class QuarkusDevModeLauncher {
         }
 
         @SuppressWarnings("unchecked")
-        public B classpathEntry(File f) {
-            classpath.add(f);
+        public B classpathEntry(ArtifactKey key, File f) {
+            final File prev = classpath.put(key, f);
+            if (prev != null && !f.equals(prev)) {
+                Logger.getLogger(getClass()).warn(key + " classpath entry " + prev + " was overriden with " + f);
+            }
             return (B) this;
         }
 
+        @SuppressWarnings("unchecked")
         public B debugHost(String host) {
             if ((null != host) && !host.isEmpty()) {
-                debugHost = host;
+                QuarkusDevModeLauncher.this.debugHost = host;
+            }
+            return (B) this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public B debugPort(String port) {
+            if ((null != port) && !port.isEmpty()) {
+                QuarkusDevModeLauncher.this.debugPort = port;
             }
             return (B) this;
         }
@@ -268,6 +294,7 @@ public abstract class QuarkusDevModeLauncher {
     private Boolean debugPortOk;
     private String suspend;
     private String debugHost = "localhost";
+    private String debugPort = "5005";
     private File projectDir;
     private File buildDir;
     private File outputDir;
@@ -275,9 +302,10 @@ public abstract class QuarkusDevModeLauncher {
     private String applicationName;
     private String applicationVersion;
     private String sourceEncoding;
-    private List<String> compilerOptions = new ArrayList<>(0);
+    private Map<String, Set<String>> compilerOptions = new HashMap<>(1);
     private List<String> compilerPluginArtifacts;
     private List<String> compilerPluginOptions;
+    private String releaseJavaVersion;
     private String sourceJavaVersion;
     private String targetJavaVersion;
     private Set<Path> buildFiles = new HashSet<>(0);
@@ -285,10 +313,10 @@ public abstract class QuarkusDevModeLauncher {
     private String baseName;
     private Consumer<DevModeContext> entryPointCustomizer;
     private String applicationArgs;
-    private Set<AppArtifactKey> localArtifacts = new HashSet<>();
+    private Set<ArtifactKey> localArtifacts = new HashSet<>();
     private ModuleInfo main;
     private List<ModuleInfo> dependencies = new ArrayList<>(0);
-    private List<File> classpath = new ArrayList<>(0);
+    private LinkedHashMap<ArtifactKey, File> classpath = new LinkedHashMap<>();
 
     protected QuarkusDevModeLauncher() {
     }
@@ -297,6 +325,7 @@ public abstract class QuarkusDevModeLauncher {
      * Attempts to prepare the dev mode runner.
      */
     protected void prepare() throws Exception {
+        JBossVersion.disableVersionLogging();
 
         if (!JavaVersionUtil.isGraalvmJdk()) {
             // prevent C2 compiler for kicking in - makes startup a little faster
@@ -326,39 +355,64 @@ public abstract class QuarkusDevModeLauncher {
             suspend = "n";
         }
 
-        if (debug == null) {
-            // debug mode not specified
-            // make sure 5005 is not used, we don't want to just fail if something else is using it
-            // we don't check this on restarts, as the previous process is still running
+        int port = 5005;
+
+        if (debugPort != null && validPort.matcher(debugPort).matches()) {
+            port = Integer.parseInt(debugPort);
+        }
+        if (debug != null) {
+            if (!validDebug.matcher(debug).matches()) {
+                throw new Exception(
+                        "Invalid value for debug parameter: " + debug + " must be true|false|client|{port}");
+            }
+            if (validPort.matcher(debug).matches()) {
+                port = Integer.parseInt(debug);
+            }
+        }
+        int originalPort = port;
+        if (port <= 0) {
+            port = getRandomPort();
+        }
+
+        if (debug != null && debug.equalsIgnoreCase("client")) {
+            args.add("-agentlib:jdwp=transport=dt_socket,address=" + debugHost + ":" + port + ",server=n,suspend=" + suspend);
+        } else if (debug == null || !debug.equalsIgnoreCase("false")) {
+            // if the debug port is used, we want to make an effort to pick another one
+            // if we can't find an open port, we don't fail the process launch, we just don't enable debugging
+            // Furthermore, we don't check this on restarts, as the previous process is still running
+            boolean warnAboutChange = false;
             if (debugPortOk == null) {
-                try (Socket socket = new Socket(InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 }), 5005)) {
-                    error("Port 5005 in use, not starting in debug mode");
-                    debugPortOk = false;
-                } catch (IOException e) {
-                    debugPortOk = true;
+                int tries = 0;
+                while (true) {
+                    boolean isPortUsed;
+                    try (Socket socket = new Socket(getInetAddress(debugHost), port)) {
+                        // we can make a connection, that means the port is in use
+                        isPortUsed = true;
+                        warnAboutChange = warnAboutChange || (originalPort != 0); // we only want to warn if the user had not configured a random port
+                    } catch (IOException e) {
+                        // no connection made, so the port is not in use
+                        isPortUsed = false;
+                    }
+                    if (!isPortUsed) {
+                        debugPortOk = true;
+                        break;
+                    }
+                    if (++tries >= 5) {
+                        debugPortOk = false;
+                        break;
+                    } else {
+                        port = getRandomPort();
+                    }
                 }
             }
             if (debugPortOk) {
-                args.add("-Xdebug");
-                args.add("-Xrunjdwp:transport=dt_socket,address=" + debugHost + ":5005,server=y,suspend=" + suspend);
-            }
-        } else if (debug.toLowerCase().equals("client")) {
-            args.add("-Xdebug");
-            args.add("-Xrunjdwp:transport=dt_socket,address=" + debugHost + ":5005,server=n,suspend=" + suspend);
-        } else if (debug.toLowerCase().equals("true")) {
-            args.add("-Xdebug");
-            args.add("-Xrunjdwp:transport=dt_socket,address=" + debugHost + ":5005,server=y,suspend=" + suspend);
-        } else if (!debug.toLowerCase().equals("false")) {
-            try {
-                int port = Integer.parseInt(debug);
-                if (port <= 0) {
-                    throw new Exception("The specified debug port must be greater than 0");
+                if (warnAboutChange) {
+                    warn("Changed debug port to " + port + " because of a port conflict");
                 }
-                args.add("-Xdebug");
-                args.add("-Xrunjdwp:transport=dt_socket,address=" + debugHost + ":" + port + ",server=y,suspend=" + suspend);
-            } catch (NumberFormatException e) {
-                throw new Exception(
-                        "Invalid value for debug parameter: " + debug + " must be true|false|client|{port}");
+                args.add("-agentlib:jdwp=transport=dt_socket,address=" + debugHost + ":" + port + ",server=y,suspend="
+                        + suspend);
+            } else {
+                error("Port " + port + " in use, not starting in debug mode");
             }
         }
 
@@ -377,6 +431,8 @@ public abstract class QuarkusDevModeLauncher {
         devModeContext.getBuildSystemProperties().putIfAbsent("quarkus.application.name", applicationName);
         devModeContext.getBuildSystemProperties().putIfAbsent("quarkus.application.version", applicationVersion);
 
+        devModeContext.getBuildSystemProperties().putIfAbsent("quarkus.live-reload.ignore-module-info", "true");
+
         devModeContext.setSourceEncoding(sourceEncoding);
         devModeContext.setCompilerOptions(compilerOptions);
 
@@ -387,9 +443,9 @@ public abstract class QuarkusDevModeLauncher {
             devModeContext.setCompilerPluginsOptions(compilerPluginOptions);
         }
 
+        devModeContext.setReleaseJavaVersion(releaseJavaVersion);
         devModeContext.setSourceJavaVersion(sourceJavaVersion);
         devModeContext.setTargetJvmVersion(targetJavaVersion);
-
         devModeContext.getLocalArtifacts().addAll(localArtifacts);
         devModeContext.setApplicationRoot(main);
         devModeContext.getAdditionalModules().addAll(dependencies);
@@ -419,12 +475,11 @@ public abstract class QuarkusDevModeLauncher {
             Manifest manifest = new Manifest();
             manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
 
-            if (!classpath.isEmpty()) {
-                classpath.forEach(file -> {
-                    final URI uri = file.toPath().toAbsolutePath().toUri();
-                    classPathManifest.append(uri).append(" ");
-                });
-            }
+            classpath.values().forEach(file -> {
+                final URI uri = file.toPath().toAbsolutePath().toUri();
+                classPathManifest.append(uri).append(" ");
+            });
+
             manifest.getMainAttributes().put(Attributes.Name.CLASS_PATH, classPathManifest.toString());
             manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, DevModeMain.class.getName());
             out.putNextEntry(new ZipEntry("META-INF/MANIFEST.MF"));
@@ -447,8 +502,21 @@ public abstract class QuarkusDevModeLauncher {
         args.add("-jar");
         args.add(tempFile.getAbsolutePath());
         if (applicationArgs != null) {
-            args.addAll(Arrays.asList(CommandLineUtils.translateCommandline(applicationArgs)));
+            args.addAll(Arrays.asList(CommandLineUtil.translateCommandline(applicationArgs)));
         }
+    }
+
+    private int getRandomPort() throws IOException {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        }
+    }
+
+    private InetAddress getInetAddress(String host) throws UnknownHostException {
+        if ("localhost".equals(host)) {
+            return InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 });
+        }
+        return InetAddress.getByName(host);
     }
 
     public Collection<Path> watchedBuildFiles() {
@@ -457,6 +525,10 @@ public abstract class QuarkusDevModeLauncher {
 
     public List<String> args() {
         return args;
+    }
+
+    public Boolean getDebugPortOk() {
+        return debugPortOk;
     }
 
     protected abstract boolean isDebugEnabled();

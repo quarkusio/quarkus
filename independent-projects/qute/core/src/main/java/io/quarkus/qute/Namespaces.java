@@ -4,6 +4,8 @@ import java.util.regex.Pattern;
 
 public final class Namespaces {
 
+    static final String DATA_NAMESPACE = "data";
+
     static final Pattern NAMESPACE_PATTERN = Pattern.compile("[a-zA-Z0-9_]+");
 
     private Namespaces() {
@@ -11,6 +13,10 @@ public final class Namespaces {
 
     public static boolean isValidNamespace(String value) {
         return NAMESPACE_PATTERN.matcher(value).matches();
+    }
+
+    public static boolean isDataNamespace(String value) {
+        return DATA_NAMESPACE.equals(value);
     }
 
     public static String requireValid(String value) {

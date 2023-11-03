@@ -1,26 +1,23 @@
 package io.quarkus.devtools.testing.registry.client;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.eclipse.aether.artifact.DefaultArtifact;
+
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.PlatformCatalog;
-import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
-import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
-import io.quarkus.registry.catalog.json.JsonPlatformCatalog;
 import io.quarkus.registry.client.RegistryClient;
 import io.quarkus.registry.client.spi.RegistryClientEnvironment;
 import io.quarkus.registry.config.RegistriesConfigLocator;
 import io.quarkus.registry.config.RegistryConfig;
-import io.quarkus.registry.config.json.JsonRegistryConfig;
-import io.quarkus.registry.config.json.RegistriesConfigMapperHelper;
 import io.quarkus.registry.util.PlatformArtifacts;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import org.eclipse.aether.artifact.DefaultArtifact;
 
 public class TestRegistryClient implements RegistryClient {
 
@@ -44,9 +41,9 @@ public class TestRegistryClient implements RegistryClient {
         }
 
         final Path configPath = TestRegistryClientBuilder.getRegistryDescriptorPath(registryDir);
-        final JsonRegistryConfig registryConfig;
+        final RegistryConfig.Mutable registryConfig;
         try {
-            registryConfig = RegistriesConfigMapperHelper.deserialize(configPath, JsonRegistryConfig.class);
+            registryConfig = RegistryConfig.mutableFromFile(configPath);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to deserialize registry configuration from " + configPath, e);
         }
@@ -71,7 +68,7 @@ public class TestRegistryClient implements RegistryClient {
     }
 
     @Override
-    public ExtensionCatalog resolveNonPlatformExtensions(String quarkusVersion) throws RegistryResolutionException {
+    public ExtensionCatalog.Mutable resolveNonPlatformExtensions(String quarkusVersion) throws RegistryResolutionException {
         if (config.getNonPlatformExtensions() == null || config.getNonPlatformExtensions().isDisabled()) {
             return null;
         }
@@ -84,7 +81,7 @@ public class TestRegistryClient implements RegistryClient {
     }
 
     @Override
-    public ExtensionCatalog resolvePlatformExtensions(ArtifactCoords platformCoords)
+    public ExtensionCatalog.Mutable resolvePlatformExtensions(ArtifactCoords platformCoords)
             throws RegistryResolutionException {
         final ArtifactCoords coords = PlatformArtifacts.ensureCatalogArtifact(platformCoords);
         log.debug("%s resolvePlatformExtensions %s", config.getId(), coords);
@@ -108,20 +105,23 @@ public class TestRegistryClient implements RegistryClient {
         return deserializeExtensionCatalog(p);
     }
 
-    private ExtensionCatalog deserializeExtensionCatalog(Path p) throws RegistryResolutionException {
+    private ExtensionCatalog.Mutable deserializeExtensionCatalog(Path p) throws RegistryResolutionException {
         try {
-            return JsonCatalogMapperHelper.deserialize(p, JsonExtensionCatalog.class);
+            return ExtensionCatalog.mutableFromFile(p);
         } catch (IOException e) {
             throw new RegistryResolutionException("Failed to deserialize " + p, e);
         }
     }
 
     @Override
-    public PlatformCatalog resolvePlatforms(String quarkusVersion) throws RegistryResolutionException {
+    public PlatformCatalog.Mutable resolvePlatforms(String quarkusVersion) throws RegistryResolutionException {
         final Path json = TestRegistryClientBuilder.getRegistryPlatformsCatalogPath(registryDir, quarkusVersion);
         log.debug("%s resolvePlatforms %s", config.getId(), json);
+        if (!Files.exists(json)) {
+            return null;
+        }
         try {
-            return JsonCatalogMapperHelper.deserialize(json, JsonPlatformCatalog.class);
+            return PlatformCatalog.mutableFromFile(json);
         } catch (IOException e) {
             throw new RegistryResolutionException("Failed to deserialize " + json, e);
         }
@@ -132,12 +132,16 @@ public class TestRegistryClient implements RegistryClient {
         return config;
     }
 
-    public static RegistryConfig getDefaultConfig() {
+    @Override
+    public void clearCache() {
+        log.debug("% clearCache not supported", config.getId());
+    }
 
-        final JsonRegistryConfig config = new JsonRegistryConfig();
-        config.setId("test.quarkus.registry");
-        config.setAny("client-factory-url",
-                TestRegistryClient.class.getProtectionDomain().getCodeSource().getLocation().toExternalForm());
-        return config;
+    public static RegistryConfig getDefaultConfig() {
+        return RegistryConfig.builder()
+                .setId("test.quarkus.registry")
+                .setExtra("client-factory-url",
+                        TestRegistryClient.class.getProtectionDomain().getCodeSource().getLocation().toExternalForm())
+                .build();
     }
 }

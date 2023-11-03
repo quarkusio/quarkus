@@ -12,12 +12,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -33,7 +32,7 @@ public class MessageConsumerMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(SimpleBean.class, Transformer.class));
+            .withApplicationRoot((jar) -> jar.addClasses(SimpleBean.class, Transformer.class));
 
     @Inject
     SimpleBean simpleBean;
@@ -56,6 +55,23 @@ public class MessageConsumerMethodTest {
             }
         });
         assertEquals("HELLO", synchronizer.poll(2, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testSendGenericType() throws InterruptedException {
+        BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
+        eventBus.request("foos", List.of(1, 2), ar -> {
+            if (ar.succeeded()) {
+                try {
+                    synchronizer.put(ar.result().body());
+                } catch (InterruptedException e) {
+                    fail(e);
+                }
+            } else {
+                fail(ar.cause());
+            }
+        });
+        assertEquals(3, synchronizer.poll(2, TimeUnit.SECONDS));
     }
 
     @Test
@@ -253,6 +269,11 @@ public class MessageConsumerMethodTest {
         @ConsumeEvent("blocking-request")
         String blockingRequestContextActive(String message) {
             return transformer.transform(message);
+        }
+
+        @ConsumeEvent("foos")
+        int reply(List<Integer> numbers) {
+            return numbers.stream().collect(Collectors.summingInt(Integer::intValue));
         }
     }
 

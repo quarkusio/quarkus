@@ -16,12 +16,15 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.container.CompletionCallback;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.container.CompletionCallback;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
@@ -41,7 +44,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
 
     private Path tempFileLocation;
 
-    private String defaultEncoding = StandardCharsets.ISO_8859_1.displayName();
+    private String defaultCharset = StandardCharsets.UTF_8.displayName();
 
     private boolean deleteUploadsOnEnd = true;
 
@@ -49,9 +52,9 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
 
     private long fileSizeThreshold;
 
-    private int maxParameters = 1000;
     private long maxAttributeSize = 2048;
     private long maxEntitySize = -1;
+    private List<String> fileContentTypes;
 
     public MultiPartParserDefinition(Supplier<Executor> executorSupplier) {
         this.executorSupplier = executorSupplier;
@@ -64,7 +67,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
     }
 
     @Override
-    public FormDataParser create(final ResteasyReactiveRequestContext exchange) {
+    public FormDataParser create(final ResteasyReactiveRequestContext exchange, Set<String> fileFormNames) {
         String mimeType = exchange.serverRequest().getRequestHeader(HttpHeaders.CONTENT_TYPE);
         if (mimeType != null && mimeType.startsWith(MULTIPART_FORM_DATA)) {
             String boundary = HeaderUtil.extractQuotedValueFromHeader(mimeType, "boundary");
@@ -75,7 +78,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 return null;
             }
             final MultiPartUploadHandler parser = new MultiPartUploadHandler(exchange, boundary, maxIndividualFileSize,
-                    fileSizeThreshold, defaultEncoding, mimeType, maxAttributeSize, maxEntitySize);
+                    fileSizeThreshold, defaultCharset, mimeType, maxAttributeSize, maxEntitySize, fileFormNames);
             exchange.registerCompletionCallback(new CompletionCallback() {
                 @Override
                 public void onComplete(Throwable throwable) {
@@ -119,12 +122,12 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         return this;
     }
 
-    public String getDefaultEncoding() {
-        return defaultEncoding;
+    public String getDefaultCharset() {
+        return defaultCharset;
     }
 
-    public MultiPartParserDefinition setDefaultEncoding(final String defaultEncoding) {
-        this.defaultEncoding = defaultEncoding;
+    public MultiPartParserDefinition setDefaultCharset(final String defaultCharset) {
+        this.defaultCharset = defaultCharset;
         return this;
     }
 
@@ -151,6 +154,15 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         return this;
     }
 
+    public List<String> getFileContentTypes() {
+        return fileContentTypes;
+    }
+
+    public MultiPartParserDefinition setFileContentTypes(List<String> fileContentTypes) {
+        this.fileContentTypes = fileContentTypes;
+        return this;
+    }
+
     private final class MultiPartUploadHandler implements FormDataParser, MultipartParser.PartHandler {
 
         private final ResteasyReactiveRequestContext exchange;
@@ -160,6 +172,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         private final long fileSizeThreshold;
         private final long maxAttributeSize;
         private final long maxEntitySize;
+        private final Set<String> fileFormNames;
         private String defaultEncoding;
 
         private final ByteArrayOutputStream contentBytes = new ByteArrayOutputStream();
@@ -174,13 +187,16 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
 
         private MultiPartUploadHandler(final ResteasyReactiveRequestContext exchange, final String boundary,
                 final long maxIndividualFileSize, final long fileSizeThreshold, final String defaultEncoding,
-                String contentType, long maxAttributeSize, long maxEntitySize) {
+                String contentType, long maxAttributeSize, long maxEntitySize,
+                Set<String> fileFormNames) {
             this.exchange = exchange;
             this.maxIndividualFileSize = maxIndividualFileSize;
             this.defaultEncoding = defaultEncoding;
             this.fileSizeThreshold = fileSizeThreshold;
             this.maxAttributeSize = maxAttributeSize;
             this.maxEntitySize = maxEntitySize;
+            this.fileFormNames = fileFormNames;
+            int maxParameters = 1000;
             this.data = new FormData(maxParameters);
             String charset = defaultEncoding;
             if (contentType != null) {
@@ -206,7 +222,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         }
 
         @Override
-        public FormData parseBlocking() throws IOException {
+        public FormData parseBlocking() throws Exception {
             final FormData existing = exchange.getFormData();
             if (existing != null) {
                 return existing;
@@ -221,8 +237,6 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                     throw new IOException("Connection terminated parsing multipart request");
                 }
                 exchange.setFormData(data);
-            } catch (RuntimeException e) {
-                throw new IOException(e);
             }
             return data;
         }
@@ -236,12 +250,15 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 if (disposition.startsWith("form-data")) {
                     currentName = HeaderUtil.extractQuotedValueFromHeader(disposition, "name");
                     fileName = HeaderUtil.extractQuotedValueFromHeaderWithEncoding(disposition, "filename");
-                    if (fileName != null && fileSizeThreshold == 0) {
+                    String contentType = headers.getFirst(HttpHeaders.CONTENT_TYPE);
+                    if (((fileName != null) || isFileContentType(contentType) || fileFormNames.contains(currentName))
+                            && fileSizeThreshold == 0) {
                         try {
                             if (tempFileLocation != null) {
-                                file = Files.createTempFile(tempFileLocation, "undertow", "upload");
+                                Files.createDirectories(tempFileLocation);
+                                file = Files.createTempFile(tempFileLocation, "resteasy-reactive", "upload");
                             } else {
-                                file = Files.createTempFile("undertow", "upload");
+                                file = Files.createTempFile("resteasy-reactive", "upload");
                             }
                             createdFiles.add(file);
                             fileChannel = FileChannel.open(file, StandardOpenOption.READ, StandardOpenOption.WRITE);
@@ -251,6 +268,14 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                     }
                 }
             }
+        }
+
+        private boolean isFileContentType(String contentType) {
+            if (contentType == null || fileContentTypes == null) {
+                return false;
+            }
+
+            return fileContentTypes.contains(contentType);
         }
 
         @Override
@@ -268,9 +293,10 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
             if (file == null && fileName != null && fileSizeThreshold < this.currentFileSize) {
                 try {
                     if (tempFileLocation != null) {
-                        file = Files.createTempFile(tempFileLocation, "undertow", "upload");
+                        Files.createDirectories(tempFileLocation);
+                        file = Files.createTempFile(tempFileLocation, "resteasy-reactive", "upload");
                     } else {
-                        file = Files.createTempFile("undertow", "upload");
+                        file = Files.createTempFile("resteasy-reactive", "upload");
                     }
                     createdFiles.add(file);
 
@@ -323,7 +349,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                         }
                     }
 
-                    data.add(currentName, new String(contentBytes.toByteArray(), charset), charset, headers);
+                    data.add(currentName, contentBytes.toString(charset), charset, headers);
                 } catch (UnsupportedEncodingException e) {
                     throw new RuntimeException(e);
                 }

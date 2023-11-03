@@ -1,11 +1,9 @@
 package io.quarkus.resteasy.reactive.server.test.path;
 
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
+import jakarta.ws.rs.ApplicationPath;
+import jakarta.ws.rs.core.Application;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -19,11 +17,11 @@ public class RestApplicationPathTestCase {
             .withConfigurationResource("empty.properties")
             .overrideConfigKey("quarkus.resteasy-reactive.path", "/foo")
             .overrideConfigKey("quarkus.http.root-path", "/app")
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(HelloResource.class, BarApp.class, BaseApplication.class));
 
     /**
-     * Using @ApplicationPath will overlay/replace `quarkus.rest.path`.
+     * Using @ApplicationPath will overlay/replace `quarkus.resteasy-reactive.path`.
      * Per spec:
      * <quote>
      * Identifies the application path that serves as the base URI for all resource

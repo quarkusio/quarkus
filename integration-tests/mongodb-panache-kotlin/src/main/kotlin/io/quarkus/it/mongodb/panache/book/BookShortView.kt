@@ -1,8 +1,9 @@
 package io.quarkus.it.mongodb.panache.book
 
-import io.quarkus.mongodb.panache.ProjectionFor
+import com.fasterxml.jackson.annotation.JsonFormat
+import com.fasterxml.jackson.annotation.JsonFormat.Shape
+import io.quarkus.mongodb.panache.common.ProjectionFor
 import java.time.LocalDate
-import javax.json.bind.annotation.JsonbDateFormat
 
 @ProjectionFor(Book::class)
 class BookShortView {
@@ -10,6 +11,5 @@ class BookShortView {
     var title: String? = null
     var author: String? = null
 
-    @JsonbDateFormat("yyyy-MM-dd")
-    var creationDate: LocalDate? = null
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd") var creationDate: LocalDate? = null
 }

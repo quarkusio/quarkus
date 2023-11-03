@@ -9,11 +9,13 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import javax.persistence.EntityManager;
-import javax.persistence.LockModeType;
-import javax.persistence.Query;
-import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.Query;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.TransactionManager;
+
+import org.hibernate.Session;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
@@ -33,7 +35,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         entityToPersistenceUnit = Collections.unmodifiableMap(map);
     }
 
-    protected abstract PanacheQueryType createPanacheQuery(EntityManager em, String query, String orderBy,
+    protected abstract PanacheQueryType createPanacheQuery(EntityManager em, String query, String originalQuery, String orderBy,
             Object paramsArrayOrMap);
 
     public abstract List<?> list(PanacheQueryType query);
@@ -119,7 +121,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
     public void delete(Object entity) {
         EntityManager em = getEntityManager(entity.getClass());
-        em.remove(entity);
+        em.remove(em.contains(entity) ? entity : em.unwrap(Session.class).getReference(entity));
     }
 
     public boolean isPersistent(Object entity) {
@@ -193,100 +195,110 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         return find(entityClass, query, null, params);
     }
 
-    public PanacheQueryType find(Class<?> entityClass, String query, Sort sort, Object... params) {
-        String findQuery = PanacheJpaUtil.createFindQuery(entityClass, query, paramCount(params));
+    public PanacheQueryType find(Class<?> entityClass, String panacheQuery, Sort sort, Object... params) {
         EntityManager em = getEntityManager(entityClass);
-        // FIXME: check for duplicate ORDER BY clause?
-        if (PanacheJpaUtil.isNamedQuery(query)) {
-            String namedQuery = query.substring(1);
+        if (PanacheJpaUtil.isNamedQuery(panacheQuery)) {
+            String namedQuery = panacheQuery.substring(1);
+            if (sort != null) {
+                throw new IllegalArgumentException(
+                        "Sort cannot be used with named query, add an \"order by\" clause to the named query \"" + namedQuery
+                                + "\" instead");
+            }
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
-            return createPanacheQuery(em, query, PanacheJpaUtil.toOrderBy(sort), params);
+            return createPanacheQuery(em, panacheQuery, panacheQuery, null, params);
         }
-        return createPanacheQuery(em, findQuery, PanacheJpaUtil.toOrderBy(sort), params);
+
+        String translatedHqlQuery = PanacheJpaUtil.createFindQuery(entityClass, panacheQuery, paramCount(params));
+        return createPanacheQuery(em, translatedHqlQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
     }
 
-    public PanacheQueryType find(Class<?> entityClass, String query, Map<String, Object> params) {
-        return find(entityClass, query, null, params);
+    public PanacheQueryType find(Class<?> entityClass, String panacheQuery, Map<String, Object> params) {
+        return find(entityClass, panacheQuery, null, params);
     }
 
-    public PanacheQueryType find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
-        String findQuery = PanacheJpaUtil.createFindQuery(entityClass, query, paramCount(params));
+    public PanacheQueryType find(Class<?> entityClass, String panacheQuery, Sort sort, Map<String, Object> params) {
         EntityManager em = getEntityManager(entityClass);
-        // FIXME: check for duplicate ORDER BY clause?
-        if (PanacheJpaUtil.isNamedQuery(query)) {
-            String namedQuery = query.substring(1);
+        if (PanacheJpaUtil.isNamedQuery(panacheQuery)) {
+            String namedQuery = panacheQuery.substring(1);
+            if (sort != null) {
+                throw new IllegalArgumentException(
+                        "Sort cannot be used with named query, add an \"order by\" clause to the named query \"" + namedQuery
+                                + "\" instead");
+            }
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
-            return createPanacheQuery(em, query, PanacheJpaUtil.toOrderBy(sort), params);
+            return createPanacheQuery(em, panacheQuery, panacheQuery, null, params);
         }
-        return createPanacheQuery(em, findQuery, PanacheJpaUtil.toOrderBy(sort), params);
+
+        String translatedHqlQuery = PanacheJpaUtil.createFindQuery(entityClass, panacheQuery, paramCount(params));
+        return createPanacheQuery(em, translatedHqlQuery, panacheQuery, PanacheJpaUtil.toOrderBy(sort), params);
     }
 
-    public PanacheQueryType find(Class<?> entityClass, String query, Parameters params) {
-        return find(entityClass, query, null, params);
+    public PanacheQueryType find(Class<?> entityClass, String panacheQuery, Parameters params) {
+        return find(entityClass, panacheQuery, null, params);
     }
 
-    public PanacheQueryType find(Class<?> entityClass, String query, Sort sort, Parameters params) {
-        return find(entityClass, query, sort, params.map());
+    public PanacheQueryType find(Class<?> entityClass, String panacheQuery, Sort sort, Parameters params) {
+        return find(entityClass, panacheQuery, sort, params.map());
     }
 
-    public List<?> list(Class<?> entityClass, String query, Object... params) {
-        return list(find(entityClass, query, params));
+    public List<?> list(Class<?> entityClass, String panacheQuery, Object... params) {
+        return list(find(entityClass, panacheQuery, params));
     }
 
-    public List<?> list(Class<?> entityClass, String query, Sort sort, Object... params) {
-        return list(find(entityClass, query, sort, params));
+    public List<?> list(Class<?> entityClass, String panacheQuery, Sort sort, Object... params) {
+        return list(find(entityClass, panacheQuery, sort, params));
     }
 
-    public List<?> list(Class<?> entityClass, String query, Map<String, Object> params) {
-        return list(find(entityClass, query, params));
+    public List<?> list(Class<?> entityClass, String panacheQuery, Map<String, Object> params) {
+        return list(find(entityClass, panacheQuery, params));
     }
 
-    public List<?> list(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
-        return list(find(entityClass, query, sort, params));
+    public List<?> list(Class<?> entityClass, String panacheQuery, Sort sort, Map<String, Object> params) {
+        return list(find(entityClass, panacheQuery, sort, params));
     }
 
-    public List<?> list(Class<?> entityClass, String query, Parameters params) {
-        return list(find(entityClass, query, params));
+    public List<?> list(Class<?> entityClass, String panacheQuery, Parameters params) {
+        return list(find(entityClass, panacheQuery, params));
     }
 
-    public List<?> list(Class<?> entityClass, String query, Sort sort, Parameters params) {
-        return list(find(entityClass, query, sort, params));
+    public List<?> list(Class<?> entityClass, String panacheQuery, Sort sort, Parameters params) {
+        return list(find(entityClass, panacheQuery, sort, params));
     }
 
-    public Stream<?> stream(Class<?> entityClass, String query, Object... params) {
-        return stream(find(entityClass, query, params));
+    public Stream<?> stream(Class<?> entityClass, String panacheQuery, Object... params) {
+        return stream(find(entityClass, panacheQuery, params));
     }
 
-    public Stream<?> stream(Class<?> entityClass, String query, Sort sort, Object... params) {
-        return stream(find(entityClass, query, sort, params));
+    public Stream<?> stream(Class<?> entityClass, String panacheQuery, Sort sort, Object... params) {
+        return stream(find(entityClass, panacheQuery, sort, params));
     }
 
-    public Stream<?> stream(Class<?> entityClass, String query, Map<String, Object> params) {
-        return stream(find(entityClass, query, params));
+    public Stream<?> stream(Class<?> entityClass, String panacheQuery, Map<String, Object> params) {
+        return stream(find(entityClass, panacheQuery, params));
     }
 
-    public Stream<?> stream(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
-        return stream(find(entityClass, query, sort, params));
+    public Stream<?> stream(Class<?> entityClass, String panacheQuery, Sort sort, Map<String, Object> params) {
+        return stream(find(entityClass, panacheQuery, sort, params));
     }
 
-    public Stream<?> stream(Class<?> entityClass, String query, Parameters params) {
-        return stream(find(entityClass, query, params));
+    public Stream<?> stream(Class<?> entityClass, String panacheQuery, Parameters params) {
+        return stream(find(entityClass, panacheQuery, params));
     }
 
-    public Stream<?> stream(Class<?> entityClass, String query, Sort sort, Parameters params) {
-        return stream(find(entityClass, query, sort, params));
+    public Stream<?> stream(Class<?> entityClass, String panacheQuery, Sort sort, Parameters params) {
+        return stream(find(entityClass, panacheQuery, sort, params));
     }
 
     public PanacheQueryType findAll(Class<?> entityClass) {
         String query = "FROM " + PanacheJpaUtil.getEntityName(entityClass);
         EntityManager em = getEntityManager(entityClass);
-        return createPanacheQuery(em, query, null, null);
+        return createPanacheQuery(em, query, null, null, null);
     }
 
     public PanacheQueryType findAll(Class<?> entityClass, Sort sort) {
         String query = "FROM " + PanacheJpaUtil.getEntityName(entityClass);
         EntityManager em = getEntityManager(entityClass);
-        return createPanacheQuery(em, query, PanacheJpaUtil.toOrderBy(sort), null);
+        return createPanacheQuery(em, query, null, PanacheJpaUtil.toOrderBy(sort), null);
     }
 
     public List<?> listAll(Class<?> entityClass) {
@@ -311,22 +323,50 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
                 .getSingleResult();
     }
 
-    public long count(Class<?> entityClass, String query, Object... params) {
-        return (long) bindParameters(
-                getEntityManager(entityClass)
-                        .createQuery(PanacheJpaUtil.createCountQuery(entityClass, query, paramCount(params))),
-                params).getSingleResult();
+    public long count(Class<?> entityClass, String panacheQuery, Object... params) {
+        if (PanacheJpaUtil.isNamedQuery(panacheQuery)) {
+            Query namedQuery = extractNamedQuery(entityClass, panacheQuery);
+            return (long) bindParameters(namedQuery, params).getSingleResult();
+        }
+
+        try {
+            return (long) bindParameters(
+                    getEntityManager(entityClass)
+                            .createQuery(PanacheJpaUtil.createCountQuery(entityClass, panacheQuery, paramCount(params))),
+                    params).getSingleResult();
+        } catch (IllegalArgumentException x) {
+            throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);
+        }
     }
 
-    public long count(Class<?> entityClass, String query, Map<String, Object> params) {
-        return (long) bindParameters(
-                getEntityManager(entityClass)
-                        .createQuery(PanacheJpaUtil.createCountQuery(entityClass, query, paramCount(params))),
-                params).getSingleResult();
+    public long count(Class<?> entityClass, String panacheQuery, Map<String, Object> params) {
+        if (PanacheJpaUtil.isNamedQuery(panacheQuery)) {
+            Query namedQuery = extractNamedQuery(entityClass, panacheQuery);
+            return (long) bindParameters(namedQuery, params).getSingleResult();
+        }
+
+        try {
+            return (long) bindParameters(
+                    getEntityManager(entityClass)
+                            .createQuery(PanacheJpaUtil.createCountQuery(entityClass, panacheQuery, paramCount(params))),
+                    params).getSingleResult();
+        } catch (IllegalArgumentException x) {
+            throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);
+        }
+
     }
 
     public long count(Class<?> entityClass, String query, Parameters params) {
         return count(entityClass, query, params.map());
+    }
+
+    private Query extractNamedQuery(Class<?> entityClass, String query) {
+        if (!PanacheJpaUtil.isNamedQuery(query))
+            throw new IllegalArgumentException("Must be a named query!");
+
+        String namedQueryName = query.substring(1);
+        NamedQueryUtil.checkNamedQuery(entityClass, namedQueryName);
+        return getEntityManager(entityClass).createNamedQuery(namedQueryName);
     }
 
     public boolean exists(Class<?> entityClass) {
@@ -361,20 +401,38 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         return true;
     }
 
-    public long delete(Class<?> entityClass, String query, Object... params) {
-        return bindParameters(
-                getEntityManager(entityClass)
-                        .createQuery(PanacheJpaUtil.createDeleteQuery(entityClass, query, paramCount(params))),
-                params)
-                        .executeUpdate();
+    public long delete(Class<?> entityClass, String panacheQuery, Object... params) {
+        if (PanacheJpaUtil.isNamedQuery(panacheQuery)) {
+            Query namedQuery = extractNamedQuery(entityClass, panacheQuery);
+            return bindParameters(namedQuery, params).executeUpdate();
+        }
+
+        try {
+            return bindParameters(
+                    getEntityManager(entityClass)
+                            .createQuery(PanacheJpaUtil.createDeleteQuery(entityClass, panacheQuery, paramCount(params))),
+                    params)
+                    .executeUpdate();
+        } catch (IllegalArgumentException x) {
+            throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);
+        }
     }
 
-    public long delete(Class<?> entityClass, String query, Map<String, Object> params) {
-        return bindParameters(
-                getEntityManager(entityClass)
-                        .createQuery(PanacheJpaUtil.createDeleteQuery(entityClass, query, paramCount(params))),
-                params)
-                        .executeUpdate();
+    public long delete(Class<?> entityClass, String panacheQuery, Map<String, Object> params) {
+        if (PanacheJpaUtil.isNamedQuery(panacheQuery)) {
+            Query namedQuery = extractNamedQuery(entityClass, panacheQuery);
+            return bindParameters(namedQuery, params).executeUpdate();
+        }
+
+        try {
+            return bindParameters(
+                    getEntityManager(entityClass)
+                            .createQuery(PanacheJpaUtil.createDeleteQuery(entityClass, panacheQuery, paramCount(params))),
+                    params)
+                    .executeUpdate();
+        } catch (IllegalArgumentException x) {
+            throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);
+        }
     }
 
     public long delete(Class<?> entityClass, String query, Parameters params) {
@@ -404,26 +462,36 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         return jpaQuery.executeUpdate();
     }
 
-    public int executeUpdate(String query, Class<?> entityClass, Object... params) {
-        Query jpaQuery = getEntityManager(entityClass).createQuery(query);
-        bindParameters(jpaQuery, params);
-        return jpaQuery.executeUpdate();
+    public int executeUpdate(Class<?> entityClass, String panacheQuery, Object... params) {
+        if (PanacheJpaUtil.isNamedQuery(panacheQuery)) {
+            Query namedQuery = extractNamedQuery(entityClass, panacheQuery);
+            return bindParameters(namedQuery, params).executeUpdate();
+        }
+
+        try {
+            String updateQuery = PanacheJpaUtil.createUpdateQuery(entityClass, panacheQuery, paramCount(params));
+            Query jpaQuery = getEntityManager(entityClass).createQuery(updateQuery);
+            bindParameters(jpaQuery, params);
+            return jpaQuery.executeUpdate();
+        } catch (IllegalArgumentException x) {
+            throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);
+        }
     }
 
-    public int executeUpdate(String query, Class<?> entityClass, Map<String, Object> params) {
-        Query jpaQuery = getEntityManager(entityClass).createQuery(query);
-        bindParameters(jpaQuery, params);
-        return jpaQuery.executeUpdate();
-    }
+    public int executeUpdate(Class<?> entityClass, String panacheQuery, Map<String, Object> params) {
+        if (PanacheJpaUtil.isNamedQuery(panacheQuery)) {
+            Query namedQuery = extractNamedQuery(entityClass, panacheQuery);
+            return bindParameters(namedQuery, params).executeUpdate();
+        }
 
-    public int executeUpdate(Class<?> entityClass, String query, Object... params) {
-        String updateQuery = PanacheJpaUtil.createUpdateQuery(entityClass, query, paramCount(params));
-        return executeUpdate(updateQuery, entityClass, params);
-    }
-
-    public int executeUpdate(Class<?> entityClass, String query, Map<String, Object> params) {
-        String updateQuery = PanacheJpaUtil.createUpdateQuery(entityClass, query, paramCount(params));
-        return executeUpdate(updateQuery, entityClass, params);
+        try {
+            String updateQuery = PanacheJpaUtil.createUpdateQuery(entityClass, panacheQuery, paramCount(params));
+            Query jpaQuery = getEntityManager(entityClass).createQuery(updateQuery);
+            bindParameters(jpaQuery, params);
+            return jpaQuery.executeUpdate();
+        } catch (IllegalArgumentException x) {
+            throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);
+        }
     }
 
     public int update(Class<?> entityClass, String query, Map<String, Object> params) {

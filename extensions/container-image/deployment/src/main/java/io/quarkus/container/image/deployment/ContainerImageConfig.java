@@ -1,10 +1,13 @@
 package io.quarkus.container.image.deployment;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConvertWith;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 
 @ConfigRoot
 public class ContainerImageConfig {
@@ -12,26 +15,34 @@ public class ContainerImageConfig {
     /**
      * The group the container image will be part of
      */
-    @ConfigItem(defaultValue = "${user.name}")
-    public Optional<String> group;
+    @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
+    Optional<String> group; //used only by ContainerImageProcessor, use ContainerImageInfoBuildItem instead
 
     /**
      * The name of the container image. If not set defaults to the application name
      */
     @ConfigItem(defaultValue = "${quarkus.application.name:unset}")
-    public Optional<String> name;
+    @ConvertWith(TrimmedStringConverter.class)
+    String name; //used only by ContainerImageProcessor, use ContainerImageInfoBuildItem instead
 
     /**
      * The tag of the container image. If not set defaults to the application version
      */
     @ConfigItem(defaultValue = "${quarkus.application.version:latest}")
-    public Optional<String> tag;
+    Optional<String> tag; //used only by ContainerImageProcessor, use ContainerImageInfoBuildItem instead
 
     /**
      * Additional tags of the container image.
      */
     @ConfigItem
     public Optional<List<String>> additionalTags;
+
+    /**
+     * Custom labels to add to the generated image.
+     */
+    @ConfigItem
+    public Map<String, String> labels;
 
     /**
      * The container registry to use
@@ -69,13 +80,13 @@ public class ContainerImageConfig {
      * Whether or not a image build will be performed.
      */
     @ConfigItem
-    public boolean build;
+    public Optional<Boolean> build;
 
     /**
      * Whether or not an image push will be performed.
      */
     @ConfigItem
-    public boolean push;
+    public Optional<Boolean> push;
 
     /**
      * The name of the container image extension to use (e.g. docker, jib, s2i).
@@ -84,20 +95,19 @@ public class ContainerImageConfig {
     @ConfigItem
     public Optional<String> builder;
 
-    /**
-     * Since user.name which is default value can be uppercase and uppercase values are not allowed
-     * in the repository part of image references, we need to make the username lowercase.
-     * If spaces exist in the user name, we replace them with the dash character.
-     *
-     * We purposely don't change the value of an explicitly set group.
-     */
-    public Optional<String> getEffectiveGroup() {
-        if (group.isPresent()) {
-            String originalGroup = group.get();
-            if (originalGroup.equals(System.getProperty("user.name"))) {
-                return Optional.of(originalGroup.toLowerCase().replace(' ', '-'));
-            }
-        }
-        return group;
+    public boolean isBuildExplicitlyEnabled() {
+        return build.isPresent() && build.get();
+    }
+
+    public boolean isBuildExplicitlyDisabled() {
+        return build.isPresent() && !build.get();
+    }
+
+    public boolean isPushExplicitlyEnabled() {
+        return push.isPresent() && push.get();
+    }
+
+    public boolean isPushExplicitlyDisabled() {
+        return push.isPresent() && !push.get();
     }
 }

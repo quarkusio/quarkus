@@ -22,7 +22,7 @@ public final class ProvidedAmazonLambdaHandlerBuildItem extends SimpleBuildItem 
 
     /**
      * Just used for error logging purposes. Name of your extension i.e. "AWS Lambda HTTP".
-     * 
+     *
      * @return
      */
     public String getProvider() {

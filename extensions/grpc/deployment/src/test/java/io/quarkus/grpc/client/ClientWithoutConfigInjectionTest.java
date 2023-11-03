@@ -41,12 +41,19 @@ public class ClientWithoutConfigInjectionTest {
     public void testHelloWithBlockingClient() {
         HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("neo").build());
         assertThat(reply.getMessage()).isEqualTo("Hello neo");
+
+        reply = client.wEIRD(HelloRequest.newBuilder().setName("neo").build());
+        assertThat(reply.getMessage()).isEqualTo("Hello neo");
     }
 
     @Test
     public void testHelloWithMutinyClient() {
         Uni<HelloReply> reply = mutinyClient
                 .sayHello(HelloRequest.newBuilder().setName("neo").build());
+        assertThat(reply.await().atMost(TIMEOUT).getMessage()).isEqualTo("Hello neo");
+
+        reply = mutinyClient
+                .wEIRD(HelloRequest.newBuilder().setName("neo").build());
         assertThat(reply.await().atMost(TIMEOUT).getMessage()).isEqualTo("Hello neo");
     }
 }

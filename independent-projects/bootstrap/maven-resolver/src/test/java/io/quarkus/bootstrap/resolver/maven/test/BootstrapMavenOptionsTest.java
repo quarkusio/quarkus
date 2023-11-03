@@ -3,10 +3,12 @@ package io.quarkus.bootstrap.resolver.maven.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import java.util.Properties;
+
 import org.apache.maven.cli.CLIManager;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 
 public class BootstrapMavenOptionsTest {
 

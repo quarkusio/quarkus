@@ -14,6 +14,6 @@ public class TestFixtureMultiModuleTest extends QuarkusGradleWrapperTestBase {
     public void testTaskShouldUseTestFixtures() throws IOException, URISyntaxException, InterruptedException {
         final File projectDir = getProjectDir("test-fixtures-multi-module");
         final BuildResult result = runGradleWrapper(projectDir, "clean", "test");
-        assertThat(result.getTasks().get(":application:test")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(result.getTasks().get(":application:test"))).isTrue();
     }
 }

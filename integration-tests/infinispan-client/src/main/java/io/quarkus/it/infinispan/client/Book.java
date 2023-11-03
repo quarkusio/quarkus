@@ -4,12 +4,16 @@ import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.Set;
 
+import org.infinispan.api.annotations.indexing.Indexed;
+import org.infinispan.api.annotations.indexing.Keyword;
+import org.infinispan.api.annotations.indexing.Text;
 import org.infinispan.protostream.annotations.ProtoFactory;
 import org.infinispan.protostream.annotations.ProtoField;
 
 /**
  * @author William Burns
  */
+@Indexed
 public class Book {
     private final String title;
     private final String description;
@@ -29,11 +33,13 @@ public class Book {
     }
 
     @ProtoField(number = 1)
+    @Text
     public String getTitle() {
         return title;
     }
 
     @ProtoField(number = 2)
+    @Keyword(projectable = true, sortable = true, normalizer = "lowercase", indexNullAs = "unnamed", norms = false)
     public String getDescription() {
         return description;
     }

@@ -2,12 +2,10 @@ package io.quarkus.qute.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,17 +19,18 @@ public class PropertyNotFoundDevModeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest testConfig = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(Routes.class)
                     .addAsResource(new StringAsset("{foo.surname}"), "templates/foo.html")
                     .addAsResource(new StringAsset("{bar.name}"), "templates/bar.html"));
 
     @Test
     public void testExceptionIsThrown() {
-        assertEquals("Property \"foo\" not found in expression {foo.surname} in template foo on line 1",
+        assertEquals(
+                "Rendering error in template [foo.html] line 1: Entry \"foo\" not found in the data map in expression {foo.surname}",
                 RestAssured.get("test-foo").then().statusCode(200).extract().body().asString());
         assertEquals(
-                "Property \"name\" not found on the base object \"java.lang.String\" in expression {bar.name} in template bar on line 1",
+                "Rendering error in template [bar.html] line 1: Property \"name\" not found on the base object \"java.lang.String\" in expression {bar.name}",
                 RestAssured.get("test-bar").then().statusCode(200).extract().body().asString());
     }
 

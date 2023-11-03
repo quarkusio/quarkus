@@ -2,6 +2,11 @@ package io.quarkus.it.keycloak;
 
 import static org.hamcrest.Matchers.is;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.http.TestHTTPEndpoint;
@@ -21,10 +26,18 @@ public class TestSecurityLazyAuthTest {
     @TestSecurity(user = "user1", roles = "viewer")
     public void testWithDummyUser() {
         RestAssured.when().get("test-security").then()
-                .body(is("user1"));
+                .body(is("user1:user1:user1:user1"));
     }
 
     @Test
+    @TestSecurityMetaAnnotation
+    public void testJwtWithDummyUser() {
+        RestAssured.when().get("test-security-oidc").then()
+                .body(is("userOidc:userOidc:userOidc:userOidc:viewer:user@gmail.com:subject:aud"));
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ ElementType.METHOD })
     @TestSecurity(user = "userOidc", roles = "viewer")
     @OidcSecurity(claims = {
             @Claim(key = "email", value = "user@gmail.com")
@@ -33,9 +46,8 @@ public class TestSecurityLazyAuthTest {
     }, config = {
             @ConfigMetadata(key = "audience", value = "aud")
     })
-    public void testJwtWithDummyUser() {
-        RestAssured.when().get("test-security-oidc").then()
-                .body(is("userOidc:viewer:user@gmail.com:subject:aud"));
+    public @interface TestSecurityMetaAnnotation {
+
     }
 
 }

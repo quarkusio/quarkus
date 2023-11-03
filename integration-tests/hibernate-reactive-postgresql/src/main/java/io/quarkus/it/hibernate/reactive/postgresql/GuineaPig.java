@@ -2,12 +2,14 @@ package io.quarkus.it.hibernate.reactive.postgresql;
 
 import java.util.Objects;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.NamedNativeQuery;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "Pig")
+@NamedNativeQuery(name = "pig.all", query = "select * from Pig", resultClass = GuineaPig.class)
 public class GuineaPig {
 
     @Id

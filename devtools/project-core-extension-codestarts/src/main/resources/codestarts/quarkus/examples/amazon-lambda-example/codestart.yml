@@ -11,4 +11,4 @@ language:
     dependencies:
       - io.quarkus:quarkus-amazon-lambda
     test-dependencies:
-      - io.quarkus:quarkus-test-amazon-lambda
+      - io.rest-assured:rest-assured

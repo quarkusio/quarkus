@@ -14,7 +14,7 @@ import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 import picocli.CommandLine.Parameters;
 
-@CommandLine.Command(name = "build", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, showEndOfOptionsDelimiterInUsageHelp = true, header = "Build the current project.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+@CommandLine.Command(name = "build", showEndOfOptionsDelimiterInUsageHelp = true, header = "Build the current project.")
 public class Build extends BaseBuildCommand implements Callable<Integer> {
 
     @CommandLine.Mixin
@@ -33,6 +33,9 @@ public class Build extends BaseBuildCommand implements Callable<Integer> {
             output.throwIfUnmatchedArguments(spec.commandLine());
 
             BuildSystemRunner runner = getRunner();
+            if (buildOptions.generateReport) {
+                params.add("-Dquarkus.debug.dump-build-metrics=true");
+            }
             BuildSystemRunner.BuildCommandArgs commandArgs = runner.prepareBuild(buildOptions, runMode, params);
 
             if (runMode.isDryRun()) {
@@ -40,7 +43,14 @@ public class Build extends BaseBuildCommand implements Callable<Integer> {
                 return CommandLine.ExitCode.OK;
             }
 
-            return runner.run(commandArgs);
+            int exitCode = runner.run(commandArgs);
+            if (exitCode == CommandLine.ExitCode.OK && buildOptions.generateReport) {
+                output.printText(new String[] {
+                        "\nBuild report available: " + new BuildReport(runner).generate().toPath().toAbsolutePath().toString()
+                                + "\n"
+                });
+            }
+            return exitCode;
         } catch (Exception e) {
             return output.handleCommandException(e,
                     "Unable to build project: " + e.getMessage());
@@ -64,10 +74,7 @@ public class Build extends BaseBuildCommand implements Callable<Integer> {
 
     @Override
     public String toString() {
-        return "Build [clean=" + buildOptions.clean
-                + ", buildNative=" + buildOptions.buildNative
-                + ", offline=" + buildOptions.offline
-                + ", runTests=" + buildOptions.runTests
+        return "Build [buildOptions=" + buildOptions
                 + ", properties=" + propertiesOptions.properties
                 + ", output=" + output
                 + ", params=" + params + "]";

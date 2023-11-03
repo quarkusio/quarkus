@@ -13,6 +13,10 @@
     <artifactId>quarkus-tck-microprofile-graphql</artifactId>
     <name>Quarkus - TCK - MicroProfile GraphQL</name>
 
+    <properties>
+        <microprofile-graphql-tck.version>2.0</microprofile-graphql-tck.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -25,6 +29,10 @@
                     <suiteXmlFiles>
                         <suiteXmlFile>testng.xml</suiteXmlFile>
                     </suiteXmlFiles>
+                    <systemPropertyVariables>
+                        <quarkus.arc.exclude-dependency.graphql-tck.group-id>org.eclipse.microprofile.graphql</quarkus.arc.exclude-dependency.graphql-tck.group-id>
+                        <quarkus.arc.exclude-dependency.graphql-tck.artifact-id>microprofile-graphql-tck</quarkus.arc.exclude-dependency.graphql-tck.artifact-id>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>
@@ -42,8 +50,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.graphql</groupId>
             <artifactId>microprofile-graphql-tck</artifactId>
-            <version>${microprofile-graphql-api.version}</version>
-            <scope>provided</scope>
+            <version>${microprofile-graphql-tck.version}</version>
         </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->

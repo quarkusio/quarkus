@@ -9,34 +9,60 @@ on:
       jdkVersion:
         description: 'JDK version'
         required: true
-        # make sure to keep the default of JDK_VERSION in sync!
-        default: '17-ea'
+        # make sure to keep the matrix entries (see below) in sync!
+        default: '21'
+      jdkDistribution:
+        description: 'JDK distribution'
+        required: true
+        # make sure to keep the matrix entries (see below) in sync!
+        default: 'jdk.java.net'
 
 env:
-  JDK_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.jdkVersion || '17-ea' }}
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
-  JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-containers -Dstart-containers -Dformat.skip"
+  MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
+  JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-containers -Dstart-containers -Dtest-resteasy-reactive-large-files -Dformat.skip"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
 jobs:
   linux-jvm-test:
-    name: "JVM Tests - Early Access JDK Build"
+    name: JVM Tests - Early Access JDK ${{ matrix.version }} Build - ${{ matrix.dist }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # This is complex because we want to use a different matrix when using workflow_dispatch.
+      # See https://docs.github.com/en/actions/learn-github-actions/expressions#example-returning-a-json-object
+      # for the code that inspired this.
+      # The first matrix (with a single entry) gets executed when using workflow_dispatch only.
+      # The second matrix (with multiple entries) get executed when NOT using workflow_dispatch.
+      # When adding a newer JDK here, make sure to update the defaults of workflow_dispatch inputs (see top of this file).
+      matrix: >-
+        ${{
+          fromJSON(
+            github.event_name == 'workflow_dispatch'
+            && format( '{{ "include": [{{ "version": "{0}", "dist": "{1}" }}] }}',
+                github.event.inputs.jdkVersion, github.event.inputs.jdkDistribution )
+            || '{ "include": [{ "version": 20, "dist": "jdk.java.net" }, { "version": 21, "dist": "jdk.java.net" }] }'
+          )
+        }}
     if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
     timeout-minutes: 360
     env:
-      # "--add-opens ..." to work around https://youtrack.jetbrains.com/issue/KT-43704
-      # all the jdk.compiler ones are for Kotlin Kapt
-      MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m --add-opens java.base/java.util=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.jvm=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-opens jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED
+      MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m
     steps:
-
-      - name: Set up JDK
-        # AdoptOpenJDK does not seem to provide EA builds, so use the standard action which provides a Zulu JDK
-        uses: actions/setup-java@v1
+      - name: Set up JDK from jdk.java.net
+        if: matrix.dist == 'jdk.java.net'
+        uses: oracle-actions/setup-java@v1
         with:
-          java-version: ${{ env.JDK_VERSION }}
+          website: jdk.java.net
+          release: ${{ matrix.version }}
+      - name: Set up JDK from other provider than jdk.java.net
+        if: matrix.dist != 'jdk.java.net'
+        uses: actions/setup-java@v3
+        with:
+          distribution: ${{ matrix.dist }}
+          java-version: ${{ matrix.version }}
       - name: Print Java version
         shell: bash
         run: java -version
@@ -46,34 +72,29 @@ jobs:
         run: |
           ss -ln
           sudo service mysql stop || true
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.ref || 'main' }}
-      - uses: n1hility/cancel-previous-runs@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: jdk-early-access-build.yml
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Get Date
         id: get-date
         run: |
-          echo "::set-output name=date::$(/bin/date -u "+%Y-%m")"
+          echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
         shell: bash
       - name: Cache Maven Repository
         id: cache-maven
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.m2/repository
           # refresh cache every month to avoid unlimited growth
           # also add JDK version to key to avoid poisioning of the CI cache
-          key: q2maven-${{ steps.get-date.outputs.date }}-${{ env.JDK_VERSION }}
+          key: q2maven-${{ steps.get-date.outputs.date }}-${{ matrix.version }}
       - name: Build with Maven
         # -fae to try to gather as many failures as possible
         # (but not maven.test.failure.ignore because test report generation is buggy)
-        # Gradle bits are excluded due to https://github.com/gradle/gradle/issues/13481
         run: |
-          ./mvnw $JVM_TEST_MAVEN_OPTS -Dtcks install -fae -pl '!devtools/gradle' -pl '!integration-tests/gradle'
+          ./mvnw $JVM_TEST_MAVEN_OPTS -Dtcks install -fae
       # Test reports disabled due to: https://github.com/ScaCap/action-surefire-report/issues/39
       #- name: Publish Test Report
       #  if: always()
@@ -96,10 +117,10 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
-          name: test-reports-linux-jvm${{ env.JDK_VERSION }}
+          name: test-reports-linux-jvm${{ matrix.version }}
           path: 'test-reports.tgz'
       - name: Delete Local Artifacts From Cache
         if: always()

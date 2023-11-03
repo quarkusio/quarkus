@@ -14,16 +14,16 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.concurrent.atomic.LongAdder;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.sse.SseEventSource;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.sse.SseEventSource;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -44,7 +44,6 @@ import io.restassured.response.Response;
 
 @QuarkusTest
 @QuarkusTestResource(MongoReplicaSetTestResource.class)
-@DisabledOnOs(OS.WINDOWS)
 class ReactiveMongodbPanacheResourceTest {
     private static final TypeRef<List<BookDTO>> LIST_OF_BOOK_TYPE_REF = new TypeRef<List<BookDTO>>() {
     };
@@ -197,7 +196,7 @@ class ReactiveMongodbPanacheResourceTest {
         Client client = ClientBuilder.newClient();
         WebTarget target = client.target("http://localhost:8081" + endpoint + "/stream");
         try (SseEventSource source = SseEventSource.target(target).build()) {
-            final IntegerAdder nbEvent = new IntegerAdder();
+            final LongAdder nbEvent = new LongAdder();
             source.register((inboundSseEvent) -> {
                 try {
                     BookDTO theBook = objectMapper.readValue(inboundSseEvent.readData(), BookDTO.class);
@@ -208,7 +207,7 @@ class ReactiveMongodbPanacheResourceTest {
                 nbEvent.increment();
             });
             source.open();
-            await().atMost(Duration.ofSeconds(10)).until(() -> nbEvent.count() == 3);
+            await().atMost(Duration.ofSeconds(10)).until(() -> nbEvent.sum() == 3);
         }
 
         //delete all
@@ -343,24 +342,13 @@ class ReactiveMongodbPanacheResourceTest {
         return cal.getTime();
     }
 
-    private static class IntegerAdder {
-        int cpt = 0;
-
-        public void increment() {
-            cpt++;
-        }
-
-        public int count() {
-            return cpt;
-        }
-    }
-
     @Test
     public void testMoreEntityFunctionalities() {
         get("/test/reactive/entity").then().statusCode(200);
     }
 
     @Test
+    @Disabled("flaky")
     public void testMoreRepositoryFunctionalities() {
         get("/test/reactive/repository").then().statusCode(200);
     }

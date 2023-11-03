@@ -5,7 +5,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import jakarta.inject.Inject;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.graphql.DefaultValue;
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Mutation;
 import org.eclipse.microprofile.graphql.Name;
@@ -33,6 +36,11 @@ public class GreetingResource {
         return greetings;
     }
 
+    @Mutation
+    public String error(@DefaultValue("Foo") String name) throws BusinessException {
+        throw new BusinessException("No foo allowed");
+    }
+
     @Name("options")
     public List<Greeting> buildInOptions(@Source Greeting greeting) {
         List<Greeting> options = new ArrayList<>();
@@ -51,5 +59,14 @@ public class GreetingResource {
     @Query
     public Farewell farewell() {
         return new Farewell();
+    }
+
+    @Inject
+    FaultTolerantService service;
+
+    @Query
+    public String faultTolerance() {
+        service.causeTimeout();
+        return "PASSED";
     }
 }

@@ -2,10 +2,8 @@ package io.quarkus.micrometer.deployment.export;
 
 import java.util.Set;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -25,8 +23,8 @@ public class JsonRegistryEnabledTest {
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.export.json.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(PrometheusRegistryProcessor.REGISTRY_CLASS));
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
+            .withEmptyApplication();
 
     @Inject
     MeterRegistry registry;
@@ -49,7 +47,7 @@ public class JsonRegistryEnabledTest {
     public void metricsEndpoint() {
         // RestAssured prepends /app for us
         RestAssured.given()
-                .contentType("application/json")
+                .accept("application/json")
                 .get("/relative/metrics")
                 .then()
                 .statusCode(200);

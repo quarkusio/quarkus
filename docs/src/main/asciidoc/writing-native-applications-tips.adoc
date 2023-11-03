@@ -3,9 +3,11 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Tips for writing native applications
-
-include::./attributes.adoc[]
+= Tips for writing native applications
+include::_attributes.adoc[]
+:categories: core, writing-extensions, native
+:summary: This guide is a collection of tips to help you solve the problems you encounter when compiling applications to native executable.
+:topics: native,extensions
 
 This guide contains various tips and tricks for getting around problems that might arise when attempting to run Java applications as native executables.
 
@@ -25,7 +27,7 @@ GraalVM imposes a number of constraints and making your application a native exe
 By default, when building a native executable, GraalVM will not include any of the resources that are on the classpath into the native executable it creates.
 Resources that are meant to be part of the native executable need to be configured explicitly.
 
-Quarkus automatically includes the resources present in `META-INF/resources` (the web resources) but, outside of this directory, you are on your own.
+Quarkus automatically includes the resources present in `META-INF/resources` (the web resources) but, outside this directory, you are on your own.
 
 [WARNING]
 ====
@@ -34,6 +36,8 @@ So this directory is not a shortcut for "let's automatically include these resou
 
 Other resources should be declared explicitly.
 ====
+
+==== Using the `quarkus.native.resources.includes` configuration property
 
 To include more resources in the native executable, the easiest way is to use the `quarkus.native.resources.includes` configuration property,
 and its counterpart to exclude resources `quarkus.native.resources.excludes`.
@@ -53,8 +57,19 @@ will include:
 * all files in the `foo/` directory and its subdirectories except for files in `foo/private/` and its subdirectories,
 * all text files in the `bar/` directory and its subdirectories.
 
-If globs are not sufficiently precise for your use case and you need to rely on regular expressions or if you prefer relying on the GraalVM infrastructure,
-you can also create a `resources-config.json` (the most common location is within `src/main/resources`) JSON file defining which resources should be included:
+==== Using a configuration file
+
+If globs are not sufficiently precise for your use case and you need to rely on regular expressions, or if you prefer relying on the GraalVM infrastructure,
+you can also create a `resources-config.json` (the most common location is within `src/main/resources`) JSON file defining which resources should be included.
+
+[WARNING]
+====
+Relying on the GraalVM infrastructure means that you are responsible for keeping the configuration file up to date as new Mandrel and GraalVM versions are released.
+
+Please also note that the `resources-config.json` file will be overwritten by Quarkus if placed directly under `src/main/resources/META-INF/native-image/` as Quarkus generates its own configuration file in this directory.
+====
+
+An example of such a file is the following:
 
 [source,json]
 ----
@@ -75,15 +90,24 @@ Here we include all the XML files and JSON files into the native executable.
 
 [NOTE]
 ====
-You can find more information about this topic in https://github.com/oracle/graal/blob/master/substratevm/Resources.md[the GraalVM documentation].
+For more information about this topic, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/Resources/[GraalVM Accessing Resources in Native Image] guide.
 ====
 
 The final order of business is to make the configuration file known to the `native-image` executable by adding the proper configuration to `application.properties`:
 
 [source,properties]
 ----
-quarkus.native.additional-build-args =-H:ResourceConfigurationFiles=resources-config.json
+quarkus.native.additional-build-args =\
+    -H:+UnlockExperimentalVMOptions,\
+    -H:ResourceConfigurationFiles=resources-config.json,\
+    -H:-UnlockExperimentalVMOptions
 ----
+
+[NOTE]
+====
+Starting with Mandrel 23.1 and GraalVM for JDK 21, `-H:ResourceConfigurationFiles=resources-config.json` results in a warning being shown unless wrapped in `-H:+UnlockExperimentalVMOptions` and `-H:-UnlockExperimentalVMOptions`.
+The absence of these options will result in build failures in the future.
+====
 
 In the previous snippet we were able to simply use `resources-config.json` instead of specifying the entire path of the file simply because it was added to `src/main/resources`.
 If the file had been added to another directory, the proper file path would have had to be specified manually.
@@ -95,8 +119,10 @@ Multiple options may be separated by a comma. For example, one could use:
 [source,properties]
 ----
 quarkus.native.additional-build-args =\
+    -H:+UnlockExperimentalVMOptions,\
     -H:ResourceConfigurationFiles=resources-config.json,\
-    -H:ReflectionConfigurationFiles=reflection-config.json
+    -H:ReflectionConfigurationFiles=reflection-config.json,\
+    -H:-UnlockExperimentalVMOptions
 ----
 
 in order to ensure that various resources are included and additional reflection is registered.
@@ -113,7 +139,9 @@ When using Maven, we could use the following configuration:
         <id>native</id>
         <properties>
             <quarkus.package.type>native</quarkus.package.type>
-            <quarkus.native.additional-build-args>-H:ResourceConfigurationFiles=resources-config.json</quarkus.native.additional-build-args>
+            <quarkus.native.additional-build-args>
+                -H:+UnlockExperimentalVMOptions,-H:ResourceConfigurationFiles=resources-config.json,-H:-UnlockExperimentalVMOptions
+            </quarkus.native.additional-build-args>
         </properties>
     </profile>
 </profiles>
@@ -174,7 +202,7 @@ If we were to use the code above, we would get an exception like the following w
 
 [source]
 ----
-Exception handling request to /person: org.jboss.resteasy.spi.UnhandledException: javax.json.bind.JsonbException: Can't create instance of a class: class org.acme.jsonb.Person, No default constructor found
+Exception handling request to /person: org.jboss.resteasy.spi.UnhandledException: jakarta.json.bind.JsonbException: Can't create instance of a class: class org.acme.jsonb.Person, No default constructor found
 ----
 
 or if you are using Jackson:
@@ -223,7 +251,12 @@ public class MyReflectionConfiguration {
 
 ==== Using a configuration file
 
-You can use a configuration file to register classes for reflection.
+You can also use a configuration file to register classes for reflection, if you prefer relying on the GraalVM infrastructure.
+
+[WARNING]
+====
+Relying on the GraalVM infrastructure means that you are responsible for keeping the configuration file up to date as new Mandrel and GraalVM versions are released.
+====
 
 As an example, in order to register all methods of class `com.acme.MyClass` for reflection, we create `reflection-config.json` (the most common location is within `src/main/resources`)
 
@@ -244,15 +277,24 @@ As an example, in order to register all methods of class `com.acme.MyClass` for 
 
 [NOTE]
 ====
-For more details on the format of this file, please refer to https://github.com/oracle/graal/blob/master/substratevm/Reflection.md[the GraalVM documentation].
+For more information about the format of this file, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/Reflection/[GraalVM Reflection in Native Image] guide.
 ====
 
 The final order of business is to make the configuration file known to the `native-image` executable by adding the proper configuration to `application.properties`:
 
 [source,properties]
 ----
-quarkus.native.additional-build-args =-H:ReflectionConfigurationFiles=reflection-config.json
+quarkus.native.additional-build-args =\
+    -H:+UnlockExperimentalVMOptions,\
+    -H:ReflectionConfigurationFiles=reflection-config.json,\
+    -H:-UnlockExperimentalVMOptions
 ----
+
+[NOTE]
+====
+Starting with Mandrel 23.1 and GraalVM for JDK 21, `-H:ResourceConfigurationFiles=resources-config.json` results in a warning being shown unless wrapped in `-H:+UnlockExperimentalVMOptions` and `-H:-UnlockExperimentalVMOptions`.
+The absence of these options will result in build failures in the future.
+====
 
 In the previous snippet we were able to simply use `reflection-config.json` instead of specifying the entire path of the file simply because it was added to `src/main/resources`.
 If the file had been added to another directory, the proper file path would have had to be specified manually.
@@ -264,8 +306,10 @@ Multiple options may be separated by a comma. For example, one could use:
 [source,properties]
 ----
 quarkus.native.additional-build-args =\
+    -H:+UnlockExperimentalVMOptions,\
     -H:ResourceConfigurationFiles=resources-config.json,\
-    -H:ReflectionConfigurationFiles=reflection-config.json
+    -H:ReflectionConfigurationFiles=reflection-config.json,\
+    -H:-UnlockExperimentalVMOptions
 ----
 
 in order to ensure that various resources are included and additional reflection is registered.
@@ -282,18 +326,21 @@ When using Maven, we could use the following configuration:
         <id>native</id>
         <properties>
             <quarkus.package.type>native</quarkus.package.type>
-            <quarkus.native.additional-build-args>-H:ReflectionConfigurationFiles=reflection-config.json</quarkus.native.additional-build-args>
+            <quarkus.native.additional-build-args>
+                -H:+UnlockExperimentalVMOptions,-H:ReflectionConfigurationFiles=reflection-config.json,-H:-UnlockExperimentalVMOptions
+            </quarkus.native.additional-build-args>
         </properties>
     </profile>
 </profiles>
 ----
 
+[[delay-class-init-in-your-app]]
 === Delaying class initialization
 
 By default, Quarkus initializes all classes at build time.
 
 There are cases where the initialization of certain classes is done in a static block needs to be postponed to runtime.
-Typically omitting such configuration would result in a runtime exception like the following:
+Typically, omitting such configuration would result in a runtime exception like the following:
 
 [source]
 ----
@@ -303,13 +350,29 @@ method com.amazonaws.services.s3.model.CryptoConfiguration.<init>(CryptoMode)
 Call path from entry point to com.amazonaws.services.s3.model.CryptoConfiguration.<init>(CryptoMode):
 ----
 
-If you need to delay the initialization of a class, you can use the `--initialize-at-run-time=<package or class>` configuration knob.
+Another common source of errors is when the image heap taken by GraalVM contains a `Random`/`SplittableRandom` instance:
+
+[source]
+----
+Error: com.oracle.graal.pointsto.constraints.UnsupportedFeatureException: Detected an instance of Random/SplittableRandom class in the image heap. Instances created during image generation have cached seed values and don't behave as expected.
+----
+
+Which is more often than not caused by Quarkus initializing at build time a class with a static `Random`/`SplittableRandom` field,
+causing this particular instance to be tentatively included in the image heap.
+
+[TIP]
+====
+You can find detailed information about this `Random`/`SplittableRandom` issue in https://foivos.zakkak.net/tutorials/working-with-randoms-native-images/[this blog post].
+====
+
+In these cases, delaying the infringing class initialization at runtime might be the solution and, to achieve that,
+you can use the `--initialize-at-run-time=<package or class>` configuration knob.
 
 It should be added to the `native-image` configuration using the `quarkus.native.additional-build-args` configuration property as shown in the examples above.
 
 [NOTE]
 ====
-You can find more information about all this in https://github.com/oracle/graal/blob/master/substratevm/ClassInitialization.md[the GraalVM documentation].
+For more information, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/optimizations-and-performance/ClassInitialization/[GraalVM Class Initialization in Native Image] guide.
 ====
 
 [NOTE]
@@ -342,7 +405,227 @@ com.oracle.svm.core.jdk.UnsupportedFeatureError: Proxy class defined by interfac
 ----
 
 Solving this issue requires adding the `-H:DynamicProxyConfigurationResources=<comma-separated-config-resources>` option and to provide a dynamic proxy configuration file.
-You can find all the information about the format of this file in https://github.com/oracle/graal/blob/master/substratevm/DynamicProxy.md#manual-configuration[the GraalVM documentation].
+
+For more information about the format of this file, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/guides/configure-dynamic-proxies/[GraalVM Configure Dynamic Proxies Manually] guide.
+
+[[modularity-benefits]]
+=== Modularity Benefits
+
+During native executable build time GraalVM analyses the application's call tree and generates a code-set that includes all the code it needs.
+Having a modular codebase is key to avoiding problems with unused or optional parts of your application,
+while at the same time reducing both native executable build times and size.
+In this section you will learn about the details behind the benefits of modularity for native applications.
+
+When code is not modular enough, generated native executables can end up with more code than what the user needs.
+If a feature is not used and the code gets compiled into the native executable,
+this is a waste of native compilation time and memory usage, as well as native executable disk space and starting heap size.
+Even more problems arise when third party libraries or specialized API subsystems are used which cause native compilation or runtime errors,
+and their use is not modularised enough.
+A recent problem can be found in the JAXB library,
+which is capable of deserializing XML files containing images using Java’s AWT APIs.
+The vast majority of Quarkus XML users don’t need to deserialize images,
+so there shouldn’t be a need for users applications to include Java AWT code,
+unless they specifically configure Quarkus to add the JAXB AWT code to the native executable.
+However, because JAXB code that uses AWT is in the same jar as the rest of the XML parsing code,
+achieving this separation was rather complex and required the use of Java bytecode substitutions to get around it.
+These substitutions are hard to maintain and can easily break, hence they should be one's last resort.
+
+A modular codebase is the best way to avoid these kind of issues.
+Taking the JAXB/AWT problem above,
+if the JAXB code that dealt with images was in a separate module or jar (e.g. `jaxb-images`),
+then Quarkus could choose not to include that module unless the user specifically requested the need to serialize/deserialize XML files containing images at build time.
+
+Another benefit of modular applications is that they can reduce the code-set that will need to get into the native executable.
+The smaller the code-set, the faster the native executable builds will be and the smaller the native executable produced.
+
+[TIP]
+====
+The key takeaway point here is the following:
+Keeping optional features, particularly those that depend on third party libraries or API subsystems with a big footprint,
+in separate modules is the best solution.
+====
+
+How do I know if my application suffers from similar problems?
+Aside from a deep study of the application,
+finding usages of
+https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html[Maven optional dependencies]
+is a clear indicator that your application might suffer from similar problems.
+These type of dependencies should be avoided,
+and instead code that interacts with optional dependencies should be moved into separate modules.
+
+[[enforcing-singletons]]
+=== Enforcing Singletons
+
+As already explained in the <<delay-class-init-in-your-app,delay class initialization>> section,
+Quarkus marks all code to be initialized at build time by default.
+This means that, unless marked otherwise,
+static variables will be assigned at build time,
+and static blocks will be executed at build time too.
+
+This can cause values in Java programs that would normally vary from one run to another,
+to always return a constant value.
+E.g. a static field that is assigned the value of `System.currentTimeMillis()`
+will always return the same value when executed as a Quarkus native executable.
+
+Singletons that rely on static variable initialization will suffer similar problems.
+For example, imagine you have a singleton based around static initialization along with a REST endpoint to query it:
+
+[source,java]
+----
+@Path("/singletons")
+public class Singletons {
+
+    @GET
+    @Path("/static")
+    public long withStatic() {
+        return StaticSingleton.startTime();
+    }
+}
+
+class StaticSingleton {
+    static final long START_TIME = System.currentTimeMillis();
+
+    static long startTime() {
+        return START_TIME;
+    }
+}
+----
+
+When the `singletons/static` endpoint is queried,
+it will always return the same value,
+even after the application is restarted:
+
+[source,bash]
+----
+$ curl http://localhost:8080/singletons/static
+1656509254532%
+
+$ curl http://localhost:8080/singletons/static
+1656509254532%
+
+### Restart the native application ###
+
+$ curl http://localhost:8080/singletons/static
+1656509254532%
+----
+
+Singletons that rely on `enum` classes are also affected by the same issue:
+
+[source,java]
+----
+@Path("/singletons")
+public class Singletons {
+
+    @GET
+    @Path("/enum")
+    public long withEnum() {
+        return EnumSingleton.INSTANCE.startTime();
+    }
+}
+
+enum EnumSingleton {
+    INSTANCE(System.currentTimeMillis());
+
+    private final long startTime;
+
+    private EnumSingleton(long startTime) {
+        this.startTime = startTime;
+    }
+
+    long startTime() {
+        return startTime;
+    }
+}
+----
+
+When the `singletons/enum` endpoint is queried,
+it will always return the same value,
+even after the application is restarted:
+
+[source,bash]
+----
+$ curl http://localhost:8080/singletons/enum
+1656509254601%
+
+$ curl http://localhost:8080/singletons/enum
+1656509254601%
+
+### Restart the native application ###
+
+$ curl http://localhost:8080/singletons/enum
+1656509254601%
+----
+
+One way to fix it is to build singletons using CDI's `@Singleton` annotation:
+
+[source,java]
+----
+@Path("/singletons")
+public class Singletons {
+
+    @Inject
+    CdiSingleton cdiSingleton;
+
+    @GET
+    @Path("/cdi")
+    public long withCdi() {
+        return cdiSingleton.startTime();
+    }
+}
+
+@Singleton
+class CdiSingleton {
+    // Note that the field is not static
+    final long startTime = System.currentTimeMillis();
+
+    long startTime() {
+        return startTime;
+    }
+}
+----
+
+After each restart,
+querying `singletons/cdi` will return a different value,
+just like it would in JVM mode:
+
+[source,bash]
+----
+$ curl http://localhost:8080/singletons/cdi
+1656510218554%
+
+$ curl http://localhost:8080/singletons/cdi
+1656510218554%
+
+### Restart the native application ###
+
+$ curl http://localhost:8080/singletons/cdi
+1656510714689%
+----
+
+An alternative way to enforce a singleton while relying static fields, or enums,
+is to <<delay-class-init-in-your-app,delay its class initialization until run time>>.
+The nice advantage of CDI-based singletons is that your class initialization is not constrained,
+so you can freely decide whether it should be build-time or run-time initialized,
+depending on your use case.
+
+=== Beware of common Java API overrides
+
+Certain commonly used Java methods are overriden by user classes,
+e.g. `toString`, `equals`, `hashCode`...etc.
+The majority of overrides do not cause problems,
+but if they use third party libraries (e.g. for additional formatting),
+or use dynamic language features (e.g. reflection or proxies),
+they can cause native image build to fail.
+Some of those failures might be solvable via configuration,
+but others can be more tricky to handle.
+
+From a GraalVM points-to analysis perspective,
+what happens in these method overrides matters,
+even if the application does not explicitly call them.
+This is because these methods are used throughout the JDK,
+and all it takes is for one of those calls to be done on an unconstrained type,
+e.g. `java.lang.Object`,
+for the analysis to have to pull all implementations of that particular method.
 
 [[native-in-extension]]
 == Supporting native in a Quarkus extension
@@ -375,7 +658,7 @@ public class SaxParserProcessor {
 
 [NOTE]
 ====
-More information about reflection in GraalVM can be found https://github.com/oracle/graal/blob/master/substratevm/Reflection.md[here].
+For more information about reflection in GraalVM, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/Reflection/[GraalVM Reflection in Native Image] guide.
 ====
 
 === Including resources
@@ -396,7 +679,7 @@ public class ResourcesProcessor {
 
 [NOTE]
 ====
-For more information about GraalVM resource handling in native executables please refer to https://github.com/oracle/graal/blob/master/substratevm/Resources.md[the GraalVM documentation].
+For more information about GraalVM resource handling in native executables, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/Resources/[GraalVM Accessing Resources in Native Image] guide.
 ====
 
 
@@ -420,7 +703,7 @@ Using such a construct means that a `--initialize-at-run-time` option will autom
 
 [NOTE]
 ====
-For more information about `--initialize-at-run-time`, please read https://github.com/oracle/graal/blob/master/substratevm/ClassInitialization.md[the GraalVM documentation].
+For more information about the `--initialize-at-run-time` option, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/optimizations-and-performance/ClassInitialization/[GraalVM Class Initialization in Native Image] guide.
 ====
 
 === Managing Proxy Classes
@@ -444,11 +727,11 @@ Using such a construct means that a `-H:DynamicProxyConfigurationResources` opti
 
 [NOTE]
 ====
-For more information about Proxy Classes you can read https://github.com/oracle/graal/blob/master/substratevm/DynamicProxy.md[the GraalVM documentation].
+For more information about Proxy Classes, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/guides/configure-dynamic-proxies/[GraalVM Configure Dynamic Proxies Manually] guide.
 ====
 
 === Logging with Native Image
 
 If you are using dependencies that require logging components such as Apache Commons Logging or Log4j and are experiencing a `ClassNotFoundException` when building the native executable, you can resolve this by excluding the logging library and adding the corresponding JBoss Logging adapter.
 
-For more details please refer to the link:logging#logging-adapters[Logging guide].
+For more details please refer to the xref:logging.adoc#logging-adapters[Logging guide].

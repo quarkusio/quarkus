@@ -1,12 +1,12 @@
 package io.quarkus.it.amazon.lambda;
 
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.amazon.lambda.test.LambdaClient;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
@@ -18,10 +18,15 @@ public class AmazonLambdaSimpleTestCase {
         InputObject in = new InputObject();
         in.setGreeting("Hello");
         in.setName("Stu");
-        OutputObject out = LambdaClient.invoke(OutputObject.class, in);
-        assertEquals("Hello Stu", out.getResult());
-        assertCounter(1);
-        assertTrue(out.getRequestId().matches("aws-request-\\d"), "Expected requestId as 'aws-request-<number>'");
+        given()
+                .contentType("application/json")
+                .accept("application/json")
+                .body(in)
+                .when()
+                .post()
+                .then()
+                .statusCode(200)
+                .body(containsString("Hello Stu"));
     }
 
     @Test
@@ -30,30 +35,31 @@ public class AmazonLambdaSimpleTestCase {
         InputObject in = new InputObject();
         in.setGreeting("Hello");
         in.setName("Stuart");
-        try {
-            OutputObject out = LambdaClient.invoke(OutputObject.class, in);
-            out.getResult();
-            fail();
-        } catch (Exception e) {
-            assertEquals(ProcessingService.CAN_ONLY_GREET_NICKNAMES, e.getMessage());
-            //Assertions.assertEquals(IllegalArgumentException.class.getName(), e.getType());
-        }
+        given()
+                .contentType("application/json")
+                .accept("application/json")
+                .body(in)
+                .when()
+                .post()
+                .then()
+                .statusCode(500)
+                .body("errorMessage", equalTo(ProcessingService.CAN_ONLY_GREET_NICKNAMES));
         assertCounter(1);
     }
 
     private void resetCounter() {
-        if (!isNativeImageTest()) {
+        if (!isQuarkusIntegrationTest()) {
             CounterInterceptor.COUNTER.set(0);
         }
     }
 
     private void assertCounter(int expected) {
-        if (!isNativeImageTest()) {
+        if (!isQuarkusIntegrationTest()) {
             assertEquals(expected, CounterInterceptor.COUNTER.get());
         }
     }
 
-    private boolean isNativeImageTest() {
+    private boolean isQuarkusIntegrationTest() {
         return System.getProperty("native.image.path") != null;
     }
 }

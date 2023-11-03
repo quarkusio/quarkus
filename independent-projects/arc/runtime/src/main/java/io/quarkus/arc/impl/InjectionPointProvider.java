@@ -1,8 +1,9 @@
 package io.quarkus.arc.impl;
 
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+
 import io.quarkus.arc.InjectableReferenceProvider;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.InjectionPoint;
 
 /**
  *
@@ -19,7 +20,7 @@ public class InjectionPointProvider implements InjectableReferenceProvider<Injec
 
     /**
      * Set the current injection point for a non-null parameter, remove the threadlocal for null parameter.
-     * 
+     *
      * @param injectionPoint
      * @return the previous injection point or {@code null}
      */

@@ -5,18 +5,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Inject;
-import javax.security.auth.AuthPermission;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
 
 import org.keycloak.authorization.client.AuthzClient;
 import org.keycloak.representations.idm.authorization.Permission;
 
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
@@ -38,13 +39,7 @@ public class ProtectedResource {
 
     @GET
     public Uni<List<Permission>> permissions() {
-        return identity.checkPermission(new AuthPermission("Permission Resource")).onItem()
-                .transform(granted -> {
-                    if (granted) {
-                        return identity.getAttribute("permissions");
-                    }
-                    throw new ForbiddenException();
-                });
+        return Uni.createFrom().item(identity.<List<Permission>> getAttribute("permissions"));
     }
 
     @GET
@@ -62,6 +57,20 @@ public class ProtectedResource {
                     }
                     throw new ForbiddenException();
                 });
+    }
+
+    @PermissionsAllowed("Scope Permission Resource:read")
+    @GET
+    @Path("/annotation/scope-read")
+    public Uni<List<Permission>> hasScopeReadPermission() {
+        return permissions();
+    }
+
+    @PermissionsAllowed("Scope Permission Resource:write")
+    @GET
+    @Path("/annotation/scope-write")
+    public Uni<List<Permission>> hasScopeWritePermission() {
+        return permissions();
     }
 
     @Path("/claim-protected")
@@ -89,5 +98,13 @@ public class ProtectedResource {
     @GET
     public String getEntitlements() {
         return authzClient.authorization().authorize().getToken();
+    }
+
+    @Produces("application/json")
+    @Path("/party-token-permissions-size")
+    @GET
+    public int getPartyTokenPermissionsSize() {
+        return authzClient.protection().introspectRequestingPartyToken(authzClient.authorization().authorize().getToken())
+                .getPermissions().size();
     }
 }

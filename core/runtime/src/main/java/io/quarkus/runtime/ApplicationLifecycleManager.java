@@ -1,6 +1,6 @@
 package io.quarkus.runtime;
 
-import java.net.BindException;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
@@ -8,23 +8,27 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.stream.Collectors;
 
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.inject.spi.CDI;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
+import org.jboss.logmanager.handlers.AsyncHandler;
 import org.wildfly.common.lock.Locks;
 
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.runner.RunnerClassLoader;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.graal.DiagnosticPrinter;
+import io.quarkus.runtime.util.ExceptionUtil;
+import io.quarkus.runtime.util.StringUtil;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
@@ -45,9 +49,16 @@ import sun.misc.SignalHandler;
  */
 public class ApplicationLifecycleManager {
 
+    // used by ShutdownEvent to propagate the information about shutdown reason
+    public static volatile ShutdownEvent.ShutdownReason shutdownReason = ShutdownEvent.ShutdownReason.STANDARD;
     private static volatile BiConsumer<Integer, Throwable> defaultExitCodeHandler = new BiConsumer<Integer, Throwable>() {
         @Override
         public void accept(Integer integer, Throwable cause) {
+            Logger logger = Logger.getLogger(Application.class);
+            logger.debugf("Shutting down with exit code %s", integer);
+            if (logger.isTraceEnabled()) {
+                logger.tracef(new RuntimeException("Shutdown Stack Trace"), "Shutdown triggered");
+            }
             System.exit(integer);
         }
     };
@@ -67,7 +78,6 @@ public class ApplicationLifecycleManager {
     private static int exitCode = -1;
     private static volatile boolean shutdownRequested;
     private static Application currentApplication;
-    private static boolean hooksRegistered;
     private static boolean vmShuttingDown;
 
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
@@ -80,7 +90,7 @@ public class ApplicationLifecycleManager {
     public static void run(Application application, Class<? extends QuarkusApplication> quarkusApplication,
             BiConsumer<Integer, Throwable> exitCodeHandler, String... args) {
         stateLock.lock();
-        //in tests we might pass this method an already started application
+        //in tests, we might pass this method an already started application
         //in this case we don't shut it down at the end
         boolean alreadyStarted = application.isStarted();
         if (shutdownHookThread == null) {
@@ -96,10 +106,9 @@ public class ApplicationLifecycleManager {
         } finally {
             stateLock.unlock();
         }
-        boolean appStarted = false;
         try {
+
             application.start(args);
-            appStarted = true;
             //now we are started, we either run the main application or just wait to exit
             if (quarkusApplication != null) {
                 BeanManager beanManager = CDI.current().getBeanManager();
@@ -147,64 +156,47 @@ public class ApplicationLifecycleManager {
                 }
             }
         } catch (Exception e) {
+            Throwable rootCause = ExceptionUtil.getRootCause(e);
             if (exitCodeHandler == null) {
-                Throwable rootCause = e;
-                while (rootCause.getCause() != null) {
-                    rootCause = rootCause.getCause();
-                }
                 Logger applicationLogger = Logger.getLogger(Application.class);
-                if (rootCause instanceof BindException) {
-                    Config config = ConfigProviderResolver.instance().getConfig();
-                    Integer port = null;
-                    Integer sslPort = null;
-
-                    if (config.getOptionalValue("quarkus.http.insecure-requests", String.class).orElse("")
-                            .equalsIgnoreCase("disabled")) {
-                        // If http port is disabled, then the exception must have been thrown because of the https port
-                        port = config.getOptionalValue("quarkus.http.ssl-port", Integer.class).orElse(8443);
+                if (rootCause instanceof QuarkusBindException) {
+                    List<Integer> ports = ((QuarkusBindException) rootCause).getPorts();
+                    if (ports.size() == 1) {
                         applicationLogger.errorf("Port %d seems to be in use by another process. " +
-                                "Quarkus may already be running or the port is used by another application.", port);
-                    } else if (config.getOptionalValue("quarkus.http.ssl.certificate.file", String.class).isPresent()
-                            || config.getOptionalValue("quarkus.http.ssl.certificate.key-file", String.class).isPresent()
-                            || config.getOptionalValue("quarkus.http.ssl.certificate.key-store-file", String.class)
-                                    .isPresent()) {
-                        // The port which is already bound could be either http or https, so we check if https is enabled by looking at the config properties
-                        port = config.getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
-                        sslPort = config.getOptionalValue("quarkus.http.ssl-port", Integer.class).orElse(8443);
-                        applicationLogger.errorf(
-                                "Either port %d or port %d seem to be in use by another process. " +
-                                        "Quarkus may already be running or one of the ports is used by another application.",
-                                port, sslPort);
+                                "Quarkus may already be running or the port is used by another application.", ports.get(0));
                     } else {
-                        // If no ssl configuration is found, and http port is not disabled, then it must be the one which is already bound
-                        port = config.getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
-                        applicationLogger.errorf("Port %d seems to be in use by another process. " +
-                                "Quarkus may already be running or the port is used by another application.", port);
+                        applicationLogger.errorf(
+                                "One or more of the following ports: %s seem to be in use by another process. " +
+                                        "Quarkus may already be running or one of the ports is used by another application.",
+                                ports.stream().map(
+                                        Object::toString).collect(Collectors.joining(",")));
                     }
                     if (IS_WINDOWS) {
                         applicationLogger.warn("Use 'netstat -a -b -n -o' to identify the process occupying the port.");
                         applicationLogger.warn("You can try to kill it with 'taskkill /PID <pid>' or via the Task Manager.");
                     } else if (IS_MAC) {
-                        applicationLogger
-                                .warnf("Use 'netstat -anv | grep %d' to identify the process occupying the port.", port);
-                        if (sslPort != null)
+                        for (Integer port : ports) {
                             applicationLogger
-                                    .warnf("Use 'netstat -anv | grep %d' to identify the process occupying the port.", sslPort);
+                                    .warnf("Use 'netstat -anv | grep %d' to identify the process occupying the port.", port);
+                        }
                         applicationLogger.warn("You can try to kill it with 'kill -9 <pid>'.");
                     } else {
-                        applicationLogger
-                                .warnf("Use 'netstat -anop | grep %d' to identify the process occupying the port.", port);
-                        if (sslPort != null)
+                        for (Integer port : ports) {
                             applicationLogger
-                                    .warnf("Use 'netstat -anop | grep %d' to identify the process occupying the port.",
-                                            sslPort);
+                                    .warnf("Use 'netstat -anop | grep %d' to identify the process occupying the port.", port);
+                        }
                         applicationLogger.warn("You can try to kill it with 'kill -9 <pid>'.");
                     }
                 } else if (rootCause instanceof ConfigurationException) {
                     System.err.println(rootCause.getMessage());
+                } else if (rootCause instanceof PreventFurtherStepsException
+                        && !StringUtil.isNullOrEmpty(rootCause.getMessage())) {
+                    System.err.println(rootCause.getMessage());
                 } else {
-                    applicationLogger.errorv(rootCause, "Failed to start application (with profile {0})",
-                            ProfileManager.getActiveProfile());
+                    // If it is not a ConfigurationException it should be safe to call ConfigProvider.getConfig here
+                    applicationLogger.errorv(e, "Failed to start application (with profile {0})",
+                            ConfigUtils.getProfiles());
+                    ensureConsoleLogsDrained();
                 }
             }
             stateLock.lock();
@@ -215,7 +207,10 @@ public class ApplicationLifecycleManager {
                 stateLock.unlock();
             }
             application.stop();
-            (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(1, e);
+            int exceptionExitCode = rootCause instanceof PreventFurtherStepsException
+                    ? ((PreventFurtherStepsException) rootCause).getExitCode()
+                    : 1;
+            (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(exceptionExitCode, e);
             return;
         } finally {
             try {
@@ -234,9 +229,41 @@ public class ApplicationLifecycleManager {
         (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(getExitCode(), null); //this may not be called if shutdown was initiated by a signal
     }
 
+    // this is needed only when async console logging is enabled
+    private static void ensureConsoleLogsDrained() {
+        AsyncHandler asyncHandler = null;
+        for (Handler handler : InitialConfigurator.DELAYED_HANDLER.getHandlers()) {
+            if (handler instanceof AsyncHandler) {
+                asyncHandler = (AsyncHandler) handler;
+                Handler[] nestedHandlers = asyncHandler.getHandlers();
+                boolean foundNestedConsoleHandler = false;
+                for (Handler nestedHandler : nestedHandlers) {
+                    if (nestedHandler instanceof ConsoleHandler) {
+                        foundNestedConsoleHandler = true;
+                        break;
+                    }
+                }
+                if (!foundNestedConsoleHandler) {
+                    asyncHandler = null;
+                }
+            }
+            if (asyncHandler != null) {
+                break;
+            }
+        }
+        if (asyncHandler != null) {
+            try {
+                // all we can do is wait because the thread that takes records off the queue is a daemon thread and there is no way to interact with its lifecycle
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
     /**
      * Run some background cleanup once after the application has booted.
-     * This will not be invoked for command mode, as it's not worth it for a short lived process.
+     * This will not be invoked for command mode, as it's not worth it for a short-lived process.
      */
     private static void longLivedPostBootCleanup() {
         final ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -247,7 +274,7 @@ public class ApplicationLifecycleManager {
     }
 
     private static void registerHooks(final BiConsumer<Integer, Throwable> exitCodeHandler) {
-        if (ImageInfo.inImageRuntimeCode() && System.getenv(DISABLE_SIGNAL_HANDLERS) == null) {
+        if (ImageMode.current() == ImageMode.NATIVE_RUN && System.getenv(DISABLE_SIGNAL_HANDLERS) == null) {
             registerSignalHandlers(exitCodeHandler);
         }
         shutdownHookThread = new ShutdownHookThread();
@@ -258,6 +285,8 @@ public class ApplicationLifecycleManager {
         final SignalHandler exitHandler = new SignalHandler() {
             @Override
             public void handle(Signal signal) {
+                Logger applicationLogger = Logger.getLogger(Application.class);
+                applicationLogger.debugf("Received signed %s, shutting down", signal.getNumber());
                 exitCodeHandler.accept(signal.getNumber() + 0x80, null);
             }
         };
@@ -277,6 +306,10 @@ public class ApplicationLifecycleManager {
             handleSignal("HUP", exitHandler);
             handleSignal("QUIT", diagnosticsHandler);
         }
+    }
+
+    public static Application getCurrentApplication() {
+        return currentApplication;
     }
 
     /**
@@ -313,7 +346,7 @@ public class ApplicationLifecycleManager {
      * Sets the default exit code and exception handler for application run through the run method
      * that does not take an exit handler.
      *
-     * By default this will just call System.exit, however this is not always
+     * By default, this will just call {@code System.exit}, however this is not always
      * what is wanted.
      *
      * @param defaultExitCodeHandler the new default exit handler
@@ -327,7 +360,7 @@ public class ApplicationLifecycleManager {
      * Sets the default exit code handler for application run through the run method
      * that does not take an exit handler.
      *
-     * By default this will just call System.exit, however this is not always
+     * By default, this will just call {@code System.exit}, however this is not always
      * what is wanted.
      *
      * @param defaultExitCodeHandler the new default exit handler
@@ -389,6 +422,8 @@ public class ApplicationLifecycleManager {
             //we let the application main thread take care of actually exiting
             //TODO: if the main thread is not actively waiting to exit should we interrupt it?
             shutdownRequested = true;
+            // so long as this thread is invoked, the app shutdown is considered non-standard
+            shutdownReason = ShutdownEvent.ShutdownReason.NON_STANDARD;
             try {
                 stateCond.signalAll();
             } finally {

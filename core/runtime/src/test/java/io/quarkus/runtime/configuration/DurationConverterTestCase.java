@@ -47,4 +47,39 @@ public class DurationConverterTestCase {
     public void testValueNotInCorrectFormatProvided() {
         assertThrows(IllegalArgumentException.class, () -> durationConverter.convert("PT"));
     }
+
+    @Test
+    public void testValueIsInDays() {
+        Duration expectedDuration = Duration.ofDays(3);
+        Duration actualDuration = durationConverter.convert("3d");
+        assertEquals(expectedDuration, actualDuration);
+    }
+
+    @Test
+    public void testValueIsInMillis() {
+        Duration expectedDuration = Duration.ofMillis(25);
+        Duration actualDuration = durationConverter.convert("25ms");
+        assertEquals(expectedDuration, actualDuration);
+    }
+
+    @Test
+    public void testValueIsInSec() {
+        Duration expectedDuration = Duration.ofSeconds(2);
+        Duration actualDuration = durationConverter.convert("2s");
+        assertEquals(expectedDuration, actualDuration);
+    }
+
+    @Test
+    public void testValuesWithMultipleUnits() {
+        Duration expectedDuration = Duration.ofSeconds(150);
+        Duration actualDuration = durationConverter.convert("2m30s");
+        assertEquals(expectedDuration, actualDuration);
+    }
+
+    @Test
+    public void testValuesWithMultipleUnitsSigned() {
+        Duration expectedDuration = Duration.ofSeconds(90);
+        Duration actualDuration = durationConverter.convert("+2m-30s");
+        assertEquals(expectedDuration, actualDuration);
+    }
 }

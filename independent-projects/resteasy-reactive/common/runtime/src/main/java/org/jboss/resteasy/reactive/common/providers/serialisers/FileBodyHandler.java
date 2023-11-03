@@ -10,11 +10,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.MessageBodyWriter;
+import java.nio.file.Files;
+
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.MessageBodyReader;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 
 public class FileBodyHandler implements MessageBodyReader<File>, MessageBodyWriter<File> {
@@ -30,17 +33,13 @@ public class FileBodyHandler implements MessageBodyReader<File>, MessageBodyWrit
     public File readFrom(Class<File> type, Type genericType,
             Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
-        File downloadedFile = File.createTempFile(PREFIX, SUFFIX);
+        File downloadedFile = Files.createTempFile(PREFIX, SUFFIX).toFile();
         if (HeaderUtil.isContentLengthZero(httpHeaders)) {
             return downloadedFile;
         }
 
         try (OutputStream output = new BufferedOutputStream(new FileOutputStream(downloadedFile))) {
-            int read;
-            final byte[] buf = new byte[2048];
-            while ((read = entityStream.read(buf)) != -1) {
-                output.write(buf, 0, read);
-            }
+            entityStream.transferTo(output);
         }
 
         return downloadedFile;

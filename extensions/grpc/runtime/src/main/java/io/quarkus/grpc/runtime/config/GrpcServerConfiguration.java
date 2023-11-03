@@ -12,6 +12,26 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class GrpcServerConfiguration {
 
     /**
+     * Do we use separate HTTP server to serve gRPC requests.
+     * Set this to false if you want to use new Vert.x gRPC support,
+     * which uses existing Vert.x HTTP server.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean useSeparateServer;
+
+    /**
+     * Configure XDS usage, if enabled.
+     */
+    @ConfigItem
+    public Xds xds;
+
+    /**
+     * Configure InProcess usage, if enabled.
+     */
+    @ConfigItem
+    public InProcess inProcess;
+
+    /**
      * The gRPC Server port.
      */
     @ConfigItem(defaultValue = "9000")

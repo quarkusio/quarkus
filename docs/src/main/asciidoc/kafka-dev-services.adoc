@@ -4,8 +4,11 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for Kafka
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: messaging
+:summary: Start Apache Kafka automatically in dev and test modes.
+:topics: messaging,kafka,devservices,tooling,testing,devmode
+:extensions: io.quarkus:quarkus-kafka-client,io.quarkus:quarkus-smallrye-reactive-messaging-kafka
 
 If any Kafka-related extension is present (e.g. `quarkus-smallrye-reactive-messaging-kafka`), Dev Services for Kafka automatically starts a Kafka broker in dev mode and when running tests.
 So, you don't have to start a broker manually.
@@ -46,14 +49,69 @@ You can set the port by configuring the `quarkus.kafka.devservices.port` propert
 
 Note that the Kafka advertised address is automatically configured with the chosen port.
 
+[[configuring-the-image]]
 == Configuring the image
 
-Dev Services for Kafka uses: `vectorized/redpanda` images.
-You can select any version from https://hub.docker.com/r/vectorized/redpanda:
+Dev Services for Kafka supports https://redpanda.com[Redpanda], https://github/ozangunalp/kafka-native[kafka-native]
+and https://strimzi.io[Strimzi] (in https://github.com/apache/kafka/blob/trunk/config/kraft/README.md[Kraft] mode)  images.
+
+**Redpanda** is a Kafka compatible event streaming platform.
+Because it provides a fast startup times, dev services defaults to Redpanda images from `vectorized/redpanda`.
+You can select any version from https://hub.docker.com/r/vectorized/redpanda.
+
+**kafka-native** provides images of standard Apache Kafka distribution compiled to native binary using Quarkus and GraalVM.
+While still being _experimental_, it provides very fast startup times with small footprint.
+
+Image type can be configured using
 
 [source, properties]
 ----
-quarkus.kafka.devservices.image-name=vectorized/redpanda:latest
+quarkus.kafka.devservices.provider=kafka-native
 ----
 
-IMPORTANT: Dev Services for Kafka only support Redpanda.
+**Strimzi** provides container images and Operators for running Apache Kafka on Kubernetes.
+While Strimzi is optimized for Kubernetes, the images work perfectly in classic container environments.
+Strimzi container images run "genuine" Kafka broker on JVM, which is slower to start.
+
+[source, properties]
+----
+quarkus.kafka.devservices.provider=strimzi
+----
+
+For Strimzi, you can select any image with a Kafka version which has Kraft support (2.8.1 and higher) from https://quay.io/repository/strimzi-test-container/test-container?tab=tags
+
+[source, properties]
+----
+quarkus.kafka.devservices.image-name=quay.io/strimzi-test-container/test-container:0.100.0-kafka-3.1.0
+----
+
+== Configuring Kafka topics
+
+You can configure the Dev Services for Kafka to create topics once the broker is started.
+Topics are created with given number of partitions and 1 replica.
+
+The following example creates a topic named `test` with 3 partitions, and a second topic named `messages` with 2 partitions.
+
+[source, properties]
+----
+quarkus.kafka.devservices.topic-partitions.test=3
+quarkus.kafka.devservices.topic-partitions.messages=2
+----
+
+If a topic already exists with the given name, the creation is skipped,
+without trying to re-partition the existing topic to a different number of partitions.
+
+You can configure timeout for Kafka admin client calls used in topic creation using `quarkus.kafka.devservices.topic-partitions-timeout`, it defaults to 2 seconds.
+
+[[redpanda-transactions]]
+== Transactional and Idempotent producers support
+
+By default, the Red Panda broker is configured to enable transactions and idempotence features.
+You can disable those using:
+
+[source, properties]
+----
+quarkus.kafka.devservices.redpanda.transaction-enabled=false
+----
+
+NOTE: Redpanda transactions does not support exactly-once processing.

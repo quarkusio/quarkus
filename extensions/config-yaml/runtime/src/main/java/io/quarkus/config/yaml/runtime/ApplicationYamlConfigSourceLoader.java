@@ -3,6 +3,7 @@ package io.quarkus.config.yaml.runtime;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,8 +46,12 @@ public class ApplicationYamlConfigSourceLoader extends AbstractLocationConfigSou
         @Override
         public List<ConfigSource> getConfigSources(final ClassLoader classLoader) {
             List<ConfigSource> configSources = new ArrayList<>();
-            configSources.addAll(loadConfigSources("config/application.yaml", 265, classLoader));
-            configSources.addAll(loadConfigSources("config/application.yml", 265, classLoader));
+            configSources.addAll(loadConfigSources(
+                    Paths.get(System.getProperty("user.dir"), "config", "application.yaml").toUri().toString(), 265,
+                    classLoader));
+            configSources.addAll(
+                    loadConfigSources(Paths.get(System.getProperty("user.dir"), "config", "application.yml").toUri().toString(),
+                            265, classLoader));
             return configSources;
         }
 

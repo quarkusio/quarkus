@@ -10,8 +10,9 @@ public interface ToolsConstants {
 
     String QUARKUS_MAVEN_PLUGIN = "quarkus-maven-plugin";
 
-    String DEFAULT_PLATFORM_BOM_GROUP_ID = IO_QUARKUS;
-    String DEFAULT_PLATFORM_BOM_ARTIFACT_ID = "quarkus-universe-bom";
+    String DEFAULT_PLATFORM_BOM_GROUP_ID = IO_QUARKUS + ".platform";
+    String DEFAULT_PLATFORM_BOM_ARTIFACT_ID = "quarkus-bom";
+    String UNIVERSE_PLATFORM_BOM_ARTIFACT_ID = "quarkus-universe-bom";
 
     String PROP_QUARKUS_CORE_VERSION = "quarkus-core-version";
 

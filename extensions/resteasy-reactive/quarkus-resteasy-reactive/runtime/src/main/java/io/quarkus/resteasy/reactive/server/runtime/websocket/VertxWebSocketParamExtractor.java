@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.runtime.websocket;
 
-import javax.ws.rs.container.CompletionCallback;
+import jakarta.ws.rs.container.CompletionCallback;
 
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.parameters.ParameterExtractor;
@@ -12,7 +12,7 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.ServerWebSocket;
 
 //TODO: do we actually want vert.x websockets?
-//they are not our primary API but they are easy to support
+//they are not our primary API, but they are easy to support
 public class VertxWebSocketParamExtractor implements ParameterExtractor {
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {

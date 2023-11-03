@@ -3,24 +3,22 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using Apache Kafka Streams
-
-include::./attributes.adoc[]
+= Using Apache Kafka Streams
+include::_attributes.adoc[]
+:categories: messaging
+:summary: This guide demonstrates how your Quarkus application can utilize the Apache Kafka Streams API to implement stream processing applications based on Apache Kafka.
+:topics: messaging,kafka,kafka-streams
+:extensions: io.quarkus:quarkus-kafka-streams
 
 This guide demonstrates how your Quarkus application can utilize the Apache Kafka Streams API to implement stream processing applications based on Apache Kafka.
 
 == Prerequisites
 
-To complete this guide, you need:
+:prerequisites-time: 30 minutes
+:prerequisites-docker-compose:
+include::{includes}/prerequisites.adoc[]
 
-* less than 30 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-* Docker Compose to start an Apache Kafka development cluster
-* GraalVM installed if you want to run in native mode.
-
-It is recommended, that you have read the {quickstarts-tree-url}/kafka-quickstart[Kafka quickstart] before.
+It is recommended, that you have read the link:{quickstarts-tree-url}/kafka-quickstart[Kafka quickstart] before.
 
 [NOTE]
 ====
@@ -75,41 +73,41 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `kafka-streams-quickstart` {quickstarts-tree-url}/kafka-streams-quickstart[directory].
+The solution is located in the `kafka-streams-quickstart` link:{quickstarts-tree-url}/kafka-streams-quickstart[directory].
 
 == Creating the Producer Maven Project
 
 First, we need a new project with the temperature value producer.
 Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=kafka-streams-quickstart-producer \
-    -Dextensions="kafka" \
-    -DnoExamples \
-    && mv kafka-streams-quickstart-producer producer
-----
+:create-app-artifact-id: kafka-streams-quickstart-producer
+:create-app-extensions: kafka
+:create-app-post-command: mv kafka-streams-quickstart-producer producer
+include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven project, importing the Reactive Messaging and Kafka connector extensions.
 
 If you already have your Quarkus project configured, you can add the `smallrye-reactive-messaging-kafka` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="quarkus-smallrye-reactive-messaging-kafka"
-----
+:add-extension-extensions: quarkus-smallrye-reactive-messaging-kafka
+include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-reactive-messaging-kafka")
 ----
 
 === The Temperature Value Producer
@@ -130,7 +128,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.messaging.kafka.Record;
@@ -150,18 +148,16 @@ public class ValuesGenerator {
 
     private Random random = new Random();
 
-    private List<WeatherStation> stations = Collections.unmodifiableList(
-            Arrays.asList(
-                    new WeatherStation(1, "Hamburg", 13),
-                    new WeatherStation(2, "Snowdonia", 5),
-                    new WeatherStation(3, "Boston", 11),
-                    new WeatherStation(4, "Tokio", 16),
-                    new WeatherStation(5, "Cusco", 12),
-                    new WeatherStation(6, "Svalbard", -7),
-                    new WeatherStation(7, "Porthsmouth", 11),
-                    new WeatherStation(8, "Oslo", 7),
-                    new WeatherStation(9, "Marrakesh", 20)
-            ));
+    private List<WeatherStation> stations = List.of(
+                        new WeatherStation(1, "Hamburg", 13),
+                        new WeatherStation(2, "Snowdonia", 5),
+                        new WeatherStation(3, "Boston", 11),
+                        new WeatherStation(4, "Tokio", 16),
+                        new WeatherStation(5, "Cusco", 12),
+                        new WeatherStation(6, "Svalbard", -7),
+                        new WeatherStation(7, "Porthsmouth", 11),
+                        new WeatherStation(8, "Oslo", 7),
+                        new WeatherStation(9, "Marrakesh", 20));
 
     @Outgoing("temperature-values")                                        // <1>
     public Multi<Record<Integer, String>> generate() {
@@ -236,34 +232,34 @@ With the producer application in place, it's time to implement the actual aggreg
 which will run the Kafka Streams pipeline.
 Create another project like so:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=kafka-streams-quickstart-aggregator \
-    -Dextensions="resteasy,kafka-streams,resteasy-jackson" \
-    -DnoExamples \
-    && mv kafka-streams-quickstart-aggregator aggregator
-----
+:create-app-artifact-id: kafka-streams-quickstart-aggregator
+:create-app-extensions: kafka-streams,resteasy-reactive-jackson
+:create-app-post-command: mv kafka-streams-quickstart-aggregator aggregator
+include::{includes}/devtools/create-app.adoc[]
 
-This creates the `aggregator` project with the Quarkus extension for Kafka Streams and with RESTEasy support for Jackson.
+This creates the `aggregator` project with the Quarkus extension for Kafka Streams and with the Jackson support for RESTEasy Reactive.
 
 If you already have your Quarkus project configured, you can add the `kafka-streams` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="kafka-streams"
-----
+:add-extension-extensions: kafka-streams
+include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your `pom.xml`:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-kafka-streams</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-kafka-streams")
 ----
 
 === The Pipeline Implementation
@@ -365,8 +361,8 @@ package org.acme.kafka.streams.aggregator.streams;
 
 import java.time.Instant;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 
 import org.acme.kafka.streams.aggregator.model.Aggregation;
 import org.acme.kafka.streams.aggregator.model.TemperatureMeasurement;
@@ -448,7 +444,7 @@ public class TopologyProducer {
 The Kafka Streams extension is configured via the Quarkus configuration file `application.properties`.
 Create the file `aggregator/src/main/resources/application.properties` with the following contents:
 
-[source]
+[source,properties]
 ----
 quarkus.kafka-streams.bootstrap-servers=localhost:9092
 quarkus.kafka-streams.application-server=${hostname}:8080
@@ -469,6 +465,11 @@ e.g. via environment variables or system properties.
 This is to done to gracefully await the creation of topics that don't yet exist at application startup time.
 
 TIP: Alternatively, you can use `kafka.bootstrap.servers` instead of `quarkus.kafka-streams.bootstrap-servers` as you did in the _generator_ project above.
+
+[NOTE]
+====
+Once you are ready to promote your application into production, consider changing the above configuration values. While `cache.max.bytes.buffering=10240` will move your records faster through the topology, the default value of `10485760` is more throughput-friendly. Also condider increasing `metadata.max.age.ms` from `500`, which will update cluster metadata quickly, but will generate a lot of redundant requests, to a value closer to the default of `300000`. A `commit.interval.ms` of `1000` is good for exactly-once processing, but might generate excessive load for  the default at-least-once processing with the default value of `30000`.
+====
 
 All the properties within the `kafka-streams` namespace are passed through as-is to the Kafka Streams engine.
 Changing their values requires a rebuild of the application.
@@ -600,8 +601,8 @@ one more method to the `KafkaStreamsPipeline` class which obtains the current st
 ----
 package org.acme.kafka.streams.aggregator.streams;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.acme.kafka.streams.aggregator.model.Aggregation;
 import org.acme.kafka.streams.aggregator.model.WeatherStationData;
@@ -729,14 +730,13 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 import org.acme.kafka.streams.aggregator.streams.GetWeatherStationDataResult;
 import org.acme.kafka.streams.aggregator.streams.KafkaStreamsPipeline;
@@ -750,7 +750,7 @@ public class WeatherStationEndpoint {
 
     @GET
     @Path("/data/{id}")
-    public Response getWeatherStationData(@PathParam("id") int id) {
+    public Response getWeatherStationData(int id) {
         GetWeatherStationDataResult result = interactiveQueries.getWeatherStationData(id);
 
         if (result.getResult().isPresent()) {  // <1>
@@ -918,7 +918,7 @@ public class GetWeatherStationDataResult {
 }
 ----
 
-Also the return type for `getMetaData()` must be defined
+Also, the return type for `getMetaData()` must be defined
 (`aggregator/src/main/java/org/acme/kafka/streams/aggregator/streams/PipelineMetadata.java`):
 
 [source, java]
@@ -949,16 +949,15 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 
 import org.acme.kafka.streams.aggregator.streams.GetWeatherStationDataResult;
 import org.acme.kafka.streams.aggregator.streams.KafkaStreamsPipeline;
@@ -975,7 +974,7 @@ public class WeatherStationEndpoint {
     @Path("/data/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getWeatherStationData(@PathParam("id") int id) {
+    public Response getWeatherStationData(int id) {
         GetWeatherStationDataResult result = interactiveQueries.getWeatherStationData(id);
 
         if (result.getResult().isPresent()) {                     // <1>
@@ -1116,12 +1115,12 @@ The Quarkus extension for Kafka Streams enables the execution of stream processi
 natively via GraalVM without further configuration.
 
 To run both the `producer` and `aggregator` applications in native mode,
-the Maven builds can be executed using the `native` profile:
+the Maven builds can be executed using `-Dnative`:
 
 [source,bash]
 ----
-./mvnw clean package -f producer/pom.xml -Pnative -Dnative-image.container-runtime=docker
-./mvnw clean package -f aggregator/pom.xml -Pnative -Dnative-image.container-runtime=docker
+./mvnw clean package -f producer/pom.xml -Dnative -Dnative-image.container-runtime=docker
+./mvnw clean package -f aggregator/pom.xml -Dnative -Dnative-image.container-runtime=docker
 ----
 
 Now create an environment variable named `QUARKUS_MODE` and with value set to "native":
@@ -1252,7 +1251,7 @@ content-length: 265
 This guide has shown how you can build stream processing applications using Quarkus and the Kafka Streams APIs,
 both in JVM and native modes.
 For running your KStreams application in production, you could also add health checks and metrics for the data pipeline.
-Refer to the Quarkus guides on link:micrometer[Micrometer], link:smallrye-metrics[SmallRye Metrics], and link:smallrye-health[SmallRye Health] to learn more.
+Refer to the Quarkus guides on xref:telemetry-micrometer.adoc[Micrometer], xref:smallrye-metrics.adoc[SmallRye Metrics], and xref:smallrye-health.adoc[SmallRye Health] to learn more.
 
 == Configuration Reference
 

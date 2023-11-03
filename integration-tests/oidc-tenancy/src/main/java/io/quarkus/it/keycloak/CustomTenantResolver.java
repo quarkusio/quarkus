@@ -1,8 +1,9 @@
 package io.quarkus.it.keycloak;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.oidc.TenantResolver;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
@@ -23,6 +24,13 @@ public class CustomTenantResolver implements TenantResolver {
         if ("tenant-hybrid".equals(tenantId)) {
             return context.request().getHeader("Authorization") != null ? "tenant-hybrid-service" : "tenant-hybrid-webapp";
         }
+
+        if ("tenant-web-app".equals(tenantId)
+                && context.getCookie("q_session_tenant-web-app") != null) {
+            context.put("reauthenticated", "true");
+            return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+        }
+
         return tenantId;
 
     }

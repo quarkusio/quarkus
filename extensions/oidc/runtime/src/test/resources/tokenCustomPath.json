@@ -9,15 +9,21 @@
   "iat": 1311280970,
   "auth_time": 1311280969,
   "application_card": {
-       "embedded": {
-            "roles": [
-                "r1",
-                "r2"
-            ],
-            "https://custom/roles": [
-                "r3",
-                "r4"
-             ]
-       }
+    "embedded": {
+      "roles": [
+        "r1",
+        "r2"
+      ],
+      "https://custom/roles": [
+        "r3",
+        "r4"
+      ]
+    },
+    "embedded2": {
+      "roles": [
+        "r5",
+        "r6"
+      ]
+    }
   }
 }

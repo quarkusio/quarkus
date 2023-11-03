@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -26,6 +24,11 @@
             <artifactId>quarkus-container-image-jib</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -38,25 +41,104 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-openshift</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-minikube</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.dekorate</groupId>
             <artifactId>kubernetes-annotations</artifactId>
             <classifier>noapt</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>kubernetes-client</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.dekorate</groupId>
             <artifactId>openshift-annotations</artifactId>
             <classifier>noapt</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>kubernetes-client</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.dekorate</groupId>
             <artifactId>knative-annotations</artifactId>
             <classifier>noapt</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>kubernetes-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
-        <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
+        <!-- Minimal test dependencies to artifacts for consistent build order -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-maven-plugin</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kubernetes-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-openshift-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-minikube-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -93,14 +175,47 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
     <build>
-        <testResources>
-            <testResource>
-                <directory>src/it</directory>
-                <filtering>true</filtering>
-            </testResource>
-        </testResources>
         <plugins>
             <plugin>
                 <artifactId>maven-invoker-plugin</artifactId>
@@ -137,6 +252,7 @@
             </plugin>
         </plugins>
     </build>
+
     <profiles>
         <profile>
             <id>basic-test-suite</id>
@@ -159,6 +275,106 @@
             <properties>
                 <maven.test.skip>true</maven.test.skip>
             </properties>
+        </profile>
+        <profile>
+            <id>offline-tests</id>
+            <activation>
+                <property>
+                    <name>!e2e-tests</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-invoker-plugin</artifactId>
+                        <configuration>
+                            <filterProperties>
+                                <kubernetes-client-api-server-url>-Dquarkus.kubernetes-client.api-server-url=http://localhost:12345</kubernetes-client-api-server-url>
+                                <build-result>failure</build-result>
+                            </filterProperties>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>kubernetes-e2e-tests</id>
+            <activation>
+                <property>
+                    <name>kubernetes-e2e-tests</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-invoker-plugin</artifactId>
+                        <configuration>
+                            <pomIncludes>
+                                <pomInclude>kubernetes-*/pom.xml</pomInclude>
+                                <pomInclude>minikube-*/pom.xml</pomInclude>
+                            </pomIncludes>
+                            <skipInvocation>${skipTests}</skipInvocation>
+                            <filterProperties>
+                                <!-- this is on purpose to make sure the property is expanded -->
+                                <kubernetes-client-api-server-url>-Dinvalid-on-purpose</kubernetes-client-api-server-url>
+                                <build-result>success</build-result>
+                            </filterProperties>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>openshift-e2e-tests</id>
+            <activation>
+                <property>
+                    <name>openshift-e2e-tests</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-invoker-plugin</artifactId>
+                        <configuration>
+                            <pomIncludes>
+                                <pomInclude>openshift-*/pom.xml</pomInclude>
+                            </pomIncludes>
+                            <skipInvocation>${skipTests}</skipInvocation>
+                            <filterProperties>
+                                <!-- this is on purpose to make sure the property is expanded -->
+                                <kubernetes-client-api-server-url>-Dinvalid-on-purpose</kubernetes-client-api-server-url>
+                                <build-result>success</build-result>
+                            </filterProperties>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>knative-e2e-tests</id>
+            <activation>
+                <property>
+                    <name>knative-e2e-tests</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-invoker-plugin</artifactId>
+                        <configuration>
+                            <pomIncludes>
+                                <pomInclude>knative-*/pom.xml</pomInclude>
+                            </pomIncludes>
+                            <skipInvocation>${skipTests}</skipInvocation>
+                            <filterProperties>
+                                <!-- this is on purpose to make sure the property is expanded -->
+                                <kubernetes-client-api-server-url>-Dinvalid-on-purpose</kubernetes-client-api-server-url>
+                                <build-result>success</build-result>
+                            </filterProperties>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
         <profile>
             <activation>

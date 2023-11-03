@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.server.processor.scanning;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -18,7 +19,7 @@ public interface MethodScanner {
 
     /**
      * Method that allows for customising an endpoints handler chain
-     * 
+     *
      * @param method The method
      * @param actualEndpointClass
      * @param methodContext Any context discovered by {@link #handleCustomParameter(Type, Map, boolean, Map)}
@@ -31,7 +32,7 @@ public interface MethodScanner {
 
     /**
      * Method that is called when a parameter of an unknown type is discovered.
-     * 
+     *
      * @param paramType The parameter type
      * @param annotations The annotations
      * @param field If this is field injection
@@ -41,6 +42,10 @@ public interface MethodScanner {
     default ParameterExtractor handleCustomParameter(Type paramType, Map<DotName, AnnotationInstance> annotations,
             boolean field, Map<String, Object> methodContext) {
         return null;
+    }
+
+    default boolean isMethodSignatureAsync(MethodInfo info) {
+        return false;
     }
 
 }

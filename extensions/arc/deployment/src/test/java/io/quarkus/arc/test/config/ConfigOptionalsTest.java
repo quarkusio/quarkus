@@ -9,13 +9,13 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.inject.Provider;
+import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -25,7 +25,7 @@ public class ConfigOptionalsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(UsingOptionals.class)
                     .addAsResource(new StringAsset("foo=42\nbar=4.2"), "application.properties"));
 
@@ -58,6 +58,9 @@ public class ConfigOptionalsTest {
         assertFalse(usingOptionals.missingOptionalInt.isPresent());
         assertFalse(usingOptionals.missingOptionalLong.isPresent());
         assertFalse(usingOptionals.missingOptionalDouble.isPresent());
+
+        assertFalse(usingOptionals.instanceOptional.get().isPresent());
+        assertFalse(usingOptionals.providerOptional.get().isPresent());
     }
 
     @Singleton
@@ -109,6 +112,13 @@ public class ConfigOptionalsTest {
         @Inject
         @ConfigProperty(name = "missing")
         OptionalDouble missingOptionalDouble;
-    }
 
+        @Inject
+        @ConfigProperty(name = "missing")
+        Instance<Optional<String>> instanceOptional;
+
+        @Inject
+        @ConfigProperty(name = "missing")
+        Provider<Optional<String>> providerOptional;
+    }
 }

@@ -1,18 +1,25 @@
 package io.quarkus.devservices.h2.deployment;
 
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_NAME;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_PASSWORD;
+import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
 
 import org.h2.tools.Server;
+import org.jboss.logging.Logger;
 
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -20,34 +27,46 @@ import io.quarkus.runtime.LaunchMode;
 
 public class H2DevServicesProcessor {
 
+    private static final Logger LOG = Logger.getLogger(H2DevServicesProcessor.class);
+
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupH2() {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.H2, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    Optional<String> datasourceName, Optional<String> imageName, Map<String, String> additionalProperties,
-                    OptionalInt port, LaunchMode launchMode) {
+                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
+                    LaunchMode launchMode, Optional<Duration> startupTimeout) {
                 try {
                     final Server tcpServer = Server.createTcpServer("-tcpPort",
-                            port.isPresent() ? String.valueOf(port.getAsInt()) : "0");
+                            containerConfig.getFixedExposedPort().isPresent()
+                                    ? String.valueOf(containerConfig.getFixedExposedPort().getAsInt())
+                                    : "0",
+                            "-ifNotExists");
                     tcpServer.start();
 
+                    String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
+                    String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
+                    String effectiveDbName = containerConfig.getDbName().orElse(
+                            DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
+
                     StringBuilder additionalArgs = new StringBuilder();
-                    for (Map.Entry<String, String> i : additionalProperties.entrySet()) {
+                    for (Map.Entry<String, String> i : containerConfig.getAdditionalJdbcUrlProperties().entrySet()) {
                         additionalArgs.append(";");
                         additionalArgs.append(i.getKey());
                         additionalArgs.append("=");
                         additionalArgs.append(i.getValue());
                     }
-                    System.out
-                            .println("[INFO] H2 database started in TCP server mode; server status: " + tcpServer.getStatus());
+
+                    LOG.info("Dev Services for H2 started.");
+
                     String connectionUrl = "jdbc:h2:tcp://localhost:" + tcpServer.getPort() + "/mem:"
-                            + datasourceName.orElse("default")
+                            + effectiveDbName
                             + ";DB_CLOSE_DELAY=-1" + additionalArgs.toString();
-                    return new RunningDevServicesDatasource(
+                    return new RunningDevServicesDatasource(null,
                             connectionUrl,
-                            "sa",
-                            "sa",
+                            null,
+                            effectiveUsername,
+                            effectivePassword,
                             new Closeable() {
                                 @Override
                                 public void close() throws IOException {
@@ -57,8 +76,8 @@ public class H2DevServicesProcessor {
                                         //make sure the DB is removed on close
                                         try (Connection connection = DriverManager.getConnection(
                                                 connectionUrl,
-                                                "sa",
-                                                "sa")) {
+                                                effectiveUsername,
+                                                effectivePassword)) {
                                             try (Statement statement = connection.createStatement()) {
                                                 statement.execute("SET DB_CLOSE_DELAY 0");
                                             }
@@ -66,11 +85,10 @@ public class H2DevServicesProcessor {
                                             t.printStackTrace();
                                         }
                                         tcpServer.stop();
-                                        System.out.println(
-                                                "[INFO] H2 database was shut down; server status: " + tcpServer.getStatus());
+                                        LOG.info("Dev Services for H2 shut down; server status: " + tcpServer.getStatus());
                                     } else {
-                                        System.out.println(
-                                                "[INFO] H2 database was NOT shut down as it appears it was down already; server status: "
+                                        LOG.info(
+                                                "Dev Services for H2 was NOT shut down as it appears it was down already; server status: "
                                                         + tcpServer.getStatus());
                                     }
                                 }

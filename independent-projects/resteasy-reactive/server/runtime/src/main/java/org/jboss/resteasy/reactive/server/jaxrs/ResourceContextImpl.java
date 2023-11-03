@@ -1,7 +1,7 @@
 package org.jboss.resteasy.reactive.server.jaxrs;
 
-import javax.enterprise.inject.spi.CDI;
-import javax.ws.rs.container.ResourceContext;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.ws.rs.container.ResourceContext;
 
 public class ResourceContextImpl implements ResourceContext {
     public static ResourceContextImpl INSTANCE = new ResourceContextImpl();

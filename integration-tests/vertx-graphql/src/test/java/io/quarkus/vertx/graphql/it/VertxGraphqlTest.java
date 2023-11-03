@@ -1,6 +1,10 @@
 package io.quarkus.vertx.graphql.it;
 
 import static io.restassured.RestAssured.given;
+import static io.vertx.ext.web.handler.graphql.ws.MessageType.COMPLETE;
+import static io.vertx.ext.web.handler.graphql.ws.MessageType.CONNECTION_ACK;
+import static io.vertx.ext.web.handler.graphql.ws.MessageType.CONNECTION_INIT;
+import static io.vertx.ext.web.handler.graphql.ws.MessageType.NEXT;
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,7 +28,7 @@ import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketConnectOptions;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.handler.graphql.ApolloWSMessageType;
+import io.vertx.ext.web.handler.graphql.ws.MessageType;
 
 @QuarkusTest
 class VertxGraphqlTest {
@@ -57,9 +61,9 @@ class VertxGraphqlTest {
     public void testWebSocketSubProtocol() throws Exception {
         HttpClient httpClient = vertx.createHttpClient();
         WebSocketConnectOptions options = new WebSocketConnectOptions().setPort(getPortFromConfig())
-                .addSubProtocol("graphql-ws").setURI("/graphql");
-        JsonObject init = new JsonObject().put("type", ApolloWSMessageType.CONNECTION_INIT.getText());
-        String graphql = "{\"id\" : \"2\", \"type\" : \"start\", \"payload\" : { \"query\" : \"{ hello }\" } }";
+                .addSubProtocol("graphql-transport-ws").setURI("/graphql");
+        JsonObject init = new JsonObject().put("type", CONNECTION_INIT.getText());
+        String graphql = "{\"id\" : \"2\", \"type\" : \"subscribe\", \"payload\" : { \"query\" : \"{ hello }\" } }";
         CompletableFuture<JsonObject> wsFuture = new CompletableFuture<>();
         wsFuture.whenComplete((r, t) -> httpClient.close());
 
@@ -73,25 +77,31 @@ class VertxGraphqlTest {
          */
 
         httpClient.webSocket(options, ws -> {
-            AtomicReference<String> lastReceivedType = new AtomicReference<>();
+            AtomicReference<MessageType> lastReceivedType = new AtomicReference<>();
+            AtomicReference<JsonObject> result = new AtomicReference<>();
             if (ws.succeeded()) {
                 WebSocket webSocket = ws.result();
                 webSocket.handler(message -> {
-                    if (lastReceivedType.compareAndSet(null, ApolloWSMessageType.CONNECTION_ACK.getText())) {
-                        // Go ack, wait for the next message (ka)
-                    } else if (lastReceivedType.compareAndSet("connection_ack",
-                            ApolloWSMessageType.CONNECTION_KEEP_ALIVE.getText())) {
-                        webSocket.write(Buffer.buffer(graphql));
-                    } else {
-                        JsonObject json = message.toJsonObject();
-                        String type = json.getString("type");
-                        if (ApolloWSMessageType.DATA.getText().equals(type)) {
-                            wsFuture.complete(message.toJsonObject());
-                        } else {
-                            wsFuture.completeExceptionally(new RuntimeException(
-                                    format("Unexpected message type: %s\nMessage: %s", type, message.toString())));
+                    JsonObject json = message.toJsonObject();
+                    MessageType messageType = MessageType.from(json.getString("type"));
+                    if (messageType == CONNECTION_ACK) {
+                        if (lastReceivedType.compareAndSet(null, CONNECTION_ACK)) {
+                            webSocket.write(Buffer.buffer(graphql));
+                            return;
+                        }
+                    } else if (messageType == NEXT) {
+                        if (lastReceivedType.compareAndSet(CONNECTION_ACK, NEXT)) {
+                            result.set(json);
+                            return;
+                        }
+                    } else if (messageType == COMPLETE) {
+                        if (lastReceivedType.compareAndSet(NEXT, COMPLETE)) {
+                            wsFuture.complete(result.get());
+                            return;
                         }
                     }
+                    wsFuture.completeExceptionally(new RuntimeException(
+                            format("Unexpected message type: %s\nMessage: %s", messageType.getText(), message)));
                 });
                 webSocket.write(init.toBuffer());
             } else {
@@ -102,7 +112,7 @@ class VertxGraphqlTest {
         JsonObject json = wsFuture.get(1, TimeUnit.MINUTES);
         assertNotNull(json);
         assertEquals("2", json.getString("id"));
-        assertEquals("data", json.getString("type"));
+        assertEquals(NEXT.getText(), json.getString("type"));
         assertEquals("world", json.getJsonObject("payload").getJsonObject("data").getString("hello"));
     }
 

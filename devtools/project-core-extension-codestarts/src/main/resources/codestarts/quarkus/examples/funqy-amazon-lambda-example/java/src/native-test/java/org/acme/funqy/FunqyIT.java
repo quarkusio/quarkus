@@ -1,9 +1,9 @@
 package org.acme.funqy;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
-public class FunqyIT extends FunqyTest {
+@QuarkusIntegrationTest
+class FunqyIT extends FunqyTest {
 
     // Run the same tests
 

@@ -1,10 +1,5 @@
 package io.quarkus.devtools.project.buildfile;
 
-import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.devtools.project.buildfile.AbstractGradleBuildFile.Model;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.platform.tools.ToolsUtils;
-import io.quarkus.registry.catalog.ExtensionCatalog;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -15,6 +10,12 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
+
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.buildfile.AbstractGradleBuildFile.Model;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.platform.tools.ToolsUtils;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 abstract class AbstractGradleBuildFilesCreator {
 

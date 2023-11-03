@@ -7,8 +7,13 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class CORSRecorder {
+    final HttpConfiguration configuration;
 
-    public Handler<RoutingContext> corsHandler(HttpConfiguration configuration) {
+    public CORSRecorder(HttpConfiguration configuration) {
+        this.configuration = configuration;
+    }
+
+    public Handler<RoutingContext> corsHandler() {
         if (configuration.corsEnabled) {
             return new CORSFilter(configuration.cors);
         }

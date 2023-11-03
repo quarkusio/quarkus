@@ -1,9 +1,7 @@
 package io.quarkus.smallrye.openapi.test.jaxrs;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -15,9 +13,9 @@ public class OpenApiWithResteasyPathTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiResource.class, ResourceBean.class)
-                    .addAsResource(new StringAsset("quarkus.resteasy.path=/foo/bar"),
+                    .addAsResource(new StringAsset("quarkus.resteasy-reactive.path=/foo/bar"),
                             "application.properties"));
 
     @Test
@@ -27,7 +25,7 @@ public class OpenApiWithResteasyPathTestCase {
                 .then()
                 .header("Content-Type", "application/json;charset=UTF-8")
                 .body("openapi", Matchers.startsWith("3.0"))
-                .body("info.title", Matchers.equalTo("Generated API"))
+                .body("info.title", Matchers.equalTo("quarkus-smallrye-openapi-deployment API"))
                 .body("paths", Matchers.hasKey("/foo/bar/resource"));
     }
 }

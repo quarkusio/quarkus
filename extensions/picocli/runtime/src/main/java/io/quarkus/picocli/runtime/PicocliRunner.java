@@ -1,7 +1,7 @@
 package io.quarkus.picocli.runtime;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.event.Event;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Event;
 
 import io.quarkus.runtime.QuarkusApplication;
 import picocli.CommandLine;
@@ -36,6 +36,11 @@ public class PicocliRunner implements QuarkusApplication {
 
     @Override
     public int run(String... args) throws Exception {
-        return commandLine.execute(args);
+        try {
+            return commandLine.execute(args);
+        } finally {
+            commandLine.getOut().flush();
+            commandLine.getErr().flush();
+        }
     }
 }

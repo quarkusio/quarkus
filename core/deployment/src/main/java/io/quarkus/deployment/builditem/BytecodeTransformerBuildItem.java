@@ -12,7 +12,7 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
 
     /**
      * If this is true it means the class should be loaded eagerly by a thread pool in dev mode
-     * on multi threaded systems.
+     * on multithreaded systems.
      * <p>
      * Transformation is expensive, so doing it this way can speed up boot time.
      */
@@ -21,8 +21,8 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
     final BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction;
 
     /**
-     * Function that can be applied to the inout bytes before it is passed into ASM. This should only be used
-     * in very specific circumstances. At the moment the only known valid use case is jacoco, which needs
+     * Function that can be applied to the input bytes before it is passed into ASM. This should only be used
+     * in very specific circumstances. At the moment the only known valid use case is JaCoCo, which needs
      * access to the unmodified class file bytes.
      */
     final BiFunction<String, byte[], byte[]> inputTransformer;
@@ -31,7 +31,7 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
      * A set of class names that need to be present in the const pool for the transformation to happen. These
      * need to be in JVM internal format.
      * <p>
-     * The transformation is only applied if at least one of the entries in the const pool is present
+     * The transformation is only applied if at least one of the entries in the const pool is present.
      * <p>
      * Note that this is an optimisation, and if another transformer is transforming the class anyway then
      * this transformer will always be applied.
@@ -39,6 +39,12 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
     final Set<String> requireConstPoolEntry;
 
     final boolean cacheable;
+
+    final int classReaderOptions;
+
+    final boolean continueOnFailure;
+
+    final int priority;
 
     public BytecodeTransformerBuildItem(String classToTransform,
             BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction) {
@@ -75,6 +81,9 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
         this.requireConstPoolEntry = requireConstPoolEntry;
         this.cacheable = cacheable;
         this.inputTransformer = null;
+        this.classReaderOptions = 0;
+        this.continueOnFailure = false;
+        this.priority = 0;
     }
 
     public BytecodeTransformerBuildItem(Builder builder) {
@@ -84,6 +93,9 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
         this.requireConstPoolEntry = builder.requireConstPoolEntry;
         this.cacheable = builder.cacheable;
         this.inputTransformer = builder.inputTransformer;
+        this.classReaderOptions = builder.classReaderOptions;
+        this.continueOnFailure = builder.continueOnFailure;
+        this.priority = builder.priority;
         if (visitorFunction == null && inputTransformer == null) {
             throw new IllegalArgumentException("One of either visitorFunction or inputTransformer must be set");
         }
@@ -109,17 +121,55 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
         return cacheable;
     }
 
+    public int getClassReaderOptions() {
+        return classReaderOptions;
+    }
+
     public BiFunction<String, byte[], byte[]> getInputTransformer() {
         return inputTransformer;
     }
 
+    public boolean isContinueOnFailure() {
+        return continueOnFailure;
+    }
+
+    /**
+     * Bytecode transformers are applied in ascending priority order. That is, lower priority
+     * value means the transformer is applied sooner, and higher priority value means
+     * the transformer is applied later.
+     * <p>
+     * This applies directly to {@link #inputTransformer} functions: an input transformer
+     * function with lower priority is applied first and its result is passed to the transformer
+     * function with higher priority.
+     * <p>
+     * It is a bit counter-intuitive when it comes to the {@link #visitorFunction}. The visitor
+     * function doesn't directly transform bytecode; instead, it constructs an ASM
+     * {@link ClassVisitor} from an earlier class visitor. This means that the priority order
+     * is effectively turned around: the later a bytecode transformer is called,
+     * the <em>higher</em> in the class visitor chain it ends up, and the <em>sooner</em>
+     * is the visitor eventually called.
+     * <p>
+     * The priority value defaults to {@code 0}.
+     */
+    public int getPriority() {
+        return priority;
+    }
+
     public static class Builder {
         public BiFunction<String, byte[], byte[]> inputTransformer;
+        public boolean continueOnFailure;
         private String classToTransform;
         private BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction;
         private Set<String> requireConstPoolEntry = null;
         private boolean eager = false;
         private boolean cacheable = false;
+        private int classReaderOptions = 0;
+        private int priority = 0;
+
+        public Builder setContinueOnFailure(boolean continueOnFailure) {
+            this.continueOnFailure = continueOnFailure;
+            return this;
+        }
 
         public Builder setInputTransformer(BiFunction<String, byte[], byte[]> inputTransformer) {
             this.inputTransformer = inputTransformer;
@@ -148,6 +198,16 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
 
         public Builder setCacheable(boolean cacheable) {
             this.cacheable = cacheable;
+            return this;
+        }
+
+        public Builder setClassReaderOptions(int classReaderOptions) {
+            this.classReaderOptions = classReaderOptions;
+            return this;
+        }
+
+        public Builder setPriority(int priority) {
+            this.priority = priority;
             return this;
         }
 

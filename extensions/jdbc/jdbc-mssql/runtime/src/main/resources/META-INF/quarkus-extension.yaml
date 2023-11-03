@@ -7,6 +7,7 @@ metadata:
   - "jdbc"
   - "mssql"
   - "sql-server"
+  guide: "https://quarkus.io/guides/datasource"
   categories:
   - "data"
   status: "stable"

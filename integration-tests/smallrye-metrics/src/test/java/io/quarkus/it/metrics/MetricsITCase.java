@@ -1,7 +1,7 @@
 package io.quarkus.it.metrics;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class MetricsITCase extends MetricsTestCase {
 }

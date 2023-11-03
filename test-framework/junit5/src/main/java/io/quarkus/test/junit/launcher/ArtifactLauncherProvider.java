@@ -25,6 +25,8 @@ public interface ArtifactLauncherProvider {
         Path buildOutputDirectory();
 
         Class<?> testClass();
+
+        ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult();
     }
 
 }

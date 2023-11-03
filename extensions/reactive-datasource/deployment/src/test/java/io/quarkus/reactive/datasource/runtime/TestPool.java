@@ -9,6 +9,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.PrepareOptions;
 import io.vertx.sqlclient.PreparedQuery;
 import io.vertx.sqlclient.Query;
 import io.vertx.sqlclient.Row;
@@ -30,6 +31,11 @@ class TestPool implements TestPoolInterface {
 
     @Override
     public PreparedQuery<RowSet<Row>> preparedQuery(String s) {
+        return null;
+    }
+
+    @Override
+    public PreparedQuery<RowSet<Row>> preparedQuery(String sql, PrepareOptions options) {
         return null;
     }
 

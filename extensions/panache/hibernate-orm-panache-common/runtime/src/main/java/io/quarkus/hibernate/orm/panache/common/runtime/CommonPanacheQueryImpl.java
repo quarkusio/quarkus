@@ -10,16 +10,15 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import javax.persistence.EntityManager;
-import javax.persistence.LockModeType;
-import javax.persistence.NonUniqueResultException;
-import javax.persistence.Query;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.NonUniqueResultException;
+import jakarta.persistence.Query;
 
 import org.hibernate.Filter;
 import org.hibernate.Session;
-import org.hibernate.engine.spi.RowSelection;
 
-import io.quarkus.hibernate.orm.panache.ProjectedFieldName;
+import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
 import io.quarkus.panache.common.exception.PanacheQueryException;
@@ -39,7 +38,14 @@ public class CommonPanacheQueryImpl<Entity> {
     };
 
     private Object paramsArrayOrMap;
+    /**
+     * this is the HQL query expanded from the Panache-Query
+     */
     private String query;
+    /**
+     * this is the original Panache-Query, if any (can be null)
+     */
+    private String originalQuery;
     protected String countQuery;
     private String orderBy;
     private EntityManager em;
@@ -54,9 +60,11 @@ public class CommonPanacheQueryImpl<Entity> {
 
     private Map<String, Map<String, Object>> filters;
 
-    public CommonPanacheQueryImpl(EntityManager em, String query, String orderBy, Object paramsArrayOrMap) {
+    public CommonPanacheQueryImpl(EntityManager em, String query, String originalQuery, String orderBy,
+            Object paramsArrayOrMap) {
         this.em = em;
         this.query = query;
+        this.originalQuery = originalQuery;
         this.orderBy = orderBy;
         this.paramsArrayOrMap = paramsArrayOrMap;
     }
@@ -78,8 +86,39 @@ public class CommonPanacheQueryImpl<Entity> {
     // Builder
 
     public <T> CommonPanacheQueryImpl<T> project(Class<T> type) {
+        String selectQuery = query;
         if (PanacheJpaUtil.isNamedQuery(query)) {
-            throw new PanacheQueryException("Unable to perform a projection on a named query");
+            org.hibernate.query.Query q = (org.hibernate.query.Query) em.createNamedQuery(query.substring(1));
+            selectQuery = q.getQueryString();
+        }
+
+        String lowerCasedTrimmedQuery = selectQuery.trim().replace('\n', ' ').replace('\r', ' ').toLowerCase();
+        if (lowerCasedTrimmedQuery.startsWith("select new ")
+                || lowerCasedTrimmedQuery.startsWith("select distinct new ")) {
+            throw new PanacheQueryException("Unable to perform a projection on a 'select [distinct]? new' query: " + query);
+        }
+
+        // If the query starts with a select clause, we generate an HQL query
+        // using the fields in the select clause:
+        // Initial query: select e.field1, e.field2 from EntityClass e
+        // New query: SELECT new org.acme.ProjectionClass(e.field1, e.field2) from EntityClass e
+        if (lowerCasedTrimmedQuery.startsWith("select ")) {
+            int endSelect = lowerCasedTrimmedQuery.indexOf(" from ");
+            String trimmedQuery = selectQuery.trim().replace('\n', ' ').replace('\r', ' ');
+            // 7 is the length of "select "
+            String selectClause = trimmedQuery.substring(7, endSelect).trim();
+            String from = trimmedQuery.substring(endSelect);
+            StringBuilder newQuery = new StringBuilder("select ");
+            // Handle select-distinct. HQL example: select distinct new org.acme.ProjectionClass...
+            boolean distinctQuery = selectClause.toLowerCase().startsWith("distinct ");
+            if (distinctQuery) {
+                // 9 is the length of "distinct "
+                selectClause = selectClause.substring(9).trim();
+                newQuery.append("distinct ");
+            }
+
+            newQuery.append("new ").append(type.getName()).append("(").append(selectClause).append(")").append(from);
+            return new CommonPanacheQueryImpl<>(this, newQuery.toString(), "select count(*) " + from);
         }
 
         // We use the first constructor that we found and use the parameter names,
@@ -95,13 +134,14 @@ public class CommonPanacheQueryImpl<Entity> {
             String parameterName;
             if (parameter.isAnnotationPresent(ProjectedFieldName.class)) {
                 final String name = parameter.getAnnotation(ProjectedFieldName.class).value();
-                if (name.isEmpty())
+                if (name.isEmpty()) {
                     throw new PanacheQueryException("The annotation ProjectedFieldName must have a non-empty value.");
+                }
                 parameterName = name;
             } else if (!parameter.isNamePresent()) {
                 throw new PanacheQueryException(
                         "Your application must be built with parameter names, this should be the default if" +
-                                " using Quarkus artifacts. Check the maven or gradle compiler configuration to include '-parameters'.");
+                                " using Quarkus project generation. Check the Maven or Gradle compiler configuration to include '-parameters'.");
             } else {
                 parameterName = parameter.getName();
             }
@@ -113,7 +153,7 @@ public class CommonPanacheQueryImpl<Entity> {
         }
         select.append(") ");
 
-        return new CommonPanacheQueryImpl<>(this, select.toString() + query, "select count(*) " + query);
+        return new CommonPanacheQueryImpl<>(this, select.toString() + selectQuery, "select count(*) " + selectQuery);
     }
 
     public void filter(String filterName, Map<String, Object> parameters) {
@@ -294,11 +334,7 @@ public class CommonPanacheQueryImpl<Entity> {
             jpaQuery.setFirstResult(page.index * page.size);
             jpaQuery.setMaxResults(page.size);
         } else {
-            // Use deprecated API in org.hibernate.Query that will be moved to org.hibernate.query.Query on Hibernate 6.0
-            @SuppressWarnings("deprecation")
-            RowSelection options = jpaQuery.unwrap(org.hibernate.query.Query.class).getQueryOptions();
-            options.setFirstRow(null);
-            options.setMaxRows(null);
+            //no-op
         }
 
         return jpaQuery;
@@ -312,10 +348,7 @@ public class CommonPanacheQueryImpl<Entity> {
         } else if (page != null) {
             jpaQuery.setFirstResult(page.index * page.size);
         } else {
-            // Use deprecated API in org.hibernate.Query that will be moved to org.hibernate.query.Query on Hibernate 6.0
-            @SuppressWarnings("deprecation")
-            RowSelection options = jpaQuery.unwrap(org.hibernate.query.Query.class).getQueryOptions();
-            options.setFirstRow(null);
+            //no-op
         }
         jpaQuery.setMaxResults(maxResults);
 
@@ -329,7 +362,11 @@ public class CommonPanacheQueryImpl<Entity> {
             String namedQuery = query.substring(1);
             jpaQuery = em.createNamedQuery(namedQuery);
         } else {
-            jpaQuery = em.createQuery(orderBy != null ? query + orderBy : query);
+            try {
+                jpaQuery = em.createQuery(orderBy != null ? query + orderBy : query);
+            } catch (IllegalArgumentException x) {
+                throw NamedQueryUtil.checkForNamedQueryMistake(x, originalQuery);
+            }
         }
 
         if (paramsArrayOrMap instanceof Map) {

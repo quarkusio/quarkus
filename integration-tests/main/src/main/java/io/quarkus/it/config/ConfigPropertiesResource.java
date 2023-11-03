@@ -7,11 +7,11 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.Optional;
 
-import javax.validation.constraints.Size;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
-import io.quarkus.arc.config.ConfigProperties;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 @Path("/configuration-properties")
 public class ConfigPropertiesResource {
@@ -27,25 +27,30 @@ public class ConfigPropertiesResource {
 
     @GET
     public String greet() {
-        return greetingConfiguration.message + greetingConfiguration.number + greetingConfiguration.suffix;
+        return greetingConfiguration.message() + greetingConfiguration.number() + greetingConfiguration.suffix();
     }
 
     @GET
     @Path("/period")
     public String period() {
-        return greetingConfiguration.period.get().toString();
+        return greetingConfiguration.period().get().toString();
     }
 
-    @ConfigProperties(prefix = "configproperties")
-    public static class GreetingConfiguration {
-        @Size(min = 2)
-        public String message;
-        public String suffix = "!";
-        public BigDecimal other;
-        public NumberEnum number;
+    @ConfigMapping(prefix = "configproperties")
+    public interface GreetingConfiguration {
+        String message();
+
+        @WithDefault("!")
+        String suffix();
+
+        BigDecimal other();
+
+        NumberEnum number();
+
         // Force to use implicit converter to check for reflective registration
-        public LocalDate date;
-        public Optional<Period> period;
+        LocalDate date();
+
+        Optional<Period> period();
     }
 
     public enum NumberEnum {
@@ -53,7 +58,7 @@ public class ConfigPropertiesResource {
         TWO;
     }
 
-    @ConfigProperties(prefix = "configproperties")
+    @ConfigMapping(prefix = "configproperties")
     public interface GreetingConfigurationI {
         LocalDateTime dateTime();
 

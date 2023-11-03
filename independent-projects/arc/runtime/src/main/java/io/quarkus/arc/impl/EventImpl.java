@@ -1,17 +1,15 @@
 package io.quarkus.arc.impl;
 
-import static javax.transaction.Status.STATUS_COMMITTED;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+import static jakarta.transaction.Status.STATUS_COMMITTED;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.ManagedContext;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -23,20 +21,28 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import javax.enterprise.event.Event;
-import javax.enterprise.event.NotificationOptions;
-import javax.enterprise.event.ObserverException;
-import javax.enterprise.event.TransactionPhase;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.spi.EventContext;
-import javax.enterprise.inject.spi.EventMetadata;
-import javax.enterprise.inject.spi.InjectionPoint;
-import javax.enterprise.inject.spi.ObserverMethod;
-import javax.enterprise.util.TypeLiteral;
-import javax.transaction.RollbackException;
-import javax.transaction.Synchronization;
-import javax.transaction.TransactionSynchronizationRegistry;
+
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.event.NotificationOptions;
+import jakarta.enterprise.event.ObserverException;
+import jakarta.enterprise.event.TransactionPhase;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.spi.EventContext;
+import jakarta.enterprise.inject.spi.EventMetadata;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.inject.spi.ObserverMethod;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.transaction.RollbackException;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.TransactionManager;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.AsyncObserverExceptionHandler;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.ManagedContext;
 
 /**
  *
@@ -53,15 +59,21 @@ class EventImpl<T> implements Event<T> {
     private final Type eventType;
     private final Set<Annotation> qualifiers;
     private final ConcurrentMap<Class<?>, Notifier<? super T>> notifiers;
+    private final InjectionPoint injectionPoint;
 
     private transient volatile Notifier<? super T> lastNotifier;
 
-    EventImpl(Type eventType, Set<Annotation> qualifiers) {
+    private static final Logger LOGGER = Logger.getLogger(EventImpl.class);
+
+    EventImpl(Type eventType, Set<Annotation> qualifiers, InjectionPoint injectionPoint) {
         this.eventType = initEventType(eventType);
         this.injectionPointTypeHierarchy = new HierarchyDiscovery(this.eventType);
-        this.qualifiers = qualifiers;
-        this.qualifiers.add(Any.Literal.INSTANCE);
+        Set<Annotation> eventQualifiers = new HashSet<>();
+        eventQualifiers.addAll(qualifiers);
+        eventQualifiers.add(Any.Literal.INSTANCE);
+        this.qualifiers = Set.copyOf(eventQualifiers);
         this.notifiers = new ConcurrentHashMap<>(DEFAULT_CACHE_CAPACITY);
+        this.injectionPoint = injectionPoint;
     }
 
     @Override
@@ -94,7 +106,9 @@ class EventImpl<T> implements Event<T> {
         Supplier<U> notifyLogic = new Supplier<U>() {
             @Override
             public U get() {
-                ObserverExceptionHandler exceptionHandler = new CollectingExceptionHandler();
+                // Note that async observers are notified serially - no need to synchronize the collection
+                ObserverExceptionHandler exceptionHandler = new CollectingExceptionHandler(new ArrayList<>(),
+                        Arc.container().instance(AsyncObserverExceptionHandler.class).get());
                 notifier.notify(event, exceptionHandler, true);
                 handleExceptions(exceptionHandler);
                 return event;
@@ -115,48 +129,58 @@ class EventImpl<T> implements Event<T> {
 
     @Override
     public Event<T> select(Annotation... qualifiers) {
+        ArcContainerImpl.instance().registeredQualifiers.verify(qualifiers);
         Set<Annotation> mergedQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergedQualifiers, qualifiers);
-        return new EventImpl<T>(eventType, mergedQualifiers);
+        return new EventImpl<T>(eventType, mergedQualifiers, injectionPoint);
     }
 
     @Override
     public <U extends T> Event<U> select(Class<U> subtype, Annotation... qualifiers) {
+        if (Types.containsTypeVariable(subtype)) {
+            throw new IllegalArgumentException(
+                    "Event#select(Class<U>, Annotation...) cannot be used with type variable parameter");
+        }
+        ArcContainerImpl.instance().registeredQualifiers.verify(qualifiers);
         Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergerdQualifiers, qualifiers);
-        return new EventImpl<U>(subtype, mergerdQualifiers);
+        return new EventImpl<U>(subtype, mergerdQualifiers, injectionPoint);
     }
 
     @Override
     public <U extends T> Event<U> select(TypeLiteral<U> subtype, Annotation... qualifiers) {
+        ArcContainerImpl.instance().registeredQualifiers.verify(qualifiers);
+        if (Types.containsTypeVariable(subtype.getType())) {
+            throw new IllegalArgumentException(
+                    "Event#select(TypeLiteral, Annotation...) cannot be used with type variable parameter");
+        }
         Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
         Collections.addAll(mergerdQualifiers, qualifiers);
-        return new EventImpl<U>(subtype.getType(), mergerdQualifiers);
+        return new EventImpl<U>(subtype.getType(), mergerdQualifiers, injectionPoint);
     }
 
     private Notifier<? super T> createNotifier(Class<?> runtimeType) {
         Type eventType = getEventType(runtimeType);
-        return createNotifier(runtimeType, eventType, qualifiers, ArcContainerImpl.unwrap(Arc.container()));
+        return createNotifier(runtimeType, eventType, qualifiers, ArcContainerImpl.unwrap(Arc.container()), injectionPoint);
     }
 
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
-            ArcContainerImpl container) {
-        return createNotifier(runtimeType, eventType, qualifiers, container, true);
+            ArcContainerImpl container, InjectionPoint injectionPoint) {
+        return createNotifier(runtimeType, eventType, qualifiers, container, !Arc.container().strictCompatibility(),
+                injectionPoint);
     }
 
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
-            ArcContainerImpl container, boolean activateRequestContext) {
-        EventMetadata metadata = new EventMetadataImpl(qualifiers, eventType);
-        List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>();
-        for (ObserverMethod<? super T> observerMethod : container.resolveObservers(eventType, qualifiers)) {
-            notifierObserverMethods.add(observerMethod);
-        }
+            ArcContainerImpl container, boolean activateRequestContext, InjectionPoint injectionPoint) {
+        EventMetadata metadata = new EventMetadataImpl(qualifiers, eventType, injectionPoint);
+        List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>(
+                container.resolveObservers(eventType, qualifiers));
         return new Notifier<>(runtimeType, notifierObserverMethods, metadata, activateRequestContext);
     }
 
     private Type initEventType(Type type) {
-        if (type instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) type;
+        if (isParameterizedType(type)) {
+            ParameterizedType parameterizedType = asParameterizedType(type);
             if (Event.class.isAssignableFrom(Types.getRawType(parameterizedType.getRawType()))) {
                 return parameterizedType.getActualTypeArguments()[0];
             }
@@ -186,6 +210,14 @@ class EventImpl<T> implements Event<T> {
                     new HierarchyDiscovery(canonicalEventType).getResolver().getResolvedTypeVariables()).build();
             resolvedType = objectTypeResolver.resolveType(canonicalEventType);
         }
+        /*
+         * If the runtime type of the event object still contains an unresolved type variable,
+         * the container must throw an IllegalArgumentException.
+         */
+        if (Types.containsTypeVariable(resolvedType)) {
+            throw new IllegalArgumentException(
+                    "CDI event payload cannot contain unresolved type variable; found type: " + resolvedType);
+        }
         return resolvedType;
     }
 
@@ -197,9 +229,10 @@ class EventImpl<T> implements Event<T> {
                 exception = new CompletionException(handledExceptions.get(0));
             } else {
                 exception = new CompletionException(null);
-                for (Throwable handledException : handledExceptions) {
-                    exception.addSuppressed(handledException);
-                }
+            }
+            // always add exceptions into suppressed
+            for (Throwable handledException : handledExceptions) {
+                exception.addSuppressed(handledException);
             }
             throw exception;
         }
@@ -209,7 +242,7 @@ class EventImpl<T> implements Event<T> {
 
         private final Class<?> runtimeType;
         private final List<ObserverMethod<? super T>> observerMethods;
-        private final EventMetadata eventMetadata;
+        final EventMetadata eventMetadata;
         private final boolean hasTxObservers;
         private final boolean activateRequestContext;
 
@@ -239,39 +272,52 @@ class EventImpl<T> implements Event<T> {
 
                 if (!async && hasTxObservers) {
                     // Note that tx observers are never async
-                    InstanceHandle<TransactionSynchronizationRegistry> registryInstance = Arc.container()
-                            .instance(TransactionSynchronizationRegistry.class);
+                    InstanceHandle<TransactionManager> transactionManagerInstance = Arc.container()
+                            .instance(TransactionManager.class);
 
-                    if (registryInstance.isAvailable() &&
-                            registryInstance.get().getTransactionStatus() == javax.transaction.Status.STATUS_ACTIVE) {
-                        // we have one or more transactional OM, and TransactionSynchronizationRegistry is available
-                        // we attempt to register a JTA synchronization
-                        List<DeferredEventNotification<?>> deferredEvents = new ArrayList<>();
-                        EventContext eventContext = new EventContextImpl<>(event, eventMetadata);
+                    try {
+                        if (transactionManagerInstance.isAvailable() &&
+                                transactionManagerInstance.get().getStatus() == jakarta.transaction.Status.STATUS_ACTIVE) {
+                            // we have one or more transactional OM, and TransactionManager is available
+                            // we attempt to register a JTA synchronization
+                            List<DeferredEventNotification<?>> deferredEvents = new ArrayList<>();
+                            EventContext eventContext = new EventContextImpl<>(event, eventMetadata);
 
-                        for (ObserverMethod<? super T> om : observerMethods) {
-                            if (isTxObserver(om)) {
-                                deferredEvents.add(new DeferredEventNotification<>(om, eventContext,
-                                        Status.valueOf(om.getTransactionPhase())));
+                            for (ObserverMethod<? super T> om : observerMethods) {
+                                if (isTxObserver(om)) {
+                                    deferredEvents.add(new DeferredEventNotification<>(om, eventContext,
+                                            Status.valueOf(om.getTransactionPhase())));
+                                }
+                            }
+
+                            Synchronization sync = new ArcSynchronization(deferredEvents);
+                            TransactionManager txManager = transactionManagerInstance.get();
+                            try {
+                                // NOTE - We are using standard synchronization on purpose as that seems more
+                                // fitting than interposed sync. Either way will have some use-cases that won't work.
+                                // See for instance discussions on https://github.com/eclipse-ee4j/cdi/issues/467
+                                txManager.getTransaction().registerSynchronization(sync);
+                                // registration succeeded, notify all non-tx observers synchronously
+                                predicate = predicate.and(this::isNotTxObserver);
+                            } catch (Exception e) {
+                                if (e.getCause() instanceof RollbackException
+                                        || e.getCause() instanceof IllegalStateException
+                                        || e.getCause() instanceof SystemException) {
+                                    // registration failed, AFTER_SUCCESS OMs are accordingly to CDI spec left out
+                                    predicate = predicate.and(this::isNotAfterSuccess);
+                                }
                             }
                         }
-
-                        Synchronization sync = new ArcSynchronization(deferredEvents);
-                        TransactionSynchronizationRegistry registry = registryInstance.get();
-                        try {
-                            registry.registerInterposedSynchronization(sync);
-                            // registration succeeded, notify all non-tx observers synchronously
-                            predicate = predicate.and(this::isNotTxObserver);
-                        } catch (Exception e) {
-                            if (e.getCause() instanceof RollbackException || e.getCause() instanceof IllegalStateException) {
-                                // registration failed, AFTER_SUCCESS OMs are accordingly to CDI spec left out
-                                predicate = predicate.and(this::isNotAfterSuccess);
-                            }
-                        }
+                    } catch (SystemException e) {
+                        // In theory, this can be thrown by TransactionManager#getStatus() at which point we cannot even
+                        // determine if we should register some synchronization, therefore, we only log this
+                        LOGGER.debugf("Failure when trying to invoke TransactionManager#getStatus(). Stacktrace: %s",
+                                e.getCause() != null ? e.getCause() : e);
                     }
                 }
 
                 // Non-tx observers notifications
+                // req. context is activated if not in strict mode and not for lifecycle events such as init/shutdown
                 if (activateRequestContext) {
                     ManagedContext requestContext = Arc.container().requestContext();
                     if (requestContext.isActive()) {
@@ -298,8 +344,8 @@ class EventImpl<T> implements Event<T> {
                 if (predicate.test(observerMethod)) {
                     try {
                         observerMethod.notify(eventContext);
-                    } catch (Throwable e) {
-                        exceptionHandler.handle(e);
+                    } catch (Throwable t) {
+                        exceptionHandler.handle(t, observerMethod, eventContext);
                     }
                 }
             }
@@ -319,58 +365,6 @@ class EventImpl<T> implements Event<T> {
 
         private boolean isNotTxObserver(ObserverMethod<?> observer) {
             return !isTxObserver(observer);
-        }
-
-    }
-
-    static class EventContextImpl<T> implements EventContext<T> {
-
-        private final T payload;
-
-        private final EventMetadata metadata;
-
-        public EventContextImpl(T payload, EventMetadata metadata) {
-            this.payload = payload;
-            this.metadata = metadata;
-        }
-
-        @Override
-        public T getEvent() {
-            return payload;
-        }
-
-        @Override
-        public EventMetadata getMetadata() {
-            return metadata;
-        }
-
-    }
-
-    static class EventMetadataImpl implements EventMetadata {
-
-        private final Set<Annotation> qualifiers;
-
-        private final Type eventType;
-
-        public EventMetadataImpl(Set<Annotation> qualifiers, Type eventType) {
-            this.qualifiers = qualifiers;
-            this.eventType = eventType;
-        }
-
-        @Override
-        public Set<Annotation> getQualifiers() {
-            return qualifiers;
-        }
-
-        @Override
-        public InjectionPoint getInjectionPoint() {
-            // Currently we do not support injection point of the injected Event instance which fired the event
-            return null;
-        }
-
-        @Override
-        public Type getType() {
-            return eventType;
         }
 
     }
@@ -410,7 +404,7 @@ class EventImpl<T> implements Event<T> {
         private EventContext eventContext;
         private Status status;
 
-        private static final Logger LOGGER = Logger.getLogger(DeferredEventNotification.class);
+        private static final Logger LOG = Logger.getLogger(DeferredEventNotification.class);
 
         DeferredEventNotification(ObserverMethod<? super T> observerMethod, EventContext eventContext, Status status) {
             this.observerMethod = observerMethod;
@@ -444,9 +438,16 @@ class EventImpl<T> implements Event<T> {
                 }
             } catch (Exception e) {
                 // swallow exception and log errors for every problematic OM
-                LOGGER.errorf("Failure while notifying an observer %s for event %s. Stack trace - %s",
+                LOG.errorf(
+                        "Failure occurred while notifying a transational %s for event of type %s " +
+                                "\n- please enable debug logging to see the full stack trace" +
+                                "\n %s",
                         observerMethod, eventContext.getMetadata().getType().getTypeName(),
-                        e.getCause() != null ? e.getCause() : e);
+                        e.getCause() != null && e.getMessage() != null
+                                ? "Cause: " + e.getCause() + " Message: " + e.getMessage()
+                                : "Exception caught: " + e);
+                LOG.debugf(e, "Failure occurred while notifying a transational %s for event of type %s",
+                        observerMethod, eventContext.getMetadata().getType().getTypeName());
             }
         }
     }
@@ -512,17 +513,17 @@ class EventImpl<T> implements Event<T> {
      */
     protected interface ObserverExceptionHandler {
 
-        ObserverExceptionHandler IMMEDIATE_HANDLER = throwable -> {
-            if (throwable instanceof RuntimeException) {
-                throw (RuntimeException) throwable;
+        ObserverExceptionHandler IMMEDIATE_HANDLER = (t, m, e) -> {
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
             }
-            if (throwable instanceof Error) {
-                throw (Error) throwable;
+            if (t instanceof Error) {
+                throw (Error) t;
             }
-            throw new ObserverException(throwable);
+            throw new ObserverException(t);
         };
 
-        void handle(Throwable throwable);
+        void handle(Throwable throwable, ObserverMethod<?> observerMethod, EventContext<?> eventContext);
 
         default List<Throwable> getHandledExceptions() {
             return Collections.emptyList();
@@ -531,19 +532,23 @@ class EventImpl<T> implements Event<T> {
 
     static class CollectingExceptionHandler implements ObserverExceptionHandler {
 
-        private List<Throwable> throwables;
+        private final List<Throwable> throwables;
 
-        CollectingExceptionHandler() {
-            this(new LinkedList<>());
-        }
+        private final AsyncObserverExceptionHandler exceptionHandler;
 
-        CollectingExceptionHandler(List<Throwable> throwables) {
+        CollectingExceptionHandler(List<Throwable> throwables, AsyncObserverExceptionHandler exceptionHandler) {
             this.throwables = throwables;
+            this.exceptionHandler = exceptionHandler;
         }
 
         @Override
-        public void handle(Throwable throwable) {
+        public void handle(Throwable throwable, ObserverMethod<?> observerMethod, EventContext<?> eventContext) {
             throwables.add(throwable);
+            try {
+                exceptionHandler.handle(throwable, observerMethod, eventContext);
+            } catch (Exception e) {
+                LOGGER.errorf(e, "Cannot handle exception of an async observer: %s", throwable);
+            }
         }
 
         @Override

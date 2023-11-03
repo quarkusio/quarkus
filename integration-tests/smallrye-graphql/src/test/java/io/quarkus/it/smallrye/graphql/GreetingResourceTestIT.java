@@ -1,7 +1,7 @@
 package io.quarkus.it.smallrye.graphql;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 class GreetingResourceTestIT extends GreetingResourceTest {
 }

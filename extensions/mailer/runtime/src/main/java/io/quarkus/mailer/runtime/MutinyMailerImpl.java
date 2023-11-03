@@ -3,17 +3,17 @@ package io.quarkus.mailer.runtime;
 import static java.util.Arrays.stream;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Flow.Publisher;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-
 import org.jboss.logging.Logger;
-import org.reactivestreams.Publisher;
 
 import io.quarkus.mailer.Attachment;
 import io.quarkus.mailer.Mail;
@@ -29,22 +29,38 @@ import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.file.AsyncFile;
 import io.vertx.mutiny.ext.mail.MailClient;
 
-@ApplicationScoped
 public class MutinyMailerImpl implements ReactiveMailer {
 
     private static final Logger LOGGER = Logger.getLogger("quarkus-mailer");
 
-    @Inject
-    MailClient client;
+    private final Vertx vertx;
 
-    @Inject
-    Vertx vertx;
+    private final MailClient client;
 
-    @Inject
-    MockMailboxImpl mockMailbox;
+    private final MockMailboxImpl mockMailbox;
 
-    @Inject
-    MailerSupport mailerSupport;
+    private final String from;
+
+    private final String bounceAddress;
+
+    private final boolean mock;
+
+    private final List<Pattern> approvedRecipients;
+
+    private boolean logRejectedRecipients;
+
+    MutinyMailerImpl(Vertx vertx, MailClient client, MockMailboxImpl mockMailbox,
+            String from, String bounceAddress, boolean mock, List<Pattern> approvedRecipients,
+            boolean logRejectedRecipients) {
+        this.vertx = vertx;
+        this.client = client;
+        this.mockMailbox = mockMailbox;
+        this.from = from;
+        this.bounceAddress = bounceAddress;
+        this.mock = mock;
+        this.approvedRecipients = approvedRecipients;
+        this.logRejectedRecipients = logRejectedRecipients;
+    }
 
     @Override
     public Uni<Void> send(Mail... mails) {
@@ -71,15 +87,47 @@ public class MutinyMailerImpl implements ReactiveMailer {
     }
 
     private Uni<Void> send(Mail mail, MailMessage message) {
-        if (mailerSupport.isMock()) {
-            LOGGER.infof("Sending email %s from %s to %s, text body: \n%s\nhtml body: \n%s",
+        if (!approvedRecipients.isEmpty()) {
+            Recipients to = filterApprovedRecipients(message.getTo());
+            Recipients cc = filterApprovedRecipients(message.getCc());
+            Recipients bcc = filterApprovedRecipients(message.getBcc());
+
+            if (to.approved.isEmpty() && cc.approved.isEmpty() && bcc.approved.isEmpty()) {
+                logRejectedRecipients("Email '%s' was not sent because all recipients were rejected by the configuration: %s",
+                        message.getSubject(), to.rejected, cc.rejected, bcc.rejected);
+                return Uni.createFrom().voidItem();
+            }
+
+            if (!to.rejected.isEmpty() || !cc.rejected.isEmpty() || !bcc.rejected.isEmpty()) {
+                logRejectedRecipients(
+                        "Email '%s' was not sent to the following recipients as they were rejected by the configuration: %s",
+                        message.getSubject(), to.rejected, cc.rejected, bcc.rejected);
+            }
+
+            if (!to.rejected.isEmpty()) {
+                mail.setTo(to.approved);
+                message.setTo(to.approved);
+            }
+            if (!cc.rejected.isEmpty()) {
+                mail.setCc(cc.approved);
+                message.setCc(cc.approved);
+            }
+            if (!bcc.rejected.isEmpty()) {
+                mail.setBcc(bcc.approved);
+                message.setBcc(bcc.approved);
+            }
+        }
+
+        if (mock) {
+            LOGGER.infof("Sending email %s from %s to %s (cc: %s, bcc: %s), text body: \n%s\nhtml body: \n%s",
                     message.getSubject(), message.getFrom(), message.getTo(),
+                    message.getCc(), message.getBcc(),
                     message.getText() == null ? "<empty>" : message.getText(),
                     message.getHtml() == null ? "<empty>" : message.getHtml());
-            return mockMailbox.send(mail);
+            return mockMailbox.send(mail, message);
         } else {
             return client.sendMail(message)
-                    .onItem().ignore().andContinueWithNull();
+                    .replaceWithVoid();
         }
     }
 
@@ -89,14 +137,15 @@ public class MutinyMailerImpl implements ReactiveMailer {
         if (mail.getBounceAddress() != null) {
             message.setBounceAddress(mail.getBounceAddress());
         } else {
-            message.setBounceAddress(this.mailerSupport.getBounceAddress());
+            message.setBounceAddress(bounceAddress);
         }
 
         if (mail.getFrom() != null) {
             message.setFrom(mail.getFrom());
         } else {
-            message.setFrom(this.mailerSupport.getFrom());
+            message.setFrom(from);
         }
+
         message.setTo(mail.getTo());
         message.setCc(mail.getCc());
         message.setBcc(mail.getBcc());
@@ -160,6 +209,47 @@ public class MutinyMailerImpl implements ReactiveMailer {
                 .onItem().transform(attach::setData);
     }
 
+    private Recipients filterApprovedRecipients(List<String> emails) {
+        if (approvedRecipients.isEmpty()) {
+            return new Recipients(emails, List.of());
+        }
+
+        List<String> allowedRecipients = new ArrayList<>();
+        List<String> rejectedRecipients = new ArrayList<>();
+
+        emailLoop: for (String email : emails) {
+            for (Pattern approvedRecipient : approvedRecipients) {
+                if (approvedRecipient.matcher(email).matches()) {
+                    allowedRecipients.add(email);
+                    continue emailLoop;
+                }
+            }
+
+            rejectedRecipients.add(email);
+        }
+
+        return new Recipients(allowedRecipients, rejectedRecipients);
+    }
+
+    @SafeVarargs
+    private void logRejectedRecipients(String logMessage, String subject, List<String>... rejectedRecipientLists) {
+        if (logRejectedRecipients) {
+            Set<String> allRejectedRecipients = new LinkedHashSet<>();
+            for (List<String> rejectedRecipients : rejectedRecipientLists) {
+                allRejectedRecipients.addAll(rejectedRecipients);
+            }
+
+            LOGGER.warn(String.format(logMessage, subject, allRejectedRecipients));
+        } else if (LOGGER.isDebugEnabled()) {
+            List<String> allRejectedRecipients = new ArrayList<>();
+            for (List<String> rejectedRecipients : rejectedRecipientLists) {
+                allRejectedRecipients.addAll(rejectedRecipients);
+            }
+
+            LOGGER.warn(String.format(logMessage, subject, allRejectedRecipients));
+        }
+    }
+
     public static Uni<Buffer> getAttachmentStream(Vertx vertx, Attachment attachment) {
         if (attachment.getFile() != null) {
             Uni<AsyncFile> open = vertx.fileSystem().open(attachment.getFile().getAbsolutePath(),
@@ -175,6 +265,17 @@ public class MutinyMailerImpl implements ReactiveMailer {
                     .collect().in(Buffer::buffer, Buffer::appendByte);
         } else {
             return Uni.createFrom().failure(new IllegalArgumentException("Attachment has no data"));
+        }
+    }
+
+    private static class Recipients {
+
+        private final List<String> approved;
+        private final List<String> rejected;
+
+        Recipients(List<String> approved, List<String> rejected) {
+            this.approved = approved;
+            this.rejected = rejected;
         }
     }
 }

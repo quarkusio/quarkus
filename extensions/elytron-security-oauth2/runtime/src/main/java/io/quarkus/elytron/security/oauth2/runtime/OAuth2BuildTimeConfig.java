@@ -5,7 +5,7 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
- * See http://docs.wildfly.org/14/WildFly_Elytron_Security.html#validating-oauth2-bearer-tokens
+ * See https://docs.wildfly.org/14/WildFly_Elytron_Security.html#validating-oauth2-bearer-tokens
  */
 @ConfigRoot(name = "oauth2", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class OAuth2BuildTimeConfig {

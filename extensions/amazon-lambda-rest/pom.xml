@@ -17,6 +17,7 @@
 
     <modules>
         <module>runtime</module>
+        <module>rest-event-server</module>
         <module>deployment</module>
         <module>maven-archetype</module>
     </modules>

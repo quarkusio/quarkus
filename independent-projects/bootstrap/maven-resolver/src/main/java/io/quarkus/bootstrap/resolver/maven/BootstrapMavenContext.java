@@ -1,11 +1,5 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
-import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
-import io.quarkus.bootstrap.util.PropertyUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,13 +7,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.StringUtils;
+
 import org.apache.maven.cli.transfer.BatchModeMavenTransferListener;
 import org.apache.maven.cli.transfer.ConsoleMavenTransferListener;
 import org.apache.maven.cli.transfer.QuietMavenTransferListener;
@@ -28,6 +25,7 @@ import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.building.ModelProblemCollector;
 import org.apache.maven.model.building.ModelProblemCollectorRequest;
 import org.apache.maven.model.path.DefaultPathTranslator;
+import org.apache.maven.model.path.ProfileActivationFilePathInterpolator;
 import org.apache.maven.model.profile.DefaultProfileActivationContext;
 import org.apache.maven.model.profile.DefaultProfileSelector;
 import org.apache.maven.model.profile.activation.FileProfileActivator;
@@ -46,7 +44,10 @@ import org.apache.maven.settings.building.SettingsBuildingException;
 import org.apache.maven.settings.building.SettingsBuildingResult;
 import org.apache.maven.settings.building.SettingsProblem;
 import org.apache.maven.settings.crypto.DefaultSettingsDecryptionRequest;
+import org.apache.maven.settings.crypto.SettingsDecrypter;
+import org.apache.maven.settings.crypto.SettingsDecryptionRequest;
 import org.apache.maven.settings.crypto.SettingsDecryptionResult;
+import org.codehaus.plexus.configuration.PlexusConfiguration;
 import org.codehaus.plexus.configuration.xml.XmlPlexusConfiguration;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.ConfigurationProperties;
@@ -56,10 +57,7 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
-import org.eclipse.aether.impl.DefaultServiceLocator;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
-import org.eclipse.aether.internal.impl.DefaultRemoteRepositoryManager;
 import org.eclipse.aether.repository.ArtifactRepository;
 import org.eclipse.aether.repository.Authentication;
 import org.eclipse.aether.repository.LocalRepository;
@@ -68,17 +66,22 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
 import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
-import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
-import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transfer.TransferListener;
-import org.eclipse.aether.transport.wagon.WagonConfigurator;
-import org.eclipse.aether.transport.wagon.WagonProvider;
-import org.eclipse.aether.transport.wagon.WagonTransporterFactory;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
 import org.eclipse.aether.util.repository.DefaultAuthenticationSelector;
 import org.eclipse.aether.util.repository.DefaultMirrorSelector;
 import org.eclipse.aether.util.repository.DefaultProxySelector;
 import org.jboss.logging.Logger;
+
+import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.bootstrap.util.PropertyUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.smallrye.beanbag.BeanSupplier;
+import io.smallrye.beanbag.Scope;
+import io.smallrye.beanbag.maven.MavenFactory;
 
 public class BootstrapMavenContext {
 
@@ -92,11 +95,19 @@ public class BootstrapMavenContext {
     private static final String MAVEN_SETTINGS = "maven.settings";
     private static final String MAVEN_TOP_LEVEL_PROJECT_BASEDIR = "maven.top-level-basedir";
     private static final String SETTINGS_XML = "settings.xml";
-
-    private static final String userHome = PropertyUtils.getUserHome();
-    private static final File userMavenConfigurationHome = new File(userHome, ".m2");
+    private static final String SETTINGS_SECURITY = "settings.security";
 
     private static final String EFFECTIVE_MODEL_BUILDER_PROP = "quarkus.bootstrap.effective-model-builder";
+
+    private static final String MAVEN_RESOLVER_TRANSPORT_KEY = "maven.resolver.transport";
+    private static final String MAVEN_RESOLVER_TRANSPORT_DEFAULT = "default";
+    private static final String MAVEN_RESOLVER_TRANSPORT_WAGON = "wagon";
+    private static final String MAVEN_RESOLVER_TRANSPORT_NATIVE = "native";
+    private static final String MAVEN_RESOLVER_TRANSPORT_AUTO = "auto";
+    private static final String WAGON_TRANSPORTER_PRIORITY_KEY = "aether.priority.WagonTransporterFactory";
+    private static final String NATIVE_HTTP_TRANSPORTER_PRIORITY_KEY = "aether.priority.HttpTransporterFactory";
+    private static final String NATIVE_FILE_TRANSPORTER_PRIORITY_KEY = "aether.priority.FileTransporterFactory";
+    private static final String RESOLVER_MAX_PRIORITY = String.valueOf(Float.MAX_VALUE);
 
     private boolean artifactTransferLogging;
     private BootstrapMavenOptions cliOptions;
@@ -115,11 +126,12 @@ public class BootstrapMavenContext {
     private String localRepo;
     private Path currentPom;
     private Boolean currentProjectExists;
-    private DefaultServiceLocator serviceLocator;
     private String alternatePomName;
     private Path rootProjectDir;
     private boolean preferPomsFromWorkspace;
     private Boolean effectiveModelBuilder;
+    private Boolean wsModuleParentHierarchy;
+    private SettingsDecrypter settingsDecrypter;
 
     public static BootstrapMavenContextConfig<?> config() {
         return new BootstrapMavenContextConfig<>();
@@ -149,7 +161,7 @@ public class BootstrapMavenContext {
         if (config.rootProjectDir == null) {
             final String topLevelBaseDirStr = PropertyUtils.getProperty(MAVEN_TOP_LEVEL_PROJECT_BASEDIR);
             if (topLevelBaseDirStr != null) {
-                final Path tmp = Paths.get(topLevelBaseDirStr);
+                final Path tmp = Path.of(topLevelBaseDirStr);
                 if (!Files.exists(tmp)) {
                     throw new BootstrapMavenException("Top-level project base directory " + topLevelBaseDirStr
                             + " specified with system property " + MAVEN_TOP_LEVEL_PROJECT_BASEDIR + " does not exist");
@@ -161,26 +173,31 @@ public class BootstrapMavenContext {
         }
         this.preferPomsFromWorkspace = config.preferPomsFromWorkspace;
         this.effectiveModelBuilder = config.effectiveModelBuilder;
+        this.wsModuleParentHierarchy = config.wsModuleParentHierarchy;
         this.userSettings = config.userSettings;
         if (config.currentProject != null) {
             this.currentProject = config.currentProject;
             this.currentPom = currentProject.getRawModel().getPomFile().toPath();
             this.workspace = config.currentProject.getWorkspace();
         } else if (config.workspaceDiscovery) {
-            currentProject = resolveCurrentProject();
+            currentProject = resolveCurrentProject(config.modelProvider);
             this.workspace = currentProject == null ? null : currentProject.getWorkspace();
             if (workspace != null) {
                 if (config.repoSession == null && repoSession != null && repoSession.getWorkspaceReader() == null) {
                     repoSession = new DefaultRepositorySystemSession(repoSession).setWorkspaceReader(workspace);
                     if (config.remoteRepos == null && remoteRepos != null) {
-                        remoteRepos = resolveCurrentProjectRepos(remoteRepos);
+                        final List<RemoteRepository> rawProjectRepos = resolveRawProjectRepos(remoteRepos);
+                        if (!rawProjectRepos.isEmpty()) {
+                            remoteRepos = getRemoteRepositoryManager().aggregateRepositories(repoSession, remoteRepos,
+                                    rawProjectRepos, true);
+                        }
                     }
                 }
             }
         }
     }
 
-    public AppArtifact getCurrentProjectArtifact(String extension) throws BootstrapMavenException {
+    public ArtifactCoords getCurrentProjectArtifact(String extension) throws BootstrapMavenException {
         if (currentProject != null) {
             return currentProject.getAppArtifact(extension);
         }
@@ -188,8 +205,8 @@ public class BootstrapMavenContext {
         if (model == null) {
             return null;
         }
-        return new AppArtifact(ModelUtils.getGroupId(model), model.getArtifactId(), "", extension,
-                ModelUtils.getVersion(model));
+        return ArtifactCoords.of(ModelUtils.getGroupId(model), model.getArtifactId(), ArtifactCoords.DEFAULT_CLASSIFIER,
+                extension, ModelUtils.getVersion(model));
     }
 
     public LocalProject getCurrentProject() {
@@ -205,15 +222,21 @@ public class BootstrapMavenContext {
     }
 
     public File getUserSettings() {
-        return userSettings == null
-                ? userSettings = resolveSettingsFile(
-                        getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_USER_SETTINGS),
-                        () -> {
-                            final String quarkusMavenSettings = getProperty(MAVEN_SETTINGS);
-                            return quarkusMavenSettings == null ? new File(userMavenConfigurationHome, SETTINGS_XML)
-                                    : new File(quarkusMavenSettings);
-                        })
-                : userSettings;
+        if (userSettings == null) {
+            final String quarkusMavenSettings = getProperty(MAVEN_SETTINGS);
+            if (quarkusMavenSettings != null) {
+                var f = new File(quarkusMavenSettings);
+                return userSettings = f.exists() ? f : null;
+            }
+            return userSettings = resolveSettingsFile(
+                    getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_USER_SETTINGS),
+                    () -> new File(getUserMavenConfigurationHome(), SETTINGS_XML));
+        }
+        return userSettings;
+    }
+
+    private static File getUserMavenConfigurationHome() {
+        return new File(PropertyUtils.getUserHome(), ".m2");
     }
 
     private String getProperty(String name) {
@@ -249,7 +272,17 @@ public class BootstrapMavenContext {
     }
 
     public RepositorySystem getRepositorySystem() throws BootstrapMavenException {
-        return repoSystem == null ? repoSystem = newRepositorySystem() : repoSystem;
+        if (repoSystem == null) {
+            initRepoSystemAndManager();
+        }
+        return repoSystem;
+    }
+
+    public RemoteRepositoryManager getRemoteRepositoryManager() {
+        if (remoteRepoManager == null) {
+            initRepoSystemAndManager();
+        }
+        return remoteRepoManager;
     }
 
     public RepositorySystemSession getRepositorySystemSession() throws BootstrapMavenException {
@@ -262,6 +295,13 @@ public class BootstrapMavenContext {
 
     public List<RemoteRepository> getRemotePluginRepositories() throws BootstrapMavenException {
         return remotePluginRepos == null ? remotePluginRepos = resolveRemotePluginRepos() : remotePluginRepos;
+    }
+
+    private SettingsDecrypter getSettingsDecrypter() {
+        if (settingsDecrypter == null) {
+            initRepoSystemAndManager();
+        }
+        return settingsDecrypter;
     }
 
     public Settings getEffectiveSettings() throws BootstrapMavenException {
@@ -307,9 +347,9 @@ public class BootstrapMavenContext {
         return localRepo == null ? localRepo = resolveLocalRepo(getEffectiveSettings()) : localRepo;
     }
 
-    private LocalProject resolveCurrentProject() throws BootstrapMavenException {
+    private LocalProject resolveCurrentProject(Function<Path, Model> modelProvider) throws BootstrapMavenException {
         try {
-            return LocalProject.loadWorkspace(this);
+            return LocalProject.loadWorkspace(this, modelProvider);
         } catch (Exception e) {
             throw new BootstrapMavenException("Failed to load current project at " + getCurrentProjectPomOrNull(), e);
         }
@@ -325,7 +365,7 @@ public class BootstrapMavenContext {
             return localRepo;
         }
         localRepo = settings.getLocalRepository();
-        return localRepo == null ? new File(userMavenConfigurationHome, "repository").getAbsolutePath() : localRepo;
+        return localRepo == null ? new File(getUserMavenConfigurationHome(), "repository").getAbsolutePath() : localRepo;
     }
 
     private File resolveSettingsFile(String settingsArg, Supplier<File> supplier) {
@@ -396,12 +436,11 @@ public class BootstrapMavenContext {
     private DefaultRepositorySystemSession newRepositorySystemSession() throws BootstrapMavenException {
         final DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
         final Settings settings = getEffectiveSettings();
-
         final List<Mirror> mirrors = settings.getMirrors();
         if (mirrors != null && !mirrors.isEmpty()) {
             final DefaultMirrorSelector ms = new DefaultMirrorSelector();
             for (Mirror m : mirrors) {
-                ms.add(m.getId(), m.getUrl(), m.getLayout(), false, m.getMirrorOf(), m.getMirrorOfLayouts());
+                ms.add(m.getId(), m.getUrl(), m.getLayout(), false, m.isBlocked(), m.getMirrorOf(), m.getMirrorOfLayouts());
             }
             session.setMirrorSelector(ms);
         }
@@ -425,10 +464,20 @@ public class BootstrapMavenContext {
             }
         }
 
-        final DefaultSettingsDecryptionRequest decrypt = new DefaultSettingsDecryptionRequest();
+        final SettingsDecryptionRequest decrypt = new DefaultSettingsDecryptionRequest();
         decrypt.setProxies(settings.getProxies());
         decrypt.setServers(settings.getServers());
-        final SettingsDecryptionResult decrypted = new SettingsDecrypterImpl().decrypt(decrypt);
+        // set settings.security property to ~/.m2/settings-security.xml unless it's already set to some other value
+        File settingsSecurityXml = null;
+        final boolean setSettingsSecurity = !System.getProperties().contains(SETTINGS_SECURITY)
+                && ((settingsSecurityXml = new File(getUserMavenConfigurationHome(), "settings-security.xml")).exists());
+        if (setSettingsSecurity) {
+            System.setProperty(SETTINGS_SECURITY, settingsSecurityXml.toString());
+        }
+        final SettingsDecryptionResult decrypted = getSettingsDecrypter().decrypt(decrypt);
+        if (setSettingsSecurity) {
+            System.clearProperty(SETTINGS_SECURITY);
+        }
         if (!decrypted.getProblems().isEmpty() && log.isDebugEnabled()) {
             // this is how maven handles these
             for (SettingsProblem p : decrypted.getProblems()) {
@@ -465,11 +514,96 @@ public class BootstrapMavenContext {
                 }
                 XmlPlexusConfiguration config = new XmlPlexusConfiguration(dom);
                 configProps.put("aether.connector.wagon.config." + server.getId(), config);
+
+                // Translate to proper resolver configuration properties as well (as Plexus XML above is Wagon specific
+                // only), but support only configuration/httpConfiguration/all, see
+                // https://maven.apache.org/guides/mini/guide-http-settings.html
+                Map<String, String> headers = null;
+                Integer connectTimeout = null;
+                Integer requestTimeout = null;
+
+                PlexusConfiguration httpHeaders = config.getChild("httpHeaders", false);
+                if (httpHeaders != null) {
+                    PlexusConfiguration[] properties = httpHeaders.getChildren("property");
+                    if (properties != null && properties.length > 0) {
+                        headers = new HashMap<>();
+                        for (PlexusConfiguration property : properties) {
+                            headers.put(
+                                    property.getChild("name").getValue(),
+                                    property.getChild("value").getValue());
+                        }
+                    }
+                }
+
+                PlexusConfiguration connectTimeoutXml = config.getChild("connectTimeout", false);
+                if (connectTimeoutXml != null) {
+                    connectTimeout = Integer.parseInt(connectTimeoutXml.getValue());
+                } else {
+                    // fallback configuration name
+                    PlexusConfiguration httpConfiguration = config.getChild("httpConfiguration", false);
+                    if (httpConfiguration != null) {
+                        PlexusConfiguration httpConfigurationAll = httpConfiguration.getChild("all", false);
+                        if (httpConfigurationAll != null) {
+                            connectTimeoutXml = httpConfigurationAll.getChild("connectionTimeout", false);
+                            if (connectTimeoutXml != null) {
+                                connectTimeout = Integer.parseInt(connectTimeoutXml.getValue());
+                                log.warn("Settings for server " + server.getId() + " uses legacy format");
+                            }
+                        }
+                    }
+                }
+
+                PlexusConfiguration requestTimeoutXml = config.getChild("requestTimeout", false);
+                if (requestTimeoutXml != null) {
+                    requestTimeout = Integer.parseInt(requestTimeoutXml.getValue());
+                } else {
+                    // fallback configuration name
+                    PlexusConfiguration httpConfiguration = config.getChild("httpConfiguration", false);
+                    if (httpConfiguration != null) {
+                        PlexusConfiguration httpConfigurationAll = httpConfiguration.getChild("all", false);
+                        if (httpConfigurationAll != null) {
+                            requestTimeoutXml = httpConfigurationAll.getChild("readTimeout", false);
+                            if (requestTimeoutXml != null) {
+                                requestTimeout = Integer.parseInt(requestTimeoutXml.getValue());
+                                log.warn("Settings for server " + server.getId() + " uses legacy format");
+                            }
+                        }
+                    }
+                }
+
+                // org.eclipse.aether.ConfigurationProperties.HTTP_HEADERS => Map<String, String>
+                if (headers != null) {
+                    configProps.put(ConfigurationProperties.HTTP_HEADERS + "." + server.getId(), headers);
+                }
+                // org.eclipse.aether.ConfigurationProperties.CONNECT_TIMEOUT => int
+                if (connectTimeout != null) {
+                    configProps.put(ConfigurationProperties.CONNECT_TIMEOUT + "." + server.getId(), connectTimeout);
+                }
+                // org.eclipse.aether.ConfigurationProperties.REQUEST_TIMEOUT => int
+                if (requestTimeout != null) {
+                    configProps.put(ConfigurationProperties.REQUEST_TIMEOUT + "." + server.getId(), requestTimeout);
+                }
             }
             configProps.put("aether.connector.perms.fileMode." + server.getId(), server.getFilePermissions());
             configProps.put("aether.connector.perms.dirMode." + server.getId(), server.getDirectoryPermissions());
         }
         session.setAuthenticationSelector(authSelector);
+
+        Object transport = configProps.getOrDefault(MAVEN_RESOLVER_TRANSPORT_KEY, MAVEN_RESOLVER_TRANSPORT_DEFAULT);
+        if (MAVEN_RESOLVER_TRANSPORT_DEFAULT.equals(transport)) {
+            // The "default" mode (user did not set anything) from now on defaults to AUTO
+        } else if (MAVEN_RESOLVER_TRANSPORT_NATIVE.equals(transport)) {
+            // Make sure (whatever extra priority is set) that resolver native is selected
+            configProps.put(NATIVE_FILE_TRANSPORTER_PRIORITY_KEY, RESOLVER_MAX_PRIORITY);
+            configProps.put(NATIVE_HTTP_TRANSPORTER_PRIORITY_KEY, RESOLVER_MAX_PRIORITY);
+        } else if (MAVEN_RESOLVER_TRANSPORT_WAGON.equals(transport)) {
+            // Make sure (whatever extra priority is set) that wagon is selected
+            configProps.put(WAGON_TRANSPORTER_PRIORITY_KEY, RESOLVER_MAX_PRIORITY);
+        } else if (!MAVEN_RESOLVER_TRANSPORT_AUTO.equals(transport)) {
+            throw new IllegalArgumentException("Unknown resolver transport '" + transport
+                    + "'. Supported transports are: " + MAVEN_RESOLVER_TRANSPORT_WAGON + ", "
+                    + MAVEN_RESOLVER_TRANSPORT_NATIVE + ", " + MAVEN_RESOLVER_TRANSPORT_AUTO);
+        }
 
         session.setConfigProperties(configProps);
 
@@ -494,36 +628,63 @@ public class BootstrapMavenContext {
             session.setTransferListener(transferListener);
         }
 
+        for (var e : System.getProperties().entrySet()) {
+            session.setSystemProperty(e.getKey().toString(), e.getValue().toString());
+        }
+
         return session;
     }
 
     private List<RemoteRepository> resolveRemoteRepos() throws BootstrapMavenException {
         final List<RemoteRepository> rawRepos = new ArrayList<>();
+        readMavenReposFromEnv(rawRepos, System.getenv());
+        addReposFromProfiles(rawRepos);
 
-        getActiveSettingsProfiles().forEach(p -> addProfileRepos(p.getRepositories(), rawRepos));
-
-        // central must be there
-        if (rawRepos.isEmpty() || !includesDefaultRepo(rawRepos)) {
+        final boolean centralConfiguredInSettings = includesDefaultRepo(rawRepos);
+        if (!centralConfiguredInSettings) {
             rawRepos.add(newDefaultRepository());
         }
-        final List<RemoteRepository> repos = getRepositorySystem().newResolutionRepositories(getRepositorySystemSession(),
-                rawRepos);
 
-        return workspace == null ? repos : resolveCurrentProjectRepos(repos);
+        if (workspace == null) {
+            return newResolutionRepos(rawRepos);
+        }
+
+        final List<RemoteRepository> rawProjectRepos = resolveRawProjectRepos(newResolutionRepos(rawRepos));
+        if (!rawProjectRepos.isEmpty()) {
+            if (!centralConfiguredInSettings) {
+                // if the default repo was added here, we are removing it to add it last
+                rawRepos.remove(rawRepos.size() - 1);
+            }
+            rawRepos.addAll(rawProjectRepos);
+            if (!centralConfiguredInSettings && !includesDefaultRepo(rawProjectRepos)) {
+                rawRepos.add(newDefaultRepository());
+            }
+        }
+
+        return newResolutionRepos(rawRepos);
     }
 
     private List<RemoteRepository> resolveRemotePluginRepos() throws BootstrapMavenException {
         final List<RemoteRepository> rawRepos = new ArrayList<>();
-
-        getActiveSettingsProfiles().forEach(p -> addProfileRepos(p.getPluginRepositories(), rawRepos));
-
+        addReposFromProfiles(rawRepos);
         // central must be there
-        if (rawRepos.isEmpty() || !includesDefaultRepo(rawRepos)) {
+        if (!includesDefaultRepo(rawRepos)) {
             rawRepos.add(newDefaultRepository());
         }
-        final List<RemoteRepository> repos = getRepositorySystem().newResolutionRepositories(getRepositorySystemSession(),
-                rawRepos);
-        return repos;
+        return newResolutionRepos(rawRepos);
+    }
+
+    private List<RemoteRepository> newResolutionRepos(final List<RemoteRepository> rawRepos)
+            throws BootstrapMavenException {
+        return getRepositorySystem().newResolutionRepositories(getRepositorySystemSession(), rawRepos);
+    }
+
+    private void addReposFromProfiles(final List<RemoteRepository> rawRepos) throws BootstrapMavenException {
+        // reverse the order of the profiles to match the order in which the repos appear in Maven mojos
+        final List<org.apache.maven.model.Profile> profiles = getActiveSettingsProfiles();
+        for (int i = profiles.size() - 1; i >= 0; --i) {
+            addProfileRepos(profiles.get(i).getRepositories(), rawRepos);
+        }
     }
 
     public static RemoteRepository newDefaultRepository() {
@@ -547,33 +708,32 @@ public class BootstrapMavenContext {
         }
     }
 
-    private List<RemoteRepository> resolveCurrentProjectRepos(List<RemoteRepository> repos)
+    private List<RemoteRepository> resolveRawProjectRepos(List<RemoteRepository> repos)
             throws BootstrapMavenException {
         final Artifact projectArtifact;
         if (currentProject == null) {
             final Model model = loadCurrentProjectModel();
             if (model == null) {
-                return repos;
+                return List.of();
             }
-            projectArtifact = new DefaultArtifact(ModelUtils.getGroupId(model), model.getArtifactId(), null, "pom",
-                    ModelUtils.getVersion(model));
+            projectArtifact = new DefaultArtifact(ModelUtils.getGroupId(model), model.getArtifactId(),
+                    ArtifactCoords.DEFAULT_CLASSIFIER, ArtifactCoords.TYPE_POM, ModelUtils.getVersion(model));
         } else {
-            projectArtifact = new DefaultArtifact(currentProject.getGroupId(), currentProject.getArtifactId(), null, "pom",
-                    currentProject.getVersion());
+            projectArtifact = new DefaultArtifact(currentProject.getGroupId(), currentProject.getArtifactId(),
+                    ArtifactCoords.DEFAULT_CLASSIFIER, ArtifactCoords.TYPE_POM, currentProject.getVersion());
         }
 
-        final List<RemoteRepository> rawRepos;
+        final RepositorySystem repoSystem = getRepositorySystem();
+        final RepositorySystemSession repoSession = getRepositorySystemSession();
         try {
-            rawRepos = getRepositorySystem()
-                    .readArtifactDescriptor(getRepositorySystemSession(), new ArtifactDescriptorRequest()
+            return repoSystem
+                    .readArtifactDescriptor(repoSession, new ArtifactDescriptorRequest()
                             .setArtifact(projectArtifact)
                             .setRepositories(repos))
                     .getRepositories();
         } catch (ArtifactDescriptorException e) {
             throw new BootstrapMavenException("Failed to read artifact descriptor for " + projectArtifact, e);
         }
-
-        return getRepositorySystem().newResolutionRepositories(getRepositorySystemSession(), rawRepos);
     }
 
     public List<org.apache.maven.model.Profile> getActiveSettingsProfiles()
@@ -583,23 +743,16 @@ public class BootstrapMavenContext {
         }
 
         final Settings settings = getEffectiveSettings();
-        final int profilesTotal = settings.getProfiles().size();
-        if (profilesTotal == 0) {
-            return Collections.emptyList();
-        }
-        List<org.apache.maven.model.Profile> modelProfiles = new ArrayList<>(profilesTotal);
-        for (Profile profile : settings.getProfiles()) {
-            modelProfiles.add(SettingsUtils.convertFromSettingsProfile(profile));
+        final List<Profile> allSettingsProfiles = settings.getProfiles();
+        if (allSettingsProfiles.isEmpty()) {
+            return activeSettingsProfiles = List.of();
         }
 
         final BootstrapMavenOptions mvnArgs = getCliOptions();
-        List<String> activeProfiles = mvnArgs.getActiveProfileIds();
-        final List<String> inactiveProfiles = mvnArgs.getInactiveProfileIds();
-
         final Path currentPom = getCurrentProjectPomOrNull();
         final DefaultProfileActivationContext context = new DefaultProfileActivationContext()
-                .setActiveProfileIds(activeProfiles)
-                .setInactiveProfileIds(inactiveProfiles)
+                .setActiveProfileIds(mvnArgs.getActiveProfileIds())
+                .setInactiveProfileIds(mvnArgs.getInactiveProfileIds())
                 .setSystemProperties(System.getProperties())
                 .setProjectDirectory(
                         currentPom == null ? getCurrentProjectBaseDir().toFile() : currentPom.getParent().toFile());
@@ -607,44 +760,45 @@ public class BootstrapMavenContext {
                 .addProfileActivator(new PropertyProfileActivator())
                 .addProfileActivator(new JdkVersionProfileActivator())
                 .addProfileActivator(new OperatingSystemProfileActivator())
-                .addProfileActivator(new FileProfileActivator().setPathTranslator(new DefaultPathTranslator()));
-        modelProfiles = profileSelector.getActiveProfiles(modelProfiles, context, new ModelProblemCollector() {
-            public void add(ModelProblemCollectorRequest req) {
-                log.error("Failed to activate a Maven profile: " + req.getMessage());
-            }
-        });
+                .addProfileActivator(createFileProfileActivator());
+        List<org.apache.maven.model.Profile> selectedProfiles = profileSelector
+                .getActiveProfiles(toModelProfiles(allSettingsProfiles), context, new ModelProblemCollector() {
+                    public void add(ModelProblemCollectorRequest req) {
+                        log.error("Failed to activate a Maven profile: " + req.getMessage());
+                    }
+                });
 
-        activeProfiles = settings.getActiveProfiles();
-        if (!activeProfiles.isEmpty()) {
-            for (String profileName : activeProfiles) {
-                final Profile profile = getProfile(profileName, settings);
-                if (profile != null) {
-                    modelProfiles.add(SettingsUtils.convertFromSettingsProfile(profile));
+        if (!settings.getActiveProfiles().isEmpty()) {
+            final Set<String> activeProfiles = new HashSet<>(settings.getActiveProfiles());
+            // remove already activated to avoid duplicates
+            selectedProfiles.forEach(p -> activeProfiles.remove(p.getId()));
+            if (!activeProfiles.isEmpty()) {
+                final List<org.apache.maven.model.Profile> allActiveProfiles = new ArrayList<>(
+                        selectedProfiles.size() + activeProfiles.size());
+                allActiveProfiles.addAll(selectedProfiles);
+                for (Profile profile : allSettingsProfiles) {
+                    if (activeProfiles.contains(profile.getId())) {
+                        allActiveProfiles.add(SettingsUtils.convertFromSettingsProfile(profile));
+                    }
                 }
+                selectedProfiles = allActiveProfiles;
             }
         }
-        return activeSettingsProfiles = modelProfiles;
+        return activeSettingsProfiles = selectedProfiles;
     }
 
-    private static Profile getProfile(String name, Settings settings) throws BootstrapMavenException {
-        final Profile profile = settings.getProfilesAsMap().get(name);
-        if (profile == null) {
-            unrecognizedProfile(name, true);
+    private static List<org.apache.maven.model.Profile> toModelProfiles(List<Profile> profiles) {
+        final List<org.apache.maven.model.Profile> result = new ArrayList<>(profiles.size());
+        for (Profile p : profiles) {
+            result.add(SettingsUtils.convertFromSettingsProfile(p));
         }
-        return profile;
-    }
-
-    private static void unrecognizedProfile(String name, boolean activate) {
-        final StringBuilder buf = new StringBuilder();
-        buf.append("The requested Maven profile \"").append(name).append("\" could not be ");
-        if (!activate) {
-            buf.append("de");
-        }
-        buf.append("activated because it does not exist.");
-        log.warn(buf.toString());
+        return result;
     }
 
     private static boolean includesDefaultRepo(List<RemoteRepository> repositories) {
+        if (repositories.isEmpty()) {
+            return false;
+        }
         for (ArtifactRepository repository : repositories) {
             if (repository.getId().equals(DEFAULT_REMOTE_REPO_ID)) {
                 return true;
@@ -672,10 +826,14 @@ public class BootstrapMavenContext {
 
     private static RepositoryPolicy toAetherRepoPolicy(org.apache.maven.model.RepositoryPolicy modelPolicy) {
         return new RepositoryPolicy(modelPolicy.isEnabled(),
-                StringUtils.isEmpty(modelPolicy.getUpdatePolicy()) ? RepositoryPolicy.UPDATE_POLICY_DAILY
+                isEmpty(modelPolicy.getUpdatePolicy()) ? RepositoryPolicy.UPDATE_POLICY_DAILY
                         : modelPolicy.getUpdatePolicy(),
-                StringUtils.isEmpty(modelPolicy.getChecksumPolicy()) ? RepositoryPolicy.CHECKSUM_POLICY_WARN
+                isEmpty(modelPolicy.getChecksumPolicy()) ? RepositoryPolicy.CHECKSUM_POLICY_WARN
                         : modelPolicy.getChecksumPolicy());
+    }
+
+    private static boolean isEmpty(final CharSequence cs) {
+        return cs == null || cs.length() == 0;
     }
 
     /**
@@ -698,35 +856,28 @@ public class BootstrapMavenContext {
         return new Proxy(proxy.getProtocol(), proxy.getHost(), proxy.getPort(), auth);
     }
 
-    private RepositorySystem newRepositorySystem() throws BootstrapMavenException {
-        final DefaultServiceLocator locator = getServiceLocator();
-        if (!isOffline()) {
-            locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
-            locator.addService(TransporterFactory.class, WagonTransporterFactory.class);
-            locator.setServices(WagonConfigurator.class, new BootstrapWagonConfigurator());
-            locator.setServices(WagonProvider.class, new BootstrapWagonProvider());
+    private void initRepoSystemAndManager() {
+        final MavenFactory factory = configureMavenFactory();
+        if (repoSystem == null) {
+            repoSystem = factory.getRepositorySystem();
         }
-        locator.setServices(ModelBuilder.class, new MavenModelBuilder(this));
-        locator.setErrorHandler(new DefaultServiceLocator.ErrorHandler() {
-            @Override
-            public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
-                log.error("Failed to initialize " + impl.getName() + " as a service implementing " + type.getName(), exception);
-            }
+        if (remoteRepoManager == null) {
+            remoteRepoManager = factory.getContainer().requireBean(RemoteRepositoryManager.class);
+        }
+        if (settingsDecrypter == null) {
+            settingsDecrypter = factory.getContainer().requireBean(SettingsDecrypter.class);
+        }
+    }
+
+    protected MavenFactory configureMavenFactory() {
+        return MavenFactory.create(RepositorySystem.class.getClassLoader(), builder -> {
+            builder.addBean(ModelBuilder.class).setSupplier(new BeanSupplier<ModelBuilder>() {
+                @Override
+                public ModelBuilder get(Scope scope) {
+                    return new MavenModelBuilder(BootstrapMavenContext.this);
+                }
+            }).setPriority(100).build();
         });
-        return locator.getService(RepositorySystem.class);
-    }
-
-    public RemoteRepositoryManager getRemoteRepositoryManager() {
-        if (remoteRepoManager != null) {
-            return remoteRepoManager;
-        }
-        final DefaultRemoteRepositoryManager remoteRepoManager = new DefaultRemoteRepositoryManager();
-        remoteRepoManager.initService(getServiceLocator());
-        return this.remoteRepoManager = remoteRepoManager;
-    }
-
-    private DefaultServiceLocator getServiceLocator() {
-        return serviceLocator == null ? serviceLocator = MavenRepositorySystemUtils.newServiceLocator() : serviceLocator;
     }
 
     private static String getUserAgent() {
@@ -780,14 +931,14 @@ public class BootstrapMavenContext {
             // check whether an alternate pom was provided as a CLI arg
             final String cliPomName = getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_POM_FILE);
             if (cliPomName != null) {
-                alternatePom = Paths.get(cliPomName);
+                alternatePom = Path.of(cliPomName);
             }
         }
 
         final String basedirProp = PropertyUtils.getProperty(BASEDIR);
         if (basedirProp != null) {
             // this is the actual current project dir
-            return getPomForDirOrNull(Paths.get(basedirProp), alternatePom);
+            return getPomForDirOrNull(Path.of(basedirProp), alternatePom);
         }
 
         // we are not in the context of a Maven build
@@ -796,35 +947,32 @@ public class BootstrapMavenContext {
         }
 
         // trying the current dir as the basedir
-        final Path basedir = Paths.get("").normalize().toAbsolutePath();
+        final Path basedir = Path.of("").normalize().toAbsolutePath();
         if (alternatePom != null) {
             return pomXmlOrNull(basedir.resolve(alternatePom));
         }
-        final Path pom = basedir.resolve("pom.xml");
+        final Path pom = basedir.resolve(LocalProject.POM_XML);
         return Files.exists(pom) ? pom : null;
     }
 
     static Path getPomForDirOrNull(final Path basedir, Path alternatePom) {
-        // if the basedir matches the parent of the alternate pom, it's the alternate pom
-        if (alternatePom != null
-                && alternatePom.isAbsolute()
-                && alternatePom.getParent().equals(basedir)) {
-            return alternatePom;
-        }
-        // even if the alternate pom has been specified we try the default pom.xml first
-        // since unlike Maven CLI we don't know which project originated the build
-        Path pom = basedir.resolve("pom.xml");
-        if (Files.exists(pom)) {
-            return pom;
+        if (alternatePom != null) {
+            if (alternatePom.getNameCount() == 1 || basedir.endsWith(alternatePom.getParent())) {
+                if (alternatePom.isAbsolute()) {
+                    // if the basedir matches the parent of the alternate pom, it's the alternate pom
+                    return alternatePom;
+                }
+                // if the basedir ends with the alternate POM parent relative path, we can try it as the base dir
+                final Path pom = basedir.resolve(alternatePom.getFileName());
+                if (Files.exists(pom)) {
+                    return pom;
+                }
+            }
         }
 
-        // if alternate pom path has a single element we can try it
-        // if it has more, it won't match the basedir
-        if (alternatePom != null && !alternatePom.isAbsolute() && alternatePom.getNameCount() == 1) {
-            pom = basedir.resolve(alternatePom);
-            if (Files.exists(pom)) {
-                return pom;
-            }
+        final Path pom = basedir.resolve(LocalProject.POM_XML);
+        if (Files.exists(pom)) {
+            return pom;
         }
 
         // give up
@@ -833,7 +981,7 @@ public class BootstrapMavenContext {
 
     private static Path pomXmlOrNull(Path path) {
         if (Files.isDirectory(path)) {
-            path = path.resolve("pom.xml");
+            path = path.resolve(LocalProject.POM_XML);
         }
         return Files.exists(path) ? path : null;
     }
@@ -843,7 +991,7 @@ public class BootstrapMavenContext {
             return currentProject.getDir();
         }
         final String basedirProp = PropertyUtils.getProperty(BASEDIR);
-        return basedirProp == null ? Paths.get("").normalize().toAbsolutePath() : Paths.get(basedirProp);
+        return basedirProp == null ? Path.of("").normalize().toAbsolutePath() : Paths.get(basedirProp);
     }
 
     public Path getRootProjectBaseDir() {
@@ -864,5 +1012,111 @@ public class BootstrapMavenContext {
             effectiveModelBuilder = s == null ? false : Boolean.parseBoolean(s);
         }
         return effectiveModelBuilder;
+    }
+
+    public boolean isWorkspaceModuleParentHierarchy() {
+        return wsModuleParentHierarchy == null ? false : wsModuleParentHierarchy;
+    }
+
+    static final String BOOTSTRAP_MAVEN_REPOS = "BOOTSTRAP_MAVEN_REPOS";
+    static final String BOOTSTRAP_MAVEN_REPO_PREFIX = "BOOTSTRAP_MAVEN_REPO_";
+    static final String URL_SUFFIX = "_URL";
+    static final String SNAPSHOT_SUFFIX = "_SNAPSHOT";
+    static final String RELEASE_SUFFIX = "_RELEASE";
+
+    static void readMavenReposFromEnv(List<RemoteRepository> repos, Map<String, String> env) {
+        final String envRepos = env.get(BOOTSTRAP_MAVEN_REPOS);
+        if (envRepos == null || envRepos.isBlank()) {
+            return;
+        }
+        final StringBuilder buf = new StringBuilder();
+        for (int i = 0; i < envRepos.length(); ++i) {
+            final char c = envRepos.charAt(i);
+            if (c == ',') {
+                initMavenRepoFromEnv(envRepos, buf.toString(), env, repos);
+                buf.setLength(0);
+            } else {
+                buf.append(c);
+            }
+        }
+        if (buf.length() > 0) {
+            initMavenRepoFromEnv(envRepos, buf.toString(), env, repos);
+        }
+    }
+
+    private static void initMavenRepoFromEnv(String envRepos, String repoId, Map<String, String> env,
+            List<RemoteRepository> repos) {
+        final String envRepoId = toEnvVarPart(repoId);
+        String repoUrl = null;
+        boolean snapshot = true;
+        boolean release = true;
+        for (Map.Entry<String, String> envvar : env.entrySet()) {
+            final String varName = envvar.getKey();
+            if (varName.startsWith(BOOTSTRAP_MAVEN_REPO_PREFIX)
+                    && varName.regionMatches(BOOTSTRAP_MAVEN_REPO_PREFIX.length(), envRepoId, 0, envRepoId.length())) {
+                if (isMavenRepoEnvVarOption(varName, repoId, URL_SUFFIX)) {
+                    repoUrl = envvar.getValue();
+                } else if (isMavenRepoEnvVarOption(varName, repoId, SNAPSHOT_SUFFIX)) {
+                    snapshot = Boolean.parseBoolean(envvar.getValue());
+                } else if (isMavenRepoEnvVarOption(varName, repoId, RELEASE_SUFFIX)) {
+                    release = Boolean.parseBoolean(envvar.getValue());
+                }
+            }
+        }
+        if (repoUrl == null || repoUrl.isBlank()) {
+            log.warn("Maven repository " + repoId + " listed in " + BOOTSTRAP_MAVEN_REPOS + "=" + envRepos
+                    + " was ignored because the corresponding " + BOOTSTRAP_MAVEN_REPO_PREFIX + envRepoId + URL_SUFFIX
+                    + " is missing");
+        } else {
+            final RemoteRepository.Builder repoBuilder = new RemoteRepository.Builder(repoId, "default", repoUrl);
+            if (!release) {
+                repoBuilder.setReleasePolicy(new RepositoryPolicy(false, RepositoryPolicy.UPDATE_POLICY_DAILY,
+                        RepositoryPolicy.CHECKSUM_POLICY_WARN));
+            }
+            if (!snapshot) {
+                repoBuilder.setSnapshotPolicy(new RepositoryPolicy(false, RepositoryPolicy.UPDATE_POLICY_DAILY,
+                        RepositoryPolicy.CHECKSUM_POLICY_WARN));
+            }
+            repos.add(repoBuilder.build());
+        }
+    }
+
+    private static String toEnvVarPart(String s) {
+        final StringBuilder buf = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); ++i) {
+            final char c = s.charAt(i);
+            if (c == '.' || c == '-') {
+                buf.append('_');
+            } else {
+                buf.append(Character.toUpperCase(c));
+            }
+        }
+        return buf.toString();
+    }
+
+    private static boolean isMavenRepoEnvVarOption(String varName, String repoId, String option) {
+        return varName.length() == BOOTSTRAP_MAVEN_REPO_PREFIX.length() + repoId.length() + option.length()
+                && varName.endsWith(option);
+    }
+
+    private static FileProfileActivator createFileProfileActivator() throws BootstrapMavenException {
+        var activator = new FileProfileActivator();
+        var translator = new DefaultPathTranslator();
+        try {
+            var pathInterpolator = new ProfileActivationFilePathInterpolator();
+            pathInterpolator.setPathTranslator(translator);
+            activator.setProfileActivationFilePathInterpolator(pathInterpolator);
+        } catch (NoClassDefFoundError e) {
+            // ProfileActivationFilePathInterpolator not found; Maven < 3.8.5 (https://github.com/apache/maven/pull/649)
+            try {
+                activator.getClass().getMethod("setPathTranslator", org.apache.maven.model.path.PathTranslator.class)
+                        .invoke(activator, translator);
+            } catch (ReflectiveOperationException reflectionExc) {
+                throw new BootstrapMavenException(
+                        "Failed to set up DefaultPathTranslator for Maven < 3.8.5 DefaultPathTranslator",
+                        reflectionExc);
+            }
+        }
+        return activator;
     }
 }

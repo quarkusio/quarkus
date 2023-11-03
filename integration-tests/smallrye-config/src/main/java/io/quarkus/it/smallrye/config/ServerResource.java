@@ -1,15 +1,20 @@
 package io.quarkus.it.smallrye.config;
 
-import javax.inject.Inject;
-import javax.json.Json;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObjectBuilder;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
+import java.lang.reflect.Method;
+import java.util.List;
+
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.json.Json;
+import jakarta.json.JsonArrayBuilder;
+import jakarta.json.JsonObjectBuilder;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.smallrye.config.ConfigValidationException;
 import io.smallrye.config.SmallRyeConfig;
@@ -23,10 +28,23 @@ public class ServerResource {
     @Inject
     @ConfigProperties
     ServerProperties serverProperties;
+    @Inject
+    @ConfigProperty(name = "server.info.message")
+    Instance<String> message;
+    @Inject
+    @ConfigProperty(name = "http.server.form.positions")
+    List<Integer> positions;
 
     @GET
     public Response getServer() {
         return Response.ok(server).build();
+    }
+
+    @GET
+    @Path("/host")
+    public Response getServerHost() throws Exception {
+        Method method = server.getClass().getDeclaredMethod("host");
+        return Response.ok(method.invoke(server)).build();
     }
 
     @GET
@@ -53,5 +71,17 @@ public class ServerResource {
         }
 
         return Response.serverError().build();
+    }
+
+    @GET
+    @Path("/info")
+    public String info() {
+        return message.get();
+    }
+
+    @GET
+    @Path("/positions")
+    public List<Integer> positions() {
+        return positions;
     }
 }

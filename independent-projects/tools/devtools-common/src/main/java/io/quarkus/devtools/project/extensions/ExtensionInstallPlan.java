@@ -1,11 +1,12 @@
 package io.quarkus.devtools.project.extensions;
 
-import io.quarkus.maven.ArtifactCoords;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 public class ExtensionInstallPlan {
 

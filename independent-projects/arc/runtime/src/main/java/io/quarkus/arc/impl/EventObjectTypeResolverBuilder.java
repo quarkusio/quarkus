@@ -1,5 +1,8 @@
 package io.quarkus.arc.impl;
 
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -77,8 +80,8 @@ class EventObjectTypeResolverBuilder {
         if (type1 instanceof TypeVariable<?>) {
             resolveTypeVariables((TypeVariable<?>) type1, type2);
         }
-        if (type1 instanceof ParameterizedType) {
-            resolveTypeVariables((ParameterizedType) type1, type2);
+        if (isParameterizedType(type1)) {
+            resolveTypeVariables(asParameterizedType(type1), type2);
         }
     }
 
@@ -91,9 +94,9 @@ class EventObjectTypeResolverBuilder {
     }
 
     protected void resolveTypeVariables(ParameterizedType type1, Type type2) {
-        if (type2 instanceof ParameterizedType) {
+        if (isParameterizedType(type2)) {
             Type[] type1Arguments = type1.getActualTypeArguments();
-            Type[] type2Arguments = ((ParameterizedType) type2).getActualTypeArguments();
+            Type[] type2Arguments = asParameterizedType(type2).getActualTypeArguments();
             if (type1Arguments.length == type2Arguments.length) {
                 for (int i = 0; i < type1Arguments.length; i++) {
                     resolveTypeVariables(type1Arguments[i], type2Arguments[i]);

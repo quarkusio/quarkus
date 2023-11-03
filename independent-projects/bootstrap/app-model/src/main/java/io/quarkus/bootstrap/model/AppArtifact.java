@@ -3,29 +3,58 @@ package io.quarkus.bootstrap.model;
 import java.io.Serializable;
 import java.nio.file.Path;
 
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.paths.PathCollection;
+import io.quarkus.paths.PathList;
+
 /**
  * Represents an application (or its dependency) artifact.
  *
  * @author Alexey Loubyansky
  */
-public class AppArtifact extends AppArtifactCoords implements Serializable {
+public class AppArtifact extends AppArtifactCoords implements ResolvedDependency, Serializable {
+
+    private static final long serialVersionUID = -6226544163467103712L;
 
     protected PathsCollection paths;
+    private final WorkspaceModule module;
+    private final String scope;
+    private final int flags;
 
     public AppArtifact(AppArtifactCoords coords) {
-        this(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType(), coords.getVersion());
+        this(coords, null);
+    }
+
+    public AppArtifact(AppArtifactCoords coords, WorkspaceModule module) {
+        this(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType(), coords.getVersion(),
+                module, "compile", 0);
     }
 
     public AppArtifact(String groupId, String artifactId, String version) {
         super(groupId, artifactId, version);
+        module = null;
+        scope = "compile";
+        flags = 0;
     }
 
     public AppArtifact(String groupId, String artifactId, String classifier, String type, String version) {
         super(groupId, artifactId, classifier, type, version);
+        module = null;
+        scope = "compile";
+        flags = 0;
+    }
+
+    public AppArtifact(String groupId, String artifactId, String classifier, String type, String version,
+            WorkspaceModule module, String scope, int flags) {
+        super(groupId, artifactId, classifier, type, version);
+        this.module = module;
+        this.scope = scope;
+        this.flags = flags;
     }
 
     /**
-     * @deprecated in favor of {@link #getPaths()}
+     * @deprecated in favor of {@link #getResolvedPaths()}
      */
     @Deprecated
     public Path getPath() {
@@ -68,7 +97,28 @@ public class AppArtifact extends AppArtifactCoords implements Serializable {
      *
      * @return true if the artifact has been resolved, otherwise - false
      */
+    @Override
     public boolean isResolved() {
         return paths != null && !paths.isEmpty();
+    }
+
+    @Override
+    public PathCollection getResolvedPaths() {
+        return paths == null ? null : PathList.from(paths);
+    }
+
+    @Override
+    public WorkspaceModule getWorkspaceModule() {
+        return module;
+    }
+
+    @Override
+    public String getScope() {
+        return scope;
+    }
+
+    @Override
+    public int getFlags() {
+        return flags;
     }
 }

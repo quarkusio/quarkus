@@ -3,9 +3,10 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-parent</artifactId>
         <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-project</artifactId>
         <version>999-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -18,107 +19,122 @@
         <!-- Maven plugin versions -->
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
-        <!-- Quarkus uses jboss-parent and it comes with 3.8.1-jboss-1, we don't want that in the templates -->
-        <compiler-plugin.version>3.8.1</compiler-plugin.version>
-        <kotlin.version>1.5.20</kotlin.version>
-        <dokka.version>1.4.32</dokka.version>
-        <scala.version>2.12.13</scala.version>
-        <scala-maven-plugin.version>4.4.0</scala-maven-plugin.version>
+        <compiler-plugin.version>3.11.0</compiler-plugin.version>
+        <kotlin.version>1.9.10</kotlin.version>
+        <dokka.version>1.9.0</dokka.version>
+        <scala.version>2.13.8</scala.version>
+        <scala-maven-plugin.version>4.8.1</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
 
-        <!-- version.* properties are defined in jboss-parent and are overridden/updated here: -->
-        <version.enforcer.plugin>3.0.0-M3</version.enforcer.plugin>
-        <version.surefire.plugin>3.0.0-M5</version.surefire.plugin>
+        <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
+        <version.surefire.plugin>3.1.2</version.surefire.plugin>
         <version.exec.plugin>3.0.0</version.exec.plugin>
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
-        <!-- These properties are needed in order for them to be resolvable by the documentation -->
-        <!-- The Graal version we suggest using in documentation - as that's
-           what we work with by self downloading it: -->
-        <graal-sdk.version-for-documentation>21.1.0</graal-sdk.version-for-documentation>
-        <mandrel.version-for-documentation>21.0</mandrel.version-for-documentation>
+        <!-- Jandex versions -->
+        <jandex.version>3.1.5</jandex.version>
+        <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
-        <htmlunit.version>2.40.0</htmlunit.version>
-        <subethasmtp.version>3.1.7</subethasmtp.version>
+        <asciidoctorj.version>2.5.10</asciidoctorj.version>
+        <htmlunit.version>2.70.0</htmlunit.version>
+        <javaparser-core.version>3.25.5</javaparser-core.version>
+        <jdeparser.version>2.0.3.Final</jdeparser.version>
+        <subethasmtp.version>6.0.1</subethasmtp.version>
 
         <!-- Dev tools -->
-        <freemarker.version>2.3.31</freemarker.version>
+        <freemarker.version>2.3.32</freemarker.version>
+        <commonmark.version>0.21.0</commonmark.version>
 
         <!-- Arquillian BOM -->
-        <arquillian.version>1.5.0.Final</arquillian.version>
+        <arquillian.version>1.7.0.Final</arquillian.version>
 
         <!-- Enable APT by default for Eclipse -->
         <m2e.apt.activation>jdt_apt</m2e.apt.activation>
 
+        <!-- These 2 properties are used in catalog-overrides.json -->
+        <minimum-java-version>${maven.compiler.release}</minimum-java-version>
+        <recommended-java-version>17</recommended-java-version>
+
         <!--
-        Supported Maven versions, interpreted as a version range
+        Supported Maven versions, interpreted as a version range (Also defined in quarkus-enforcer-rules)
          -->
-        <supported-maven-versions>[3.6.2,)</supported-maven-versions>
+        <supported-maven-versions>[3.8.2,)</supported-maven-versions>
 
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.8.1</proposed-maven-version>
-        <maven-wrapper.version>0.7.7</maven-wrapper.version>
-        <gradle-wrapper.version>6.9</gradle-wrapper.version>
+        <proposed-maven-version>3.9.5</proposed-maven-version>
+        <maven-wrapper.version>3.2.0</maven-wrapper.version>
+        <gradle-wrapper.version>8.4</gradle-wrapper.version>
+        <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
+        <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
+        <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
 
-        <!-- MicroProfile TCK versions -->
-        <microprofile-health-api.version>3.1</microprofile-health-api.version>
-        <microprofile-config-api.version>2.0</microprofile-config-api.version>
-        <microprofile-metrics-api.version>3.0</microprofile-metrics-api.version>
-        <microprofile-fault-tolerance-api.version>3.0</microprofile-fault-tolerance-api.version>
-        <microprofile-reactive-messaging-api.version>2.0</microprofile-reactive-messaging-api.version>
-        <microprofile-rest-client-api.version>2.0</microprofile-rest-client-api.version>
-        <microprofile-open-api.version>2.0.1-RC1</microprofile-open-api.version>
-        <microprofile-opentracing-api.version>2.0</microprofile-opentracing-api.version>
-        <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>
-        <microprofile-jwt-api.version>1.2</microprofile-jwt-api.version>
-        <microprofile-graphql-api.version>1.1.0</microprofile-graphql-api.version>
+        <!-- MicroProfile TCK versions used to be defined here but have moved to the concrete tck modules -->
 
-        <!-- Antlr is used by the PanacheQL parser-->
-        <antlr.version>4.8</antlr.version>
+        <!-- Antlr 4 is used by the PanacheQL parser but also needs to match the requirements of Hibernate ORM 6.x-->
+        <antlr.version>4.10.1</antlr.version>
+
+        <!-- SELinux access label, used when mounting local volumes into containers in tests -->
+        <volume.access.modifier>:Z</volume.access.modifier>
 
         <!-- Defaults for integration tests -->
-        <elasticsearch-server.version>7.10.0</elasticsearch-server.version>
-        <elasticsearch.image>docker.elastic.co/elasticsearch/elasticsearch-oss:${elasticsearch-server.version}</elasticsearch.image>
+        <elasticsearch-server.version>8.9.1</elasticsearch-server.version>
+        <elasticsearch.image>docker.io/elastic/elasticsearch:${elasticsearch-server.version}</elasticsearch.image>
+        <logstash.image>docker.io/elastic/logstash:${elasticsearch-server.version}</logstash.image>
+        <kibana.image>docker.io/elastic/kibana:${elasticsearch-server.version}</kibana.image>
         <elasticsearch.protocol>http</elasticsearch.protocol>
+        <opensearch-server.version>2.9.0</opensearch-server.version>
+        <opensearch.image>docker.io/opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
+        <opensearch.protocol>http</opensearch.protocol>
+
+        <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
+        <postgres.image>docker.io/postgres:14</postgres.image>
+        <mariadb.image>docker.io/mariadb:10.11</mariadb.image>
+        <db2.image>docker.io/ibmcom/db2:11.5.7.0a</db2.image>
+        <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
+        <mysql.image>docker.io/mysql:8.0</mysql.image>
+        <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
+        <mongo.image>docker.io/mongo:4.4</mongo.image>
 
         <!-- Align various dependencies that are not really part of the bom-->
-        <findbugs.version>3.0.2</findbugs.version>
-        <jsoup.version>1.12.1</jsoup.version>
-        <wagon-provider-api.version>3.4.3</wagon-provider-api.version>
+        <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml to match the version -->
-        <keycloak.docker.image>quay.io/keycloak/keycloak:14.0.0</keycloak.docker.image>
+        <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
+        <keycloak.version>22.0.5</keycloak.version>
+        <keycloak.wildfly.version>19.0.3</keycloak.wildfly.version>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
+        <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
 
-        <unboundid-ldap.version>4.0.13</unboundid-ldap.version>
+        <unboundid-ldap.version>6.0.9</unboundid-ldap.version>
 
-        <wiremock-jre8.version>2.27.2</wiremock-jre8.version>
-        <wiremock-maven-plugin.version>7.0.0</wiremock-maven-plugin.version>
+        <assertj.version>3.24.2</assertj.version>
+
+        <wiremock.version>3.2.0</wiremock.version>
+        <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
+
+        <!-- Artemis test dependencies -->
+        <artemis.version>2.31.0</artemis.version>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
-        <!-- Note: this version is also set in quarkus-bom but BOMs don't contribute to pluginManagement or properties -->
-        <jacoco.version>0.8.7</jacoco.version>
 
+        <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
+        <docker-maven-plugin.version>0.43.4</docker-maven-plugin.version>
+        <formatter-maven-plugin.version>2.23.0</formatter-maven-plugin.version>
+        <impsort-maven-plugin.version>1.9.0</impsort-maven-plugin.version>
+        <maven-invoker-plugin.version>3.6.0</maven-invoker-plugin.version>
+        <maven-resources-plugin.version>3.1.0</maven-resources-plugin.version>
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
-
-        <!--TODO: remove when switched back to quarkus-maven-plugin for grpc stubs-->
-        <protoc.version>3.14.0</protoc.version> <!--keep in sync with the BOM-->
-        <grpc.version>1.35.0</grpc.version> <!--keep in sync with the BOM -->
-
-        <!-- Webjars -->
-        <webjar.bootstrap.version>4.6.0</webjar.bootstrap.version>
-        <webjar.font-awesome.version>5.15.2</webjar.font-awesome.version>
-        <webjar.jquery.version>3.5.1</webjar.jquery.version>
+        <truststore-maven-plugin.version>3.0.0</truststore-maven-plugin.version>
 
         <!-- revapi API check -->
-        <revapi-maven-plugin.version>0.12.1</revapi-maven-plugin.version>
-        <revapi-java-plugin.version>0.22.0</revapi-java-plugin.version>
-        <build-helper-plugin.version>1.9.1</build-helper-plugin.version>
-        <revapi-reporter-text.version>0.12.1</revapi-reporter-text.version>
-        <revapi-reporter-json.version>0.2.1</revapi-reporter-json.version>
-         <!-- Latest release to be used by api-compatibility-check to check backwards compatibility of the Quarkus API. -->
+        <revapi-maven-plugin.version>0.14.7</revapi-maven-plugin.version>
+        <revapi-java-plugin.version>0.26.1</revapi-java-plugin.version>
+        <build-helper-plugin.version>3.4.0</build-helper-plugin.version>
+        <revapi-reporter-text.version>0.14.5</revapi-reporter-text.version>
+        <revapi-reporter-json.version>0.4.5</revapi-reporter-json.version>
+        <!-- Latest release to be used by api-compatibility-check to check backwards compatibility of the Quarkus API. -->
         <revapi.oldVersion>1.6.0.Final</revapi.oldVersion>
         <revapi.newVersion>${project.version}</revapi.newVersion>
         <!-- severity Possible values: equivalent, nonBreaking, potentiallyBreaking, breaking -->
@@ -126,13 +142,15 @@
         <!-- Skip the API checks by default. Let the modules opt in. -->
         <revapi.skip>true</revapi.skip>
         <!-- By default don't check dependencies -->
-        <revapi.checkdeps>false</revapi.checkdeps>
+        <revapi.checkdeps>true</revapi.checkdeps>
+        <!-- The message that is appended to the end of the plugin error output when the API problems fail the build -->
+        <revapi.buildFailureMessage>Run "jbang revapi-update" to update api-changes.xml file and also add the justification for those changes in that file.</revapi.buildFailureMessage>
 
         <!-- Forbidden API checks -->
-        <forbiddenapis-maven-plugin.version>3.1</forbiddenapis-maven-plugin.version>
+        <forbiddenapis-maven-plugin.version>3.4</forbiddenapis-maven-plugin.version>
 
         <!-- platform properties - this is a floating tag -->
-        <platform.quarkus.native.builder-image>quay.io/quarkus/ubi-quarkus-native-image:21.1-java11</platform.quarkus.native.builder-image>
+        <platform.quarkus.native.builder-image>mandrel</platform.quarkus.native.builder-image>
 
         <script.extension>sh</script.extension>
         <docker-prune.location>${maven.multiModuleProjectDirectory}/.github/docker-prune.${script.extension}</docker-prune.location>
@@ -140,6 +158,37 @@
         <enforce-test-deps-scope.skip>${enforcer.skip}</enforce-test-deps-scope.skip>
 
         <surefire.argLine.additional></surefire.argLine.additional>
+        <failsafe.argLine.additional>${surefire.argLine.additional}</failsafe.argLine.additional>
+        <os-maven-plugin.version>1.7.0</os-maven-plugin.version>
+
+        <!-- google cloud functions invoker-->
+        <gcf-invoker.version>1.3.0</gcf-invoker.version>
+        <!-- Jakarta JMS API -->
+        <jakarta.jms-api.version>3.1.0</jakarta.jms-api.version>
+
+        <!-- Quarkus Analytics -->
+        <properties-maven-plugin.version>1.1.0</properties-maven-plugin.version>
+        <quarkus.analytics.disabled>true</quarkus.analytics.disabled>
+
+        <!-- Dev UI -->
+        <vaadin.version>24.1.10</vaadin.version>
+        <lit.version>2.8.0</lit.version>
+        <lit-element.version>3.3.3</lit-element.version>
+        <lit-html.version>2.8.0</lit-html.version>
+        <ssr-dom-shim.version>1.1.1</ssr-dom-shim.version>
+        <trusted-types.version>2.0.4</trusted-types.version>
+        <reactive-element.version>1.6.3</reactive-element.version>
+        <vaadin-usage-statistics.version>2.1.2</vaadin-usage-statistics.version>
+        <vaadin-development-mode-detector.version>2.0.6</vaadin-development-mode-detector.version>
+        <polymer.version>3.5.1</polymer.version>
+        <shadycss.version>1.11.2</shadycss.version>
+        <dedupe-mixin.version>1.4.0</dedupe-mixin.version>
+        <vaadin-router.version>1.7.5</vaadin-router.version>
+        <lit-state.version>1.7.0</lit-state.version>
+        <echarts.version>5.4.3</echarts.version>
+        <wc-codemirror.version>2.1.0</wc-codemirror.version>
+        <es-module-shims.version>1.8.0</es-module-shims.version>
+        <path-to-regexp.version>2.4.0</path-to-regexp.version>
     </properties>
 
     <dependencyManagement>
@@ -157,34 +206,7 @@
             <!-- Dev tools -->
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-devtools-testing</artifactId>
-                <version>${project.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devmode-test-utils</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-devtools-utilities</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-devtools-common</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-project-core-extension-codestarts</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-project-core-extension-codestarts</artifactId>
-                <type>pom</type>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -192,8 +214,46 @@
                 <artifactId>freemarker</artifactId>
                 <version>${freemarker.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.commonmark</groupId>
+                <artifactId>commonmark</artifactId>
+                <version>${commonmark.version}</version>
+            </dependency>
+
+            <!-- Extension processor -->
+            <dependency>
+                <groupId>org.jboss.jdeparser</groupId>
+                <artifactId>jdeparser</artifactId>
+                <version>${jdeparser.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.javaparser</groupId>
+                <artifactId>javaparser-core</artifactId>
+                <version>${javaparser-core.version}</version>
+            </dependency>
 
             <!-- Miscellaneous -->
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-core</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-reactive-datasource-deployment</artifactId>
+                <version>${project.version}</version>
+                <scope>test</scope>
+                <type>test-jar</type>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+                <version>${project.version}</version>
+                <scope>test</scope>
+                <type>test-jar</type>
+            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-war-launcher-runner</artifactId>
@@ -205,62 +265,14 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.google.code.findbugs</groupId>
-                <artifactId>jsr305</artifactId>
-                <version>${findbugs.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jsoup</groupId>
-                <artifactId>jsoup</artifactId>
-                <version>${jsoup.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.maven.wagon</groupId>
-                <artifactId>wagon-provider-api</artifactId>
-                <version>${wagon-provider-api.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>com.unboundid</groupId>
                 <artifactId>unboundid-ldapsdk</artifactId>
                 <version>${unboundid-ldap.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.tomakehurst</groupId>
-                <artifactId>wiremock-jre8</artifactId>
-                <version>${wiremock-jre8.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>javax.servlet</groupId>
-                        <artifactId>javax.servlet-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>javax.xml.bind</groupId>
-                        <artifactId>jaxb-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.checkerframework</groupId>
-                        <artifactId>checker-qual</artifactId>
-                    </exclusion>
-                    <exclusion> <!-- fix dependencyConvergence clash with junit-jupiter -->
-                        <groupId>org.opentest4j</groupId>
-                        <artifactId>opentest4j</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.google.code.findbugs</groupId>
-                        <artifactId>jsr305</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-core</artifactId>
-                <version>${project.version}</version>
-                <type>test-jar</type>
-                <scope>test</scope>
+                <groupId>org.wiremock</groupId>
+                <artifactId>wiremock-standalone</artifactId>
+                <version>${wiremock.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
@@ -283,6 +295,24 @@
                 <version>${project.version}</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-core</artifactId>
+                <version>${assertj.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.asciidoctor</groupId>
+                <artifactId>asciidoctorj</artifactId>
+                <version>${asciidoctorj.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>javax.annotation</groupId>
+                        <artifactId>javax.annotation-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
 
             <dependency>
                 <groupId>net.sourceforge.htmlunit</groupId>
@@ -299,36 +329,329 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-
-            <!-- Webjars for UI related -->
             <dependency>
-                <groupId>org.webjars</groupId>
-                <artifactId>bootstrap</artifactId>
-                <version>${webjar.bootstrap.version}</version>
+                <groupId>jakarta.jms</groupId>
+                <artifactId>jakarta.jms-api</artifactId>
+                <version>${jakarta.jms-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.webjars</groupId>
-                <artifactId>font-awesome</artifactId>
-                <version>${webjar.font-awesome.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.webjars</groupId>
-                <artifactId>jquery</artifactId>
-                <version>${webjar.jquery.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.subethamail</groupId>
+                <groupId>com.github.davidmoten</groupId>
                 <artifactId>subethasmtp</artifactId>
                 <version>${subethasmtp.version}</version>
                 <scope>test</scope>
             </dependency>
+
+            <!-- Artemis test dependencies -->
+            <dependency>
+                <groupId>org.apache.activemq</groupId>
+                <artifactId>artemis-server</artifactId>
+                <version>${artemis.version}</version>
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.checkerframework</groupId>
+                        <artifactId>checker-qual</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.geronimo.specs</groupId>
+                        <artifactId>geronimo-json_1.0_spec</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.johnzon</groupId>
+                        <artifactId>johnzon-core</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.jboss.logmanager</groupId>
+                        <artifactId>jboss-logmanager</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.activemq</groupId>
+                <artifactId>artemis-amqp-protocol</artifactId>
+                <version>${artemis.version}</version>
+                <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.activemq</groupId>
+                        <artifactId>artemis-server</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <!-- Dev UI -->
+            <!-- Vaadin Router -->
+            <dependency>
+                <groupId>org.mvnpm.at.vaadin</groupId>
+                <artifactId>router</artifactId>
+                <version>${vaadin-router.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>path-to-regexp</artifactId>
+                <version>${path-to-regexp.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <!-- Vaadin Web components -->
+            <dependency>
+                <groupId>org.mvnpm.at.mvnpm</groupId>
+                <artifactId>vaadin-webcomponents</artifactId>
+                <version>${vaadin.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.vaadin</groupId>
+                <artifactId>vaadin-usage-statistics</artifactId>
+                <version>${vaadin-usage-statistics.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.vaadin</groupId>
+                <artifactId>vaadin-development-mode-detector</artifactId>
+                <version>${vaadin-development-mode-detector.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.polymer</groupId>
+                <artifactId>polymer</artifactId>
+                <version>${polymer.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.webcomponents</groupId>
+                <artifactId>shadycss</artifactId>
+                <version>${shadycss.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.open-wc</groupId>
+                <artifactId>dedupe-mixin</artifactId>
+                <version>${dedupe-mixin.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+
+            <!-- Lit -->
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>lit</artifactId>
+                <version>${lit.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.lit</groupId>
+                <artifactId>reactive-element</artifactId>
+                <version>${reactive-element.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>lit-element</artifactId>
+                <version>${lit-element.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>lit-html</artifactId>
+                <version>${lit-html.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.lit-labs</groupId>
+                <artifactId>ssr-dom-shim</artifactId>
+                <version>${ssr-dom-shim.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.types</groupId>
+                <artifactId>trusted-types</artifactId>
+                <version>${trusted-types.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>lit-element-state</artifactId>
+                <version>${lit-state.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+
+            <!-- Apache echarts -->
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>echarts</artifactId>
+                <version>${echarts.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+
+            <!-- hpcc-js Wasm / Graphviz and dependencies -->
+            <dependency>
+                <groupId>org.mvnpm.at.hpcc-js</groupId>
+                <artifactId>wasm</artifactId>
+                <version>2.14.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>yargs</artifactId>
+                <version>17.7.2</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>cliui</artifactId>
+                <version>8.0.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>escalade</artifactId>
+                <version>3.1.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>get-caller-file</artifactId>
+                <version>2.0.5</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>require-directory</artifactId>
+                <version>2.1.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>string-width</artifactId>
+                <version>4.2.3</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>y18n</artifactId>
+                <version>5.0.8</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>yargs-parser</artifactId>
+                <version>21.1.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>strip-ansi</artifactId>
+                <version>6.0.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>wrap-ansi</artifactId>
+                <version>7.0.0</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>emoji-regex</artifactId>
+                <version>8.0.0</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>is-fullwidth-code-point</artifactId>
+                <version>3.0.0</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>ansi-regex</artifactId>
+                <version>5.0.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>ansi-styles</artifactId>
+                <version>4.3.0</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>color-convert</artifactId>
+                <version>2.0.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>color-name</artifactId>
+                <version>1.1.4</version>
+                <scope>runtime</scope>
+            </dependency>
+
+            <!-- Code editor -->
+            <dependency>
+                <groupId>org.mvnpm.at.vanillawc</groupId>
+                <artifactId>wc-codemirror</artifactId>
+                <version>${wc-codemirror.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+
+            <!-- Polyfill for importmaps -->
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>es-module-shims</artifactId>
+                <version>${es-module-shims.version}</version>
+                <scope>runtime</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bom</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
 
     <build>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${compiler-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>properties-maven-plugin</artifactId>
+                    <version>${properties-maven-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>set-system-properties</goal>
+                            </goals>
+                            <configuration>
+                                <properties>
+                                    <property>
+                                        <name>quarkus.analytics.disabled</name>
+                                        <value>${quarkus.analytics.disabled}</value>
+                                    </property>
+                                </properties>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${version.surefire.plugin}</version>
@@ -339,13 +662,13 @@
                             <maven.home>${maven.home}</maven.home>
                             <maven.repo.local>${settings.localRepository}</maven.repo.local>
                             <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
-                            <project.version>${project.version}</project.version> <!-- some dev tools tests need this -->
+                            <!-- some dev tools tests need the following properties -->
+                            <project.version>${project.version}</project.version>
+                            <project.groupId>${project.groupId}</project.groupId>
                         </systemPropertyVariables>
                         <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
                         <!-- set tmpdir as early as possible because surefire sets it too late for JDK16 -->
                         <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional}</argLine>
-                        <!-- https://lists.apache.org/thread.html/r9030808273c82ac6d7b9602d34d446c7d8c4e8aa02c41bca164df1c5%40%3Cdev.maven.apache.org%3E -->
-                        <trimStackTrace>false</trimStackTrace>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                     </configuration>
                 </plugin>
@@ -358,12 +681,12 @@
                             <maven.home>${maven.home}</maven.home>
                             <maven.repo.local>${settings.localRepository}</maven.repo.local>
                             <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
-                            <project.version>${project.version}</project.version> <!-- some dev tools tests need this -->
+                            <!-- some dev tools tests need the following properties -->
+                            <project.version>${project.version}</project.version>
+                            <project.groupId>${project.groupId}</project.groupId>
                         </systemPropertyVariables>
                         <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
-                        <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
-                        <!-- https://lists.apache.org/thread.html/r9030808273c82ac6d7b9602d34d446c7d8c4e8aa02c41bca164df1c5%40%3Cdev.maven.apache.org%3E -->
-                        <trimStackTrace>false</trimStackTrace>
+                        <argLine>-Djava.io.tmpdir="${project.build.directory}" ${failsafe.argLine.additional}</argLine>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                     </configuration>
                 </plugin>
@@ -379,7 +702,7 @@
                 </plugin>
                 <plugin>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                    <artifactId>quarkus-extension-maven-plugin</artifactId>
                     <version>${project.version}</version>
                     <executions>
                         <execution>
@@ -398,111 +721,28 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-enforcer-plugin</artifactId>
+                    <dependencies>
+                        <dependency>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-enforcer-rules</artifactId>
+                            <version>${project.version}</version>
+                        </dependency>
+                    </dependencies>
                     <executions>
                         <execution>
                             <id>enforce</id>
                             <configuration>
                                 <rules>
                                     <dependencyConvergence/>
-                                    <requireJavaVersion>
-                                        <version>[${maven.compiler.release},)</version>
-                                    </requireJavaVersion>
-                                    <requireMavenVersion>
-                                        <version>${supported-maven-versions}</version>
-                                    </requireMavenVersion>
-                                    <bannedDependencies>
-                                        <excludes>
-                                            <!-- Use Jakarta artifacts instead of JBoss specific ones -->
-                                            <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec</exclude>
-                                            <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec</exclude>
-                                            <exclude>org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec</exclude>
-                                            <exclude>org.jboss.spec.javax.transaction:jboss-transaction-api_1.3_spec</exclude>
-                                            <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_4.0_spec</exclude>
-                                            <exclude>org.jboss.spec.javax.security.jacc:jboss-jacc-api_1.5_spec</exclude>
-                                            <exclude>org.jboss.spec.javax.security.auth.message:jboss-jaspi-api_1.1_spec</exclude>
-                                            <exclude>org.jboss.spec.javax.websocket:jboss-websocket-api_1.1_spec</exclude>
-                                            <exclude>org.jboss.spec.javax.interceptor:jboss-interceptors-api_1.2_spec</exclude>
-                                            <!-- except for these 2 for now as most of the RESTEasy optional artifacts depend on them
-                                            <exclude>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</exclude>
-                                            <exclude>org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec</exclude>
-                                            -->
-                                            <exclude>jakarta.xml.bind:jakarta.xml.bind-api</exclude>
-                                            <exclude>jakarta.ws.rs:jakarta.ws.rs-api</exclude>
-                                            <!-- Exclude javax dependencies in favor of Jakarta -->
-                                            <exclude>javax.activation:activation</exclude>
-                                            <exclude>javax.activation:javax.activation-api</exclude>
-                                            <exclude>javax.annotation:javax.annotation-api</exclude>
-                                            <exclude>javax.enterprise:cdi-api</exclude>
-                                            <exclude>javax.inject:javax.inject</exclude>
-                                            <exclude>javax.json:javax.json-api</exclude>
-                                            <exclude>javax.json.bind:javax.json.bind-api</exclude>
-                                            <exclude>org.glassfish:javax.json</exclude>
-                                            <exclude>org.glassfish:javax.el</exclude>
-                                            <exclude>javax.persistence:javax.persistence-api</exclude>
-                                            <exclude>javax.persistence:persistence-api</exclude>
-                                            <exclude>javax.security.enterprise:javax.security.enterprise-api</exclude>
-                                            <exclude>javax.servlet:servlet-api</exclude>
-                                            <exclude>javax.servlet:javax.servlet-api</exclude>
-                                            <exclude>javax.transaction:jta</exclude>
-                                            <exclude>javax.transaction:javax.transaction-api</exclude>
-                                            <exclude>javax.validation:validation-api</exclude>
-                                            <exclude>javax.xml.bind:jaxb-api</exclude>
-                                            <exclude>javax.websocket:javax.websocket-api</exclude>
-                                            <exclude>javax.ws.rs:javax.ws.rs-api</exclude>
-                                            <!-- use our jboss-logmanager -->
-                                            <exclude>org.jboss.logging:jboss-logmanager</exclude>
-                                            <exclude>org.jboss.logging:jboss-logging-jdk</exclude>
-                                            <!-- We don't want all the API's in one jar-->
-                                            <exclude>javax:javaee-api</exclude>
-                                            <!-- Prevent incompatible config from coming in -->
-                                            <exclude>org.wildfly.client:wildfly-client-config</exclude>
-                                            <exclude>org.jboss.marshalling:jboss-marshalling-osgi</exclude>
-                                            <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</exclude>
-                                            <!-- The API is packaged by the implementation-->
-                                            <exclude>jakarta.json:jakarta.json-api</exclude>
-                                            <!-- Ensure none of the deps use netty-all. This forces deps to use more fine grained netty artifacts -->
-                                            <exclude>io.netty:netty-all</exclude>
-                                            <!-- Ban jboss-logmanager, we use jboss-logmanager-embedded -->
-                                            <exclude>org.jboss.logmanager:jboss-logmanager</exclude>
-                                            <!-- Ban Log4J (use org.jboss.logmanager:log4j-jboss-logmanager instead) -->
-                                            <exclude>log4j:log4j</exclude>
-                                            <exclude>org.apache.logging.log4j:log4j-core</exclude>
-                                            <exclude>org.apache.logging.log4j:log4j-slf4j-impl</exclude>
-                                            <!-- Ban commons-logging (use org.jboss.logging:commons-logging-jboss-logging instead) -->
-                                            <exclude>commons-logging:commons-logging</exclude>
-                                            <exclude>commons-logging:commons-logging-api</exclude>
-                                            <exclude>org.springframework:spring-jcl</exclude>
-                                            <exclude>org.slf4j:jcl-over-slf4j</exclude>
-                                            <!-- Ban SLF4j implementations (use org.jboss.slf4j:slf4j-jboss-logmanager instead) -->
-                                            <exclude>org.jboss.slf4j:slf4j-jboss-logging</exclude>
-                                            <exclude>org.slf4j:slf4j-simple</exclude>
-                                            <exclude>org.slf4j:slf4j-nop</exclude>
-                                            <exclude>org.slf4j:slf4j-jdk14</exclude>
-                                            <exclude>org.slf4j:slf4j-log4j12</exclude>
-                                            <exclude>org.slf4j:slf4j-log4j13</exclude>
-                                            <exclude>org.osgi:org.osgi.annotation.versioning</exclude>
-                                            <!-- Ban Spring Dependencies (since we have our own jars)-->
-                                            <exclude>org.springframework:spring-core</exclude>
-                                            <exclude>org.springframework:spring-beans</exclude>
-                                            <exclude>org.springframework:spring-context</exclude>
-                                            <exclude>org.springframework:spring-web</exclude>
-                                            <exclude>org.springframework:spring-webmvc</exclude>
-                                            <exclude>org.springframework.data:spring-data-jpa</exclude>
-                                            <exclude>org.springframework.data:spring-data-commons</exclude>
-                                            <exclude>org.springframework.security:spring-security-core</exclude>
-                                            <exclude>org.springframework.boot:spring-boot</exclude>
-                                            <!-- Ban checker-qual, we don't use Checker Framework -->
-                                            <exclude>org.checkerframework:checker-qual</exclude>
-                                            <!-- We use our own impl here, including this one causes problems-->
-                                            <exclude>org.jboss.resteasy:resteasy-context-propagation</exclude>
-                                            <exclude>com.google.android:annotations</exclude>
-                                            <exclude>org.codehaus.mojo:animal-sniffer-annotations</exclude>
-                                        </excludes>
-                                        <includes>
-                                            <!-- this is for REST Assured -->
-                                            <include>jakarta.xml.bind:jakarta.xml.bind-api:*:*:test</include>
-                                        </includes>
-                                    </bannedDependencies>
+                                    <externalRules>
+                                        <location>classpath:enforcer-rules/quarkus-require-java-version.xml</location>
+                                    </externalRules>
+                                    <externalRules>
+                                        <location>classpath:enforcer-rules/quarkus-require-maven-version.xml</location>
+                                    </externalRules>
+                                    <externalRules>
+                                        <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                                    </externalRules>
                                 </rules>
                             </configuration>
                             <goals>
@@ -561,7 +801,7 @@
                 <plugin>
                     <groupId>io.fabric8</groupId>
                     <artifactId>docker-maven-plugin</artifactId>
-                    <version>0.31.0</version>
+                    <version>${docker-maven-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>
@@ -572,24 +812,24 @@
                     </configuration>
                 </plugin>
                 <plugin>
-                    <groupId>org.jboss.jandex</groupId>
+                    <groupId>io.smallrye</groupId>
                     <artifactId>jandex-maven-plugin</artifactId>
-                    <version>1.1.0</version>
+                    <version>${jandex.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.16.0</version>
+                    <version>${formatter-maven-plugin.version}</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
                             <groupId>io.quarkus</groupId>
                             <version>${project.version}</version>
                         </dependency>
-                      </dependencies>
+                    </dependencies>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
-                        <cachedir>.cache</cachedir>
+                        <cachedir>.cache/formatter-maven-plugin-${formatter-maven-plugin.version}</cachedir>
                         <configFile>eclipse-format.xml</configFile>
                         <lineEnding>LF</lineEnding>
                         <skip>${format.skip}</skip>
@@ -598,24 +838,30 @@
                 <plugin>
                     <groupId>net.revelc.code</groupId>
                     <artifactId>impsort-maven-plugin</artifactId>
-                    <version>1.6.2</version>
+                    <version>${impsort-maven-plugin.version}</version>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
-                        <cachedir>.cache</cachedir>
-                        <groups>java.,javax.,org.,com.</groups>
+                        <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>
+                        <groups>java.,javax.,jakarta.,org.,com.</groups>
                         <staticGroups>*</staticGroups>
                         <skip>${format.skip}</skip>
                         <removeUnused>true</removeUnused>
                     </configuration>
                 </plugin>
                 <plugin>
-                    <groupId>com.google.code.maven-replacer-plugin</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>1.5.3</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-resources-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>${maven-resources-plugin.version}</version>
+                    <configuration>
+                        <nonFilteredFileExtensions>
+                            <nonFilteredFileExtension>eot</nonFilteredFileExtension>
+                            <nonFilteredFileExtension>ttf</nonFilteredFileExtension>
+                            <nonFilteredFileExtension>woff</nonFilteredFileExtension>
+                            <nonFilteredFileExtension>woff2</nonFilteredFileExtension>
+                            <nonFilteredFileExtension>svg</nonFilteredFileExtension>
+                            <nonFilteredFileExtension>ico</nonFilteredFileExtension>
+                            <nonFilteredFileExtension>js</nonFilteredFileExtension>
+                        </nonFilteredFileExtensions>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.antlr</groupId>
@@ -627,12 +873,10 @@
                     <artifactId>wiremock-maven-plugin</artifactId>
                     <version>${wiremock-maven-plugin.version}</version>
                     <dependencies>
-                        <!-- plugin defines "wiremock" artifactId (in provided scope), not the preferred "wiremock-jre8"
-                             which cannot be forced here, see https://issues.apache.org/jira/browse/MNG-6222 -->
                         <dependency>
-                            <groupId>com.github.tomakehurst</groupId>
-                            <artifactId>wiremock</artifactId>
-                            <version>${wiremock-jre8.version}</version>
+                            <groupId>org.wiremock</groupId>
+                            <artifactId>wiremock-standalone</artifactId>
+                            <version>${wiremock.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -657,8 +901,61 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-invoker-plugin</artifactId>
-                    <version>3.2.2</version>
+                    <version>${maven-invoker-plugin.version}</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.groovy</groupId>
+                            <artifactId>groovy</artifactId>
+                            <version>4.0.15</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
+                <plugin>
+                    <groupId>org.asciidoctor</groupId>
+                    <artifactId>asciidoctor-maven-plugin</artifactId>
+                    <version>${asciidoctor-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>de.thetaphi</groupId>
+                    <artifactId>forbiddenapis</artifactId>
+                    <version>${forbiddenapis-maven-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>verify-forbidden-apis</id>
+                            <configuration>
+                                <!-- if the used Java version is too new, don't fail, just do nothing: -->
+                                <failOnUnsupportedJava>false</failOnUnsupportedJava>
+                                <signaturesFiles>
+                                    <signaturesFile>${maven.multiModuleProjectDirectory}/.forbiddenapis/banned-signatures-common.txt</signaturesFile>
+                                </signaturesFiles>
+                                <failOnMissingClasses>false</failOnMissingClasses>
+                                <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>
+                                <suppressAnnotations><annotation>**.SuppressForbidden</annotation></suppressAnnotations>
+                            </configuration>
+                            <phase>compile</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-plugin-plugin</artifactId>
+                    <version>${maven-plugin-plugin.version}</version>
+                    <configuration>
+                        <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>help-goal</id>
+                            <goals>
+                                <goal>helpmojo</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
             </plugins>
         </pluginManagement>
     </build>
@@ -746,70 +1043,47 @@
         </profile>
 
         <profile>
-            <id>release</id>
+            <id>format-kotlin</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>!no-format</name>
+                </property>
+                <file>
+                    <exists>src/main/kotlin</exists>
+                </file>
+            </activation>
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>${nexus-staging-maven-plugin.version}</version>
-                        <extensions>true</extensions>
+                        <groupId>com.diffplug.spotless</groupId>
+                        <artifactId>spotless-maven-plugin</artifactId>
+                        <version>2.35.0</version>
+                        <executions>
+                            <execution>
+                                <id>format-kotlin</id>
+                                <phase>process-sources</phase>
+                                <goals>
+                                    <goal>apply</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+
                         <configuration>
-                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                            <serverId>ossrh</serverId>
-                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
-                            <keepStagingRepositoryOnCloseRuleFailure>true</keepStagingRepositoryOnCloseRuleFailure>
+                            <kotlin>
+                                <ktfmt>
+                                    <style>KOTLINLANG</style>
+                                    <!-- optional, other options are DEFAULT, DROPBOX, GOOGLE and KOTLINLANG -->
+                                </ktfmt>
+
+                                <!--
+                                    <ktfmt>
+                                        <style>DEFAULT</style> &lt;!&ndash; optional, other options are DEFAULT, DROPBOX, GOOGLE and KOTLINLANG &ndash;&gt;
+                                    </ktfmt>
+                                -->
+
+                            </kotlin>
                         </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <!--
-                        ## IMPORTANT ##
-                        In your ~/.m2/settings.xml you need to add and edit the following profile:
-                        <profile>
-                            <id>release</id>
-                            <properties>
-                                <gpg.useagent>false</gpg.useagent>
-                                <gpg.executable>/usr/local/Cellar/gnupg@1.4/1.4.23_1/bin/gpg1</gpg.executable> <- use gpg1 on Mac OS X
-                                <gpg.homedir>~/.gnupg</gpg.homedir>  <- Update to your own directory
-                                <gpg.passphrase>******</gpg.passphrase> <- Add your passphrase
-                            </properties>
-                        </profile>
-                         -->
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>
@@ -820,7 +1094,6 @@
                 <property>
                     <name>dokka</name>
                 </property>
-                <jdk>[,16)</jdk>
                 <file>
                     <exists>src/main/kotlin</exists>
                 </file>
@@ -836,7 +1109,7 @@
                                 <id>dokka</id>
                                 <phase>package</phase>
                                 <goals>
-                                    <goal>javadocJar</goal>
+                                    <goal>dokka</goal>
                                 </goals>
                             </execution>
                         </executions>
@@ -850,6 +1123,24 @@
                                 </link>
                             </externalDocumentationLinks>
                         </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>dokka-jar</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <classifier>javadoc</classifier>
+                                    <classesDirectory>${project.build.directory}/dokka</classesDirectory>
+                                    <skipIfEmpty>true</skipIfEmpty>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
@@ -932,7 +1223,7 @@
                                         <pluginExecution>
                                             <pluginExecutionFilter>
                                                 <groupId>
-                                                    org.jboss.jandex
+                                                    io.smallrye
                                                 </groupId>
                                                 <artifactId>
                                                     jandex-maven-plugin
@@ -1056,13 +1347,13 @@
                             <newArtifacts>
                                 <artifact>${project.groupId}:${project.artifactId}:${revapi.newVersion}</artifact>
                             </newArtifacts>
-                            <!-- don't fail is false making it possible to have 
+                            <!-- don't fail is false making it possible to have
                                 revapi checks without requiring config files -->
                             <failOnMissingConfigurationFiles>false</failOnMissingConfigurationFiles>
-                            <!-- Consider changes from the latest .Final version, 
+                            <!-- Consider changes from the latest .Final version,
                                 not from the latest non-snapshot. -->
                             <versionFormat>\d+\.\d+\.\d+\.Final</versionFormat>
-                            <!-- By default revapi will check the oldArtifact 
+                            <!-- By default revapi will check the oldArtifact
                                 against the currently executed build -->
                             <!-- <checkDependencies>false</checkDependencies> -->
                             <analysisConfigurationFiles>
@@ -1076,22 +1367,23 @@
                                     </roots>
                                 </configurationFile>
                             </analysisConfigurationFiles>
-                            <!-- By default, revapi will only fail the build 
-                                 if there are potentially breaking or breaking changes. However, in the report 
+                            <!-- By default, revapi will only fail the build
+                                 if there are potentially breaking or breaking changes. However, in the report
                                  we want even non breaking changes to be present. -->
                             <reportSeverity>nonBreaking</reportSeverity>
                             <failSeverity>potentiallyBreaking</failSeverity>
                             <failBuildOnProblemsFound>true</failBuildOnProblemsFound>
                             <checkDependencies>${revapi.checkdeps}</checkDependencies>
+                            <buildFailureMessage>${revapi.buildFailureMessage}</buildFailureMessage>
                             <ignoreSuggestionsFormat>xml</ignoreSuggestionsFormat>
                             <ignoreSuggestionsFile>${project.build.directory}/api-changes-suggestions.xml</ignoreSuggestionsFile>
                             <expandProperties>true</expandProperties>
                         </configuration>
-                        <!-- Running two executions is a workaround to make sure 
-                             we get a HTML report in case revapi finds some incompatible changes. The 
-                             "check" goal will simply fail the whole build before it could get to the 
-                             report. To make sure we always get a HTML report, the "report" goal needs 
-                             to be executed before the "check" goal. Once https://github.com/revapi/revapi/issues/11 
+                        <!-- Running two executions is a workaround to make sure
+                             we get a HTML report in case revapi finds some incompatible changes. The
+                             "check" goal will simply fail the whole build before it could get to the
+                             report. To make sure we always get a HTML report, the "report" goal needs
+                             to be executed before the "check" goal. Once https://github.com/revapi/revapi/issues/11
                              is fixed it should be possible to use single execution. -->
                         <executions>
                             <execution>
@@ -1114,7 +1406,6 @@
                 </plugins>
             </build>
         </profile>
-
         <profile>
             <id>Windows</id>
             <activation>
@@ -1128,15 +1419,26 @@
         </profile>
 
         <profile>
-            <id>jdk16-workarounds</id>
+            <id>mac-m1</id>
             <activation>
-                <jdk>[16,)</jdk>
+                <os>
+                    <arch>aarch64</arch>
+                </os>
             </activation>
             <properties>
-                <!-- auto-exclude tests that are known to fail on JDK 16 (tagged via @Tag("failsOnJDK16")) -->
-                <excludedGroups>failsOnJDK16</excludedGroups>
+                <!-- Podman compatibility. Currently, mac file systems based on Plan 9 does not support SELinux labeling z and Z should not be used. When they transition to use virtiofsd, it should support SELinux labeling, and then we can use it for better container separation on the Mac.-->
+                <volume.access.modifier></volume.access.modifier>
+
+                <!-- See https://stackoverflow.com/questions/65456814/docker-apple-silicon-m1-preview-mysql-no-matching-manifest-for-linux-arm64-v8
+                and https://www.emmanuelgautier.com/blog/mysql-docker-arm-m1
+                This hopefully should be temporary -->
+                <mysql.image>arm64v8/mysql:8-oracle</mysql.image>
+
+                <!-- See
+                https://github.com/microsoft/mssql-docker/issues/668 and https://stackoverflow.com/questions/65398641/docker-connect-sql-server-container-non-zero-code-1/66919852#66919852.
+                The MS SQL image segfaults on ARM. Azure Edge is not fully compatible, but it is better than not running the tests at all. -->
+                <mssql.image>mcr.microsoft.com/azure-sql-edge:latest</mssql.image>
             </properties>
         </profile>
-
     </profiles>
 </project>

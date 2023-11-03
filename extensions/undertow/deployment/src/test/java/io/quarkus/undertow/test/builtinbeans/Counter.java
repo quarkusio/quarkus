@@ -2,8 +2,8 @@ package io.quarkus.undertow.test.builtinbeans;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.SessionScoped;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.SessionScoped;
 
 @SessionScoped
 class Counter {

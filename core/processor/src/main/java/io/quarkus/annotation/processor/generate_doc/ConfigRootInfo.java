@@ -10,10 +10,14 @@ final public class ConfigRootInfo {
     private final ConfigPhase configPhase;
     private final String fileName;
 
-    public ConfigRootInfo(String name, TypeElement clazz, ConfigPhase visibility, String fileName) {
+    public ConfigRootInfo(
+            final String name,
+            final TypeElement clazz,
+            final ConfigPhase configPhase,
+            final String fileName) {
         this.name = name;
         this.clazz = clazz;
-        this.configPhase = visibility;
+        this.configPhase = configPhase;
         this.fileName = fileName;
     }
 
@@ -22,16 +26,18 @@ final public class ConfigRootInfo {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o)
+    public boolean equals(final Object o) {
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
-        ConfigRootInfo that = (ConfigRootInfo) o;
-        return Objects.equals(name, that.name) &&
-                Objects.equals(clazz, that.clazz) &&
+        }
+        final ConfigRootInfo that = (ConfigRootInfo) o;
+        return name.equals(that.name) &&
+                clazz.equals(that.clazz) &&
                 configPhase == that.configPhase &&
-                Objects.equals(fileName, that.fileName);
+                fileName.equals(that.fileName);
     }
 
     @Override

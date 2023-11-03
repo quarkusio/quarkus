@@ -13,7 +13,7 @@ import io.quarkus.test.junit.QuarkusTest;
  * and only messages at same runtime log level or above are shown.
  */
 @QuarkusTest
-@QuarkusTestResource(SetRuntimeLogLevels.class)
+@QuarkusTestResource(SetCategoryRuntimeLogLevels.class)
 public class LoggingMinLevelAboveTest {
 
     @Test

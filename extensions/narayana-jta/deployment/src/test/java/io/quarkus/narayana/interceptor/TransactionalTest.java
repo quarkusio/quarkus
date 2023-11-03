@@ -1,30 +1,31 @@
 package io.quarkus.narayana.interceptor;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.transaction.RollbackException;
-import javax.transaction.Status;
-import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
-import javax.transaction.Transactional;
-import javax.transaction.UserTransaction;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.transaction.RollbackException;
+import jakarta.transaction.Status;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.Transactional;
+import jakarta.transaction.UserTransaction;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.bootstrap.classloading.ClassLoaderLimiter;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class TransactionalTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(TransactionalTest.TransactionalBean.class, TestXAResource.class,
-                            TxAssertionData.class, TestException.class));
+                            TxAssertionData.class, TestException.class, AnnotatedTestException.class, AnnotatedError.class))
+            .addClassLoaderEventListener(ClassLoaderLimiter.builder()
+                    .neverLoadedRuntimeClassName("javax.xml.stream.XMLInputFactory").build());
 
     @Inject
     private TransactionManager tm;
@@ -95,6 +96,32 @@ public class TransactionalTest {
         assertTransactionInactive();
         Assertions.assertEquals(0, txAssertionData.getCommit());
         Assertions.assertEquals(1, txAssertionData.getRollback());
+    }
+
+    @Test
+    public void transactionalThrowAnnotatedApplicationException() {
+        assertTransactionInactive();
+        try {
+            testTransactionalBean.executeTransactionalThrowException(AnnotatedTestException.class);
+            Assertions.fail("Expecting TestException to be thrown and the execution does not reach this point");
+        } catch (Throwable expected) {
+        }
+        assertTransactionInactive();
+        Assertions.assertEquals(0, txAssertionData.getCommit());
+        Assertions.assertEquals(1, txAssertionData.getRollback());
+    }
+
+    @Test
+    public void transactionalThrowAnnotatedError() {
+        assertTransactionInactive();
+        try {
+            testTransactionalBean.executeTransactionalThrowException(AnnotatedError.class);
+            Assertions.fail("Expecting Error to be thrown and the execution does not reach this point");
+        } catch (Throwable expected) {
+        }
+        assertTransactionInactive();
+        Assertions.assertEquals(1, txAssertionData.getCommit());
+        Assertions.assertEquals(0, txAssertionData.getRollback());
     }
 
     @Test
@@ -180,31 +207,31 @@ public class TransactionalTest {
         @Transactional
         public void executeTransactionalThrowException(Class<? extends Throwable> throwable) throws Throwable {
             enlist();
-            throw throwable.newInstance();
+            throw throwable.getDeclaredConstructor().newInstance();
         }
 
         @Transactional(rollbackOn = Exception.class)
         public void executeTransactionalRollbackOnException(Class<? extends Throwable> throwable) throws Throwable {
             enlist();
-            throw throwable.newInstance();
+            throw throwable.getDeclaredConstructor().newInstance();
         }
 
         @Transactional(dontRollbackOn = RuntimeException.class)
         public void executeTransactionalDontRollbackOnRuntimeException(Class<? extends Throwable> throwable) throws Throwable {
             enlist();
-            throw throwable.newInstance();
+            throw throwable.getDeclaredConstructor().newInstance();
         }
 
         @Transactional(dontRollbackOn = Error.class)
         public void executeTransactionalDontRollbackOnError(Class<? extends Throwable> throwable) throws Throwable {
             enlist();
-            throw throwable.newInstance();
+            throw throwable.getDeclaredConstructor().newInstance();
         }
 
         @Transactional(dontRollbackOn = Exception.class, rollbackOn = Exception.class)
         public void executeTransactionalRollbackOnPriority(Class<? extends Throwable> throwable) throws Throwable {
             enlist();
-            throw throwable.newInstance();
+            throw throwable.getDeclaredConstructor().newInstance();
         }
     }
 }

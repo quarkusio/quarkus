@@ -5,20 +5,23 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Default;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Default;
+import jakarta.inject.Singleton;
 
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.pojo.PropertyCodecProvider;
 import org.bson.codecs.pojo.annotations.BsonDiscriminator;
+import org.bson.types.ObjectId;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -26,14 +29,18 @@ import org.jboss.jandex.IndexView;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
+import com.mongodb.client.model.changestream.UpdateDescription;
 import com.mongodb.event.CommandListener;
 import com.mongodb.event.ConnectionPoolListener;
+import com.mongodb.spi.dns.DnsClientProvider;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
@@ -50,24 +57,37 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.mongodb.MongoClientName;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
+import io.quarkus.mongodb.runtime.MongoClientCustomizer;
 import io.quarkus.mongodb.runtime.MongoClientRecorder;
 import io.quarkus.mongodb.runtime.MongoClientSupport;
 import io.quarkus.mongodb.runtime.MongoClients;
+import io.quarkus.mongodb.runtime.MongoServiceBindingConverter;
 import io.quarkus.mongodb.runtime.MongodbConfig;
+import io.quarkus.mongodb.runtime.dns.MongoDnsClient;
+import io.quarkus.mongodb.runtime.dns.MongoDnsClientProvider;
+import io.quarkus.mongodb.tracing.MongoTracingCommandListener;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import io.quarkus.vertx.deployment.VertxBuildItem;
 
 public class MongoClientProcessor {
-    private static final String MONGODB_TRACING_COMMANDLISTENER_CLASSNAME = "io.quarkus.mongodb.tracing.MongoTracingCommandListener";
+    private static final String MONGODB_TRACING_COMMAND_LISTENER = MongoTracingCommandListener.class.getName();
     private static final DotName MONGO_CLIENT_ANNOTATION = DotName.createSimple(MongoClientName.class.getName());
 
     private static final DotName MONGO_CLIENT = DotName.createSimple(MongoClient.class.getName());
     private static final DotName REACTIVE_MONGO_CLIENT = DotName.createSimple(ReactiveMongoClient.class.getName());
+
+    private static final DotName MONGO_CLIENT_CUSTOMIZER = DotName.createSimple(MongoClientCustomizer.class.getName());
+
+    private static final String SERVICE_BINDING_INTERFACE_NAME = "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter";
 
     @BuildStep
     AdditionalIndexedClassesBuildItem includeBsonTypesToIndex() {
@@ -84,6 +104,18 @@ public class MongoClientProcessor {
                 "org.bson.types.ObjectId",
                 "org.bson.types.StringRangeSet",
                 "org.bson.types.Symbol");
+    }
+
+    @BuildStep
+    AdditionalIndexedClassesBuildItem includeDnsTypesToIndex() {
+        return new AdditionalIndexedClassesBuildItem(
+                MongoDnsClientProvider.class.getName(),
+                MongoDnsClient.class.getName());
+    }
+
+    @BuildStep
+    public void registerDnsProvider(BuildProducer<NativeImageResourceBuildItem> nativeProducer) {
+        nativeProducer.produce(new NativeImageResourceBuildItem("META-INF/services/" + DnsClientProvider.class.getName()));
     }
 
     @BuildStep
@@ -121,7 +153,7 @@ public class MongoClientProcessor {
                 .map(ci -> ci.name().toString())
                 .collect(Collectors.toList());
         if (buildTimeConfig.tracingEnabled && capabilities.isPresent(Capability.OPENTRACING)) {
-            names.add(MONGODB_TRACING_COMMANDLISTENER_CLASSNAME);
+            names.add(MONGODB_TRACING_COMMAND_LISTENER);
         }
         return new CommandListenerBuildItem(names);
     }
@@ -137,15 +169,18 @@ public class MongoClientProcessor {
         reflectiveClassNames.addAll(commandListeners.getCommandListenerClassNames());
 
         List<ReflectiveClassBuildItem> reflectiveClass = reflectiveClassNames.stream()
-                .map(s -> new ReflectiveClassBuildItem(true, true, false, s))
-                .collect(Collectors.toCollection(() -> new ArrayList<>()));
+                .map(s -> ReflectiveClassBuildItem.builder(s).methods().build())
+                .collect(Collectors.toCollection(ArrayList::new));
         // ChangeStreamDocument needs to be registered for reflection with its fields.
-        reflectiveClass.add(new ReflectiveClassBuildItem(true, true, true, ChangeStreamDocument.class.getName()));
+        reflectiveClass.add(ReflectiveClassBuildItem.builder(ChangeStreamDocument.class).methods().fields().build());
+        reflectiveClass.add(ReflectiveClassBuildItem.builder(UpdateDescription.class).methods().build());
+        // ObjectId is often used on identifier, so we also register it
+        reflectiveClass.add(ReflectiveClassBuildItem.builder(ObjectId.class).methods().fields().build());
         return reflectiveClass;
     }
 
     @BuildStep
-    public void mongoClientNames(BeanArchiveIndexBuildItem indexBuildItem,
+    public void mongoClientNames(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<MongoClientNameBuildItem> mongoClientName) {
         Set<String> values = new HashSet<>();
         IndexView indexView = indexBuildItem.getIndex();
@@ -193,16 +228,25 @@ public class MongoClientProcessor {
 
     @BuildStep
     void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        // add the @MongoClientName class otherwise it won't registered as a qualifier
+        // add the @MongoClientName class otherwise it won't be registered as a qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(MongoClientName.class).build());
-        // make MongoClients an unremoveable bean
+        // make MongoClients an unremovable bean
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(MongoClients.class).setUnremovable().build());
+    }
+
+    @BuildStep
+    void connectionNames(
+            List<MongoClientNameBuildItem> mongoClientNames,
+            BuildProducer<MongoConnectionNameBuildItem> mongoConnections) {
+        mongoConnections.produce(new MongoConnectionNameBuildItem(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME));
+        for (MongoClientNameBuildItem bi : mongoClientNames) {
+            mongoConnections.produce(new MongoConnectionNameBuildItem(bi.getName()));
+        }
     }
 
     @Record(STATIC_INIT)
     @BuildStep
     void build(
-            List<MongoClientNameBuildItem> mongoClientNames,
             MongoClientRecorder recorder,
             SslNativeConfigBuildItem sslNativeConfig,
             CodecProviderBuildItem codecProvider,
@@ -210,7 +254,7 @@ public class MongoClientProcessor {
             BsonDiscriminatorBuildItem bsonDiscriminator,
             CommandListenerBuildItem commandListener,
             List<MongoConnectionPoolListenerBuildItem> connectionPoolListenerProvider,
-            BuildProducer<MongoConnectionNameBuildItem> mongoConnections,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemProducer,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
         List<Supplier<ConnectionPoolListener>> poolListenerList = new ArrayList<>(connectionPoolListenerProvider.size());
@@ -218,19 +262,27 @@ public class MongoClientProcessor {
             poolListenerList.add(item.getConnectionPoolListener());
         }
 
+        List<String> codecProviderClassNames = codecProvider.getCodecProviderClassNames();
+        AdditionalBeanBuildItem.Builder additionalBeansBuilder = AdditionalBeanBuildItem.builder();
+        additionalBeansBuilder.setDefaultScope(DotNames.SINGLETON);
+        for (String name : codecProviderClassNames) {
+            additionalBeansBuilder.addBeanClass(name);
+        }
+        for (String name : propertyCodecProvider.getPropertyCodecProviderClassNames()) {
+            additionalBeansBuilder.addBeanClass(name);
+        }
+        for (String name : commandListener.getCommandListenerClassNames()) {
+            additionalBeansBuilder.addBeanClass(name);
+        }
+        additionalBeanBuildItemProducer.produce(additionalBeansBuilder.build());
+
         // create MongoClientSupport as a synthetic bean as it's used in AbstractMongoClientProducer
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(MongoClientSupport.class)
                 .scope(Singleton.class)
-                .supplier(recorder.mongoClientSupportSupplier(codecProvider.getCodecProviderClassNames(),
-                        propertyCodecProvider.getPropertyCodecProviderClassNames(),
-                        bsonDiscriminator.getBsonDiscriminatorClassNames(), commandListener.getCommandListenerClassNames(),
+                .supplier(recorder.mongoClientSupportSupplier(
+                        bsonDiscriminator.getBsonDiscriminatorClassNames(),
                         poolListenerList, sslNativeConfig.isExplicitlyDisabled()))
                 .done());
-
-        mongoConnections.produce(new MongoConnectionNameBuildItem(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME));
-        for (MongoClientNameBuildItem bi : mongoClientNames) {
-            mongoConnections.produce(new MongoConnectionNameBuildItem(bi.getName()));
-        }
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -241,7 +293,8 @@ public class MongoClientProcessor {
             MongoClientBuildTimeConfig mongoClientBuildTimeConfig,
             MongodbConfig mongodbConfig,
             List<MongoUnremovableClientsBuildItem> mongoUnremovableClientsBuildItem,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+            VertxBuildItem vertxBuildItem) {
 
         boolean makeUnremovable = !mongoUnremovableClientsBuildItem.isEmpty();
 
@@ -288,6 +341,8 @@ public class MongoClientProcessor {
                     .produce(createReactiveSyntheticBean(recorder, mongodbConfig, makeUnremovable, mongoClientName.getName(),
                             mongoClientName.isAddQualifier()));
         }
+
+        recorder.performInitialization(mongodbConfig, vertxBuildItem.getVertx());
     }
 
     private SyntheticBeanBuildItem createBlockingSyntheticBean(MongoClientRecorder recorder, MongodbConfig mongodbConfig,
@@ -297,7 +352,7 @@ public class MongoClientProcessor {
                 .configure(MongoClient.class)
                 .scope(ApplicationScoped.class)
                 // pass the runtime config into the recorder to ensure that the DataSource related beans
-                // are created after runtime configuration has been setup
+                // are created after runtime configuration has been set up
                 .supplier(recorder.mongoClientSupplier(clientName, mongodbConfig))
                 .setRuntimeInit();
 
@@ -311,7 +366,7 @@ public class MongoClientProcessor {
                 .configure(ReactiveMongoClient.class)
                 .scope(ApplicationScoped.class)
                 // pass the runtime config into the recorder to ensure that the DataSource related beans
-                // are created after runtime configuration has been setup
+                // are created after runtime configuration has been set up
                 .supplier(recorder.reactiveMongoClientSupplier(clientName, mongodbConfig))
                 .setRuntimeInit();
 
@@ -370,5 +425,53 @@ public class MongoClientProcessor {
     HealthBuildItem addHealthCheck(MongoClientBuildTimeConfig buildTimeConfig) {
         return new HealthBuildItem("io.quarkus.mongodb.health.MongoHealthCheck",
                 buildTimeConfig.healthEnabled);
+    }
+
+    @BuildStep
+    void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> buildProducer) {
+        if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
+            buildProducer.produce(
+                    new ServiceProviderBuildItem(SERVICE_BINDING_INTERFACE_NAME,
+                            MongoServiceBindingConverter.class.getName()));
+        }
+    }
+
+    @BuildStep
+    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem(ObjectId.class.getName()));
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("com.mongodb.internal.dns.DefaultDnsResolver"));
+    }
+
+    /**
+     * Ensure we have at most one customizer per Mongo client.
+     *
+     * @param beans the beans
+     * @param validation the producer used to report issues
+     */
+    @BuildStep
+    void validateMongoConfigCustomizers(BeanDiscoveryFinishedBuildItem beans,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validation) {
+        HashMap<String, List<String>> customizers = new HashMap<>();
+
+        for (BeanInfo bean : beans.getBeans()) {
+            if (bean.hasType(MONGO_CLIENT_CUSTOMIZER)) {
+                var name = bean.getQualifier(MONGO_CLIENT_ANNOTATION);
+                if (name.isPresent()) {
+                    String clientName = name.get().value().asString();
+                    customizers.computeIfAbsent(clientName, k -> new ArrayList<>()).add(bean.getBeanClass().toString());
+                } else {
+                    customizers.computeIfAbsent(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME, k -> new ArrayList<>())
+                            .add(bean.getBeanClass().toString());
+                }
+            }
+        }
+
+        for (Map.Entry<String, List<String>> entry : customizers.entrySet()) {
+            if (entry.getValue().size() > 1) {
+                validation.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
+                        new IllegalStateException("Multiple Mongo client customizers found for client " + entry.getKey() + ": "
+                                + String.join(", ", entry.getValue()))));
+            }
+        }
     }
 }

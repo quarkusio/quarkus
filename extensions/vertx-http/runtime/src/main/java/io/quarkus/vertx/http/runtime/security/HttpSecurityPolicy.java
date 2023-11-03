@@ -7,7 +7,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * A HTTP Security policy, that controls which requests are allowed to proceeed.
+ * An HTTP Security policy, that controls which requests are allowed to proceed.
  *
  * There are two different ways these policies can be installed. The easiest is to just create a CDI bean, in which
  * case the policy will be invoked on every request.
@@ -61,7 +61,7 @@ public interface HttpSecurityPolicy {
     /**
      * A context object that can be used to run blocking tasks
      * <p>
-     * Blocking identity providers should used this context object to run blocking tasks, to prevent excessive and
+     * Blocking identity providers should use this context object to run blocking tasks, to prevent excessive and
      * unnecessary delegation to thread pools
      */
     interface AuthorizationRequestContext {

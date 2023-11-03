@@ -4,19 +4,23 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Instance;
-import javax.inject.Singleton;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.util.TypeLiteral;
+import jakarta.inject.Singleton;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class SimpleObserverInjectionTest {
 
@@ -27,12 +31,14 @@ public class SimpleObserverInjectionTest {
     public void testObserverInjection() {
         AtomicReference<String> msg = new AtomicReference<String>();
         Fool.DESTROYED.set(false);
-        Arc.container().beanManager().fireEvent(msg);
+        Arc.container().beanManager().getEvent().select(new TypeLiteral<AtomicReference<String>>() {
+        }).fire(msg);
         String id1 = msg.get();
         assertNotNull(id1);
         assertTrue(Fool.DESTROYED.get());
         Fool.DESTROYED.set(false);
-        Arc.container().beanManager().fireEvent(msg);
+        Arc.container().beanManager().getEvent().select(new TypeLiteral<AtomicReference<String>>() {
+        }).fire(msg);
         assertNotEquals(id1, msg.get());
         assertTrue(Fool.DESTROYED.get());
     }

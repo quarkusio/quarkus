@@ -12,9 +12,9 @@
     <name>Quarkus - Integration Tests - REST client</name>
 
     <properties>
-        <self-signed.trust-store>${project.basedir}/self-signed</self-signed.trust-store>
+        <self-signed.trust-store>${project.build.directory}/self-signed.p12</self-signed.trust-store>
         <self-signed.trust-store-password>changeit</self-signed.trust-store-password>
-        <wrong-host.trust-store>${project.basedir}/wrong-host</wrong-host.trust-store>
+        <wrong-host.trust-store>${project.build.directory}/wrong-host.p12</wrong-host.trust-store>
         <wrong-host.trust-store-password>changeit</wrong-host.trust-store-password>
     </properties>
 
@@ -27,7 +27,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <!-- Client dependencies -->
@@ -42,6 +41,20 @@
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-multipart-provider</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>jakarta.activation</groupId>
+                    <artifactId>jakarta.activation-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jboss.spec.javax.ws.rs</groupId>
+                    <artifactId>jboss-jaxrs-api_3.0_spec</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.activation</groupId>
+                    <artifactId>jakarta.activation</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- Test dependencies -->
         <dependency>
@@ -129,6 +142,49 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>uk.co.automatictester</groupId>
+                <artifactId>truststore-maven-plugin</artifactId>
+                <version>${truststore-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>self-signed-truststore</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>generate-truststore</goal>
+                        </goals>
+                        <configuration>
+                            <truststoreFormat>PKCS12</truststoreFormat>
+                            <truststoreFile>${self-signed.trust-store}</truststoreFile>
+                            <truststorePassword>${self-signed.trust-store-password}</truststorePassword>
+                            <servers>
+                                <server>self-signed.badssl.com:443</server>
+                            </servers>
+                            <trustAllCertificates>true</trustAllCertificates>
+                            <includeCertificates>LEAF</includeCertificates>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>wrong-host-truststore</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>generate-truststore</goal>
+                        </goals>
+                        <configuration>
+                            <truststoreFormat>PKCS12</truststoreFormat>
+                            <truststoreFile>${wrong-host.trust-store}</truststoreFile>
+                            <truststorePassword>${wrong-host.trust-store-password}</truststorePassword>
+                            <servers>
+                                <server>wrong.host.badssl.com:443</server>
+                            </servers>
+                            <trustAllCertificates>true</trustAllCertificates>
+                            <includeCertificates>LEAF</includeCertificates>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -144,6 +200,27 @@
                 </configuration>
             </plugin>
         </plugins>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>com.gradle</groupId>
+                    <artifactId>gradle-enterprise-maven-extension</artifactId>
+                    <configuration>
+                        <gradleEnterprise>
+                            <normalization>
+                                <systemProperties>
+                                    <ignoredKeys combine.children="append">
+                                        <ignore>javax.net.ssl.trustStore</ignore>
+                                        <ignore>rest-client.trustStore</ignore>
+                                    </ignoredKeys>
+                                </systemProperties>
+                            </normalization>
+                        </gradleEnterprise>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 
     <profiles>

@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -17,6 +19,9 @@ import java.util.function.Function;
 public final class ValueResolvers {
 
     static final String THIS = "this";
+    static final String ELVIS = "?:";
+    static final String COLON = ":";
+    public static final String OR = "or";
 
     public static ValueResolver rawResolver() {
         return new ValueResolver() {
@@ -35,6 +40,12 @@ public final class ValueResolvers {
 
     public static ValueResolver listResolver() {
         return new ValueResolver() {
+
+            @Override
+            public int getPriority() {
+                // Use this resolver before collectionResolver()
+                return WithPriority.DEFAULT_PRIORITY + 1;
+            }
 
             public boolean appliesTo(EvalContext context) {
                 return ValueResolver.matchClass(context, List.class);
@@ -76,8 +87,9 @@ public final class ValueResolvers {
     }
 
     /**
-     * Returns the default value if the base object is null or {@link Result#NOT_FOUND} and the base object otherwise.
-     * 
+     * Returns the default value if the base object is {@code null}, empty {@link Optional} or not found and the base object
+     * otherwise.
+     *
      * {@code foo.or(bar)}, {@code foo or true}, {@code name ?: 'elvis'}
      */
     public static ValueResolver orResolver() {
@@ -88,22 +100,23 @@ public final class ValueResolvers {
                     return false;
                 }
                 String name = context.getName();
-                return name.equals("?:") || name.equals("or") || name.equals(":");
+                return name.equals(ELVIS) || name.equals(OR) || name.equals(COLON);
             }
 
             @Override
             public CompletionStage<Object> resolve(EvalContext context) {
-                if (context.getBase() == null || Results.isNotFound(context.getBase())) {
+                Object base = context.getBase();
+                if (base == null || Results.isNotFound(base) || (base instanceof Optional && ((Optional<?>) base).isEmpty())) {
                     return context.evaluate(context.getParams().get(0));
                 }
-                return CompletedStage.of(context.getBase());
+                return CompletedStage.of(base);
             }
 
         };
     }
 
     /**
-     * Return an empty list if the base object is null or {@link Result#NOT_FOUND}.
+     * Return an empty list if the base object is null or not found.
      */
     public static ValueResolver orEmpty() {
         CompletionStage<Object> empty = CompletedStage.of(Collections.emptyList());
@@ -124,10 +137,10 @@ public final class ValueResolvers {
     }
 
     /**
-     * Returns {@link Result#NOT_FOUND} if the base object is falsy and the base object otherwise.
+     * Returns {@link Results#NotFound} if the base object is falsy and the base object otherwise.
      * <p>
      * Can be used together with {@link #orResolver()} to form a ternary operator.
-     * 
+     *
      * {@code person.isElvis ? 'elvis' : notElvis}
      */
     public static ValueResolver trueResolver() {
@@ -194,7 +207,7 @@ public final class ValueResolvers {
             @Override
             public int getPriority() {
                 // mapper is used in loops so we use a higher priority to jump the queue
-                return 5;
+                return 15;
             }
 
             @Override
@@ -209,7 +222,7 @@ public final class ValueResolvers {
     /**
      * Performs conditional AND on the base object and the first parameter.
      * It's a short-circuiting operation - the parameter is only evaluated if needed.
-     * 
+     *
      * @see Booleans#isFalsy(Object)
      */
     public static ValueResolver logicalAndResolver() {
@@ -238,7 +251,7 @@ public final class ValueResolvers {
     /**
      * Performs conditional OR on the base object and the first parameter.
      * It's a short-circuiting operation - the parameter is only evaluated if needed.
-     * 
+     *
      * @see Booleans#isFalsy(Object)
      */
     public static ValueResolver logicalOrResolver() {
@@ -347,6 +360,187 @@ public final class ValueResolvers {
         };
     }
 
+    public static ValueResolver numberValueResolver() {
+        return new ValueResolver() {
+
+            public boolean appliesTo(EvalContext context) {
+                Object base = context.getBase();
+                String name = context.getName();
+                return base != null
+                        && (base instanceof Number)
+                        && context.getParams().isEmpty()
+                        && ("intValue".equals(name) || "longValue".equals(name) || "floatValue".equals(name)
+                                || "doubleValue".equals(name) || "byteValue".equals(name) || "shortValue".equals(name));
+            }
+
+            @Override
+            public CompletionStage<Object> resolve(EvalContext context) {
+                switch (context.getName()) {
+                    case "intValue":
+                        return CompletedStage.of(((Number) context.getBase()).intValue());
+                    case "longValue":
+                        return CompletedStage.of(((Number) context.getBase()).longValue());
+                    case "floatValue":
+                        return CompletedStage.of(((Number) context.getBase()).floatValue());
+                    case "doubleValue":
+                        return CompletedStage.of(((Number) context.getBase()).doubleValue());
+                    case "byteValue":
+                        return CompletedStage.of(((Number) context.getBase()).byteValue());
+                    case "shortValue":
+                        return CompletedStage.of(((Number) context.getBase()).shortValue());
+                    default:
+                        throw new IllegalArgumentException();
+                }
+            }
+        };
+    }
+
+    public static ValueResolver plusResolver() {
+        return new IntArithmeticResolver() {
+
+            @Override
+            protected boolean appliesToName(String name) {
+                return "plus".equals(name) || "+".equals(name);
+            }
+
+            @Override
+            protected Object compute(Long op1, Long op2) {
+                return op1 + op2;
+            }
+
+            @Override
+            protected Object compute(Integer op1, Long op2) {
+                return op1 + op2;
+            }
+
+            @Override
+            protected Object compute(Long op1, Integer op2) {
+                return op1 + op2;
+            }
+
+            @Override
+            protected Object compute(Integer op1, Integer op2) {
+                return op1 + op2;
+            }
+
+        };
+
+    }
+
+    public static ValueResolver minusResolver() {
+        return new IntArithmeticResolver() {
+
+            @Override
+            protected boolean appliesToName(String name) {
+                return "minus".equals(name) || "-".equals(name);
+            }
+
+            @Override
+            protected Object compute(Long op1, Long op2) {
+                return op1 - op2;
+            }
+
+            @Override
+            protected Object compute(Integer op1, Long op2) {
+                return op1 - op2;
+            }
+
+            @Override
+            protected Object compute(Long op1, Integer op2) {
+                return op1 - op2;
+            }
+
+            @Override
+            protected Object compute(Integer op1, Integer op2) {
+                return op1 - op2;
+            }
+
+        };
+    }
+
+    public static ValueResolver modResolver() {
+        return new IntArithmeticResolver() {
+
+            @Override
+            protected boolean appliesToName(String name) {
+                return "mod".equals(name);
+            }
+
+            @Override
+            protected Object compute(Long op1, Long op2) {
+                return op1 % op2;
+            }
+
+            @Override
+            protected Object compute(Integer op1, Long op2) {
+                return op1 % op2;
+            }
+
+            @Override
+            protected Object compute(Long op1, Integer op2) {
+                return op1 % op2;
+            }
+
+            @Override
+            protected Object compute(Integer op1, Integer op2) {
+                return op1 % op2;
+            }
+
+        };
+    }
+
+    static abstract class IntArithmeticResolver implements ValueResolver {
+
+        public boolean appliesTo(EvalContext context) {
+            Object base = context.getBase();
+            return base != null
+                    && (base instanceof Integer || base instanceof Long)
+                    && context.getParams().size() == 1
+                    && appliesToName(context.getName());
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            return context.evaluate(context.getParams().get(0)).thenApply(new Function<Object, Object>() {
+                @Override
+                public Object apply(Object param) {
+                    Object base = context.getBase();
+                    if (param instanceof Integer) {
+                        Integer intParam = (Integer) param;
+                        if (base instanceof Integer) {
+                            return compute((Integer) base, intParam);
+                        } else if (base instanceof Long) {
+                            return compute((Long) base, intParam);
+                        } else {
+                            throw new IllegalStateException("Unsupported base operand: " + base.getClass());
+                        }
+                    } else if (param instanceof Long) {
+                        Long longParam = (Long) param;
+                        if (base instanceof Integer) {
+                            return compute((Integer) base, longParam);
+                        } else if (base instanceof Long) {
+                            return compute((Long) base, longParam);
+                        } else {
+                            throw new IllegalStateException("Unsupported base operand: " + base.getClass());
+                        }
+                    }
+                    return Results.notFound(context);
+                }
+            });
+        }
+
+        protected abstract boolean appliesToName(String name);
+
+        protected abstract Object compute(Integer op1, Integer op2);
+
+        protected abstract Object compute(Long op1, Integer op2);
+
+        protected abstract Object compute(Integer op1, Long op2);
+
+        protected abstract Object compute(Long op1, Long op2);
+
+    }
+
     private static Object takeArray(int n, Object sourceArray) {
         int size = Array.getLength(sourceArray);
         if (n < 1 || n > size) {
@@ -390,18 +584,15 @@ public final class ValueResolvers {
 
     private static CompletionStage<Object> listResolveAsync(EvalContext context) {
         List<?> list = (List<?>) context.getBase();
-        switch (context.getName()) {
+        String name = context.getName();
+        switch (name) {
             case "get":
                 if (context.getParams().size() == 1) {
                     return context.evaluate(context.getParams().get(0))
                             .thenApply(r -> {
                                 try {
-                                    int idx = r instanceof Integer ? (Integer) r : Integer.valueOf(r.toString());
-                                    if (idx >= list.size()) {
-                                        // Be consistent with property resolvers
-                                        return Results.NotFound.from(context);
-                                    }
-                                    return list.get(idx);
+                                    int n = r instanceof Integer ? (Integer) r : Integer.parseInt(r.toString());
+                                    return list.get(n);
                                 } catch (NumberFormatException e) {
                                     return Results.NotFound.from(context);
                                 }
@@ -437,8 +628,25 @@ public final class ValueResolvers {
                                 }
                             });
                 }
+            case "first":
+                if (list.isEmpty()) {
+                    throw new NoSuchElementException();
+                }
+                return CompletedStage.of(list.get(0));
+            case "last":
+                if (list.isEmpty()) {
+                    throw new NoSuchElementException();
+                }
+                return CompletedStage.of(list.get(list.size() - 1));
             default:
-                return Results.notFound(context);
+                // Try to use the name as an index
+                int index;
+                try {
+                    index = Integer.parseInt(name);
+                } catch (NumberFormatException e) {
+                    return Results.notFound(context);
+                }
+                return CompletedStage.of(list.get(index));
         }
     }
 

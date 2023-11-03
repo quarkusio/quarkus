@@ -3,120 +3,147 @@ package io.quarkus.deployment.pkg;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.runtime.annotations.ConvertWith;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.quarkus.runtime.util.ContainerRuntimeUtil;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithConverter;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithParentName;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public class NativeConfig {
+@ConfigMapping(prefix = "quarkus.native")
+public interface NativeConfig {
+
+    String DEFAULT_GRAALVM_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:jdk-21";
+    String DEFAULT_MANDREL_BUILDER_IMAGE = "quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21";
 
     /**
-     * Additional arguments to pass to the build process
+     * Comma-separated, additional arguments to pass to the build process.
+     * If an argument includes the {@code ,} symbol, it needs to be escaped, e.g. {@code \\,}
      */
-    @ConfigItem
-    public Optional<List<String>> additionalBuildArgs;
+    Optional<List<String>> additionalBuildArgs();
 
     /**
      * If the HTTP url handler should be enabled, allowing you to do URL.openConnection() for HTTP URLs
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enableHttpUrlHandler;
+    @WithDefault("true")
+    boolean enableHttpUrlHandler();
 
     /**
      * If the HTTPS url handler should be enabled, allowing you to do URL.openConnection() for HTTPS URLs
      */
-    @ConfigItem
-    public boolean enableHttpsUrlHandler;
+    @WithDefault("false")
+    boolean enableHttpsUrlHandler();
 
     /**
      * If all security services should be added to the native image
+     *
+     * @deprecated {@code --enable-all-security-services} was removed in GraalVM 21.1 https://github.com/oracle/graal/pull/3258
      */
-    @ConfigItem
-    public boolean enableAllSecurityServices;
+    @WithDefault("false")
+    @Deprecated
+    boolean enableAllSecurityServices();
 
     /**
      * If {@code -H:+InlineBeforeAnalysis} flag will be added to the native-image run
+     *
+     * @deprecated inlineBeforeAnalysis is always enabled starting from GraalVM 21.3.
      */
-    @ConfigItem
-    public boolean inlineBeforeAnalysis;
+    @Deprecated
+    @WithDefault("true")
+    boolean inlineBeforeAnalysis();
 
     /**
      * @deprecated JNI is always enabled starting from GraalVM 19.3.1.
      */
     @Deprecated
-    @ConfigItem(defaultValue = "true")
-    public boolean enableJni;
+    @WithDefault("true")
+    boolean enableJni();
+
+    /**
+     * The default value for java.awt.headless JVM option.
+     * Switching this option affects linking of awt libraries.
+     */
+    @WithDefault("true")
+    boolean headless();
 
     /**
      * Defines the user language used for building the native executable.
+     * It also serves as the default Locale language for the native executable application runtime.
+     * e.g. en or cs as defined by IETF BCP 47 language tags.
      * <p>
-     * Defaults to the system one.
+     *
+     * @deprecated Use the global quarkus.default-locale.
      */
-    @ConfigItem(defaultValue = "${user.language:}")
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> userLanguage;
+    @WithConverter(TrimmedStringConverter.class)
+    @Deprecated
+    Optional<String> userLanguage();
 
     /**
      * Defines the user country used for building the native executable.
+     * It also serves as the default Locale country for the native executable application runtime.
+     * e.g. US or FR as defined by ISO 3166-1 alpha-2 codes.
      * <p>
-     * Defaults to the system one.
+     *
+     * @deprecated Use the global quarkus.default-locale.
      */
-    @ConfigItem(defaultValue = "${user.country:}")
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> userCountry;
+    @WithConverter(TrimmedStringConverter.class)
+    @Deprecated
+    Optional<String> userCountry();
 
     /**
-     * Defines the file encoding as in -Dfile.encoding=...
+     * Defines the file encoding as in {@code -Dfile.encoding=...}.
      *
-     * Native image runtime uses the host's (i.e. build time) value of file.encoding
+     * Native image runtime uses the host's (i.e. build time) value of {@code file.encoding}
      * system property. We intentionally default this to UTF-8 to avoid platform specific
      * defaults to be picked up which can then result in inconsistent behavior in the
      * generated native executable.
      */
-    @ConfigItem(defaultValue = "UTF-8")
-    @ConvertWith(TrimmedStringConverter.class)
-    public String fileEncoding;
+    @WithDefault("UTF-8")
+    @WithConverter(TrimmedStringConverter.class)
+    String fileEncoding();
 
     /**
      * If all character sets should be added to the native image. This increases image size
      */
-    @ConfigItem
-    public boolean addAllCharsets;
+    @WithDefault("false")
+    boolean addAllCharsets();
 
     /**
      * The location of the Graal distribution
      */
-    @ConfigItem(defaultValue = "${GRAALVM_HOME:}")
-    public Optional<String> graalvmHome;
+    @WithDefault("${GRAALVM_HOME:}")
+    Optional<String> graalvmHome();
 
     /**
      * The location of the JDK
      */
-    @ConfigItem(defaultValue = "${java.home}")
-    public File javaHome;
+    @WithDefault("${java.home}")
+    File javaHome();
 
     /**
      * The maximum Java heap to be used during the native image generation
      */
-    @ConfigItem
-    public Optional<String> nativeImageXmx;
+    Optional<String> nativeImageXmx();
 
     /**
      * If the native image build should wait for a debugger to be attached before running. This is an advanced option
      * and is generally only intended for those familiar with GraalVM internals
      */
-    @ConfigItem
-    public boolean debugBuildProcess;
+    @WithDefault("false")
+    boolean debugBuildProcess();
 
     /**
      * If the debug port should be published when building with docker and debug-build-process is true
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean publishDebugBuildProcessPort;
+    @WithDefault("true")
+    boolean publishDebugBuildProcessPort();
 
     /**
      * If the native image server should be restarted.
@@ -125,21 +152,21 @@ public class NativeConfig {
      *             default.
      */
     @Deprecated
-    @ConfigItem
-    public boolean cleanupServer;
+    @WithDefault("false")
+    boolean cleanupServer();
 
     /**
      * If isolates should be enabled
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enableIsolates;
+    @WithDefault("true")
+    boolean enableIsolates();
 
     /**
      * If a JVM based 'fallback image' should be created if native image fails. This is not recommended, as this is
      * functionally the same as just running the application in a JVM
      */
-    @ConfigItem
-    public boolean enableFallbackImages;
+    @WithDefault("false")
+    boolean enableFallbackImages();
 
     /**
      * If the native image server should be used. This can speed up compilation but can result in changes not always
@@ -150,84 +177,149 @@ public class NativeConfig {
      *             feature.
      */
     @Deprecated
-    @ConfigItem
-    public boolean enableServer;
+    @WithDefault("false")
+    boolean enableServer();
 
     /**
      * If all META-INF/services entries should be automatically registered
      */
-    @ConfigItem
-    public boolean autoServiceLoaderRegistration;
+    @WithDefault("false")
+    boolean autoServiceLoaderRegistration();
 
     /**
      * If the bytecode of all proxies should be dumped for inspection
      */
-    @ConfigItem
-    public boolean dumpProxies;
+    @WithDefault("false")
+    boolean dumpProxies();
 
     /**
      * If this build should be done using a container runtime. Unless container-runtime is also set, docker will be
      * used by default. If docker is not available or is an alias to podman, podman will be used instead as the default.
      */
-    @ConfigItem
-    public boolean containerBuild;
+    Optional<Boolean> containerBuild();
+
+    /**
+     * Explicit configuration option to generate a native Position Independent Executable (PIE) for Linux.
+     * If the system supports PIE generation, the default behaviour is to disable it for
+     * <a href="https://www.redhat.com/en/blog/position-independent-executable-pie-performance">performance reasons</a>.
+     * However, some systems can only run position-independent executables,
+     * so this option enables the generation of such native executables.
+     */
+    Optional<Boolean> pie();
 
     /**
      * If this build is done using a remote docker daemon.
      */
-    @ConfigItem
-    public boolean remoteContainerBuild;
+    @WithDefault("false")
+    boolean remoteContainerBuild();
+
+    default boolean isExplicitContainerBuild() {
+        return containerBuild().orElse(containerRuntime().isPresent() || remoteContainerBuild());
+    }
 
     /**
-     * The docker image to use to do the image build
+     * Configuration related to the builder image, when performing native builds in a container.
      */
-    @ConfigItem(defaultValue = "${platform.quarkus.native.builder-image}")
-    public String builderImage;
+    BuilderImageConfig builderImage();
+
+    interface BuilderImageConfig {
+        /**
+         * The docker image to use to do the image build. It can be one of `graalvm`, `mandrel`, or the full image path, e.g.
+         * {@code quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21}.
+         */
+        @WithParentName
+        @WithDefault("${platform.quarkus.native.builder-image}")
+        @ConfigDocDefault("mandrel")
+        String image();
+
+        /**
+         * The strategy for pulling the builder image during the build.
+         * <p>
+         * Defaults to 'always', which will always pull the most up-to-date image;
+         * useful to keep up with fixes when a (floating) tag is updated.
+         * <p>
+         * Use 'missing' to only pull if there is no image locally;
+         * useful on development environments where building with out-of-date images is acceptable
+         * and bandwidth may be limited.
+         * <p>
+         * Use 'never' to fail the build if there is no image locally.
+         */
+        @WithDefault("always")
+        ImagePullStrategy pull();
+
+        default String getEffectiveImage() {
+            final String builderImageName = this.image().toUpperCase();
+            if (builderImageName.equals(BuilderImageProvider.GRAALVM.name())) {
+                return DEFAULT_GRAALVM_BUILDER_IMAGE;
+            } else if (builderImageName.equals(BuilderImageProvider.MANDREL.name())) {
+                return DEFAULT_MANDREL_BUILDER_IMAGE;
+            } else {
+                return this.image();
+            }
+        }
+    }
 
     /**
      * The container runtime (e.g. docker) that is used to do an image based build. If this is set then
      * a container build is always done.
      */
-    @ConfigItem
-    public Optional<ContainerRuntime> containerRuntime;
+    Optional<ContainerRuntimeUtil.ContainerRuntime> containerRuntime();
 
     /**
      * Options to pass to the container runtime
      */
-    @ConfigItem
-    public Optional<List<String>> containerRuntimeOptions;
+    Optional<List<String>> containerRuntimeOptions();
 
     /**
-     * If the resulting image should allow VM introspection
+     * If the resulting image should allow VM introspection.
+     *
+     * @deprecated Use {@code quarkus.native.monitoring} instead.
      */
-    @ConfigItem
-    public boolean enableVmInspection;
+    @WithDefault("false")
+    @Deprecated
+    boolean enableVmInspection();
+
+    /**
+     * Enable monitoring various monitoring options. The value should be comma separated.
+     * <ul>
+     * <li><code>jfr</code> for JDK flight recorder support</li>
+     * <li><code>jvmstat</code> for JVMStat support</li>
+     * <li><code>heapdump</code> for heampdump support</li>
+     * <li><code>jmxclient</code> for JMX client support (experimental)</li>
+     * <li><code>jmxserver</code> for JMX server support (experimental)</li>
+     * <li><code>all</code> for all monitoring features</li>
+     * </ul>
+     */
+    Optional<List<MonitoringOption>> monitoring();
 
     /**
      * If full stack traces are enabled in the resulting image
+     *
+     * @deprecated GraalVM 23.1+ will always build with full stack traces.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean fullStackTraces;
+    @WithDefault("true")
+    @Deprecated
+    boolean fullStackTraces();
 
     /**
      * If the reports on call paths and included packages/classes/methods should be generated
      */
-    @ConfigItem
-    public boolean enableReports;
+    @WithDefault("false")
+    boolean enableReports();
 
     /**
      * If exceptions should be reported with a full stack trace
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean reportExceptionStackTraces;
+    @WithDefault("true")
+    boolean reportExceptionStackTraces();
 
     /**
      * If errors should be reported at runtime. This is a more relaxed setting, however it is not recommended as it
      * means
      * your application may fail at runtime if an unsupported feature is used by accident.
      */
-    @ConfigItem
-    public boolean reportErrorsAtRuntime;
+    @WithDefault("false")
+    boolean reportErrorsAtRuntime();
 
     /**
      * Don't build a native image if it already exists.
@@ -237,17 +329,15 @@ public class NativeConfig {
      * Note that this is not able to detect if the existing image is outdated, if you have modified source
      * or config and want a new image you must not use this flag.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean reuseExisting;
+    @WithDefault("false")
+    boolean reuseExisting();
 
     /**
      * Build time configuration options for resources inclusion in the native executable.
      */
-    @ConfigItem
-    public ResourcesConfig resources;
+    ResourcesConfig resources();
 
-    @ConfigGroup
-    public static class ResourcesConfig {
+    interface ResourcesConfig {
 
         /**
          * A comma separated list of globs to match resource paths that should be added to the native image.
@@ -324,8 +414,7 @@ public class NativeConfig {
          * Note that Quarkus extensions typically include the resources they require by themselves. This option is
          * useful in situations when the built-in functionality is not sufficient.
          */
-        @ConfigItem
-        public Optional<List<String>> includes;
+        Optional<List<String>> includes();
 
         /**
          * A comma separated list of globs to match resource paths that should <b>not</b> be added to the native image.
@@ -348,41 +437,84 @@ public class NativeConfig {
          * the resource {@code red.png} will be available in the native image while the resources {@code foo/green.png}
          * and {@code bar/blue.png} will not be available in the native image.
          */
-        @ConfigItem
-        public Optional<List<String>> excludes;
+        Optional<List<String>> excludes();
     }
 
     /**
      * Debugging options.
      */
-    @ConfigItem
-    public Debug debug;
+    Debug debug();
 
     @ConfigGroup
-    public static class Debug {
+    interface Debug {
         /**
          * If debug is enabled and debug symbols are generated.
          * The symbols will be generated in a separate .debug file.
          */
-        @ConfigItem
-        public boolean enabled;
+        @WithDefault("false")
+        boolean enabled();
     }
 
     /**
      * Generate the report files for GraalVM Dashboard.
      */
-    @ConfigItem
-    public boolean enableDashboardDump;
+    @WithDefault("false")
+    boolean enableDashboardDump();
 
     /**
-     * Supported Container runtimes
+     * Configure native executable compression using UPX.
      */
-    public static enum ContainerRuntime {
-        DOCKER,
-        PODMAN;
+    Compression compression();
 
-        public String getExecutableName() {
-            return this.name().toLowerCase();
-        }
+    @ConfigGroup
+    interface Compression {
+        /**
+         * The compression level in [1, 10].
+         * 10 means <em>best</em>.
+         * <p>
+         * Higher compression level requires more time to compress the executable.
+         */
+        OptionalInt level();
+
+        /**
+         * Allows passing extra arguments to the UPX command line (like --brute).
+         * The arguments are comma-separated.
+         *
+         * The exhaustive list of parameters can be found in
+         * <a href="https://github.com/upx/upx/blob/devel/doc/upx.pod">https://github.com/upx/upx/blob/devel/doc/upx.pod</a>.
+         */
+        Optional<List<String>> additionalArgs();
+    }
+
+    /**
+     * Supported Builder Image providers/distributions
+     */
+    enum BuilderImageProvider {
+        GRAALVM,
+        MANDREL;
+    }
+
+    enum MonitoringOption {
+        HEAPDUMP,
+        JVMSTAT,
+        JFR,
+        JMXSERVER,
+        JMXCLIENT,
+        ALL
+    }
+
+    enum ImagePullStrategy {
+        /**
+         * Always pull the most recent image.
+         */
+        ALWAYS,
+        /**
+         * Only pull the image if it's missing locally.
+         */
+        MISSING,
+        /**
+         * Never pull any image; fail if the image is missing locally.
+         */
+        NEVER
     }
 }

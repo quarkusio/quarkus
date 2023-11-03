@@ -11,6 +11,6 @@ language:
     dependencies:
       - io.quarkus:quarkus-google-cloud-functions-http
       - io.quarkus:quarkus-resteasy
-      - io.quarkus:quarkus-vertx-web
+      - io.quarkus:quarkus-reactive-routes
       - io.quarkus:quarkus-funqy-http
       - io.quarkus:quarkus-undertow

@@ -1,15 +1,14 @@
 package io.quarkus.smallrye.health.test;
 
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.Readiness;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.eclipse.microprofile.health.Startup;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -22,7 +21,7 @@ public class ExpectedBeansUnitTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(FailingHealthCheck.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
     @Inject
@@ -65,6 +64,9 @@ public class ExpectedBeansUnitTest {
         selects = checks.select(Readiness.Literal.INSTANCE);
         Assertions.assertTrue(isUnique(selects));
 
+        selects = checks.select(Startup.Literal.INSTANCE);
+        Assertions.assertTrue(isUnique(selects));
+
         selects = checks.select(HealthGroup.Literal.of("group1"));
         Assertions.assertTrue(isUnique(selects));
 
@@ -73,6 +75,7 @@ public class ExpectedBeansUnitTest {
 
         selects = checks.select(Liveness.Literal.INSTANCE,
                 Readiness.Literal.INSTANCE,
+                Startup.Literal.INSTANCE,
                 HealthGroup.Literal.of("group1"),
                 HealthGroup.Literal.of("group2"));
         Assertions.assertTrue(isUnique(selects));

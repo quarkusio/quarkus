@@ -12,7 +12,7 @@ public class MultiModuleKotlinProjectBuildTest extends QuarkusGradleWrapperTestB
     public void testBasicMultiModuleBuild() throws Exception {
         final File projectDir = getProjectDir("multi-module-kotlin-project");
         final BuildResult build = runGradleWrapper(projectDir, "clean", "build");
-        assertThat(build.getTasks().get(":quarkusGenerateCode")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
-        assertThat(build.getTasks().get(":compileKotlin")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(build.getTasks().get(":quarkusGenerateCode"))).isTrue();
+        assertThat(BuildResult.isSuccessful(build.getTasks().get(":compileKotlin"))).isTrue();
     }
 }

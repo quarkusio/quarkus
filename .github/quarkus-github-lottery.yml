@@ -1,0 +1,150 @@
+notifications:
+  createIssues:
+    repository: "quarkusio/quarkus-github-lottery-reports"
+buckets:
+  triage:
+    label: "triage/needs-triage"
+    delay: PT0S
+    timeout: P3D
+  maintenance:
+    feedback:
+      labels: ["triage/needs-reproducer", "triage/needs-feedback"]
+      needed:
+        delay: P21D
+        timeout: P3D
+      provided:
+        delay: P7D
+        timeout: P3D
+    stale:
+      delay: P60D
+      timeout: P14D
+  stewardship:
+    delay: P60D
+    timeout: P14D
+participants:
+  - username: "yrodiere"
+    timezone: "Europe/Paris"
+    triage:
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      maxIssues: 3
+    maintenance:
+      labels: ["area/hibernate-orm", "area/hibernate-search", "area/elasticsearch"]
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      feedback:
+        needed:
+          maxIssues: 4
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 5
+  - username: "gsmet"
+    timezone: "Europe/Paris"
+    triage:
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      maxIssues: 3
+    maintenance:
+      labels: ["area/hibernate-validator", "area/jakarta"]
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      feedback:
+        needed:
+          maxIssues: 4
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 5
+    stewardship:
+      days: ["MONDAY"]
+      maxIssues: 3
+  - username: "mkouba"
+    timezone: "Europe/Prague"
+    triage:
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      maxIssues: 2
+    maintenance:
+      labels: ["area/arc", "area/scheduler", "area/qute"]
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      feedback:
+        needed:
+          maxIssues: 4
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 5
+  - username: "jmartisk"
+    timezone: "Europe/Prague"
+    triage:
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      maxIssues: 3
+    maintenance:
+      labels: ["area/graphql", "area/smallrye", "area/health", "area/kotlin", "area/metrics", "area/registry", "area/platform"]
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      feedback:
+        needed:
+          maxIssues: 4
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 5
+  - username: "maxandersen"
+    timezone: "Europe/Paris"
+    triage:
+      days: ["WEDNESDAY", "FRIDAY"]
+      maxIssues: 3
+    maintenance:
+      labels: ["area/build", "area/cli", "area/devmode", "area/dev-ui", "area/gradle", "area/jbang", "area/devtools"]
+      days: ["WEDNESDAY", "FRIDAY"]
+      feedback:
+        needed:
+          maxIssues: 4
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 5
+  - username: "geoand"
+    timezone: "Europe/Athens"
+    triage:
+      days: ["WEDNESDAY", "FRIDAY"]
+      maxIssues: 3
+    maintenance:
+      labels: ["area/core", "area/testing", "area/kotlin", "area/spring", "area/resteasy-reactive", "area/kubernetes"]
+      days: ["WEDNESDAY", "FRIDAY"]
+      feedback:
+        needed:
+          maxIssues: 4
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 5
+    stewardship:
+      days: ["WEDNESDAY", "FRIDAY"]
+      maxIssues: 3
+  - username: "sberyozkin"
+    timezone: "Europe/Dublin"
+    triage:
+      days: ["MONDAY", "WEDNESDAY", "FRIDAY"]
+      maxIssues: 3
+    maintenance:
+      labels: ["area/security", "area/oidc", "area/keycloak-authorization"]
+      days: ["MONDAY", "WEDNESDAY", "FRIDAY"]
+      feedback:
+        needed:
+          maxIssues: 4
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 5
+  - username: "manovotn"
+    timezone: "Europe/Prague"
+    triage:
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      maxIssues: 2
+    maintenance:
+      labels: ["area/arc"]
+      days: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+      feedback:
+        needed:
+          maxIssues: 4
+        provided:
+          maxIssues: 2
+      stale:
+        maxIssues: 5

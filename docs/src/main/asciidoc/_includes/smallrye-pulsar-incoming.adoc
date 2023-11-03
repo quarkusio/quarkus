@@ -1,0 +1,90 @@
+.Incoming Attributes of the 'smallrye-pulsar' connector
+[options="header"]
+|===
+|Attribute (_alias_) |Description |Type |Mandatory |Default
+|*ack-strategy*
+|Specify the commit strategy to apply when a message produced from a record is acknowledged. Values can be `ack`, `cumulative`.
+|string
+|false
+|`ack`
+|*ackTimeout.redeliveryBackoff*
+|Comma separated values for configuring ack timeout MultiplierRedeliveryBackoff, min delay, max delay, multiplier.
+|string
+|false
+|
+|*batchReceive*
+|Whether batch receive is used to consume messages
+|boolean
+|false
+|`false`
+|*client-configuration*
+|Identifier of a CDI bean that provides the default Pulsar client configuration for this channel. The channel configuration can still override any attribute. The bean must have a type of Map<String, Object> and must use the @io.smallrye.common.annotation.Identifier qualifier to set the identifier.
+|string
+|false
+|
+|*consumer-configuration*
+|Identifier of a CDI bean that provides the default Pulsar consumer configuration for this channel. The channel configuration can still override any attribute. The bean must have a type of Map<String, Object> and must use the @io.smallrye.common.annotation.Identifier qualifier to set the identifier.
+|string
+|false
+|
+|*deadLetterPolicy.deadLetterTopic*
+|Name of the dead letter topic where the failing messages will be sent
+|string
+|false
+|
+|*deadLetterPolicy.initialSubscriptionName*
+|Name of the initial subscription name of the dead letter topic
+|string
+|false
+|
+|*deadLetterPolicy.maxRedeliverCount*
+|Maximum number of times that a message will be redelivered before being sent to the dead letter topic
+|int
+|false
+|
+|*deadLetterPolicy.retryLetterTopic*
+|Name of the retry topic where the failing messages will be sent
+|string
+|false
+|
+|*failure-strategy*
+|Specify the failure strategy to apply when a message produced from a record is acknowledged negatively (nack). Values can be `nack` (default), `fail`, `ignore` or `reconsume-later
+|string
+|false
+|`nack`
+|*health-enabled*
+|Whether health reporting is enabled (default) or disabled
+|boolean
+|false
+|`true`
+|*negativeAck.redeliveryBackoff*
+|Comma separated values for configuring negative ack MultiplierRedeliveryBackoff, min delay, max delay, multiplier.
+|string
+|false
+|
+|*reconsumeLater.delay*
+|Default delay for reconsume failure-strategy, in seconds
+|long
+|false
+|`3`
+|*schema*
+|The Pulsar schema type of this channel. When configured a schema is built with the given SchemaType and used for the channel. When absent, the schema is resolved searching for a CDI bean typed `Schema` qualified with `@Identifier` and the channel name. As a fallback AUTO_CONSUME or AUTO_PRODUCE are used.
+|string
+|false
+|
+|*serviceUrl*
+|The service URL for the Pulsar service
+|string
+|false
+|`pulsar://localhost:6650`
+|*topic*
+|The consumed / populated Pulsar topic. If not set, the channel name is used
+|string
+|false
+|
+|*tracing-enabled*
+|Whether tracing is enabled (default) or disabled
+|boolean
+|false
+|`true`
+|===

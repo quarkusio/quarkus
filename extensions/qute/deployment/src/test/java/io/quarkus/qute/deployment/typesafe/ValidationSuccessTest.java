@@ -4,11 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Collections;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -19,12 +17,13 @@ public class ValidationSuccessTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Movie.class, MovieExtensions.class)
                     .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.typesafe.Movie movie}"
                             + "{@java.lang.Long age}"
                             + "{@java.lang.String surname}"
-                            + "{@java.util.Map<String,String map}"
+                            + "{@java.util.Map<String,String> map}"
+                            + "{@int cislo}"
                             // Property found
                             + "{movie.name} "
                             // Built-in value resolvers
@@ -43,6 +42,8 @@ public class ValidationSuccessTest {
                             + "{movie.toNumber(surname)} "
                             // Varargs extension method
                             + "{movie.toLong(1l,2l)} "
+                            // Primitive type in param declaration
+                            + "{movie.toInt(cislo)} "
                             // Field access
                             + "{#each movie.mainCharacters}{it.substring(1)}{/} "
                             // Method param assignability
@@ -55,9 +56,9 @@ public class ValidationSuccessTest {
     @Test
     public void testResult() {
         // Validation succeeded! Yay!
-        assertEquals("Jason Jason Mono Stereo true 1 10 11 ok 43 3 ohn bar",
+        assertEquals("Jason Jason Mono Stereo true 1 10 11 ok 43 3 1 ohn bar",
                 movie.data("movie", new Movie("John"), "name", "Vasik", "surname", "Hu", "age", 10l, "map",
-                        Collections.singletonMap("foo", "bar")).render());
+                        Collections.singletonMap("foo", "bar")).data("cislo", 1).render());
     }
 
 }

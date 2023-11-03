@@ -3,21 +3,19 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Extension for Spring Data API
-
-include::./attributes.adoc[]
+= Extension for Spring Data API
+include::_attributes.adoc[]
+:categories: compatibility
+:summary: While you are encouraged to use Hibernate ORM with Panache for your data layer, Quarkus provides a compatibility layer for Spring Data JPA in the form of the spring-data-jpa extension.
+:topics: spring,data,hibernate-orm,jpa,compatibility
+:extensions: io.quarkus:quarkus-spring-data-jpa
 
 While users are encouraged to use Hibernate ORM with Panache for Relational Database access, Quarkus provides a compatibility layer for
 Spring Data JPA repositories in the form of the `spring-data-jpa` extension.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::{includes}/prerequisites.adoc[]
 
 == Solution
 
@@ -26,24 +24,17 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `spring-data-jpa-quickstart` {quickstarts-tree-url}/spring-data-jpa-quickstart[directory].
+The solution is located in the `spring-data-jpa-quickstart` link:{quickstarts-tree-url}/spring-data-jpa-quickstart[directory].
 
 == Creating the Maven project
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=spring-data-jpa-quickstart \
-    -DclassName="org.acme.spring.data.jpa.FruitResource" \
-    -Dpath="/greeting" \
-    -Dextensions="resteasy,spring-data-jpa,resteasy-jackson,quarkus-jdbc-postgresql"
-cd spring-data-jpa-quickstart
-----
+:create-app-artifact-id: spring-data-jpa-quickstart
+:create-app-extensions: resteasy-reactive-jackson,spring-data-jpa,quarkus-jdbc-postgresql
+include::{includes}/devtools/create-app.adoc[]
 
-This command generates a Maven project with a REST endpoint and imports the `spring-data-jpa` extension.
+This command generates a Maven project and imports the `spring-data-jpa` extension.
 
 If you already have your Quarkus project configured, you can add the `spring-data-jpa` extension
 to your project by running the following command in your project base directory:
@@ -53,14 +44,21 @@ to your project by running the following command in your project base directory:
 ./mvnw quarkus:add-extension -Dextensions="spring-data-jpa"
 ----
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-spring-data-jpa</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-spring-data-jpa")
 ----
 
 == Define the Entity
@@ -71,9 +69,9 @@ Throughout the course of this guide, the following JPA Entity will be used:
 ----
 package org.acme.spring.data.jpa;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 
 @Entity
 public class Fruit {
@@ -143,7 +141,7 @@ A very easy way to accomplish that is by using the following Docker command:
 
 [source,bash]
 ----
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:11.5
+docker run -it --rm=true --name quarkus_test -e POSTGRES_USER=quarkus_test -e POSTGRES_PASSWORD=quarkus_test -e POSTGRES_DB=quarkus_test -p 5432:5432 postgres:14.1
 ----
 
 If you plan on using a different setup, please change your `application.properties` accordingly.
@@ -183,25 +181,24 @@ public interface FruitRepository extends CrudRepository<Fruit, Long> {
 }
 ----
 
-The `FruitRepository` above extends Spring Data's `org.springframework.data.repository.CrudRepository` which means that all of the latter's methods are
+The `FruitRepository` above extends Spring Data's `org.springframework.data.repository.CrudRepository` which means that all the latter's methods are
 available to `FruitRepository`.
 Additionally `findByColor` is defined whose purpose is to return all Fruit entities that match the specified color.
 
-== Update the JAX-RS resource
+== Update the Jakarta REST resource
 
-With the repository in place, the next order of business is to update the JAX-RS resource that will use the `FruitRepository`. Open `FruitResource` and change its contents to:
+With the repository in place, the next order of business is to create the Jakarta REST resource that will use the `FruitRepository`.
+Create `FruitResource` with the following content:
 
 [source,java]
 ----
 package org.acme.spring.data.jpa;
 
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
 
 import java.util.List;
 import java.util.Optional;
@@ -223,19 +220,19 @@ public class FruitResource {
 
     @DELETE
     @Path("{id}")
-    public void delete(@PathParam long id) {
+    public void delete(long id) {
         fruitRepository.deleteById(id);
     }
 
     @POST
     @Path("/name/{name}/color/{color}")
-    public Fruit create(@PathParam String name, @PathParam String color) {
+    public Fruit create(String name, String color) {
         return fruitRepository.save(new Fruit(name, color));
     }
 
     @PUT
     @Path("/id/{id}/color/{color}")
-    public Fruit changeColor(@PathParam Long id, @PathParam String color) {
+    public Fruit changeColor(Long id, String color) {
         Optional<Fruit> optional = fruitRepository.findById(id);
         if (optional.isPresent()) {
             Fruit fruit = optional.get();
@@ -248,7 +245,7 @@ public class FruitResource {
 
     @GET
     @Path("/color/{color}")
-    public List<Fruit> findByColor(@PathParam String color) {
+    public List<Fruit> findByColor(String color) {
         return fruitRepository.findByColor(color);
     }
 }
@@ -259,8 +256,8 @@ public class FruitResource {
 
 === Note on Spring Web
 
-The JAX-RS resource can also be substituted with a Spring Web controller as Quarkus supports REST endpoint definition using Spring controllers.
-See the link:spring-web[Spring Web guide] for more details.
+The Jakarta REST resource can also be substituted with a Spring Web controller as Quarkus supports REST endpoint definition using Spring controllers.
+See the xref:spring-web.adoc[Spring Web guide] for more details.
 
 == Update the test
 
@@ -383,28 +380,27 @@ class FruitResourceTest {
 }
 ----
 
-The test can be easily run by issuing: `./mvnw test`
+The test can be easily run by issuing:
+
+include::{includes}/devtools/test.adoc[]
 
 == Package and run the application
 
 Quarkus dev mode works with the defined repositories just like with any other Quarkus extension, greatly enhancing your productivity during the dev cycle.
 The application can be started in dev mode as usual using:
 
-[source, bash]
-----
-./mvnw compile quarkus:dev
-----
+include::{includes}/devtools/dev.adoc[]
 
 == Run the application as a native binary
 
-You can of course create a native executable following the instructions of the link:building-native-image[this] guide.
+You can of course create a native executable following the instructions of xref:building-native-image.adoc[this guide].
 
 == Supported Spring Data JPA functionalities
 
 Quarkus currently supports a subset of Spring Data JPA's features, namely the most useful and most commonly used features.
 
 An important part of this support is that all repository generation is done at build time thus ensuring that all supported features work correctly in native mode.
-Moreover, developers know at build time whether or not their repository method names can be converted to proper JPQL queries.
+Moreover, developers know at build time whether their repository method names can be converted to proper JPQL queries.
 This also means that if a method name indicates that a field should be used that is not part of the Entity, developers will get
 the relevant error at build time.
 
@@ -422,9 +418,9 @@ Interfaces that extend any of the following Spring Data repositories are automat
 * `org.springframework.data.jpa.repository.JpaRepository`
 
 The generated repositories are also registered as beans so they can be injected into any other bean.
-Furthermore the methods that update the database are automatically annotated with `@Transactional`.
+Furthermore, the methods that update the database are automatically annotated with `@Transactional`.
 
-==== Fine tuning of repository definition
+==== Fine-tuning of repository definition
 
 This allows user defined repository interfaces to cherry-pick methods from any of the supported Spring Data repository interfaces without having to extend those interfaces.
 This is particularly useful when for example a repository needs to use some methods from `CrudRepository` but it's undesirable to expose the full list of methods of said interface.
@@ -581,6 +577,8 @@ public interface MovieRepository extends CrudRepository<Movie, Long> {
 ----
 All methods that are annotated with `@Modifying` will automatically be annotated with `@Transactional`.
 
+TIP: In Quarkus, `@Param` is optional when parameter names have been compiled to bytecode (which is active by default in generated projects).
+
 ==== Naming Strategies
 
 Hibernate ORM maps property names using a physical naming strategy and an implicit naming strategy. If you wish to use Spring Boot's default naming strategies, the following properties need to be set:
@@ -598,16 +596,15 @@ An extensive list of examples can be seen in the https://github.com/quarkusio/qu
 === What is currently unsupported
 
 * Methods of the `org.springframework.data.repository.query.QueryByExampleExecutor` interface - if any of these are invoked, a Runtime exception will be thrown.
-* QueryDSL support. No attempt will be made to generate implementations of any of the QueryDSL related repositories.
+* QueryDSL support. No attempt will be made to generate implementations of the QueryDSL related repositories.
 * Customizing the base repository for all repository interfaces in the code base.
 ** In Spring Data JPA this is done by registering a class that extends `org.springframework.data.jpa.repository.support.SimpleJpaRepository` however in Quarkus this class
 is not used at all (since all the necessary plumbing is done at build time). Similar support might be added to Quarkus in the future.
 * Using `java.util.concurrent.Future` and classes that extend it as return types of repository methods.
 * Native and named queries when using `@Query`
-* https://github.com/spring-projects/spring-data-jpa/blob/master/src/main/asciidoc/jpa.adoc#entity-state-detection-strategies[Entity State-detection Strategies]
+* https://github.com/spring-projects/spring-data-jpa/blob/main/src/main/asciidoc/jpa.adoc#entity-state-detection-strategies[Entity State-detection Strategies]
 via `EntityInformation`.
-** As of Quarkus 1.6.0, only "Version-Property and Id-Property inspection" is implemented (which should cover most cases).
-** As of Quarkus 1.7.0, `org.springframework.data.domain.Persistable` is also implemented.
+* The use of `org.springframework.data.jpa.repository.Lock`
 
 The Quarkus team is exploring various alternatives to bridging the gap between the JPA and Reactive worlds.
 
@@ -620,11 +617,11 @@ Spring classes and annotations are only used for reading metadata and / or are u
 
 Quarkus has more Spring compatibility features. See the following guides for more details:
 
-* link:spring-di[Quarkus - Extension for Spring DI]
-* link:spring-web[Quarkus - Extension for Spring Web]
-* link:spring-security[Quarkus - Extension for Spring Security]
-* link:spring-cloud-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
-* link:spring-boot-properties[Quarkus - Extension for Spring Boot properties]
-* link:spring-cache[Quarkus - Extension for Spring Cache]
-* link:spring-scheduled[Quarkus - Extension for Spring Scheduled]
-* link:spring-data-rest[Quarkus - Extension for Spring Data REST]
+* xref:spring-di.adoc[Quarkus - Extension for Spring DI]
+* xref:spring-web.adoc[Quarkus - Extension for Spring Web]
+* xref:spring-security.adoc[Quarkus - Extension for Spring Security]
+* xref:spring-cloud-config-client.adoc[Quarkus - Reading properties from Spring Cloud Config Server]
+* xref:spring-boot-properties.adoc[Quarkus - Extension for Spring Boot properties]
+* xref:spring-cache.adoc[Quarkus - Extension for Spring Cache]
+* xref:spring-scheduled.adoc[Quarkus - Extension for Spring Scheduled]
+* xref:spring-data-rest.adoc[Quarkus - Extension for Spring Data REST]

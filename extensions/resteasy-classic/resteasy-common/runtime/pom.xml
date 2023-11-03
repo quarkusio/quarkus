@@ -10,12 +10,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-common</artifactId>
-    <name>Quarkus - RESTEasy - Common - Runtime</name>
-    <description>Components common to the RESTEasy server and the REST Client</description>
+    <name>Quarkus - RESTEasy Classic - Common - Runtime</name>
+    <description>Components common to the RESTEasy Classic server and REST Client</description>
     <dependencies>
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>graal-sdk</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -25,14 +25,24 @@
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>jakarta.activation</groupId>
+                    <artifactId>jakarta.activation-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jboss.spec.javax.ws.rs</groupId>
+                    <artifactId>jboss-jaxrs-api_3.0_spec</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.sun.activation</groupId>
-            <artifactId>jakarta.activation</artifactId>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>angus-activation</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -56,6 +66,10 @@
                     <groupId>com.google.code.findbugs</groupId>
                     <artifactId>jsr305</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>jakarta.activation</groupId>
+                    <artifactId>jakarta.activation-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -64,9 +78,24 @@
             <optional>true</optional>
         </dependency>
         <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-json-binding-provider</artifactId>
             <optional>true</optional>
+            <exclusions>
+                <!-- we let quarkus-jsonp bring the appropriate impl -->
+                <exclusion>
+                    <groupId>org.glassfish</groupId>
+                    <artifactId>jakarta.json</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy.microprofile</groupId>
+            <artifactId>microprofile-config</artifactId>
         </dependency>
     </dependencies>
 
@@ -74,14 +103,14 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <excludedArtifacts>
                         <excludedArtifact>javax.ws.rs:javax.ws.rs-api</excludedArtifact>
                         <excludedArtifact>javax.activation:javax.activation-api</excludedArtifact>
                         <excludedArtifact>javax.activation:activation</excludedArtifact>
-                        <excludedArtifact>jakarta.ws.rs:jakarta.ws.rs-api</excludedArtifact>
-                        <excludedArtifact>org.jboss.resteasy:resteasy-context-propagation</excludedArtifact>
+                        <excludedArtifact>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_3.0_spec</excludedArtifact>
+                        <excludedArtifact>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</excludedArtifact>
                     </excludedArtifacts>
                 </configuration>
             </plugin>

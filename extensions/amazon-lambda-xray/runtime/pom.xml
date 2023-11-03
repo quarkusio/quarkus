@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>quarkus-amazon-lambda-xray</artifactId>
-    <name>Quarkus - Amazon Lambda Xray - Runtime</name>
+    <name>Quarkus - Amazon Lambda X-Ray - Runtime</name>
     <description>Allow X-Ray to run with Quarkus Lambda support</description>
 
     <dependencies>
@@ -37,8 +37,8 @@
             <artifactId>commons-logging-jboss-logging</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>graal-sdk</artifactId>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -47,7 +47,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

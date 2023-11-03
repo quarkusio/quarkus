@@ -7,10 +7,8 @@ import java.util.Map;
 
 import org.hamcrest.CoreMatchers;
 import org.jboss.logging.Logger;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -26,9 +24,9 @@ public class GraphQLConfigMappingTest extends AbstractGraphQLTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
-                            BusinessException.class)
+                            BusinessException.class, TestUnion.class, TestUnionMember.class)
                     .addAsResource(new StringAsset(getPropertyAsString(configuration())), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
@@ -80,7 +78,7 @@ public class GraphQLConfigMappingTest extends AbstractGraphQLTest {
     private static Map<String, String> configuration() {
         Map<String, String> m = new HashMap<>();
         m.put("quarkus.smallrye-graphql.error-extension-fields",
-                "exception, classification, code, description, validationErrorType, queryPath");
+                "exception,classification,code,description,validationErrorType,queryPath");
         m.put("quarkus.smallrye-graphql.default-error-message", "O gats, daar is 'n probleem !");
 
         m.put("quarkus.smallrye-graphql.events.enabled", "true");

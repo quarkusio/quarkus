@@ -2,8 +2,8 @@ package io.quarkus.elytron.security.runtime;
 
 import java.util.function.Supplier;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 import org.wildfly.security.auth.server.RealmIdentity;
@@ -52,7 +52,9 @@ public class ElytronTrustedIdentityProvider implements IdentityProvider<TrustedA
                     PasswordCredential cred = id.getCredential(PasswordCredential.class);
                     try (ServerAuthenticationContext ac = domain.createNewAuthenticationContext()) {
                         ac.setAuthenticationName(request.getPrincipal());
-                        ac.addPrivateCredential(cred);
+                        if (cred != null) {
+                            ac.addPrivateCredential(cred);
+                        }
                         ac.authorize();
                         result = ac.getAuthorizedIdentity();
 

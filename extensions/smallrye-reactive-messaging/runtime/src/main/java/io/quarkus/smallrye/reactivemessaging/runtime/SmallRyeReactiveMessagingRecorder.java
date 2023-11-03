@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import io.quarkus.runtime.annotations.Recorder;
-import io.smallrye.reactive.messaging.extension.ChannelConfiguration;
-import io.smallrye.reactive.messaging.extension.EmitterConfiguration;
+import io.smallrye.reactive.messaging.EmitterConfiguration;
+import io.smallrye.reactive.messaging.providers.extension.ChannelConfiguration;
 
 @Recorder
 public class SmallRyeReactiveMessagingRecorder {

@@ -2,7 +2,7 @@ package io.quarkus.annotation.processor.generate_doc;
 
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.computeConfigGroupDocFileName;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.computeConfigRootDocFileName;
-import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.deriveConfigRootName;
+import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getName;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -64,6 +64,7 @@ final public class ConfigDocItemScanner {
             return;
         }
 
+        String prefix = Constants.QUARKUS;
         ConfigPhase configPhase = ConfigPhase.BUILD_TIME;
 
         for (AnnotationMirror annotationMirror : clazz.getAnnotationMirrors()) {
@@ -71,46 +72,74 @@ final public class ConfigDocItemScanner {
             if (annotationName.equals(Constants.ANNOTATION_CONFIG_ROOT)) {
                 final Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues = annotationMirror
                         .getElementValues();
-                String name = Constants.EMPTY;
+                String name = Constants.HYPHENATED_ELEMENT_NAME;
                 for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : elementValues.entrySet()) {
                     final String key = entry.getKey().toString();
                     final String value = entry.getValue().getValue().toString();
                     if ("name()".equals(key)) {
-                        name = Constants.QUARKUS + Constants.DOT + value;
+                        name = value;
                     } else if ("phase()".equals(key)) {
                         configPhase = ConfigPhase.valueOf(value);
+                    } else if ("prefix()".equals(key)) {
+                        prefix = value;
                     }
                 }
 
-                if (name.isEmpty()) {
-                    name = deriveConfigRootName(clazz.getSimpleName().toString(), configPhase);
-                } else if (name.endsWith(Constants.DOT + Constants.PARENT)) {
+                for (AnnotationMirror mirror : clazz.getAnnotationMirrors()) {
+                    if (mirror.getAnnotationType().toString().equals(Constants.ANNOTATION_CONFIG_MAPPING)) {
+                        name = Constants.EMPTY;
+                        for (Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : mirror.getElementValues()
+                                .entrySet()) {
+                            if ("prefix()".equals(entry.getKey().toString())) {
+                                prefix = entry.getValue().getValue().toString();
+                            }
+                        }
+                    }
+                }
+
+                String docFileName = null;
+                for (AnnotationMirror mirror : clazz.getAnnotationMirrors()) {
+                    if (mirror.getAnnotationType().toString().equals(Constants.ANNOTATION_CONFIG_DOC_FILE_NAME)) {
+                        for (Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : mirror.getElementValues()
+                                .entrySet()) {
+                            if ("value()".equals(entry.getKey().toString())) {
+                                docFileName = entry.getValue().getValue().toString();
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+
+                name = getName(prefix, name, clazz.getSimpleName().toString(), configPhase);
+                if (name.endsWith(Constants.DOT + Constants.PARENT)) {
                     // take into account the root case which would contain characters that can't be used to create the final file
                     name = name.replace(Constants.DOT + Constants.PARENT, "");
                 }
 
-                final Matcher pkgMatcher = Constants.PKG_PATTERN.matcher(pkg.toString());
-                final String fileName;
-                if (pkgMatcher.find()) {
-                    fileName = DocGeneratorUtil.computeExtensionDocFileName(clazz.toString());
-                } else {
-                    fileName = name.replace(Constants.DOT, Constants.DASH.charAt(0)) + Constants.ADOC_EXTENSION;
+                if (docFileName == null || docFileName.isEmpty()) {
+                    final Matcher pkgMatcher = Constants.PKG_PATTERN.matcher(pkg.toString());
+                    if (pkgMatcher.find()) {
+                        docFileName = DocGeneratorUtil.computeExtensionDocFileName(clazz.toString());
+                    } else {
+                        docFileName = name.replace(Constants.DOT, Constants.DASH.charAt(0))
+                                + Constants.ADOC_EXTENSION;
+                    }
                 }
-
-                ConfigRootInfo configRootInfo = new ConfigRootInfo(name, clazz, configPhase, fileName);
+                ConfigRootInfo configRootInfo = new ConfigRootInfo(name, clazz, configPhase, docFileName);
                 configRoots.add(configRootInfo);
                 break;
             }
         }
     }
 
-    public Set<ConfigDocGeneratedOutput> scanExtensionsConfigurationItems(Properties javaDocProperties)
+    public Set<ConfigDocGeneratedOutput> scanExtensionsConfigurationItems(Properties javaDocProperties, boolean configMapping)
             throws IOException {
 
         Set<ConfigDocGeneratedOutput> configDocGeneratedOutputs = new HashSet<>();
-        final ConfigDoItemFinder configDoItemFinder = new ConfigDoItemFinder(configRoots, configGroupsToTypeElement,
-                javaDocProperties, allConfigGroupGeneratedDocs, allExtensionGeneratedDocs);
-        final ScannedConfigDocsItemHolder inMemoryScannedItemsHolder = configDoItemFinder.findInMemoryConfigurationItems();
+        final ConfigDocItemFinder configDocItemFinder = new ConfigDocItemFinder(configRoots, configGroupsToTypeElement,
+                javaDocProperties, allConfigGroupGeneratedDocs, allExtensionGeneratedDocs, configMapping);
+        final ScannedConfigDocsItemHolder inMemoryScannedItemsHolder = configDocItemFinder.findInMemoryConfigurationItems();
 
         if (!inMemoryScannedItemsHolder.isEmpty()) {
             updateScannedExtensionArtifactFiles(inMemoryScannedItemsHolder);
@@ -131,7 +160,7 @@ final public class ConfigDocItemScanner {
      * Loads the list of configuration items per configuration root
      *
      */
-    private Properties loadAllExtensionConfigItemsParConfigRoot() throws IOException {
+    private Properties loadAllExtensionConfigItemsParConfigRoot() {
         return allExtensionGeneratedDocs.asProperties();
     }
 
@@ -139,9 +168,8 @@ final public class ConfigDocItemScanner {
      * Update extensions config roots. We need to gather the complete list of configuration roots of an extension
      * when generating the documentation.
      *
-     * @throws IOException
      */
-    private void updateConfigurationRootsList(Map.Entry<ConfigRootInfo, List<ConfigDocItem>> entry) throws IOException {
+    private void updateConfigurationRootsList(Map.Entry<ConfigRootInfo, List<ConfigDocItem>> entry) {
         String extensionFileName = entry.getKey().getFileName();
         String clazz = entry.getKey().getClazz().getQualifiedName().toString();
         configurationRootsParExtensionFileName.put(extensionFileName, clazz);

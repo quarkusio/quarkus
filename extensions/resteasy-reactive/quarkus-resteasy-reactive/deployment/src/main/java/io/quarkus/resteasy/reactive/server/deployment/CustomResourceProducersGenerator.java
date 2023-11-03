@@ -7,10 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -37,7 +36,6 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.util.HashUtil;
-import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 
 final class CustomResourceProducersGenerator {
 
@@ -138,8 +136,9 @@ final class CustomResourceProducersGenerator {
                 ResultHandle quarkusRestContextHandle = m.invokeVirtualMethod(getContextMethodCreator.getMethodDescriptor(),
                         m.getThis());
                 ResultHandle extractorHandle = m.newInstance(
-                        MethodDescriptor.ofConstructor(QueryParamExtractor.class, String.class, boolean.class, boolean.class),
-                        m.getMethodParam(0), m.load(true), m.load(false));
+                        MethodDescriptor.ofConstructor(QueryParamExtractor.class, String.class, boolean.class, boolean.class,
+                                String.class),
+                        m.getMethodParam(0), m.load(true), m.load(false), m.loadNull());
                 ResultHandle resultHandle = m.invokeVirtualMethod(MethodDescriptor.ofMethod(QueryParamExtractor.class,
                         "extractParameter", Object.class, ResteasyReactiveRequestContext.class), extractorHandle,
                         quarkusRestContextHandle);
@@ -151,8 +150,8 @@ final class CustomResourceProducersGenerator {
                 ResultHandle quarkusRestContextHandle = m.invokeVirtualMethod(getContextMethodCreator.getMethodDescriptor(),
                         m.getThis());
                 ResultHandle extractorHandle = m.newInstance(
-                        MethodDescriptor.ofConstructor(PathParamExtractor.class, int.class, boolean.class),
-                        m.getMethodParam(0), m.load(false));
+                        MethodDescriptor.ofConstructor(PathParamExtractor.class, int.class, boolean.class, boolean.class),
+                        m.getMethodParam(0), m.load(false), m.load(true));
                 ResultHandle resultHandle = m.invokeVirtualMethod(MethodDescriptor.ofMethod(PathParamExtractor.class,
                         "extractParameter", Object.class, ResteasyReactiveRequestContext.class), extractorHandle,
                         quarkusRestContextHandle);
@@ -177,8 +176,8 @@ final class CustomResourceProducersGenerator {
                 ResultHandle quarkusRestContextHandle = m.invokeVirtualMethod(getContextMethodCreator.getMethodDescriptor(),
                         m.getThis());
                 ResultHandle extractorHandle = m.newInstance(
-                        MethodDescriptor.ofConstructor(CookieParamExtractor.class, String.class),
-                        m.getMethodParam(0));
+                        MethodDescriptor.ofConstructor(CookieParamExtractor.class, String.class, String.class),
+                        m.getMethodParam(0), m.loadNull());
                 ResultHandle resultHandle = m.invokeVirtualMethod(MethodDescriptor.ofMethod(CookieParamExtractor.class,
                         "extractParameter", Object.class, ResteasyReactiveRequestContext.class), extractorHandle,
                         quarkusRestContextHandle);
@@ -208,9 +207,9 @@ final class CustomResourceProducersGenerator {
                 // The JAX-RS parameters will be handled directly
                 // The other parameters we will just add to the method signature of the producer method
                 // and let CDI populate them for us
-                List<CtorParamData> ctorParamData = new ArrayList<>(ctor.parameters().size());
-                for (short i = 0; i < ctor.parameters().size(); i++) {
-                    Type parameterType = ctor.parameters().get(i);
+                List<CtorParamData> ctorParamData = new ArrayList<>(ctor.parametersCount());
+                for (short i = 0; i < ctor.parametersCount(); i++) {
+                    Type parameterType = ctor.parameterType(i);
                     if (!paramIndexToAnnotations.containsKey(i)) {
                         ctorParamData.add(new CtorParamData(CtorParamData.CustomProducerParameterType.OTHER, parameterType));
                     } else {
@@ -256,7 +255,7 @@ final class CustomResourceProducersGenerator {
                         }
                     }
                 }
-                List<String> producerMethodParameterTypes = new ArrayList<>(ctor.parameters().size());
+                List<String> producerMethodParameterTypes = new ArrayList<>(ctor.parametersCount());
                 for (CtorParamData ctorParamDatum : ctorParamData) {
                     if (ctorParamDatum.getCustomProducerParameterType() == CtorParamData.CustomProducerParameterType.OTHER) {
                         producerMethodParameterTypes.add(ctorParamDatum.getParameterType().name().toString());

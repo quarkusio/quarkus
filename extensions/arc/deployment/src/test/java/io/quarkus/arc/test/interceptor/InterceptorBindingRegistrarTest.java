@@ -7,20 +7,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
+import java.util.List;
 
-import javax.annotation.Priority;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+import jakarta.annotation.Priority;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 
-import org.jboss.jandex.DotName;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -34,7 +29,7 @@ public class InterceptorBindingRegistrarTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(NotAnInterceptorBinding.class, SimpleBean.class, SimpleInterceptor.class))
             .addBuildChainCustomizer(b -> {
                 b.addBuildStep(new BuildStep() {
@@ -42,11 +37,9 @@ public class InterceptorBindingRegistrarTest {
                     public void execute(BuildContext context) {
                         context.produce(new InterceptorBindingRegistrarBuildItem(new InterceptorBindingRegistrar() {
                             @Override
-                            public Map<DotName, Set<String>> registerAdditionalBindings() {
-                                return Collections.singletonMap(DotName.createSimple(NotAnInterceptorBinding.class.getName()),
-                                        Collections.emptySet());
+                            public List<InterceptorBinding> getAdditionalBindings() {
+                                return List.of(InterceptorBinding.of(NotAnInterceptorBinding.class));
                             }
-
                         }));
                     }
                 }).produces(InterceptorBindingRegistrarBuildItem.class).build();

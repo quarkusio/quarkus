@@ -9,7 +9,10 @@ metadata:
   - "metric"
   - "prometheus"
   - "monitoring"
-  guide: "https://quarkus.io/guides/microprofile-metrics"
+  guide: "https://quarkus.io/guides/smallrye-metrics"
   categories:
   - "observability"
-  status: "stable"
+  status: "deprecated"
+  config:
+  - "quarkus.smallrye-metrics."
+  - "mp.metrics."

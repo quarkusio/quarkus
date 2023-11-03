@@ -10,27 +10,16 @@ public class ListFormatOptions {
     @CommandLine.Option(names = { "--name" }, hidden = true, description = "Display extension artifactId only. (deprecated)")
     boolean name = false;
 
-    @CommandLine.Option(names = { "--concise" }, order = 5, description = "Display extension name and artifactId.")
+    @CommandLine.Option(names = { "--concise" }, order = 5, description = "Display extension artifactId and name.")
     boolean concise = false;
 
     @CommandLine.Option(names = {
-            "--full" }, order = 6, description = "Display concise format and version related columns.")
+            "--full" }, order = 6, description = "Display extension artifactId, name, version, platform origin, and other information.")
     boolean full = false;
 
     @CommandLine.Option(names = {
-            "--origins" }, order = 7, description = "Display extensions including their platform origins.")
+            "--origins" }, order = 7, description = "Display extension artifactId, name, version, and platform origins.")
     boolean origins = false;
-
-    /**
-     * If a value was not specified via options (all false),
-     * make origins true. Used with specific platform list.
-     */
-    public void useOriginsUnlessSpecified() {
-        if (id || name || concise || full || origins) {
-            return;
-        }
-        origins = true;
-    }
 
     /**
      * Check if any format has been specified on the command line.
@@ -40,7 +29,9 @@ public class ListFormatOptions {
     }
 
     public String getFormatString() {
-        String formatString = "id";
+        String formatString = "concise";
+        if (id)
+            formatString = "id";
         if (concise)
             formatString = "concise";
         else if (full)

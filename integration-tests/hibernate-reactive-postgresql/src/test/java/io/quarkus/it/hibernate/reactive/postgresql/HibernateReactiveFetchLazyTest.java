@@ -19,6 +19,20 @@ import io.restassured.response.Response;
 public class HibernateReactiveFetchLazyTest {
 
     @Test
+    public void fetchAfterGetReferenceWithMutiny() {
+        RestAssured.when()
+                .post("/prepareDb")
+                .then()
+                .body(is("Neal Stephenson"));
+
+        Response response = RestAssured.when()
+                .get("/getReferenceBooksWithMutiny/567")
+                .then()
+                .extract().response();
+        assertTitles(response, "Cryptonomicon", "Snow Crash");
+    }
+
+    @Test
     public void fetchAfterFindWithMutiny() {
         RestAssured.when()
                 .post("/prepareDb")

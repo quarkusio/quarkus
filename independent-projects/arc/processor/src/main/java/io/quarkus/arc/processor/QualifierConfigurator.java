@@ -5,6 +5,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
@@ -15,7 +16,7 @@ import org.jboss.jandex.Type.Kind;
  * Use this configurator to construct an {@link AnnotationInstance} that represents a CDI qualifier.
  * <p>
  * This construct is not thread-safe.
- * 
+ *
  * @param <C>
  * @see BeanConfigurator
  * @see ObserverConfigurator

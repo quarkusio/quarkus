@@ -1,5 +1,8 @@
 package io.quarkus.arc.impl;
 
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -48,8 +51,8 @@ public class ParameterizedTypeImpl implements ParameterizedType, Serializable {
     public boolean equals(Object obj) {
         if (this == obj) {
             return true;
-        } else if (obj instanceof ParameterizedType) {
-            ParameterizedType that = (ParameterizedType) obj;
+        } else if (isParameterizedType(obj)) {
+            ParameterizedType that = asParameterizedType(obj);
             Type thatOwnerType = that.getOwnerType();
             Type thatRawType = that.getRawType();
             return (ownerType == null ? thatOwnerType == null : ownerType.equals(thatOwnerType))
@@ -77,9 +80,9 @@ public class ParameterizedTypeImpl implements ParameterizedType, Serializable {
                 } else {
                     sb.append(actualType);
                 }
-                sb.append(",");
+                sb.append(", ");
             }
-            sb.delete(sb.length() - 1, sb.length());
+            sb.delete(sb.length() - 2, sb.length());
             sb.append(">");
         }
         return sb.toString();

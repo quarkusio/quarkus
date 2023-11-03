@@ -6,17 +6,16 @@ import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.quarkus.bootstrap.model.AppArtifact;
+import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
+import io.fabric8.kubernetes.api.model.rbac.Subject;
 import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.LogFile;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
@@ -24,16 +23,16 @@ import io.quarkus.test.QuarkusProdModeTest;
 
 public class WithKubernetesClientTest {
 
+    private static final String APP_NAME = "kubernetes-with-client";
+
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
-            .setApplicationName("kubernetes-with-client")
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
+            .setApplicationName(APP_NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
-            .setForcedDependencies(
-                    Collections.singletonList(
-                            new AppArtifact("io.quarkus", "quarkus-kubernetes-client", Version.getVersion())));
+            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-kubernetes-client", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -63,11 +62,21 @@ public class WithKubernetesClientTest {
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
 
         assertThat(kubernetesList).filteredOn(h -> "ServiceAccount".equals(h.getKind())).singleElement().satisfies(h -> {
-            assertThat(h.getMetadata().getName()).isEqualTo("kubernetes-with-client");
+            assertThat(h.getMetadata().getName()).isEqualTo(APP_NAME);
         });
 
         assertThat(kubernetesList).filteredOn(h -> "RoleBinding".equals(h.getKind())).singleElement().satisfies(h -> {
-            assertThat(h.getMetadata().getName()).isEqualTo("kubernetes-with-client-view");
+            assertThat(h.getMetadata().getName()).isEqualTo(APP_NAME + "-view");
+            RoleBinding roleBinding = (RoleBinding) h;
+            // verify role ref
+            assertThat(roleBinding.getRoleRef().getKind()).isEqualTo("ClusterRole");
+            assertThat(roleBinding.getRoleRef().getName()).isEqualTo("view");
+
+            // verify subjects
+            assertThat(roleBinding.getSubjects()).isNotEmpty();
+            Subject subject = roleBinding.getSubjects().get(0);
+            assertThat(subject.getKind()).isEqualTo("ServiceAccount");
+            assertThat(subject.getName()).isEqualTo(APP_NAME);
         });
     }
 

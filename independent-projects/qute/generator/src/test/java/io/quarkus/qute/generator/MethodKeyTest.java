@@ -2,11 +2,11 @@ package io.quarkus.qute.generator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.quarkus.qute.generator.ValueResolverGenerator.MethodKey;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -14,6 +14,8 @@ import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.generator.ValueResolverGenerator.MethodKey;
 
 public class MethodKeyTest {
 

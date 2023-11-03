@@ -1,5 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME;
+import static io.quarkus.deployment.pkg.steps.JarResultBuildStep.QUARKUS_RUN_JAR;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.mergeList;
 
@@ -11,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,14 +25,15 @@ import org.jboss.logging.Logger;
 import io.dekorate.Session;
 import io.dekorate.SessionReader;
 import io.dekorate.SessionWriter;
+import io.dekorate.config.ConfigurationSupplier;
 import io.dekorate.kubernetes.config.Configurator;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.logger.NoopLogger;
 import io.dekorate.processor.SimpleFileReader;
-import io.dekorate.processor.SimpleFileWriter;
 import io.dekorate.project.Project;
 import io.dekorate.utils.Maps;
 import io.dekorate.utils.Strings;
+import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsTest;
@@ -40,12 +44,18 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.kubernetes.spi.ConfigurationSupplierBuildItem;
 import io.quarkus.kubernetes.spi.ConfiguratorBuildItem;
 import io.quarkus.kubernetes.spi.CustomProjectRootBuildItem;
 import io.quarkus.kubernetes.spi.DecoratorBuildItem;
+import io.quarkus.kubernetes.spi.DekorateOutputBuildItem;
+import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesOutputDirectoryBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
@@ -53,8 +63,7 @@ class KubernetesProcessor {
 
     private static final Logger log = Logger.getLogger(KubernetesProcessor.class);
 
-    private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
-    public static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
+    private static final String COMMON = "common";
 
     @BuildStep
     FeatureBuildItem produceFeature() {
@@ -71,15 +80,26 @@ class KubernetesProcessor {
         for (KubernetesDeploymentTargetBuildItem deploymentTarget : mergedDeploymentTargets) {
             if (deploymentTarget.isEnabled()) {
                 entries.add(new DeploymentTargetEntry(deploymentTarget.getName(),
-                        deploymentTarget.getKind(), deploymentTarget.getPriority()));
+                        deploymentTarget.getKind(), deploymentTarget.getPriority(),
+                        deploymentTarget.getDeployStrategy()));
             }
         }
         return new EnabledKubernetesDeploymentTargetsBuildItem(entries);
     }
 
+    @BuildStep
+    public void preventContainerPush(ContainerImageConfig containerImageConfig,
+            BuildProducer<PreventImplicitContainerImagePushBuildItem> producer) {
+        if (containerImageConfig.isPushExplicitlyDisabled()) {
+            producer.produce(new PreventImplicitContainerImagePushBuildItem());
+        }
+    }
+
     @BuildStep(onlyIfNot = IsTest.class)
     public void build(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
+            List<UberJarRequiredBuildItem> uberJarRequired,
+            List<LegacyJarRequiredBuildItem> legacyJarRequired,
             PackageConfig packageConfig,
             KubernetesConfig kubernetesConfig,
             OpenshiftConfig openshiftConfig,
@@ -89,17 +109,17 @@ class KubernetesProcessor {
             List<KubernetesPortBuildItem> kubernetesPorts,
             EnabledKubernetesDeploymentTargetsBuildItem kubernetesDeploymentTargets,
             List<ConfiguratorBuildItem> configurators,
+            List<ConfigurationSupplierBuildItem> configurationSuppliers,
             List<DecoratorBuildItem> decorators,
+            BuildProducer<DekorateOutputBuildItem> dekorateSessionProducer,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
-            BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer) {
+            BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer,
+            BuildProducer<GeneratedKubernetesResourceBuildItem> generatedKubernetesResourceProducer,
+            BuildProducer<KubernetesOutputDirectoryBuildItem> outputDirectoryBuildItemBuildProducer) {
 
-        List<ConfiguratorBuildItem> allConfigurationRegistry = new ArrayList<>(configurators);
+        List<ConfiguratorBuildItem> allConfigurators = new ArrayList<>(configurators);
+        List<ConfigurationSupplierBuildItem> allConfigurationSuppliers = new ArrayList<>(configurationSuppliers);
         List<DecoratorBuildItem> allDecorators = new ArrayList<>(decorators);
-
-        if (kubernetesPorts.isEmpty()) {
-            log.debug("The service is not an HTTP service so no Kubernetes manifests will be generated");
-            return;
-        }
 
         final Path root;
         try {
@@ -113,21 +133,20 @@ class KubernetesProcessor {
                 .map(DeploymentTargetEntry::getName)
                 .collect(Collectors.toSet());
 
-        Path artifactPath = outputTarget.getOutputDirectory()
-                .resolve(String.format(OUTPUT_ARTIFACT_FORMAT, outputTarget.getBaseName(), packageConfig.runnerSuffix));
+        Path artifactPath = getRunner(outputTarget, packageConfig, uberJarRequired, legacyJarRequired);
 
         try {
             // by passing false to SimpleFileWriter, we ensure that no files are actually written during this phase
             Optional<Project> optionalProject = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot,
                     artifactPath);
             optionalProject.ifPresent(project -> {
-
+                Set<String> targets = new HashSet<>();
+                targets.add(COMMON);
+                targets.addAll(deploymentTargets);
                 final Map<String, String> generatedResourcesMap;
-                final SessionWriter sessionWriter = new SimpleFileWriter(project, false);
+                final SessionWriter sessionWriter = new QuarkusFileWriter(project);
                 final SessionReader sessionReader = new SimpleFileReader(
-                        project.getRoot().resolve("src").resolve("main").resolve("kubernetes"), kubernetesDeploymentTargets
-                                .getEntriesSortedByPriority().stream()
-                                .map(DeploymentTargetEntry::getName).collect(Collectors.toSet()));
+                        project.getRoot().resolve("src").resolve("main").resolve("kubernetes"), targets);
                 sessionWriter.setProject(project);
 
                 if (launchMode.getLaunchMode() != LaunchMode.NORMAL) {
@@ -144,10 +163,15 @@ class KubernetesProcessor {
 
                 //We need to verify to filter out anything that doesn't extend the Configurator class.
                 //The ConfiguratorBuildItem is a wrapper to Object.
-                allConfigurationRegistry.stream().filter(d -> d.matches(Configurator.class)).forEach(i -> {
-                    Configurator configurator = (Configurator) i.getConfigurator();
-                    session.getConfigurationRegistry().add(configurator);
-                });
+                for (ConfiguratorBuildItem configuratorBuildItem : allConfigurators) {
+                    session.getConfigurationRegistry().add((Configurator) configuratorBuildItem.getConfigurator());
+                }
+                //We need to verify to filter out anything that doesn't extend the ConfigurationSupplier class.
+                //The ConfigurationSupplierBuildItem is a wrapper to Object.
+                for (ConfigurationSupplierBuildItem configurationSupplierBuildItem : allConfigurationSuppliers) {
+                    session.getConfigurationRegistry()
+                            .add((ConfigurationSupplier) configurationSupplierBuildItem.getConfigurationSupplier());
+                }
 
                 //We need to verify to filter out anything that doesn't extend the Decorator class.
                 //The DecoratorBuildItem is a wrapper to Object.
@@ -161,8 +185,14 @@ class KubernetesProcessor {
                     }
                 });
 
+                Path targetDirectory = getEffectiveOutputDirectory(kubernetesConfig, project.getRoot(),
+                        outputTarget.getOutputDirectory());
+
+                outputDirectoryBuildItemBuildProducer.produce(new KubernetesOutputDirectoryBuildItem(targetDirectory));
+
                 // write the generated resources to the filesystem
                 generatedResourcesMap = session.close();
+                List<String> generatedFiles = new ArrayList<>(generatedResourcesMap.size());
                 List<String> generatedFileNames = new ArrayList<>(generatedResourcesMap.size());
                 for (Map.Entry<String, String> resourceEntry : generatedResourcesMap.entrySet()) {
                     Path path = Paths.get(resourceEntry.getKey());
@@ -171,10 +201,12 @@ class KubernetesProcessor {
                         continue;
                     }
                     String fileName = path.toFile().getName();
-                    Path targetPath = outputTarget.getOutputDirectory().resolve(KUBERNETES).resolve(fileName);
+                    Path targetPath = targetDirectory.resolve(fileName);
                     String relativePath = targetPath.toAbsolutePath().toString().replace(root.toAbsolutePath().toString(), "");
 
-                    resourceEntry.getKey().replace(root.toAbsolutePath().toString(), KUBERNETES);
+                    generatedKubernetesResourceProducer.produce(new GeneratedKubernetesResourceBuildItem(fileName,
+                            resourceEntry.getValue().getBytes(StandardCharsets.UTF_8)));
+
                     if (fileName.endsWith(".yml") || fileName.endsWith(".json")) {
                         String target = fileName.substring(0, fileName.lastIndexOf("."));
                         if (!deploymentTargets.contains(target)) {
@@ -183,12 +215,15 @@ class KubernetesProcessor {
                     }
 
                     generatedFileNames.add(fileName);
+                    generatedFiles.add(relativePath);
                     generatedResourceProducer.produce(
                             new GeneratedFileSystemResourceBuildItem(
                                     // we need to make sure we are only passing the relative path to the build item
                                     relativePath,
                                     resourceEntry.getValue().getBytes(StandardCharsets.UTF_8)));
                 }
+
+                dekorateSessionProducer.produce(new DekorateOutputBuildItem(project, session, generatedFiles));
 
                 if (!generatedFileNames.isEmpty()) {
                     log.debugf("Generated the Kubernetes manifests: '%s' in '%s'", String.join(",", generatedFileNames),
@@ -216,5 +251,50 @@ class KubernetesProcessor {
             log.warn("Failed to generate Kubernetes resources", e);
         }
 
+    }
+
+    /**
+     * This method is based on the logic in {@link io.quarkus.deployment.pkg.steps.JarResultBuildStep#buildRunnerJar}.
+     * Note that we cannot consume the {@link io.quarkus.deployment.pkg.builditem.JarBuildItem} because it causes build cycle
+     * exceptions since we need to support adding generated resources into the JAR file (see
+     * https://github.com/quarkusio/quarkus/pull/20113).
+     */
+    private Path getRunner(OutputTargetBuildItem outputTarget,
+            PackageConfig packageConfig,
+            List<UberJarRequiredBuildItem> uberJarRequired,
+            List<LegacyJarRequiredBuildItem> legacyJarRequired) {
+        if (!legacyJarRequired.isEmpty() || packageConfig.isLegacyJar()
+                || !uberJarRequired.isEmpty()
+                || packageConfig.type.equalsIgnoreCase(PackageConfig.BuiltInType.UBER_JAR.getValue())) {
+            // the jar is a legacy jar or uber jar, the next logic applies:
+            return outputTarget.getOutputDirectory()
+                    .resolve(outputTarget.getBaseName() + packageConfig.getRunnerSuffix() + ".jar");
+        }
+
+        // otherwise, it's a thin jar:
+        Path buildDir;
+
+        if (packageConfig.outputDirectory.isPresent()) {
+            buildDir = outputTarget.getOutputDirectory();
+        } else {
+            buildDir = outputTarget.getOutputDirectory().resolve(DEFAULT_FAST_JAR_DIRECTORY_NAME);
+        }
+
+        return buildDir.resolve(QUARKUS_RUN_JAR);
+    }
+
+    /**
+     * Resolve the effective output directory where to generate the Kubernetes manifests.
+     * If the `quarkus.kubernetes.output-directory` property is not provided, then the default project output directory will be
+     * used.
+     *
+     * @param config The Kubernetes configuration.
+     * @param projectLocation The project location.
+     * @param projectOutputDirectory The project output target.
+     * @return the effective output directory.
+     */
+    private Path getEffectiveOutputDirectory(KubernetesConfig config, Path projectLocation, Path projectOutputDirectory) {
+        return config.outputDirectory.map(d -> projectLocation.resolve(d))
+                .orElse(projectOutputDirectory.resolve(KUBERNETES));
     }
 }

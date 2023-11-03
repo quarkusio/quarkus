@@ -9,8 +9,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -27,7 +25,7 @@ public class KubernetesWithApplicationPropertiesTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("kubernetes-with-application-properties")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("kubernetes-with-application.properties");
@@ -50,7 +48,8 @@ public class KubernetesWithApplicationPropertiesTest {
             assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
                 assertThat(d.getMetadata()).satisfies(m -> {
                     assertThat(m.getName()).isEqualTo("test-it");
-                    assertThat(m.getLabels()).contains(entry("foo", "bar"));
+                    assertThat(m.getLabels()).contains(entry("foo", "bar"))
+                            .containsKey("app.kubernetes.io/version"); // make sure the version was not removed from the labels
                     assertThat(m.getNamespace()).isEqualTo("applications");
                 });
 
@@ -73,7 +72,7 @@ public class KubernetesWithApplicationPropertiesTest {
 
                                 assertThat(container.getImage())
                                         .isEqualTo("quay.io/grp/kubernetes-with-application-properties:0.1-SNAPSHOT");
-                                assertThat(container.getPorts()).singleElement().satisfies(p -> {
+                                assertThat(container.getPorts()).anySatisfy(p -> {
                                     assertThat(p.getContainerPort()).isEqualTo(9090);
                                 });
                                 assertThat(container.getImagePullPolicy()).isEqualTo("IfNotPresent");
@@ -88,12 +87,13 @@ public class KubernetesWithApplicationPropertiesTest {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getMetadata()).satisfies(m -> {
                     assertThat(m.getNamespace()).isEqualTo("applications");
+                    assertThat(m.getLabels()).contains(entry("foo", "bar"));
                 });
 
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertEquals("NodePort", spec.getType());
                     assertThat(spec.getSelector()).containsOnly(entry("app.kubernetes.io/name", "test-it"));
-                    assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
+                    assertThat(spec.getPorts()).hasSize(1).anySatisfy(p -> {
                         assertThat(p.getPort()).isEqualTo(80);
                         assertThat(p.getTargetPort().getIntVal()).isEqualTo(9090);
                     });

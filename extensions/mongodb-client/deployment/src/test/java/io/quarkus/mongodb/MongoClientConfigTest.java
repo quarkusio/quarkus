@@ -4,10 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -18,7 +16,7 @@ import com.mongodb.ReadPreference;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.internal.MongoClientImpl;
 
-import io.quarkus.arc.runtime.ClientProxyUnwrapper;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.test.QuarkusUnitTest;
@@ -27,7 +25,7 @@ public class MongoClientConfigTest extends MongoWithReplicasTestBase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MongoTestBase.class))
+            .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class))
             .withConfigurationResource("test-config-mongoclient.properties");
 
     @Inject
@@ -35,8 +33,6 @@ public class MongoClientConfigTest extends MongoWithReplicasTestBase {
 
     @Inject
     ReactiveMongoClient reactiveClient;
-
-    private final ClientProxyUnwrapper unwrapper = new ClientProxyUnwrapper();
 
     @AfterEach
     void cleanup() {
@@ -49,8 +45,8 @@ public class MongoClientConfigTest extends MongoWithReplicasTestBase {
     }
 
     @Test
-    public void testClientConfiuration() {
-        MongoClientImpl clientImpl = (MongoClientImpl) unwrapper.apply(client);
+    public void testClientConfiguration() {
+        MongoClientImpl clientImpl = (MongoClientImpl) ClientProxy.unwrap(client);
         assertThat(clientImpl.getSettings().getConnectionPoolSettings().getMaxSize()).isEqualTo(2);
         assertThat(clientImpl.getSettings().getConnectionPoolSettings().getMinSize()).isEqualTo(1);
         assertThat(clientImpl.getSettings().getConnectionPoolSettings().getMaxConnectionIdleTime(TimeUnit.SECONDS))
@@ -75,7 +71,7 @@ public class MongoClientConfigTest extends MongoWithReplicasTestBase {
 
     @Test
     public void testReactiveClientConfiuration() {
-        ReactiveMongoClientImpl reactiveMongoClientImpl = (ReactiveMongoClientImpl) unwrapper.apply(reactiveClient);
+        ReactiveMongoClientImpl reactiveMongoClientImpl = (ReactiveMongoClientImpl) ClientProxy.unwrap(reactiveClient);
         com.mongodb.reactivestreams.client.internal.MongoClientImpl clientImpl = (com.mongodb.reactivestreams.client.internal.MongoClientImpl) reactiveMongoClientImpl
                 .unwrap();
         assertThat(clientImpl.getSettings().getConnectionPoolSettings().getMaxSize()).isEqualTo(2);

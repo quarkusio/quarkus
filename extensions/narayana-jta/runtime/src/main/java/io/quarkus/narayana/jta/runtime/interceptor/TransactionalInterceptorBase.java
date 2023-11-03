@@ -2,38 +2,46 @@ package io.quarkus.narayana.jta.runtime.interceptor;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Flow;
+import java.util.function.Function;
 
-import javax.inject.Inject;
-import javax.interceptor.InvocationContext;
-import javax.transaction.Status;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-import javax.transaction.Transactional;
+import jakarta.inject.Inject;
+import jakarta.interceptor.InvocationContext;
+import jakarta.transaction.Status;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.Transaction;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.Transactional;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
 import org.jboss.tm.usertx.client.ServerVMClientUserTransaction;
 import org.reactivestreams.Publisher;
 
 import com.arjuna.ats.jta.logging.jtaLogger;
 
 import io.quarkus.arc.runtime.InterceptorBindings;
-import io.quarkus.narayana.jta.runtime.CDIDelegatingTransactionManager;
+import io.quarkus.narayana.jta.runtime.NotifyingTransactionManager;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
+import io.quarkus.transaction.annotations.Rollback;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
 import io.smallrye.reactive.converters.Registry;
-
-/**
- * @author paul.robinson@redhat.com 02/05/2013
- */
+import mutiny.zero.flow.adapters.AdaptersToFlow;
+import mutiny.zero.flow.adapters.AdaptersToReactiveStreams;
 
 public abstract class TransactionalInterceptorBase implements Serializable {
 
     private static final long serialVersionUID = 1L;
+    private static final Logger log = Logger.getLogger(TransactionalInterceptorBase.class);
+    private final Map<Method, Integer> methodTransactionTimeoutDefinedByPropertyCache = new ConcurrentHashMap<>();
 
     @Inject
     TransactionManager transactionManager;
@@ -66,8 +74,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
      * Method handles CDI types to cover cases where extensions are used. In
      * case of EE container uses reflection.
      *
-     * @param ic
-     *        invocation context of the interceptor
+     * @param ic invocation context of the interceptor
      * @return instance of {@link Transactional} annotation or null
      */
     private Transactional getTransactional(InvocationContext ic) {
@@ -104,18 +111,20 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     protected Object invokeInOurTx(InvocationContext ic, TransactionManager tm, RunnableWithException afterEndTransaction)
             throws Exception {
 
-        TransactionConfiguration configAnnotation = getTransactionConfiguration(ic);
-        int currentTmTimeout = ((CDIDelegatingTransactionManager) transactionManager).getTransactionTimeout();
-        if (configAnnotation != null && configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT) {
-            tm.setTransactionTimeout(configAnnotation.timeout());
+        int timeoutConfiguredForMethod = getTransactionTimeoutFromAnnotation(ic);
+
+        int currentTmTimeout = ((NotifyingTransactionManager) transactionManager).getTransactionTimeout();
+
+        if (timeoutConfiguredForMethod > 0) {
+            tm.setTransactionTimeout(timeoutConfiguredForMethod);
         }
+
         Transaction tx;
         try {
             tm.begin();
             tx = tm.getTransaction();
         } finally {
-            if (configAnnotation != null && configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT) {
-                //restore the default behaviour
+            if (timeoutConfiguredForMethod > 0) {
                 tm.setTransactionTimeout(currentTmTimeout);
             }
         }
@@ -132,8 +141,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
             // handle asynchronously if not throwing
             if (!throwing && ret != null) {
                 ReactiveTypeConverter<Object> converter = null;
-                if (ret instanceof CompletionStage == false
-                        && (ret instanceof Publisher == false || ic.getMethod().getReturnType() != Publisher.class)) {
+                if (!isCompletionStage(ret) && !isSomePublisher(ic, ret)) {
                     @SuppressWarnings({ "rawtypes", "unchecked" })
                     Optional<ReactiveTypeConverter<Object>> lookup = Registry.lookup((Class) ret.getClass());
                     if (lookup.isPresent()) {
@@ -145,12 +153,15 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                         }
                     }
                 }
-                if (ret instanceof CompletionStage) {
+                if (isCompletionStage(ret)) {
                     ret = handleAsync(tm, tx, ic, ret, afterEndTransaction);
                     // convert back
                     if (converter != null)
                         ret = converter.fromCompletionStage((CompletionStage<?>) ret);
-                } else if (ret instanceof Publisher) {
+                } else if (isFlowPublisher(ret)) {
+                    // FIXME this needs to be tested
+                    ret = handleAsync(tm, tx, ic, ret, afterEndTransaction);
+                } else if (isLegacyPublisher(ret)) {
                     ret = handleAsync(tm, tx, ic, ret, afterEndTransaction);
                     // convert back
                     if (converter != null)
@@ -167,12 +178,74 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         return ret;
     }
 
+    private static boolean isLegacyPublisher(Object ret) {
+        return ret instanceof Publisher;
+    }
+
+    private boolean isSomePublisher(InvocationContext ic, Object ret) {
+        return isLegacyPublisher(ret) || (ic.getMethod().getReturnType() == Publisher.class)
+                || isFlowPublisher(ret) || (ic.getMethod().getReturnType() == Flow.Publisher.class);
+    }
+
+    private static boolean isFlowPublisher(Object ret) {
+        return ret instanceof Flow.Publisher;
+    }
+
+    private boolean isCompletionStage(Object ret) {
+        return ret instanceof CompletionStage;
+    }
+
+    private int getTransactionTimeoutFromAnnotation(InvocationContext ic) {
+        TransactionConfiguration configAnnotation = getTransactionConfiguration(ic);
+
+        if (configAnnotation == null) {
+            return -1;
+        }
+
+        int transactionTimeout = -1;
+
+        if (!configAnnotation.timeoutFromConfigProperty().equals(TransactionConfiguration.UNSET_TIMEOUT_CONFIG_PROPERTY)) {
+            Integer timeoutForMethod = methodTransactionTimeoutDefinedByPropertyCache.get(ic.getMethod());
+            if (timeoutForMethod != null) {
+                transactionTimeout = timeoutForMethod;
+            } else {
+                transactionTimeout = methodTransactionTimeoutDefinedByPropertyCache.computeIfAbsent(ic.getMethod(),
+                        new Function<Method, Integer>() {
+                            @Override
+                            public Integer apply(Method m) {
+                                return TransactionalInterceptorBase.this.getTransactionTimeoutPropertyValue(configAnnotation);
+                            }
+                        });
+            }
+        }
+
+        if (transactionTimeout == -1 && (configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT)) {
+            transactionTimeout = configAnnotation.timeout();
+        }
+
+        return transactionTimeout;
+    }
+
+    private Integer getTransactionTimeoutPropertyValue(TransactionConfiguration configAnnotation) {
+        Optional<Integer> configTimeout = ConfigProvider.getConfig()
+                .getOptionalValue(configAnnotation.timeoutFromConfigProperty(), Integer.class);
+        if (configTimeout.isEmpty()) {
+            if (log.isDebugEnabled()) {
+                log.debugf("Configuration property '%s' was not provided, so it will not affect the transaction's timeout.",
+                        configAnnotation.timeoutFromConfigProperty());
+            }
+            return -1;
+        }
+
+        return configTimeout.get();
+    }
+
     protected Object handleAsync(TransactionManager tm, Transaction tx, InvocationContext ic, Object ret,
             RunnableWithException afterEndTransaction) throws Exception {
         // Suspend the transaction to remove it from the main request thread
         tm.suspend();
         afterEndTransaction.run();
-        if (ret instanceof CompletionStage) {
+        if (isCompletionStage(ret)) {
             return ((CompletionStage<?>) ret).handle((v, t) -> {
                 try {
                     doInTransaction(tm, tx, () -> {
@@ -198,8 +271,15 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                     throw new CompletionException(t);
                 return v;
             });
-        } else if (ret instanceof Publisher) {
-            ret = Multi.createFrom().publisher((Publisher<?>) ret)
+        } else if (isLegacyPublisher(ret) || isFlowPublisher(ret)) {
+            Flow.Publisher<?> pub;
+            boolean isLegacyRS = !isFlowPublisher(ret);
+            if (isLegacyRS) {
+                pub = AdaptersToFlow.publisher((Publisher<?>) ret);
+            } else {
+                pub = (Flow.Publisher<?>) ret;
+            }
+            ret = Multi.createFrom().publisher(pub)
                     .onFailure().invoke(t -> {
                         try {
                             doInTransaction(tm, tx, () -> handleExceptionNoThrow(ic, t, tx));
@@ -225,6 +305,9 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                             throw new RuntimeException(e);
                         }
                     });
+            if (isLegacyRS) {
+                ret = AdaptersToReactiveStreams.publisher((Multi<?>) ret);
+            }
         }
         return ret;
     }
@@ -263,7 +346,9 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     private void checkConfiguration(InvocationContext ic) {
         TransactionConfiguration configAnnotation = getTransactionConfiguration(ic);
-        if (configAnnotation != null && configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT) {
+        if (configAnnotation != null && ((configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT)
+                || !TransactionConfiguration.UNSET_TIMEOUT_CONFIG_PROPERTY
+                        .equals(configAnnotation.timeoutFromConfigProperty()))) {
             throw new RuntimeException("Changing timeout via @TransactionConfiguration can only be done " +
                     "at the entry level of a transaction");
         }
@@ -271,7 +356,6 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     protected void handleExceptionNoThrow(InvocationContext ic, Throwable t, Transaction tx)
             throws IllegalStateException, SystemException {
-
         Transactional transactional = getTransactional(ic);
 
         for (Class<?> dontRollbackOnClass : transactional.dontRollbackOn()) {
@@ -285,6 +369,15 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                 tx.setRollbackOnly();
                 return;
             }
+        }
+
+        Rollback rollbackAnnotation = t.getClass().getAnnotation(Rollback.class);
+        if (rollbackAnnotation != null) {
+            if (rollbackAnnotation.value()) {
+                tx.setRollbackOnly();
+            }
+            // in both cases, behaviour is specified by the annotation
+            return;
         }
 
         // RuntimeException and Error are un-checked exceptions and rollback is expected
@@ -330,10 +423,10 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     }
 
     /**
-     * An utility method to throw any exception as a {@link RuntimeException}.
+     * A utility method to throw any exception as a {@link RuntimeException}.
      * We may throw a checked exception (subtype of {@code Throwable} or {@code Exception}) as un-checked exception.
      * This considers the Java 8 inference rule that states that a {@code throws E} is inferred as {@code RuntimeException}.
-     *
+     * <p>
      * This method can be used in {@code throw} statement such as: {@code throw sneakyThrow(exception);}.
      */
     @SuppressWarnings("unchecked")

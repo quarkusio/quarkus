@@ -1,6 +1,7 @@
 package io.quarkus.it.main;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 
 import org.junit.jupiter.api.Test;
 
@@ -49,6 +50,14 @@ public class RegisterForReflectionTestCase {
         assertRegistration("ResourceD", resourceD);
         assertRegistration("StaticClassOfD", resourceD + "$StaticClassOfD");
         assertRegistration("OtherAccessibleClassOfD", resourceD + "$StaticClassOfD$OtherAccessibleClassOfD");
+    }
+
+    @Test
+    public void testLambdaCapturing() {
+        final String resourceLambda = BASE_PKG + ".ResourceLambda";
+
+        assertRegistration("ResourceLambda", resourceLambda);
+        RestAssured.given().when().get("/reflection/lambda").then().body(startsWith("Comparator$$Lambda"));
     }
 
     private void assertRegistration(String expected, String queryParam) {

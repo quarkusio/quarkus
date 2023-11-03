@@ -1,9 +1,7 @@
 package io.quarkus.smallrye.openapi.test.jaxrs;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -13,7 +11,7 @@ import io.restassured.RestAssured;
 public class OIDCSecurityWithConfigTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiResource.class, ResourceBean.class)
                     .addAsResource(
                             new StringAsset("quarkus.smallrye-openapi.security-scheme=oidc\n"

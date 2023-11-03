@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+         child.project.url.inherit.append.path="false">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.jboss</groupId>
-        <artifactId>jboss-parent</artifactId>
-        <version>38</version>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>independent-projects/parent/pom.xml</relativePath>
     </parent>
 
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-parent</artifactId>
-    <name>Quarkus - Parent pom</name>
+    <artifactId>quarkus-project</artifactId>
+    <name>Quarkus - Project pom</name>
     <version>999-SNAPSHOT</version>
     <packaging>pom</packaging>
 
@@ -35,7 +36,9 @@
         </license>
     </licenses>
 
-    <scm>
+    <scm child.scm.connection.inherit.append.path="false"
+         child.scm.developerConnection.inherit.append.path="false"
+         child.scm.url.inherit.append.path="false">
         <url>https://github.com/quarkusio/quarkus</url>
         <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
         <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
@@ -52,22 +55,37 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.release>11</maven.compiler.release>
         <maven.compiler.parameters>true</maven.compiler.parameters>
-
+        
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
-        <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <gitflow-incremental-builder.version>3.14.3</gitflow-incremental-builder.version>
-        <quarkus-platform-bom-plugin.version>0.0.22</quarkus-platform-bom-plugin.version>
+        <gitflow-incremental-builder.version>4.5.1</gitflow-incremental-builder.version>
+        <quarkus-platform-bom-plugin.version>0.0.97</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
 
+        <owasp-dependency-check-plugin.version>8.3.1</owasp-dependency-check-plugin.version>
+
+        <!-- Dependency versions -->
+        <jacoco.version>0.8.11</jacoco.version>
+        <kubernetes-client.version>6.8.1</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
+
+        <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
+        <grpc.version>1.59.0</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <grpc-jprotoc.version>1.2.1</grpc-jprotoc.version>
+        <protoc.version>3.24.4</protoc.version>
+        <protobuf-java.version>${protoc.version}</protobuf-java.version>
+        <proto-google-common-protos.version>2.27.0</proto-google-common-protos.version>
+
+        <!-- TestNG version: we don't enforce it in the BOM as it is mostly used in the MP TCKs and we need to use the version from the TCKs -->
+        <testng.version>7.4.0</testng.version>
     </properties>
 
     <modules>
 
         <!-- External projects -->
+        <module>independent-projects/parent</module>
         <module>independent-projects/ide-config</module>
         <module>independent-projects/revapi</module>
         <module>independent-projects/arc</module>
@@ -76,6 +94,8 @@
         <module>independent-projects/tools</module>
         <module>independent-projects/enforcer-rules</module>
         <module>independent-projects/resteasy-reactive</module>
+        <module>independent-projects/extension-maven-plugin</module>
+        <module>independent-projects/junit5-virtual-threads</module>
 
         <!-- BOMs and parent POM -->
         <module>bom/application</module>
@@ -132,8 +152,27 @@
                     <artifactId>quarkus-platform-bom-maven-plugin</artifactId>
                     <version>${quarkus-platform-bom-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.owasp</groupId>
+                    <artifactId>dependency-check-maven</artifactId>
+                    <version>${owasp-dependency-check-plugin.version}</version>
+                    <configuration>
+                        <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+                        <nugetconfAnalyzerEnabled>false</nugetconfAnalyzerEnabled>
+                        <nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
+                        <retireJsAnalyzerEnabled>false</retireJsAnalyzerEnabled>
+                        <nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
+        <extensions>
+            <extension>
+                <groupId>io.quarkus.bot</groupId>
+                <artifactId>build-reporter-maven-extension</artifactId>
+                <version>3.2.2</version>
+            </extension>
+        </extensions>
     </build>
 
     <profiles>
@@ -154,6 +193,27 @@
                 <skip.gradle.tests>true</skip.gradle.tests>
                 <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
                 <jbang.skip>true</jbang.skip> <!-- jbang-maven-plugin -->
+                <forbiddenapis.skip>true</forbiddenapis.skip> <!-- forbidden-apis maven plugin -->
+                <skipCodestartValidation>true</skipCodestartValidation>
+            </properties>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
+        <profile>
+            <id>quick-build-docs</id>
+            <activation>
+                <property>
+                    <name>quicklyDocs</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <enforcer.skip>true</enforcer.skip>
+                <skipExtensionValidation>true</skipExtensionValidation>
+                <skip.gradle.tests>true</skip.gradle.tests>
+                <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
                 <forbiddenapis.skip>true</forbiddenapis.skip> <!-- forbidden-apis maven plugin -->
                 <skipCodestartValidation>true</skipCodestartValidation>
             </properties>
@@ -183,74 +243,16 @@
             </properties>
         </profile>
         <profile>
+            <id>relocations</id>
+            <modules>
+                <module>relocations</module>
+            </modules>
+        </profile>
+        <profile>
             <id>release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>${nexus-staging-maven-plugin.version}</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                            <serverId>ossrh</serverId>
-                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
-                            <keepStagingRepositoryOnCloseRuleFailure>true</keepStagingRepositoryOnCloseRuleFailure>
-                            <stagingProgressTimeoutMinutes>60</stagingProgressTimeoutMinutes>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <!--
-                        ## IMPORTANT ##
-                        In your ~/.m2/settings.xml you need to add and edit the following profile:
-                        <profile>
-                            <id>release</id>
-                            <properties>
-                                <gpg.useagent>false</gpg.useagent>
-                                <gpg.executable>/usr/local/Cellar/gnupg@1.4/1.4.23_1/bin/gpg1</gpg.executable> <- use gpg1 on Mac OS X
-                                <gpg.homedir>~/.gnupg</gpg.homedir>  <- Update to your own directory
-                                <gpg.passphrase>******</gpg.passphrase> <- Add your passphrase
-                            </properties>
-                        </profile>
-                         -->
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
+            <modules>
+                <module>relocations</module>
+            </modules>
         </profile>
         <profile>
             <id>tcks</id>
@@ -277,7 +279,7 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>com.vackosar.gitflowincrementalbuilder</groupId>
+                        <groupId>io.github.gitflow-incremental-builder</groupId>
                         <artifactId>gitflow-incremental-builder</artifactId>
                         <version>${gitflow-incremental-builder.version}</version>
                         <extensions>true</extensions>
@@ -285,6 +287,8 @@
                              General recap: Anything that is directly set in <configuration> cannot be redefined via '-D...'!
                              See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder/issues/213 -->
                         <configuration>
+                            <!-- these metadata file can't affect the build -->
+                            <excludePathsMatching>\.sdkmanrc</excludePathsMatching>
                             <!-- pointless to attempt incremental build if something like mvnw was changed
                                  (and also potentially wrong, given that independent-projects might not be built) -->
                             <skipIfPathMatches>\.github[/\\].*|\.mvn[/\\].*|mvnw.*</skipIfPathMatches>
@@ -300,6 +304,27 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>owasp-check</id>
+            <activation>
+                <property>
+                    <name>owasp-check</name>
+                </property>
+            </activation>
+            <build>
+                <defaultGoal>org.owasp:dependency-check-maven:check</defaultGoal>
+            </build>
+        </profile>
+        <profile>
+            <id>owasp-report</id>
+            <activation>
+                <property>
+                    <name>owasp-report</name>
+                </property>
+            </activation>
+            <build>
+                <defaultGoal>org.owasp:dependency-check-maven:aggregate</defaultGoal>
+            </build>
+        </profile>
     </profiles>
-
 </project>

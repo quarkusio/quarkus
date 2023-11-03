@@ -15,7 +15,6 @@
 
     <properties>
         <mysql.url>jdbc:mysql://localhost:3306/hibernate_orm_test?allowPublicKeyRetrieval=true</mysql.url>
-        <mysql.image>mysql:8.0.22</mysql.image>
     </properties>
 
     <dependencies>
@@ -39,8 +38,18 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -164,8 +173,24 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${mysql.image}</name>
+                                    <name>healthcheck-${mysql.image}</name>
                                     <alias>quarkus-test-mysql</alias>
+                                    <build>
+                                        <from>${mysql.image}</from>
+                                        <healthCheck>
+                                            <!-- The exact values for these aren't very important, but it is important they are there -->
+                                            <interval>5s</interval>
+                                            <timeout>3s</timeout>
+                                            <startPeriod>5s</startPeriod>
+                                            <retries>5</retries>
+                                            <!--  We could also use /usr/local/bin/healthcheck.sh but it seemed complicated to get the right level.
+                                            Note that mysqladmin ping returns 0 even if the password is wrong so we don't need to pass in a password, but it makes the logs cleaner-->
+                                            <cmd>
+                                                <shell>mysqladmin ping -h localhost -u hibernate_orm_test -phibernate_orm_test || exit 1
+                                                </shell>
+                                            </cmd>
+                                        </healthCheck>
+                                    </build>
                                     <run>
                                         <ports>
                                             <port>3306:3306</port>
@@ -183,13 +208,10 @@
                                         </log>
                                         <!-- Speed things up a bit by not actually flushing writes to disk -->
                                         <tmpfs>/var/lib/mysql</tmpfs>
+                                        <!-- good docs found at: https://dmp.fabric8.io/#start-wait -->
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#start-wait -->
                                             <time>20000</time>
-                                            <!-- wait until MySQL is actually up by checking if mysqladmin can ping the server with specified username/password -->
-                                            <exec>
-                                                <postStart>mysqladmin ping -h localhost -u hibernate_orm_test -phibernate_orm_test</postStart>
-                                            </exec>
+                                            <healthy>true</healthy>
                                         </wait>
                                     </run>
                                 </image>
@@ -204,6 +226,7 @@
                                 <phase>compile</phase>
                                 <goals>
                                     <goal>stop</goal>
+                                    <goal>build</goal>
                                     <goal>start</goal>
                                 </goals>
                             </execution>
@@ -235,7 +258,32 @@
                 </plugins>
             </build>
         </profile>
-
+        <!-- Disabled pending fix of #33105 -->
+        <profile>
+            <id>podman</id>
+            <activation>
+                <property>
+                    <name>env.IS_PODMAN</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <enforcer.skip>true</enforcer.skip>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
 </project>

@@ -10,8 +10,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-jsonb</artifactId>
-    <name>Quarkus - RESTEasy - JSON-B - Runtime</name>
-    <description>JSON-B serialization support for RESTEasy</description>
+    <name>Quarkus - RESTEasy Classic - JSON-B - Runtime</name>
+    <description>JSON-B serialization support for RESTEasy Classic</description>
 
     <dependencies>
         <dependency>
@@ -25,6 +25,12 @@
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-json-binding-provider</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.glassfish</groupId>
+                    <artifactId>jakarta.json</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
@@ -50,7 +56,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <capabilities>
                         <provides>io.quarkus.rest.jsonb</provides>

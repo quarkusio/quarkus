@@ -1,17 +1,17 @@
 package io.quarkus.scheduler.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.enterprise.event.Observes;
-import javax.inject.Singleton;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Singleton;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,7 +24,7 @@ public class ConditionalExecutionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Jobs.class));
 
     @Test
@@ -44,17 +44,25 @@ public class ConditionalExecutionTest {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(e);
         }
+
+        assertTrue(OtherIsDisabled.TESTED.get());
+        assertEquals(0, Jobs.OTHER_COUNT.get());
     }
 
     static class Jobs {
 
         static final CountDownLatch COUNTER = new CountDownLatch(1);
+        static final AtomicInteger OTHER_COUNT = new AtomicInteger(0);
 
         @Scheduled(identity = "foo", every = "1s", skipExecutionIf = IsDisabled.class)
         void doSomething() throws InterruptedException {
             COUNTER.countDown();
         }
 
+        @Scheduled(identity = "other-foo", every = "1s", skipExecutionIf = OtherIsDisabled.class)
+        void doSomethingElse() throws InterruptedException {
+            OTHER_COUNT.incrementAndGet();
+        }
     }
 
     @Singleton
@@ -74,6 +82,19 @@ public class ConditionalExecutionTest {
 
                 SKIPPED_LATCH.countDown();
             }
+        }
+
+    }
+
+    @Singleton
+    public static class OtherIsDisabled implements Scheduled.SkipPredicate {
+
+        static final AtomicBoolean TESTED = new AtomicBoolean(false);
+
+        @Override
+        public boolean test(ScheduledExecution execution) {
+            TESTED.set(true);
+            return true;
         }
 
     }

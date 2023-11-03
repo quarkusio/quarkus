@@ -3,8 +3,6 @@ package io.quarkus.it.kubernetes.client;
 import java.io.IOException;
 
 import org.assertj.core.api.Assertions;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,7 +14,7 @@ public class AbsentConfigMapPropertiesPMT {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(ConfigMapProperties.class))
+            .withApplicationRoot((jar) -> jar.addClasses(ConfigMapProperties.class))
             .setApplicationName("k8s-configMaps")
             .withConfigurationResource("application-demo.properties")
             .setRun(true)

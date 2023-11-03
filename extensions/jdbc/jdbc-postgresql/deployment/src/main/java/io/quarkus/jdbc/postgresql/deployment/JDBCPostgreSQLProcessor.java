@@ -12,16 +12,24 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.jdbc.postgresql.runtime.PostgreSQLAgroalConnectionConfigurer;
-import io.quarkus.jdbc.postgresql.runtime.PostgreSqlServiceBindingConverter;
+import io.quarkus.jdbc.postgresql.runtime.PostgreSQLServiceBindingConverter;
+import io.quarkus.jdbc.postgresql.runtime.graal.SQLXMLFeature;
 
 public class JDBCPostgreSQLProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.JDBC_POSTGRESQL);
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    NativeImageFeatureBuildItem nativeImageFeature() {
+        return new NativeImageFeatureBuildItem(SQLXMLFeature.class);
     }
 
     @BuildStep
@@ -55,7 +63,7 @@ public class JDBCPostgreSQLProcessor {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
             serviceProvider.produce(
                     new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
-                            PostgreSqlServiceBindingConverter.class.getName()));
+                            PostgreSQLServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.POSTGRESQL));
     }

@@ -2,12 +2,16 @@ package io.quarkus.platform.catalog.processor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.TreeSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.StringUtils;
 
 public final class ExtendedKeywords {
@@ -23,19 +27,44 @@ public final class ExtendedKeywords {
             "these", "her", "him", "has", "over", "than", "who", "may", "down", "been", "more", "implementing", "non",
             "quarkus"));
 
-    public static List<String> extendsKeywords(String artifactId, String description, List<String> keywords) {
-        final TreeSet<String> result = new TreeSet<>();
-        keywords.forEach(it -> result.add(it.toLowerCase(Locale.US)));
-        result.add(artifactId.toLowerCase(Locale.US));
+    public static Set<String> extendsKeywords(String artifactId, String name, String shortName, List<String> categories,
+            String description, List<String> keywords) {
+        final List<String> result = new ArrayList<>();
+        result.addAll(expandValue(artifactId, true));
+        result.addAll(expandValue(name, false));
+        result.addAll(expandValue(shortName, true));
+        categories.forEach(it -> result.addAll(expandValue(it, true)));
+        result.addAll(keywords);
         if (!StringUtils.isEmpty(description)) {
             final Matcher matcher = TOKENIZER_PATTERN.matcher(description);
             while (matcher.find()) {
                 final String token = matcher.group().toLowerCase(Locale.US);
-                if (token.length() >= 3 && !STOP_WORDS.contains(token)) {
+                if (isNotStopWord(token)) {
                     result.add(token);
                 }
             }
         }
-        return new ArrayList<>(result);
+        return result.stream()
+                .filter(Objects::nonNull)
+                .map(s -> s.toLowerCase(Locale.US))
+                .filter(ExtendedKeywords::isNotStopWord)
+                .collect(Collectors.toSet());
     }
+
+    private static boolean isNotStopWord(String token) {
+        return token.length() >= 3 && !STOP_WORDS.contains(token);
+    }
+
+    private static List<String> expandValue(String value, boolean keepOriginal) {
+        if (value == null) {
+            return Collections.emptyList();
+        }
+        String r = value.replaceAll("\\s", "-");
+        final List<String> l = new ArrayList<>(Arrays.asList(r.split("-")));
+        if (keepOriginal) {
+            l.add(r);
+        }
+        return l;
+    }
+
 }

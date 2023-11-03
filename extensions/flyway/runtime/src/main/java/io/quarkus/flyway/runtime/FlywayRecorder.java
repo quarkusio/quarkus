@@ -1,22 +1,35 @@
 package io.quarkus.flyway.runtime;
 
-import java.util.ArrayList;
+import java.lang.annotation.Annotation;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
-import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.sql.DataSource;
 
+import jakarta.enterprise.inject.Default;
+
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.FlywayExecutor;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
+import org.flywaydb.core.api.output.BaselineResult;
+import org.flywaydb.core.internal.callback.CallbackExecutor;
+import org.flywaydb.core.internal.database.base.Database;
+import org.flywaydb.core.internal.database.base.Schema;
+import org.flywaydb.core.internal.jdbc.StatementInterceptor;
+import org.flywaydb.core.internal.resolver.CompositeMigrationResolver;
+import org.flywaydb.core.internal.schemahistory.SchemaHistory;
 import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.runtime.UnconfiguredDataSource;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.flyway.FlywayDataSource.FlywayDataSourceLiteral;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
@@ -24,7 +37,11 @@ public class FlywayRecorder {
 
     private static final Logger log = Logger.getLogger(FlywayRecorder.class);
 
-    static final List<FlywayContainer> FLYWAY_CONTAINERS = new ArrayList<>(2);
+    private final RuntimeValue<FlywayRuntimeConfig> config;
+
+    public FlywayRecorder(RuntimeValue<FlywayRuntimeConfig> config) {
+        this.config = config;
+    }
 
     public void setApplicationMigrationFiles(Collection<String> migrationFiles) {
         log.debugv("Setting the following application migration files: {0}", migrationFiles);
@@ -41,39 +58,97 @@ public class FlywayRecorder {
         QuarkusPathLocationScanner.setApplicationCallbackClasses(callbackClasses);
     }
 
-    public void resetFlywayContainers() {
-        FLYWAY_CONTAINERS.clear();
+    public Function<SyntheticCreationalContext<FlywayContainer>, FlywayContainer> flywayContainerFunction(String dataSourceName,
+            boolean hasMigrations,
+            boolean createPossible) {
+        return new Function<>() {
+            @Override
+            public FlywayContainer apply(SyntheticCreationalContext<FlywayContainer> context) {
+                DataSource dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
+                if (dataSource instanceof UnconfiguredDataSource) {
+                    return new UnconfiguredDataSourceFlywayContainer(dataSourceName);
+                }
+
+                FlywayContainerProducer flywayProducer = context.getInjectedReference(FlywayContainerProducer.class);
+                FlywayContainer flywayContainer = flywayProducer.createFlyway(dataSource, dataSourceName, hasMigrations,
+                        createPossible);
+                return flywayContainer;
+            }
+        };
     }
 
-    public Supplier<Flyway> flywaySupplier(String dataSourceName) {
-        DataSource dataSource = DataSources.fromName(dataSourceName);
-        if (dataSource instanceof UnconfiguredDataSource) {
-            return new Supplier<Flyway>() {
-                @Override
-                public Flyway get() {
-                    throw new UnsatisfiedResolutionException("No datasource present");
-                }
-            };
-        }
-        FlywayContainerProducer flywayProducer = Arc.container().instance(FlywayContainerProducer.class).get();
-        FlywayContainer flywayContainer = flywayProducer.createFlyway(dataSource, dataSourceName);
-        FLYWAY_CONTAINERS.add(flywayContainer);
-        return new Supplier<Flyway>() {
+    public Function<SyntheticCreationalContext<Flyway>, Flyway> flywayFunction(String dataSourceName) {
+        return new Function<>() {
             @Override
-            public Flyway get() {
+            public Flyway apply(SyntheticCreationalContext<Flyway> context) {
+                FlywayContainer flywayContainer = context.getInjectedReference(FlywayContainer.class,
+                        getFlywayContainerQualifier(dataSourceName));
                 return flywayContainer.getFlyway();
             }
         };
     }
 
-    public void doStartActions() {
-        for (FlywayContainer flywayContainer : FLYWAY_CONTAINERS) {
-            if (flywayContainer.isCleanAtStart()) {
-                flywayContainer.getFlyway().clean();
+    public void doStartActions(String dataSourceName) {
+        FlywayDataSourceRuntimeConfig flywayDataSourceRuntimeConfig = config.getValue()
+                .getConfigForDataSourceName(dataSourceName);
+
+        if (!config.getValue().getConfigForDataSourceName(dataSourceName).active) {
+            return;
+        }
+
+        InstanceHandle<FlywayContainer> flywayContainerInstanceHandle = Arc.container().instance(FlywayContainer.class,
+                getFlywayContainerQualifier(dataSourceName));
+
+        if (!flywayContainerInstanceHandle.isAvailable()) {
+            return;
+        }
+
+        FlywayContainer flywayContainer = flywayContainerInstanceHandle.get();
+
+        if (flywayContainer instanceof UnconfiguredDataSourceFlywayContainer) {
+            return;
+        }
+
+        if (flywayContainer.isCleanAtStart()) {
+            flywayContainer.getFlyway().clean();
+        }
+        if (flywayContainer.isValidateAtStart()) {
+            flywayContainer.getFlyway().validate();
+        }
+        if (flywayContainer.isBaselineAtStart()) {
+            new FlywayExecutor(flywayContainer.getFlyway().getConfiguration())
+                    .execute(new BaselineCommand(flywayContainer.getFlyway()), true, null);
+        }
+        if (flywayContainer.isRepairAtStart()) {
+            flywayContainer.getFlyway().repair();
+        }
+        if (flywayContainer.isMigrateAtStart()) {
+            flywayContainer.getFlyway().migrate();
+        }
+    }
+
+    private static Annotation getFlywayContainerQualifier(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return Default.Literal.INSTANCE;
+        }
+
+        return FlywayDataSourceLiteral.of(dataSourceName);
+    }
+
+    static class BaselineCommand implements FlywayExecutor.Command<BaselineResult> {
+        BaselineCommand(Flyway flyway) {
+            this.flyway = flyway;
+        }
+
+        final Flyway flyway;
+
+        @Override
+        public BaselineResult execute(CompositeMigrationResolver cmr, SchemaHistory schemaHistory, Database d,
+                Schema defaultSchema, Schema[] s, CallbackExecutor ce, StatementInterceptor si) {
+            if (!schemaHistory.exists()) {
+                return flyway.baseline();
             }
-            if (flywayContainer.isMigrateAtStart()) {
-                flywayContainer.getFlyway().migrate();
-            }
+            return null;
         }
     }
 }

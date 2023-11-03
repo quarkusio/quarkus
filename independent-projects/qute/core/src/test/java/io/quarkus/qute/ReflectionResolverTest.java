@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.IntStream;
+
 import org.junit.jupiter.api.Test;
 
 public class ReflectionResolverTest {
@@ -42,9 +43,17 @@ public class ReflectionResolverTest {
                 .parse("{foo.compute(foo.name,1,2)}").data("foo", new Foo("box")).render());
     }
 
+    @Test
+    public void testStaticMembersIgnored() {
+        assertEquals("baz::baz", Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build()
+                .parse("{foo.bar ?: 'baz'}::{foo.BAR ?: 'baz'}").data("foo", new Foo("box")).render());
+    }
+
     public static class Foo {
 
         public final String name;
+
+        public static final String BAR = "bar";
 
         public Foo(String name) {
             this.name = name;
@@ -62,6 +71,10 @@ public class ReflectionResolverTest {
             StringBuilder builder = new StringBuilder();
             IntStream.of(counts).forEach(i -> builder.append(val).append(":"));
             return builder.toString();
+        }
+
+        public static String bar() {
+            return "BAR";
         }
 
     }

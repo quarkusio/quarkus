@@ -1,6 +1,7 @@
 package io.quarkus.maven.utilities;
 
 import java.util.function.Predicate;
+
 import org.apache.maven.model.Dependency;
 
 public class QuarkusDependencyPredicate implements Predicate<Dependency> {

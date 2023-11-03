@@ -8,7 +8,6 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -16,12 +15,16 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.Converter;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.Converters;
 import io.smallrye.config.SmallRyeConfig;
 
@@ -32,35 +35,63 @@ import io.smallrye.config.SmallRyeConfig;
  * has failed and we are attempting to do some form of recovery via hot deployment
  * <p>
  * TODO: fully implement this as required, at the moment this is mostly to read the HTTP config when startup fails
+ * or for basic logging setup in non-Quarkus tests
  */
 public class ConfigInstantiator {
 
     // certain well-known classname suffixes that we support
-    private static Set<String> supportedClassNameSuffix;
+    private static Set<String> SUPPORTED_CLASS_NAME_SUFFIXES = Set.of("Config", "Configuration");
 
-    static {
-        final Set<String> suffixes = new HashSet<>();
-        suffixes.add("Config");
-        suffixes.add("Configuration");
-        supportedClassNameSuffix = Collections.unmodifiableSet(suffixes);
+    private static final String QUARKUS_PROPERTY_PREFIX = "quarkus.";
+
+    private static final Pattern SEGMENT_EXTRACTION_PATTERN = Pattern.compile("(\"[^\"]+\"|[^.\"]+).*");
+
+    public static <T> T handleObject(Supplier<T> supplier) {
+        T o = supplier.get();
+        handleObject(o);
+        return o;
     }
 
     public static void handleObject(Object o) {
         final SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
-        final Class cls = o.getClass();
+        handleObject(o, config);
+    }
+
+    public static void handleObject(Object o, SmallRyeConfig config) {
         final String clsNameSuffix = getClassNameSuffix(o);
         if (clsNameSuffix == null) {
             // unsupported object type
             return;
         }
-        final String name = dashify(cls.getSimpleName().substring(0, cls.getSimpleName().length() - clsNameSuffix.length()));
-        handleObject("quarkus." + name, o, config);
+
+        final Class<?> cls = o.getClass();
+        final String name;
+        ConfigRoot configRoot = cls.getAnnotation(ConfigRoot.class);
+        if (configRoot != null && !configRoot.name().equals(ConfigItem.HYPHENATED_ELEMENT_NAME)) {
+            name = configRoot.name();
+            if (name.startsWith("<<")) {
+                throw new IllegalArgumentException("Found unsupported @ConfigRoot.name = " + name + " on " + cls);
+            }
+        } else {
+            name = dashify(cls.getSimpleName().substring(0, cls.getSimpleName().length() - clsNameSuffix.length()));
+        }
+        handleObject(QUARKUS_PROPERTY_PREFIX + name, o, config, gatherQuarkusPropertyNames(config));
     }
 
-    private static void handleObject(String prefix, Object o, SmallRyeConfig config) {
+    private static List<String> gatherQuarkusPropertyNames(SmallRyeConfig config) {
+        var names = new ArrayList<String>(50);
+        for (String name : config.getPropertyNames()) {
+            if (name.startsWith(QUARKUS_PROPERTY_PREFIX)) {
+                names.add(name);
+            }
+        }
+        return names;
+    }
+
+    private static void handleObject(String prefix, Object o, SmallRyeConfig config, List<String> quarkusPropertyNames) {
 
         try {
-            final Class cls = o.getClass();
+            final Class<?> cls = o.getClass();
             if (!isClassNameSuffixSupported(o)) {
                 return;
             }
@@ -76,9 +107,7 @@ public class ConfigInstantiator {
                     constructor.setAccessible(true);
                     Object newInstance = constructor.newInstance();
                     field.set(o, newInstance);
-                    handleObject(prefix + "." + dashify(field.getName()), newInstance, config);
-                } else if (fieldClass == Map.class) { //TODO: FIXME, this cannot handle Map yet
-                    field.set(o, new HashMap<>());
+                    handleObject(prefix + "." + dashify(field.getName()), newInstance, config, quarkusPropertyNames);
                 } else {
                     String name = configItem.name();
                     if (name.equals(ConfigItem.HYPHENATED_ELEMENT_NAME)) {
@@ -88,14 +117,18 @@ public class ConfigInstantiator {
                     }
                     String fullName = prefix + "." + name;
                     final Type genericType = field.getGenericType();
-                    final Converter<?> conv = getConverterFor(genericType);
+                    if (fieldClass == Map.class) {
+                        field.set(o, handleMap(fullName, genericType, config, quarkusPropertyNames));
+                        continue;
+                    }
+                    final Converter<?> conv = getConverterFor(genericType, config);
                     try {
                         Optional<?> value = config.getOptionalValue(fullName, conv);
                         if (value.isPresent()) {
                             field.set(o, value.get());
                         } else if (!configItem.defaultValue().equals(ConfigItem.NO_DEFAULT)) {
                             //the runtime config source handles default automatically
-                            //however this may not have actually been installed depending on where the failure occured
+                            //however this may not have actually been installed depending on where the failure occurred
                             field.set(o, conv.convert(configItem.defaultValue()));
                         }
                     } catch (NoSuchElementException ignored) {
@@ -107,16 +140,65 @@ public class ConfigInstantiator {
         }
     }
 
-    private static Converter<?> getConverterFor(Type type) {
+    private static Map<?, ?> handleMap(String fullName, Type genericType, SmallRyeConfig config,
+            List<String> quarkusPropertyNames) throws ReflectiveOperationException {
+        var map = new HashMap<>();
+        if (typeOfParameter(genericType, 0) != String.class) { // only support String keys
+            return map;
+        }
+        var processedSegments = new HashSet<String>();
+        // infer the map keys from existing property names
+        for (String propertyName : quarkusPropertyNames) {
+            var fullNameWithDot = fullName + ".";
+            String withoutPrefix = propertyName.replace(fullNameWithDot, "");
+            if (withoutPrefix.equals(propertyName)) {
+                continue;
+            }
+            Matcher matcher = SEGMENT_EXTRACTION_PATTERN.matcher(withoutPrefix);
+            if (!matcher.find()) {
+                continue; // should not happen, but be lenient
+            }
+            var segment = matcher.group(1);
+            if (!processedSegments.add(segment)) {
+                continue;
+            }
+            var mapKey = segment.replace("\"", "");
+            var nextFullName = fullNameWithDot + segment;
+            var mapValueType = typeOfParameter(genericType, 1);
+            Object mapValue;
+            if (mapValueType instanceof ParameterizedType
+                    && ((ParameterizedType) mapValueType).getRawType().equals(Map.class)) {
+                mapValue = handleMap(nextFullName, mapValueType, config, quarkusPropertyNames);
+            } else {
+                Class<?> mapValueClass = mapValueType instanceof Class ? (Class<?>) mapValueType : null;
+                if (mapValueClass != null && mapValueClass.isAnnotationPresent(ConfigGroup.class)) {
+                    Constructor<?> constructor = mapValueClass.getConstructor();
+                    constructor.setAccessible(true);
+                    mapValue = constructor.newInstance();
+                    handleObject(nextFullName, mapValue, config, quarkusPropertyNames);
+                } else {
+                    final Converter<?> conv = getConverterFor(mapValueType, config);
+                    mapValue = config.getOptionalValue(nextFullName, conv).orElse(null);
+                }
+            }
+            map.put(mapKey, mapValue);
+        }
+        return map;
+    }
+
+    private static Converter<?> getConverterFor(Type type, SmallRyeConfig config) {
         // hopefully this is enough
-        final SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
         Class<?> rawType = rawTypeOf(type);
         if (Enum.class.isAssignableFrom(rawType)) {
             return new HyphenateEnumConverter(rawType);
         } else if (rawType == Optional.class) {
-            return Converters.newOptionalConverter(getConverterFor(typeOfParameter(type, 0)));
+            return Converters.newOptionalConverter(getConverterFor(typeOfParameter(type, 0), config));
         } else if (rawType == List.class) {
-            return Converters.newCollectionConverter(getConverterFor(typeOfParameter(type, 0)), ArrayList::new);
+            return Converters.newCollectionConverter(getConverterFor(typeOfParameter(type, 0), config),
+                    ConfigUtils.listFactory());
+        } else if (rawType == Set.class) {
+            return Converters.newCollectionConverter(getConverterFor(typeOfParameter(type, 0), config),
+                    ConfigUtils.setFactory());
         } else {
             return config.requireConverter(rawTypeOf(type));
         }
@@ -167,7 +249,7 @@ public class ConfigInstantiator {
             return null;
         }
         final String klassName = o.getClass().getName();
-        for (final String supportedSuffix : supportedClassNameSuffix) {
+        for (final String supportedSuffix : SUPPORTED_CLASS_NAME_SUFFIXES) {
             if (klassName.endsWith(supportedSuffix)) {
                 return supportedSuffix;
             }
@@ -180,7 +262,7 @@ public class ConfigInstantiator {
             return false;
         }
         final String klassName = o.getClass().getName();
-        for (final String supportedSuffix : supportedClassNameSuffix) {
+        for (final String supportedSuffix : SUPPORTED_CLASS_NAME_SUFFIXES) {
             if (klassName.endsWith(supportedSuffix)) {
                 return true;
             }

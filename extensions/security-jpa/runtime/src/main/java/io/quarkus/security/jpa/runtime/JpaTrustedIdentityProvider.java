@@ -1,28 +1,32 @@
 package io.quarkus.security.jpa.runtime;
 
+import java.util.List;
 import java.util.function.Supplier;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 
 import org.hibernate.FlushMode;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
+import io.quarkus.security.jpa.common.runtime.JpaIdentityProviderUtil;
 import io.smallrye.mutiny.Uni;
 
-public abstract class JpaTrustedIdentityProvider extends AbstractJpaIdentityProvider
-        implements IdentityProvider<TrustedAuthenticationRequest> {
+public abstract class JpaTrustedIdentityProvider implements IdentityProvider<TrustedAuthenticationRequest> {
 
     private static Logger log = Logger.getLogger(JpaTrustedIdentityProvider.class);
 
     @Inject
-    EntityManagerFactory entityManagerFactory;
+    SessionFactory sessionFactory;
 
     @Override
     public Class<TrustedAuthenticationRequest> getRequestType() {
@@ -35,19 +39,39 @@ public abstract class JpaTrustedIdentityProvider extends AbstractJpaIdentityProv
         return context.runBlocking(new Supplier<SecurityIdentity>() {
             @Override
             public SecurityIdentity get() {
-                EntityManager em = entityManagerFactory.createEntityManager();
-                ((org.hibernate.Session) em).setHibernateFlushMode(FlushMode.MANUAL);
-                ((org.hibernate.Session) em).setDefaultReadOnly(true);
-                try {
-                    return authenticate(em, request);
-                } catch (SecurityException e) {
-                    log.debug("Authentication failed", e);
-                    throw new AuthenticationFailedException();
-                } finally {
-                    em.close();
+                if (requireActiveCDIRequestContext() && !Arc.container().requestContext().isActive()) {
+                    var requestContext = Arc.container().requestContext();
+                    requestContext.activate();
+                    try {
+                        return authenticate(request);
+                    } finally {
+                        requestContext.terminate();
+                    }
                 }
+                return authenticate(request);
             }
         });
+    }
+
+    private SecurityIdentity authenticate(TrustedAuthenticationRequest request) {
+        try (Session session = sessionFactory.openSession()) {
+            session.setHibernateFlushMode(FlushMode.MANUAL);
+            session.setDefaultReadOnly(true);
+            return authenticate(session, request);
+        } catch (SecurityException e) {
+            log.debug("Authentication failed", e);
+            throw new AuthenticationFailedException();
+        }
+    }
+
+    protected boolean requireActiveCDIRequestContext() {
+        return false;
+    }
+
+    protected <T> T getSingleUser(Query query) {
+        @SuppressWarnings("unchecked")
+        List<T> results = (List<T>) query.getResultList();
+        return JpaIdentityProviderUtil.getSingleUser(results);
     }
 
     public abstract SecurityIdentity authenticate(EntityManager em,

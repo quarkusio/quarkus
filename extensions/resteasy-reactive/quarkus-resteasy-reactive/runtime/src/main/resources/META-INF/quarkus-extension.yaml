@@ -6,10 +6,12 @@ metadata:
   - "jaxrs"
   - "web"
   - "rest"
+  - "jakarta-rest"
   categories:
   - "web"
   - "reactive"
-  status: "experimental"
+  status: "stable"
+  guide: "https://quarkus.io/guides/resteasy-reactive"
   codestart:
     name: "resteasy-reactive"
     languages:
@@ -17,3 +19,5 @@ metadata:
       - "kotlin"
       - "scala"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
+  config:
+  - "quarkus.resteasy-reactive."

@@ -3,21 +3,19 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using Security with JDBC
-
-include::./attributes.adoc[]
+= Using Security with JDBC
+include::_attributes.adoc[]
+:categories: security
+:summary: This guide demonstrates how your Quarkus application can use a database to store your user identities.
+:topics: security,identity-providers,jdbc,sql,database
+:extensions: io.quarkus:quarkus-elytron-security-jdbc
 
 This guide demonstrates how your Quarkus application can use a database to store your user identities.
 
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -38,41 +36,34 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `security-jdbc-quickstart` {quickstarts-tree-url}/security-jdbc-quickstart[directory].
+The solution is located in the `security-jdbc-quickstart` link:{quickstarts-tree-url}/security-jdbc-quickstart[directory].
 
 == Creating the Maven Project
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=security-jdbc-quickstart \
-    -Dextensions="elytron-security-jdbc,jdbc-postgresql,resteasy" \
-    -DnoExamples
-cd security-jdbc-quickstart
-----
+:create-app-artifact-id: security-jdbc-quickstart
+:create-app-extensions: elytron-security-jdbc,jdbc-postgresql,resteasy-reactive
+include::{includes}/devtools/create-app.adoc[]
 
 [NOTE]
 ====
 Don't forget to add the database connector library of choice. Here we are using PostgreSQL as identity store.
 ====
 
-This command generates a Maven project, importing the `elytron-security-jdbc` extension
+This command generates a new project, importing the `elytron-security-jdbc` extension
 which is an https://docs.wildfly.org/17/WildFly_Elytron_Security.html#jdbc-security-realm[`wildfly-elytron-realm-jdbc`] adapter for Quarkus applications.
 
 If you already have your Quarkus project configured, you can add the `elytron-security-jdbc` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="elytron-security-jdbc"
-----
+:add-extension-extensions: elytron-security-jdbc
+include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -80,19 +71,25 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-elytron-security-jdbc")
+----
+
 == Writing the application
 
-Let's start by implementing the `/api/public` endpoint. As you can see from the source code below, it is just a regular JAX-RS resource:
+Let's start by implementing the `/api/public` endpoint. As you can see from the source code below, it is just a regular Jakarta REST resource:
 
 [source,java]
 ----
 package org.acme.security.jdbc;
 
-import javax.annotation.security.PermitAll;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.annotation.security.PermitAll;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/api/public")
 public class PublicResource {
@@ -113,11 +110,11 @@ The source code for the `/api/admin` endpoint is also very simple. The main diff
 ----
 package org.acme.security.jdbc;
 
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/api/admin")
 public class AdminResource {
@@ -132,18 +129,18 @@ public class AdminResource {
 ----
 
 Finally, let's consider the `/api/users/me` endpoint. As you can see from the source code below, we are trusting only users with the `user` role.
-We are using `SecurityContext` to get access to the current authenticated Principal and we return the user's name. This information is loaded from the database.
+We are using `SecurityContext` to get access to the current authenticated Principal, and we return the user's name. This information is loaded from the database.
 
 [source,java]
 ----
 package org.acme.security.jdbc;
 
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.SecurityContext;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.SecurityContext;
 
 @Path("/api/users")
 public class UserResource {
@@ -169,7 +166,7 @@ quarkus.datasource.password=quarkus
 quarkus.datasource.jdbc.url=jdbc:postgresql:elytron-security-jdbc
 ----
 
-In our context, we are using PostgreSQL as identity store and we initialize the database with users and roles.
+In our context, we are using PostgreSQL as identity store, and we initialize the database with users and roles.
 
 [source,sql]
 ----
@@ -186,7 +183,7 @@ INSERT INTO test_user (id, username, password, role) VALUES (2, 'user','user', '
 
 [NOTE]
 ====
-It is probably useless but we kindly remind you that you must not store clear-text passwords in production environment ;-).
+It is probably useless, but we kindly remind you that you must not store clear-text passwords in production environment ;-).
 The `elytron-security-jdbc` offers a built-in bcrypt password mapper.
 ====
 
@@ -206,7 +203,7 @@ The `elytron-security-jdbc` extension requires at least one principal query to a
 
 <1> We define a parameterized SQL statement (with exactly 1 parameter) which should return the user's password plus any additional information you want to load.
 <2> We  configure the password mapper with the position of the password field in the `SELECT` fields and other information like salt, hash encoding, etc.
-<3> We use `attribute-mappings` to bind the `SELECT` projection fields (ie. `u.role` here) to the target Principal representation attributes.
+<3> We use `attribute-mappings` to bind the `SELECT` projection fields (i.e. `u.role` here) to the target Principal representation attributes.
 
 [NOTE]
 ====
@@ -228,7 +225,7 @@ Content-Type: text/plain;charset=UTF-8
 public%
 ----
 
-Now, let's try a to hit a protected resource anonymously.
+Now, let's try to hit a protected resource anonymously.
 
 [source,shell]
 ----
@@ -312,4 +309,4 @@ include::{generated-dir}/config/quarkus-elytron-security-jdbc.adoc[opts=optional
 
 == References
 
-* link:security[Quarkus Security]
+* xref:security-overview.adoc[Quarkus Security overview]

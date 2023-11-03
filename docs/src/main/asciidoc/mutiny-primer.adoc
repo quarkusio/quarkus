@@ -4,8 +4,10 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Mutiny - Async for bare mortal
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: reactive
+:topics: mutiny,reactive
+:extensions: io.quarkus:quarkus-mutiny
 
 https://smallrye.io/smallrye-mutiny[Mutiny] is an intuitive, reactive programming library.
 It is the primary model to write reactive applications with Quarkus.
@@ -32,7 +34,7 @@ You observe them (_subscription_) and you get notified when they emit an item, a
 When you (the subscriber) receive the event, you can process it (e.g., transform it, filter it).
 With Mutiny, you are going to write code like _onX().action()_, which reads as “on item X do action”.
 
-If you want to know more about Mutiny, and the concepts behind it, check https://smallrye.io/smallrye-mutiny/pages/philosophy[the Mutiny Philosophy].
+If you want to know more about Mutiny, and the concepts behind it, check https://smallrye.io/smallrye-mutiny/latest/reference/why-is-asynchronous-important[the Mutiny Reference documentation].
 
 == Mutiny in Quarkus
 
@@ -198,7 +200,7 @@ As we have seen in the previous section, it could indicate the successful insert
 
 Transforming an item is done using: `onItem().transform(item -> ....)`.
 
-More details about transformation can be found in the https://smallrye.io/smallrye-mutiny/getting-started/transforming-items[Mutiny documentation].
+More details about transformation can be found in the https://smallrye.io/smallrye-mutiny/latest/tutorials/transforming-items/[Mutiny documentation].
 
 === Sequential composition
 
@@ -209,10 +211,10 @@ Unlike `transform`, the function passed to `transformToUni` returns a Uni.
 ----
 Uni<String> uni1 = …
 uni1
-.onItem().transformtoUni(item -> anotherAsynchronousAction(item));
+.onItem().transformToUni(item -> anotherAsynchronousAction(item));
 ----
 
-More details about asynchronous transformation can be found in the https://smallrye.io/smallrye-mutiny/getting-started/transforming-items-async[Mutiny documentation].
+More details about asynchronous transformation can be found in the https://smallrye.io/smallrye-mutiny/latest/tutorials/transforming-items-asynchronously/[Mutiny documentation].
 
 === Failure handling
 
@@ -236,7 +238,7 @@ uni1
 .onFailure().retry().atMost(5);
 ----
 
-More info about failure recovery can be found on https://smallrye.io/smallrye-mutiny/getting-started/handling-failures[the handling failure documentation] and https://smallrye.io/smallrye-mutiny/getting-started/retry[the retry documentation].
+More info about failure recovery can be found on https://smallrye.io/smallrye-mutiny/latest/tutorials/handling-failures/[the handling failure documentation] and https://smallrye.io/smallrye-mutiny/latest/tutorials/retrying/[the retrying on failures documentation].
 
 == Events and Actions
 
@@ -256,7 +258,7 @@ The following tables list the events that you can receive for Uni and Multi. Eac
 |Cancellation, Request
 |===
 
-Check the full list of events on https://smallrye.io/smallrye-mutiny/getting-started/observing-events[the event documentation].
+Check the full list of events on https://smallrye.io/smallrye-mutiny/latest/tutorials/observing-events/[the event documentation].
 
 |===
 | Action |API |Comment
@@ -264,8 +266,8 @@ Check the full list of events on https://smallrye.io/smallrye-mutiny/getting-sta
 |transform | `onItem().transform(Function<I, O> function);` | Transform the event into another event using a synchronous function.
 The downstream receives the result of the function (or a failure if the transformation failed).
 |transformToUni | `onItem().transformToUni(Function<I, Uni<O>> function);` | Transform the event into another event using an asynchronous function. The downstream receives the item emitted by the produced Uni (or a failure if the transformation failed). If the produced Uni emits a failure, that failure is passed to the downstream.
-|invoke | `onItem().invoke(Consumer<I> consumer)` | Invokes the synchronous consumer. This is particularly convenient to execute side-effects actions. The downstream receives the original event, or a failure if the consumer throws an exception
-| call | `onItem().call(Function<I, Uni<?>>)` | Invokes the asynchronous function. This is particularly convenient to execute asynchronous side-effect actions.The downstream receives the original event, or a failure if the consumer throws an exception or if the produced Uni emits a failure.
+|invoke | `onItem().invoke(Consumer<I> consumer)` | Invokes the synchronous consumer. This is particularly convenient to execute side effects actions. The downstream receives the original event, or a failure if the consumer throws an exception
+| call | `onItem().call(Function<I, Uni<?>>)` | Invokes the asynchronous function. This is particularly convenient to execute asynchronous side effect actions.The downstream receives the original event, or a failure if the consumer throws an exception or if the produced Uni emits a failure.
 | fail | `onItem().failWith(Function<I, Throwable>)` | Emits a failure when it receives the event.
 | complete (Multi only) | `onItem().complete()` | Emits the completion event when it receives the event.
 |===
@@ -277,9 +279,9 @@ Head over to the https://smallrye.io/smallrye-mutiny[Mutiny documentation] to se
 
 Some frequently asked guides are the following:
 
-1. merge vs. concatenation - https://smallrye.io/smallrye-mutiny/guides/merge-concat
-2. controlling the emission thread - https://smallrye.io/smallrye-mutiny/guides/emit-subscription
-3. explicit blocking  - https://smallrye.io/smallrye-mutiny/guides/imperative-to-reactive
+1. merge vs. concatenation - https://smallrye.io/smallrye-mutiny/latest/guides/merging-and-concatenating-streams/
+2. controlling the emission thread - https://smallrye.io/smallrye-mutiny/latest/guides/emit-on-vs-run-subscription-on/
+3. explicit blocking  - https://smallrye.io/smallrye-mutiny/latest/guides/imperative-to-reactive/
 
 == Shortcuts
 
@@ -288,16 +290,37 @@ Fortunately, Mutiny provides a set of shortcut to make your code more concise:
 
 
 |===
-|Shortcut |Equivalent
+|Shortcut | Equivalent
 
-| uni.map(x → y) | uni.onItem().transform(x → y)
-| uni.flatMap(x → uni2) | uni.onItem().transformToUni(x → uni2)
-| uni.chain(x → uni2) | uni.onItem().transformToUni(x → uni2)
-| uni.then(() → uni2) | uni.onItem().transformToUni(ignored → uni2)
-| uni.invoke(x → System.out.println(x)) | uni.onItem().invoke(x → System.out.println(x))
-| uni.call(x → uni2) | uni.onItem().call(x → uni2)
-| uni.eventually) → System.out.println("eventually" | uni.onItemOrFailure().invokeignoredItem, ignoredException) → System.out.println("eventually"
-| uni.eventually(() → uni2) | uni.onItemOrFailure().call((ignoredItem, ignoredException) → uni2)
+|`uni.map(x -> y)`
+|`uni.onItem().transform(x -> y)`
+
+|`uni.flatMap(x -> uni2)`
+|`uni.onItem().transformToUni(x -> uni2)`
+
+|`uni.chain(x -> uni2)`
+|`uni.onItem().transformToUni(x -> uni2)`
+
+|`uni.invoke(x -> System.out.println(x))`
+|`uni.onItem().invoke(x -> System.out.println(x))`
+
+|`uni.call(x -> uni2)`
+|`uni.onItem().call(x -> uni2)`
+
+|`uni.eventually\(() -> System.out.println("eventually"))`
+|`uni.onItemOrFailure().invoke\((ignoredItem, ignoredException) -> System.out.println("eventually"))`
+
+|`uni.eventually(() -> uni2)`
+|`uni.onItemOrFailure().call((ignoredItem, ignoredException) -> uni2)`
+
+|`uni.replaceWith(x)`
+|`uni.onItem().transform(ignored -> x)`
+
+|`uni.replaceWith(uni2)`
+|`uni.onItem().transformToUni(ignored -> uni2)`
+
+|`uni.replaceIfNullWith(x)`
+|`uni.onItem().ifNull().continueWith(x)`
 |===
 
 == Reactive Streams
@@ -333,7 +356,7 @@ Mutiny exposes hooks that allow Quarkus and Mutiny to be closely integrated:
 * The default Mutiny thread pool is the Quarkus worker thread pool;
 * Context Propagation is enabled by default when using Mutiny Uni and Multi
 
-More details about the infrastructure integration can be found on https://smallrye.io/smallrye-mutiny/guides/infrastructure.
+More details about the infrastructure integration can be found on https://smallrye.io/smallrye-mutiny/latest/guides/framework-integration/.
 
 
 

@@ -11,4 +11,7 @@ metadata:
   guide: "https://quarkus.io/guides/opentracing"
   categories:
   - "observability"
-  status: "stable"
+  status: "deprecated"
+  config:
+  - "quarkus.jaeger."
+  - "mp.opentracing."

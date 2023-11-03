@@ -7,7 +7,7 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
 
 /**
- * indicates the type of launch
+ * Indicates the type of launch.
  */
 public final class LaunchModeBuildItem extends SimpleBuildItem {
 
@@ -18,12 +18,15 @@ public final class LaunchModeBuildItem extends SimpleBuildItem {
     private final boolean auxiliaryApplication;
     private final Optional<DevModeType> auxiliaryDevModeType;
 
+    private final boolean test;
+
     public LaunchModeBuildItem(LaunchMode launchMode, Optional<DevModeType> devModeType, boolean auxiliaryApplication,
-            Optional<DevModeType> auxiliaryDevModeType) {
+            Optional<DevModeType> auxiliaryDevModeType, boolean test) {
         this.launchMode = launchMode;
         this.devModeType = devModeType;
         this.auxiliaryApplication = auxiliaryApplication;
         this.auxiliaryDevModeType = auxiliaryDevModeType;
+        this.test = test;
     }
 
     public LaunchMode getLaunchMode() {
@@ -41,9 +44,18 @@ public final class LaunchModeBuildItem extends SimpleBuildItem {
     }
 
     /**
+     * Whether the development mode type is not local.
+     *
+     * @return true if {@link #getDevModeType()} is not {@link DevModeType#LOCAL}
+     */
+    public boolean isNotLocalDevModeType() {
+        return devModeType.orElse(null) != DevModeType.LOCAL;
+    }
+
+    /**
      * An Auxiliary Application is a second application running in the same JVM as a primary application.
      * <p>
-     * Currently this is done to allow running tests in dev mode, while the main dev mode process continues to
+     * Currently, this is done to allow running tests in dev mode, while the main dev mode process continues to
      * run.
      */
     public boolean isAuxiliaryApplication() {
@@ -52,9 +64,16 @@ public final class LaunchModeBuildItem extends SimpleBuildItem {
 
     /**
      * The dev mode type of the main application.
-     *
      */
     public Optional<DevModeType> getAuxiliaryDevModeType() {
         return auxiliaryDevModeType;
+    }
+
+    /**
+     * If this is a test. Dev mode tests don't launch with a launch mode TEST, so this
+     * can be used to determine if we are in a dev mode test.
+     */
+    public boolean isTest() {
+        return test;
     }
 }

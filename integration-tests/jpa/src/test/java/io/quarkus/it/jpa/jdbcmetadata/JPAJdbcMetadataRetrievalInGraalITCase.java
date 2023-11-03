@@ -1,7 +1,7 @@
 package io.quarkus.it.jpa.jdbcmetadata;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class JPAJdbcMetadataRetrievalInGraalITCase extends JPAJdbcMetadataRetrievalTest {
 }

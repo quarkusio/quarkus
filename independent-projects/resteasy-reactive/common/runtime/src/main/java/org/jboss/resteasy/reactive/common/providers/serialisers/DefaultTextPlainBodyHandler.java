@@ -4,11 +4,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyReader;
+
+import jakarta.ws.rs.ProcessingException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.MessageBodyReader;
+
 import org.jboss.resteasy.reactive.common.util.TypeConverter;
 
 /**
@@ -25,9 +27,13 @@ public abstract class DefaultTextPlainBodyHandler implements MessageBodyReader<O
         return !String.class.equals(type) && TypeConverter.isConvertable(type);
     }
 
-    @SuppressWarnings("unchecked")
     public Object readFrom(Class type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+        return doReadFrom(type, mediaType, entityStream);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    protected Object doReadFrom(Class type, MediaType mediaType, InputStream entityStream) throws IOException {
         String input = MessageReaderUtil.readString(entityStream, mediaType);
         validateInput(input);
         return TypeConverter.getType(type, input);

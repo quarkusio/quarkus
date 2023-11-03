@@ -1,8 +1,14 @@
 package io.quarkus.spring.data.rest.deployment;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
+
+import jakarta.annotation.security.RolesAllowed;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -23,6 +29,8 @@ public abstract class ResourcePropertiesProvider {
     private static final DotName REPOSITORY_REST_RESOURCE_ANNOTATION = DotName
             .createSimple(RepositoryRestResource.class.getName());
 
+    private static final List<String> ANNOTATIONS_TO_COPY = List.of(RolesAllowed.class.getPackageName());
+
     private final IndexView index;
 
     private final boolean paged;
@@ -41,22 +49,50 @@ public abstract class ResourcePropertiesProvider {
         String halCollectionName = getHalCollectionName(annotation, ResourceName.fromClass(interfaceName));
 
         return new ResourceProperties(isExposed(annotation), resourcePath, paged, true, halCollectionName,
-                getMethodProperties(repositoryInterfaceName));
+                new String[0], collectAnnotationsToCopy(repositoryInterfaceName), getMethodProperties(repositoryInterfaceName));
     }
 
     private Map<String, MethodProperties> getMethodProperties(DotName interfaceName) {
         Map<String, MethodProperties> methodPropertiesMap = new HashMap<>();
         for (Map.Entry<String, Predicate<MethodInfo>> method : getMethodPredicates().entrySet()) {
-            AnnotationInstance annotation = findMethodAnnotation(interfaceName, method.getValue());
-            if (annotation != null) {
-                methodPropertiesMap.putIfAbsent(method.getKey(), getMethodProperties(annotation));
+            MethodWithAnnotation methodWithAnnotation = findMethodAnnotation(interfaceName, method.getValue());
+            if (methodWithAnnotation != null) {
+                Set<AnnotationInstance> annotationsToCopy = new HashSet<>();
+                for (AnnotationInstance ann : methodWithAnnotation.method.annotations()) {
+                    if (ANNOTATIONS_TO_COPY.stream().anyMatch(ann.name().toString()::startsWith)) {
+                        annotationsToCopy.add(ann);
+                    }
+                }
+
+                methodPropertiesMap.putIfAbsent(method.getKey(),
+                        getMethodProperties(methodWithAnnotation.annotation, annotationsToCopy));
             }
         }
         return methodPropertiesMap;
     }
 
-    private MethodProperties getMethodProperties(AnnotationInstance annotation) {
-        return new MethodProperties(isExposed(annotation), getPath(annotation, ""));
+    private MethodProperties getMethodProperties(AnnotationInstance annotation, Set<AnnotationInstance> annotationsToCopy) {
+        return new MethodProperties(isExposed(annotation), getPath(annotation, ""), new String[0], annotationsToCopy);
+    }
+
+    private Collection<AnnotationInstance> collectAnnotationsToCopy(DotName className) {
+        Set<AnnotationInstance> annotations = new HashSet<>();
+        ClassInfo classInfo = index.getClassByName(className);
+        if (classInfo == null) {
+            return annotations;
+        }
+
+        for (AnnotationInstance annotation : classInfo.declaredAnnotations()) {
+            if (ANNOTATIONS_TO_COPY.stream().anyMatch(annotation.name().toString()::startsWith)) {
+                annotations.add(annotation);
+            }
+        }
+
+        if (classInfo.superName() != null) {
+            annotations.addAll(collectAnnotationsToCopy(classInfo.superName()));
+        }
+
+        return annotations;
     }
 
     private AnnotationInstance findClassAnnotation(DotName interfaceName) {
@@ -64,11 +100,11 @@ public abstract class ResourcePropertiesProvider {
         if (classInfo == null) {
             return null;
         }
-        if (classInfo.classAnnotation(REPOSITORY_REST_RESOURCE_ANNOTATION) != null) {
-            return classInfo.classAnnotation(REPOSITORY_REST_RESOURCE_ANNOTATION);
+        if (classInfo.declaredAnnotation(REPOSITORY_REST_RESOURCE_ANNOTATION) != null) {
+            return classInfo.declaredAnnotation(REPOSITORY_REST_RESOURCE_ANNOTATION);
         }
-        if (classInfo.classAnnotation(REST_RESOURCE_ANNOTATION) != null) {
-            return classInfo.classAnnotation(REST_RESOURCE_ANNOTATION);
+        if (classInfo.declaredAnnotation(REST_RESOURCE_ANNOTATION) != null) {
+            return classInfo.declaredAnnotation(REST_RESOURCE_ANNOTATION);
         }
         if (classInfo.superName() != null) {
             return findClassAnnotation(classInfo.superName());
@@ -76,18 +112,22 @@ public abstract class ResourcePropertiesProvider {
         return null;
     }
 
-    private AnnotationInstance findMethodAnnotation(DotName interfaceName, Predicate<MethodInfo> methodPredicate) {
+    private MethodWithAnnotation findMethodAnnotation(DotName interfaceName, Predicate<MethodInfo> methodPredicate) {
         ClassInfo classInfo = index.getClassByName(interfaceName);
         if (classInfo == null) {
             return null;
         }
         for (MethodInfo method : classInfo.methods()) {
             if (methodPredicate.test(method)) {
+                MethodWithAnnotation found = new MethodWithAnnotation();
+                found.method = method;
                 if (method.hasAnnotation(REPOSITORY_REST_RESOURCE_ANNOTATION)) {
-                    return method.annotation(REPOSITORY_REST_RESOURCE_ANNOTATION);
+                    found.annotation = method.annotation(REPOSITORY_REST_RESOURCE_ANNOTATION);
                 } else if (method.hasAnnotation(REST_RESOURCE_ANNOTATION)) {
-                    return method.annotation(REST_RESOURCE_ANNOTATION);
+                    found.annotation = method.annotation(REST_RESOURCE_ANNOTATION);
                 }
+
+                return found;
             }
         }
         if (classInfo.superName() != null) {
@@ -114,5 +154,10 @@ public abstract class ResourcePropertiesProvider {
             return annotation.value("collectionResourceRel").asString();
         }
         return defaultValue;
+    }
+
+    class MethodWithAnnotation {
+        MethodInfo method;
+        AnnotationInstance annotation;
     }
 }

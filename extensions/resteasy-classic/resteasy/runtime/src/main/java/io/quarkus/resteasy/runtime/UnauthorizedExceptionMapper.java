@@ -1,11 +1,11 @@
 package io.quarkus.resteasy.runtime;
 
-import javax.annotation.Priority;
-import javax.enterprise.inject.spi.CDI;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.logging.Logger;
 
@@ -48,11 +48,17 @@ public class UnauthorizedExceptionMapper implements ExceptionMapper<Unauthorized
                     if (challengeData.headerName != null) {
                         status.header(challengeData.headerName.toString(), challengeData.headerContent);
                     }
+                    log.debugf("Returning an authentication challenge, status code: %d", challengeData.status);
                     return status.build();
                 } else {
+                    log.debug("ChallengeData is null, returning HTTP status 401");
                     return Response.status(401).build();
                 }
+            } else {
+                log.error("HttpAuthenticator is not found, returning HTTP status 401");
             }
+        } else {
+            log.error("RoutingContext is not found, returning HTTP status 401");
         }
         return Response.status(401).entity("Not authorized").build();
     }

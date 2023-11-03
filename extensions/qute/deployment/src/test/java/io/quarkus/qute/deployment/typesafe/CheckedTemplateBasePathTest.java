@@ -2,9 +2,7 @@ package io.quarkus.qute.deployment.typesafe;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class CheckedTemplateBasePathTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Monks.class)
                     .addAsResource(new StringAsset("Hello {name}!"), "templates/foo/monk.txt")
                     .addAsResource(new StringAsset("Hello {name}!"), "templates/Monks/monk.txt"));

@@ -2,8 +2,6 @@ package io.quarkus.hibernate.orm.panache.deployment.test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -13,7 +11,7 @@ public class EntityManagerTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource("application-test.properties", "application.properties")
                     .addClasses(MyEntity.class));
 

@@ -24,6 +24,7 @@ import org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineEndpointInvoke
 import org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineMethodProcessor;
 import org.jboss.resteasy.reactive.server.runtime.kotlin.FlowToPublisherHandler;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
+import org.jboss.resteasy.reactive.server.spi.EndpointInvokerFactory;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -33,7 +34,6 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.resteasy.reactive.server.common.runtime.EndpointInvokerFactory;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 
 public class KotlinCoroutineIntegrationProcessor {
@@ -55,6 +55,7 @@ public class KotlinCoroutineIntegrationProcessor {
     @BuildStep
     MethodScannerBuildItem scanner() {
         return new MethodScannerBuildItem(new MethodScanner() {
+            @SuppressWarnings("unchecked")
             @Override
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                     Map<String, Object> methodContext) {
@@ -68,6 +69,14 @@ public class KotlinCoroutineIntegrationProcessor {
                             method.declaringClass(), method,
                             (BuildProducer<GeneratedClassBuildItem>) methodContext.get(GeneratedClassBuildItem.class.getName()),
                             recorder));
+                    if (methodContext.containsKey(EndpointIndexer.METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)) {
+                        Type methodReturnType = (Type) methodContext.get(EndpointIndexer.METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY);
+                        if (methodReturnType != null) {
+                            if (methodReturnType.name().equals(FLOW)) {
+                                return List.of(processor, flowCustomizer());
+                            }
+                        }
+                    }
                     return Collections.singletonList(processor);
                 }
                 return Collections.emptyList();
@@ -99,6 +108,16 @@ public class KotlinCoroutineIntegrationProcessor {
                 }
                 return null;
             }
+
+            @Override
+            public boolean isMethodSignatureAsync(MethodInfo info) {
+                for (var param : info.parameterTypes()) {
+                    if (param.name().equals(CONTINUATION)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
         });
     }
 
@@ -106,7 +125,7 @@ public class KotlinCoroutineIntegrationProcessor {
      * This method generates the same invocation code as for the standard invoker but also passes along the implicit
      * {@code Continuation} argument provided by kotlinc and the coroutines library.
      *
-     * @see io.quarkus.resteasy.reactive.server.deployment.QuarkusInvokerFactory#create(ResourceMethod, ClassInfo, MethodInfo)
+     * See: io.quarkus.resteasy.reactive.server.deployment.QuarkusInvokerFactory#create(ResourceMethod, ClassInfo, MethodInfo)
      */
     private Supplier<EndpointInvoker> createCoroutineInvoker(ClassInfo currentClassInfo,
             MethodInfo info, BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
@@ -114,7 +133,7 @@ public class KotlinCoroutineIntegrationProcessor {
         StringBuilder sigBuilder = new StringBuilder();
         sigBuilder.append(info.name())
                 .append(info.returnType());
-        for (Type t : info.parameters()) {
+        for (Type t : info.parameterTypes()) {
             sigBuilder.append(t);
         }
         String baseName = currentClassInfo.name() + "$quarkuscoroutineinvoker$" + info.name() + "_"
@@ -130,9 +149,9 @@ public class KotlinCoroutineIntegrationProcessor {
 
             try (MethodCreator mc = classCreator.getMethodCreator("invokeCoroutine", Object.class, Object.class, Object[].class,
                     CONTINUATION.toString())) {
-                ResultHandle[] args = new ResultHandle[info.parameters().size()];
+                ResultHandle[] args = new ResultHandle[info.parametersCount()];
                 ResultHandle array = mc.getMethodParam(1);
-                for (int i = 0; i < info.parameters().size() - 1; ++i) {
+                for (int i = 0; i < info.parametersCount() - 1; ++i) {
                     args[i] = mc.readArrayValue(array, i);
                 }
                 args[args.length - 1] = mc.getMethodParam(2);
@@ -161,12 +180,21 @@ public class KotlinCoroutineIntegrationProcessor {
                     Map<String, Object> methodContext) {
                 DotName returnTypeName = method.returnType().name();
                 if (returnTypeName.equals(FLOW)) {
-                    return Collections.singletonList(new FixedHandlersChainCustomizer(
-                            List.of(new FlowToPublisherHandler(), new PublisherResponseHandler()),
-                            HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE));
+                    return Collections.singletonList(flowCustomizer());
                 }
                 return Collections.emptyList();
             }
+
+            @Override
+            public boolean isMethodSignatureAsync(MethodInfo info) {
+                return info.returnType().name().equals(FLOW);
+            }
         });
+    }
+
+    private static HandlerChainCustomizer flowCustomizer() {
+        return new FixedHandlersChainCustomizer(
+                List.of(new FlowToPublisherHandler(), new PublisherResponseHandler()),
+                HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE);
     }
 }

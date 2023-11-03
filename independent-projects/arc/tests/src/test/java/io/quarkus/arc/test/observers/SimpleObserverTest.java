@@ -1,19 +1,26 @@
 package io.quarkus.arc.test.observers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.ObserverMethod;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.event.Event;
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class SimpleObserverTest {
 
@@ -28,6 +35,15 @@ public class SimpleObserverTest {
         producer.produce("ping");
         List<String> events = observer.getEvents();
         assertEquals(2, events.size());
+
+        // verify we can resolve OM and check some of its metadata
+        Set<ObserverMethod<? super String>> foundOms = Arc.container().beanManager().resolveObserverMethods("someString");
+        assertEquals(1, foundOms.size());
+        ObserverMethod<? super String> om = foundOms.iterator().next();
+        Bean<?> declaringBean = om.getDeclaringBean();
+        assertNotNull(declaringBean);
+        assertEquals(StringObserver.class, declaringBean.getBeanClass());
+        assertEquals(Singleton.class, declaringBean.getScope());
     }
 
     @Singleton

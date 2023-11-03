@@ -1,27 +1,27 @@
 package io.quarkus.arc.impl;
 
+import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
+
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.ContextInstanceHandle;
+import io.quarkus.arc.CurrentContext;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.impl.EventImpl.Notifier;
-import java.lang.annotation.Annotation;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.enterprise.context.BeforeDestroyed;
-import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.Destroyed;
-import javax.enterprise.context.Initialized;
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.Any;
-import org.jboss.logging.Logger;
 
 /**
  * The built-in context for {@link RequestScoped}.
@@ -30,19 +30,23 @@ import org.jboss.logging.Logger;
  */
 class RequestContext implements ManagedContext {
 
-    private static final Logger LOGGER = Logger.getLogger(RequestContext.class.getPackage().getName());
+    private static final Logger LOG = Logger.getLogger("io.quarkus.arc.requestContext");
 
-    // It's a normal scope so there may be no more than one mapped instance per contextual type per thread
-    private final ThreadLocal<ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>>> currentContext = new ThreadLocal<>();
+    private final CurrentContext<RequestContextState> currentContext;
 
-    private final LazyValue<Notifier<Object>> initializedNotifier;
-    private final LazyValue<Notifier<Object>> beforeDestroyedNotifier;
-    private final LazyValue<Notifier<Object>> destroyedNotifier;
+    private final Notifier<Object> initializedNotifier;
+    private final Notifier<Object> beforeDestroyedNotifier;
+    private final Notifier<Object> destroyedNotifier;
+    private final Supplier<ContextInstances> contextInstances;
 
-    public RequestContext() {
-        this.initializedNotifier = new LazyValue<>(RequestContext::createInitializedNotifier);
-        this.beforeDestroyedNotifier = new LazyValue<>(RequestContext::createBeforeDestroyedNotifier);
-        this.destroyedNotifier = new LazyValue<>(RequestContext::createDestroyedNotifier);
+    public RequestContext(CurrentContext<RequestContextState> currentContext, Notifier<Object> initializedNotifier,
+            Notifier<Object> beforeDestroyedNotifier, Notifier<Object> destroyedNotifier,
+            Supplier<ContextInstances> contextInstances) {
+        this.currentContext = currentContext;
+        this.initializedNotifier = initializedNotifier;
+        this.beforeDestroyedNotifier = beforeDestroyedNotifier;
+        this.destroyedNotifier = destroyedNotifier;
+        this.contextInstances = contextInstances;
     }
 
     @Override
@@ -55,18 +59,26 @@ class RequestContext implements ManagedContext {
     public <T> T getIfActive(Contextual<T> contextual, Function<Contextual<T>, CreationalContext<T>> creationalContextFun) {
         Objects.requireNonNull(contextual, "Contextual must not be null");
         Objects.requireNonNull(creationalContextFun, "CreationalContext supplier must not be null");
-        Map<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
-        if (ctx == null) {
-            // Thread local not set - context is not active!
+        InjectableBean<T> bean = (InjectableBean<T>) contextual;
+        if (!Scopes.scopeMatches(this, bean)) {
+            throw Scopes.scopeDoesNotMatchException(this, bean);
+        }
+        RequestContextState ctxState = currentContext.get();
+        if (ctxState == null) {
+            // Context is not active!
             return null;
         }
-        ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) ctx.get(contextual);
+        ContextInstances contextInstances = ctxState.contextInstances;
+        ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) contextInstances.getIfPresent(bean.getIdentifier());
         if (instance == null) {
             CreationalContext<T> creationalContext = creationalContextFun.apply(contextual);
-            // Bean instance does not exist - create one if we have CreationalContext
-            instance = new ContextInstanceHandleImpl<T>((InjectableBean<T>) contextual,
-                    contextual.create(creationalContext), creationalContext);
-            ctx.put(contextual, instance);
+            return (T) contextInstances.computeIfAbsent(bean.getIdentifier(), new Supplier<ContextInstanceHandle<?>>() {
+
+                @Override
+                public ContextInstanceHandle<?> get() {
+                    return new ContextInstanceHandleImpl<>(bean, contextual.create(creationalContext), creationalContext);
+                }
+            }).get();
         }
         return instance.get();
     }
@@ -76,8 +88,7 @@ class RequestContext implements ManagedContext {
         T result = getIfActive(contextual,
                 CreationalContextImpl.unwrap(Objects.requireNonNull(creationalContext, "CreationalContext must not be null")));
         if (result == null) {
-            // Thread local not set - context is not active!
-            throw new ContextNotActiveException();
+            throw notActive();
         }
         return result;
     }
@@ -86,12 +97,16 @@ class RequestContext implements ManagedContext {
     @Override
     public <T> T get(Contextual<T> contextual) {
         Objects.requireNonNull(contextual, "Contextual must not be null");
-        Map<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
-        if (ctx == null) {
-            // Thread local not set - context is not active!
-            throw new ContextNotActiveException();
+        InjectableBean<T> bean = (InjectableBean<T>) contextual;
+        if (!Scopes.scopeMatches(this, bean)) {
+            throw Scopes.scopeDoesNotMatchException(this, bean);
         }
-        ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) ctx.get(contextual);
+        RequestContextState state = currentContext.get();
+        if (state == null) {
+            throw notActive();
+        }
+        ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) state.contextInstances
+                .getIfPresent(bean.getIdentifier());
         return instance == null ? null : instance.get();
     }
 
@@ -102,45 +117,78 @@ class RequestContext implements ManagedContext {
 
     @Override
     public void destroy(Contextual<?> contextual) {
-        Map<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
-        if (ctx == null) {
-            // Thread local not set - context is not active!
-            throw new ContextNotActiveException();
+        RequestContextState state = currentContext.get();
+        if (state == null) {
+            // Context is not active
+            throw notActive();
         }
-        ContextInstanceHandle<?> instance = ctx.remove(contextual);
+        InjectableBean<?> bean = (InjectableBean<?>) contextual;
+        ContextInstanceHandle<?> instance = state.contextInstances.remove(bean.getIdentifier());
         if (instance != null) {
             instance.destroy();
         }
     }
 
     @Override
-    public void activate(ContextState initialState) {
+    public ContextState activate(ContextState initialState) {
+        if (LOG.isTraceEnabled()) {
+            traceActivate(initialState);
+        }
         if (initialState == null) {
-            currentContext.set(new ConcurrentHashMap<>());
+            RequestContextState state = new RequestContextState(contextInstances.get());
+            currentContext.set(state);
             // Fire an event with qualifier @Initialized(RequestScoped.class) if there are any observers for it
             fireIfNotEmpty(initializedNotifier);
+            return state;
         } else {
             if (initialState instanceof RequestContextState) {
-                currentContext.set(((RequestContextState) initialState).value);
+                currentContext.set((RequestContextState) initialState);
+                return initialState;
             } else {
                 throw new IllegalArgumentException("Invalid initial state: " + initialState.getClass().getName());
             }
         }
     }
 
+    private void traceActivate(ContextState initialState) {
+        String stack = Arrays.stream(Thread.currentThread().getStackTrace())
+                .skip(2)
+                .limit(7)
+                .map(se -> "\n\t" + se.toString())
+                .collect(Collectors.joining());
+        LOG.tracef("Activate %s %s\n\t...",
+                initialState != null ? Integer.toHexString(initialState.hashCode()) : "new", stack);
+    }
+
     @Override
     public ContextState getState() {
-        ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> ctx = currentContext.get();
-        if (ctx == null) {
+        RequestContextState state = currentContext.get();
+        if (state == null) {
             // Thread local not set - context is not active!
-            throw new ContextNotActiveException();
+            throw notActive();
         }
-        return new RequestContextState(ctx);
+        return state;
+    }
+
+    public ContextState getStateIfActive() {
+        return currentContext.get();
     }
 
     @Override
     public void deactivate() {
+        if (LOG.isTraceEnabled()) {
+            traceDeactivate();
+        }
         currentContext.remove();
+    }
+
+    private static void traceDeactivate() {
+        String stack = Arrays.stream(Thread.currentThread().getStackTrace())
+                .skip(2)
+                .limit(7)
+                .map(se -> "\n\t" + se.toString())
+                .collect(Collectors.joining());
+        LOG.tracef("Deactivate%s\n\t...", stack);
     }
 
     @Override
@@ -150,36 +198,38 @@ class RequestContext implements ManagedContext {
 
     @Override
     public void destroy(ContextState state) {
+        if (LOG.isTraceEnabled()) {
+            traceDestroy(state);
+        }
+        if (state == null) {
+            // nothing to destroy
+            return;
+        }
         if (state instanceof RequestContextState) {
-            destroy(((RequestContextState) state).value);
-        } else {
-            throw new IllegalArgumentException("Invalid state: " + state.getClass().getName());
-        }
-    }
-
-    private void destroy(Map<Contextual<?>, ContextInstanceHandle<?>> currentContext) {
-        if (currentContext != null) {
-            synchronized (currentContext) {
+            RequestContextState reqState = ((RequestContextState) state);
+            if (reqState.invalidate()) {
                 // Fire an event with qualifier @BeforeDestroyed(RequestScoped.class) if there are any observers for it
-                try {
-                    fireIfNotEmpty(beforeDestroyedNotifier);
-                } catch (Exception e) {
-                    LOGGER.warn("An error occurred during delivery of the @BeforeDestroyed(RequestScoped.class) event", e);
-                }
-                //Performance: avoid an iterator on the map elements
-                currentContext.forEach(this::destroyContextElement);
+                fireIfNotEmpty(beforeDestroyedNotifier);
+                reqState.contextInstances.getAllPresent().forEach(this::destroyContextElement);
+                reqState.contextInstances.clear();
                 // Fire an event with qualifier @Destroyed(RequestScoped.class) if there are any observers for it
-                try {
-                    fireIfNotEmpty(destroyedNotifier);
-                } catch (Exception e) {
-                    LOGGER.warn("An error occurred during delivery of the @Destroyed(RequestScoped.class) event", e);
-                }
-                currentContext.clear();
+                fireIfNotEmpty(destroyedNotifier);
             }
+        } else {
+            throw new IllegalArgumentException("Invalid state implementation: " + state.getClass().getName());
         }
     }
 
-    private void destroyContextElement(Contextual<?> contextual, ContextInstanceHandle<?> contextInstanceHandle) {
+    private static void traceDestroy(ContextState state) {
+        String stack = Arrays.stream(Thread.currentThread().getStackTrace())
+                .skip(2)
+                .limit(7)
+                .map(se -> "\n\t" + se.toString())
+                .collect(Collectors.joining());
+        LOG.tracef("Destroy %s%s\n\t...", state != null ? Integer.toHexString(state.hashCode()) : "", stack);
+    }
+
+    private void destroyContextElement(ContextInstanceHandle<?> contextInstanceHandle) {
         try {
             contextInstanceHandle.destroy();
         } catch (Exception e) {
@@ -187,43 +237,66 @@ class RequestContext implements ManagedContext {
         }
     }
 
-    private void fireIfNotEmpty(LazyValue<Notifier<Object>> value) {
-        Notifier<Object> notifier = value.get();
-        if (!notifier.isEmpty()) {
-            notifier.notify(toString());
+    private void fireIfNotEmpty(Notifier<Object> notifier) {
+        if (notifier != null && !notifier.isEmpty()) {
+            try {
+                notifier.notify(toString());
+            } catch (Exception e) {
+                LOG.warn("An error occurred during delivery of the container lifecycle event for qualifiers "
+                        + notifier.eventMetadata.getQualifiers(), e);
+            }
         }
     }
 
-    private static Notifier<Object> createInitializedNotifier() {
-        return EventImpl.createNotifier(Object.class, Object.class,
-                new HashSet<>(Arrays.asList(Initialized.Literal.REQUEST, Any.Literal.INSTANCE)),
-                ArcContainerImpl.instance(), false);
-    }
-
-    private static Notifier<Object> createBeforeDestroyedNotifier() {
-        return EventImpl.createNotifier(Object.class, Object.class,
-                new HashSet<>(Arrays.asList(BeforeDestroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
-                ArcContainerImpl.instance(), false);
-    }
-
-    private static Notifier<Object> createDestroyedNotifier() {
-        return EventImpl.createNotifier(Object.class, Object.class,
-                new HashSet<>(Arrays.asList(Destroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
-                ArcContainerImpl.instance(), false);
+    private ContextNotActiveException notActive() {
+        String msg = "Request context is not active - you can activate the request context for a specific method using the @ActivateRequestContext interceptor binding";
+        return new ContextNotActiveException(msg);
     }
 
     static class RequestContextState implements ContextState {
 
-        private final ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> value;
+        // Using 0 as default value enable removing an initialization
+        // in the constructor, piggybacking on the default value.
+        // As per https://docs.oracle.com/javase/specs/jls/se8/html/jls-12.html#jls-12.5
+        // the default field values are set before 'this' is accessible, hence
+        // they should be the very first value observable even in presence of
+        // unsafe publication of this object.
+        private static final int VALID = 0;
+        private static final int INVALID = 1;
+        private static final VarHandle IS_VALID;
 
-        RequestContextState(ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> value) {
-            this.value = value;
+        static {
+            try {
+                IS_VALID = MethodHandles.lookup().findVarHandle(RequestContextState.class, "isValid", int.class);
+            } catch (ReflectiveOperationException e) {
+                throw new Error(e);
+            }
+        }
+
+        private final ContextInstances contextInstances;
+        private volatile int isValid;
+
+        RequestContextState(ContextInstances contextInstances) {
+            this.contextInstances = Objects.requireNonNull(contextInstances);
         }
 
         @Override
         public Map<InjectableBean<?>, Object> getContextualInstances() {
-            return value.values().stream()
-                    .collect(Collectors.toMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
+            return contextInstances.getAllPresent().stream()
+                    .collect(Collectors.toUnmodifiableMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
+        }
+
+        /**
+         * @return {@code true} if the state was successfully invalidated, {@code false} otherwise
+         */
+        boolean invalidate() {
+            // Atomically sets the value just like AtomicBoolean.compareAndSet(boolean, boolean)
+            return IS_VALID.compareAndSet(this, VALID, INVALID);
+        }
+
+        @Override
+        public boolean isValid() {
+            return isValid == VALID;
         }
 
     }

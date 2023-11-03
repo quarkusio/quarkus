@@ -15,7 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.eclipse.microprofile.metrics.ConcurrentGauge;
 import org.eclipse.microprofile.metrics.Counter;
@@ -28,10 +28,10 @@ import org.eclipse.microprofile.metrics.MetricType;
 import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.Tag;
 import org.eclipse.microprofile.metrics.Timer;
-import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.metrics.MetricsFactory;
@@ -194,7 +194,7 @@ public class SmallRyeMetricsRecorder {
         //HACK: registration is done via statics, but cleanup is done via pre destroy
         //however if the bean is not used it will not be created, so no cleanup will be done
         //we force bean creation here to make sure the container can restart correctly
-        container.instance(MetricRegistries.class).getApplicationRegistry();
+        container.beanInstance(MetricRegistries.class).getApplicationRegistry();
     }
 
     public void dropRegistriesAtShutdown(ShutdownContext shutdownContext) {
@@ -328,7 +328,7 @@ public class SmallRyeMetricsRecorder {
         // some metrics are only available in jdk internal class 'com.sun.management.OperatingSystemMXBean': cast to it.
         // com.sun.management.OperatingSystemMXBean is not available in SubstratVM
         // the cast will fail for some JVM not derived from HotSpot (J9 for example) so we check if it is assignable to it
-        if (!ImageInfo.inImageCode()
+        if (ImageMode.current() == ImageMode.JVM
                 && com.sun.management.OperatingSystemMXBean.class.isAssignableFrom(operatingSystemMXBean.getClass())) {
             try {
                 com.sun.management.OperatingSystemMXBean internalOperatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) operatingSystemMXBean;
@@ -343,7 +343,7 @@ public class SmallRyeMetricsRecorder {
                                 "observed, while a value of 1.0 means that all CPUs were actively running threads from " +
                                 "the JVM 100% of the time during the recent period being observed. Threads from the JVM " +
                                 "include the application threads as well as the JVM internal threads. " +
-                                "All values betweens 0.0 and 1.0 are possible depending of the activities going on in " +
+                                "All values between 0.0 and 1.0 are possible depending of the activities going on in " +
                                 "the JVM process and the whole system. " +
                                 "If the Java Virtual Machine recent CPU usage is not available, the method returns a negative value.")
                         .build();
@@ -354,7 +354,7 @@ public class SmallRyeMetricsRecorder {
                     }
                 });
             } catch (ClassCastException cce) {
-                // this should never occurs
+                // this should never occur
                 log.debug("Unable to cast the OperatingSystemMXBean to com.sun.management.OperatingSystemMXBean, " +
                         "not registering extended operating system metrics", cce);
             }
@@ -367,7 +367,7 @@ public class SmallRyeMetricsRecorder {
         // some metrics are only available in jdk internal class 'com.sun.management.OperatingSystemMXBean': cast to it.
         // com.sun.management.OperatingSystemMXBean is not available in SubstratVM
         // the cast will fail for some JVM not derived from HotSpot (J9 for example) so we check if it is assignable to it
-        if (!ImageInfo.inImageCode()
+        if (ImageMode.current() == ImageMode.JVM
                 && com.sun.management.OperatingSystemMXBean.class.isAssignableFrom(operatingSystemMXBean.getClass())) {
             try {
                 com.sun.management.OperatingSystemMXBean internalOperatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) operatingSystemMXBean;
@@ -608,7 +608,7 @@ public class SmallRyeMetricsRecorder {
 
     private void memoryPoolMetrics(MetricRegistry registry) {
         // MemoryPoolMXBean doesn't work in native mode
-        if (!ImageInfo.inImageCode()) {
+        if (ImageMode.current() == ImageMode.JVM) {
             List<MemoryPoolMXBean> mps = ManagementFactory.getMemoryPoolMXBeans();
             Metadata usageMetadata = Metadata.builder()
                     .withName("memoryPool.usage")
@@ -665,7 +665,7 @@ public class SmallRyeMetricsRecorder {
     }
 
     private void micrometerJvmGcMetrics(MetricRegistry registry, ShutdownContext shutdownContext) {
-        if (!ImageInfo.inImageCode()) {
+        if (ImageMode.current() == ImageMode.JVM) {
             MicrometerGCMetrics gcMetrics = new MicrometerGCMetrics();
 
             registry.register(new ExtendedMetadataBuilder()
@@ -731,9 +731,9 @@ public class SmallRyeMetricsRecorder {
     /**
      * Mimics Uptime metrics from Micrometer. Most of the logic here is basically copied from
      * {@link <a href=
-     * "https://github.com/micrometer-metrics/micrometer/blob/master/micrometer-core/src/main/java/io/micrometer/core/instrument/binder/system/UptimeMetrics.java">Micrometer
+     * "https://github.com/micrometer-metrics/micrometer/blob/main/micrometer-core/src/main/java/io/micrometer/core/instrument/binder/system/UptimeMetrics.java">Micrometer
      * Uptime metrics</a>}.
-     * 
+     *
      * @param registry
      */
     private void micrometerRuntimeMetrics(MetricRegistry registry) {
@@ -815,7 +815,7 @@ public class SmallRyeMetricsRecorder {
                     }
                 });
 
-        if (!ImageInfo.inImageCode()) {
+        if (ImageMode.current() == ImageMode.JVM) {
             ExtendedMetadata threadStatesMetadata = new ExtendedMetadataBuilder()
                     .withName("jvm.threads.states")
                     .withType(MetricType.GAUGE)
@@ -837,7 +837,7 @@ public class SmallRyeMetricsRecorder {
     }
 
     private void micrometerJvmMemoryMetrics(MetricRegistry registry) {
-        if (!ImageInfo.inImageCode()) {
+        if (ImageMode.current() == ImageMode.JVM) {
             for (MemoryPoolMXBean memoryPoolMXBean : ManagementFactory.getMemoryPoolMXBeans()) {
                 String area = MemoryType.HEAP.equals(memoryPoolMXBean.getType()) ? "heap" : "nonheap";
                 Tag[] tags = new Tag[] { new Tag("id", memoryPoolMXBean.getName()),
@@ -951,7 +951,7 @@ public class SmallRyeMetricsRecorder {
 
     private void micrometerJvmClassLoaderMetrics(MetricRegistry registry) {
         // The ClassLoadingMXBean can be used in native mode, but it only returns zeroes, so there's no point in including such metrics.
-        if (!ImageInfo.inImageCode()) {
+        if (ImageMode.current() == ImageMode.JVM) {
             ClassLoadingMXBean classLoadingBean = ManagementFactory.getClassLoadingMXBean();
 
             registry.register(

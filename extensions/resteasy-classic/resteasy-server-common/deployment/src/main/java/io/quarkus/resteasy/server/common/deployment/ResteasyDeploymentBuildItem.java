@@ -5,12 +5,12 @@ import org.jboss.resteasy.spi.ResteasyDeployment;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 public final class ResteasyDeploymentBuildItem extends SimpleBuildItem {
-    private ResteasyDeployment deployment;
     private String rootPath;
+    private ResteasyDeployment deployment;
 
     public ResteasyDeploymentBuildItem(String rootPath, ResteasyDeployment deployment) {
+        this.rootPath = rootPath.startsWith("/") ? rootPath : "/" + rootPath;
         this.deployment = deployment;
-        this.rootPath = rootPath;
     }
 
     public ResteasyDeployment getDeployment() {

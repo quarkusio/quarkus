@@ -6,8 +6,9 @@ import java.util.function.Function;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.util.UriNormalizationUtil;
+import io.quarkus.vertx.http.deployment.RouteBuildItem.RouteType;
+import io.quarkus.vertx.http.deployment.devmode.ConfiguredPathInfo;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.console.ConfiguredPathInfo;
 import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.vertx.core.Handler;
@@ -66,16 +67,44 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
         return UriNormalizationUtil.normalizeWithBase(rootPath, path, false).getPath();
     }
 
+    /**
+     * Resolve path that is always relative into an absolute path.
+     * Whether the path is relative or absolute, it will be resolved against `quarkus.http.root-path`,
+     * by removing the '/' in the latter case.
+     * <p>
+     * Given {@literal quarkus.http.root-path=/}
+     * <ul>
+     * <li>{@code relativePath("foo")} will return {@literal /foo}</li>
+     * <li>{@code relativePath("/foo")} will return {@literal /foo}</li>
+     * </ul>
+     * Given {@literal quarkus.http.root-path=/app}
+     * <ul>
+     * <li>{@code relativePath("foo")} will return {@literal /app/foo}</li>
+     * <li>{@code relativePath("/foo")} will return {@literal /app/foo}</li>
+     * </ul>
+     * <p>
+     * The returned path will not end with a slash.
+     *
+     * @param path Path to be resolved to an absolute path.
+     * @return An absolute path not ending with a slash
+     * @see UriNormalizationUtil#normalizeWithBase(URI, String, boolean)
+     */
+    public String relativePath(String path) {
+        String relativePath = path.startsWith("/") ? path.substring(1) : path;
+        return UriNormalizationUtil.normalizeWithBase(rootPath, relativePath, false).getPath();
+    }
+
     public HttpRootPathBuildItem.Builder routeBuilder() {
         return new HttpRootPathBuildItem.Builder(this);
     }
 
     public static class Builder extends RouteBuildItem.Builder {
         private final HttpRootPathBuildItem buildItem;
-        private RouteBuildItem.RouteType routeType = RouteBuildItem.RouteType.APPLICATION_ROUTE;
+        private RouteType routeType = RouteType.APPLICATION_ROUTE;
+        private RouteType routerType = RouteType.APPLICATION_ROUTE;
         private String path;
 
-        Builder(HttpRootPathBuildItem buildItem) {
+        private Builder(HttpRootPathBuildItem buildItem) {
             this.buildItem = buildItem;
         }
 
@@ -91,14 +120,14 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
             if (route.startsWith(buildItem.getRootPath())) {
                 // relative to http root (leading slash for vert.x route)
                 this.path = "/" + UriNormalizationUtil.relativize(buildItem.getRootPath(), route);
-                this.routeType = RouteBuildItem.RouteType.APPLICATION_ROUTE;
+                this.routerType = RouteType.APPLICATION_ROUTE;
             } else if (route.startsWith("/")) {
                 // absolute path
                 this.path = route;
-                this.routeType = RouteBuildItem.RouteType.ABSOLUTE_ROUTE;
+                this.routerType = RouteType.ABSOLUTE_ROUTE;
             }
 
-            BasicRoute basicRoute = new BasicRoute(this.path, -1);
+            BasicRoute basicRoute = new BasicRoute(this.path, order);
 
             super.routeFunction = basicRoute;
             return this;
@@ -110,13 +139,12 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
             if (route.startsWith(buildItem.getRootPath())) {
                 // relative to http root (leading slash for vert.x route)
                 this.path = "/" + UriNormalizationUtil.relativize(buildItem.getRootPath(), route);
-                this.routeType = RouteBuildItem.RouteType.APPLICATION_ROUTE;
+                this.routerType = RouteType.APPLICATION_ROUTE;
             } else if (route.startsWith("/")) {
                 // absolute path
                 this.path = route;
-                this.routeType = RouteBuildItem.RouteType.ABSOLUTE_ROUTE;
+                this.routerType = RouteType.ABSOLUTE_ROUTE;
             }
-
             super.routeFunction(this.path, routeFunction);
             return this;
         }
@@ -182,12 +210,24 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
 
         @Override
         public RouteBuildItem build() {
-            return new RouteBuildItem(this, routeType);
+            return new RouteBuildItem(this, routeType, routerType, isManagement);
         }
 
         @Override
         protected ConfiguredPathInfo getRouteConfigInfo() {
             return super.getRouteConfigInfo();
+        }
+
+        @Override
+        public Builder management() {
+            super.management();
+            return this;
+        }
+
+        @Override
+        public Builder management(String managementConfigKey) {
+            super.management(managementConfigKey);
+            return this;
         }
 
         @Override

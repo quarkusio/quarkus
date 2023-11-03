@@ -23,8 +23,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 
@@ -160,6 +160,10 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                     candidates = typeTriggers.get(ceType);
 
                     if (candidates == null || candidates.isEmpty()) {
+                        candidates = typeTriggers.get("*"); // Catch-all
+                    }
+
+                    if (candidates == null || candidates.isEmpty()) {
                         routingContext.fail(404);
                         log.error("Couldn't map CloudEvent type: '" + ceType + "' to a function.");
                         return;
@@ -257,6 +261,12 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             outputCloudEvent = (CloudEvent<?>) output;
                         }
 
+                        if (outputCloudEvent == null) {
+                            routingContext.response().setStatusCode(204);
+                            routingContext.response().end();
+                            return;
+                        }
+
                         String id = outputCloudEvent.id();
                         if (id == null) {
                             id = getResponseId();
@@ -302,8 +312,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             }
 
                             outputCloudEvent.extensions()
-                                    .entrySet()
-                                    .forEach(e -> httpResponse.putHeader("ce-" + e.getKey(), e.getValue()));
+                                    .forEach((key, value) -> httpResponse.putHeader("ce-" + key, value));
 
                             String dataContentType = outputCloudEvent.dataContentType();
                             if (dataContentType != null) {
@@ -346,9 +355,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                 responseEvent.put(dsName, outputCloudEvent.dataSchema());
                             }
 
-                            outputCloudEvent.extensions()
-                                    .entrySet()
-                                    .forEach(e -> responseEvent.put(e.getKey(), e.getValue()));
+                            responseEvent.putAll(outputCloudEvent.extensions());
 
                             String dataContentType = outputCloudEvent.dataContentType();
                             if (dataContentType != null) {
@@ -555,19 +562,25 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             }
         }
         currentVertxRequest.setCurrent(routingContext);
-        try {
-            RequestContextImpl funqContext = new RequestContextImpl();
-            if (event != null) {
-                funqContext.setContextData(CloudEvent.class, event);
-            }
-            FunqyRequestImpl funqyRequest = new FunqyRequestImpl(funqContext, input);
-            FunqyResponseImpl funqyResponse = new FunqyResponseImpl();
-            invoker.invoke(funqyRequest, funqyResponse);
-            return funqyResponse;
-        } finally {
-            if (requestContext.isActive()) {
-                requestContext.terminate();
-            }
+        RequestContextImpl funqContext = new RequestContextImpl();
+        if (event != null) {
+            funqContext.setContextData(CloudEvent.class, event);
         }
+        FunqyRequestImpl funqyRequest = new FunqyRequestImpl(funqContext, input);
+        FunqyResponseImpl funqyResponse = new FunqyResponseImpl();
+        invoker.invoke(funqyRequest, funqyResponse);
+
+        // The invoker set the output, but we need to extend that output (a Uni) with a termination block deactivating the
+        // request context if activated.
+        funqyResponse.setOutput(funqyResponse.getOutput()
+                .onTermination().invoke(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (requestContext.isActive()) {
+                            requestContext.terminate();
+                        }
+                    }
+                }));
+        return funqyResponse;
     }
 }

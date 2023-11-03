@@ -58,7 +58,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-web-deployment</artifactId>
+            <artifactId>quarkus-reactive-routes-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

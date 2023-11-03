@@ -94,6 +94,13 @@ public class Invocation {
         return "";
     }
 
+    public boolean isQuarkusBean() {
+        if (interceptedBean == null) {
+            return false;
+        }
+        return interceptedBean.getBeanClass().getName().startsWith("io.quarkus");
+    }
+
     public enum Kind {
 
         BUSINESS,

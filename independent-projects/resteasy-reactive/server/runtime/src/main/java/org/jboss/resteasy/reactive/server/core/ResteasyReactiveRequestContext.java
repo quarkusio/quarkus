@@ -10,21 +10,25 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
-import javax.ws.rs.core.Cookie;
-import javax.ws.rs.core.GenericEntity;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.PathSegment;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.ReaderInterceptor;
-import javax.ws.rs.ext.WriterInterceptor;
+
+import jakarta.ws.rs.core.Cookie;
+import jakarta.ws.rs.core.GenericEntity;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.PathSegment;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.ext.ReaderInterceptor;
+import jakarta.ws.rs.ext.WriterInterceptor;
+
+import org.jboss.resteasy.reactive.common.NotImplementedYet;
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
@@ -41,6 +45,7 @@ import org.jboss.resteasy.reactive.server.jaxrs.SseEventSinkImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.UriInfoImpl;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
+import org.jboss.resteasy.reactive.server.multipart.FormValue;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
@@ -54,17 +59,11 @@ public abstract class ResteasyReactiveRequestContext
 
     public static final Object[] EMPTY_ARRAY = new Object[0];
     protected final Deployment deployment;
-    protected final ProvidersImpl providers;
     /**
      * The parameters array, populated by handlers
      */
     private Object[] parameters;
     private RuntimeResource target;
-
-    /**
-     * info about path params and other data about previously matched sub resource locators
-     */
-    private PreviousResource previousResource;
 
     /**
      * The parameter values extracted from the path.
@@ -114,8 +113,6 @@ public abstract class ResteasyReactiveRequestContext
     private String authority;
     private String remaining;
     private EncodedMediaType responseContentType;
-    private MediaType consumesMediaType;
-
     private Annotation[] methodAnnotations;
     private Annotation[] additionalAnnotations; // can be added by entity annotations or response filters
     private Annotation[] allAnnotations;
@@ -131,9 +128,6 @@ public abstract class ResteasyReactiveRequestContext
      */
     private List<UriMatch> matchedURIs;
 
-    private AsyncResponseImpl asyncResponse;
-    private SseEventSinkImpl sseEventSink;
-    private List<PathSegment> pathSegments;
     private ReaderInterceptor[] readerInterceptors;
     private WriterInterceptor[] writerInterceptors;
 
@@ -142,16 +136,16 @@ public abstract class ResteasyReactiveRequestContext
     private OutputStream underlyingOutputStream;
     private FormData formData;
 
-    public ResteasyReactiveRequestContext(Deployment deployment, ProvidersImpl providers,
+    public ResteasyReactiveRequestContext(Deployment deployment,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
         super(handlerChain, abortHandlerChain, requestContext);
         this.deployment = deployment;
-        this.providers = providers;
         this.parameters = EMPTY_ARRAY;
     }
 
     public abstract ServerHttpRequest serverRequest();
 
+    @Override
     public abstract ServerHttpResponse serverResponse();
 
     public Deployment getDeployment() {
@@ -159,7 +153,9 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     public ProvidersImpl getProviders() {
-        return providers;
+        // this is rarely called (basically only if '@Context Providers' is used),
+        // so let's avoid creating an extra field
+        return new ProvidersImpl(deployment);
     }
 
     /**
@@ -174,19 +170,21 @@ public abstract class ResteasyReactiveRequestContext
     public void restart(RuntimeResource target, boolean setLocatorTarget) {
         this.handlers = target.getHandlerChain();
         position = 0;
-        parameters = new Object[target.getParameterTypes().length];
+        parameters = target.getParameterTypes().length == 0 ? EMPTY_ARRAY : new Object[target.getParameterTypes().length];
         if (setLocatorTarget) {
-            previousResource = new PreviousResource(this.target, pathParamValues, previousResource);
+            setProperty(PreviousResource.PROPERTY_KEY, new PreviousResource(this.target, pathParamValues,
+                    (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY)));
         }
         this.target = target;
     }
 
     /**
-     * Meant to be used when a error occurred early in processing chain
+     * Meant to be used when an error occurred early in processing chain
      */
     @Override
     public void abortWith(Response response) {
         setResult(response);
+        setAbortHandlerChainStarted(true);
         restart(getAbortHandlerChain());
         // this is a valid action after suspend, in which case we must resume
         if (isSuspended()) {
@@ -289,6 +287,7 @@ public abstract class ResteasyReactiveRequestContext
         return result;
     }
 
+    @Override
     public Throwable getThrowable() {
         return throwable;
     }
@@ -318,6 +317,10 @@ public abstract class ResteasyReactiveRequestContext
         return this;
     }
 
+    public boolean handlesUnmappedException() {
+        return true;
+    }
+
     public void handleUnmappedException(Throwable throwable) {
         setResult(Response.serverError().build());
     }
@@ -331,7 +334,7 @@ public abstract class ResteasyReactiveRequestContext
         // we got an exception
         if (throwable != null) {
             this.responseContentType = null;
-            deployment.getExceptionMapping().mapException(throwable, this);
+            deployment.getExceptionMapper().mapException(throwable, this);
             // NOTE: keep the throwable around for close() AsyncResponse notification
         }
     }
@@ -471,11 +474,15 @@ public abstract class ResteasyReactiveRequestContext
         this.path = requestURI.getPath();
         this.authority = requestURI.getRawAuthority();
         this.scheme = requestURI.getScheme();
-        // FIXME: it's possible we may have to also update the query part
+        setQueryParamsFrom(requestURI.toString());
         // invalidate those
         this.uriInfo = null;
         this.absoluteUri = null;
         return this;
+    }
+
+    protected void setQueryParamsFrom(String uri) {
+        throw new NotImplementedYet();
     }
 
     /**
@@ -516,15 +523,6 @@ public abstract class ResteasyReactiveRequestContext
         } else {
             this.responseContentType = new EncodedMediaType(responseContentType);
         }
-        return this;
-    }
-
-    public MediaType getConsumesMediaType() {
-        return consumesMediaType;
-    }
-
-    public ResteasyReactiveRequestContext setConsumesMediaType(MediaType consumesMediaType) {
-        this.consumesMediaType = consumesMediaType;
         return this;
     }
 
@@ -589,15 +587,18 @@ public abstract class ResteasyReactiveRequestContext
         return this;
     }
 
+    private static final String ASYNC_RESPONSE_PROPERTY_KEY = AbstractResteasyReactiveContext.CUSTOM_RR_PROPERTIES_PREFIX
+            + "AsyncResponse";
+
     public AsyncResponseImpl getAsyncResponse() {
-        return asyncResponse;
+        return (AsyncResponseImpl) getProperty(ASYNC_RESPONSE_PROPERTY_KEY);
     }
 
     public ResteasyReactiveRequestContext setAsyncResponse(AsyncResponseImpl asyncResponse) {
-        if (this.asyncResponse != null) {
+        if (getAsyncResponse() != null) {
             throw new RuntimeException("Async can only be started once");
         }
-        this.asyncResponse = asyncResponse;
+        setProperty(ASYNC_RESPONSE_PROPERTY_KEY, asyncResponse);
         return this;
     }
 
@@ -619,8 +620,13 @@ public abstract class ResteasyReactiveRequestContext
         return this;
     }
 
+    @Override
     protected void handleUnrecoverableError(Throwable throwable) {
         log.error("Request failed", throwable);
+        endResponse();
+    }
+
+    protected void endResponse() {
         if (serverResponse().headWritten()) {
             serverRequest().closeConnection();
         } else {
@@ -629,6 +635,7 @@ public abstract class ResteasyReactiveRequestContext
         close();
     }
 
+    @Override
     protected void handleRequestScopeActivation() {
         CurrentRequestManager.set(this);
     }
@@ -640,7 +647,7 @@ public abstract class ResteasyReactiveRequestContext
 
     @Override
     protected void restarted(boolean keepTarget) {
-        parameters = new Object[0];
+        parameters = EMPTY_ARRAY;
         if (!keepTarget) {
             target = null;
         }
@@ -704,6 +711,7 @@ public abstract class ResteasyReactiveRequestContext
         return inputStream != null;
     }
 
+    @Override
     public InputStream getInputStream() {
         if (inputStream == null) {
             inputStream = serverRequest().createInputStream();
@@ -716,12 +724,15 @@ public abstract class ResteasyReactiveRequestContext
         return this;
     }
 
+    private static final String SSE_EVENT_SINK_PROPERTY_KEY = AbstractResteasyReactiveContext.CUSTOM_RR_PROPERTIES_PREFIX
+            + "SSEEventSink";
+
     public SseEventSinkImpl getSseEventSink() {
-        return sseEventSink;
+        return (SseEventSinkImpl) getProperty(SSE_EVENT_SINK_PROPERTY_KEY);
     }
 
     public void setSseEventSink(SseEventSinkImpl sseEventSink) {
-        this.sseEventSink = sseEventSink;
+        setProperty(SSE_EVENT_SINK_PROPERTY_KEY, sseEventSink);
     }
 
     /**
@@ -730,25 +741,33 @@ public abstract class ResteasyReactiveRequestContext
      * This is lazily initialized
      */
     public List<PathSegment> getPathSegments() {
-        if (pathSegments == null) {
+        if (getPathSegments0() == null) {
             initPathSegments();
         }
-        return pathSegments;
+        return getPathSegments0();
+    }
+
+    private static final String PATH_SEGMENTS__PROPERTY_KEY = AbstractResteasyReactiveContext.CUSTOM_RR_PROPERTIES_PREFIX
+            + "PathSegments";
+
+    private List<PathSegment> getPathSegments0() {
+        return (List<PathSegment>) getProperty(PATH_SEGMENTS__PROPERTY_KEY);
     }
 
     /**
-     * initializes the path seegments and removes any matrix params for the path
+     * initializes the path segments and removes any matrix params for the path
      * used for matching.
      */
     public void initPathSegments() {
-        if (pathSegments != null) {
+        if (getPathSegments0() != null) {
             return;
         }
         //this is not super optimised
         //I don't think we care about it that much though
         String path = getPath();
         String[] parts = path.split("/");
-        pathSegments = new ArrayList<>();
+        List<PathSegment> pathSegments = new ArrayList<>();
+        setProperty(PATH_SEGMENTS__PROPERTY_KEY, pathSegments);
         boolean hasMatrix = false;
         for (String i : parts) {
             if (i.isEmpty()) {
@@ -777,14 +796,30 @@ public abstract class ResteasyReactiveRequestContext
 
     @Override
     public Object getHeader(String name, boolean single) {
-        if (single)
-            return serverRequest().getRequestHeader(name);
-        // empty collections must not be turned to null
-        return serverRequest().getAllRequestHeaders(name);
+        if (httpHeaders == null) {
+            if (single)
+                return serverRequest().getRequestHeader(name);
+            // empty collections must not be turned to null
+            return serverRequest().getAllRequestHeaders(name);
+        } else {
+            if (single)
+                return httpHeaders.getMutableHeaders().getFirst(name);
+            // empty collections must not be turned to null
+            List<String> list = httpHeaders.getMutableHeaders().get(name);
+            if (list == null) {
+                return Collections.emptyList();
+            } else {
+                return list;
+            }
+        }
+    }
+
+    public Object getQueryParameter(String name, boolean single, boolean encoded) {
+        return getQueryParameter(name, single, encoded, null);
     }
 
     @Override
-    public Object getQueryParameter(String name, boolean single, boolean encoded) {
+    public Object getQueryParameter(String name, boolean single, boolean encoded, String separator) {
         if (single) {
             String val = serverRequest().getQueryParam(name);
             if (encoded && val != null) {
@@ -792,6 +827,7 @@ public abstract class ResteasyReactiveRequestContext
             }
             return val;
         }
+
         // empty collections must not be turned to null
         List<String> strings = serverRequest().getAllQueryParams(name);
         if (encoded) {
@@ -799,9 +835,19 @@ public abstract class ResteasyReactiveRequestContext
             for (String i : strings) {
                 newStrings.add(Encode.encodeQueryParam(i));
             }
-            return newStrings;
+            strings = newStrings;
         }
-        return strings;
+
+        if (separator != null) {
+            List<String> result = new ArrayList<>(strings.size());
+            for (int i = 0; i < strings.size(); i++) {
+                String[] parts = strings.get(i).split(separator);
+                result.addAll(Arrays.asList(parts));
+            }
+            return result;
+        } else {
+            return strings;
+        }
     }
 
     @Override
@@ -848,7 +894,7 @@ public abstract class ResteasyReactiveRequestContext
             return null;
         }
         if (single) {
-            FormData.FormValue val = formData.getFirst(name);
+            FormValue val = formData.getFirst(name);
             if (val == null || val.isFileItem()) {
                 return null;
             }
@@ -857,10 +903,10 @@ public abstract class ResteasyReactiveRequestContext
             }
             return val.getValue();
         }
-        Deque<FormData.FormValue> val = formData.get(name);
+        Deque<FormValue> val = formData.get(name);
         List<String> strings = new ArrayList<>();
         if (val != null) {
-            for (FormData.FormValue i : val) {
+            for (FormValue i : val) {
                 if (encoded) {
                     strings.add(Encode.encodeQueryParam(i.getValue()));
                 } else {
@@ -877,15 +923,24 @@ public abstract class ResteasyReactiveRequestContext
         // this is a slower version than getPathParam, but we can't actually bake path indices inside
         // BeanParam classes (which use thismethod ) because they can be used by multiple resources that would have different
         // indices
-        Integer index = this.target.getPathParameterIndexes().get(name);
+        Integer index = target.getPathParameterIndexes().get(name);
+        String value;
+        if (index != null) {
+            value = getPathParam(index);
+        } else {
+            // Check previous resources if the path is not defined in the current target
+            value = getResourceLocatorPathParam(name);
+        }
+
         // It's possible to inject a path param that's not defined, return null in this case
-        String value = index != null ? getPathParam(index) : null;
         if (encoded && value != null) {
             return Encode.encodeQueryParam(value);
         }
+
         return value;
     }
 
+    @Override
     public <T> T unwrap(Class<T> type) {
         return serverRequest().unwrap(type);
     }
@@ -923,6 +978,7 @@ public abstract class ResteasyReactiveRequestContext
         return outputStream;
     }
 
+    @Override
     public OutputStream getOrCreateOutputStream() {
         if (outputStream == null) {
             return outputStream = underlyingOutputStream = serverResponse().createResponseOutputStream();
@@ -941,7 +997,7 @@ public abstract class ResteasyReactiveRequestContext
     public abstract Runnable registerTimer(long millis, Runnable task);
 
     public String getResourceLocatorPathParam(String name) {
-        return getResourceLocatorPathParam(name, previousResource);
+        return getResourceLocatorPathParam(name, (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY));
     }
 
     public FormData getFormData() {
@@ -995,7 +1051,12 @@ public abstract class ResteasyReactiveRequestContext
         return getResourceLocatorPathParam(name, previousResource.prev);
     }
 
+    public abstract boolean resumeExternalProcessing();
+
     static class PreviousResource {
+
+        private static final String PROPERTY_KEY = AbstractResteasyReactiveContext.CUSTOM_RR_PROPERTIES_PREFIX
+                + "PreviousResource";
 
         public PreviousResource(RuntimeResource locatorTarget, Object locatorPathParamValues, PreviousResource prev) {
             this.locatorTarget = locatorTarget;

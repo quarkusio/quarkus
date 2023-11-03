@@ -10,6 +10,7 @@ import java.util.List;
 
 public class TypeVariableImpl<D extends GenericDeclaration> implements TypeVariable<D> {
 
+    private static final Type[] EMPTY_TYPES_ARRAY = new Type[0];
     private final String name;
 
     private final List<Type> bounds;
@@ -36,7 +37,7 @@ public class TypeVariableImpl<D extends GenericDeclaration> implements TypeVaria
 
     @Override
     public Type[] getBounds() {
-        return bounds.toArray(new Type[bounds.size()]);
+        return bounds.toArray(EMPTY_TYPES_ARRAY);
     }
 
     @Override

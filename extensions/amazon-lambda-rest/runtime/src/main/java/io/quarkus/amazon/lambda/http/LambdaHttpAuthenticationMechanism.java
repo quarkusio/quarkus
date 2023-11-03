@@ -5,10 +5,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
 import io.quarkus.security.identity.IdentityProvider;
@@ -68,7 +68,8 @@ public class LambdaHttpAuthenticationMechanism implements HttpAuthenticationMech
         final boolean isSamLocal = Boolean.parseBoolean(systemEnvironment.get("AWS_SAM_LOCAL"));
         final String forcedUserName = systemEnvironment.get("QUARKUS_AWS_LAMBDA_FORCE_USER_NAME");
         return (isSamLocal && forcedUserName != null) || (event.getRequestContext() != null
-                && (event.getRequestContext().getAuthorizer() != null || event.getRequestContext().getIdentity() != null));
+                && (event.getRequestContext().getAuthorizer() != null || (event.getRequestContext().getIdentity() != null
+                        && event.getRequestContext().getIdentity().getUser() != null)));
     }
 
     @Override

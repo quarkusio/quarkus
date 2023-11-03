@@ -1,6 +1,5 @@
 package io.quarkus.it.mailer;
 
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -9,29 +8,23 @@ import java.util.List;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import com.google.common.reflect.TypeToken;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
-import io.restassured.config.ObjectMapperConfig;
-import io.restassured.mapper.ObjectMapperType;
 
+@DisabledOnOs({ OS.WINDOWS, OS.MAC })
 @QuarkusTest
 @QuarkusTestResource(FakeMailerTestResource.class)
 public class MailerTest {
     public static final String LOREM_CHECKSUM = "386e8d6ae186eacb5b60fac15ed140cd";
     private String mailServer;
-
-    @BeforeAll
-    public static void configureMapper() {
-        RestAssured.config = RestAssured.config.objectMapperConfig(ObjectMapperConfig.objectMapperConfig()
-                .defaultObjectMapperType(ObjectMapperType.JSONB));
-    }
 
     @BeforeEach
     public void init() {
@@ -58,6 +51,54 @@ public class MailerTest {
     }
 
     @Test
+    public void sendTextEmailWithNonAsciiCharacters() {
+        RestAssured.get("/mail/text-non-ascii");
+
+        await().until(() -> getLastEmail() != null);
+
+        TextEmail email = getLastEmail();
+        assertThat(email).isNotNull();
+        assertThat(email.subject).contains("Příliš žluťoučký kůň úpěl ďábelské ódy na 各分野最高のライブラリと標準で構成された、");
+        assertThat(email.text).contains("Příliš žluťoučký kůň úpěl ďábelské ódy na 各分野最高のライブラリと標準で構成された、");
+    }
+
+    @Test
+    public void sendEmailWithHumanFriendlyAddressPrefix() {
+        RestAssured.get("/mail/human-friendly-address");
+
+        await().until(() -> getLastEmail() != null);
+
+        TextEmail email = getLastEmail();
+        assertThat(email).isNotNull();
+        assertThat(email.from.text).contains("Roger the robot <roger-the-robot@quarkus.io>");
+        assertThat(email.to.text).contains("Mr. Nobody <nobody@quarkus.io>");
+    }
+
+    @Test
+    public void checkAttachmentCache() {
+        String body = RestAssured.get("/mail/attachments/cache").then().extract().asString();
+        assertThat(body).isEqualTo("true");
+    }
+
+    @Test
+    public void sendTextEmailWithDkimSignature() {
+        RestAssured.get("/mail/dkim");
+
+        await().until(() -> getLastEmail() != null);
+
+        TextEmail email = getLastEmail();
+        assertThat(email).isNotNull();
+        assertThat(email.subject).isEqualTo("simple test email");
+        assertThat(email.text).contains("This is a simple test email.");
+        assertThat(email.to.text).contains("nobody@quarkus.io");
+
+        String signature = email.headerLines.stream().filter(h -> h.key.equalsIgnoreCase("DKIM-Signature")).findAny()
+                .get().line;
+        assertThat(signature).contains(
+                "DKIM-Signature: v=1; a=rsa-sha256; c=simple/relaxed; d=quarkus.io; i=roger-the-robot@quarkus.io; s=exampleUser; h=From:To; l=5000; bh=A6TE38YlUzdJNIgFMcUU43Wde0+0vzij4DoME0Gtnqk=; b=FWVms0SnIyX9F5pgdUHgIy+aJnjBNrcToJzBdBiKb6fYZ7cbrUhqmrUkYI2MsIXk4D2DvCig+eU8eqES65Slwc6pMo6ZWKEmqDQcr/2fAx0x30p/tbCemivcRmInaeoxit0cSsoAnnvv+XRuWc9rAAajuI1DCo+Pw7pZBUkKz0M=");
+    }
+
+    @Test
     public void sendEmailToMultipleRecipients() {
         RestAssured.get("/mail/multiple-recipients");
 
@@ -81,6 +122,17 @@ public class MailerTest {
         assertThat(email.subject).isEqualTo("html test email");
         assertThat(email.html).contains("<h3>Hello!</h3>");
         assertThat(email.to.text).contains("nobody@quarkus.io");
+    }
+
+    @Test
+    public void sendSimpleHtmlEmailWithAttachmentInline() {
+        RestAssured.get("/mail/html-inline-attachment");
+
+        await().until(() -> getLastEmail() != null);
+
+        HtmlEmail email = getLastHtmlEmail();
+        assertThat(email).isNotNull();
+        assertThat(email.html).contains("<img src=\"data:image/png;base64,");
     }
 
     @Test
@@ -135,7 +187,7 @@ public class MailerTest {
     private TextEmail getLastEmail() {
         Type t = new TypeToken<List<TextEmail>>() {
         }.getType();
-        List<TextEmail> emails = RestAssured.get(mailServer).as(t, ObjectMapperType.JSONB);
+        List<TextEmail> emails = RestAssured.get(mailServer).as(t);
         if (emails == null || emails.isEmpty()) {
             return null;
         }
@@ -146,7 +198,7 @@ public class MailerTest {
     private HtmlEmail getLastHtmlEmail() {
         Type t = new TypeToken<List<HtmlEmail>>() {
         }.getType();
-        List<HtmlEmail> emails = RestAssured.get(mailServer).as(t, ObjectMapperType.JSONB);
+        List<HtmlEmail> emails = RestAssured.get(mailServer).as(t);
         if (emails == null || emails.isEmpty()) {
             return null;
         }

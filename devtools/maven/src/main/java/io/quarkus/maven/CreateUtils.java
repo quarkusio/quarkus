@@ -15,14 +15,10 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import io.quarkus.bootstrap.util.ZipUtils;
+import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.utilities.MojoUtils;
 
 public final class CreateUtils {
-
-    public static final String DEFAULT_PLATFORM_BOM_GROUP_ID = "io.quarkus";
-    public static final String QUARKUS_CORE_BOM_ARTIFACT_ID = "quarkus-bom";
-    public static final String DEFAULT_PLATFORM_BOM_ARTIFACT_ID = "quarkus-universe-bom";
 
     public static final String GRADLE_WRAPPER_PATH = "gradle-wrapper";
     public static final String[] GRADLE_WRAPPER_FILES = new String[] {

@@ -7,21 +7,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
+
 import org.jboss.resteasy.reactive.common.util.URIDecoder;
 
 public class RequestMapper<T> {
 
-    private final PathMatcher<List<RequestPath<T>>> requestPaths;
-    private final List<RequestPath<T>> templates;
+    private static final String[] EMPTY_STRING_ARRAY = new String[0];
+
+    private final PathMatcher<ArrayList<RequestPath<T>>> requestPaths;
+    private final PathMatcher.Builder<ArrayList<RequestPath<T>>> pathMatcherBuilder;
+    private final ArrayList<RequestPath<T>> templates;
     final int maxParams;
 
-    public RequestMapper(List<RequestPath<T>> templates) {
-        this.requestPaths = new PathMatcher<>();
+    public RequestMapper(ArrayList<RequestPath<T>> templates) {
+        pathMatcherBuilder = new PathMatcher.Builder<>();
         this.templates = templates;
         int max = 0;
-        Map<String, List<RequestPath<T>>> aggregates = new HashMap<>();
+        Map<String, ArrayList<RequestPath<T>>> aggregates = new HashMap<>();
         for (RequestPath<T> i : templates) {
-            List<RequestPath<T>> paths = aggregates.get(i.template.stem);
+            ArrayList<RequestPath<T>> paths = aggregates.get(i.template.stem);
             if (paths == null) {
                 aggregates.put(i.template.stem, paths = new ArrayList<>());
             }
@@ -31,6 +35,7 @@ public class RequestMapper<T> {
         aggregates.forEach(this::sortAggregates);
         aggregates.forEach(this::addPrefixPaths);
         maxParams = max;
+        requestPaths = pathMatcherBuilder.build();
     }
 
     private void sortAggregates(String stem, List<RequestPath<T>> list) {
@@ -42,22 +47,30 @@ public class RequestMapper<T> {
         });
     }
 
-    private void addPrefixPaths(String stem, List<RequestPath<T>> list) {
-        requestPaths.addPrefixPath(stem, list);
+    private void addPrefixPaths(String stem, ArrayList<RequestPath<T>> list) {
+        pathMatcherBuilder.addPrefixPath(stem, list);
+    }
+
+    public RequestMatch<T> map(String path) {
+        var result = mapFromPathMatcher(path, requestPaths.match(path));
+        if (result != null) {
+            return result;
+        }
+
+        // the following code is meant to handle cases like https://github.com/quarkusio/quarkus/issues/30667
+        return mapFromPathMatcher(path, requestPaths.defaultMatch(path));
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public RequestMatch<T> map(String path) {
-        int pathLength = path.length();
-        PathMatcher.PathMatch<List<RequestPath<T>>> initialMatch = requestPaths.match(path);
+    private RequestMatch<T> mapFromPathMatcher(String path, PathMatcher.PathMatch<ArrayList<RequestPath<T>>> initialMatch) {
+        var value = initialMatch.getValue();
         if (initialMatch.getValue() == null) {
             return null;
         }
-
-        List<RequestPath<T>> value = initialMatch.getValue();
-        for (int index = 0; index < value.size(); index++) {
-            RequestPath<T> potentialMatch = value.get(index);
-            String[] params = new String[maxParams];
+        int pathLength = path.length();
+        for (int index = 0; index < ((List<RequestPath<T>>) value).size(); index++) {
+            RequestPath<T> potentialMatch = ((List<RequestPath<T>>) value).get(index);
+            String[] params = (maxParams > 0) ? new String[maxParams] : EMPTY_STRING_ARRAY;
             int paramCount = 0;
             boolean matched = true;
             boolean prefixAllowed = potentialMatch.prefixTemplate;
@@ -67,12 +80,12 @@ public class RequestMapper<T> {
                 if (segment.type == URITemplate.Type.CUSTOM_REGEX) {
                     Matcher matcher = segment.pattern.matcher(path);
                     matched = matcher.find(matchPos);
-                    if (!matched) {
+                    if (!matched || matcher.start() != matchPos) {
                         break;
                     }
                     matchPos = matcher.end();
-                    for (String name : segment.names) {
-                        params[paramCount++] = URIDecoder.decodeURIComponent(matcher.group(name), false);
+                    for (String group : segment.groups) {
+                        params[paramCount++] = matcher.group(group);
                     }
                 } else if (segment.type == URITemplate.Type.LITERAL) {
                     //make sure the literal text is the same
@@ -86,6 +99,9 @@ public class RequestMapper<T> {
                             break;
                         }
                     }
+                    if (!matched) {
+                        break;
+                    }
                 } else if (segment.type == URITemplate.Type.DEFAULT_REGEX) {
                     if (matchPos == pathLength) {
                         matched = false;
@@ -98,15 +114,23 @@ public class RequestMapper<T> {
                     params[paramCount++] = URIDecoder.decodeURIComponent(path.substring(start, matchPos), false);
                 }
             }
+            if (!matched) {
+                continue;
+            }
             if (paramCount < params.length) {
                 params[paramCount] = null;
             }
             boolean fullMatch = matchPos == pathLength;
-            if (!prefixAllowed && !fullMatch) {
+            boolean doPrefixMatch = false;
+            if (!fullMatch) {
                 //according to the spec every template ends with (/.*)?
-                prefixAllowed = path.charAt(matchPos) == '/' && matchPos == pathLength - 1;
+                if (matchPos == 1) { //matchPos == 1 corresponds to '/' as a root level match
+                    doPrefixMatch = prefixAllowed || pathLength == 1; //if prefix is allowed, or we've matched the whole thing
+                } else if (path.charAt(matchPos) == '/') {
+                    doPrefixMatch = prefixAllowed || matchPos == pathLength - 1; //if prefix is allowed, or the remainder is only a trailing /
+                }
             }
-            if (matched && (fullMatch || prefixAllowed)) {
+            if (fullMatch || doPrefixMatch) {
                 String remaining;
                 if (fullMatch) {
                     remaining = "";
@@ -180,11 +204,11 @@ public class RequestMapper<T> {
         this.requestPaths.dump(0);
     }
 
-    public PathMatcher<List<RequestPath<T>>> getRequestPaths() {
+    public PathMatcher<ArrayList<RequestPath<T>>> getRequestPaths() {
         return requestPaths;
     }
 
-    public List<RequestPath<T>> getTemplates() {
+    public ArrayList<RequestPath<T>> getTemplates() {
         return templates;
     }
 }

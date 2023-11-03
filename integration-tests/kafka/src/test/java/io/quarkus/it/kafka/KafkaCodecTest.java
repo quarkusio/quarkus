@@ -2,15 +2,26 @@ package io.quarkus.it.kafka;
 
 import static org.hamcrest.Matchers.is;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.kafka.KafkaCompanionResource;
 import io.restassured.RestAssured;
+import io.restassured.config.ObjectMapperConfig;
+import io.restassured.mapper.ObjectMapperType;
 
-@QuarkusTestResource(KafkaTestResource.class)
+@QuarkusTestResource(KafkaCompanionResource.class)
 @QuarkusTest
 public class KafkaCodecTest {
+
+    @BeforeAll
+    public static void configureMapper() {
+        // We have JSON-B and Jackson around, we want to ensure REST Assured uses Jackson and not JSON-B
+        RestAssured.config = RestAssured.config.objectMapperConfig(ObjectMapperConfig.objectMapperConfig()
+                .defaultObjectMapperType(ObjectMapperType.JACKSON_2));
+    }
 
     @Test
     public void testCustomCodec() {
@@ -63,6 +74,49 @@ public class KafkaCodecTest {
                 .then()
                 .body("title", is("Inception"))
                 .body("year", is(2010));
+
+    }
+
+    @Test
+    public void testJsonbCodecWithList() {
+        RestAssured
+                .given()
+                .header("Content-Type", "application/json")
+                .body("[{\"name\":\"kate\", \"id\":\"1234\"},{\"name\":\"john\", \"id\":\"2345\"}]")
+                .post("/codecs/person-list");
+
+        RestAssured
+                .given()
+                .header("Accept", "application/json")
+                .get("/codecs/person-list")
+                .then()
+                .body("size()", is(2))
+                .body("[0].name", is("kate"))
+                .body("[0].id", is(1234))
+                .body("[1].name", is("john"))
+                .body("[1].id", is(2345));
+        ;
+
+    }
+
+    @Test
+    public void testJacksonCodecWithList() {
+        RestAssured
+                .given()
+                .header("Content-Type", "application/json")
+                .body("[{\"title\":\"Inception\", \"year\":\"2010\"},{\"title\":\"Terminator\", \"year\":\"1984\"}]")
+                .post("/codecs/movie-list");
+
+        RestAssured
+                .given()
+                .header("Accept", "application/json")
+                .get("/codecs/movie-list")
+                .then()
+                .body("size()", is(2))
+                .body("[0].title", is("Inception"))
+                .body("[0].year", is(2010))
+                .body("[1].title", is("Terminator"))
+                .body("[1].year", is(1984));
 
     }
 

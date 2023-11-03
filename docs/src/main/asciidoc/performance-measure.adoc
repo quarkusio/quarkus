@@ -3,9 +3,11 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Measuring Performance
-
-include::./attributes.adoc[]
+= Measuring Performance
+include::_attributes.adoc[]
+:categories: miscellaneous
+:summary: This guide explains how to best measure the footprint of a Quarkus application.
+:topics: internals,performance
 
 This guide covers:
 
@@ -14,7 +16,7 @@ This guide covers:
 * which additional flags will Quarkus apply to native-image by default
 
 All of our tests are run on the same hardware for a given batch.
-It goes without saying but it's better when you say it.
+It goes without saying, but it's better when you say it.
 
 == How do we measure memory usage
 
@@ -36,7 +38,7 @@ Enable NMT on the command line;
 
  -XX:NativeMemoryTracking=[off | summary | detail] <1>
 
-<1> NOTE: this feature will add cause an approximately 5-10% performance overhead
+<1> NOTE: this feature will add a 5-10% performance overhead
 
 It is then possible to use jcmd to dump a report of the native memory usage of the Hotspot JVM running your application;
 
@@ -48,12 +50,12 @@ It is important to measure the whole memory to see the impact of a Cloud Native 
 It is particularly true of container environments which will kill a process based on its full RSS memory usage.
 
 Likewise, don't fall into the trap of only measuring private memory which is what the process uses that is not shareable with other processes.
-While private memory might be useful in a environment deploying many different applications (and thus sharing memory a lot),
+While private memory might be useful in an environment deploying many different applications (and thus sharing memory a lot),
 it is very misleading in environments like Kubernetes/OpenShift.
 
 === Measuring Memory Correctly on Docker
 
-In order to measure memory correctly **DO NOT use docker stat or anything derived from it** (e.g. ctop). This approach only measures a subset of the in-use resident pages, while the Linux Kernel, cgroups and cloud orchestration providers will utilize the full resident set in their accounting (determining whether a process is over the limits and should be killed). 
+In order to measure memory correctly **DO NOT use docker stat or anything derived from it** (e.g. ctop). This approach only measures a subset of the in-use resident pages, while the Linux Kernel, cgroups and cloud orchestration providers will utilize the full resident set in their accounting (determining whether a process is over the limits and should be killed).
 
 To measure accurately, a similar set of steps for measuring RSS on Linux should be performed. The docker `top` command allows running a `ps` command on the container host machine against the processes in the container instance. By utilizing this in combination with formatting output parameters, the rss value can be returned:
 
@@ -68,7 +70,7 @@ For example:
 PID                 RSS                 COMMAND
 2531                27m                 ./application -Dquarkus.http.host=0.0.0.0
 ----
- 
+
 Alternatively, one can jump directly into a privileged shell (root on the host), and execute a `ps` command directly:
 
 [source,shell]
@@ -188,7 +190,7 @@ $ date +"%T.%3N" &&  ./target/quarkus-timing-runner
 10:57:32.508
 10:57:32.512
 2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Quarkus 0.11.0 started in 0.002s. Listening on: http://127.0.0.1:8080
-2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jackson]
+2019-04-05 10:57:32,512 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, resteasy-reactive-jackson]
 10:57:32.537
 ----
 
@@ -223,21 +225,14 @@ all services it's able to find on the classpath.
 
 We prefer listing services explicitly as it produces better optimised binaries. Disable it as well by setting `-H:-UseServiceLoaderFeature`.
 
-=== Better default for Garbage Collection implementation
-
-The default in GraalVM seems meant to optimise for short lived processes.
-
-Quarkus defaults to server applications, so we switch to a better default by setting
- `-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime`.
-
 === Others ...
 
 This section is provided as high level guidance, but can't presume to be comprehensive as some flags are controlled
  dynamically by the extensions, the platform you're building on, configuration details, your code and possibly
- a combination of any of these.
+ a combination of these.
 
 Generally speaking the ones listed here are those most likely to affect performance metrics, but in the right
-circumstances one could observe non negligible impact from the other flags too.
+circumstances one could observe non-negligible impact from the other flags too.
 
 If you're to investigate some differences in detail make sure to check what Quarkus is invoking exactly: when the build
 plugin is producing a native image, the full command lines are logged.

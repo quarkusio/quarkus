@@ -1,7 +1,7 @@
 package io.quarkus.it.micrometer.prometheus;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 class PrometheusMetricsRegistryIT extends PrometheusMetricsRegistryTest {
 }

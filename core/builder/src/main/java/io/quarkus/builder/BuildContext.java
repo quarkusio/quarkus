@@ -2,12 +2,14 @@ package io.quarkus.builder;
 
 import static io.quarkus.builder.Execution.*;
 
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.wildfly.common.Assert;
@@ -48,7 +50,7 @@ public final class BuildContext {
     }
 
     /**
-     * Produce the given item. If the {@code type} refers to a item which is declared with multiplicity, then this
+     * Produce the given item. If the {@code type} refers to an item which is declared with multiplicity, then this
      * method can be called more than once for the given {@code type}, otherwise it must be called no more than once.
      *
      * @param item the item value (must not be {@code null})
@@ -74,7 +76,7 @@ public final class BuildContext {
     }
 
     /**
-     * Produce the given item. If the {@code type} refers to a item which is declared with multiplicity, then this
+     * Produce the given item. If the {@code type} refers to an item which is declared with multiplicity, then this
      * method can be called more than once for the given {@code type}, otherwise it must be called no more than once.
      *
      * @param type the item type (must not be {@code null})
@@ -113,7 +115,7 @@ public final class BuildContext {
     }
 
     /**
-     * Consume all of the values produced for the named item. If the
+     * Consume all the values produced for the named item. If the
      * item type implements {@link Comparable}, it will be sorted by natural order before return. The returned list
      * is a mutable copy.
      *
@@ -139,7 +141,7 @@ public final class BuildContext {
     }
 
     /**
-     * Consume all of the values produced for the named item, re-sorting it according
+     * Consume all the values produced for the named item, re-sorting it according
      * to the given comparator. The returned list is a mutable copy.
      *
      * @param type the item element type (must not be {@code null})
@@ -152,32 +154,6 @@ public final class BuildContext {
         final List<T> result = consumeMulti(type);
         result.sort(comparator);
         return result;
-    }
-
-    /**
-     * Determine if a item was produced and is therefore available to be {@linkplain #consume(Class) consumed}.
-     *
-     * @param type the item type (must not be {@code null})
-     * @return {@code true} if the item was produced and is available, {@code false} if it was not or if this deployer does
-     *         not consume the named item
-     */
-    public boolean isAvailableToConsume(Class<? extends BuildItem> type) {
-        final ItemId id = new ItemId(type);
-        return stepInfo.getConsumes().contains(id) && id.isMulti()
-                ? !execution.getMultis().getOrDefault(id, Collections.emptyList()).isEmpty()
-                : execution.getSingles().containsKey(id);
-    }
-
-    /**
-     * Determine if a item will be consumed in this build. If a item is not consumed, then build steps are not
-     * required to produce it.
-     *
-     * @param type the item type (must not be {@code null})
-     * @return {@code true} if the item will be consumed, {@code false} if it will not be or if this deployer does
-     *         not produce the named item
-     */
-    public boolean isConsumed(Class<? extends BuildItem> type) {
-        return execution.getBuildChain().getConsumed().contains(new ItemId(type));
     }
 
     /**
@@ -222,7 +198,7 @@ public final class BuildContext {
      *
      * @return an executor which can be used for asynchronous tasks
      */
-    public Executor getExecutor() {
+    public ExecutorService getExecutor() {
         return execution.getExecutor();
     }
 
@@ -252,6 +228,7 @@ public final class BuildContext {
                 throw Messages.msg.cannotMulti(id);
             }
         }
+        execution.getMetrics().buildItemProduced(value);
     }
 
     void depFinished() {
@@ -266,12 +243,14 @@ public final class BuildContext {
         final Execution execution = this.execution;
         final StepInfo stepInfo = this.stepInfo;
         final BuildStep buildStep = stepInfo.getBuildStep();
-        final long start = System.currentTimeMillis();
+        final long start = System.nanoTime();
+        final LocalTime started = LocalTime.now();
+        final Thread currentThread = Thread.currentThread();
         log.tracef("Starting step \"%s\"", buildStep);
         try {
             if (!execution.isErrorReported()) {
                 running = true;
-                ClassLoader old = Thread.currentThread().getContextClassLoader();
+                ClassLoader old = currentThread.getContextClassLoader();
                 try {
                     Thread.currentThread().setContextClassLoader(classLoader);
                     buildStep.execute(this);
@@ -281,11 +260,13 @@ public final class BuildContext {
                     execution.setErrorReported();
                 } finally {
                     running = false;
-                    Thread.currentThread().setContextClassLoader(old);
+                    currentThread.setContextClassLoader(old);
                 }
             }
         } finally {
-            log.tracef("Finished step \"%s\" in %s ms", buildStep, System.currentTimeMillis() - start);
+            long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+            execution.getMetrics().buildStepFinished(stepInfo, currentThread.getName(), started, duration);
+            log.tracef("Finished step \"%s\" in %s ms", buildStep, duration);
             execution.removeBuildContext(stepInfo, this);
         }
         final Set<StepInfo> dependents = stepInfo.getDependents();

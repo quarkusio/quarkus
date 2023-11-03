@@ -1,100 +1,91 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.STRING;
+import static org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames.SERVER_MESSAGE_BODY_READER;
+import static org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames.SERVER_MESSAGE_BODY_WRITER;
 
-import java.lang.reflect.Modifier;
-import java.util.HashMap;
+import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Predicate;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
+import org.jboss.resteasy.reactive.common.model.MethodParameter;
+import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.processor.DefaultProducesHandler;
-import org.jboss.resteasy.reactive.server.core.Deployment;
-import org.jboss.resteasy.reactive.server.core.parameters.converters.GeneratedParameterConverter;
-import org.jboss.resteasy.reactive.server.core.parameters.converters.NoopParameterConverter;
-import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverter;
-import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterConverterSupplier;
-import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
+import org.jboss.resteasy.reactive.common.processor.scanning.ScannedSerializer;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
+import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.processor.ServerEndpointIndexer;
 import org.jboss.resteasy.reactive.server.processor.ServerIndexedParameter;
+import org.jboss.resteasy.reactive.server.spi.EndpointInvokerFactory;
 
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.builder.BuildException;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.resteasy.reactive.server.common.runtime.EndpointInvokerFactory;
+import io.quarkus.deployment.util.JandexUtil;
+import io.quarkus.resteasy.reactive.common.deployment.JsonDefaultProducersHandler;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
-import io.vertx.ext.web.RoutingContext;
 
 public class QuarkusServerEndpointIndexer
         extends ServerEndpointIndexer {
-    private final MethodCreator initConverters;
+
+    private static final org.jboss.logging.Logger LOGGER = Logger.getLogger(QuarkusServerEndpointIndexer.class);
+
+    private final Capabilities capabilities;
     private final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
-    private final BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer;
-    private final BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer;
     private final DefaultProducesHandler defaultProducesHandler;
+    private final JsonDefaultProducersHandler jsonDefaultProducersHandler;
     private final ResteasyReactiveRecorder resteasyReactiveRecorder;
-
-    private final Map<String, String> multipartGeneratedPopulators = new HashMap<>();
-    private final Predicate<String> applicationClassPredicate;
-
-    private static final Set<DotName> CONTEXT_TYPES = Set.of(
-            DotName.createSimple(HttpServerRequest.class.getName()),
-            DotName.createSimple(HttpServerResponse.class.getName()),
-            DotName.createSimple(RoutingContext.class.getName()));
 
     QuarkusServerEndpointIndexer(Builder builder) {
         super(builder);
-        this.initConverters = builder.initConverters;
+        this.capabilities = builder.capabilities;
         this.generatedClassBuildItemBuildProducer = builder.generatedClassBuildItemBuildProducer;
-        this.bytecodeTransformerBuildProducer = builder.bytecodeTransformerBuildProducer;
-        this.reflectiveClassProducer = builder.reflectiveClassProducer;
         this.defaultProducesHandler = builder.defaultProducesHandler;
-        this.applicationClassPredicate = builder.applicationClassPredicate;
         this.resteasyReactiveRecorder = builder.resteasyReactiveRecorder;
+        this.jsonDefaultProducersHandler = new JsonDefaultProducersHandler();
     }
 
-    protected boolean isContextType(ClassType klass) {
-        return super.isContextType(klass) || CONTEXT_TYPES.contains(klass.name());
-    }
+    private DefaultProducesHandler.Context currentDefaultProducesContext;
 
     @Override
-    protected String[] applyAdditionalDefaults(Type nonAsyncReturnType) {
-        List<MediaType> defaultMediaTypes = defaultProducesHandler.handle(new DefaultProducesHandler.Context() {
+    protected void setupApplyDefaults(Type nonAsyncReturnType, DotName httpMethod) {
+        currentDefaultProducesContext = new DefaultProducesHandler.Context() {
             @Override
             public Type nonAsyncReturnType() {
                 return nonAsyncReturnType;
             }
 
             @Override
+            public DotName httpMethod() {
+                return httpMethod;
+            }
+
+            @Override
             public IndexView index() {
-                return index;
+                return applicationIndex;
             }
 
             @Override
             public ResteasyReactiveConfig config() {
                 return config;
             }
-        });
+        };
+    }
+
+    @Override
+    protected String[] applyAdditionalDefaults(Type nonAsyncReturnType) {
+        List<MediaType> defaultMediaTypes = defaultProducesHandler.handle(currentDefaultProducesContext);
         if ((defaultMediaTypes != null) && !defaultMediaTypes.isEmpty()) {
             String[] result = new String[defaultMediaTypes.size()];
             for (int i = 0; i < defaultMediaTypes.size(); i++) {
@@ -113,169 +104,22 @@ public class QuarkusServerEndpointIndexer
         return super.handleCustomParameter(anns, builder, paramType, field, methodContext);
     }
 
-    @Override
-    protected ParameterConverterSupplier extractConverter(String elementType, IndexView indexView,
-            Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters) {
-        if (elementType.equals(String.class.getName())) {
-            if (hasRuntimeConverters)
-                return new RuntimeResolvedConverter.Supplier().setDelegate(new NoopParameterConverter.Supplier());
-            // String needs no conversion
-            return null;
-        } else if (existingConverters.containsKey(elementType)) {
-            String className = existingConverters.get(elementType);
-            ParameterConverterSupplier delegate;
-            if (className == null)
-                delegate = null;
-            else
-                delegate = new GeneratedParameterConverter().setClassName(className);
-            if (hasRuntimeConverters)
-                return new RuntimeResolvedConverter.Supplier().setDelegate(delegate);
-            if (delegate == null)
-                throw new RuntimeException("Failed to find converter for " + elementType);
-            return delegate;
-        }
-
-        MethodDescriptor fromString = null;
-        MethodDescriptor valueOf = null;
-        MethodInfo stringCtor = null;
-        String primitiveWrapperType = primitiveTypes.get(elementType);
-        String prefix = "";
-        if (primitiveWrapperType != null) {
-            valueOf = MethodDescriptor.ofMethod(primitiveWrapperType, "valueOf", primitiveWrapperType, String.class);
-            prefix = "io.quarkus.generated.";
-        } else {
-            ClassInfo type = indexView.getClassByName(DotName.createSimple(elementType));
-            if (type != null) {
-                for (MethodInfo i : type.methods()) {
-                    boolean isStatic = ((i.flags() & Modifier.STATIC) != 0);
-                    boolean isNotPrivate = (i.flags() & Modifier.PRIVATE) == 0;
-                    if ((i.parameters().size() == 1) && isNotPrivate) {
-                        if (i.parameters().get(0).name().equals(STRING)) {
-                            if (i.name().equals("<init>")) {
-                                stringCtor = i;
-                            } else if (i.name().equals("valueOf") && isStatic) {
-                                valueOf = MethodDescriptor.of(i);
-                            } else if (i.name().equals("fromString") && isStatic) {
-                                fromString = MethodDescriptor.of(i);
-                            }
-                        }
-                    }
-                }
-                if (type.isEnum()) {
-                    //spec weirdness, enums order is different
-                    if (fromString != null) {
-                        valueOf = null;
-                    }
-                }
-            }
-        }
-
-        String baseName;
-        ParameterConverterSupplier delegate;
-        if (stringCtor != null || valueOf != null || fromString != null) {
-            String effectivePrefix = prefix + elementType;
-            if (effectivePrefix.startsWith("java")) {
-                effectivePrefix = effectivePrefix.replace("java", "javaq"); // generated classes can't start with the java package
-            }
-            baseName = effectivePrefix + "$quarkusrestparamConverter$";
-            try (ClassCreator classCreator = new ClassCreator(
-                    new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer,
-                            applicationClassPredicate.test(elementType)),
-                    baseName, null,
-                    Object.class.getName(), ParameterConverter.class.getName())) {
-                MethodCreator mc = classCreator.getMethodCreator("convert", Object.class, Object.class);
-                if (stringCtor != null) {
-                    ResultHandle ret = mc.newInstance(stringCtor, mc.getMethodParam(0));
-                    mc.returnValue(ret);
-                } else if (valueOf != null) {
-                    ResultHandle ret = mc.invokeStaticMethod(valueOf, mc.getMethodParam(0));
-                    mc.returnValue(ret);
-                } else if (fromString != null) {
-                    ResultHandle ret = mc.invokeStaticMethod(fromString, mc.getMethodParam(0));
-                    mc.returnValue(ret);
-                }
-            }
-            delegate = new GeneratedParameterConverter().setClassName(baseName);
-        } else {
-            // let's not try this again
-            baseName = null;
-            delegate = null;
-        }
-        existingConverters.put(elementType, baseName);
-        if (hasRuntimeConverters)
-            return new RuntimeResolvedConverter.Supplier().setDelegate(delegate);
-        if (delegate == null)
-            throw new RuntimeException("Failed to find converter for " + elementType);
-        return delegate;
-    }
-
-    protected void handleFieldExtractors(String currentTypeName, Map<FieldInfo, ServerIndexedParameter> fieldExtractors,
-            boolean superTypeIsInjectable) {
-        bytecodeTransformerBuildProducer.produce(new BytecodeTransformerBuildItem(currentTypeName,
-                new ClassInjectorTransformer(fieldExtractors, superTypeIsInjectable)));
-    }
-
-    protected void handleConverter(String currentTypeName, FieldInfo field) {
-        initConverters.invokeStaticMethod(MethodDescriptor.ofMethod(currentTypeName,
-                ClassInjectorTransformer.INIT_CONVERTER_METHOD_NAME + field.name(),
-                void.class, Deployment.class),
-                initConverters.getMethodParam(0));
-    }
-
-    protected void handleMultipart(ClassInfo multipartClassInfo) {
-        String className = multipartClassInfo.name().toString();
-        if (multipartGeneratedPopulators.containsKey(className)) {
-            // we've already seen this class before and have done all we need to make it work
-            return;
-        }
-        reflectiveClassProducer.produce(new ReflectiveClassBuildItem(false, false, className));
-        String populatorClassName = MultipartPopulatorGenerator.generate(multipartClassInfo,
-                new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), index);
-        multipartGeneratedPopulators.put(className, populatorClassName);
-
-        // transform the multipart pojo (and any super-classes) so we can access its fields no matter what
-        ClassInfo currentClassInHierarchy = multipartClassInfo;
-        while (true) {
-            bytecodeTransformerBuildProducer
-                    .produce(new BytecodeTransformerBuildItem(currentClassInHierarchy.name().toString(),
-                            new MultipartTransformer(populatorClassName)));
-
-            DotName superClassDotName = currentClassInHierarchy.superName();
-            if (superClassDotName.equals(DotNames.OBJECT_NAME)) {
-                break;
-            }
-            ClassInfo newCurrentClassInHierarchy = index.getClassByName(superClassDotName);
-            if (newCurrentClassInHierarchy == null) {
-                break;
-            }
-            currentClassInHierarchy = newCurrentClassInHierarchy;
-        }
-
-    }
-
     public static final class Builder extends AbstractBuilder<Builder> {
 
+        private final Capabilities capabilities;
+
         private BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
-        private BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer;
-        private BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer;
         private ResteasyReactiveRecorder resteasyReactiveRecorder;
-        private MethodCreator initConverters;
         private DefaultProducesHandler defaultProducesHandler = DefaultProducesHandler.Noop.INSTANCE;
         public Predicate<String> applicationClassPredicate;
+
+        public Builder(Capabilities capabilities) {
+            this.capabilities = capabilities;
+        }
 
         @Override
         public QuarkusServerEndpointIndexer build() {
             return new QuarkusServerEndpointIndexer(this);
-        }
-
-        public MethodCreator getInitConverters() {
-            return initConverters;
-        }
-
-        public Builder setBytecodeTransformerBuildProducer(
-                BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildProducer) {
-            this.bytecodeTransformerBuildProducer = bytecodeTransformerBuildProducer;
-            return this;
         }
 
         public Builder setGeneratedClassBuildItemBuildProducer(
@@ -284,19 +128,8 @@ public class QuarkusServerEndpointIndexer
             return this;
         }
 
-        public Builder setReflectiveClassProducer(
-                BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
-            this.reflectiveClassProducer = reflectiveClassProducer;
-            return this;
-        }
-
         public Builder setApplicationClassPredicate(Predicate<String> applicationClassPredicate) {
             this.applicationClassPredicate = applicationClassPredicate;
-            return this;
-        }
-
-        public Builder setInitConverters(MethodCreator initConverters) {
-            this.initConverters = initConverters;
             return this;
         }
 
@@ -310,4 +143,124 @@ public class QuarkusServerEndpointIndexer
             return this;
         }
     }
+
+    @Override
+    protected void handleAdditionalMethodProcessing(ServerResourceMethod method, ClassInfo currentClassInfo,
+            MethodInfo info, AnnotationStore annotationStore) {
+        super.handleAdditionalMethodProcessing(method, currentClassInfo, info, annotationStore);
+
+        if (!capabilities.isCapabilityWithPrefixMissing("io.quarkus.resteasy.reactive.json")) {
+            return;
+        }
+
+        warnAboutMissingJsonProviderIfNeeded(method, info, jsonDefaultProducersHandler, currentDefaultProducesContext);
+    }
+
+    @Override
+    public boolean additionalRegisterClassForReflectionCheck(ResourceMethodCallbackEntry entry) {
+        return checkBodyParameterMessageBodyReader(entry) || checkReturnTypeMessageBodyWriter(entry);
+    }
+
+    /**
+     * Check whether the Resource Method has a body parameter for which there exists a matching
+     * {@link jakarta.ws.rs.ext.MessageBodyReader}
+     * that is not a {@link org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader}.
+     * In this case the Resource Class needs to be registered for reflection because the
+     * {@link jakarta.ws.rs.ext.MessageBodyReader#isReadable(Class, java.lang.reflect.Type, Annotation[], MediaType)}
+     * method expects to be passed the method annotations.
+     */
+    private boolean checkBodyParameterMessageBodyReader(ResourceMethodCallbackEntry entry) {
+        MethodParameter[] parameters = entry.getResourceMethod().getParameters();
+        if (parameters.length == 0) {
+            return false;
+        }
+        MethodParameter bodyParameter = null;
+        for (MethodParameter parameter : parameters) {
+            if (parameter.parameterType == ParameterType.BODY) {
+                bodyParameter = parameter;
+                break;
+            }
+        }
+        if (bodyParameter == null) {
+            return false;
+        }
+        String parameterClassName = bodyParameter.getDeclaredType();
+        List<ScannedSerializer> readers = getSerializerScanningResult().getReaders();
+
+        for (ScannedSerializer reader : readers) {
+            if (isSubclassOf(parameterClassName, reader.getHandledClassName()) && !isServerMessageBodyReader(
+                    reader.getClassInfo())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check whether the Resource Method has a return type for which there exists a matching
+     * {@link jakarta.ws.rs.ext.MessageBodyWriter}
+     * that is not a {@link org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter}.
+     * In this case the Resource Class needs to be registered for reflection because the
+     * {@link jakarta.ws.rs.ext.MessageBodyWriter#isWriteable(Class, java.lang.reflect.Type, Annotation[], MediaType)}
+     * method expects to be passed the method annotations.
+     */
+    private boolean checkReturnTypeMessageBodyWriter(ResourceMethodCallbackEntry entry) {
+        Type returnType = entry.getMethodInfo().returnType();
+        String returnTypeName;
+        switch (returnType.kind()) {
+            case CLASS:
+                returnTypeName = returnType.asClassType().name().toString();
+                break;
+            case PARAMETERIZED_TYPE:
+                returnTypeName = returnType.asParameterizedType().name().toString();
+                break;
+            default:
+                returnTypeName = null;
+        }
+        if (returnTypeName == null) {
+            return false;
+        }
+
+        List<ScannedSerializer> writers = getSerializerScanningResult().getWriters();
+
+        for (ScannedSerializer writer : writers) {
+            if (isSubclassOf(returnTypeName, writer.getHandledClassName())
+                    && !isServerMessageBodyWriter(writer.getClassInfo())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isSubclassOf(String className, String parentName) {
+        if (className.equals(parentName)) {
+            return true;
+        }
+        ClassInfo classByName = index.getClassByName(className);
+        if ((classByName == null) || (classByName.superName() == null)) {
+            return false;
+        }
+        try {
+            return JandexUtil.isSubclassOf(index, classByName,
+                    DotName.createSimple(parentName));
+        } catch (BuildException e) {
+            return false;
+        }
+    }
+
+    private boolean isServerMessageBodyReader(ClassInfo classInfo) {
+        return index.getAllKnownImplementors(SERVER_MESSAGE_BODY_READER).contains(classInfo);
+    }
+
+    private boolean isServerMessageBodyWriter(ClassInfo classInfo) {
+        return index.getAllKnownImplementors(SERVER_MESSAGE_BODY_WRITER).contains(classInfo);
+    }
+
+    @Override
+    protected void logMissingJsonWarning(MethodInfo info) {
+        LOGGER.warnf("Quarkus detected the use of JSON in JAX-RS method '" + info.declaringClass().name() + "#"
+                + info.name()
+                + "' but no JSON extension has been added. Consider adding 'quarkus-resteasy-reactive-jackson' (recommended) or 'quarkus-resteasy-reactive-jsonb'.");
+    }
+
 }

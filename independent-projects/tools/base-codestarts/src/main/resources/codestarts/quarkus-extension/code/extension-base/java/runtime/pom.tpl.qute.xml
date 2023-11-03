@@ -11,8 +11,11 @@
     </parent>
 
     <artifactId>{namespace.id}{extension.id}</artifactId>
-    {#if extension.name}
-    <name>{namespace.name}{extension.name} - Runtime</name>
+    {#if extension.full-name}
+    <name>{extension.full-name} - Runtime</name>
+    {/if}
+    {#if extension.description}
+    <description>{extension.description}</description>
     {/if}
 
     <dependencies>
@@ -26,7 +29,11 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                {#if maven.quarkus-extension-plugin}
+                <artifactId>{maven.quarkus-extension-plugin}</artifactId>
+                {#else}
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
+                {/if}
                 {#if quarkus.version}
                 <version>$\{quarkus.version}</version>
                 <executions>

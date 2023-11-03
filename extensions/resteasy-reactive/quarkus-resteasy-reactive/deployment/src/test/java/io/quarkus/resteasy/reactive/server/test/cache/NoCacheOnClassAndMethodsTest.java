@@ -4,8 +4,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 
 import java.util.function.Supplier;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.NoCache;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -20,7 +20,7 @@ public class NoCacheOnClassAndMethodsTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)

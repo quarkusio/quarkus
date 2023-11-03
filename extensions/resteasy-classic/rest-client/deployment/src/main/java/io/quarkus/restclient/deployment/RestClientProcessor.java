@@ -10,13 +10,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.SessionScoped;
-import javax.ws.rs.Path;
-import javax.ws.rs.client.ClientRequestFilter;
-import javax.ws.rs.client.ClientResponseFilter;
-import javax.ws.rs.ext.Providers;
+import jakarta.enterprise.context.SessionScoped;
+import jakarta.enterprise.inject.spi.InterceptionType;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.client.ClientResponseFilter;
+import jakarta.ws.rs.ext.Providers;
+import jakarta.ws.rs.sse.SseEventSource;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -29,6 +32,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
@@ -45,14 +49,18 @@ import org.jboss.resteasy.microprofile.client.DefaultResponseExceptionMapper;
 import org.jboss.resteasy.microprofile.client.RestClientProxy;
 import org.jboss.resteasy.microprofile.client.async.AsyncInterceptorRxInvokerProvider;
 import org.jboss.resteasy.microprofile.client.publisher.MpPublisherMessageBodyReader;
+import org.jboss.resteasy.plugins.providers.sse.client.SseEventSourceImpl;
 import org.jboss.resteasy.spi.ResteasyConfiguration;
 
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.InterceptorResolverBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.InterceptorInfo;
 import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -74,6 +82,8 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.restclient.NoopHostnameVerifier;
+import io.quarkus.restclient.config.RestClientsConfig;
+import io.quarkus.restclient.config.deployment.RestClientConfigUtils;
 import io.quarkus.restclient.runtime.PathFeatureHandler;
 import io.quarkus.restclient.runtime.PathTemplateInjectionFilter;
 import io.quarkus.restclient.runtime.RestClientBase;
@@ -109,13 +119,16 @@ class RestClientProcessor {
     void setupProviders(BuildProducer<NativeImageResourceBuildItem> resources,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition) {
 
-        proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem("javax.ws.rs.ext.Providers"));
+        proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem("jakarta.ws.rs.ext.Providers"));
         resources.produce(new NativeImageResourceBuildItem(PROVIDERS_SERVICE_FILE));
     }
 
     @BuildStep
-    void setupClientBuilder(BuildProducer<NativeImageResourceBuildItem> resources) {
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
+    void setupClientBuilder(BuildProducer<NativeImageResourceBuildItem> resources,
+            BuildProducer<ServiceProviderBuildItem> serviceProviders) {
+        resources.produce(new NativeImageResourceBuildItem("META-INF/services/jakarta.ws.rs.client.ClientBuilder"));
+        serviceProviders.produce(new ServiceProviderBuildItem(SseEventSource.Builder.class.getName(),
+                SseEventSourceImpl.SourceBuilder.class.getName()));
     }
 
     @BuildStep
@@ -132,7 +145,8 @@ class RestClientProcessor {
             resource.produce(new NativeImageResourceBuildItem(
                     "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
             reflectiveClass
-                    .produce(new ReflectiveClassBuildItem(true, true, "io.smallrye.opentracing.SmallRyeRestClientListener"));
+                    .produce(ReflectiveClassBuildItem.builder("io.smallrye.opentracing.SmallRyeRestClientListener")
+                            .methods().fields().build());
         }
     }
 
@@ -149,17 +163,39 @@ class RestClientProcessor {
 
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                DefaultResponseExceptionMapper.class.getName(),
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(DefaultResponseExceptionMapper.class.getName(),
                 AsyncInterceptorRxInvokerProvider.class.getName(),
                 ResteasyProviderFactoryImpl.class.getName(),
                 ProxyBuilderImpl.class.getName(),
                 ClientRequestFilter[].class.getName(),
                 ClientResponseFilter[].class.getName(),
-                javax.ws.rs.ext.ReaderInterceptor[].class.getName()));
+                jakarta.ws.rs.ext.ReaderInterceptor[].class.getName()).build());
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
-                ResteasyClientBuilder.class.getName(), NoopHostnameVerifier.class.getName()));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(ResteasyClientBuilder.class.getName(), NoopHostnameVerifier.class.getName())
+                        .methods().build());
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem makeConfigUnremovable() {
+        return UnremovableBeanBuildItem.beanTypes(RestClientsConfig.class);
+    }
+
+    @BuildStep
+    List<RestClientPredicateProviderBuildItem> transformAnnotationProvider(
+            List<RestClientAnnotationProviderBuildItem> annotationProviders) {
+        List<RestClientPredicateProviderBuildItem> result = new ArrayList<>();
+        for (RestClientAnnotationProviderBuildItem annotationProvider : annotationProviders) {
+            result.add(new RestClientPredicateProviderBuildItem(annotationProvider.getProviderClass().getName(),
+                    new Predicate<ClassInfo>() {
+                        @Override
+                        public boolean test(ClassInfo classInfo) {
+                            // register the provider to every Rest client annotated with annotationName
+                            return classInfo.hasAnnotation(annotationProvider.getAnnotationName());
+                        }
+                    }));
+        }
+        return result;
     }
 
     @BuildStep
@@ -169,7 +205,7 @@ class RestClientProcessor {
             Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
             PackageConfig packageConfig,
-            List<RestClientAnnotationProviderBuildItem> restClientAnnotationProviders,
+            List<RestClientPredicateProviderBuildItem> restClientProviders,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
@@ -203,12 +239,13 @@ class RestClientProcessor {
             proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(iName, ResteasyClientProxy.class.getName()));
             proxyDefinition.produce(
                     new NativeImageProxyDefinitionBuildItem(iName, RestClientProxy.class.getName(), Closeable.class.getName()));
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, iName));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(iName).methods().build());
         }
 
         // Incoming headers
         // required for the non-arg constructor of DCHFImpl to be included in the native image
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, DefaultClientHeadersFactoryImpl.class.getName()));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(DefaultClientHeadersFactoryImpl.class.getName()).methods()
+                .build());
 
         // Register Interface return types for reflection
         for (Type returnType : returnTypes) {
@@ -230,30 +267,30 @@ class RestClientProcessor {
             // The spec is not clear whether we should add superinterfaces too - let's keep aligned with SmallRye for now
             configurator.addType(restClientName);
             configurator.addQualifier(REST_CLIENT);
-            final String configPrefix = computeConfigPrefix(restClientName.toString(), entry.getValue());
-            final ScopeInfo scope = computeDefaultScope(capabilities, config, entry, configPrefix);
-            final List<Class<?>> annotationProviders = checkAnnotationProviders(entry.getValue(),
-                    restClientAnnotationProviders);
+            final Optional<String> configKey = getConfigKey(entry.getValue());
+            final ScopeInfo scope = computeDefaultScope(capabilities, config, entry, configKey);
+            final List<String> clientProviders = checkRestClientProviders(entry.getValue(),
+                    restClientProviders);
             configurator.scope(scope);
             configurator.creator(m -> {
                 // return new RestClientBase(proxyType, baseUri).create();
-                ResultHandle interfaceHandle = m.loadClass(restClientName.toString());
+                ResultHandle interfaceHandle = m.loadClassFromTCCL(restClientName.toString());
                 ResultHandle baseUriHandle = m.load(getAnnotationParameter(entry.getValue(), "baseUri"));
-                ResultHandle configPrefixHandle = m.load(configPrefix);
-                ResultHandle annotationProvidersHandle = null;
-                if (!annotationProviders.isEmpty()) {
-                    annotationProvidersHandle = m.newArray(Class.class, annotationProviders.size());
-                    for (int i = 0; i < annotationProviders.size(); i++) {
-                        m.writeArrayValue(annotationProvidersHandle, i, m.loadClass(annotationProviders.get(i)));
+                ResultHandle configKeyHandle = configKey.isPresent() ? m.load(configKey.get()) : m.loadNull();
+                ResultHandle restClientProvidersHandle;
+                if (!clientProviders.isEmpty()) {
+                    restClientProvidersHandle = m.newArray(Class.class, clientProviders.size());
+                    for (int i = 0; i < clientProviders.size(); i++) {
+                        m.writeArrayValue(restClientProvidersHandle, i, m.loadClassFromTCCL(clientProviders.get(i)));
                     }
                 } else {
-                    annotationProvidersHandle = m.loadNull();
+                    restClientProvidersHandle = m.loadNull();
                 }
                 ResultHandle baseHandle = m.newInstance(
                         MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class,
                                 String.class,
                                 Class[].class),
-                        interfaceHandle, baseUriHandle, configPrefixHandle, annotationProvidersHandle);
+                        interfaceHandle, baseUriHandle, configKeyHandle, restClientProvidersHandle);
                 ResultHandle ret = m.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), baseHandle);
                 m.returnValue(ret);
@@ -280,9 +317,9 @@ class RestClientProcessor {
                         && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)));
     }
 
-    private static List<Class<?>> checkAnnotationProviders(ClassInfo classInfo,
-            List<RestClientAnnotationProviderBuildItem> restClientAnnotationProviders) {
-        return restClientAnnotationProviders.stream().filter(p -> (classInfo.classAnnotation(p.getAnnotationName()) != null))
+    private static List<String> checkRestClientProviders(ClassInfo classInfo,
+            List<RestClientPredicateProviderBuildItem> restClientProviders) {
+        return restClientProviders.stream().filter(p -> p.appliesTo(classInfo))
                 .map(p -> p.getProviderClass()).collect(Collectors.toList());
     }
 
@@ -294,14 +331,14 @@ class RestClientProcessor {
     // currently default methods on a rest-client interface
     // that is annotated with ClientHeaderParam
     // leads to NPEs (see https://github.com/quarkusio/quarkus/issues/10249)
-    // so lets warn users about its use
+    // so let's warn users about its use
     private void warnAboutNotWorkingFeaturesInNative(PackageConfig packageConfig, Map<DotName, ClassInfo> interfaces) {
         if (!packageConfig.type.equalsIgnoreCase(PackageConfig.NATIVE)) {
             return;
         }
         Set<DotName> dotNames = new HashSet<>();
         for (ClassInfo interfaze : interfaces.values()) {
-            if (interfaze.classAnnotation(CLIENT_HEADER_PARAM) != null) {
+            if (interfaze.declaredAnnotation(CLIENT_HEADER_PARAM) != null) {
                 boolean hasDefault = false;
                 for (MethodInfo method : interfaze.methods()) {
                     if (isDefault(method.flags())) {
@@ -364,29 +401,28 @@ class RestClientProcessor {
         }
     }
 
-    private String computeConfigPrefix(String interfaceName, ClassInfo classInfo) {
-        String propertyPrefixFromAnnotation = getAnnotationParameter(classInfo, "configKey");
-
-        if (propertyPrefixFromAnnotation != null && !propertyPrefixFromAnnotation.isEmpty()) {
-            return propertyPrefixFromAnnotation;
+    private Optional<String> getConfigKey(ClassInfo classInfo) {
+        String configKey = getAnnotationParameter(classInfo, "configKey");
+        if (configKey.isEmpty()) {
+            return Optional.empty();
         }
-
-        return interfaceName;
+        return Optional.of(configKey);
     }
 
     private ScopeInfo computeDefaultScope(Capabilities capabilities, Config config, Map.Entry<DotName, ClassInfo> entry,
-            String configPrefix) {
+            Optional<String> configKey) {
         ScopeInfo scopeToUse = null;
-        final Optional<String> scopeConfig = config
-                .getOptionalValue(String.format(RestClientBase.REST_SCOPE_FORMAT, configPrefix), String.class);
+
+        ClassInfo classInfo = entry.getValue();
+        Optional<String> scopeConfig = RestClientConfigUtils.findConfiguredScope(config, classInfo, configKey);
 
         if (scopeConfig.isPresent()) {
             final DotName scope = DotName.createSimple(scopeConfig.get());
-            final BuiltinScope builtinScope = BuiltinScope.from(scope);
+            final BuiltinScope builtinScope = builtinScopeFromName(scope);
             if (builtinScope != null) { // override default @Dependent scope with user defined one.
                 scopeToUse = builtinScope.getInfo();
             } else if (capabilities.isPresent(Capability.SERVLET)) {
-                if (scope.equals(SESSION_SCOPED)) {
+                if (scope.equals(SESSION_SCOPED) || scope.toString().equalsIgnoreCase(SESSION_SCOPED.withoutPackagePrefix())) {
                     scopeToUse = new ScopeInfo(SESSION_SCOPED, true);
                 }
             }
@@ -398,7 +434,7 @@ class RestClientProcessor {
                 scopeToUse = BuiltinScope.DEPENDENT.getInfo();
             }
         } else {
-            final Set<DotName> annotations = entry.getValue().annotations().keySet();
+            final Set<DotName> annotations = classInfo.annotationsMap().keySet();
             for (final DotName annotationName : annotations) {
                 final BuiltinScope builtinScope = BuiltinScope.from(annotationName);
                 if (builtinScope != null) {
@@ -417,7 +453,7 @@ class RestClientProcessor {
     }
 
     private String getAnnotationParameter(ClassInfo classInfo, String parameterName) {
-        AnnotationInstance instance = classInfo.classAnnotation(REGISTER_REST_CLIENT);
+        AnnotationInstance instance = classInfo.declaredAnnotation(REGISTER_REST_CLIENT);
         if (instance == null) {
             return "";
         }
@@ -443,7 +479,7 @@ class RestClientProcessor {
             List<IgnoreClientProviderBuildItem> ignoreClientProviderBuildItems,
             CombinedIndexBuildItem combinedIndexBuildItem,
             ResteasyInjectionReadyBuildItem injectorFactory,
-            RestClientRecorder restClientRecorder) {
+            RestClientRecorder restClientRecorder, Capabilities capabilities) {
 
         for (IgnoreClientProviderBuildItem item : ignoreClientProviderBuildItems) {
             jaxrsProvidersToRegisterBuildItem.getProviders().remove(item.getProviderClassName());
@@ -454,9 +490,15 @@ class RestClientProcessor {
                 jaxrsProvidersToRegisterBuildItem.useBuiltIn(),
                 jaxrsProvidersToRegisterBuildItem.getProviders(), jaxrsProvidersToRegisterBuildItem.getContributedProviders());
 
+        if (!capabilities.isPresent(Capability.RESTEASY) && !capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
+            // ResteasyProviderFactory will use our implementation when accessing instance statically. That's not
+            // necessary when RESTEasy classic is present as then provider factory with correct provider classes is generated.
+            restClientRecorder.setResteasyProviderFactoryInstance();
+        }
+
         // register the providers for reflection
         for (String providerToRegister : jaxrsProvidersToRegisterBuildItem.getProviders()) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerToRegister));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(providerToRegister).build());
         }
 
         // now we register all values of @RegisterProvider for constructor reflection
@@ -468,7 +510,8 @@ class RestClientProcessor {
         }
         for (AnnotationInstance annotationInstance : allInstances) {
             reflectiveClass
-                    .produce(new ReflectiveClassBuildItem(false, false, annotationInstance.value().asClass().toString()));
+                    .produce(ReflectiveClassBuildItem.builder(annotationInstance.value().asClass().toString())
+                            .build());
         }
 
         // Register @RegisterClientHeaders for reflection
@@ -476,17 +519,20 @@ class RestClientProcessor {
             AnnotationValue value = annotationInstance.value();
             if (value != null) {
                 reflectiveClass
-                        .produce(new ReflectiveClassBuildItem(false, false, annotationInstance.value().asClass().toString()));
+                        .produce(ReflectiveClassBuildItem.builder(annotationInstance.value().asClass().toString())
+                                .build());
             }
         }
 
         // now retain all un-annotated implementations of ClientRequestFilter and ClientResponseFilter
         // in case they are programmatically registered by applications
         for (ClassInfo info : index.getAllKnownImplementors(CLIENT_REQUEST_FILTER)) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, info.name().toString()));
+            reflectiveClass
+                    .produce(ReflectiveClassBuildItem.builder(info.name().toString()).build());
         }
         for (ClassInfo info : index.getAllKnownImplementors(CLIENT_RESPONSE_FILTER)) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, info.name().toString()));
+            reflectiveClass
+                    .produce(ReflectiveClassBuildItem.builder(info.name().toString()).build());
         }
     }
 
@@ -509,8 +555,71 @@ class RestClientProcessor {
         return builder.build();
     }
 
+    @BuildStep
+    void unremovableInterceptors(List<RestClientBuildItem> restClientInterfaces, BeanArchiveIndexBuildItem beanArchiveIndex,
+            InterceptorResolverBuildItem interceptorResolver, BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+
+        if (restClientInterfaces.isEmpty()) {
+            return;
+        }
+
+        IndexView index = beanArchiveIndex.getIndex();
+        Set<DotName> interceptorBindings = interceptorResolver.getInterceptorBindings();
+        Set<String> unremovableInterceptors = new HashSet<>();
+
+        for (RestClientBuildItem restClient : restClientInterfaces) {
+            ClassInfo restClientClass = index.getClassByName(DotName.createSimple(restClient.getInterfaceName()));
+            if (restClientClass != null) {
+                Set<AnnotationInstance> classLevelBindings = new HashSet<>();
+                for (AnnotationInstance annotationInstance : restClientClass.declaredAnnotations()) {
+                    if (interceptorBindings.contains(annotationInstance.name())) {
+                        classLevelBindings.add(annotationInstance);
+                    }
+                }
+                for (MethodInfo method : restClientClass.methods()) {
+                    if (Modifier.isStatic(method.flags())) {
+                        continue;
+                    }
+                    Set<AnnotationInstance> bindings = new HashSet<>(classLevelBindings);
+                    for (AnnotationInstance annotationInstance : method.annotations()) {
+                        if (annotationInstance.target().kind() == Kind.METHOD
+                                && interceptorBindings.contains(annotationInstance.name())) {
+                            bindings.add(annotationInstance);
+                        }
+                    }
+                    if (bindings.isEmpty()) {
+                        continue;
+                    }
+                    List<InterceptorInfo> interceptors = interceptorResolver.get().resolve(
+                            InterceptionType.AROUND_INVOKE,
+                            bindings);
+                    if (!interceptors.isEmpty()) {
+                        interceptors.stream().map(InterceptorInfo::getBeanClass).map(Object::toString)
+                                .forEach(unremovableInterceptors::add);
+                    }
+                }
+            }
+        }
+        if (!unremovableInterceptors.isEmpty()) {
+            unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(unremovableInterceptors));
+        }
+
+    }
+
     private boolean isRestClientInterface(IndexView index, ClassInfo classInfo) {
         return Modifier.isInterface(classInfo.flags())
                 && index.getAllKnownImplementors(classInfo.name()).isEmpty();
+    }
+
+    private static BuiltinScope builtinScopeFromName(DotName scopeName) {
+        BuiltinScope scope = BuiltinScope.from(scopeName);
+        if (scope == null) {
+            for (BuiltinScope builtinScope : BuiltinScope.values()) {
+                if (builtinScope.getName().withoutPackagePrefix().equalsIgnoreCase(scopeName.toString())) {
+                    scope = builtinScope;
+                }
+            }
+        }
+        return scope;
     }
 }

@@ -2,7 +2,7 @@ package io.quarkus.it.amazon.lambda;
 
 import java.security.Principal;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 

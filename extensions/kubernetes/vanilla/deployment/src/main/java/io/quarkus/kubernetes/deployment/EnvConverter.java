@@ -28,7 +28,7 @@ public class EnvConverter {
         e.secrets.ifPresent(sl -> sl.forEach(s -> envs.add(new EnvBuilder().withName(convertName(s)).withSecret(s).build())));
         e.configmaps
                 .ifPresent(cl -> cl.forEach(c -> envs.add(new EnvBuilder().withName(convertName(c)).withConfigmap(c).build())));
-        e.vars.forEach((k, v) -> envs.add(new EnvBuilder().withName(convertName(k)).withValue(v).build()));
+        e.vars.forEach((k, v) -> envs.add(new EnvBuilder().withName(convertName(k)).withValue(v.orElse("")).build()));
         e.fields.forEach((k, v) -> {
             // env vars from fields need to have their name set in addition to their field field :)
             final String field = convertName(k);

@@ -5,7 +5,9 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import javax.enterprise.inject.spi.DefinitionException;
+
+import jakarta.enterprise.inject.spi.DefinitionException;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.MethodInfo;
@@ -74,13 +76,12 @@ public class DisposerInfo implements InjectionTargetInfo {
     Collection<AnnotationInstance> getDisposedParameterQualifiers() {
         Set<AnnotationInstance> resultingQualifiers = new HashSet<>();
         Annotations.getParameterAnnotations(declaringBean.getDeployment(), disposerMethod, disposedParameter.position())
-                .stream().forEach(a -> declaringBean.getDeployment().extractQualifiers(a)
-                        .forEach(resultingQualifiers::add));
+                .stream().forEach(a -> resultingQualifiers.addAll(declaringBean.getDeployment().extractQualifiers(a)));
         return resultingQualifiers;
     }
 
     Type getDisposedParameterType() {
-        return disposerMethod.parameters().get(disposedParameter.position());
+        return disposerMethod.parameterType(disposedParameter.position());
     }
 
     MethodParameterInfo initDisposedParam(MethodInfo disposerMethod) {

@@ -5,7 +5,6 @@ import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Supplier;
 
 import org.hibernate.HibernateException;
@@ -28,7 +27,7 @@ import net.bytebuddy.ClassFileVersion;
  * class is meant to be created at build time and hold onto those class definitions.
  *
  * Implementors of a custom {@link org.hibernate.bytecode.spi.ProxyFactoryFactory} are
- * then able to lookup such class definitions at runtime to create new instances of the
+ * then able to look up such class definitions at runtime to create new instances of the
  * required enhanced proxies.
  *
  * Failure to generate such a proxy is not critical, but it implies that Hibernate ORM
@@ -39,7 +38,7 @@ import net.bytebuddy.ClassFileVersion;
  * Default constructors are required beyond proxy generation, so a lack of such a constructor
  * will have us abort the bootstrap process with a critical error.
  * On the other hand, having the entities marked as "final" is handled gracefully, as we
- * can simply fallback to not use the enhanced proxy for the specific entity, and because
+ * can simply fall back to not use the enhanced proxy for the specific entity, and because
  * it's a common case when writing entities in Kotlin.
  */
 public final class ProxyDefinitions {
@@ -109,7 +108,8 @@ public final class ProxyDefinitions {
                     + "') as it's final. Your application might perform better if we're allowed to extend it.");
             return null;
         }
-        final Set<Class> proxyInterfaces = ProxyFactoryHelper.extractProxyInterfaces(persistentClass, entityName);
+        final java.util.Set<Class<?>> proxyInterfaces = org.hibernate.proxy.pojo.ProxyFactoryHelper
+                .extractProxyInterfaces(persistentClass, entityName);
         PreGeneratedProxies.ProxyClassDetailsHolder preProxy = preGeneratedProxies.getProxies()
                 .get(persistentClass.getClassName());
         Class<?> preGeneratedProxy = null;
@@ -155,7 +155,7 @@ public final class ProxyDefinitions {
         }
     }
 
-    private static Class[] toArray(final Set<Class> interfaces) {
+    private static Class[] toArray(final java.util.Set<Class<?>> interfaces) {
         if (interfaces == null) {
             return ArrayHelper.EMPTY_CLASS_ARRAY;
         }
@@ -193,7 +193,7 @@ public final class ProxyDefinitions {
         @Override
         public ByteBuddyProxyHelper get() {
             if (helper == null) {
-                bytecodeProvider = new BytecodeProviderImpl(ClassFileVersion.JAVA_V8);
+                bytecodeProvider = new BytecodeProviderImpl(ClassFileVersion.JAVA_V11);
                 helper = bytecodeProvider.getByteBuddyProxyHelper();
             }
             return helper;

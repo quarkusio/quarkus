@@ -28,8 +28,8 @@ public class PagingAndSortingPropertiesProvider extends ResourcePropertiesProvid
     protected Map<String, Predicate<MethodInfo>> getMethodPredicates() {
         Map<String, Predicate<MethodInfo>> methodPredicates = new HashMap<>();
         methodPredicates.put("list", methodInfo -> methodInfo.name().equals(LIST_PAGED.getName())
-                && methodInfo.parameters().size() == 1
-                && methodInfo.parameters().get(0).name().equals(PAGEABLE));
+                && methodInfo.parametersCount() == 1
+                && methodInfo.parameterType(0).name().equals(PAGEABLE));
         methodPredicates.put("get", methodInfo -> methodInfo.name().equals(GET.getName()));
         methodPredicates.put("add", methodInfo -> methodInfo.name().equals(ADD.getName()));
         methodPredicates.put("update", methodInfo -> methodInfo.name().equals(UPDATE.getName()));

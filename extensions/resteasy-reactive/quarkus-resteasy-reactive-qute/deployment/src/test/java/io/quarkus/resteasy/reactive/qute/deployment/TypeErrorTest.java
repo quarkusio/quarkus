@@ -2,9 +2,7 @@ package io.quarkus.resteasy.reactive.qute.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class TypeErrorTest {
 
     @RegisterExtension
     static final QuarkusUnitTest configError = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(HelloResource.class)
                     .addAsResource("templates/HelloResource/hello.txt")
                     .addAsResource("templates/HelloResource/typeError.txt")
@@ -22,7 +20,7 @@ public class TypeErrorTest {
                     .addAsResource("templates/HelloResource/typedTemplatePrimitives.txt")
                     .addAsResource(new StringAsset("Hello {name}!"), "templates/hello.txt"))
             .assertException(t -> {
-                assertTrue(t.getMessage().contains("Incorrect expression"));
+                assertTrue(t.getMessage().contains("Found incorrect expressions"));
                 assertTrue(t.getMessage().contains("name.foo()"));
             });
 

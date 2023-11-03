@@ -59,15 +59,11 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
 
     @Inject
     @DeploymentScoped
-    private InstanceProducer<RunningQuarkusApplication> runningApp;
+    private InstanceProducer<QuarkusDeployment> deployment;
 
     @Inject
     @DeploymentScoped
     private InstanceProducer<Path> deploymentLocation;
-
-    @Inject
-    @DeploymentScoped
-    private InstanceProducer<ClassLoader> appClassloader;
 
     @Inject
     private Instance<TestClass> testClass;
@@ -191,8 +187,7 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
             AugmentAction augmentAction = new AugmentActionImpl(curatedApplication, customizers);
             StartupAction app = augmentAction.createInitialRuntimeApplication();
             RunningQuarkusApplication runningQuarkusApplication = app.run();
-            appClassloader.set(runningQuarkusApplication.getClassLoader());
-            runningApp.set(runningQuarkusApplication);
+            deployment.set(new QuarkusDeployment(runningQuarkusApplication));
             Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
             // Instantiate the real test instance
             testInstance = TestInstantiator.instantiateTest(testJavaClass, runningQuarkusApplication.getClassLoader());
@@ -241,13 +236,17 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
         ProtocolMetaData metadata = new ProtocolMetaData();
 
         //TODO: fix this
-        String testUri = TestHTTPResourceManager.getUri(runningApp.get());
+        String testUri = TestHTTPResourceManager.getUri(deployment.get().getRunningApp());
 
         System.setProperty("test.url", testUri);
         URI uri = URI.create(testUri);
         HTTPContext httpContext = new HTTPContext(uri.getHost(), uri.getPort());
         // This is to work around https://github.com/arquillian/arquillian-core/issues/216
-        httpContext.add(new Servlet("dummy", "/"));
+        String path = uri.getPath();
+        if (path == null || path.isEmpty()) {
+            path = "/";
+        }
+        httpContext.add(new Servlet("dummy", path));
         metadata.addContext(httpContext);
         return metadata;
     }
@@ -255,42 +254,9 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
     @Override
     public void undeploy(Archive<?> archive) throws DeploymentException {
         try {
-            RunningQuarkusApplication runner = runningApp.get();
+            RunningQuarkusApplication runner = deployment.get().getRunningApp();
             if (runner != null) {
-                Thread.currentThread().setContextClassLoader(runningApp.get().getClassLoader());
-            }
-            testInstance = null;
-            Path location = deploymentLocation.get();
-            if (location != null) {
-                try {
-                    Files.walkFileTree(location, new FileVisitor<Path>() {
-                        @Override
-                        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                            return FileVisitResult.CONTINUE;
-                        }
-
-                        @Override
-                        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                            Files.delete(file);
-                            return FileVisitResult.CONTINUE;
-                        }
-
-                        @Override
-                        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                            return FileVisitResult.CONTINUE;
-                        }
-
-                        @Override
-                        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                            Files.delete(dir);
-                            return FileVisitResult.CONTINUE;
-                        }
-                    });
-                } catch (IOException e) {
-                    LOGGER.warn("Unable to delete the deployment dir: " + location, e);
-                }
-            }
-            if (runner != null) {
+                Thread.currentThread().setContextClassLoader(runner.getClassLoader());
                 try {
                     runner.close();
                 } catch (Exception e) {
@@ -299,6 +265,38 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
             }
         } finally {
             Thread.currentThread().setContextClassLoader(old);
+        }
+        deployment.get().cleanup();
+
+        Path location = deploymentLocation.get();
+        if (location != null) {
+            try {
+                Files.walkFileTree(location, new FileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        Files.delete(file);
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                        Files.delete(dir);
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
+            } catch (IOException e) {
+                LOGGER.warn("Unable to delete the deployment dir: " + location, e);
+            }
         }
     }
 

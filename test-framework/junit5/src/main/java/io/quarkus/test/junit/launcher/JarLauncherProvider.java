@@ -1,28 +1,30 @@
 package io.quarkus.test.junit.launcher;
 
+import static io.quarkus.test.junit.ArtifactTypeUtil.isJar;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_HTTPS_PORT;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_PORT;
-import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_WAIT_TIME_SECONDS;
 
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
-import java.util.OptionalLong;
 import java.util.ServiceLoader;
 
 import org.eclipse.microprofile.config.Config;
 
+import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DefaultJarLauncher;
 import io.quarkus.test.common.JarArtifactLauncher;
 import io.quarkus.test.common.LauncherUtil;
+import io.quarkus.test.common.TestConfigUtil;
 
 public class JarLauncherProvider implements ArtifactLauncherProvider {
 
     @Override
     public boolean supportsArtifactType(String type) {
-        return "jar".equals(type);
+        return isJar(type);
     }
 
     @Override
@@ -42,10 +44,11 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
             launcher.init(new DefaultJarInitContext(
                     config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
-                    Duration.ofSeconds(config.getValue("quarkus.test.jar-wait-time", OptionalLong.class)
-                            .orElse(DEFAULT_WAIT_TIME_SECONDS)),
-                    config.getOptionalValue("quarkus.test.native-image-profile", String.class).orElse(null),
-                    ConfigUtil.argLineValue(config),
+                    TestConfigUtil.waitTimeValue(config),
+                    TestConfigUtil.integrationTestProfile(config),
+                    TestConfigUtil.argLineValue(config),
+                    TestConfigUtil.env(config),
+                    context.devServicesLaunchResult(),
                     context.buildOutputDirectory().resolve(pathStr)));
             return launcher;
         } else {
@@ -57,9 +60,10 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
 
         private final Path jarPath;
 
-        DefaultJarInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile, List<String> argLine,
-                Path jarPath) {
-            super(httpPort, httpsPort, waitTime, testProfile, argLine);
+        DefaultJarInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
+                List<String> argLine, Map<String, String> env,
+                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult, Path jarPath) {
+            super(httpPort, httpsPort, waitTime, testProfile, argLine, env, devServicesLaunchResult);
             this.jarPath = jarPath;
         }
 

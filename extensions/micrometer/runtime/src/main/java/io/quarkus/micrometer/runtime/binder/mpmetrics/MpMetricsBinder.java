@@ -2,8 +2,8 @@ package io.quarkus.micrometer.runtime.binder.mpmetrics;
 
 import java.util.Iterator;
 
-import javax.enterprise.inject.Instance;
-import javax.inject.Singleton;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Singleton;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;

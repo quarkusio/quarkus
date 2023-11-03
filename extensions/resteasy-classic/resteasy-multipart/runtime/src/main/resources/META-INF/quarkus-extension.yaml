@@ -1,6 +1,6 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
-name: "RESTEasy Multipart"
+name: "RESTEasy Classic Multipart"
 metadata:
   keywords:
   - "resteasy-multipart"
@@ -8,7 +8,18 @@ metadata:
   - "upload"
   - "resteasy"
   - "jaxrs"
+  - "rest"
+  - "jakarta-rest"
   guide: "https://quarkus.io/guides/rest-json#multipart-support"
   categories:
   - "web"
   status: "stable"
+  codestart:
+    name: "resteasy"
+    languages:
+      - "java"
+      - "kotlin"
+      - "scala"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
+  config:
+  - "quarkus.resteasy.multipart."

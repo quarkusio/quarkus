@@ -1,0 +1,25 @@
+
+subprojects {
+    apply plugin: 'java'
+
+    repositories {
+        mavenLocal {
+            content {
+                includeGroupByRegex 'io.quarkus.*'
+                includeGroup 'org.hibernate.orm'
+            }
+        }
+        mavenCentral()
+    }
+
+    dependencies {
+        implementation enforcedPlatform("io.quarkus:quarkus-bom:${quarkusPlatformVersion}")
+    }
+
+    test {
+        systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+    }
+}
+
+group 'org.acme'
+version '1.0-SNAPSHOT'

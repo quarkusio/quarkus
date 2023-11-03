@@ -1,30 +1,24 @@
 package io.quarkus.resteasy.reactive.server.runtime;
 
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Disposes;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.ext.Providers;
 
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
-import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
+import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 
-import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 
 /**
  * Provides CDI producers for objects that can be injected via @Context
- * In quarkus-rest this works because @Context is considered an alias for @Inject
+ * In RESTEasy Reactive this works because @Context is considered an alias for @Inject
  * through the use of {@code AutoInjectAnnotationBuildItem}
  */
 @Singleton
 public class QuarkusContextProducers {
-
-    // HttpServerRequest, HttpServerRequest are Vert.x types so it's not necessary to have it injectable via @Context,
-    // however we do use it in the Quickstarts so let's make it work
-    @RequestScoped
-    @Produces
-    HttpServerRequest httpServerRequest() {
-        return CurrentRequestManager.get().serverRequest().unwrap(HttpServerRequest.class);
-    }
 
     @RequestScoped
     @Produces
@@ -32,7 +26,20 @@ public class QuarkusContextProducers {
         return CurrentRequestManager.get().serverRequest().unwrap(HttpServerResponse.class);
     }
 
-    private ResteasyReactiveRequestContext getContext() {
-        return CurrentRequestManager.get();
+    @ApplicationScoped
+    @Produces
+    Providers providers() {
+        return new ProvidersImpl(ResteasyReactiveRecorder.getCurrentDeployment());
     }
+
+    @RequestScoped
+    @Produces
+    CloserImpl closer() {
+        return new CloserImpl();
+    }
+
+    void closeCloser(@Disposes CloserImpl closer) {
+        closer.close();
+    }
+
 }

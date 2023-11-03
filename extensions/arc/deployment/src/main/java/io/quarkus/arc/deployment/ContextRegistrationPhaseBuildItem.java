@@ -16,8 +16,11 @@ import io.quarkus.deployment.annotations.BuildProducer;
  * An extension that needs to produce other build items during the "context registration" phase should use this build item. The
  * build step should produce a {@link ContextConfiguratorBuildItem} or at least inject a {@link BuildProducer} for this build
  * item, otherwise it could be ignored or processed at the wrong time, e.g. after
- * {@link ArcProcessor#registerBeans(ContextRegistrationPhaseBuildItem, List)}.
- * 
+ * {@link ArcProcessor#registerBeans(ContextRegistrationPhaseBuildItem, List, BuildProducer, BuildProducer, BuildProducer)}.
+ * <p>
+ * Typical workflow involves obtaining a {@link ContextConfigurator} via {@code getContext().configure()}. Note that there
+ * is no need to invoke {@link ContextConfigurator#done()} once you are done as it is performed automatically.
+ *
  * @see ContextConfiguratorBuildItem
  * @see CustomScopeBuildItem
  */
@@ -39,6 +42,12 @@ public final class ContextRegistrationPhaseBuildItem extends SimpleBuildItem {
         return beanProcessor;
     }
 
+    /**
+     * A build item holding a list of {@link ContextConfigurator} objects which is used to register custom CDI contexts.
+     * <p>
+     * Note that after configuring each {@link ContextConfigurator}, there is no need to invoke
+     * {@link ContextConfigurator#done()} as this is done automatically.
+     */
     public static final class ContextConfiguratorBuildItem extends MultiBuildItem {
 
         private final List<ContextConfigurator> values;

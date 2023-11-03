@@ -1,0 +1,34 @@
+---
+name: Linting with Vale
+on:
+  pull_request:
+    paths:
+      - 'docs/src/main/asciidoc/**'
+      - '.github/workflows/vale.yml'
+
+concurrency:
+  group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}"
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.repository != 'quarkusio/quarkus' }}
+
+jobs:
+  vale:
+    name: Linting with Vale
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Vale Linter
+        continue-on-error: true
+        uses: errata-ai/vale-action@reviewdog
+        with:
+          fail_on_error: false
+          vale_flags: "--no-exit --config=docs/.vale.ini"
+          filter_mode: diff_context
+          files: docs/src/main/asciidoc/
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}

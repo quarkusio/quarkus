@@ -5,17 +5,15 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.Flow;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.reactivestreams.Publisher;
 
 import io.quarkus.smallrye.reactivemessaging.blocking.beans.IncomingCustomTwoBlockingBean;
 import io.quarkus.smallrye.reactivemessaging.blocking.beans.IncomingCustomUnorderedBlockingBean;
@@ -26,7 +24,7 @@ import io.smallrye.reactive.messaging.annotations.Broadcast;
 public class BlockingSubscriberTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(ProduceIn.class, IncomingCustomUnorderedBlockingBean.class, IncomingCustomTwoBlockingBean.class)
                     .addAsResource(
                             new File("src/test/resources/config/worker-config.properties"),
@@ -74,7 +72,7 @@ public class BlockingSubscriberTest {
     public static class ProduceIn {
         @Outgoing("in")
         @Broadcast(2)
-        public Publisher<String> produce() {
+        public Flow.Publisher<String> produce() {
             return Multi.createFrom().items("a", "b", "c", "d", "e", "f");
         }
     }

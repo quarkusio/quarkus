@@ -20,19 +20,14 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
     // issue https://github.com/containers/podman/issues/9608
     private static final String CONTAINER_BUILD_VOLUME_NAME = "quarkus-native-builder-image-project-volume";
 
-    private final String nativeImageName;
-    private final String resultingExecutableName;
     private String containerId;
 
-    public NativeImageBuildRemoteContainerRunner(NativeConfig nativeConfig, Path outputDir,
-            String nativeImageName, String resultingExecutableName) {
-        super(nativeConfig, outputDir);
-        this.nativeImageName = nativeImageName;
-        this.resultingExecutableName = resultingExecutableName;
+    protected NativeImageBuildRemoteContainerRunner(NativeConfig nativeConfig) {
+        super(nativeConfig);
     }
 
     @Override
-    protected void preBuild(List<String> buildArgs) throws InterruptedException, IOException {
+    protected void preBuild(Path outputDir, List<String> buildArgs) throws InterruptedException, IOException {
         // docker volume rm <volumeID>
         rmVolume(null);
         // docker create -v <volumeID>:/project <image-name>
@@ -41,10 +36,10 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
         final String[] createTempContainerCommand = buildCommand("create", containerRuntimeArgs, Collections.emptyList());
         containerId = runCommandAndReadOutput(createTempContainerCommand, "Failed to create temp container.");
         // docker cp <files> <containerID>:/project
-        String[] copyCommand = new String[] { containerRuntime.getExecutableName(), "cp", outputPath + "/.",
+        String[] copyCommand = new String[] { containerRuntime.getExecutableName(), "cp", outputDir.toAbsolutePath() + "/.",
                 containerId + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH };
         runCommand(copyCommand, "Failed to copy source-jar and libs from host to builder container", null);
-        super.preBuild(buildArgs);
+        super.preBuild(outputDir, buildArgs);
     }
 
     private String runCommandAndReadOutput(String[] command, String errorMsg) throws IOException, InterruptedException {
@@ -59,12 +54,13 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
     }
 
     @Override
-    protected void postBuild() {
-        copyFromContainerVolume(resultingExecutableName, "Failed to copy native image from container volume back to the host.");
-        if (nativeConfig.debug.enabled) {
-            copyFromContainerVolume("sources", "Failed to copy sources from container volume back to the host.");
+    protected void postBuild(Path outputDir, String nativeImageName, String resultingExecutableName) {
+        copyFromContainerVolume(outputDir, resultingExecutableName,
+                "Failed to copy native image from container volume back to the host.");
+        if (nativeConfig.debug().enabled()) {
+            copyFromContainerVolume(outputDir, "sources", "Failed to copy sources from container volume back to the host.");
             String symbols = String.format("%s.debug", nativeImageName);
-            copyFromContainerVolume(symbols, "Failed to copy debug symbols from container volume back to the host.");
+            copyFromContainerVolume(outputDir, symbols, "Failed to copy debug symbols from container volume back to the host.");
         }
         // docker container rm <containerID>
         final String[] rmTempContainerCommand = new String[] { containerRuntime.getExecutableName(), "container", "rm",
@@ -80,16 +76,17 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
         runCommand(rmVolumeCommand, errorMsg, null);
     }
 
-    private void copyFromContainerVolume(String path, String errorMsg) {
+    private void copyFromContainerVolume(Path outputDir, String path, String errorMsg) {
         // docker cp <containerID>:/project/<path> <dest>
         String[] copyCommand = new String[] { containerRuntime.getExecutableName(), "cp",
-                containerId + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH + "/" + path, outputPath };
+                containerId + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH + "/" + path,
+                outputDir.toAbsolutePath().toString() };
         runCommand(copyCommand, errorMsg, null);
     }
 
     @Override
-    protected List<String> getContainerRuntimeBuildArgs() {
-        List<String> containerRuntimeArgs = super.getContainerRuntimeBuildArgs();
+    protected List<String> getContainerRuntimeBuildArgs(Path outputDir) {
+        List<String> containerRuntimeArgs = super.getContainerRuntimeBuildArgs(outputDir);
         Collections.addAll(containerRuntimeArgs, "-v",
                 CONTAINER_BUILD_VOLUME_NAME + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH);
         return containerRuntimeArgs;

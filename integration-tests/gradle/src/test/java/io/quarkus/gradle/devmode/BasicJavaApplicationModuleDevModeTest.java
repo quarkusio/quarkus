@@ -19,7 +19,7 @@ public class BasicJavaApplicationModuleDevModeTest extends QuarkusDevGradleTestB
 
     @Override
     protected String[] buildArguments() {
-        return new String[] { "clean", "run", "-s" };
+        return new String[] { "clean", "run" };
     }
 
     protected void testDevMode() throws Exception {

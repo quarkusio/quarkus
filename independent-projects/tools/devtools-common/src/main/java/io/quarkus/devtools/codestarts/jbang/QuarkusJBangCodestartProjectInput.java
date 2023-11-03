@@ -1,8 +1,9 @@
 package io.quarkus.devtools.codestarts.jbang;
 
-import io.quarkus.devtools.codestarts.CodestartProjectInput;
-import io.quarkus.maven.ArtifactCoords;
 import java.util.Collection;
+
+import io.quarkus.devtools.codestarts.CodestartProjectInput;
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 public final class QuarkusJBangCodestartProjectInput extends CodestartProjectInput {
     private final Collection<ArtifactCoords> extensions;

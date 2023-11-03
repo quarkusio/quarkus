@@ -4,9 +4,10 @@ import java.security.Permission;
 import java.security.Principal;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -60,7 +61,13 @@ public class SecurityIdentityProxy implements SecurityIdentity {
 
     @Override
     public Uni<Boolean> checkPermission(Permission permission) {
-        return association.getIdentity().checkPermission(permission);
+        return association.getDeferredIdentity()
+                .flatMap(new Function<>() {
+                    @Override
+                    public Uni<? extends Boolean> apply(SecurityIdentity identity) {
+                        return identity.checkPermission(permission);
+                    }
+                });
     }
 
     @Override

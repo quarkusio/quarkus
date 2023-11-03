@@ -1,7 +1,8 @@
 package io.quarkus.deployment.dev;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
 
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
@@ -20,14 +21,15 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -37,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -46,27 +49,30 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
-import io.quarkus.bootstrap.model.PathsCollection;
+import io.quarkus.bootstrap.runner.DevModeMediator;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.changeagent.ClassChangeAgent;
-import io.quarkus.deployment.dev.filewatch.FileChangeCallback;
-import io.quarkus.deployment.dev.filewatch.FileChangeEvent;
-import io.quarkus.deployment.dev.filewatch.WatchServiceFileSystemWatcher;
+import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
+import io.quarkus.deployment.dev.filesystem.watch.FileChangeCallback;
+import io.quarkus.deployment.dev.filesystem.watch.FileChangeEvent;
+import io.quarkus.deployment.dev.filesystem.watch.WatchServiceFileSystemWatcher;
 import io.quarkus.deployment.dev.testing.TestListener;
-import io.quarkus.deployment.dev.testing.TestRunner;
 import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.dev.console.QuarkusConsole;
+import io.quarkus.dev.console.StatusLine;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.dev.testing.TestScanningLock;
+import io.quarkus.paths.PathCollection;
+import io.quarkus.paths.PathList;
 
 public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable {
     public static final boolean IS_LINUX = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("linux");
@@ -82,6 +88,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private final QuarkusCompiler compiler;
     private final DevModeType devModeType;
     volatile Throwable compileProblem;
+    volatile Throwable testCompileProblem;
+    volatile Throwable hotReloadProblem;
 
     private volatile Predicate<ClassInfo> disableInstrumentationForClassPredicate = new AlwaysFalsePredicate<>();
     private volatile Predicate<Index> disableInstrumentationForIndexPredicate = new AlwaysFalsePredicate<>();
@@ -97,10 +105,12 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private final List<Runnable> preScanSteps = new CopyOnWriteArrayList<>();
     private final List<Consumer<Set<String>>> noRestartChangesConsumers = new CopyOnWriteArrayList<>();
     private final List<HotReplacementSetup> hotReplacementSetup = new ArrayList<>();
+    private final List<Runnable> deploymentFailedStartHandlers = new ArrayList<>();
     private final BiConsumer<Set<String>, ClassScanResult> restartCallback;
     private final BiConsumer<DevModeContext.ModuleInfo, String> copyResourceNotification;
     private final BiFunction<String, byte[], byte[]> classTransformers;
     private final ReentrantLock scanLock = new ReentrantLock();
+    private final Lock codeGenLock = CodeGenLock.lockForCompilation();
 
     /**
      * The index for the last successful start. Used to determine if the class has changed its structure
@@ -118,10 +128,12 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private final TestSupport testSupport;
     private volatile boolean firstTestScanComplete;
     private volatile Boolean instrumentationEnabled;
+    private volatile boolean configuredInstrumentationEnabled;
     private volatile boolean liveReloadEnabled = true;
 
     private WatchServiceFileSystemWatcher testClassChangeWatcher;
     private Timer testClassChangeTimer;
+    volatile StatusLine compileOutput;
 
     public RuntimeUpdatesProcessor(Path applicationRoot, DevModeContext context, QuarkusCompiler compiler,
             DevModeType devModeType, BiConsumer<Set<String>, ClassScanResult> restartCallback,
@@ -183,8 +195,26 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     @Override
     public List<Path> getSourcesDir() {
-        return context.getAllModules().stream().flatMap(m -> m.getMain().getSourcePaths().toList().stream())
-                .collect(toList());
+        final List<Path> paths = new ArrayList<>();
+        for (ModuleInfo m : context.getAllModules()) {
+            for (Path p : m.getMain().getSourcePaths()) {
+                paths.add(p);
+            }
+        }
+        return paths;
+    }
+
+    @Override
+    public List<Path> getTestSourcesDir() {
+        final List<Path> paths = new ArrayList<>();
+        for (ModuleInfo m : context.getAllModules()) {
+            if (m.getTest().isPresent()) {
+                for (Path p : m.getTest().get().getSourcePaths()) {
+                    paths.add(p);
+                }
+            }
+        }
+        return paths;
     }
 
     private void startTestScanningTimer() {
@@ -200,7 +230,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                         public void handleChanges(Collection<FileChangeEvent> changes) {
                             //sometimes changes come through as two events
                             //which can cause problems for our CI tests
-                            //and cause unessesary runs.
+                            //and cause unnecessary runs.
                             //we add a half second delay for CI tests, to make sure this does not cause
                             //problems
                             try {
@@ -213,6 +243,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                             periodicTestCompile();
                         }
                     };
+                    Set<Path> nonExistent = new HashSet<>();
                     for (DevModeContext.ModuleInfo module : context.getAllModules()) {
                         for (Path path : module.getMain().getSourcePaths()) {
                             testClassChangeWatcher.watchPath(path.toFile(), callback);
@@ -221,13 +252,57 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                             testClassChangeWatcher.watchPath(path.toFile(), callback);
                         }
                     }
-                    for (Path path : context.getApplicationRoot().getTest().get().getSourcePaths()) {
-                        testClassChangeWatcher.watchPath(path.toFile(), callback);
+                    for (DevModeContext.ModuleInfo module : context.getAllModules()) {
+                        if (module.getTest().isPresent()) {
+                            for (Path path : module.getTest().get().getSourcePaths()) {
+                                if (!Files.isDirectory(path)) {
+                                    nonExistent.add(path);
+                                } else {
+                                    testClassChangeWatcher.watchPath(path.toFile(), callback);
+                                }
+                            }
+                            for (Path path : module.getTest().get().getResourcePaths()) {
+                                if (!Files.isDirectory(path)) {
+                                    nonExistent.add(path);
+                                } else {
+                                    testClassChangeWatcher.watchPath(path.toFile(), callback);
+                                }
+                            }
+                        }
                     }
-                    for (Path path : context.getApplicationRoot().getTest().get().getResourcePaths()) {
-                        testClassChangeWatcher.watchPath(path.toFile(), callback);
+                    testClassChangeTimer = new Timer("Test Compile Timer", true);
+                    if (!nonExistent.isEmpty()) {
+                        {
+                            testClassChangeTimer.schedule(new TimerTask() {
+                                @Override
+                                public void run() {
+                                    boolean added = false;
+                                    for (Iterator<Path> iterator = nonExistent.iterator(); iterator.hasNext();) {
+                                        Path i = iterator.next();
+                                        if (Files.isDirectory(i)) {
+                                            iterator.remove();
+                                            testClassChangeWatcher.watchPath(i.toFile(), callback);
+                                            added = true;
+                                        }
+
+                                    }
+                                    if (added) {
+                                        periodicTestCompile();
+                                    }
+                                }
+                            }, 1, 1000);
+                        }
                     }
-                    periodicTestCompile();
+                    //this can't be called directly because of the deadlock risk
+                    //this can happen on a hot reload, if you have changed the config to make testing 'enabled'
+                    //the thread doing the reload already holds the lock, so a deadlock would result
+                    testClassChangeTimer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            periodicTestCompile();
+                        }
+                    }, 0);
+
                 } else {
                     testClassChangeTimer = new Timer("Test Compile Timer", true);
                     testClassChangeTimer.schedule(new TimerTask() {
@@ -245,25 +320,28 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         scanLock.lock();
         TestScanningLock.lockForTests();
         try {
+            ClassScanResult changedApp = checkForChangedClasses(compiler, DevModeContext.ModuleInfo::getMain, false, test,
+                    true);
             ClassScanResult changedTestClassResult = compileTestClasses();
-            ClassScanResult changedApp = checkForChangedClasses(compiler, DevModeContext.ModuleInfo::getMain, false, test);
-            Set<String> filesChanges = new HashSet<>(checkForFileChange(s -> s.getTest().get(), test));
+            if (changedApp.compilationHappened) {
+                if (testCompileProblem != null) {
+                    testSupport.testCompileFailed(testCompileProblem);
+                } else {
+                    testSupport.testCompileSucceeded();
+                }
+            }
+            Set<String> filesChanges = new HashSet<>(checkForFileChange(s -> s.getTest().orElse(null), test));
             filesChanges.addAll(checkForFileChange(DevModeContext.ModuleInfo::getMain, test));
-            boolean configFileRestartNeeded = filesChanges.stream().map(test.watchedFilePaths::get)
-                    .anyMatch(Boolean.TRUE::equals);
+            boolean fileRestartNeeded = filesChanges.stream().anyMatch(test::isWatchedFileRestartNeeded);
 
             ClassScanResult merged = ClassScanResult.merge(changedTestClassResult, changedApp);
-            if (configFileRestartNeeded) {
-                if (compileProblem != null) {
-                    testSupport.getTestRunner().testCompileFailed(compileProblem);
-                } else {
-                    testSupport.getTestRunner().runTests(null);
+            if (fileRestartNeeded) {
+                if (testCompileProblem == null) {
+                    testSupport.runTests(null);
                 }
             } else if (merged.isChanged()) {
-                if (compileProblem != null) {
-                    testSupport.getTestRunner().testCompileFailed(compileProblem);
-                } else {
-                    testSupport.getTestRunner().runTests(merged);
+                if (testCompileProblem == null) {
+                    testSupport.runTests(merged);
                 }
             }
         } finally {
@@ -274,21 +352,19 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     private ClassScanResult compileTestClasses() {
         QuarkusCompiler testCompiler = testSupport.getCompiler();
-        TestRunner testRunner = testSupport.getTestRunner();
         ClassScanResult changedTestClassResult = new ClassScanResult();
         try {
             changedTestClassResult = checkForChangedClasses(testCompiler,
-                    m -> m.getTest().orElse(DevModeContext.EMPTY_COMPILATION_UNIT), false, test);
+                    m -> m.getTest().orElse(DevModeContext.EMPTY_COMPILATION_UNIT), false, test, true);
             if (compileProblem != null) {
-                testRunner.testCompileFailed(compileProblem);
-                compileProblem = null; //we don't want to block the app over a test problem
+                testSupport.testCompileFailed(compileProblem);
             } else {
                 if (changedTestClassResult.isChanged()) {
-                    testRunner.testCompileSucceeded();
+                    testSupport.testCompileSucceeded();
                 }
             }
         } catch (Throwable e) {
-            testRunner.testCompileFailed(e);
+            testSupport.testCompileFailed(e);
         }
         return changedTestClassResult;
     }
@@ -313,12 +389,25 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     public Throwable getDeploymentProblem() {
         //we differentiate between these internally, however for the error reporting they are the same
         return compileProblem != null ? compileProblem
-                : IsolatedDevModeMain.deploymentProblem;
+                : IsolatedDevModeMain.deploymentProblem != null ? IsolatedDevModeMain.deploymentProblem
+                        : hotReloadProblem;
     }
 
     @Override
     public void setRemoteProblem(Throwable throwable) {
         compileProblem = throwable;
+        getCompileOutput().setMessage(throwable.getMessage());
+    }
+
+    private StatusLine getCompileOutput() {
+        if (compileOutput == null) {
+            synchronized (this) {
+                if (compileOutput == null) {
+                    compileOutput = QuarkusConsole.INSTANCE.registerStatusLine(QuarkusConsole.COMPILE_ERROR);
+                }
+            }
+        }
+        return compileOutput;
     }
 
     @Override
@@ -352,15 +441,14 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         return doScan(userInitiated, false);
     }
 
-    public boolean doScan(boolean userInitiated, boolean forceRestart) throws IOException {
+    public boolean doScan(boolean userInitiated, boolean forceRestart) {
         if (!liveReloadEnabled && !forceRestart) {
             return false;
         }
         scanLock.lock();
+        codeGenLock.lock();
+
         try {
-            if (testSupport != null) {
-                testSupport.pause();
-            }
             final long startNanoseconds = System.nanoTime();
             for (Runnable step : preScanSteps) {
                 try {
@@ -371,25 +459,23 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             }
 
             ClassScanResult changedClassResults = checkForChangedClasses(compiler, DevModeContext.ModuleInfo::getMain, false,
-                    main);
+                    main, false);
             Set<String> filesChanged = checkForFileChange(DevModeContext.ModuleInfo::getMain, main);
 
-            boolean configFileRestartNeeded = forceRestart || filesChanged.stream().map(main.watchedFilePaths::get)
-                    .anyMatch(Boolean.TRUE::equals);
+            boolean fileRestartNeeded = forceRestart || filesChanged.stream().anyMatch(main::isWatchedFileRestartNeeded);
             boolean instrumentationChange = false;
 
             List<Path> changedFilesForRestart = new ArrayList<>();
-            if (configFileRestartNeeded) {
-                changedFilesForRestart
-                        .addAll(filesChanged.stream().filter(fn -> Boolean.TRUE.equals(main.watchedFilePaths.get(fn)))
-                                .map(Paths::get).collect(Collectors.toList()));
+            if (fileRestartNeeded) {
+                filesChanged.stream().filter(main::isWatchedFileRestartNeeded).map(Paths::get)
+                        .forEach(changedFilesForRestart::add);
             }
             changedFilesForRestart.addAll(changedClassResults.getChangedClasses());
             changedFilesForRestart.addAll(changedClassResults.getAddedClasses());
             changedFilesForRestart.addAll(changedClassResults.getDeletedClasses());
 
-            if (ClassChangeAgent.getInstrumentation() != null && lastStartIndex != null && !configFileRestartNeeded
-                    && devModeType != DevModeType.REMOTE_LOCAL_SIDE) {
+            if (ClassChangeAgent.getInstrumentation() != null && lastStartIndex != null && !fileRestartNeeded
+                    && devModeType != DevModeType.REMOTE_LOCAL_SIDE && instrumentationEnabled()) {
                 //attempt to do an instrumentation based reload
                 //if only code has changed and not the class structure, then we can do a reload
                 //using the JDK instrumentation API (assuming we were started with the javaagent)
@@ -403,13 +489,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                         int index = 0;
                         for (Path i : changedClassResults.changedClasses) {
                             byte[] bytes = Files.readAllBytes(i);
-                            String name = indexer.index(new ByteArrayInputStream(bytes)).name().toString();
-                            defs[index++] = new ClassDefinition(Thread.currentThread().getContextClassLoader().loadClass(name),
+                            String name = indexer.indexWithSummary(new ByteArrayInputStream(bytes)).name().toString();
+                            defs[index++] = new ClassDefinition(
+                                    Thread.currentThread().getContextClassLoader().loadClass(name),
                                     classTransformers.apply(name, bytes));
                         }
                         Index current = indexer.complete();
-                        boolean ok = instrumentationEnabled()
-                                && !disableInstrumentationForIndexPredicate.test(current);
+                        boolean ok = !disableInstrumentationForIndexPredicate.test(current);
                         if (ok) {
                             for (ClassInfo clazz : current.getKnownClasses()) {
                                 ClassInfo old = lastStartIndex.getClassByName(clazz.name());
@@ -432,18 +518,26 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     }
                 }
             }
+            if (compileProblem != null) {
+                return false;
+            }
 
             //if there is a deployment problem we always restart on scan
-            //this is because we can't setup the config file watches
+            //this is because we can't set up the config file watches
             //in an ideal world we would just check every resource file for changes, however as everything is already
             //all broken we just assume the reason that they have refreshed is because they have fixed something
             //trying to watch all resource files is complex and this is likely a good enough solution for what is already an edge case
             boolean restartNeeded = !instrumentationChange && (changedClassResults.isChanged()
-                    || (IsolatedDevModeMain.deploymentProblem != null && userInitiated) || configFileRestartNeeded);
+                    || (IsolatedDevModeMain.deploymentProblem != null && userInitiated) || fileRestartNeeded);
             if (restartNeeded) {
                 String changeString = changedFilesForRestart.stream().map(Path::getFileName).map(Object::toString)
-                        .collect(Collectors.joining(", ")) + ".";
-                log.infof("Restarting quarkus due to changes in " + changeString);
+                        .collect(Collectors.joining(", "));
+                if (!changeString.isEmpty()) {
+                    log.infof("Restarting quarkus due to changes in %s.", changeString);
+                } else if (forceRestart && userInitiated) {
+                    log.info("Restarting as requested by the user.");
+                }
+
                 restartCallback.accept(filesChanged, changedClassResults);
                 long timeNanoSeconds = System.nanoTime() - startNanoseconds;
                 log.infof("Live reload total time: %ss ", Timing.convertToBigDecimalSeconds(timeNanoSeconds));
@@ -457,13 +551,17 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
                 return true;
             } else if (!filesChanged.isEmpty()) {
-                for (Consumer<Set<String>> consumer : noRestartChangesConsumers) {
-                    try {
+                try {
+                    for (Consumer<Set<String>> consumer : noRestartChangesConsumers) {
                         consumer.accept(filesChanged);
-                    } catch (Throwable t) {
-                        log.error("Changed files consumer failed", t);
                     }
+                    hotReloadProblem = null;
+                    getCompileOutput().setMessage(null);
+                } catch (Throwable t) {
+                    hotReloadProblem = t;
+                    getCompileOutput().setMessage(t.getMessage());
                 }
+
                 log.infof("Files changed but restart not needed - notified extensions in: %ss ",
                         Timing.convertToBigDecimalSeconds(System.nanoTime() - startNanoseconds));
             } else if (instrumentationChange) {
@@ -474,9 +572,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
         } finally {
             scanLock.unlock();
-            if (testSupport != null) {
-                testSupport.resume();
-            }
+            codeGenLock.unlock();
         }
     }
 
@@ -484,14 +580,12 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         if (instrumentationEnabled != null) {
             return instrumentationEnabled;
         }
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-        try {
-            Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
-            return ConfigProvider.getConfig()
-                    .getOptionalValue("quarkus.live-reload.instrumentation", boolean.class).orElse(true);
-        } finally {
-            Thread.currentThread().setContextClassLoader(old);
-        }
+        return configuredInstrumentationEnabled;
+    }
+
+    public RuntimeUpdatesProcessor setConfiguredInstrumentationEnabled(boolean configuredInstrumentationEnabled) {
+        this.configuredInstrumentationEnabled = configuredInstrumentationEnabled;
+        return this;
     }
 
     @Override
@@ -518,6 +612,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     ret.add(i.getKey());
                 }
             }
+            List<Path> removedFiles = List.of();
             for (Map.Entry<String, String> remaining : ourHashes.entrySet()) {
                 String file = remaining.getKey();
                 if (file.endsWith("META-INF/MANIFEST.MF") || file.contains("META-INF/maven")
@@ -525,8 +620,14 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     //we have some filters, for files that we don't want to delete
                     continue;
                 }
-                log.info("Deleting removed file " + file);
-                Files.deleteIfExists(applicationRoot.resolve(file));
+                log.info("Scheduled for removal " + file);
+                if (removedFiles.isEmpty()) {
+                    removedFiles = new ArrayList<>();
+                }
+                removedFiles.add(applicationRoot.resolve(file));
+            }
+            if (!removedFiles.isEmpty()) {
+                DevModeMediator.removedFiles.addLast(removedFiles);
             }
             return ret;
         } catch (IOException e) {
@@ -535,7 +636,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     }
 
     ClassScanResult checkForChangedClasses(boolean firstScan) {
-        ClassScanResult classScanResult = checkForChangedClasses(compiler, DevModeContext.ModuleInfo::getMain, firstScan, main);
+        ClassScanResult classScanResult = checkForChangedClasses(compiler, DevModeContext.ModuleInfo::getMain, firstScan, main,
+                false);
         if (firstScan) {
             test.merge(main);
         }
@@ -548,7 +650,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         }
         ClassScanResult ret = checkForChangedClasses(testSupport.getCompiler(),
                 s -> s.getTest().orElse(DevModeContext.EMPTY_COMPILATION_UNIT), firstScan,
-                test);
+                test, true);
         if (firstScan) {
             startTestScanningTimer();
         }
@@ -564,7 +666,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
      */
     ClassScanResult checkForChangedClasses(QuarkusCompiler compiler,
             Function<DevModeContext.ModuleInfo, DevModeContext.CompilationUnit> cuf, boolean firstScan,
-            TimestampSet timestampSet) {
+            TimestampSet timestampSet, boolean compilingTests) {
         ClassScanResult classScanResult = new ClassScanResult();
         boolean ignoreFirstScanChanges = firstScan;
 
@@ -623,9 +725,18 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                             compiler.compile(sourcePath.toString(), changedSourceFiles.stream()
                                     .collect(groupingBy(this::getFileExtension, Collectors.toSet())));
                             compileProblem = null;
+                            if (compilingTests) {
+                                testCompileProblem = null;
+                            }
+                            getCompileOutput().setMessage(null);
                         } catch (Exception e) {
-                            compileProblem = e;
-                            return new ClassScanResult();
+                            if (compilingTests) {
+                                testCompileProblem = e;
+                            } else {
+                                compileProblem = e;
+                            }
+                            getCompileOutput().setMessage(e.getMessage());
+                            return classScanResult;
                         }
                         boolean timestampsChanged = false;
                         //check to make sure no changes have occurred while the compilation was
@@ -760,15 +871,19 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             TimestampSet timestampSet) {
         Set<String> ret = new HashSet<>();
         for (DevModeContext.ModuleInfo module : context.getAllModules()) {
-            final Set<Path> moduleResources = correspondingResources.computeIfAbsent(cuf.apply(module),
+            DevModeContext.CompilationUnit compilationUnit = cuf.apply(module);
+            if (compilationUnit == null) {
+                continue;
+            }
+            final Set<Path> moduleResources = correspondingResources.computeIfAbsent(compilationUnit,
                     m -> Collections.newSetFromMap(new ConcurrentHashMap<>()));
             boolean doCopy = true;
-            PathsCollection rootPaths = cuf.apply(module).getResourcePaths();
-            String outputPath = cuf.apply(module).getResourcesOutputPath();
+            PathCollection rootPaths = compilationUnit.getResourcePaths();
+            String outputPath = compilationUnit.getResourcesOutputPath();
             if (rootPaths.isEmpty()) {
-                String rootPath = cuf.apply(module).getClassesPath();
+                String rootPath = compilationUnit.getClassesPath();
                 if (rootPath != null) {
-                    rootPaths = PathsCollection.of(Paths.get(rootPath));
+                    rootPaths = PathList.of(Paths.get(rootPath));
                 }
                 outputPath = rootPath;
                 doCopy = false;
@@ -776,16 +891,16 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             if (rootPaths.isEmpty() || outputPath == null) {
                 continue;
             }
-            final List<Path> roots = rootPaths.toList().stream()
+            Path outputDir = Paths.get(outputPath);
+            final List<Path> roots = rootPaths.stream()
                     .filter(Files::exists)
                     .filter(Files::isReadable)
                     .collect(Collectors.toList());
-            //copy all modified non hot deployment files over
+            //copy all modified non-hot deployment files over
             if (doCopy) {
                 final Set<Path> seen = new HashSet<>(moduleResources);
                 try {
                     for (Path root : roots) {
-                        Path outputDir = Paths.get(outputPath);
                         //since the stream is Closeable, use a try with resources so the underlying iterator is closed
                         try (final Stream<Path> walk = Files.walk(root)) {
                             walk.forEach(path -> {
@@ -829,18 +944,32 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 }
             }
 
-            for (Path root : roots) {
-                Path outputDir = Paths.get(outputPath);
-                for (String path : timestampSet.watchedFilePaths.keySet()) {
-                    Path file = root.resolve(path);
+            for (String watchedFilePath : timestampSet.watchedFilePaths.keySet()) {
+                Path watchedFile = Paths.get(watchedFilePath);
+                boolean isAbsolute = watchedFile.isAbsolute();
+                List<Path> watchedRoots = roots;
+                if (isAbsolute) {
+                    // absolute files are assumed to be read directly from the project root.
+                    // They therefore do not get copied to, and deleted from, the outputdir.
+                    watchedRoots = List.of(Path.of("/"));
+                }
+                if (watchedRoots.isEmpty()) {
+                    // this compilation unit has no resource roots, and therefore can not have this file
+                    continue;
+                }
+                boolean pathCurrentlyExisting = false;
+                boolean pathPreviouslyExisting = false;
+                for (Path root : watchedRoots) {
+                    Path file = root.resolve(watchedFilePath);
                     if (file.toFile().exists()) {
+                        pathCurrentlyExisting = true;
                         try {
                             long value = Files.getLastModifiedTime(file).toMillis();
                             Long existing = timestampSet.watchedFileTimestamps.get(file);
                             //existing can be null when running tests
                             //as there is both normal and test resources, but only one set of watched timestampts
                             if (existing != null && value > existing) {
-                                ret.add(path);
+                                ret.add(watchedFilePath);
                                 //a write can be a 'truncate' + 'write'
                                 //if the file is empty we may be seeing the middle of a write
                                 if (Files.size(file) == 0) {
@@ -856,8 +985,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                                 value = Files.getLastModifiedTime(file).toMillis();
 
                                 log.infof("File change detected: %s", file);
-                                if (doCopy && !Files.isDirectory(file)) {
-                                    Path target = outputDir.resolve(path);
+                                if (!isAbsolute && doCopy && !Files.isDirectory(file)) {
+                                    Path target = outputDir.resolve(watchedFilePath);
                                     byte[] data = Files.readAllBytes(file);
                                     try (FileOutputStream out = new FileOutputStream(target.toFile())) {
                                         out.write(data);
@@ -869,10 +998,19 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                             throw new UncheckedIOException(e);
                         }
                     } else {
-                        timestampSet.watchedFileTimestamps.put(file, 0L);
-                        Path target = outputDir.resolve(path);
+                        Long prevValue = timestampSet.watchedFileTimestamps.put(file, 0L);
+                        pathPreviouslyExisting = pathPreviouslyExisting || (prevValue != null && prevValue > 0);
+                    }
+                }
+                if (!pathCurrentlyExisting) {
+                    if (pathPreviouslyExisting) {
+                        ret.add(watchedFilePath);
+                    }
+
+                    if (!isAbsolute) {
+                        Path target = outputDir.resolve(watchedFilePath);
                         try {
-                            FileUtil.deleteDirectory(target);
+                            FileUtil.deleteIfExists(target);
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }
@@ -943,12 +1081,15 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         return this;
     }
 
-    public RuntimeUpdatesProcessor setWatchedFilePaths(Map<String, Boolean> watchedFilePaths, boolean isTest) {
+    public RuntimeUpdatesProcessor setWatchedFilePaths(Map<String, Boolean> watchedFilePaths,
+            List<Entry<Predicate<String>, Boolean>> watchedFilePredicates, boolean isTest) {
         if (isTest) {
-            setWatchedFilePathsInternal(watchedFilePaths, test, s -> Arrays.asList(s.getTest().get(), s.getMain()));
+            setWatchedFilePathsInternal(watchedFilePaths, test,
+                    s -> s.getTest().isPresent() ? asList(s.getTest().get(), s.getMain()) : singletonList(s.getMain()));
         } else {
             main.watchedFileTimestamps.clear();
-            setWatchedFilePathsInternal(watchedFilePaths, main, s -> Collections.singletonList(s.getMain()));
+            main.watchedFilePredicates = watchedFilePredicates;
+            setWatchedFilePathsInternal(watchedFilePaths, main, s -> singletonList(s.getMain()));
         }
         return this;
     }
@@ -960,13 +1101,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         for (DevModeContext.ModuleInfo module : context.getAllModules()) {
             List<DevModeContext.CompilationUnit> compilationUnits = cuf.apply(module);
             for (DevModeContext.CompilationUnit unit : compilationUnits) {
-                PathsCollection rootPaths = unit.getResourcePaths();
+                PathCollection rootPaths = unit.getResourcePaths();
                 if (rootPaths.isEmpty()) {
                     String rootPath = unit.getClassesPath();
                     if (rootPath == null) {
                         continue;
                     }
-                    rootPaths = PathsCollection.of(Paths.get(rootPath));
+                    rootPaths = PathList.of(Path.of(rootPath));
                 }
                 for (Path root : rootPaths) {
                     for (String path : watchedFilePaths.keySet()) {
@@ -1000,9 +1141,16 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         hotReplacementSetup.add(service);
     }
 
+    public void addDeploymentFailedStartHandler(Runnable service) {
+        deploymentFailedStartHandlers.add(service);
+    }
+
     public void startupFailed() {
         for (HotReplacementSetup i : hotReplacementSetup) {
             i.handleFailedInitialStart();
+        }
+        for (Runnable i : deploymentFailedStartHandlers) {
+            i.run();
         }
         //if startup failed we always do a class loader based restart
         lastStartIndex = null;
@@ -1077,6 +1225,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         final Map<Path, Path> classFilePathToSourceFilePath = new ConcurrentHashMap<>();
         // file path -> isRestartNeeded
         private volatile Map<String, Boolean> watchedFilePaths = Collections.emptyMap();
+        volatile List<Entry<Predicate<String>, Boolean>> watchedFilePredicates = Collections.emptyList();
 
         public void merge(TimestampSet other) {
             watchedFileTimestamps.putAll(other.watchedFileTimestamps);
@@ -1085,8 +1234,34 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             Map<String, Boolean> newVal = new HashMap<>(watchedFilePaths);
             newVal.putAll(other.watchedFilePaths);
             watchedFilePaths = newVal;
+            // The list of predicates should be effectively immutable
+            watchedFilePredicates = other.watchedFilePredicates;
+        }
 
+        boolean isWatchedFileRestartNeeded(String changedFile) {
+            Boolean ret = watchedFilePaths.get(changedFile);
+            if (ret == null) {
+                ret = false;
+                for (Entry<Predicate<String>, Boolean> e : watchedFilePredicates) {
+                    if (e.getKey().test(changedFile)) {
+                        ret = ret || e.getValue();
+                    }
+                }
+            }
+            return ret;
         }
     }
 
+    public String[] getCommandLineArgs() {
+        String[] contextArgs = context.getArgs();
+        if (contextArgs == null) {
+            return new String[0];
+        }
+        return contextArgs;
+    }
+
+    public RuntimeUpdatesProcessor setCommandLineArgs(String[] commandLineArgs) {
+        this.context.setArgs(commandLineArgs);
+        return this;
+    }
 }

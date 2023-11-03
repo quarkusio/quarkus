@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
@@ -29,6 +30,7 @@ import io.quarkus.builder.BuildException;
 public final class JandexUtil {
 
     public final static DotName DOTNAME_OBJECT = DotName.createSimple(Object.class.getName());
+    public final static DotName DOTNAME_RECORD = DotName.createSimple("java.lang.Record");
 
     private JandexUtil() {
     }
@@ -71,7 +73,7 @@ public final class JandexUtil {
             inputClassInfo = fetchFromIndex(input, index);
         } catch (Exception e) {
             // keep compatibility with what clients already expect
-            throw new IllegalArgumentException(e);
+            throw new IllegalArgumentException("Couldn't fetch '" + input.toString() + "' class from index", e);
         }
 
         Type startingType = getType(inputClassInfo, index);
@@ -119,8 +121,8 @@ public final class JandexUtil {
             return null;
         }
 
-        // always end at Object
-        if (DOTNAME_OBJECT.equals(name)) {
+        // always end at Object or Record
+        if (DOTNAME_OBJECT.equals(name) || DOTNAME_RECORD.equals(name)) {
             return null;
         }
 
@@ -189,7 +191,7 @@ public final class JandexUtil {
         // figure out which arguments we passed to the supertype
         List<Type> appliedArguments;
 
-        // we passed them explicitely
+        // we passed them explicitly
         if (appliedType.kind() == Kind.PARAMETERIZED_TYPE) {
             appliedArguments = appliedType.asParameterizedType().arguments();
         } else {
@@ -231,7 +233,7 @@ public final class JandexUtil {
     private static boolean containsTypeParameters(Type type) {
         switch (type.kind()) {
             case ARRAY:
-                return containsTypeParameters(type.asArrayType().component());
+                return containsTypeParameters(type.asArrayType().constituent());
             case PARAMETERIZED_TYPE:
                 ParameterizedType parameterizedType = type.asParameterizedType();
                 if (parameterizedType.owner() != null
@@ -257,7 +259,7 @@ public final class JandexUtil {
         switch (type.kind()) {
             case ARRAY:
                 ArrayType arrayType = type.asArrayType();
-                return ArrayType.create(mapGenerics(arrayType.component(), mapping), arrayType.dimensions());
+                return ArrayType.create(mapGenerics(arrayType.constituent(), mapping), arrayType.dimensions());
             case CLASS:
                 return type;
             case PARAMETERIZED_TYPE:
@@ -288,25 +290,32 @@ public final class JandexUtil {
     }
 
     /**
-     * Returns the enclosing class of the given annotation instance. For field or method annotations this
-     * will return the enclosing class. For parameters, this will return the enclosing class of the enclosing
-     * method. For classes it will return the class itself.
-     * 
-     * @param annotationInstance the annotation whose enclosing class to look up.
-     * @return the enclosing class.
+     * Returns the enclosing class of the given annotation instance. For field, method or record component annotations,
+     * this will return the enclosing class. For parameters, this will return the enclosing class of the enclosing
+     * method. For classes, it will return the class itself. For type annotations, it will return the class enclosing
+     * the annotated type usage.
+     *
+     * @param annotationInstance the annotation whose enclosing class to look up
+     * @return the enclosing class
      */
     public static ClassInfo getEnclosingClass(AnnotationInstance annotationInstance) {
-        switch (annotationInstance.target().kind()) {
+        return getEnclosingClass(annotationInstance.target());
+    }
+
+    private static ClassInfo getEnclosingClass(AnnotationTarget annotationTarget) {
+        switch (annotationTarget.kind()) {
             case FIELD:
-                return annotationInstance.target().asField().declaringClass();
+                return annotationTarget.asField().declaringClass();
             case METHOD:
-                return annotationInstance.target().asMethod().declaringClass();
+                return annotationTarget.asMethod().declaringClass();
             case METHOD_PARAMETER:
-                return annotationInstance.target().asMethodParameter().method().declaringClass();
+                return annotationTarget.asMethodParameter().method().declaringClass();
+            case RECORD_COMPONENT:
+                return annotationTarget.asRecordComponent().declaringClass();
             case CLASS:
-                return annotationInstance.target().asClass();
+                return annotationTarget.asClass();
             case TYPE:
-                return annotationInstance.target().asType().asClass(); // TODO is it legal here or should I throw ?
+                return getEnclosingClass(annotationTarget.asType().enclosingTarget());
             default:
                 throw new RuntimeException(); // this should not occur
         }
@@ -315,7 +324,7 @@ public final class JandexUtil {
     /**
      * Returns true if the given Jandex ClassInfo is a subclass of the given <tt>parentName</tt>. Note that this will
      * not check interfaces.
-     * 
+     *
      * @param index the index to use to look up super classes.
      * @param info the ClassInfo we want to check.
      * @param parentName the name of the superclass we want to find.
@@ -323,7 +332,7 @@ public final class JandexUtil {
      * @throws BuildException if one of the superclasses is not indexed.
      */
     public static boolean isSubclassOf(IndexView index, ClassInfo info, DotName parentName) throws BuildException {
-        if (info.superName().equals(DOTNAME_OBJECT)) {
+        if (info.superName().equals(DOTNAME_OBJECT) || info.superName().equals(DOTNAME_RECORD)) {
             return false;
         }
         if (info.superName().equals(parentName)) {
@@ -341,38 +350,14 @@ public final class JandexUtil {
         return isSubclassOf(index, superClass, parentName);
     }
 
-    @SuppressWarnings("incomplete-switch")
-    public static String getBoxedTypeName(Type type) {
-        switch (type.kind()) {
-            case PRIMITIVE:
-                switch (type.asPrimitiveType().primitive()) {
-                    case BOOLEAN:
-                        return "java.lang.Boolean";
-                    case BYTE:
-                        return "java.lang.Byte";
-                    case CHAR:
-                        return "java.lang.Character";
-                    case DOUBLE:
-                        return "java.lang.Double";
-                    case FLOAT:
-                        return "java.lang.Float";
-                    case INT:
-                        return "java.lang.Integer";
-                    case LONG:
-                        return "java.lang.Long";
-                    case SHORT:
-                        return "java.lang.Short";
-                }
-        }
-        return type.toString();
-    }
-
     private static class ClassNotIndexedException extends RuntimeException {
 
         private final DotName dotName;
 
         public ClassNotIndexedException(DotName dotName) {
+            super("'" + dotName.toString() + "' is not indexed");
             this.dotName = dotName;
         }
     }
+
 }

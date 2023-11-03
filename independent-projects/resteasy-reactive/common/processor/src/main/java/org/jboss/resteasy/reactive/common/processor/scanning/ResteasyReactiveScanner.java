@@ -10,9 +10,12 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -20,7 +23,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.ws.rs.core.Application;
+
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.Application;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -29,23 +37,35 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.common.processor.BlockingDefault;
+import org.jboss.resteasy.reactive.common.processor.JandexUtil;
 import org.jboss.resteasy.reactive.common.processor.NameBindingUtil;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 public class ResteasyReactiveScanner {
 
     public static final Map<DotName, String> BUILTIN_HTTP_ANNOTATIONS_TO_METHOD;
+    public static final Map<String, DotName> METHOD_TO_BUILTIN_HTTP_ANNOTATIONS;
 
     static {
         Map<DotName, String> map = new HashMap<>();
+        Map<String, DotName> reverseMap = new HashMap<>();
         map.put(GET, "GET");
+        reverseMap.put("GET", GET);
         map.put(POST, "POST");
+        reverseMap.put("POST", POST);
         map.put(HEAD, "HEAD");
+        reverseMap.put("HEAD", HEAD);
         map.put(PUT, "PUT");
+        reverseMap.put("PUT", PUT);
         map.put(DELETE, "DELETE");
+        reverseMap.put("DELETE", DELETE);
         map.put(PATCH, "PATCH");
+        reverseMap.put("PATCH", PATCH);
         map.put(OPTIONS, "OPTIONS");
+        reverseMap.put("OPTIONS", OPTIONS);
         BUILTIN_HTTP_ANNOTATIONS_TO_METHOD = Collections.unmodifiableMap(map);
+        METHOD_TO_BUILTIN_HTTP_ANNOTATIONS = Collections.unmodifiableMap(reverseMap);
     }
 
     public static ApplicationScanningResult scanForApplicationClass(IndexView index, Set<String> excludedClasses) {
@@ -57,9 +77,12 @@ public class ResteasyReactiveScanner {
         boolean filterClasses = !excludedClasses.isEmpty();
         Application application = null;
         ClassInfo selectedAppClass = null;
-        boolean blocking = false;
+        BlockingDefault blocking = BlockingDefault.AUTOMATIC;
         for (ClassInfo applicationClassInfo : applications) {
             if (Modifier.isAbstract(applicationClassInfo.flags())) {
+                continue;
+            }
+            if (excludedClasses.contains(applicationClassInfo.name().toString())) {
                 continue;
             }
             if (selectedAppClass != null) {
@@ -93,10 +116,14 @@ public class ResteasyReactiveScanner {
                     | InvocationTargetException e) {
                 throw new RuntimeException("Unable to handle class: " + applicationClass, e);
             }
-            if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.BLOCKING) != null) {
-                blocking = true;
-            } else if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
-                blocking = false;
+            if (applicationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.BLOCKING) != null) {
+                if (applicationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
+                    throw new DeploymentException("JAX-RS Application class '" + applicationClassInfo.name()
+                            + "' contains both @Blocking and @NonBlocking annotations.");
+                }
+                blocking = BlockingDefault.BLOCKING;
+            } else if (applicationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
+                blocking = BlockingDefault.NON_BLOCKING;
             }
         }
         if (selectedAppClass != null) {
@@ -107,28 +134,97 @@ public class ResteasyReactiveScanner {
                 selectedAppClass, blocking);
     }
 
+    public static SerializerScanningResult scanForSerializers(IndexView index,
+            ApplicationScanningResult applicationScanningResult) {
+
+        Collection<ClassInfo> readers = index
+                .getAllKnownImplementors(ResteasyReactiveDotNames.MESSAGE_BODY_READER);
+        List<ScannedSerializer> readerList = new ArrayList<>();
+
+        for (ClassInfo readerClass : readers) {
+            ApplicationScanningResult.KeepProviderResult keepProviderResult = applicationScanningResult
+                    .keepProvider(readerClass);
+            if (keepProviderResult != ApplicationScanningResult.KeepProviderResult.DISCARD) {
+                List<Type> typeParameters = JandexUtil.resolveTypeParameters(readerClass.name(),
+                        ResteasyReactiveDotNames.MESSAGE_BODY_READER,
+                        index);
+                RuntimeType runtimeType = null;
+                if (keepProviderResult == ApplicationScanningResult.KeepProviderResult.SERVER_ONLY) {
+                    runtimeType = RuntimeType.SERVER;
+                }
+                List<String> mediaTypeStrings = Collections.emptyList();
+                AnnotationInstance consumesAnnotation = readerClass.declaredAnnotation(ResteasyReactiveDotNames.CONSUMES);
+                if (consumesAnnotation != null) {
+                    mediaTypeStrings = Arrays.asList(consumesAnnotation.value().asStringArray());
+                }
+                AnnotationInstance constrainedToInstance = readerClass
+                        .declaredAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
+                if (constrainedToInstance != null) {
+                    runtimeType = RuntimeType.valueOf(constrainedToInstance.value().asEnum());
+                }
+                int priority = Priorities.USER;
+                AnnotationInstance priorityInstance = readerClass.declaredAnnotation(ResteasyReactiveDotNames.PRIORITY);
+                if (priorityInstance != null) {
+                    priority = priorityInstance.value().asInt();
+                }
+                readerList.add(new ScannedSerializer(readerClass,
+                        typeParameters.get(0).name().toString(), mediaTypeStrings, runtimeType, false, priority));
+            }
+        }
+
+        List<ScannedSerializer> writerList = new ArrayList<>();
+        Collection<ClassInfo> writers = index
+                .getAllKnownImplementors(ResteasyReactiveDotNames.MESSAGE_BODY_WRITER);
+
+        for (ClassInfo writerClass : writers) {
+            ApplicationScanningResult.KeepProviderResult keepProviderResult = applicationScanningResult
+                    .keepProvider(writerClass);
+            if (keepProviderResult != ApplicationScanningResult.KeepProviderResult.DISCARD) {
+                RuntimeType runtimeType = null;
+                if (keepProviderResult == ApplicationScanningResult.KeepProviderResult.SERVER_ONLY) {
+                    runtimeType = RuntimeType.SERVER;
+                }
+                List<String> mediaTypeStrings = Collections.emptyList();
+                AnnotationInstance producesAnnotation = writerClass.declaredAnnotation(ResteasyReactiveDotNames.PRODUCES);
+                if (producesAnnotation != null) {
+                    mediaTypeStrings = Arrays.asList(producesAnnotation.value().asStringArray());
+                }
+                List<Type> typeParameters = JandexUtil.resolveTypeParameters(writerClass.name(),
+                        ResteasyReactiveDotNames.MESSAGE_BODY_WRITER,
+                        index);
+                AnnotationInstance constrainedToInstance = writerClass
+                        .declaredAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
+                if (constrainedToInstance != null) {
+                    runtimeType = RuntimeType.valueOf(constrainedToInstance.value().asEnum());
+                }
+                int priority = Priorities.USER;
+                AnnotationInstance priorityInstance = writerClass.declaredAnnotation(ResteasyReactiveDotNames.PRIORITY);
+                if (priorityInstance != null) {
+                    priority = priorityInstance.value().asInt();
+                }
+                writerList.add(new ScannedSerializer(writerClass,
+                        typeParameters.get(0).name().toString(), mediaTypeStrings, runtimeType, false, priority));
+            }
+        }
+        return new SerializerScanningResult(readerList, writerList);
+    }
+
     private static boolean appClassHasInject(ClassInfo appClass) {
-        if (appClass.annotations() == null) {
+        if (appClass.annotationsMap() == null) {
             return false;
         }
-        List<AnnotationInstance> injectInstances = appClass.annotations().get(ResteasyReactiveDotNames.CDI_INJECT);
+        List<AnnotationInstance> injectInstances = appClass.annotationsMap().get(ResteasyReactiveDotNames.CDI_INJECT);
         return (injectInstances != null) && !injectInstances.isEmpty();
     }
 
     public static ResourceScanningResult scanResources(
-            IndexView index) {
+            IndexView index, Map<DotName, ClassInfo> additionalResources, Map<DotName, String> additionalResourcePaths) {
         Collection<AnnotationInstance> paths = index.getAnnotations(ResteasyReactiveDotNames.PATH);
 
         Collection<AnnotationInstance> allPaths = new ArrayList<>(paths);
 
-        if (allPaths.isEmpty()) {
-            // no detected @Path, bail out
-            return null;
-        }
-
-        Map<DotName, ClassInfo> scannedResources = new HashMap<>();
-        Map<DotName, String> scannedResourcePaths = new HashMap<>();
-        Map<DotName, ClassInfo> possibleSubResources = new HashMap<>();
+        Map<DotName, ClassInfo> scannedResources = new HashMap<>(additionalResources);
+        Map<DotName, String> scannedResourcePaths = new HashMap<>(additionalResourcePaths);
         Map<DotName, String> pathInterfaces = new HashMap<>();
         Map<DotName, MethodInfo> resourcesThatNeedCustomProducer = new HashMap<>();
         List<MethodInfo> methodExceptionMappers = new ArrayList<>();
@@ -148,7 +244,7 @@ public class ResteasyReactiveScanner {
                 if (ctor != null) {
                     resourcesThatNeedCustomProducer.put(clazz.name(), ctor);
                 }
-                List<AnnotationInstance> exceptionMapperAnnotationInstances = clazz.annotations()
+                List<AnnotationInstance> exceptionMapperAnnotationInstances = clazz.annotationsMap()
                         .get(ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER);
                 if (exceptionMapperAnnotationInstances != null) {
                     for (AnnotationInstance instance : exceptionMapperAnnotationInstances) {
@@ -219,6 +315,40 @@ public class ResteasyReactiveScanner {
             }
         }
 
+        //now index possible sub resources. These are all classes that have method annotations
+        //that are not annotated @Path
+        Deque<ClassInfo> toScan = new ArrayDeque<>();
+        for (DotName methodAnnotation : httpAnnotationToMethod.keySet()) {
+            for (AnnotationInstance instance : index.getAnnotations(methodAnnotation)) {
+                MethodInfo method = instance.target().asMethod();
+                ClassInfo classInfo = method.declaringClass();
+                toScan.add(classInfo);
+            }
+        }
+        //sub resources can also have just a path annotation
+        //if they are 'intermediate' sub resources
+        for (AnnotationInstance instance : index.getAnnotations(ResteasyReactiveDotNames.PATH)) {
+            if (instance.target().kind() == AnnotationTarget.Kind.METHOD) {
+                MethodInfo method = instance.target().asMethod();
+                ClassInfo classInfo = method.declaringClass();
+                toScan.add(classInfo);
+            }
+        }
+        Map<DotName, ClassInfo> possibleSubResources = new HashMap<>();
+        while (!toScan.isEmpty()) {
+            ClassInfo classInfo = toScan.poll();
+            if (scannedResources.containsKey(classInfo.name()) ||
+                    pathInterfaces.containsKey(classInfo.name()) ||
+                    possibleSubResources.containsKey(classInfo.name())) {
+                continue;
+            }
+            possibleSubResources.put(classInfo.name(), classInfo);
+            //we need to also look for all sub classes and interfaces
+            //they may have type variables that need to be handled
+            toScan.addAll(index.getKnownDirectImplementors(classInfo.name()));
+            toScan.addAll(index.getKnownDirectSubclasses(classInfo.name()));
+        }
+
         Set<String> beanParams = new HashSet<>();
 
         Set<ClassInfo> beanParamAsBeanUsers = new HashSet<>(scannedResources.values());
@@ -247,7 +377,7 @@ public class ResteasyReactiveScanner {
                         MethodInfo setterMethod = target.asMethod();
                         if (beanParamAsBeanUsers.contains(setterMethod.declaringClass())
                                 || beanParams.contains(setterMethod.declaringClass().name().toString())) {
-                            Type setterParamType = setterMethod.parameters().get(0);
+                            Type setterParamType = setterMethod.parameterType(0);
 
                             newBeanParamsRegistered |= beanParams.add(setterParamType.name().toString());
                             iterator.remove();
@@ -258,7 +388,7 @@ public class ResteasyReactiveScanner {
                         if (beanParamAsBeanUsers.contains(method.declaringClass())
                                 || beanParams.contains(method.declaringClass().name().toString())) {
                             int paramIndex = target.asMethodParameter().position();
-                            Type paramType = method.parameters().get(paramIndex);
+                            Type paramType = method.parameterType(paramIndex);
                             newBeanParamsRegistered |= beanParams.add(paramType.name().toString());
                             iterator.remove();
                         }
@@ -300,7 +430,7 @@ public class ResteasyReactiveScanner {
             return null;
         }
         MethodInfo ctor = ctors.get(0);
-        if (ctor.parameters().size() == 0) { // default ctor - we don't need to do anything
+        if (ctor.parametersCount() == 0) { // default ctor - we don't need to do anything
             return null;
         }
 

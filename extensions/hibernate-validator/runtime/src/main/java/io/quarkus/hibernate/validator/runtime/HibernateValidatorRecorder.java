@@ -1,17 +1,21 @@
 package io.quarkus.hibernate.validator.runtime;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import javax.validation.ClockProvider;
-import javax.validation.ConstraintValidatorFactory;
-import javax.validation.MessageInterpolator;
-import javax.validation.ParameterNameProvider;
-import javax.validation.TraversableResolver;
-import javax.validation.Validation;
-import javax.validation.ValidatorFactory;
-import javax.validation.valueextraction.ValueExtractor;
+import jakarta.validation.ClockProvider;
+import jakarta.validation.ConstraintValidatorFactory;
+import jakarta.validation.MessageInterpolator;
+import jakarta.validation.ParameterNameProvider;
+import jakarta.validation.TraversableResolver;
+import jakarta.validation.Validation;
+import jakarta.validation.ValidatorFactory;
+import jakarta.validation.valueextraction.ValueExtractor;
 
+import org.hibernate.validator.HibernateValidatorFactory;
 import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
 import org.hibernate.validator.internal.engine.resolver.JPATraversableResolver;
@@ -24,6 +28,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.hibernate.validator.ValidatorFactoryCustomizer;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.ShutdownContext;
@@ -32,8 +37,21 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class HibernateValidatorRecorder {
 
+    public void shutdownConfigValidator(ShutdownContext shutdownContext) {
+        shutdownContext.addShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                ValidatorFactory validatorFactory = HibernateBeanValidationConfigValidator.ConfigValidatorHolder
+                        .getValidatorFactory();
+                if (validatorFactory != null) {
+                    validatorFactory.close();
+                }
+            }
+        });
+    }
+
     public BeanContainerListener initializeValidatorFactory(Set<Class<?>> classesToBeValidated,
-            Set<String> detectedBuiltinConstraints,
+            Set<String> detectedBuiltinConstraints, Set<Class<?>> valueExtractorClasses,
             boolean hasXmlConfiguration, boolean jpaInClasspath,
             ShutdownContext shutdownContext, LocalesBuildTimeConfig localesBuildTimeConfig,
             HibernateValidatorBuildTimeConfig hibernateValidatorBuildTimeConfig) {
@@ -51,7 +69,7 @@ public class HibernateValidatorRecorder {
 
                 LocaleResolver localeResolver = null;
                 InstanceHandle<LocaleResolver> configuredLocaleResolver = Arc.container()
-                        .instance(LocaleResolver.class);
+                        .instance("locale-resolver-wrapper");
                 if (configuredLocaleResolver.isAvailable()) {
                     localeResolver = configuredLocaleResolver.get();
                     configuration.localeResolver(localeResolver);
@@ -63,6 +81,11 @@ public class HibernateValidatorRecorder {
                         .locales(localesBuildTimeConfig.locales)
                         .defaultLocale(localesBuildTimeConfig.defaultLocale)
                         .beanMetaDataClassNormalizer(new ArcProxyBeanMetaDataClassNormalizer());
+
+                if (hibernateValidatorBuildTimeConfig.expressionLanguage().constraintExpressionFeatureLevel().isPresent()) {
+                    configuration.constraintExpressionLanguageFeatureLevel(
+                            hibernateValidatorBuildTimeConfig.expressionLanguage().constraintExpressionFeatureLevel().get());
+                }
 
                 InstanceHandle<ConstraintValidatorFactory> configuredConstraintValidatorFactory = Arc.container()
                         .instance(ConstraintValidatorFactory.class);
@@ -104,13 +127,13 @@ public class HibernateValidatorRecorder {
 
                 // Hibernate Validator-specific configuration
 
-                configuration.failFast(hibernateValidatorBuildTimeConfig.failFast);
+                configuration.failFast(hibernateValidatorBuildTimeConfig.failFast());
                 configuration.allowOverridingMethodAlterParameterConstraint(
-                        hibernateValidatorBuildTimeConfig.methodValidation.allowOverridingParameterConstraints);
+                        hibernateValidatorBuildTimeConfig.methodValidation().allowOverridingParameterConstraints());
                 configuration.allowParallelMethodsDefineParameterConstraints(
-                        hibernateValidatorBuildTimeConfig.methodValidation.allowParameterConstraintsOnParallelMethods);
+                        hibernateValidatorBuildTimeConfig.methodValidation().allowParameterConstraintsOnParallelMethods());
                 configuration.allowMultipleCascadedValidationOnReturnValues(
-                        hibernateValidatorBuildTimeConfig.methodValidation.allowMultipleCascadedValidationOnReturnValues);
+                        hibernateValidatorBuildTimeConfig.methodValidation().allowMultipleCascadedValidationOnReturnValues());
 
                 InstanceHandle<ScriptEvaluatorFactory> configuredScriptEvaluatorFactory = Arc.container()
                         .instance(ScriptEvaluatorFactory.class);
@@ -131,13 +154,29 @@ public class HibernateValidatorRecorder {
                 }
 
                 // Automatically add all the values extractors declared as beans
-                for (ValueExtractor<?> valueExtractor : Arc.container().beanManager().createInstance()
-                        .select(ValueExtractor.class)) {
+                for (ValueExtractor<?> valueExtractor : HibernateValidatorRecorder
+                        // We cannot do something like `instance(...).select(ValueExtractor.class)`,
+                        // because `ValueExtractor` is usually implemented
+                        // as a parameterized type with wildcards,
+                        // and the CDI spec does not consider such types as bean types.
+                        // We work around that by listing all classes implementing `ValueExtractor` at build time,
+                        // then retrieving all bean instances implementing those types here.
+                        // See https://github.com/quarkusio/quarkus/pull/30447
+                        .<ValueExtractor<?>> uniqueBeanInstances(valueExtractorClasses)) {
                     configuration.addValueExtractor(valueExtractor);
                 }
 
+                List<InstanceHandle<ValidatorFactoryCustomizer>> validatorFactoryCustomizers = Arc.container()
+                        .listAll(ValidatorFactoryCustomizer.class);
+                for (InstanceHandle<ValidatorFactoryCustomizer> validatorFactoryInstanceHandle : validatorFactoryCustomizers) {
+                    if (validatorFactoryInstanceHandle.isAvailable()) {
+                        final ValidatorFactoryCustomizer validatorFactoryCustomizer = validatorFactoryInstanceHandle.get();
+                        validatorFactoryCustomizer.customize(configuration);
+                    }
+                }
+
                 ValidatorFactory validatorFactory = configuration.buildValidatorFactory();
-                ValidatorHolder.initialize(validatorFactory);
+                ValidatorHolder.initialize(validatorFactory.unwrap(HibernateValidatorFactory.class));
 
                 // Close the ValidatorFactory on shutdown
                 shutdownContext.addShutdownTask(new Runnable() {
@@ -150,6 +189,35 @@ public class HibernateValidatorRecorder {
         };
 
         return beanContainerListener;
+    }
+
+    // Ideally we'd retrieve all instances of a set of bean types
+    // simply by calling something like ArcContainer#select(Set<Type>)
+    // but that method does not exist.
+    // This method acts as a replacement.
+    private static <T> Iterable<T> uniqueBeanInstances(Set<Class<?>> classes) {
+        Set<String> beanIds = new HashSet<>();
+        for (Class<?> clazz : classes) {
+            for (InstanceHandle<?> handle : Arc.container().select(clazz).handles()) {
+                if (!handle.isAvailable()) {
+                    continue;
+                }
+                // A single bean can have multiple types.
+                // To avoid returning duplicate instances of the same bean,
+                // we first retrieve all bean IDs, deduplicate those,
+                // then retrieve the instance for each bean.
+                // Note that just retrieving all instances and putting them in a identity-based Set
+                // would not work, because beans can have the dependent pseudo-scope,
+                // in which case we'd have two instances of the same bean.
+                beanIds.add(handle.getBean().getIdentifier());
+            }
+        }
+        List<T> instances = new ArrayList<>();
+        for (String beanId : beanIds) {
+            var arcContainer = Arc.container();
+            instances.add(arcContainer.instance(arcContainer.<T> bean(beanId)).get());
+        }
+        return instances;
     }
 
     public Supplier<ResteasyConfigSupport> resteasyConfigSupportSupplier(boolean jsonDefault) {

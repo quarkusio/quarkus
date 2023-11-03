@@ -4,11 +4,11 @@ import java.lang.reflect.Type;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
-import javax.inject.Singleton;
-import javax.json.bind.JsonbConfig;
-import javax.json.bind.serializer.DeserializationContext;
-import javax.json.bind.serializer.JsonbDeserializer;
-import javax.json.stream.JsonParser;
+import jakarta.inject.Singleton;
+import jakarta.json.bind.JsonbConfig;
+import jakarta.json.bind.serializer.DeserializationContext;
+import jakarta.json.bind.serializer.JsonbDeserializer;
+import jakarta.json.stream.JsonParser;
 
 import io.quarkus.jsonb.JsonbConfigCustomizer;
 

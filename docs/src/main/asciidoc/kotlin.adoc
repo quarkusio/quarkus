@@ -3,107 +3,100 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using Kotlin
-
-:extension-status: preview
-include::./attributes.adoc[]
+= Using Kotlin
+include::_attributes.adoc[]
+:categories: alt-languages
+:summary: This guide explains how to use Kotlin.
+:topics: kotlin
+:extensions: io.quarkus:quarkus-kotlin
 
 https://kotlinlang.org/[Kotlin] is a very popular programming language that targets the JVM (amongst other environments). Kotlin has experienced a surge in popularity the last few years making it the most popular JVM language, except for Java of course.
 
 Quarkus provides first class support for using Kotlin as will be explained in this guide.
 
-include::./status-include.adoc[]
-
 == Prerequisites
 
-To complete this guide, you need:
+include::{includes}/prerequisites.adoc[]
 
-* less than 10 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
-
-NB: For Gradle project setup please see below, and for further reference consult the guide in the link:gradle-tooling[Gradle setup page].
+NB: For Gradle project setup please see below, and for further reference consult the guide in the xref:gradle-tooling.adoc[Gradle setup page].
 
 == Creating the Maven project
 
 First, we need a new Kotlin project. This can be done using the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=rest-kotlin-quickstart \
-    -DclassName="org.acme.rest.GreetingResource" \
-    -Dpath="/greeting" \
-    -Dextensions="resteasy,kotlin,resteasy-jackson"
-cd rest-kotlin-quickstart
-----
+:create-app-artifact-id: rest-kotlin-quickstart
+:create-app-extensions: kotlin,resteasy-reactive-jackson
+:create-app-code:
+include::{includes}/devtools/create-app.adoc[]
 
 When adding `kotlin` to the extensions list, the Maven plugin will generate a project that is properly
-configured to work with Kotlin. Furthermore  the `org.acme.rest.GreetingResource` class is implemented as Kotlin source code (as is the case with the generated tests).
-The addition of `resteasy-jackson` in the extension list results in importing the RESTEasy/JAX-RS and Jackson extensions.
+configured to work with Kotlin. Furthermore, the `org.acme.ReactiveGreetingResource` class is implemented as Kotlin source code (as is the case with the generated tests).
+The addition of `resteasy-reactive-jackson` in the extension list results in importing the RESTEasy Reactive and Jackson extensions.
 
-`GreetingResource.kt` looks like this:
+`ReactiveGreetingResource` looks like this:
 
 [source,kotlin]
+.ReactiveGreetingResource.kt
 ----
-package org.acme.rest
+package org.acme
 
-import javax.ws.rs.GET
-import javax.ws.rs.Path
-import javax.ws.rs.Produces
-import javax.ws.rs.core.MediaType
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.Produces
+import jakarta.ws.rs.core.MediaType
 
-@Path("/greeting")
-class GreetingResource {
+@Path("/hello")
+class ReactiveGreetingResource {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    fun hello() = "hello"
+    fun hello() = "Hello from RESTEasy Reactive"
 }
 ----
 
 === Update code
 
-In order to show a more practical example of Kotlin usage we will add a simple link:https://kotlinlang.org/docs/reference/data-classes.html[data class] called `Greeting.kt` like so:
+In order to show a more practical example of Kotlin usage we will add a simple link:https://kotlinlang.org/docs/reference/data-classes.html[data class] called `Greeting` like so:
 
 [source,kotlin]
+.Greeting.kt
 ----
 package org.acme.rest
 
 data class Greeting(val message: String = "")
 ----
 
-We also update the `GreetingResource.kt` like so:
+We also update the `ReactiveGreetingResource` class like so:
 
 [source,kotlin]
 ----
-import javax.ws.rs.GET
-import javax.ws.rs.Path
-import javax.ws.rs.core.MediaType
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.core.MediaType
 
-@Path("/greeting")
-class GreetingResource {
+@Path("/hello")
+class ReactiveGreetingResource {
 
     @GET
     fun hello() = Greeting("hello")
 }
 ----
 
-With these changes in place the `/greeting` endpoint will reply with a JSON object instead of a simple String.
+With these changes in place the `/hello` endpoint will reply with a JSON object instead of a simple String.
 
-To make the test pass, we also need to update `GreetingResourceTest.kt` like so:
+To make the test pass, we also need to update `ReactiveGreetingResourceTest` like so:
 
 [source,kotlin]
 ----
+import org.hamcrest.Matchers.equalTo
+
 @QuarkusTest
-class GreetingResourceTest {
+class ReactiveGreetingResourceTest {
 
     @Test
     fun testHelloEndpoint() {
         given()
-          .`when`().get("/greeting")
+          .`when`().get("/hello")
           .then()
              .statusCode(200)
              .body("message", equalTo("hello"))
@@ -111,6 +104,14 @@ class GreetingResourceTest {
 
 }
 ----
+
+== Kotlin version
+
+The Quarkus Kotlin extension already declares a dependency on some base Kotlin libraries like `kotlin-stdlib-jdk8` and `kotlin-reflect`. The Kotlin version of these dependencies is declared in the Quarkus BOM and is currently at {kotlin-version}. It is therefore recommended to use the same Kotlin version for other Kotlin libraries. When adding a dependency to another base Kotlin library (e.g. `kotlin-test-junit5`) you don't need to specify the version, since the Quarkus BOM includes the link:https://search.maven.org/artifact/org.jetbrains.kotlin/kotlin-bom[Kotlin BOM].
+
+This being said, you still need to specify the version of the Kotlin compiler to use. Again, it is recommended to use the same version which Quarkus uses for the Kotlin libraries.
+
+WARNING: Using a different Kotlin version in a Quarkus application is typically not recommended. But in order to do so, you must import the Kotlin BOM *before* the Quarkus BOM.
 
 == Important Maven configuration points
 
@@ -122,6 +123,7 @@ The generated `pom.xml` contains the following modifications compared to its cou
 * The `kotlin-maven-plugin` is configured as follows:
 
 [source,xml]
+.pom.xml
 ----
 <plugin>
     <artifactId>kotlin-maven-plugin</artifactId>
@@ -143,12 +145,12 @@ The generated `pom.xml` contains the following modifications compared to its cou
     </executions>
     <configuration>
         <compilerPlugins>
-            <plugin>all-open</plugin>
+            <plugin>all-open</plugin> <1>
         </compilerPlugins>
 
         <pluginOptions>
             <!-- Each annotation is placed on its own line -->
-            <option>all-open:annotation=javax.ws.rs.Path</option>
+            <option>all-open:annotation=jakarta.ws.rs.Path</option>
         </pluginOptions>
     </configuration>
 
@@ -161,6 +163,7 @@ The generated `pom.xml` contains the following modifications compared to its cou
     </dependencies>
 </plugin>
 ----
+<1> Enables the `all-open` annotation plugin (see discussion below)
 
 The important thing to note is the use of the https://kotlinlang.org/docs/reference/compiler-plugins.html#all-open-compiler-plugin[all-open] Kotlin compiler plugin.
 In order to understand why this plugin is needed, first we need to note that by default all the classes generated from the Kotlin compiler are marked as `final`.
@@ -168,10 +171,10 @@ In order to understand why this plugin is needed, first we need to note that by 
 Having `final` classes however does not work well with various frameworks that need to create https://docs.oracle.com/javase/8/docs/technotes/guides/reflection/proxy.html[Dynamic Proxies].
 
 Thus, the `all-open` Kotlin compiler plugin allows us to configure the compiler to *not* mark as `final` classes that have certain annotations. In the snippet above,
-we have specified that classes annotated with `javax.ws.rs.Path` should not be `final`.
+we have specified that classes annotated with `jakarta.ws.rs.Path` should not be `final`.
 
-If your application contains classes annotated with `javax.enterprise.context.ApplicationScoped`
-for example, then `<option>all-open:annotation=javax.enterprise.context.ApplicationScoped</option>` needs to be added as well. Same goes for any class that needs to have a dynamic proxy created at runtime.
+If your application contains Kotlin classes annotated with `jakarta.enterprise.context.ApplicationScoped`
+for example, then `<option>all-open:annotation=jakarta.enterprise.context.ApplicationScoped</option>` needs to be added as well. Same goes for any class that needs to have a dynamic proxy created at runtime, like a JPA Entity class.
 
 Future versions of Quarkus will configure the Kotlin compiler plugin in a way that will make it unnecessary to alter this configuration.
 
@@ -190,7 +193,7 @@ Similar to the Maven configuration, when using Gradle, the following modificatio
 ----
 plugins {
     id 'java'
-    id 'io.quarkus' 
+    id 'io.quarkus'
 
     id "org.jetbrains.kotlin.jvm" version "{kotlin-version}" // <1>
     id "org.jetbrains.kotlin.plugin.allopen" version "{kotlin-version}" // <1>
@@ -201,13 +204,13 @@ repositories {
     mavenCentral()
 }
 
-dependencies { 
+dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:{kotlin-version}'
 
    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
- 
-    implementation 'io.quarkus:quarkus-resteasy'
-    implementation 'io.quarkus:quarkus-resteasy-jackson'
+
+    implementation 'io.quarkus:quarkus-resteasy-reactive'
+    implementation 'io.quarkus:quarkus-resteasy-reactive-jackson'
     implementation 'io.quarkus:quarkus-kotlin'
 
     testImplementation 'io.quarkus:quarkus-junit5'
@@ -223,8 +226,9 @@ java {
 }
 
 allOpen { // <2>
-    annotation("javax.ws.rs.Path")
-    annotation("javax.enterprise.context.ApplicationScoped")
+    annotation("jakarta.ws.rs.Path")
+    annotation("jakarta.enterprise.context.ApplicationScoped")
+    annotation("jakarta.persistence.Entity")
     annotation("io.quarkus.test.junit.QuarkusTest")
 }
 
@@ -245,7 +249,6 @@ or, if you use the Gradle Kotlin DSL:
 
 [source,kotlin,subs=attributes+]
 ----
-
 plugins {
     kotlin("jvm") version "{kotlin-version}" // <1>
     kotlin("plugin.allopen") version "{kotlin-version}"
@@ -276,8 +279,8 @@ dependencies {
     implementation(enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}"))
 
     implementation("io.quarkus:quarkus-kotlin")
-    implementation("io.quarkus:quarkus-resteasy")
-    implementation("io.quarkus:quarkus-resteasy-jackson")
+    implementation("io.quarkus:quarkus-resteasy-reactive")
+    implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
 
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("io.rest-assured:rest-assured")
@@ -292,8 +295,9 @@ java {
 }
 
 allOpen { // <2>
-    annotation("javax.ws.rs.Path")
-    annotation("javax.enterprise.context.ApplicationScoped")
+    annotation("jakarta.ws.rs.Path")
+    annotation("jakarta.enterprise.context.ApplicationScoped")
+    annotation("jakarta.persistence.Entity")
     annotation("io.quarkus.test.junit.QuarkusTest")
 }
 
@@ -307,36 +311,114 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 <1> The Kotlin plugin version needs to be specified.
 <2> The all-open configuration required, as per Maven guide above
 
+=== Overriding the Quarkus BOM Kotlin version (Gradle)
 
+If you want to use a different version than the one specified by Quarkus' BOM in your application (for example, to try pre-release features or for compatibility reasons), you can do so by using the `strictly {}` version modifier in your Gradle dependencies. For instance:
+
+[source,kotlin]
+----
+plugins {
+    id("io.quarkus")
+    kotlin("jvm") version "1.7.0-Beta"
+    kotlin("plugin.allopen") version "1.7.0-Beta"
+}
+
+configurations.all {
+    resolutionStrategy {
+        force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.7.0-Beta"
+        force "org.jetbrains.kotlin:kotlin-reflect:1.7.0-Beta"
+    }
+}
+----
 
 == Live reload
 
 Quarkus provides support for live reloading changes made to source code. This support is also available to Kotlin, meaning that developers can update their Kotlin source
 code and immediately see their changes reflected.
 
-To see this feature in action, first execute: `./mvnw compile quarkus:dev`
+To see this feature in action, first execute:
 
-When executing an HTTP GET request against `http://localhost:8080/greeting`, you see a JSON message with the value `hello` as its `message` field.
+include::{includes}/devtools/dev.adoc[]
 
-Now using your favorite editor or IDE, update `GreetingResource.kt` and change the `hello` method to the following:
+When executing an HTTP GET request against `http://localhost:8080/hello`, you see a JSON message with the value `hello` as its `message` field.
+
+Now using your favorite editor or IDE, update `ReactiveGreetingResource.kt` and change the `hello` method to the following:
 
 [source,kotlin]
 ----
 fun hello() = Greeting("hi")
 ----
 
-When you now execute an HTTP GET request against `http://localhost:8080/greeting`, you should see a JSON message with the value `hi` as its `message` field.
+When you now execute an HTTP GET request against `http://localhost:8080/hello`, you should see a JSON message with the value `hi` as its `message` field.
 
 One thing to note is that the live reload feature is not available when making changes to both Java and Kotlin source that have dependencies on each other. We hope to alleviate this limitation in the future.
 
+
+=== Configuring live reload compiler
+
+If you need to customize the compiler flags used by `kotlinc` in development mode, you can configure them in the quarkus plugin:
+
+[source, xml, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
+----
+<plugin>
+  <groupId>${quarkus.platform.group-id}</groupId>
+  <artifactId>quarkus-maven-plugin</artifactId>
+  <version>${quarkus.platform.version}</version>
+
+  <configuration>
+    <source>${maven.compiler.source}</source>
+    <target>${maven.compiler.target}</target>
+    <compilerOptions>
+      <compiler>
+        <name>kotlin</name>
+        <args>
+          <arg>-Werror</arg>
+        </args>
+      </compiler>
+    </compilerOptions>
+  </configuration>
+
+  ...
+</plugin>
+----
+[source, groovy, subs=attributes+, role="secondary asciidoc-tabs-sync-groovy"]
+.Gradle (Groovy DSL)
+----
+quarkusDev {
+    compilerOptions {
+        compiler("kotlin").args(['-Werror'])
+    }
+}
+----
+
+[source, kotlin, subs=attributes+, role="secondary asciidoc-tabs-sync-kotlin"]
+.Gradle (Kotlin DSL)
+----
+tasks.quarkusDev {
+     compilerOptions {
+        compiler("kotlin").args(["-Werror"])
+    }
+}
+----
+
 == Packaging the application
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file. You can also build the native executable using `./mvnw package -Pnative`, or `./gradlew buildNative`.
+As usual, the application can be packaged using:
 
+include::{includes}/devtools/build.adoc[]
+
+and executed with `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also build the native executable using:
+
+include::{includes}/devtools/build-native.adoc[]
+
+[[kotlin-jackson]]
 == Kotlin and Jackson
 
-If the `com.fasterxml.jackson.module:jackson-module-kotlin` dependency and the `quarkus-jackson` extension (or the `quarkus-resteasy-jackson` extension) have been added to the project,
-then Quarkus automatically registers the `KotlinModule` to the `ObjectMapper` bean (see link:rest-json#jackson[this] guide for more details).
+If the `com.fasterxml.jackson.module:jackson-module-kotlin` dependency and the `quarkus-jackson` extension (or one of the `quarkus-resteasy-jackson` or `quarkus-resteasy-reactive-jackson` extensions) have been added to the project,
+then Quarkus automatically registers the `KotlinModule` to the `ObjectMapper` bean (see xref:rest-json.adoc#jackson[this] guide for more details).
 
 When using Kotlin data classes with `native-image` you may experience serialization errors that do not occur with the `JVM` version, despite the Kotlin Jackson Module being registered. This is especially so if you have a more complex JSON hierarchy, where an issue on a lower node causes a serialization failure. The error message displayed is a catch-all and typically displays an issue with the root object, which may not necessarily be the case.
 
@@ -345,7 +427,7 @@ When using Kotlin data classes with `native-image` you may experience serializat
 com.fasterxml.jackson.databind.exc.InvalidDefinitionException: Cannot construct instance of `Address` (no Creators, like default construct, exist): cannot deserialize from Object value (no delegate- or property-based Creator)
 ----
 
-To ensure full-compability with `native-image`, it is recommended to apply the Jackson `@field:JsonProperty("fieldName")` annotation, and set a nullable default, as illustrated below. You can automate the generation of Kotlin data classes for your sample JSON using Intellij plugins (such as JSON to Kotlin Class), and easily enable the Jackson annotation and select nullable parameters as part of the auto-code generation.
+To ensure full-compatibility with `native-image`, it is recommended to apply the Jackson `@field:JsonProperty("fieldName")` annotation, and set a nullable default, as illustrated below. You can automate the generation of Kotlin data classes for your sample JSON using IntelliJ IDEA plugins (such as JSON to Kotlin Class), and easily enable the Jackson annotation and select nullable parameters as part of the auto-code generation.
 
 [source,kotlin]
 ----
@@ -378,33 +460,71 @@ data class ResultItem(
 ...
 ----
 
+== Kotlin and the Kubernetes Client
 
-== Kotlin coroutines and Mutiny
+When working with the `quarkus-kubernetes` extension and have Kotlin classes bound to CustomResource definitions (like you do for building operators), you need to be aware that the underlying Fabric8 Kubernetes Client uses its own static Jackson `ObjectMapper` s, which can be configured as follows with the `KotlinModule`:
 
-Kotlin coroutines provide a imperative programming model that actually gets executed in an asynchronous, reactive manner.
-To simplify the interoperation between Mutiny and Kotlin there is the module `io.smallrye.reactive:mutiny-kotlin`, described link:https://smallrye.io/smallrye-mutiny/guides/kotlin[here].
+[source,kotlin]
+----
+import io.fabric8.kubernetes.client.utils.Serialization
+import com.fasterxml.jackson.module.kotlin.KotlinModule
+
+...
+
+Serialization.jsonMapper().registerModule(KotlinModule())
+Serialization.yamlMapper().registerModule(KotlinModule())
+----
+
+_Please test this carefully on compilation to native images and fallback to Java-compatible Jackson bindings if you experience problems._
+
+== Coroutines support
+
+=== Extensions
+
+The following extensions provide support for Kotlin Coroutines by allowing the use of Kotlin's `suspend` keyword on method signatures.
+
+|===
+|Extension |Comments
+
+|`quarkus-resteasy-reactive`
+|Support is provided for Jakarta REST Resource Methods
+
+|`quarkus-rest-client-reactive`
+|Support is provided for REST Client interface methods
+
+|`quarkus-smallrye-reactive-messaging`
+|Support is provided for Reactive messaging methods
+
+|`quarkus-scheduler`
+|Support is provided for scheduler methods
+
+|`quarkus-smallrye-fault-tolerance`
+|Support is provided for the declarative annotation-based API
+
+|===
+
+=== Kotlin coroutines and Mutiny
+
+Kotlin coroutines provide an imperative programming model that actually gets executed in an asynchronous, reactive manner.
+To simplify the interoperability between Mutiny and Kotlin there is the module `io.smallrye.reactive:mutiny-kotlin`, described link:https://smallrye.io/smallrye-mutiny/latest/guides/kotlin/[here].
 
 == CDI @Inject with Kotlin
 
 Kotlin reflection annotation processing differs from Java.  You may experience an error when using CDI @Inject such as:
 "kotlin.UninitializedPropertyAccessException: lateinit property xxx has not been initialized"
 
-In the example below, this can be easily solved by adapting the annotation, adding @field: Default, to handle the lack of a @Target on the Kotlin reflection annotation definition. 
-
-Alternatively, prefer the use of constructor injection which works without modification of the Java examples.
+In the example below, this can be easily solved by adapting the annotation, adding @field: Default, to handle the lack of a @Target on the Kotlin reflection annotation definition.
 
 [source,kotlin]
 ----
+import jakarta.inject.Inject
+import jakarta.enterprise.inject.Default
+import jakarta.enterprise.context.ApplicationScoped
 
-import javax.inject.Inject
-import javax.enterprise.inject.Default
-import javax.enterprise.context.ApplicationScoped
-
-import javax.ws.rs.GET
-import javax.ws.rs.Path
-import javax.ws.rs.PathParam
-import javax.ws.rs.Produces
-import javax.ws.rs.core.MediaType
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.Produces
+import jakarta.ws.rs.core.MediaType
 
 
 
@@ -418,16 +538,16 @@ class GreetingService {
 }
 
 @Path("/")
-class GreetingResource {
+class ReactiveGreetingResource {
 
     @Inject
-    @field: Default // <1> 
+    @field: Default // <1>
     lateinit var service: GreetingService
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    @Path("/greeting/{name}")
-    fun greeting(@PathParam("name") name: String): String {
+    @Path("/hello/{name}")
+    fun greeting(name: String): String {
         return service.greeting(name)
     }
 
@@ -435,4 +555,35 @@ class GreetingResource {
 ----
 <1> Kotlin requires a @field: xxx qualifier as it has no @Target on the annotation definition. Add @field: xxx in this example. @Default is used as the qualifier, explicitly specifying the use of the default bean.
 
+Alternatively, prefer the use of constructor injection which works without modification of the Java examples, increases testability and complies best to a Kotlin programming style.
 
+[source,kotlin]
+----
+import jakarta.enterprise.context.ApplicationScoped
+
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.Produces
+import jakarta.ws.rs.core.MediaType
+
+@ApplicationScoped
+class GreetingService {
+    fun greeting(name: String): String {
+        return "hello $name"
+    }
+}
+
+@Path("/")
+class ReactiveGreetingResource(
+    private val service: GreetingService
+) {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/hello/{name}")
+    fun greeting(name: String): String {
+        return service.greeting(name)
+    }
+
+}
+----

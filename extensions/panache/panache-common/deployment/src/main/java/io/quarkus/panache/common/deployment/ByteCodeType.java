@@ -1,83 +1,51 @@
 package io.quarkus.panache.common.deployment;
 
-import static org.jboss.jandex.DotName.createSimple;
-import static org.objectweb.asm.Type.BOOLEAN_TYPE;
-import static org.objectweb.asm.Type.BYTE_TYPE;
-import static org.objectweb.asm.Type.CHAR_TYPE;
-import static org.objectweb.asm.Type.DOUBLE_TYPE;
-import static org.objectweb.asm.Type.FLOAT_TYPE;
-import static org.objectweb.asm.Type.INT_TYPE;
-import static org.objectweb.asm.Type.LONG_TYPE;
-import static org.objectweb.asm.Type.SHORT_TYPE;
-import static org.objectweb.asm.Type.getType;
-
+import java.util.Map;
 import java.util.StringJoiner;
 
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.PrimitiveType;
-import org.objectweb.asm.Type;
-
-import io.quarkus.deployment.util.AsmUtil;
 
 public class ByteCodeType {
-    private final Type type;
+    private static final Map<String, org.jboss.jandex.Type> WRAPPER_TO_PRIMITIVE = Map.of(
+            Boolean.class.getName(), PrimitiveType.BOOLEAN,
+            Byte.class.getName(), PrimitiveType.BYTE,
+            Short.class.getName(), PrimitiveType.SHORT,
+            Integer.class.getName(), PrimitiveType.INT,
+            Long.class.getName(), PrimitiveType.LONG,
+            Float.class.getName(), PrimitiveType.FLOAT,
+            Double.class.getName(), PrimitiveType.DOUBLE,
+            Character.class.getName(), PrimitiveType.CHAR);
 
-    public ByteCodeType(Type type) {
-        this.type = type;
-    }
+    private final org.jboss.jandex.Type type;
 
     public ByteCodeType(Class<?> type) {
-        this.type = getType(type);
+        this.type = ClassType.create(DotName.createSimple(type.getName()));
     }
 
     public ByteCodeType(org.jboss.jandex.Type type) {
-        if (type.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE) {
-            this.type = toAsm(type.asPrimitiveType());
-        } else {
-            String typeDescriptor = type.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE
-                    ? type.toString()
-                    : "L" + type.name().toString().replace('.', '/') + ";";
-            this.type = getType(typeDescriptor);
-        }
+        this.type = type;
+    }
+
+    public org.jboss.jandex.Type get() {
+        return type;
     }
 
     public String descriptor() {
-        return type.getDescriptor();
+        return type.descriptor();
     }
 
     public DotName dotName() {
-        return createSimple(type.getClassName());
+        return type.name();
     }
 
     public String internalName() {
-        return type.getInternalName();
+        return type.name().toString('/');
     }
 
     public boolean isPrimitive() {
-        return type().getSort() <= Type.DOUBLE;
-    }
-
-    private Type toAsm(PrimitiveType primitive) {
-        switch (primitive.name().toString()) {
-            case "byte":
-                return BYTE_TYPE;
-            case "char":
-                return CHAR_TYPE;
-            case "double":
-                return DOUBLE_TYPE;
-            case "float":
-                return FLOAT_TYPE;
-            case "int":
-                return INT_TYPE;
-            case "long":
-                return LONG_TYPE;
-            case "short":
-                return SHORT_TYPE;
-            case "boolean":
-                return BOOLEAN_TYPE;
-
-        }
-        return null;
+        return type.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE;
     }
 
     @Override
@@ -87,11 +55,11 @@ public class ByteCodeType {
                 .toString();
     }
 
-    public Type type() {
-        return this.type;
+    public org.objectweb.asm.Type type() {
+        return org.objectweb.asm.Type.getType(type.descriptor());
     }
 
     public ByteCodeType unbox() {
-        return new ByteCodeType(AsmUtil.WRAPPER_TO_PRIMITIVE.getOrDefault(type, type));
+        return new ByteCodeType(WRAPPER_TO_PRIMITIVE.getOrDefault(type.name().toString(), type));
     }
 }

@@ -8,15 +8,14 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.StreamSupport;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
 
 import io.quarkus.liquibase.runtime.LiquibaseConfig;
 import io.quarkus.liquibase.runtime.LiquibaseDataSourceBuildTimeConfig;
-import liquibase.configuration.GlobalConfiguration;
-import liquibase.configuration.LiquibaseConfiguration;
+import liquibase.GlobalConfiguration;
 
 /**
  * This fixture provides access to read the expected and the actual configuration of liquibase.
@@ -51,15 +50,16 @@ public class LiquibaseExtensionConfigFixture {
 
         assertEquals(configuration.changeLog, LiquibaseDataSourceBuildTimeConfig.defaultConfig().changeLog);
 
-        GlobalConfiguration globalConfiguration = LiquibaseConfiguration.getInstance()
-                .getConfiguration(GlobalConfiguration.class);
         assertEquals(configuration.databaseChangeLogTableName,
-                globalConfiguration.getDatabaseChangeLogTableName());
+                GlobalConfiguration.DATABASECHANGELOG_TABLE_NAME.getCurrentValue());
         assertEquals(configuration.databaseChangeLogLockTableName,
-                globalConfiguration.getDatabaseChangeLogLockTableName());
-        assertEquals(configuration.liquibaseTablespaceName.orElse(null), globalConfiguration.getLiquibaseTablespaceName());
-        assertEquals(configuration.liquibaseCatalogName.orElse(null), globalConfiguration.getLiquibaseCatalogName());
-        assertEquals(configuration.liquibaseSchemaName.orElse(null), globalConfiguration.getLiquibaseSchemaName());
+                GlobalConfiguration.DATABASECHANGELOGLOCK_TABLE_NAME.getCurrentValue());
+        assertEquals(configuration.liquibaseTablespaceName.orElse(null),
+                GlobalConfiguration.LIQUIBASE_TABLESPACE_NAME.getCurrentValue());
+        assertEquals(configuration.liquibaseCatalogName.orElse(null),
+                GlobalConfiguration.LIQUIBASE_CATALOG_NAME.getCurrentValue());
+        assertEquals(configuration.liquibaseSchemaName.orElse(null),
+                GlobalConfiguration.LIQUIBASE_SCHEMA_NAME.getCurrentValue());
 
     }
 

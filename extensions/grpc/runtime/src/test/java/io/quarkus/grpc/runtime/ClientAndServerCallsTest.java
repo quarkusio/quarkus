@@ -4,14 +4,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletionException;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import io.grpc.Metadata;
+import io.grpc.ServerCall;
 import io.grpc.Status;
 import io.grpc.StatusException;
+import io.quarkus.grpc.ExceptionHandler;
+import io.quarkus.grpc.ExceptionHandlerProvider;
+import io.quarkus.grpc.stubs.ClientCalls;
+import io.quarkus.grpc.stubs.ServerCalls;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -19,6 +28,33 @@ public class ClientAndServerCallsTest {
 
     protected static final Duration TIMEOUT = Duration.ofSeconds(5);
     private FakeServiceClient client = new FakeServiceClient();
+
+    private static class EHP implements ExceptionHandlerProvider {
+        @Override
+        public <ReqT, RespT> ExceptionHandler<ReqT, RespT> createHandler(ServerCall.Listener<ReqT> listener,
+                ServerCall<ReqT, RespT> serverCall, Metadata metadata) {
+            return new ExceptionHandler<>(listener, serverCall, metadata) {
+                @Override
+                protected void handleException(Throwable t, ServerCall<ReqT, RespT> call, Metadata metadata) {
+                    Status status = ExceptionHandlerProvider.toStatus(t);
+                    Optional<Metadata> trailers = ExceptionHandlerProvider.toTrailers(t);
+                    call.close(status, trailers.orElse(metadata));
+                }
+            };
+        }
+
+        @Override
+        public Throwable transform(Throwable t) {
+            return ExceptionHandlerProvider.toStatusException(t, false);
+        }
+    }
+
+    @BeforeAll
+    public static void setup() throws Exception {
+        Field ehp = ServerCalls.class.getDeclaredField("ehp");
+        ehp.setAccessible(true);
+        ehp.set(null, new EHP());
+    }
 
     @Test
     public void oneToOneSuccess() {
@@ -75,7 +111,7 @@ public class ClientAndServerCallsTest {
         assertThatThrownBy(() -> client.propagateFailure("hello").await().atMost(TIMEOUT))
                 .isInstanceOf(CompletionException.class)
                 .hasCauseInstanceOf(StatusException.class)
-                .getCause().satisfies(t -> {
+                .cause().satisfies(t -> {
                     assertThat(t).isInstanceOf(StatusException.class);
                     assertThat(((StatusException) t).getStatus().getCode()).isEqualTo(Status.UNKNOWN.getCode());
                     assertThat((t).getMessage()).contains("boom").contains("Exception");
@@ -84,7 +120,7 @@ public class ClientAndServerCallsTest {
         assertThatThrownBy(() -> client.immediateFailure("hello").await().atMost(TIMEOUT))
                 .isInstanceOf(CompletionException.class)
                 .hasCauseInstanceOf(StatusException.class)
-                .getCause().satisfies(t -> {
+                .cause().satisfies(t -> {
                     assertThat(t).isInstanceOf(StatusException.class);
                     assertThat(((StatusException) t).getStatus().getCode()).isEqualTo(Status.UNKNOWN.getCode());
                     assertThat((t).getMessage()).contains("runtime boom").contains("RuntimeException");
@@ -93,7 +129,7 @@ public class ClientAndServerCallsTest {
         assertThatThrownBy(() -> client.illegalArgumentException("hello").await().atMost(TIMEOUT))
                 .isInstanceOf(CompletionException.class)
                 .hasCauseInstanceOf(StatusException.class)
-                .getCause().satisfies(t -> {
+                .cause().satisfies(t -> {
                     assertThat(t).isInstanceOf(StatusException.class);
                     assertThat(((StatusException) t).getStatus().getCode()).isEqualTo(Status.INVALID_ARGUMENT.getCode());
                     assertThat((t).getMessage()).contains("bad").contains("IllegalArgumentException");
@@ -102,7 +138,7 @@ public class ClientAndServerCallsTest {
         assertThatThrownBy(() -> client.npe("hello").await().atMost(TIMEOUT))
                 .isInstanceOf(CompletionException.class)
                 .hasCauseInstanceOf(StatusException.class)
-                .getCause().satisfies(t -> {
+                .cause().satisfies(t -> {
                     assertThat(t).isInstanceOf(StatusException.class);
                     assertThat(((StatusException) t).getStatus().getCode()).isEqualTo(Status.UNKNOWN.getCode());
                     assertThat((t).getMessage()).contains("NullPointerException");

@@ -2,9 +2,10 @@ package io.quarkus.resteasy.reactive.server.test.security;
 
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
+import java.util.Arrays;
+
+import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -17,8 +18,8 @@ import io.restassured.RestAssured;
 public class LazyAuthRolesAllowedJaxRsTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(RolesAllowedResource.class, UserResource.class,
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(RolesAllowedResource.class, RolesAllowedBlockingResource.class, UserResource.class,
                             TestIdentityProvider.class,
                             TestIdentityController.class,
                             UnsecuredSubResource.class)
@@ -34,12 +35,16 @@ public class LazyAuthRolesAllowedJaxRsTestCase {
 
     @Test
     public void testRolesAllowed() {
-        RestAssured.get("/roles").then().statusCode(401);
-        RestAssured.given().auth().basic("admin", "admin").get("/roles").then().statusCode(200);
-        RestAssured.given().auth().basic("admin", "wrong").get("/roles").then().statusCode(401);
-        RestAssured.given().auth().basic("user", "user").get("/roles").then().statusCode(200);
-        RestAssured.given().auth().basic("admin", "admin").get("/roles/admin").then().statusCode(200);
-        RestAssured.given().auth().basic("user", "user").get("/roles/admin").then().statusCode(403);
+        Arrays.asList("/roles", "/roles-blocking").forEach((path) -> {
+            RestAssured.get(path).then().statusCode(401);
+            RestAssured.given().auth().basic("admin", "admin").get(path).then().statusCode(200);
+            RestAssured.given().auth().basic("admin", "wrong").get(path).then().statusCode(401);
+            RestAssured.given().auth().basic("user", "user").get(path).then().statusCode(200);
+            RestAssured.given().auth().basic("admin", "admin").get(path + "/admin").then().statusCode(200);
+            RestAssured.given().auth().basic("user", "user").get(path + "/admin").then().statusCode(403);
+            RestAssured.given().auth().basic("admin", "admin").get(path + "/admin/security-identity").then().statusCode(200)
+                    .body(Matchers.is("admin"));
+        });
     }
 
     @Test

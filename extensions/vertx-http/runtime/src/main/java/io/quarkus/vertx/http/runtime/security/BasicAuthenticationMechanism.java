@@ -29,7 +29,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
@@ -58,7 +58,7 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
     /**
      * A comma separated list of patterns and charsets. The pattern is a regular expression.
      *
-     * Because different browsers user different encodings this allows for the correct encoding to be selected based
+     * Because different browsers use different encodings this allows for the correct encoding to be selected based
      * on the current browser. In general though it is recommended that BASIC auth not be used when passwords contain
      * characters outside ASCII, as some browsers use the current locate to determine encoding.
      *
@@ -95,7 +95,7 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
 
     public BasicAuthenticationMechanism(final String realmName, final boolean silent,
             Charset charset, Map<Pattern, Charset> userAgentCharsets) {
-        this.challenge = BASIC_PREFIX + "realm=\"" + realmName + "\"";
+        this.challenge = realmName == null ? BASIC : BASIC_PREFIX + "realm=\"" + realmName + "\"";
         this.silent = silent;
         this.charset = charset;
         this.userAgentCharsets = Collections.unmodifiableMap(new LinkedHashMap<>(userAgentCharsets));
@@ -155,6 +155,8 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
                         UsernamePasswordAuthenticationRequest credential = new UsernamePasswordAuthenticationRequest(userName,
                                 new PasswordCredential(password));
                         HttpSecurityUtils.setRoutingContextAttribute(credential, context);
+                        context.put(HttpAuthenticationMechanism.class.getName(), this);
+
                         return identityProviderManager.authenticate(credential);
                     }
 
@@ -192,7 +194,12 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
     }
 
     @Override
-    public HttpCredentialTransport getCredentialTransport() {
-        return new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, BASIC);
+    public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
+        return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, BASIC));
+    }
+
+    @Override
+    public int getPriority() {
+        return 2000;
     }
 }

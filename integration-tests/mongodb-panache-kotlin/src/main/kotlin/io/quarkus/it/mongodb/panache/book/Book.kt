@@ -1,11 +1,12 @@
 package io.quarkus.it.mongodb.panache.book
 
-import io.quarkus.mongodb.panache.MongoEntity
+import com.fasterxml.jackson.annotation.JsonFormat
+import com.fasterxml.jackson.annotation.JsonFormat.Shape
+import io.quarkus.mongodb.panache.common.MongoEntity
+import java.time.LocalDate
 import org.bson.codecs.pojo.annotations.BsonIgnore
 import org.bson.codecs.pojo.annotations.BsonProperty
 import org.bson.types.ObjectId
-import java.time.LocalDate
-import javax.json.bind.annotation.JsonbDateFormat
 
 @MongoEntity(collection = "TheBook", clientName = "cl2")
 class Book {
@@ -20,8 +21,7 @@ class Book {
     var transientDescription: String? = null
         private set
 
-    @JsonbDateFormat("yyyy-MM-dd")
-    var creationDate: LocalDate? = null
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd") var creationDate: LocalDate? = null
     var categories = listOf<String>()
         private set
     private var details: BookDetail? = null
@@ -54,5 +54,4 @@ class Book {
         this.transientDescription = transientDescription
         return this
     }
-
 }

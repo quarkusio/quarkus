@@ -8,4 +8,6 @@ metadata:
   categories:
   - "security"
   guide: "https://quarkus.io/guides/security-oauth2"
-  status: "preview"
+  status: "stable"
+  config:
+  - "quarkus.oauth2."

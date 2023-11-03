@@ -1,15 +1,17 @@
 package io.quarkus.test.junit;
 
+import static io.quarkus.runtime.util.ContainerRuntimeUtil.detectContainerRuntime;
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
+import static java.lang.ProcessBuilder.Redirect.DISCARD;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -22,28 +24,37 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
-import javax.enterprise.inject.Alternative;
-import javax.inject.Inject;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.inject.Inject;
 
+import org.apache.commons.lang3.RandomStringUtils;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.JUnitException;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.PathsCollection;
-import io.quarkus.bootstrap.model.gradle.QuarkusModel;
-import io.quarkus.bootstrap.util.PathsUtils;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
-import io.quarkus.deployment.builditem.DevServicesNativeConfigResultBuildItem;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
+import io.quarkus.bootstrap.workspace.SourceDir;
+import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
+import io.quarkus.paths.PathList;
 import io.quarkus.runtime.configuration.ProfileManager;
+import io.quarkus.runtime.logging.LoggingSetupRecorder;
+import io.quarkus.runtime.util.ContainerRuntimeUtil;
 import io.quarkus.test.common.ArtifactLauncher;
+import io.quarkus.test.common.LauncherUtil;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
@@ -53,7 +64,6 @@ public final class IntegrationTestUtil {
 
     public static final int DEFAULT_PORT = 8081;
     public static final int DEFAULT_HTTPS_PORT = 8444;
-    public static final long DEFAULT_WAIT_TIME_SECONDS = 60;
 
     private IntegrationTestUtil() {
     }
@@ -62,10 +72,15 @@ public final class IntegrationTestUtil {
         Class<?> current = testClass;
         while (current.getSuperclass() != null) {
             for (Field field : current.getDeclaredFields()) {
-                Inject injectAnnotation = field.getAnnotation(Inject.class);
-                if (injectAnnotation != null) {
+                if (field.getAnnotation(Inject.class) != null) {
                     throw new JUnitException(
-                            "@Inject is not supported in @NativeImageTest and @QuarkusIntegrationTest tests. Offending field is "
+                            "@Inject is not supported in @QuarkusIntegrationTest tests. Offending field is "
+                                    + field.getDeclaringClass().getTypeName() + "."
+                                    + field.getName());
+                }
+                if (field.getAnnotation(ConfigProperty.class) != null) {
+                    throw new JUnitException(
+                            "@ConfigProperty is not supported in @QuarkusIntegrationTest tests. Offending field is "
                                     + field.getDeclaringClass().getTypeName() + "."
                                     + field.getName());
                 }
@@ -90,9 +105,14 @@ public final class IntegrationTestUtil {
         TestHTTPResourceManager.inject(testInstance);
         ExtensionContext root = context.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
-        IntegrationTestExtensionState state = store.get(IntegrationTestExtensionState.class.getName(),
-                IntegrationTestExtensionState.class);
-        state.getTestResourceManager().inject(testInstance);
+        QuarkusTestExtensionState state = store.get(QuarkusTestExtensionState.class.getName(),
+                QuarkusTestExtensionState.class);
+        Object testResourceManager = state.testResourceManager;
+        if (!(testResourceManager instanceof TestResourceManager)) {
+            throw new RuntimeException(
+                    "An unexpected situation occurred while trying to instantiate the testing infrastructure. Have you perhaps mixed @QuarkusTest and @QuarkusIntegrationTest in the same test run?");
+        }
+        ((TestResourceManager) state.testResourceManager).inject(testInstance);
     }
 
     static Map<String, String> getSysPropsToRestore() {
@@ -103,11 +123,12 @@ public final class IntegrationTestUtil {
     }
 
     static TestProfileAndProperties determineTestProfileAndProperties(Class<? extends QuarkusTestProfile> profile,
-            Map<String, String> sysPropRestore) throws InstantiationException, IllegalAccessException {
+            Map<String, String> sysPropRestore)
+            throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         final Map<String, String> properties = new HashMap<>();
         QuarkusTestProfile testProfile = null;
         if (profile != null) {
-            testProfile = profile.newInstance();
+            testProfile = profile.getDeclaredConstructor().newInstance();
             properties.putAll(testProfile.getConfigOverrides());
             final Set<Class<?>> enabledAlternatives = testProfile.getEnabledAlternatives();
             if (!enabledAlternatives.isEmpty()) {
@@ -186,12 +207,13 @@ public final class IntegrationTestUtil {
         }
     }
 
-    static Map<String, String> handleDevDb(ExtensionContext context) throws Exception {
+    static ArtifactLauncher.InitContext.DevServicesLaunchResult handleDevServices(ExtensionContext context,
+            boolean isDockerAppLaunch) throws Exception {
         Class<?> requiredTestClass = context.getRequiredTestClass();
         Path testClassLocation = getTestClassesLocation(requiredTestClass);
         final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
 
-        PathsCollection.Builder rootBuilder = PathsCollection.builder();
+        final PathList.Builder rootBuilder = PathList.builder();
 
         if (!appClassLocation.equals(testClassLocation)) {
             rootBuilder.add(testClassLocation);
@@ -205,19 +227,10 @@ public final class IntegrationTestUtil {
         final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder()
                 .setIsolateDeployment(true)
                 .setMode(QuarkusBootstrap.Mode.TEST);
-        QuarkusTestProfile profileInstance = null;
 
         final Path projectRoot = Paths.get("").normalize().toAbsolutePath();
         runnerBuilder.setProjectRoot(projectRoot);
-        Path outputDir;
-        try {
-            // this should work for both maven and gradle
-            outputDir = projectRoot.resolve(projectRoot.relativize(testClassLocation).getName(0));
-        } catch (Exception e) {
-            // this shouldn't happen since testClassLocation is usually found under the project dir
-            outputDir = projectRoot;
-        }
-        runnerBuilder.setTargetDirectory(outputDir);
+        runnerBuilder.setTargetDirectory(PathTestHelper.getProjectBuildDir(projectRoot, testClassLocation));
 
         rootBuilder.add(appClassLocation);
         final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");
@@ -227,14 +240,25 @@ public final class IntegrationTestUtil {
 
         // If gradle project running directly with IDE
         if (System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL) == null) {
-            QuarkusModel model = BuildToolHelper.enableGradleAppModelForTest(projectRoot);
-            if (model != null) {
-                final PathsCollection classDirectories = PathsUtils
-                        .toPathsCollection(model.getWorkspace().getMainModule().getSourceSet()
-                                .getSourceDirectories());
-                for (Path classes : classDirectories) {
-                    if (Files.exists(classes) && !rootBuilder.contains(classes)) {
-                        rootBuilder.add(classes);
+            ApplicationModel model = BuildToolHelper.enableGradleAppModelForTest(projectRoot);
+            if (model != null && model.getApplicationModule() != null) {
+                final ArtifactSources testSources = model.getApplicationModule().getTestSources();
+                if (testSources != null) {
+                    for (SourceDir src : testSources.getSourceDirs()) {
+                        if (!Files.exists(src.getOutputDir())) {
+                            final Path classes = src.getOutputDir();
+                            if (!rootBuilder.contains(classes)) {
+                                rootBuilder.add(classes);
+                            }
+                        }
+                    }
+                }
+                for (SourceDir src : model.getApplicationModule().getMainSources().getSourceDirs()) {
+                    if (!Files.exists(src.getOutputDir())) {
+                        final Path classes = src.getOutputDir();
+                        if (!rootBuilder.contains(classes)) {
+                            rootBuilder.add(classes);
+                        }
                     }
                 }
             }
@@ -259,15 +283,143 @@ public final class IntegrationTestUtil {
         TestClassIndexer.writeIndex(testClassesIndex, requiredTestClass);
 
         Map<String, String> propertyMap = new HashMap<>();
-        curatedApplication
-                .createAugmentor()
-                .performCustomBuild(NativeDevServicesHandler.class.getName(), new BiConsumer<String, String>() {
+        AugmentAction augmentAction;
+        String networkId = null;
+        if (isDockerAppLaunch) {
+            // when the application is going to be launched as a docker container, we need to make containers started by DevServices
+            // use a shared network that the application container can then use as well
+            augmentAction = curatedApplication.createAugmentor(
+                    "io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem$Factory", Collections.emptyMap());
+        } else {
+            augmentAction = curatedApplication.createAugmentor();
+        }
+        augmentAction.performCustomBuild(NativeDevServicesHandler.class.getName(), new BiConsumer<String, String>() {
+            @Override
+            public void accept(String s, String s2) {
+                propertyMap.put(s, s2);
+            }
+        }, DevServicesLauncherConfigResultBuildItem.class.getName());
+
+        boolean manageNetwork = false;
+        if (isDockerAppLaunch) {
+            // obtain the ID of the shared network - this needs to be done after the augmentation has been run
+            // or else we run into various ClassLoader problems
+            try {
+                Class<?> networkClass = curatedApplication.getAugmentClassLoader()
+                        .loadClass("org.testcontainers.containers.Network");
+                Object sharedNetwork = networkClass.getField("SHARED").get(null);
+                networkId = (String) networkClass.getMethod("getId").invoke(sharedNetwork);
+            } catch (Exception e) {
+                // use the network the use has specified or else just generate one if none is configured
+
+                Config config = LauncherUtil.installAndGetSomeConfig();
+                Optional<String> networkIdOpt = config
+                        .getOptionalValue("quarkus.test.container.network", String.class);
+                if (networkIdOpt.isPresent()) {
+                    networkId = networkIdOpt.get();
+                } else {
+                    networkId = "quarkus-integration-test-" + RandomStringUtils.random(5, true, false);
+                    manageNetwork = true;
+                }
+            }
+        }
+
+        DefaultDevServicesLaunchResult result = new DefaultDevServicesLaunchResult(propertyMap, networkId, manageNetwork,
+                curatedApplication);
+        createNetworkIfNecessary(result);
+        return result;
+    }
+
+    // this probably isn't the best place for this method, but we need to create the docker container before
+    // user code is aware of the network
+    private static void createNetworkIfNecessary(
+            final ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
+        if (devServicesLaunchResult.manageNetwork() && (devServicesLaunchResult.networkId() != null)) {
+            ContainerRuntimeUtil.ContainerRuntime containerRuntime = detectContainerRuntime(true);
+
+            try {
+                int networkCreateResult = new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
+                        .command(containerRuntime.getExecutableName(), "network", "create",
+                                devServicesLaunchResult.networkId())
+                        .start().waitFor();
+                if (networkCreateResult > 0) {
+                    throw new RuntimeException("Creating container network '" + devServicesLaunchResult.networkId()
+                            + "' completed unsuccessfully");
+                }
+                // do the cleanup in a shutdown hook because there might be more services (launched via QuarkusTestResourceLifecycleManager) connected to the network
+                Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                     @Override
-                    public void accept(String s, String s2) {
-                        propertyMap.put(s, s2);
+                    public void run() {
+                        try {
+                            new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
+                                    .command(containerRuntime.getExecutableName(), "network", "rm",
+                                            devServicesLaunchResult.networkId())
+                                    .start()
+                                    .waitFor();
+                        } catch (InterruptedException | IOException ignored) {
+                            System.out.println(
+                                    "Unable to delete container network '" + devServicesLaunchResult.networkId() + "'");
+                        }
                     }
-                }, DevServicesNativeConfigResultBuildItem.class.getName());
-        return propertyMap;
+                }));
+            } catch (Exception e) {
+                throw new RuntimeException("Creating container network '" + devServicesLaunchResult.networkId()
+                        + "' completed unsuccessfully");
+            }
+        }
+    }
+
+    static void activateLogging() {
+        // calling this method of the Recorder essentially sets up logging and configures most things
+        // based on the provided configuration
+
+        //we need to run this from the TCCL, as we want to activate it from
+        //inside the isolated CL, if one exists
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        try {
+            Class<?> lrs = cl.loadClass(LoggingSetupRecorder.class.getName());
+            lrs.getDeclaredMethod("handleFailedStart").invoke(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static class DefaultDevServicesLaunchResult implements ArtifactLauncher.InitContext.DevServicesLaunchResult {
+        private final Map<String, String> properties;
+        private final String networkId;
+        private final boolean manageNetwork;
+        private final CuratedApplication curatedApplication;
+
+        DefaultDevServicesLaunchResult(Map<String, String> properties, String networkId,
+                boolean manageNetwork, CuratedApplication curatedApplication) {
+            this.properties = properties;
+            this.networkId = networkId;
+            this.manageNetwork = manageNetwork;
+            this.curatedApplication = curatedApplication;
+        }
+
+        public Map<String, String> properties() {
+            return properties;
+        }
+
+        public String networkId() {
+            return networkId;
+        }
+
+        @Override
+        public boolean manageNetwork() {
+            return manageNetwork;
+        }
+
+        @Override
+        public CuratedApplication getCuratedApplication() {
+            return curatedApplication;
+        }
+
+        @Override
+        public void close() {
+            curatedApplication.close();
+        }
     }
 
     static Properties readQuarkusArtifactProperties(ExtensionContext context) {
@@ -291,15 +443,24 @@ public final class IntegrationTestUtil {
             }
             throw new IllegalStateException(errorMessage);
         }
-        try {
-            Properties properties = new Properties();
-            properties.load(new FileInputStream(artifactProperties.toFile()));
+
+        Properties properties = new Properties();
+        try (var fis = new FileInputStream(artifactProperties.toFile())) {
+            properties.load(fis);
             return properties;
         } catch (IOException e) {
             throw new UncheckedIOException(
                     "Unable to read artifact metadata file created that must be created by Quarkus in order to run integration tests.",
                     e);
         }
+    }
+
+    static String getArtifactType(Properties quarkusArtifactProperties) {
+        String artifactType = quarkusArtifactProperties.getProperty("type");
+        if (artifactType == null) {
+            throw new IllegalStateException("Unable to determine the type of artifact created by the Quarkus build");
+        }
+        return artifactType;
     }
 
     private static TestLauncher determineTestLauncher() {
@@ -340,12 +501,12 @@ public final class IntegrationTestUtil {
             final CodeSource codeSource = testClass.getProtectionDomain().getCodeSource();
             if (codeSource != null) {
                 URL codeSourceLocation = codeSource.getLocation();
-                File artifactPropertiesDirectory = determineBuildOutputDirectory(codeSourceLocation);
+                Path artifactPropertiesDirectory = determineBuildOutputDirectory(codeSourceLocation);
                 if (artifactPropertiesDirectory == null) {
                     throw new IllegalStateException(
                             "Unable to determine the output of the Quarkus build. Consider setting the 'build.output.directory' system property.");
                 }
-                result = artifactPropertiesDirectory.toPath();
+                result = artifactPropertiesDirectory;
             }
         }
         if (result == null) {
@@ -359,24 +520,37 @@ public final class IntegrationTestUtil {
         return result;
     }
 
-    private static File determineBuildOutputDirectory(final URL url) {
+    private static Path determineBuildOutputDirectory(final URL url) {
         if (url == null) {
             return null;
         }
-        if (url.getProtocol().equals("file") && url.getPath().endsWith("test-classes/")) {
-            //we have the maven test classes dir
-            return toPath(url).getParent().toFile();
-        } else if (url.getProtocol().equals("file") && url.getPath().endsWith("test/")) {
-            //we have the gradle test classes dir, build/classes/java/test
-            return toPath(url).getParent().getParent().getParent().toFile();
-        } else if (url.getProtocol().equals("file") && url.getPath().contains("/target/surefire/")) {
-            //this will make mvn failsafe:integration-test work
-            String path = url.getPath();
-            int index = path.lastIndexOf("/target/");
-            try {
-                return Paths.get(new URI("file:" + (path.substring(0, index) + "/target/"))).toFile();
-            } catch (URISyntaxException e) {
-                throw new RuntimeException(e);
+        if (url.getProtocol().equals("file")) {
+            if (url.getPath().endsWith("test-classes/")) {
+                // we have the maven test classes dir
+                return toPath(url).getParent();
+            } else if (url.getPath().endsWith("test/") || url.getPath().endsWith("integrationTest/")) {
+                // we have the gradle test classes dir, build/classes/java/test
+                return toPath(url).getParent().getParent().getParent();
+            } else if (url.getPath().contains("/target/surefire/")) {
+                // this will make mvn failsafe:integration-test work
+                String path = url.getPath();
+                int index = path.lastIndexOf("/target/");
+                try {
+                    return Paths.get(new URI("file:" + (path.substring(0, index) + "/target/")));
+                } catch (URISyntaxException e) {
+                    throw new RuntimeException(e);
+                }
+            } else if (url.getPath().endsWith("-tests.jar")) {
+                // integration platform test
+                final Path baseDir = Path.of("").normalize().toAbsolutePath();
+                Path outputDir = baseDir.resolve("target");
+                if (Files.exists(outputDir)) {
+                    return outputDir;
+                }
+                outputDir = baseDir.resolve("build");
+                if (Files.exists(outputDir)) {
+                    return outputDir;
+                }
             }
         }
         return null;

@@ -12,6 +12,10 @@
     <artifactId>quarkus-tck-microprofile-jwt</artifactId>
     <name>Quarkus - TCK - MicroProfile JWT</name>
 
+    <properties>
+        <microprofile-jwt-auth-tck.version>2.1</microprofile-jwt-auth-tck.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -41,7 +45,7 @@
                 <executions>
                     <execution>
                         <id>unpack-suite-files</id>
-                        <phase>process-test-classes</phase>
+                        <phase>generate-test-resources</phase>
                         <goals>
                             <goal>unpack</goal>
                         </goals>
@@ -50,7 +54,7 @@
                                 <artifactItem>
                                     <groupId>org.eclipse.microprofile.jwt</groupId>
                                     <artifactId>microprofile-jwt-auth-tck</artifactId>
-                                    <version>${microprofile-jwt-api.version}</version>
+                                    <version>${microprofile-jwt-auth-tck.version}</version>
                                     <type>test-jar</type>
                                     <classifier>tests</classifier>
                                     <overWrite>false</overWrite>
@@ -85,7 +89,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.jwt</groupId>
             <artifactId>microprofile-jwt-auth-tck</artifactId>
-            <version>${microprofile-jwt-api.version}</version>
+            <version>${microprofile-jwt-auth-tck.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.jboss.shrinkwrap.resolver</groupId>
@@ -104,7 +108,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.jwt</groupId>
             <artifactId>microprofile-jwt-auth-tck</artifactId>
-            <version>${microprofile-jwt-api.version}</version>
+            <version>${microprofile-jwt-auth-tck.version}</version>
             <type>test-jar</type>
             <exclusions>
                 <exclusion>

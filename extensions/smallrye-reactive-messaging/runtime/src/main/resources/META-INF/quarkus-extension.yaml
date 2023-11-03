@@ -10,3 +10,5 @@ metadata:
   categories:
   - "messaging"
   status: "stable"
+  config:
+  - "mp.messaging."

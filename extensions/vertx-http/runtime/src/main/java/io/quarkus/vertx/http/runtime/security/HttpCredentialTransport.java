@@ -4,13 +4,14 @@ import java.util.Objects;
 
 /**
  * A representation of HTTP credential transport. In particular this includes things such as:
- * 
+ *
  * Cookies
  * Authorization header
  * POST
- * 
- * It is not permitted for multiple HTTP authentication mechanisms to use the same credential
- * transport type, as they will not be able to figure out which mechanisms should process which
+ *
+ * Not that using multiple HTTP authentication mechanisms to use the same credential
+ * transport type can lead to unexpected authentication failures as they will not be able to figure out which mechanisms should
+ * process which
  * request.
  */
 public class HttpCredentialTransport {
@@ -26,7 +27,7 @@ public class HttpCredentialTransport {
     public HttpCredentialTransport(Type transportType, String typeTarget, String authenticationScheme) {
         this.transportType = Objects.requireNonNull(transportType);
         this.typeTarget = Objects.requireNonNull(typeTarget).toLowerCase();
-        this.authenticationScheme = Objects.requireNonNull(authenticationScheme);
+        this.authenticationScheme = Objects.requireNonNull(authenticationScheme).toLowerCase();
     }
 
     public enum Type {
@@ -49,7 +50,11 @@ public class HttpCredentialTransport {
         /**
          * X509
          */
-        X509
+        X509,
+        /**
+         * Authorization code, type target is the query 'code' parameter
+         */
+        AUTHORIZATION_CODE
     }
 
     @Override

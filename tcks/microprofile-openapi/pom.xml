@@ -13,6 +13,10 @@
     <artifactId>quarkus-tck-microprofile-openapi</artifactId>
     <name>Quarkus - TCK - MicroProfile OpenAPI</name>
 
+    <properties>
+        <microprofile-openapi-tck.version>3.1.1</microprofile-openapi-tck.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -25,6 +29,7 @@
                         <test.url>http://localhost:8081</test.url>
                         <!-- Change metrics endpoint to be /metrics -->
                         <quarkus.http.non-application-root-path>/</quarkus.http.non-application-root-path>
+                        <quarkus.smallrye-openapi.auto-add-tags>false</quarkus.smallrye-openapi.auto-add-tags>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->
@@ -52,7 +57,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.openapi</groupId>
             <artifactId>microprofile-openapi-tck</artifactId>
-            <version>${microprofile-open-api.version}</version>
+            <version>${microprofile-openapi-tck.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
@@ -73,12 +78,12 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.jboss.spec.javax.xml.bind</groupId>
-            <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.spec.javax.ws.rs</groupId>
-            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
         </dependency>
         <dependency>
             <groupId>jakarta.servlet</groupId>

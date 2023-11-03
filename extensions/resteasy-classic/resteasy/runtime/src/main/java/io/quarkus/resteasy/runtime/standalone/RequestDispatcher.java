@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.runtime.standalone;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.ResteasyContext;
@@ -54,7 +55,7 @@ public class RequestDispatcher {
     public void service(Context context,
             HttpServerRequest req,
             HttpServerResponse resp,
-            HttpRequest vertxReq, HttpResponse vertxResp, boolean handleNotFound) throws IOException {
+            HttpRequest vertxReq, HttpResponse vertxResp, boolean handleNotFound, Throwable throwable) throws IOException {
 
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
@@ -69,7 +70,15 @@ public class RequestDispatcher {
                 ResteasyContext.pushContext(HttpServerRequest.class, req);
                 ResteasyContext.pushContext(HttpServerResponse.class, resp);
                 ResteasyContext.pushContext(Vertx.class, context.owner());
-                if (handleNotFound) {
+                if (throwable != null) {
+                    dispatcher.pushContextObjects(vertxReq, vertxResp);
+                    dispatcher.writeException(vertxReq, vertxResp, throwable, new Consumer<Throwable>() {
+                        @Override
+                        public void accept(Throwable throwable) {
+
+                        }
+                    });
+                } else if (handleNotFound) {
                     dispatcher.invoke(vertxReq, vertxResp);
                 } else {
                     dispatcher.invokePropagateNotFound(vertxReq, vertxResp);

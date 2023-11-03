@@ -16,9 +16,15 @@
 */
 package {package-name}.it;
 
+{#if quarkus.bom.version.startsWith("2.") or quarkus.bom.version.startsWith("1.")}
 import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+{#else}
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+{/if}
 
 @Path("/{extension.id}")
 @ApplicationScoped

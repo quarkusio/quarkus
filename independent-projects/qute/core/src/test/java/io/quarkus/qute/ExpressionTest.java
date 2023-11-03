@@ -1,16 +1,17 @@
 package io.quarkus.qute;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
-import io.quarkus.qute.Expression.Part;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.Expression.Part;
 
 public class ExpressionTest {
 
@@ -46,18 +47,15 @@ public class ExpressionTest {
         verify("name[['value']", null, null, name("name"), name("value"));
         verify("name[false]]", null, null, name("name"), name("false"));
         verify("name[1l]", null, null, name("name"), name("1"));
-        try {
-            verify("name['value'][1][null]", null, null);
-            fail();
-        } catch (TemplateException expected) {
-            assertTrue(expected.getMessage().contains("Null value"));
-        }
-        try {
-            verify("name[value]", null, null);
-            fail();
-        } catch (TemplateException expected) {
-            assertTrue(expected.getMessage().contains("Non-literal value"));
-        }
+
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> verify("name['value'][1][null]", null, null))
+                .withMessageContaining("Null value");
+
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> verify("name[value]", null, null))
+                .withMessageContaining("Non-literal value");
+
         verify("name[1l]['foo']", null, null, name("name"), name("1"), name("foo"));
         verify("foo[\"name.dot\"].value", null, null, name("foo"), name("name.dot"), name("value"));
         verify("list[100] or 'NOT_FOUND'", null, null, name("list"), name("100"),
@@ -68,11 +66,28 @@ public class ExpressionTest {
         verify("hero.name.isBlank ? 'Hulk' : hero.name", null, null, name("hero"), name("name"), name("isBlank"),
                 virtualMethod("?", ExpressionImpl.literalFrom(-1, "'Hulk'")),
                 virtualMethod(":", ExpressionImpl.from("hero.name")));
+        verify("hero.name??", null, null, name("hero"), name("name"),
+                virtualMethod("or", ExpressionImpl.literalFrom(-1, "null")));
+    }
+
+    @Test
+    public void testInfixNotationRedundantSpace() throws InterruptedException, ExecutionException {
+        verify("name   or 'John'", null, null, name("name"), virtualMethod("or", ExpressionImpl.from("'John'")));
+        verify("name or    'John'", null, null, name("name"), virtualMethod("or", ExpressionImpl.from("'John'")));
+        verify("name  or   'John'", null, null, name("name"), virtualMethod("or", ExpressionImpl.from("'John'")));
+        verify("name  or  'John' or 1", null, null, name("name"), virtualMethod("or", ExpressionImpl.from("'John'")),
+                virtualMethod("or", ExpressionImpl.literalFrom(-1, "1")));
+        verify("name  or  'John'  or  1", null, null, name("name"), virtualMethod("or", ExpressionImpl.from("'John'")),
+                virtualMethod("or", ExpressionImpl.literalFrom(-1, "1")));
     }
 
     @Test
     public void testNestedVirtualMethods() {
-        Expression exp = ExpressionImpl.from("movie.findServices(movie.name,movie.toNumber(movie.getName))");
+        assertNestedVirtualMethod(ExpressionImpl.from("movie.findServices(movie.name,movie.toNumber(movie.getName))"));
+        assertNestedVirtualMethod(ExpressionImpl.from("movie.findServices(movie.name, movie.toNumber(movie.getName) )"));
+    }
+
+    private void assertNestedVirtualMethod(Expression exp) {
         assertNull(exp.getNamespace());
         List<Expression.Part> parts = exp.getParts();
         assertEquals(2, parts.size());
@@ -101,8 +116,7 @@ public class ExpressionTest {
         assertEquals("call(|java.util.List<org.acme.Label>|,bar)", parts.get(1));
     }
 
-    private void verify(String value, String namespace, CompletedStage<Object> literalValue, Part... parts)
-            throws InterruptedException, ExecutionException {
+    private void verify(String value, String namespace, CompletedStage<Object> literalValue, Part... parts) {
         ExpressionImpl exp = ExpressionImpl.from(value);
         assertEquals(namespace, exp.getNamespace());
         assertEquals(Arrays.asList(parts), exp.getParts());

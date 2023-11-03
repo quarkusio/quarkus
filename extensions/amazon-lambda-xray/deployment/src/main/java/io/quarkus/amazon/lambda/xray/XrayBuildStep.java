@@ -20,9 +20,7 @@ public class XrayBuildStep {
         runtimeInitialized.produce(
                 new RuntimeInitializedClassBuildItem("com.amazonaws.xray.strategy.sampling.LocalizedSamplingStrategy"));
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("com.amazonaws.xray.ThreadLocalStorage"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(
-                true, true, true,
-                "com.amazonaws.xray.handlers.config.AWSServiceHandlerManifest",
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("com.amazonaws.xray.handlers.config.AWSServiceHandlerManifest",
                 "com.amazonaws.xray.AWSXRay",
                 "com.amazonaws.xray.strategy.sampling.manifest.SamplingRuleManifest",
                 "com.amazonaws.xray.strategy.sampling.rule.SamplingRule",
@@ -41,7 +39,8 @@ public class XrayBuildStep {
                 "com.amazonaws.xray.entities.TraceID",
                 "com.amazonaws.xray.entities.Cause",
                 "com.amazonaws.xray.entities.SegmentImpl",
-                "com.fasterxml.jackson.databind.ser.std.ToStringSerializer"));
+                "com.fasterxml.jackson.databind.ser.std.ToStringSerializer").methods().fields()
+                .build());
 
         resource.produce(new NativeImageResourceBuildItem(
                 "com/amazonaws/xray/interceptors/DefaultOperationParameterWhitelist.json",

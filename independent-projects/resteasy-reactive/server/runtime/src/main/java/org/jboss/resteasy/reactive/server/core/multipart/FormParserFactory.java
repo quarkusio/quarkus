@@ -3,8 +3,10 @@ package org.jboss.resteasy.reactive.server.core.multipart;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
+
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 /**
@@ -15,23 +17,25 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
  *
  * @author Stuart Douglas
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class FormParserFactory {
 
     private final ParserDefinition[] parserDefinitions;
 
     FormParserFactory(final List<ParserDefinition> parserDefinitions) {
-        this.parserDefinitions = parserDefinitions.toArray(new ParserDefinition[parserDefinitions.size()]);
+        this.parserDefinitions = parserDefinitions.toArray(new ParserDefinition[0]);
     }
 
     /**
      * Creates a form data parser for this request.
      *
      * @param exchange The exchange
+     * @param fileFormNames
      * @return A form data parser, or null if there is no parser registered for the request content type
      */
-    public FormDataParser createParser(final ResteasyReactiveRequestContext exchange) {
+    public FormDataParser createParser(final ResteasyReactiveRequestContext exchange, Set<String> fileFormNames) {
         for (int i = 0; i < parserDefinitions.length; ++i) {
-            FormDataParser parser = parserDefinitions[i].create(exchange);
+            FormDataParser parser = parserDefinitions[i].create(exchange, fileFormNames);
             if (parser != null) {
                 return parser;
             }
@@ -41,9 +45,9 @@ public class FormParserFactory {
 
     public interface ParserDefinition<T> {
 
-        FormDataParser create(final ResteasyReactiveRequestContext exchange);
+        FormDataParser create(final ResteasyReactiveRequestContext exchange, Set<String> fileFormNames);
 
-        T setDefaultEncoding(String charset);
+        T setDefaultCharset(String charset);
     }
 
     public static Builder builder(Supplier<Executor> executorSupplier) {
@@ -114,7 +118,7 @@ public class FormParserFactory {
         public FormParserFactory build() {
             if (defaultCharset != null) {
                 for (ParserDefinition parser : parsers) {
-                    parser.setDefaultEncoding(defaultCharset);
+                    parser.setDefaultCharset(defaultCharset);
                 }
             }
             return new FormParserFactory(parsers);

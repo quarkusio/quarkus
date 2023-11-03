@@ -1,9 +1,12 @@
 package io.quarkus.dev.console;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import io.quarkus.dev.spi.HotReplacementContext;
 
@@ -13,8 +16,9 @@ public class DevConsoleManager {
     private static volatile Map<String, Map<String, Object>> templateInfo;
     private static volatile HotReplacementContext hotReplacementContext;
     private static volatile Object quarkusBootstrap;
+    private static volatile boolean doingHttpInitiatedReload;
     /**
-     * Global map that can be used to share data betweeen the runtime and deployment side
+     * Global map that can be used to share data between the runtime and deployment side
      * to enable communication.
      * <p>
      * Key names should be namespaced.
@@ -80,11 +84,55 @@ public class DevConsoleManager {
         return (T) globals.get(name);
     }
 
+    public static boolean isDoingHttpInitiatedReload() {
+        return doingHttpInitiatedReload;
+    }
+
+    public static void setDoingHttpInitiatedReload(boolean doingHttpInitiatedReload) {
+        DevConsoleManager.doingHttpInitiatedReload = doingHttpInitiatedReload;
+    }
+
     public static void close() {
         handler = null;
         templateInfo = null;
         hotReplacementContext = null;
         quarkusBootstrap = null;
+        actions.clear();
         globals.clear();
+    }
+
+    /**
+     * A list of action that can be executed.
+     * The action registered here should be used with the Dev UI / JSON RPC services.
+     */
+    private static final Map<String, Function<Map<String, String>, ?>> actions = new HashMap<>();
+
+    /**
+     * Registers an action that will be called by a JSON RPC service at runtime
+     *
+     * @param name the name of the action, should be namespaced to avoid conflicts
+     * @param action the action. The function receives a Map as parameters (named parameters) and returns an object of type
+     *        {@code T}.
+     *        Note that the type {@code T} must be a class shared by both the deployment and the runtime.
+     */
+    public static <T> void register(String name, Function<Map<String, String>, T> action) {
+        actions.put(name, action);
+    }
+
+    /**
+     * Invokes a registered action
+     *
+     * @param name the name of the action
+     * @param params the named parameters
+     * @return the result of the invocation. An empty map is returned for action not returning any result.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T invoke(String name, Map<String, String> params) {
+        var function = actions.get(name);
+        if (function == null) {
+            throw new NoSuchElementException(name);
+        } else {
+            return (T) function.apply(params);
+        }
     }
 }

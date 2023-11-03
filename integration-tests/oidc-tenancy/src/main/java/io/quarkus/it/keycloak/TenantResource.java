@@ -1,10 +1,14 @@
 package io.quarkus.it.keycloak;
 
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -13,8 +17,15 @@ import io.quarkus.arc.Arc;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdToken;
 import io.quarkus.oidc.OIDCException;
+import io.quarkus.oidc.OidcSession;
+import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.client.OidcClientConfig;
+import io.quarkus.oidc.client.OidcClients;
+import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.vertx.ext.web.RoutingContext;
 
 @Path("/tenant/{tenant}/api/user")
 public class TenantResource {
@@ -29,12 +40,24 @@ public class TenantResource {
     AccessTokenCredential accessTokenCred;
 
     @Inject
+    CustomIntrospectionUserInfoCache tokenCache;
+
+    @Inject
     @IdToken
     JsonWebToken idToken;
 
+    @Inject
+    OidcSession oidcSession;
+
+    @Inject
+    OidcClients oidcClients;
+
+    @Inject
+    RoutingContext routingContext;
+
     @GET
     @RolesAllowed("user")
-    public String userNameService(@PathParam("tenant") String tenant) {
+    public String userNameService(@PathParam("tenant") String tenant, @QueryParam("revoke") boolean revokeToken) {
         if (tenant.startsWith("tenant-web-app")) {
             throw new OIDCException("Wrong tenant");
         }
@@ -48,36 +71,78 @@ public class TenantResource {
                 name = name + "." + userInfo.getString(Claims.preferred_username.name());
             }
         }
-        return tenant + ":" + name;
+
+        String response = tenant + ":" + name;
+        if (tenant.startsWith("tenant-oidc-introspection-only")) {
+            TokenIntrospection introspection = securityIdentity.getAttribute("introspection");
+            response += (",client_id:" + introspection.getString("client_id"));
+            response += (",introspection_client_id:" + introspection.getString("introspection_client_id"));
+            response += (",introspection_client_secret:" + introspection.getString("introspection_client_secret"));
+            response += (",active:" + introspection.getBoolean("active"));
+            response += (",userinfo:" + getUserInfo().getPreferredUserName());
+            response += (",cache-size:" + tokenCache.getCacheSize());
+        }
+
+        if (revokeToken) {
+            OidcClientConfig oidcClientConfig = new OidcClientConfig();
+            oidcClientConfig.setClientId("client");
+            oidcClientConfig.setId("clientId");
+            oidcClientConfig.setTokenPath("http://localhost:8081/oidc/token");
+            oidcClientConfig.setRevokePath("http://localhost:8081/oidc/revoke");
+
+            oidcClients.newClient(oidcClientConfig)
+                    .chain(oidcClient -> oidcClient.revokeAccessToken(accessTokenCred.getToken())).await().indefinitely();
+
+        }
+
+        return response;
     }
 
     @GET
     @RolesAllowed("user")
     @Path("no-discovery")
     public String userNameServiceNoDiscovery(@PathParam("tenant") String tenant) {
-        return userNameService(tenant);
+        return userNameService(tenant, false);
     }
 
     @GET
     @Path("webapp")
     @RolesAllowed("user")
-    public String userNameWebApp(@PathParam("tenant") String tenant) {
+    public String userNameWebApp(@PathParam("tenant") String tenant, @QueryParam("logout") boolean localLogout) {
         if (!tenant.equals("tenant-web-app") && !tenant.equals("tenant-web-app-dynamic")
                 && !tenant.equals("tenant-web-app-no-discovery")) {
             throw new OIDCException("Wrong tenant");
+        }
+        if (!tenant.equals(oidcSession.getTenantId())) {
+            throw new OIDCException("'tenant' parameter does not match the OIDC session tenantid");
         }
         UserInfo userInfo = getUserInfo();
         if (!idToken.getGroups().contains("user")) {
             throw new OIDCException("Groups expected");
         }
-        return tenant + ":" + getNameWebAppType(userInfo.getString("upn"), "upn", "preferred_username");
+
+        if (!idToken.getRawToken().equals(oidcSession.getIdToken().getRawToken())) {
+            throw new OIDCException("Wrong ID token injection");
+        }
+
+        String response = tenant + ":" + getNameWebAppType(userInfo.getString("upn"), "upn", "preferred_username");
+
+        if (routingContext.get("reauthenticated") != null) {
+            response += ":reauthenticated";
+        }
+
+        if (localLogout) {
+            oidcSession.logout().await().indefinitely();
+            response += ":logout";
+        }
+        return response;
     }
 
     @GET
     @Path("webapp-no-discovery")
     @RolesAllowed("user")
     public String userNameWebAppNoDiscovery(@PathParam("tenant") String tenant) {
-        return userNameWebApp(tenant);
+        return userNameWebApp(tenant, false);
     }
 
     private UserInfo getUserInfo() {
@@ -99,6 +164,19 @@ public class TenantResource {
             throw new OIDCException("Groups are not expected");
         }
         return tenant + ":" + getNameWebAppType(idToken.getName(), "preferred_username", "upn");
+    }
+
+    @GET
+    @Path("webapp2-scope-permissions")
+    @PermissionsAllowed({ "openid", "email", "profile" })
+    public String scopePermissionsWebApp2(@PathParam("tenant") String tenant) {
+        if (!tenant.equals("tenant-web-app2")) {
+            throw new OIDCException("Wrong tenant");
+        }
+        return Arrays
+                .stream(accessToken.<String> getClaim(OidcConstants.TOKEN_SCOPE).split(" "))
+                .sorted(String::compareTo)
+                .collect(Collectors.joining(" "));
     }
 
     private String getNameWebAppType(String name,
@@ -137,7 +215,7 @@ public class TenantResource {
             // expected because an ID token must not be available
         }
         if (name != null) {
-            throw new OIDCException("Only the access token can be availabe with the 'service' application type");
+            throw new OIDCException("Only the access token can be available with the 'service' application type");
         }
         name = accessToken.getName();
         // The test is set up to use 'upn' for the 'web-app' application type

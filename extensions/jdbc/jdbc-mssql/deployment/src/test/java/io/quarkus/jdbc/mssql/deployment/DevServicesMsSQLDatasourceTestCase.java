@@ -8,10 +8,8 @@ import java.sql.Connection;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,7 +22,7 @@ public class DevServicesMsSQLDatasourceTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource("container-license-acceptance.txt"))
             // Expect no warnings (in particular from Agroal)
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()
@@ -43,7 +41,7 @@ public class DevServicesMsSQLDatasourceTestCase {
     public void testDatasource() throws Exception {
         AgroalConnectionPoolConfiguration configuration = dataSource.getConfiguration().connectionPoolConfiguration();
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:sqlserver:"));
-        assertEquals("SA", configuration.connectionFactoryConfiguration().principal().getName());
+        assertEquals("sa", configuration.connectionFactoryConfiguration().principal().getName());
         assertEquals(20, configuration.maxSize());
         assertThat(configuration.exceptionSorter()).isInstanceOf(MSSQLExceptionSorter.class);
 

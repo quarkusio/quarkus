@@ -7,7 +7,7 @@ metadata:
   - "lambda"
   - "aws"
   - "amazon"
-  guide: "https://quarkus.io/guides/funqy-amazon-lambda"
+  guide: "https://quarkus.io/guides/funqy-aws-lambda"
   categories:
   - "cloud"
   status: "experimental"
@@ -16,3 +16,5 @@ metadata:
     kind: "example"
     languages: "java"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
+  config:
+  - "quarkus.funqy."

@@ -1,0 +1,270 @@
+assertj
+Assertj
+Asciidoc
+asciidoc
+AsciiDoctor
+asciidoctor
+Bios
+btrfs
+burner
+c group
+capex
+capEx
+Capex
+CD 1
+Cds
+CDS
+CGroup
+classic mode
+configmap
+configuration map
+control key
+csv
+ctrl
+cygmon
+CygMon
+CYGMON
+Denial of Service
+Denial-of-Service
+Dev Mode
+Dev mode
+Dev Ops
+Dev-Ops
+devops
+Devops
+disk druid
+Disk druid
+diskdruid
+dns
+DVD burner
+Exec Shield
+exif
+EXIF
+F.A.Q
+faq
+Faq
+fedora project
+fortran
+fqdn
+Fqdn
+gb
+Gb
+gbps
+GBPS
+GDBTK
+gid
+Gid
+gimp
+Gimp
+git
+GIT
+gnome
+Gnome
+gnu
+Gnu
+gpl
+Gpl
+Graalvm
+graalVM
+GRPC
+Grub
+gtk
+Gtk
+HP Proliant
+hyper-threading
+hyperthreading
+Hyperviser
+HyperVisor
+ia64
+IA64
+IBM z Systems
+ignition config
+Infiniband
+Intel Tolapai
+Iops
+IOPs
+Ip
+IPSec
+iSeries
+iso
+iso image
+Istio Service Mesh
+Itanium2
+JBoss.org
+jetbrains
+Jetbrains
+Junit
+junit
+jvm
+Jvm
+kernel-based virtual machine
+knowledgebase
+kickstart
+kvm
+lan
+Lan
+linux
+LINUX
+Microprofile
+micro-profile
+MicroSoft
+mongoDB
+Mongo DB
+Mongodb
+Mongo-db
+MS
+ms-dos
+Ms-Dos
+MS-dos
+msdos
+MSDOS
+MSFT
+mutual tls
+Mutual tls
+Mutual TLS
+mySQL
+MYSQL
+node.js
+node.JS
+Node.JS
+nodejs
+Nodejs
+Objective-C
+openid connect
+Openid Connect
+Open InfiniBand
+Operating Environment
+Operating System
+Operator hub
+Operator Hub
+operatorhub
+Operatorhub
+opEx
+Opex
+Opex
+OPEX
+OS
+P-PC
+podman
+Pop-up
+popup
+posix
+Posix
+Postscript
+Powershell
+powershell
+PPC
+PPC64
+ppp
+Ppp
+prom
+Prom
+proof key for code exchange
+pSeries
+q & a
+Q & A
+q&a
+Q&A
+qcow2
+Qcow2
+Qeth
+QETH
+ram
+Ram
+RAM-disk
+ramdisk
+RAMdisk
+RAW
+Red Boot
+Red Hat Proxy
+Red Hat satellite
+Red Hat Satellite server
+Red Hat Satellite Capsule server
+Red Hat Network Satellite server
+Redboot
+resteasy
+Resteasy
+RESTEASY
+rom
+Rom
+rpm
+S-E Linux
+s-record
+s-Record
+S-Record
+S90
+samba
+SAMBA
+SE Linux
+SE-Linux
+selinux
+Shadow Man
+Shadow passwords
+Shadow utilities
+ShadowMan
+socks
+software collection
+Software collection
+Spring boot
+SR IOV
+SREC
+ssh
+Ssh
+SSL
+Star Office
+Staroffice
+StartX
+SU
+Sys V
+system d
+system D
+system D
+System V
+SystemD
+Tolapai
+ttl
+uid
+UltraSparc
+ULTRASPARC
+unix
+unix Socket
+UNIX-like
+url
+var
+VI
+vim
+VIM
+Virtual Console
+Virtual Desktop Server Management
+Virtual Network Interface Card
+virtual-console
+VisualStudio Code
+VisualStudioCode
+vlan
+vLAN
+vnic
+VNIC
+vnuma
+VNUMA
+vpn
+VS Code
+VSCode
+VT
+VT-i
+wan
+wca
+Webauthn
+webAuthn
+WebAuthN
+Websocket
+websocket
+web-UI
+webUI
+Window-Maker
+WindowMaker
+XDS
+Xemacs
+Xterm
+yaml
+Yaml is not a markup language.
+Compared to yaml, JSON has way more curly braces.

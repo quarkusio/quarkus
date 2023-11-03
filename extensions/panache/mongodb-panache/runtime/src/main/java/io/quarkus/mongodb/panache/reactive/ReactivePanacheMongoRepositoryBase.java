@@ -9,7 +9,6 @@ import java.util.stream.Stream;
 
 import org.bson.Document;
 
-import io.quarkus.mongodb.panache.PanacheUpdate;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.mongodb.reactive.ReactiveMongoDatabase;
 import io.quarkus.panache.common.Parameters;
@@ -32,8 +31,8 @@ import io.smallrye.mutiny.Uni;
 public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
     /**
      * Persist the given entity in the database.
-     * This will set it's ID field if not already set.
-     * 
+     * This will set its ID field if not already set.
+     *
      * @param entity the entity to insert.
      * @see #persist(Iterable)
      * @see #persist(Stream)
@@ -56,7 +55,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Persist the given entity in the database or update it if it already exist.
+     * Persist the given entity in the database or update it if it already exists.
      *
      * @param entity the entity to update.
      * @see #persistOrUpdate(Iterable)
@@ -69,7 +68,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Delete the given entity from the database, if it is already persisted.
-     * 
+     *
      * @param entity the entity to delete.
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
@@ -84,7 +83,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find an entity of this type by ID.
-     * 
+     *
      * @param id the ID of the entity to find.
      * @return the entity found, or <code>null</code> if not found.
      */
@@ -106,7 +105,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query, with optional indexed parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params optional sequence of indexed parameters
      * @return a new {@link ReactivePanacheQuery} instance for the given query
@@ -123,7 +122,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query and the given sort options, with optional indexed parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params optional sequence of indexed parameters
@@ -141,7 +140,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Map} of named parameters
      * @return a new {@link ReactivePanacheQuery} instance for the given query
@@ -158,7 +157,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Map} of indexed parameters
@@ -176,7 +175,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param params {@link Parameters} of named parameters
      * @return a new {@link ReactivePanacheQuery} instance for the given query
@@ -193,7 +192,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
-     * 
+     *
      * @param query a {@link io.quarkus.mongodb.panache query string}
      * @param sort the sort strategy to use
      * @param params {@link Parameters} of indexed parameters
@@ -226,7 +225,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      *
      * @param query a {@link Document} query
      * @param sort the {@link Document} sort
@@ -398,7 +397,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for <code>find(query, sort).list()</code>.
      *
      * @param query a {@link Document} query
@@ -574,7 +573,7 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for <code>find(query, sort).stream()</code>.
      *
      * @param query a {@link Document} query
@@ -885,50 +884,74 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     /**
      * Update all entities of this type by the given update document, with optional indexed parameters.
-     * The returned {@link PanacheUpdate} object will allow to restrict on which document the update should be applied.
+     * The returned {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } object will allow to restrict on
+     * which document the update should be applied.
      *
      * @param update the update document, if it didn't contain any update operator, we add <code>$set</code>.
      *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
      * @param params optional sequence of indexed parameters
-     * @return a new {@link ReactivePanacheUpdate} instance for the given update document
+     * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } instance for the given update
+     *         document
      * @see #update(String, Map)
      * @see #update(String, Parameters)
      */
     @GenerateBridge
-    default ReactivePanacheUpdate update(String update, Object... params) {
+    default io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(String update, Object... params) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
      * Update all entities of this type by the given update document, with named parameters.
-     * The returned {@link PanacheUpdate} object will allow to restrict on which document the update should be applied.
+     * The returned {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } object will allow to restrict on
+     * which document the update should be applied.
      *
      * @param update the update document, if it didn't contain any update operator, we add <code>$set</code>.
      *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
      * @param params {@link Map} of named parameters
-     * @return a new {@link ReactivePanacheUpdate} instance for the given update document
+     * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } instance for the given update
+     *         document
      * @see #update(String, Object...)
      * @see #update(String, Parameters)
      *
      */
     @GenerateBridge
-    default ReactivePanacheUpdate update(String update, Map<String, Object> params) {
+    default io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(String update, Map<String, Object> params) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
      * Update all entities of this type by the given update document, with named parameters.
-     * The returned {@link PanacheUpdate} object will allow to restrict on which document the update should be applied.
+     * The returned {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } object will allow to restrict on
+     * which document the update should be applied.
      *
      * @param update the update document, if it didn't contain any update operator, we add <code>$set</code>.
      *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
      * @param params {@link Parameters} of named parameters
-     * @return a new {@link ReactivePanacheUpdate} instance for the given update document
+     * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } instance for the given update
+     *         document
      * @see #update(String, Object...)
      * @see #update(String, Map)
      */
     @GenerateBridge
-    default ReactivePanacheUpdate update(String update, Parameters params) {
+    default io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(String update, Parameters params) {
+        throw INSTANCE.implementationInjectionMissing();
+    }
+
+    /**
+     * Update all entities of this type by the given update BSON document.
+     * The returned {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate} object will allow to restrict on
+     * which document the
+     * update should be applied.
+     *
+     * @param update the update document, as a {@link org.bson.Document}.
+     * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate} instance for the given update
+     *         document
+     * @see #update(String, Object...)
+     * @see #update(String, Map)
+     * @see #update(String, Parameters)
+     */
+    @GenerateBridge
+    default io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(Document update) {
         throw INSTANCE.implementationInjectionMissing();
     }
 

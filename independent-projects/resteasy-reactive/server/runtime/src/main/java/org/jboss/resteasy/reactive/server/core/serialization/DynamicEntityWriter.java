@@ -2,12 +2,14 @@ package org.jboss.resteasy.reactive.server.core.serialization;
 
 import java.io.IOException;
 import java.util.List;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.MessageBodyWriter;
+
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.core.EncodedMediaType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -20,6 +22,8 @@ import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
  */
 public class DynamicEntityWriter implements EntityWriter {
 
+    private static final MessageBodyWriter<?>[] EMPTY_ARRAY = new MessageBodyWriter[0];
+
     private final ServerSerialisers serialisers;
 
     public DynamicEntityWriter(ServerSerialisers serialisers) {
@@ -30,21 +34,32 @@ public class DynamicEntityWriter implements EntityWriter {
     public void write(ResteasyReactiveRequestContext context, Object entity) throws IOException {
         EncodedMediaType producesMediaType = context.getResponseContentType();
         MessageBodyWriter<?>[] writers = null;
+        MediaType serverSerializersMediaType = null;
         if (producesMediaType == null) {
             MediaType selectedMediaType = null;
             boolean mediaTypeComesFromClient = false;
             ServerHttpRequest vertxRequest = context.serverRequest();
             // first check and see if the resource method defined a media type and try to use it
             if ((context.getTarget() != null) && (context.getTarget().getProduces() != null)) {
-                MediaType res = context.getTarget().getProduces()
+                MediaType negotiatedMediaType = context.getTarget().getProduces()
                         .negotiateProduces(vertxRequest.getRequestHeader(HttpHeaders.ACCEPT)).getKey();
-                List<MessageBodyWriter<?>> writersList = serialisers.findWriters(null, entity.getClass(), res,
+                List<MessageBodyWriter<?>> writersList = serialisers.findWriters(null, entity.getClass(), negotiatedMediaType,
                         RuntimeType.SERVER);
                 if (!writersList.isEmpty()) {
-                    writers = writersList.toArray(new MessageBodyWriter[0]);
+                    writers = writersList.toArray(EMPTY_ARRAY);
                     // use the actual type the method declares as this is what the spec expects despite the fact that we might
                     // have used the suffix of the subtype to determine a MessageBodyWriter
-                    selectedMediaType = context.getTarget().getProduces().getSortedOriginalMediaTypes()[0];
+                    MediaType[] sortedOriginalMediaTypes = context.getTarget().getProduces().getSortedOriginalMediaTypes();
+                    for (MediaType methodMediaType : sortedOriginalMediaTypes) {
+                        if (methodMediaType.isCompatible(negotiatedMediaType)) {
+                            selectedMediaType = methodMediaType;
+                            break;
+                        }
+                    }
+                    if (selectedMediaType == null) {
+                        // this should never happen
+                        selectedMediaType = sortedOriginalMediaTypes[0];
+                    }
                 }
             } else if (vertxRequest.getRequestHeader(HttpHeaders.ACCEPT) != null
                     && !MediaType.WILDCARD.equals(vertxRequest.getRequestHeader(HttpHeaders.ACCEPT))) {
@@ -75,19 +90,20 @@ public class DynamicEntityWriter implements EntityWriter {
                     httpServerResponse.end();
                     return;
                 } else {
+                    serverSerializersMediaType = selectedMediaType;
                     context.setResponseContentType(selectedMediaType);
                     // this will be used as the fallback if Response does NOT contain a type
-                    context.serverResponse().addResponseHeader(HttpHeaders.CONTENT_TYPE, selectedMediaType.toString());
+                    context.serverResponse().addResponseHeader(HttpHeaders.CONTENT_TYPE,
+                            context.getResponseContentType().toString());
                 }
             }
         } else {
             writers = serialisers
-                    .findWriters(null, entity.getClass(), MediaTypeHelper.withSuffixAsSubtype(producesMediaType.getMediaType()),
-                            RuntimeType.SERVER)
+                    .findWriters(null, entity.getClass(), producesMediaType.getMediaType(), RuntimeType.SERVER)
                     .toArray(ServerSerialisers.NO_WRITER);
         }
         for (MessageBodyWriter<?> w : writers) {
-            if (ServerSerialisers.invokeWriter(context, entity, w, serialisers)) {
+            if (ServerSerialisers.invokeWriter(context, entity, w, serialisers, serverSerializersMediaType)) {
                 return;
             }
         }

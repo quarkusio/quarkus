@@ -2,8 +2,8 @@ package io.quarkus.spring.data.rest.runtime.jta;
 
 import java.util.function.Supplier;
 
-import javax.inject.Singleton;
-import javax.transaction.Transactional;
+import jakarta.inject.Singleton;
+import jakarta.transaction.Transactional;
 
 import io.quarkus.rest.data.panache.runtime.UpdateExecutor;
 

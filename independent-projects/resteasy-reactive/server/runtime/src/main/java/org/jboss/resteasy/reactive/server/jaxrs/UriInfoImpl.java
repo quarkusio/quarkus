@@ -7,10 +7,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.PathSegment;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.UriInfo;
+
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.PathSegment;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
+
+import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 import org.jboss.resteasy.reactive.common.util.PathSegmentImpl;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.common.util.URIDecoder;
@@ -18,11 +21,13 @@ import org.jboss.resteasy.reactive.common.util.UnmodifiableMultivaluedMap;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.UriMatch;
+import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
 /**
  * UriInfo implementation
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class UriInfoImpl implements UriInfo {
 
     private final ResteasyReactiveRequestContext currentRequest;
@@ -89,7 +94,13 @@ public class UriInfoImpl implements UriInfo {
     public URI getAbsolutePath() {
         try {
             // TCK says normalized
-            return new URI(currentRequest.getAbsoluteURI()).normalize();
+            String effectiveURI = currentRequest.getAbsoluteURI();
+            int queryParamsIndex = effectiveURI.indexOf('?');
+            if (queryParamsIndex > 0) {
+                // the spec says that getAbsolutePath() does not contain query parameters
+                effectiveURI = effectiveURI.substring(0, queryParamsIndex);
+            }
+            return new URI(effectiveURI).normalize();
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -138,8 +149,11 @@ public class UriInfoImpl implements UriInfo {
             throw encodedNotSupported();
         if (pathParams == null) {
             pathParams = new QuarkusMultivaluedHashMap<>();
-            for (Entry<String, Integer> pathParam : currentRequest.getTarget().getPathParameterIndexes().entrySet()) {
-                pathParams.add(pathParam.getKey(), currentRequest.getPathParam(pathParam.getValue()));
+            RuntimeResource target = currentRequest.getTarget();
+            if (target != null) { // a target can be null if this happens in a filter that runs before the target is set
+                for (Entry<String, Integer> pathParam : target.getPathParameterIndexes().entrySet()) {
+                    pathParams.add(pathParam.getKey(), currentRequest.getPathParam(pathParam.getValue()));
+                }
             }
         }
         return new UnmodifiableMultivaluedMap<>(pathParams);
@@ -209,11 +223,17 @@ public class UriInfoImpl implements UriInfo {
 
     @Override
     public URI resolve(URI uri) {
-        return null;
+        return getBaseUri().resolve(uri);
     }
 
     @Override
     public URI relativize(URI uri) {
-        return null;
+        URI from = getRequestUri();
+        URI to = uri;
+        if (uri.getScheme() == null && uri.getHost() == null) {
+            to = getBaseUriBuilder().replaceQuery(null).path(uri.getPath()).replaceQuery(uri.getQuery())
+                    .fragment(uri.getFragment()).build();
+        }
+        return UriBuilderImpl.relativize(from, to);
     }
 }

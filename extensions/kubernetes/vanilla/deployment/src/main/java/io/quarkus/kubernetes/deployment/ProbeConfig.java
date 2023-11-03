@@ -11,16 +11,36 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class ProbeConfig {
 
     /**
-     * The http path to use for the probe For this to work, the container port also
-     * needs to be set
+     * The port number to use when configuring the {@literal http get} action.
+     * If not configured, the port corresponding to the {@code httpActionPortName} will be used.
+     */
+    @ConfigItem
+    Optional<Integer> httpActionPort;
+
+    /**
+     * The port name for selecting the port of the {@literal HTTP get} action.
+     */
+    @ConfigItem
+    Optional<String> httpActionPortName;
+
+    /**
+     * The http path to use for the probe. For this to work, the container port also
+     * needs to be set.
      *
      * Assuming the container port has been set (as per above comment), if
-     * execAction or tcpSocketAction are not set, an http probe will be used
+     * execAction or tcpSocketAction are not set, an HTTP probe will be used
      * automatically even if no path is set (which will result in the root path
-     * being used)
+     * being used).
+     * If Smallrye Health is used, the path will automatically be set according to the health check path.
      */
     @ConfigItem
     Optional<String> httpActionPath;
+
+    /**
+     * The scheme of the {@literal HTTP get} action. Can be either "HTTP" or "HTTPS".
+     */
+    @ConfigItem
+    Optional<String> httpActionScheme;
 
     /**
      * The command to use for the probe.
@@ -35,15 +55,27 @@ public class ProbeConfig {
     Optional<String> tcpSocketAction;
 
     /**
+     * The gRPC port to use for the probe (the format is either port or port:service).
+     */
+    @ConfigItem
+    Optional<String> grpcAction;
+
+    /**
+     * If enabled and `grpc-action` is not provided, it will use the generated service name and the gRPC port.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean grpcActionEnabled;
+
+    /**
      * The amount of time to wait before starting to probe.
      */
-    @ConfigItem(defaultValue = "0")
+    @ConfigItem(defaultValue = "5")
     Duration initialDelay;
 
     /**
      * The period in which the action should be called.
      */
-    @ConfigItem(defaultValue = "30s")
+    @ConfigItem(defaultValue = "10s")
     Duration period;
 
     /**
@@ -65,6 +97,6 @@ public class ProbeConfig {
     Integer failureThreshold;
 
     public boolean hasUserSuppliedAction() {
-        return httpActionPath.isPresent() || tcpSocketAction.isPresent() || execAction.isPresent();
+        return httpActionPath.isPresent() || tcpSocketAction.isPresent() || execAction.isPresent() || grpcAction.isPresent();
     }
 }

@@ -8,31 +8,31 @@ import io.quarkus.cli.build.BaseBuildCommand;
 import io.quarkus.cli.build.BuildSystemRunner;
 import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.RunModeOption;
-import io.quarkus.cli.common.TargetQuarkusVersionGroup;
+import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
 import io.quarkus.devtools.commands.ListExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.registry.RegistryResolutionException;
 import picocli.CommandLine;
-import picocli.CommandLine.Mixin;
 
-@CommandLine.Command(name = "list", aliases = "ls", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "List platforms and extensions. ", footer = {
+@CommandLine.Command(name = "list", aliases = "ls", header = "List platforms and extensions. ", footer = {
         "%nList modes:%n",
         "(relative). Active when invoked within a project unless an explicit release is specified. " +
                 "The current project configuration will determine what extensions are listed, " +
                 "with installed (available) extensions listed by default.%n",
         "(absolute). Active when invoked outside of a project or when an explicit release is specified. " +
                 "All extensions for the specified release will be listed. " +
-                "The CLI release will be used if this command is invoked outside of a project and no other release is specified.%n" }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "%nOptions:%n")
+                "The CLI release will be used if this command is invoked outside of a project and no other release is specified.%n" })
 public class ProjectExtensionsList extends BaseBuildCommand implements Callable<Integer> {
 
-    @Mixin
+    @CommandLine.Mixin
     RunModeOption runMode;
 
     @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version (absolute):%n")
-    TargetQuarkusVersionGroup targetQuarkusVersion = new TargetQuarkusVersionGroup();
+    TargetQuarkusPlatformGroup targetQuarkusVersion = new TargetQuarkusPlatformGroup();
 
     @CommandLine.Option(names = { "-i",
             "--installable" }, defaultValue = "false", order = 2, description = "List extensions that can be installed (relative)")
@@ -64,8 +64,6 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
                 installable = false;
                 // check if any format was specified
                 boolean formatSpecified = format.isSpecified();
-                // show origins by default
-                format.useOriginsUnlessSpecified();
 
                 if (runMode.isDryRun()) {
                     return dryRunList(spec.commandLine().getHelp(), null);
@@ -112,12 +110,13 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
         dryRunOutput.put("List installable extensions", Boolean.toString(installable));
         dryRunOutput.put("Search pattern", searchPattern);
         dryRunOutput.put("Category", category);
+        dryRunOutput.put("Registry Client", Boolean.toString(registryClient.enabled()));
 
         output.info(help.createTextTable(dryRunOutput).toString());
         return CommandLine.ExitCode.OK;
     }
 
-    Integer listPlatformExtensions() throws QuarkusCommandException {
+    Integer listPlatformExtensions() throws QuarkusCommandException, RegistryResolutionException {
         QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetQuarkusVersion,
                 BuildTool.MAVEN, output);
 

@@ -10,7 +10,8 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class OidcClientReactiveFilterConfig {
 
     /**
-     * Name of the configured OidcClient.
+     * Name of the configured OidcClient used by the OidcClientRequestReactiveFilter. You can override this configuration
+     * for individual MP RestClients with the `io.quarkus.oidc.client.filter.OidcClientFilter` annotation.
      */
     @ConfigItem
     public Optional<String> clientName;

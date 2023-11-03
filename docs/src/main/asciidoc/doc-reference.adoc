@@ -1,0 +1,487 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="doc-reference"]
+= Quarkus style and content guidelines
+include::_attributes.adoc[]
+:diataxis-type: reference
+:categories: contributing
+:topics: internals,documentation
+
+Guidelines are provided to help you to contribute clear and consistent content that is also sourced in the required diataxis structure and composition of Quarkus documentation.
+
+== AsciiDoc syntax
+
+Quarkus docs use AsciiDoc syntax.
+The following links provide background on AsciiDoc syntax and general conventions.
+
+* https://redhat-documentation.github.io/asciidoc-markup-conventions/[AsciiDoc Mark-up Quick Reference for Documentation]
+* https://docs.asciidoctor.org/asciidoc/latest/[AsciiDoctor User Manual]
+* https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc Syntax Quick Reference]
+
+
+[[lang-grammar]]
+== Language and grammar
+
+Write clear, concise, and consistent technical information in US English.
+Write for a global audience with localization, translation, inclusivity, and diversity in mind.
+Try to use the following grammar styles:
+
+* link:https://developers.google.com/style/tense?hl=en[Present tense]
+* link:https://developers.google.com/style/voice?hl=en[Active voice]
+* link:https://developers.google.com/style/person?hl=en[Second person (you)]
+* link:https://developers.google.com/style/tone?hl=en[A conversational tone]
+* link:https://developers.google.com/style/pronouns?hl=en[Gender neutral language]
+
+
+[[sentence-length]]
+== Sentence length
+
+Shorter sentences are much easier to read and translate. Try to use less than 32 words per sentence.
+
+
+[[website-publish]]
+== Website publication
+
+Content from this repository is published to the https://quarkus.io/guides/[Quarkus.io website].
+
+- Documentation built from the main branch is published nightly (main-SNAPSHOT).
+- Documentation for other branches is published at release time.
+
+[[titles-headings]]
+== Titles and headings
+
+Regardless of content type, ensure that the main title and any headings in your document are:
+
+* Goal-oriented and use the language and keywords of the audience
+* Descriptive and avoid filler words
+* Between 3-12 words and 50-80 characters per line to optimize findability in search engines
+* In sentence case capitalization style
+
+Your titles and headings must also follow the specific guidance for the Quarkus content types, as outlined in the following table:
+
+.Title guidance for different Quarkus content types
+[cols="15%,25%a,30%,30%"]
+|===
+|Content type |Should ... |Good example |Bad example
+
+|Concept
+|* Start with a noun that names the concept or topic
+* Never start with an active verb, for example, an action word like configure, install, or start
+* Finish the implied sentence: "Understanding ..."
+|Security and authentication mechanisms in Quarkus
+|Discovering Reactive SQL Clients In Quarkus
+
+|How-To Guide
+|* Start with an active verb in the imperative verb form, for example, "Create a ..." or "Secure a ..."
+* Be action-oriented or task-oriented, rather than feature-oriented
+* Finish the implied sentence: "How to ..."
+|Secure your Quarkus application with WebAuthn authentication
+|Applying WebAuthn Authentication In Quarkus
+
+|Reference
+|* Use a noun phrase to concisely summarize the content of the document
+* Not include the word 'reference'
+* Finish the implied sentence: "About ..."
+|Hibernate Reactive API configuration properties
+|Reference guide for Configuring Hibernate Reactive API Configuration Properties
+
+|Tutorial
+|* Start with an active verb in the imperative verb form, for example, "Create a ..." or "Secure a ..."
+* State what task the user will complete, with emphasis on the key topic or demonstrated activity
+* Be action-oriented or task-oriented, rather than feature-oriented
+* Be led by the needs of the user in learning mode.
+* Finish the implied sentence: "In this tutorial, you will ..."
+|Create a Quarkus application in JVM mode by using the quick start example
+|Creating an App
+|===
+
+
+[[file-conventions]]
+== File conventions
+
+=== Source locations
+
+- AsciiDoc files are in the `src/main/asciidoc` directory within the `docs` module of the link:{quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
+- Configuration documentation is generated from JavaDoc comments in Java source files.
+- Java, YAML, and other source files can also be referenced by AsciiDoc files.
+
+=== Output locations
+
+Configuration references:: Configuration reference documentation is generated from Javadoc comments discovered in MicroProfile Config source files.
+These generated files are in `target/asciidoc/generated/config/` (from the project root).
+
+AsciiDoc output to HTML:: AsciiDoc processing creates HTML files in `docs/target/generated-docs/`.
+
+=== Templates
+
+Create new documentation files with the appropriate template for the content type:
+
+Concepts:: Use `docs/src/main/asciidoc/_templates/template-concept.adoc`
+How-To Guides:: Use `docs/src/main/asciidoc/_templates/template-howto.adoc`
+Reference:: Use `docs/src/main/asciidoc/_templates/template-reference.adoc`
+Tutorials:: Use `docs/src/main/asciidoc/_templates/template-tutorial.adoc`
+
+=== File names
+
+Quarkus documentation uses a flat hierarchy.
+
+The bulk of the file name should be some representation of its title.
+Use all lowercase letters, separate words with hyphens, and avoid symbols and special characters.
+
+Prefix:: Use a common prefix to group-related documents.
+Documents related to writing and contributing to Quarkus docs share the `doc-` prefix, for example.
+
+Suffix:: Use a suffix that reflects the document type (optional):
+
+- `-concept.adoc` for concept documents
+- `-howto.adoc` for how-to guides
+- `-reference.adoc` for references
+- `-tutorial.adoc` for tutorials
+
+[[doc-structure]]
+== Document structure
+
+Use the Quarkus templates to ensure that your content is consistent with the preferred Quarkus documentation structure and style.
+
+[[document-header]]
+=== Document header
+
+Each document should define a header for document-scoped attributes.
+Minimally, each document should define and id and a title, and include common attributes (`_attributes.adoc`).
+
+[source,asciidoc]
+----
+[id="doc-reference"] // <1>
+= Quarkus style and content guidelines // <2>
+\include::_attributes.adoc[] // <3>
+:diataxis-type: {type} // <4>
+:categories: contributing // <5>
+----
+
+<1> Use the filename as the ID for the document.
+<2> Define the document title following guidance in <<titles-headings>>.
+<3> Include common document attributes.
+<4> Specify the diataxis type: `concept`, `howto`, `reference`, or `tutorial`.
+<5> Specify the relevant <<categories>> (comma separated).
+
+[[doc-header-optional]]
+==== Other common document header attributes
+
+`:extension-status: preview`:: Use this attribute to flag special types of content. Valid values: `experimental`, `preview`, `stable` (not usually used), and `deprecated`.
+`:summary: <text>`:: Use the summary to provide a concise (26 words or less) description of the document.
+The value of this attribute is used in tiles or other descriptions on the website and is not required in newer diataxis-styled docs, as outlined in <<abstracts-preamble>>.
+If not present, the first sentence of the abstract is automatically used to generate the tile summary.
+
+IMPORTANT: Take care with whitespace when working with document-scoped attributes.
+The document header ends with the first blank line.
+
+[[abstracts-preamble]]
+=== Abstracts (preamble)
+
+The first paragraph in the main body is treated as the abstract, also referred to as the preamble.
+Add a short description that helps your audience quickly find and understand the purpose and intent of the page.
+The first sentence of the abstract provides a summary and gets automatically added to the tile on the link:https://quarkus.io/guides/[Quarkus guides homepage].
+
+Try to write the abstract by using the following guidelines:
+
+* *User oriented:* Contains terms and keywords that are familiar to users.
+* *Concise:* Avoids self-referential expressions and filler words, for example:
+** "This document.."
+** "This tutorial..."
+** "The following..."
+* *Brief:* Is no more than three sentences long.
+
+[IMPORTANT]
+====
+Ensure that the first sentence explains the value and some benefits of the content in 26 words or less.
+====
+
+If the first sentence is too long or cannot be simplified to fit on the website tile, you can define a ``:summary:`` attribute in the document header attributes to serve that purpose.
+For more information, see <<doc-header-optional>>.
+
+=== Semantic line breaks
+
+:semantic-line-breaks: footnote:smbl[Rhodes, B. Semantic Linefeeds. https://rhodesmill.org/brandon/2012/one-sentence-per-line/]
+
+Text in paragraphs, lists, and tables should be broken into pieces that are easier to review{semantic-line-breaks}.
+Start a new line at the end of each sentence, and split sentences themselves at natural breaks between clauses.
+
+=== Sections
+
+Section titles should be written in sentence case rather than title case.
+
+Start your document with a title, which in AsciiDoc is defined as a `= Level 0` heading.
+Where appropriate, divide your content into subsections, which in AsciiDoc are defined as  `== Level 1` to `====== Level 5`.
+Do not skip any levels.
+
+[TIP]
+====
+Deep nesting (`====== Level 4`, `====== Level 5`)
+should be avoided whenever possible.
+If you end up with deeply nested sections, think about the following:
+
+- Is this information in the right place?
+For example, if this is a reference, should some of this content be moved to a concept doc or how-to guide instead?
+- Can the content be reorganized to make it simpler to consume?
+
+See xref:doc-concept.adoc[Quarkus documentation content types] for more information about content types and organization.
+====
+
+== Links
+
+In general, prefer link:https://docs.asciidoctor.org/asciidoc/latest/macros/url-macro/[url macros] to bare or automatic links.
+Provide human-readable text for the link, especially if it is included in the middle of other text.
+
+.A URL Macro link with attributes
+[NOTE]
+=====
+The URL macro also supports link:https://docs.asciidoctor.org/asciidoc/latest/macros/link-macro-ref/[additional attributes] that may be relevant, like opening a link in a different window.
+
+[source,asciidoc]
+----
+https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc Syntax Quick Reference,window=_blank,opts=nofollow]
+----
+
+The above source produces this link:https://docs.asciidoctor.org/asciidoc/latest/syntax-quick-reference/[AsciiDoc Syntax Quick Reference,window=_blank,opts=nofollow].
+=====
+
+[[cross-references]]
+== Cross-references
+
+Quarkus documentation is built from source in a few different environments.
+
+[[xref-source-attributes]]
+=== Cross-reference source attributes
+
+We use attributes in our cross-references to ensure our docs can be built across these environments.
+
+.Cross-reference source attributes
+[cols="<m,<2",options="header"]
+|===
+|Attribute|Description
+|\{code-examples}|Relative path to directory containing collected example source files
+|\{doc-examples}|Relative path to source examples for documentation guides
+|\{generated-dir}|Relative path to generated configuration `*.adoc` files
+|\{imagesdir}|Relative path to directory containing images
+|\{includes}|Relative path to directory containing partial/reusable content
+|===
+
+When cross-referencing content, always use the inter-document `xref:` syntax and supply a human-readable label to your link.
+
+.Cross-reference example
+[source,asciidoc]
+----
+xref:doc-concept.adoc[Quarkus Documentation concepts] <1>
+----
+<1> The cross-reference starts with `xref:`, and provides a readable description: `[Quarkus Documentation concepts]`.
+
+[[anchors-reference]]
+=== Anchors for in-file and cross-file navigation
+
+* To create an anchored ID, use lower-case characters, separate each word with `-`, and enclose the ID in `[[]]` as in the example below.
++
+[source,asciidoc]
+----
+[[title-heading]]
+== Title heading
+----
+
+* To call an anchor created in the same file, insert the anchored ID in a `<<>>` xref macro.
++
+[source,asciidoc]
+----
+<<title-heading>>
+----
+
+* To create an anchor with a custom URL caption example, specify the anchored ID and desired name separated by `,` without white space.
++
+[source,asciidoc]
+----
+<<title-heading,Title heading description that fits the context of your content>>
+----
++
+WARNING: Do not use the `<<>>` format with the verbatim heading or section description, such as
+`\<<Title heading>>`.
+
+* To call an anchored ID from a different file, use the full file name and anchored ID separated by `#`,
+and specify the human-readable URL caption.
++
+[source,asciidoc]
+----
+xref:<other-file-name>.adoc#title-heading[Title heading]
+----
+
+* To refer to another file, use the xref macro with the full file name syntax and always specify the human-readable URL caption.
++
+[source,asciidoc]
+----
+xref:<name-of-the-file>.adoc[Human-readable label]
+----
+For more details about anchored IDs, see the xref:doc-contribute-docs-howto.adoc#anchors-howto[Cross-reference in-file and cross-file content by using anchors] section of the "Contribute to Quarkus documentation" guide.
+
+[[cross-reference-phrasing]]
+=== Cross-reference phrasing
+
+For consistency and context clarity, use the following guidelines for constructing your cross-reference phrases:
+
+* Provide a direct hyperlink to the section, using the `xref` guidance in the previous section.
+* Specify the full title of the section and use sentence case.
+* Add the definite article “the” before the section title and specify “section” directly after the title.
+* Add the definite article “the” and “Quarkus” before the title of the guide, unless the word “Quarkus" is already in the title.
+* Insert the title of the guide between double quotations and specify “guide” directly after the title.
+* If the context is needed, lead with the phrase:
+** "For more information about ..."
+
+.Correct and incorrect cross-reference phrases
+[options="header"]
+|====
+|Correct|Incorrect
+|For more information, see the xref:validation.adoc#configuring-the-validatorfactory[Configuring the ValidatorFactory] section of the Quarkus "Validation with Hibernate Validator" guide.|For more information, see the 'Configuring the ValidatorFactory' section of the xref:validation.adoc[VALIDATION WITH HIBERNATE VALIDATOR guide].
+|For more information, see the xref:cache.adoc#generating-a-cache-key-with-cachekeygenerator[Generating a cache key with CacheKeyGenerator] section of the Quarkus "Application Data Caching" guide.|For more information, see xref:cache.adoc#generating-a-cache-key-with-cachekeygenerator[Generating a cache key with CacheKeyGenerator].
+|
+For more information, see the xref:security-openid-connect-web-authentication/.adoc#proof-of-key-for-code-exchange-pkce[PKCE-related section] of the Quarkus "OpenID Connect (OIDC) Authorization Code Flow Mechanism" guide.|For more information, see xref:security-openid-connect-web-authentication.adoc#proof-of-key-for-code-exchange-pkce[OpenID Connect (OIDC) Authorization Code Flow Mechanism].
+
+|====
+
+=== Reference source code
+
+There are many ways to include source code and examples in the documentation.
+
+The simplest is to write it directly in the file, like this:
+
+[source,asciidoc]
+-----
+[source,java]
+----
+System.out.println("Hello, World!");
+----
+-----
+
+In documents like tutorials, you may want to reference source code that is built and tested regularly.
+The Quarkus documentation build copies source files enumerated in `*-examples/yaml` files into a flattened structure in the `target/asciidoc/examples` directory (from the project root).
+
+[source,yaml]
+----
+examples:
+- source: path/to/source/file/SomeClassFile.java <1>
+  target: prefix-simplified-unique-filename.java <2>
+----
+
+<1> define the path of source to be copied
+<2> define the simplified target file name to use when copying the file into the `target/asciidoc/examples` directory.
+
+Content copied in this way is referenced by the `\{code-examples}` source attribute. The literal string `{{source}}` in the source file, if present, will be replaced with the path of the source file in the copy.
+
+.Micrometer example
+* The source file to be copied is:
++
+`integration-tests/micrometer-prometheus/src/main/java/documentation/example/telemetry/micrometer/tutorial/ExampleResource.java`
+
+* The target file name we want to use in docs is:
++
+`telemetry-micrometer-tutorial-example-resource.java`.
+
+* The source and target file names are declared in `docs/src/main/asciidoc/telemetry-examples.yaml`:
++
+[source,yaml]
+----
+examples:
+- source: integration-tests/micrometer-prometheus/src/main/java/io/quarkus/doc/micrometer/ExampleResource.java
+  target: telemetry-micrometer-tutorial-example-resource.java
+----
+
+* Snippets from this source file are then referenced with the following path:
++
+`\{code-examples}/telemetry-micrometer-tutorial-example-resource.java`.
+* The source file contains the following comment:
+[source,java]
+----
+// Source: {{source}}
+----
+* The copied file contains this comment instead:
+[source,java]
+----
+// Source: integration-tests/micrometer-prometheus/src/main/java/io/quarkus/doc/micrometer/ExampleResource.java
+----
+
+[[document-attributes]]
+== Document attributes and variables
+
+[[categories]]
+=== Categories
+
+Quarkus documentation is grouped into the following categories.
+
+.Categories
+[cols="<m,<2",options="header"]
+|===
+|Category | Description
+| alt-languages | Support for other languages, namely Kotlin and Scala
+| architecture | Quarkus runtime and ecosystem architecture
+| business-automation | Business automation integrations
+| cloud | Integrations and support for cloud services
+| command-line | Command Line Applications
+| compatibility | Compatibility with other languages and frameworks
+| contributing | Guidance and references to help you contribute to Quarkus.
+| core | Information about how the Quarkus works
+| data | Topics related to using data sources with Quarkus
+| getting-started | Getting started materials
+| integration | Support for integration extensions (Camel)
+| messaging | Integrations with messaging systems like Kafka, AMQP, or RabbitMQ.
+| miscellaneous | Miscellaneous
+| native | Everything related to native executables
+| observability | Extensions and integrations for runtime and application observability
+| security | Security
+| serialization | Serialization
+| tooling | Tooling
+| web | Web
+| writing-extensions | Writing Extensions
+|===
+
+Tag your content to improve findability by adding at least one category to the categories attribute line in the <<document-header,document header>>. To add multiple categories, use comma-separated values. For example:
+
+[source,asciidoc]
+----
+:categories: contributing, data
+----
+
+[[document-variables]]
+=== Quarkus documentation variables
+
+The following variables externalize key information that can change over time.
+References to such information should use the variable inside of curly brackets, `{}`.
+
+The complete list of externalized variables for use is given in the following table:
+
+.Variables
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Value|Description
+|\{quarkus-version}|{quarkus-version}|The current version of the project.
+|\{quarkus-home-url}|{quarkus-home-url}| The location of the project home page.
+
+|\{quarkus-org-url}|{quarkus-org-url}| The location of the project GitHub organization.
+|\{quarkus-base-url}|{quarkus-base-url}| Quarkus GitHub URL common base prefix.
+|\{quarkus-clone-url}|{quarkus-clone-url}| Quarkus URL for `git clone` referenced by the documentation.
+|\{quarkus-archive-url}|{quarkus-archive-url}| Quarkus URL to main source archive.
+|\{quarkus-blob-url}|{quarkus-blob-url}| Quarkus URL to main blob source tree; used for referencing source files.
+|\{quarkus-tree-url}|{quarkus-tree-url}| Quarkus URL to main source tree root; used for referencing directories.
+|\{quarkus-issues-url}|{quarkus-issues-url}| Quarkus URL to the issues page.
+|\{quarkus-images-url}|{quarkus-images-url}| Quarkus URL to set of container images delivered for Quarkus.
+
+|\{quarkus-chat-url}|{quarkus-chat-url} | URL of our chat.
+|\{quarkus-mailing-list-subscription-email}|{quarkus-mailing-list-subscription-email} | Email used to subscribe to our mailing list.
+|\{quarkus-mailing-list-index}|{quarkus-mailing-list-index} | Mailing list index page.
+
+|\{quickstarts-base-url}|{quickstarts-base-url}| Quickstarts URL common base prefix.
+|\{quickstarts-clone-url}|{quickstarts-clone-url}| Quickstarts URL for `git clone` referenced by the documentation.
+|\{quickstarts-archive-url}|{quickstarts-archive-url}| Quickstarts URL to main source archive.
+|\{quickstarts-blob-url}|{quickstarts-blob-url}| Quickstarts URL to main blob source tree; used for referencing source files.
+|\{quickstarts-tree-url}|{quickstarts-tree-url}| Quickstarts URL to main source tree root; used for referencing directories.
+
+|\{graalvm-version}|{graalvm-version}| Recommended GraalVM version to use.
+|\{graalvm-flavor}|{graalvm-flavor}| The builder image tag of GraalVM to use e.g. `jdk-17`.
+|===

@@ -3,11 +3,11 @@ package io.quarkus.it.keycloak;
 import java.security.PublicKey;
 import java.util.Set;
 
-import javax.annotation.PostConstruct;
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.Path;
+import jakarta.annotation.PostConstruct;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 

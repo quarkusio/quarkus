@@ -3,9 +3,12 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Validation with Hibernate Validator
-
-include::./attributes.adoc[]
+= Validation with Hibernate Validator
+include::_attributes.adoc[]
+:categories: web, data
+:summary: This guide covers how to use Hibernate Validator/Bean Validation in your REST services.
+:topics: bean-validation,hibernate-validator,validation
+:extensions: io.quarkus:quarkus-hibernate-validator
 
 This guide covers how to use Hibernate Validator/Bean Validation for:
 
@@ -14,12 +17,7 @@ This guide covers how to use Hibernate Validator/Bean Validation for:
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -36,36 +34,28 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `validation-quickstart` {quickstarts-tree-url}/validation-quickstart[directory].
+The solution is located in the `validation-quickstart` link:{quickstarts-tree-url}/validation-quickstart[directory].
 
 == Creating the Maven project
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=validation-quickstart \
-    -DclassName="org.acme.validation.BookResource" \
-    -Dpath="/books" \
-    -Dextensions="resteasy,resteasy-jackson,hibernate-validator"
-cd validation-quickstart
-----
+:create-app-artifact-id: validation-quickstart
+:create-app-extensions: resteasy-reactive-jackson,hibernate-validator
+include::{includes}/devtools/create-app.adoc[]
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS, Jackson and Hibernate Validator/Bean Validation extensions.
+This command generates a Maven structure importing the RESTEasy Reactive/Jakarta REST, Jackson and Hibernate Validator/Bean Validation extensions.
 
 If you already have your Quarkus project configured, you can add the `hibernate-validator` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="hibernate-validator"
-----
+:add-extension-extensions: hibernate-validator
+include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -73,17 +63,11 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
-== Accessing the Validator
-
-Edit the `org.acme.validation.BookResource` class, and inject the `Validator` object as follows:
-
-[source,java]
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
 ----
-@Inject
-Validator validator;
+implementation("io.quarkus:quarkus-hibernate-validator")
 ----
-
-The `Validator` allows checking constraints on a specific object.
 
 == Constraints
 
@@ -94,8 +78,8 @@ Create the `org.acme.validation.Book` class with the following content:
 ----
 package org.acme.validation;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
 
 public class Book {
 
@@ -115,28 +99,42 @@ The getter and setter methods are also used for JSON mapping.
 
 == JSON mapping and validation
 
-Back to the `BookResource` class.
-Add the following method:
+Create the following REST resource as `org.acme.validation.BookResource`:
 
-[source, java]
+[source,java]
 ----
-@Path("/manual-validation")
-@POST
-public Result tryMeManualValidation(Book book) {
-    Set<ConstraintViolation<Book>> violations = validator.validate(book);
-    if (violations.isEmpty()) {
-        return new Result("Book is valid! It was validated by manual validation.");
-    } else {
-        return new Result(violations);
+package org.acme.validation;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+@Path("/books")
+public class BookResource {
+
+    @Inject
+    Validator validator; <1>
+
+    @Path("/manual-validation")
+    @POST
+    public Result tryMeManualValidation(Book book) {
+        Set<ConstraintViolation<Book>> violations = validator.validate(book);
+        if (violations.isEmpty()) {
+            return new Result("Book is valid! It was validated by manual validation.");
+        } else {
+            return new Result(violations);
+        }
     }
 }
 ----
+<1> The `Validator` instance is injected via CDI.
 
 Yes it does not compile, `Result` is missing, but we will add it very soon.
 
 The method parameter (`book`) is created from the JSON payload automatically.
 
-The method uses the `Validator` to check the payload.
+The method uses the `Validator` instance to check the payload.
 It returns a set of violations.
 If this set is empty, it means the object is valid.
 In case of failures, the messages are concatenated and sent back to the browser.
@@ -146,12 +144,12 @@ Let's now create the `Result` class as an inner class:
 [source, java]
 ----
 public static class Result {
-        
+
     Result(String message) {
         this.success = true;
         this.message = message;
     }
-        
+
     Result(Set<? extends ConstraintViolation<?>> violations) {
         this.success = false;
         this.message = violations.stream()
@@ -211,8 +209,8 @@ The best option is then to annotate a method of your business service with your 
 ----
 package org.acme.validation;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.validation.Valid;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.validation.Valid;
 
 @ApplicationScoped
 public class BookService {
@@ -251,16 +249,13 @@ Keep in mind that you usually don't want to expose to the public the internals o
 
 Now let's add the simple web page to interact with our `BookResource`.
 Quarkus automatically serves static resources contained in the `META-INF/resources` directory.
-In the `src/main/resources/META-INF/resources` directory, replace the `index.html` file with the content from this {quickstarts-blob-url}/validation-quickstart/src/main/resources/META-INF/resources/index.html[index.html] file in it.
+In the `src/main/resources/META-INF/resources` directory, replace the `index.html` file with the content from this link:{quickstarts-blob-url}/validation-quickstart/src/main/resources/META-INF/resources/index.html[index.html] file in it.
 
 == Run the application
 
 Now, let's see our application in action. Run it with:
 
-[source, bash]
-----
-./mvnw compile quarkus:dev
-----
+include::{includes}/devtools/dev.adoc[]
 
 Then, open your browser to http://localhost:8080/:
 
@@ -269,8 +264,15 @@ Then, open your browser to http://localhost:8080/:
 
 image:validation-guide-screenshot.png[alt=Application]
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
-You can also build the native executable using `./mvnw package -Pnative`.
+The application can be packaged using:
+
+include::{includes}/devtools/build.adoc[]
+
+and executed using `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also build the native executable using:
+
+include::{includes}/devtools/build-native.adoc[]
 
 == Going further
 
@@ -287,12 +289,12 @@ you can very easily tweak it by declaring replacement beans that will be injecte
 
 If you create a bean of the following types in your application, it will automatically be injected into the `ValidatorFactory` configuration:
 
- * `javax.validation.ClockProvider`
- * `javax.validation.ConstraintValidator`
- * `javax.validation.ConstraintValidatorFactory`
- * `javax.validation.MessageInterpolator`
- * `javax.validation.ParameterNameProvider`
- * `javax.validation.TraversableResolver`
+ * `jakarta.validation.ClockProvider`
+ * `jakarta.validation.ConstraintValidator`
+ * `jakarta.validation.ConstraintValidatorFactory`
+ * `jakarta.validation.MessageInterpolator`
+ * `jakarta.validation.ParameterNameProvider`
+ * `jakarta.validation.TraversableResolver`
  * `org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy`
  * `org.hibernate.validator.spi.nodenameprovider.PropertyNodeNameProvider`
  * `org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory`
@@ -303,8 +305,39 @@ You don't have to wire anything.
 ====
 Obviously, for each listed type, you can declare only one bean.
 
-These beans should be declared as `@ApplicationScoped`.
+Most of the time, these beans should be declared as `@ApplicationScoped`.
+
+However, in the case of ``ConstraintValidator``s that are dependent of attributes of the constraint annotation
+(typically when implementing the `initialize(A constraintAnnotation)` method),
+use the `@Dependent` scope to make sure each annotation context has a separate instance of the `ConstraintValidator` bean.
 ====
+
+If customizing the `ValidatorFactory` through the available configuration properties and the CDI beans above doesn't cover your requirements,
+you can customize it further by registering `ValidatorFactoryCustomizer` beans.
+
+For instance, you could override the built-in validator enforcing the `@Email` constraint and use `MyEmailValidator` instead with the following class:
+
+[source,java]
+----
+@ApplicationScoped
+public class MyEmailValidatorFactoryCustomizer implements ValidatorFactoryCustomizer {
+
+    @Override
+    public void customize(BaseHibernateValidatorConfiguration<?> configuration) {
+        ConstraintMapping constraintMapping = configuration.createConstraintMapping();
+
+        constraintMapping
+                .constraintDefinition(Email.class)
+                .includeExistingValidators(false)
+                .validatedBy(MyEmailValidator.class);
+
+        configuration.addMapping(constraintMapping);
+    }
+}
+----
+
+All beans implementing `ValidatorFactoryCustomizer` are applied, meaning you can have several of them.
+If you need to enforce some ordering, you can use the usual `@jakarta.annotation.Priority` annotation - beans with higher priority are applied first.
 
 ==== Constraint validators as beans
 
@@ -330,13 +363,16 @@ public class MyConstraintValidator implements ConstraintValidator<MyConstraint, 
 ----
 
 When initializing a constraint validator of a given type,
-Quarkus will check if a bean of this type is available and, if so, it will use it instead of instantiating one.
+Quarkus will check if a bean of this type is available and, if so, it will use it instead of instantiating a `ConstraintValidator`.
 
 Thus, as demonstrated in our example, you can fully use injection in your constraint validator beans.
 
-[NOTE]
+[WARNING]
 ====
-Except in very specific situations, it is recommended to make the said beans `@ApplicationScoped`.
+The scope you choose for your `ConstraintValidator` bean is important:
+
+- If the same instance of the `ConstraintValidator` bean can be used across the whole application, use the `@ApplicationScoped` scope.
+- If the `ConstraintValidator` bean implements the `initialize(A constraintAnnotation)` method and depends on the state of the constraint annotation, use the `@Dependent` scope to make sure each annotation context has a separate and properly configured instance of the `ConstraintValidator` bean.
 ====
 
 === Validation and localization
@@ -351,7 +387,8 @@ You can configure this behavior by adding the following configuration in your `a
 quarkus.default-locale=fr-FR
 ----
 
-If you are using RESTEasy, in the context of a JAX-RS endpoint, Hibernate Validator will automatically resolve the optimal locale to use from the `Accept-Language` HTTP header,
+If you are using RESTEasy Reactive or RESTEasy Classic, in the context of a Jakarta REST endpoint,
+Hibernate Validator will automatically resolve the optimal locale to use from the `Accept-Language` HTTP header,
 provided the supported locales have been properly specified in the `application.properties`:
 
 [source, properties]
@@ -360,33 +397,42 @@ provided the supported locales have been properly specified in the `application.
 quarkus.locales=en-US,es-ES,fr-FR
 ----
 
+A similar mechanism exists for GraphQL services based on the `quarkus-smallrye-graphql` extension.
+
+If this default mechanism is not sufficient and you need a custom locale resolution, you can add additional ``org.hibernate.validator.spi.messageinterpolation.LocaleResolver``s:
+
+* Any CDI bean implementing `org.hibernate.validator.spi.messageinterpolation.LocaleResolver` will be taken into account.
+* The ``LocaleResolver``s are consulted in the order of `@Priority` (higher priority goes first).
+* A `LocaleResolver` may return null if it cannot resolve the locale, it will then be ignored.
+* The first non-null locale returned by a `LocaleResolver` is the one resolved.
+
 === Validation groups for REST endpoint or service method validation
 
-It's sometimes necessary to enable different validation constraints
+It is sometimes necessary to enable different validation constraints
 for the same class when it's passed to a different method.
 
-For example, a `Book` may need to have a `null` identifier when passed to the `put` method
+For example, a `Book` may need to have a `null` identifier when passed to the `post` method
 (because the identifier will be generated),
-but a non-`null` identifier when passed to the `post` method
+but a non-`null` identifier when passed to the `put` method
 (because the method needs the identifier to know what to update).
 
 To address this, you can take advantage of validation groups.
 Validation groups are markers that you put on your constraints in order to enable or disable them at will.
 
-First, define the `Put` and `Post` groups, which are just Java interfaces.
+First, define the `Post` and `Put` groups, which are just Java interfaces.
 
 [source, java]
 ----
 public interface ValidationGroups {
-    interface Put extends Default { // <1>
-    }
     interface Post extends Default { // <1>
+    }
+    interface Put extends Default { // <1>
     }
 }
 ----
 <1> Make the custom groups extend the `Default` group.
 This means that whenever these groups are enabled, the `Default` group is also enabled.
-This is useful if you have constraints that you want validated in both the `Put` and `Post` method:
+This is useful if you have constraints that you want validated in both the `Post` and `Put` method:
 you can simply use the default group on those constraints, like on the `title` property below.
 
 Then add the relevant constraints to `Book`, assigning the right group to each constraint:
@@ -395,8 +441,8 @@ Then add the relevant constraints to `Book`, assigning the right group to each c
 ----
 public class Book {
 
-    @Null(groups = ValidationGroups.Put.class)
-    @NotNull(groups = ValidationGroups.Post.class)
+    @Null(groups = ValidationGroups.Post.class)
+    @NotNull(groups = ValidationGroups.Put.class)
     public Long id;
 
     @NotBlank
@@ -410,25 +456,57 @@ Finally, add a `@ConvertGroup` annotation next to your `@Valid` annotation in yo
 [source, java]
 ----
 @Path("/")
-@PUT
+@POST
 @Consumes(MediaType.APPLICATION_JSON)
-public void put(@Valid @ConvertGroup(to = ValidationGroups.Put.class) Book book) { // <1>
+public void post(@Valid @ConvertGroup(to = ValidationGroups.Post.class) Book book) { // <1>
     // ...
 }
 
 @Path("/")
-@POST
+@PUT
 @Consumes(MediaType.APPLICATION_JSON)
-public void post(@Valid @ConvertGroup(to = ValidationGroups.Post.class) Book book) { // <2>
+public void put(@Valid @ConvertGroup(to = ValidationGroups.Put.class) Book book) { // <2>
     // ...
 }
 ----
-<1> Enable the `Put` group, meaning only constraints assigned to the `Put` (and `Default`) groups
-will be validated for the `book` parameter of the `put` method.
-In this case, it means `Book.id` must be `null` and `Book.title` must not be blank.
-<2> Enable the `Post` group, meaning only constraints assigned to the `Post` (and `Default`) groups
+<1> Enable the `Post` group, meaning only constraints assigned to the `Post` (and `Default`) groups
 will be validated for the `book` parameter of the `post` method.
+In this case, it means `Book.id` must be `null` and `Book.title` must not be blank.
+<2> Enable the `Put` group, meaning only constraints assigned to the `Put` (and `Default`) groups
+will be validated for the `book` parameter of the `put` method.
 In this case, it means `Book.id` must not be `null` and `Book.title` must not be blank.
+
+== Limitations
+
+=== META-INF/validation.xml
+
+Configuring the `ValidatorFactory` using a `META-INF/validation.xml` file is *NOT* supported in Quarkus.
+
+At the moment, Hibernate Validator does not expose an API to extract the information from this file
+so that we could register the appropriate classes for reflection.
+
+To configure the `ValidatorFactory`, use the exposed configuration properties and the CDI integration.
+
+Consequently, the only way to define constraints in Quarkus is by annotating your classes.
+
+=== ValidatorFactory and native executables
+
+Quarkus provides a default `ValidatorFactory` that you can customize using configuration properties.
+This `ValidatorFactory` is carefully initialized to support native executables
+using a bootstrap that is Quarkus-specific.
+
+Creating a `ValidatorFactory` by yourself it not supported in native executables
+and if you try to do so,
+you will get an  error similar to `jakarta.validation.NoProviderFoundException: Unable to create a Configuration, because no
+Jakarta Bean Validation provider could be found. Add a provider like Hibernate Validator (RI) to your
+classpath.` when running your native executable.
+
+Thus why you should always use the Quarkus-managed `ValidatorFactory` by injecting an instance of
+`ValidatorFactory` or directly an instance of `Validator` using CDI injection.
+
+To support some external libraries that are creating a `ValidatorFactory` using the default bootstrap,
+Quarkus returns the `ValidatorFactory` managed by Quarkus when `Validation.buildDefaultValidatorFactory()`
+is called.
 
 [[configuration-reference]]
 == Hibernate Validator Configuration Reference

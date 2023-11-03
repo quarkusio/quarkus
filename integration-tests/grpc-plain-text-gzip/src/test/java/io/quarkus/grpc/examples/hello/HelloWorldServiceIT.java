@@ -1,8 +1,7 @@
 package io.quarkus.grpc.examples.hello;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
-class HelloWorldServiceIT extends HelloWorldEndpointTest {
-
+@QuarkusIntegrationTest
+class HelloWorldServiceIT extends HelloWorldServiceTestBase {
 }

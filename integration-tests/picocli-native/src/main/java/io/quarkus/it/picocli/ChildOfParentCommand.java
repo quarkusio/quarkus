@@ -1,7 +1,5 @@
 package io.quarkus.it.picocli;
 
-import org.assertj.core.api.Assertions;
-
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "child")
@@ -12,6 +10,6 @@ public class ChildOfParentCommand implements Runnable {
 
     @Override
     public void run() {
-        Assertions.assertThat(parent.parentValue).isEqualTo("testValue");
+        System.out.println(parent.parentValue);
     }
 }

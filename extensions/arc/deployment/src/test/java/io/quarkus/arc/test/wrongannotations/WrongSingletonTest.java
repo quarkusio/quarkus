@@ -6,13 +6,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.Collections;
 import java.util.List;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,11 +21,11 @@ public class WrongSingletonTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(EjbSingleton.class))
             .assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
-                assertTrue(rootCause.getMessage().contains("javax.ejb.Singleton"), t.toString());
+                assertTrue(rootCause.getMessage().contains("jakarta.ejb.Singleton"), t.toString());
                 assertTrue(rootCause.getMessage().contains("com.google.inject.Singleton"), t.toString());
             });
 
@@ -37,7 +35,7 @@ public class WrongSingletonTest {
         fail();
     }
 
-    @javax.ejb.Singleton
+    @jakarta.ejb.Singleton
     static class EjbSingleton {
 
         @Inject

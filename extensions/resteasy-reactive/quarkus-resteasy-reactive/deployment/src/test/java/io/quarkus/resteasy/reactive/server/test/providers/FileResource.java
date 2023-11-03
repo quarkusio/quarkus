@@ -3,11 +3,12 @@ package io.quarkus.resteasy.reactive.server.test.providers;
 import java.io.File;
 import java.nio.file.Paths;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.FilePart;
 import org.jboss.resteasy.reactive.PathPart;
+import org.jboss.resteasy.reactive.RestResponse;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.file.AsyncFile;
@@ -54,6 +55,25 @@ public class FileResource {
                     emitter.fail(result.cause());
             });
         });
+    }
+
+    @Path("rest-response-async-file")
+    @GET
+    public Uni<RestResponse<AsyncFile>> getRestResponseAsyncFile(RoutingContext vertxRequest) {
+        return Uni.createFrom().emitter(emitter -> {
+            vertxRequest.vertx().fileSystem().open(FILE, new OpenOptions(), result -> {
+                if (result.succeeded())
+                    emitter.complete(RestResponse.ResponseBuilder.ok(result.result()).header("foo", "bar").build());
+                else
+                    emitter.fail(result.cause());
+            });
+        });
+    }
+
+    @Path("mutiny-async-file")
+    @GET
+    public Uni<io.vertx.mutiny.core.file.AsyncFile> getMutinyAsyncFile(RoutingContext vertxRequest) {
+        return new io.vertx.mutiny.core.Vertx(vertxRequest.vertx()).fileSystem().open(FILE, new OpenOptions());
     }
 
     @Path("async-file-partial")

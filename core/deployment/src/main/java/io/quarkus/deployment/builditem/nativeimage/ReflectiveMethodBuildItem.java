@@ -15,9 +15,9 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
     final String[] params;
 
     public ReflectiveMethodBuildItem(MethodInfo methodInfo) {
-        String[] params = new String[methodInfo.parameters().size()];
+        String[] params = new String[methodInfo.parametersCount()];
         for (int i = 0; i < params.length; ++i) {
-            params[i] = methodInfo.parameters().get(i).name().toString();
+            params[i] = methodInfo.parameterType(i).name().toString();
         }
         this.name = methodInfo.name();
         this.params = params;
@@ -25,13 +25,32 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
     }
 
     public ReflectiveMethodBuildItem(Method method) {
-        String[] params = new String[method.getParameterTypes().length];
-        for (int i = 0; i < params.length; ++i) {
-            params[i] = method.getParameterTypes()[i].getName();
+        this.params = new String[method.getParameterCount()];
+        if (method.getParameterCount() > 0) {
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            for (int i = 0; i < params.length; ++i) {
+                params[i] = parameterTypes[i].getName();
+            }
         }
-        this.params = params;
         this.name = method.getName();
         this.declaringClass = method.getDeclaringClass().getName();
+    }
+
+    public ReflectiveMethodBuildItem(String declaringClass, String name,
+            String... params) {
+        this.declaringClass = declaringClass;
+        this.name = name;
+        this.params = params;
+    }
+
+    public ReflectiveMethodBuildItem(String declaringClass, String name,
+            Class<?>... params) {
+        this.declaringClass = declaringClass;
+        this.name = name;
+        this.params = new String[params.length];
+        for (int i = 0; i < params.length; ++i) {
+            this.params[i] = params[i].getName();
+        }
     }
 
     public String getName() {

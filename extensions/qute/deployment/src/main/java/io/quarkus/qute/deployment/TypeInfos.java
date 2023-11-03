@@ -18,6 +18,7 @@ import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expressions;
+import io.quarkus.qute.Expressions.SplitConfig;
 import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateNode.Origin;
 
@@ -35,7 +36,7 @@ final class TypeInfos {
         List<Info> infos = new ArrayList<>();
         boolean splitParts = true;
         for (Expression.Part part : expression.getParts()) {
-            if (splitParts) {
+            if (splitParts && part.getTypeInfo().contains(TYPE_INFO_SEPARATOR)) {
                 List<String> infoParts = Expressions.splitTypeInfoParts(part.getTypeInfo());
                 for (String infoPart : infoParts) {
                     infos.add(create(infoPart, part, index, templateIdToPathFun, expression.getOrigin()));
@@ -59,23 +60,34 @@ final class TypeInfos {
             if (classStr.equals(Expressions.TYPECHECK_NAMESPACE_PLACEHOLDER)) {
                 return new Info(typeInfo, part);
             } else {
-                // TODO make the parsing logic more robust 
+                // TODO make the parsing logic more robust
                 ClassInfo rawClass;
                 Type resolvedType;
-                int idx = classStr.indexOf(ARRAY_DIM);
-                if (idx > 0) {
+                int arrayDimIdx = classStr.indexOf(ARRAY_DIM);
+                if (arrayDimIdx > 0) {
                     // int[], java.lang.String[][], etc.
-                    String componentTypeStr = classStr.substring(0, idx);
+                    String componentTypeStr = classStr.substring(0, arrayDimIdx);
                     Type componentType = decodePrimitive(componentTypeStr);
                     if (componentType == null) {
                         componentType = resolveType(componentTypeStr);
                     }
-                    String[] dimensions = classStr.substring(idx, classStr.length()).split("\\]");
+                    String[] dimensions = classStr.substring(arrayDimIdx, classStr.length()).split("\\]");
                     rawClass = null;
                     resolvedType = ArrayType.create(componentType, dimensions.length);
                 } else {
-                    rawClass = getClassInfo(classStr, index, templateIdToPathFun, expressionOrigin);
-                    resolvedType = resolveType(classStr);
+                    Type primitiveType = decodePrimitive(classStr);
+                    if (primitiveType != null) {
+                        resolvedType = primitiveType;
+                        rawClass = null;
+                    } else {
+                        rawClass = getClassInfo(classStr, index, templateIdToPathFun, expressionOrigin);
+                        // Comparable<Integer> -> java.lang.Comparable<Integer>
+                        if (rawClass.name().packagePrefix().equals("java.lang")
+                                && !classStr.contains(Types.JAVA_LANG_PREFIX)) {
+                            classStr = Types.JAVA_LANG_PREFIX + classStr;
+                        }
+                        resolvedType = resolveType(classStr);
+                    }
                 }
                 return new TypeInfo(typeInfo, part, helperHint(typeInfo.substring(endIdx, typeInfo.length())), resolvedType,
                         rawClass);
@@ -88,8 +100,29 @@ final class TypeInfos {
             if (part.isVirtualMethod() || Expressions.isVirtualMethod(typeInfo)) {
                 return new VirtualMethodInfo(typeInfo, part.asVirtualMethod(), hint);
             }
-            return new PropertyInfo(typeInfo, part, hint);
+            return new PropertyInfo(part.getName(), part, hint);
         }
+    }
+
+    static Type resolveTypeFromTypeInfo(String typeInfo) {
+        if (typeInfo.startsWith(TYPE_INFO_SEPARATOR)) {
+            int endIdx = typeInfo.substring(1, typeInfo.length()).indexOf(Expressions.TYPE_INFO_SEPARATOR);
+            if (endIdx < 1) {
+                throw new IllegalArgumentException("Invalid type info: " + typeInfo);
+            }
+            String typeInfoStr = typeInfo.substring(1, endIdx + 1);
+            if (!isArray(typeInfoStr)) {
+                Type primitiveType = decodePrimitive(typeInfoStr);
+                if (primitiveType == null) {
+                    return resolveType(typeInfoStr);
+                }
+            }
+        }
+        return null;
+    }
+
+    static boolean isArray(String typeInfo) {
+        return typeInfo == null ? false : typeInfo.indexOf(ARRAY_DIM) > 0;
     }
 
     private static ClassInfo getClassInfo(String val, IndexView index, Function<String, String> templateIdToPathFun,
@@ -97,11 +130,18 @@ final class TypeInfos {
         DotName rawClassName = rawClassName(val);
         ClassInfo clazz = index.getClassByName(rawClassName);
         if (clazz == null) {
-            throw new TemplateException(
-                    "Class [" + rawClassName + "] used in the parameter declaration in template ["
-                            + templateIdToPathFun.apply(expressionOrigin.getTemplateGeneratedId()) + "] on line "
-                            + expressionOrigin.getLine()
-                            + " was not found in the application index. Make sure it is spelled correctly.");
+            if (!rawClassName.toString().contains(".")) {
+                // Try the java.lang prefix for a name without package
+                rawClassName = DotName.createSimple(Types.JAVA_LANG_PREFIX + rawClassName.toString());
+                clazz = index.getClassByName(rawClassName);
+            }
+            if (clazz == null) {
+                throw new TemplateException(
+                        "Class [" + rawClassName + "] used in the parameter declaration in template ["
+                                + templateIdToPathFun.apply(expressionOrigin.getTemplateGeneratedId()) + "] on line "
+                                + expressionOrigin.getLine()
+                                + " was not found in the application index. Make sure it is spelled correctly.");
+            }
         }
         return clazz;
     }
@@ -156,15 +196,34 @@ final class TypeInfos {
             return Type.create(DotName.createSimple(value), Kind.CLASS);
         } else {
             String name = value.substring(0, angleIdx);
+            String params = value.substring(angleIdx + 1, value.length() - 1);
             DotName rawName = DotName.createSimple(name);
-            String[] parts = value.substring(angleIdx + 1, value.length() - 1).split(",");
-            Type[] arguments = new Type[parts.length];
+            List<String> parts = Expressions.splitParts(params, PARAMETERIZED_TYPE_SPLIT_CONFIG);
+            Type[] arguments = new Type[parts.size()];
             for (int i = 0; i < arguments.length; i++) {
-                arguments[i] = resolveType(parts[i].trim());
+                arguments[i] = resolveType(parts.get(i).trim());
             }
             return ParameterizedType.create(rawName, arguments, null);
         }
     }
+
+    static final SplitConfig PARAMETERIZED_TYPE_SPLIT_CONFIG = new SplitConfig() {
+
+        @Override
+        public boolean isSeparator(char candidate) {
+            return ',' == candidate;
+        }
+
+        public boolean isInfixNotationSupported() {
+            return false;
+        }
+
+        @Override
+        public boolean isLiteralSeparator(char candidate) {
+            return candidate == '<' || candidate == '>';
+        }
+
+    };
 
     private TypeInfos() {
     }

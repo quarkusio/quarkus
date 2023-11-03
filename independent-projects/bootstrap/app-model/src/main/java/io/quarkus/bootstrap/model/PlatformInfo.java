@@ -6,7 +6,11 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
+
 public class PlatformInfo implements Serializable {
+
+    private static final long serialVersionUID = 7143227956636416934L;
 
     private final String key;
     private final List<PlatformStreamInfo> streams = new ArrayList<>(1); // most of the time there will be only one
@@ -19,7 +23,7 @@ public class PlatformInfo implements Serializable {
         return key;
     }
 
-    boolean isAligned(Collection<AppArtifactCoords> importedBoms) {
+    boolean isAligned(Collection<ArtifactCoords> importedBoms) {
         if (streams.isEmpty()) {
             return true;
         }
@@ -29,11 +33,11 @@ public class PlatformInfo implements Serializable {
         return streams.get(0).isAligned(importedBoms);
     }
 
-    List<List<String>> getPossibleAlignments(Collection<AppArtifactCoords> importedPlatformBoms) {
+    List<List<String>> getPossibleAlignments(Collection<ArtifactCoords> importedPlatformBoms) {
         if (streams.size() > 1) {
             final StringBuilder buf = new StringBuilder();
             buf.append("Imported BOMs ");
-            final Iterator<AppArtifactCoords> it = importedPlatformBoms.iterator();
+            final Iterator<ArtifactCoords> it = importedPlatformBoms.iterator();
             if (it.hasNext()) {
                 buf.append(it.next());
                 while (it.hasNext()) {

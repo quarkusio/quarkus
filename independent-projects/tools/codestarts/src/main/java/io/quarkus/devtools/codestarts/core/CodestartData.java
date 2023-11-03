@@ -1,9 +1,5 @@
 package io.quarkus.devtools.codestarts.core;
 
-import io.quarkus.devtools.codestarts.Codestart;
-import io.quarkus.devtools.codestarts.CodestartType;
-import io.quarkus.devtools.codestarts.core.CodestartSpec.CodestartDep;
-import io.quarkus.devtools.codestarts.utils.NestedMaps;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -13,6 +9,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import io.quarkus.devtools.codestarts.Codestart;
+import io.quarkus.devtools.codestarts.CodestartType;
+import io.quarkus.devtools.codestarts.core.CodestartSpec.CodestartDep;
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
 
 public final class CodestartData {
 
@@ -56,13 +57,15 @@ public final class CodestartData {
     public static Map<String, Object> buildDependenciesData(Stream<Codestart> codestartsStream, String languageName,
             Collection<String> extensions, Collection<String> platforms) {
         final Map<String, Set<CodestartDep>> depsData = new HashMap<>();
-        final Set<CodestartDep> boms = platforms.stream()
-                .map(CodestartDep::new)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-        final Set<CodestartDep> dependencies = extensions.stream()
-                .map(CodestartDep::new)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+        final Set<CodestartDep> boms = new LinkedHashSet<>();
+        final Set<CodestartDep> dependencies = new LinkedHashSet<>();
         final Set<CodestartDep> testDependencies = new LinkedHashSet<>();
+        platforms.stream()
+                .map(CodestartDep::new)
+                .forEach(boms::add);
+        extensions.stream()
+                .map(CodestartDep::new)
+                .forEach(dependencies::add);
         codestartsStream
                 .flatMap(s -> Stream.of(s.getBaseLanguageSpec(), s.getLanguageSpec(languageName)))
                 .forEach(d -> {

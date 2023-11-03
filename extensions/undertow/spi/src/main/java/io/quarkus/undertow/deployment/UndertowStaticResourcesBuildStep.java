@@ -12,7 +12,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.ApplicationArchive;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -20,7 +24,6 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.util.ClassPathUtils;
 
 /**
  * NOTE: Shared with Resteasy standalone!
@@ -32,8 +35,11 @@ public class UndertowStaticResourcesBuildStep {
     protected static final String META_INF_RESOURCES = "META-INF/resources";
 
     @BuildStep
-    void handleGeneratedWebResources(BuildProducer<GeneratedResourceBuildItem> generatedResources,
+    void handleGeneratedWebResources(Capabilities capabilities, BuildProducer<GeneratedResourceBuildItem> generatedResources,
             List<GeneratedWebResourceBuildItem> generatedWebResources) throws Exception {
+        if (!capabilities.isPresent(Capability.SERVLET)) {
+            return;
+        }
         for (GeneratedWebResourceBuildItem genResource : generatedWebResources) {
             generatedResources.produce(new GeneratedResourceBuildItem(META_INF_RESOURCES_SLASH + genResource.getName(),
                     genResource.getClassData()));
@@ -41,26 +47,35 @@ public class UndertowStaticResourcesBuildStep {
     }
 
     @BuildStep
-    void scanStaticResources(ApplicationArchivesBuildItem applicationArchivesBuildItem,
+    void scanStaticResources(Capabilities capabilities, ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<KnownPathsBuildItem> knownPathsBuilds,
             List<GeneratedWebResourceBuildItem> generatedWebResources,
             LaunchModeBuildItem launchModeBuildItem) throws Exception {
-
+        if (!capabilities.isPresent(Capability.SERVLET)) {
+            return;
+        }
         //we need to check for web resources in order to get welcome files to work
         //this kinda sucks
-        Set<String> knownFiles = new HashSet<>();
-        Set<String> knownDirectories = new HashSet<>();
+        final Set<String> knownFiles = new HashSet<>();
+        final Set<String> knownDirectories = new HashSet<>();
         for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
-            Path resource = i.getChildPath(META_INF_RESOURCES);
-            if (resource != null && Files.exists(resource)) {
-                collectKnownPaths(resource, knownFiles, knownDirectories);
-            }
+            i.accept(tree -> {
+                Path resource = tree.getPath(META_INF_RESOURCES);
+                if (resource != null && Files.exists(resource)) {
+                    collectKnownPaths(resource, knownFiles, knownDirectories);
+                }
+            });
         }
 
-        ClassPathUtils.consumeAsPaths(META_INF_RESOURCES, resource -> {
-            collectKnownPaths(resource, knownFiles, knownDirectories);
-        });
+        for (ClassPathElement e : QuarkusClassLoader.getElements(META_INF_RESOURCES, false)) {
+            if (e.isRuntime()) {
+                e.apply(tree -> {
+                    collectKnownPaths(tree.getPath(META_INF_RESOURCES), knownFiles, knownDirectories);
+                    return null;
+                });
+            }
+        }
 
         for (GeneratedWebResourceBuildItem genResource : generatedWebResources) {
             String sub = genResource.getName();
@@ -108,7 +123,11 @@ public class UndertowStaticResourcesBuildStep {
     }
 
     @BuildStep
-    void nativeImageResources(KnownPathsBuildItem paths, BuildProducer<NativeImageResourceBuildItem> nativeImage) {
+    void nativeImageResources(Capabilities capabilities, KnownPathsBuildItem paths,
+            BuildProducer<NativeImageResourceBuildItem> nativeImage) {
+        if (!capabilities.isPresent(Capability.SERVLET)) {
+            return;
+        }
         for (String i : paths.knownFiles) {
             nativeImage.produce(new NativeImageResourceBuildItem(META_INF_RESOURCES_SLASH + i));
         }

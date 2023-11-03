@@ -14,7 +14,7 @@ public class FunctionConstructor<T> {
 
     public T construct() {
         if (factory == null)
-            factory = CONTAINER.instanceFactory(cls);
+            factory = CONTAINER.beanInstanceFactory(cls);
         return factory.create().get();
     }
 }

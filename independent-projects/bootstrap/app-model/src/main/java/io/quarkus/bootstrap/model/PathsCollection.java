@@ -12,7 +12,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-public class PathsCollection implements Iterable<Path>, Serializable {
+import io.quarkus.paths.PathCollection;
+
+public class PathsCollection implements PathCollection, Serializable {
+
+    private static final long serialVersionUID = -7214825505580070033L;
 
     public static PathsCollection from(Iterable<Path> paths) {
         final List<Path> list = new ArrayList<>();
@@ -54,23 +58,19 @@ public class PathsCollection implements Iterable<Path>, Serializable {
         this.paths = Collections.unmodifiableList(paths);
     }
 
+    @Override
     public boolean isEmpty() {
         return paths.isEmpty();
     }
 
+    @Override
     public int size() {
         return paths.size();
     }
 
+    @Override
     public boolean isSinglePath() {
         return paths.size() == 1;
-    }
-
-    public Path getSinglePath() {
-        if (paths.size() != 1) {
-            throw new IllegalStateException("Paths collection expected to contain a single path but contains " + paths.size());
-        }
-        return paths.get(0);
     }
 
     @Override
@@ -78,28 +78,28 @@ public class PathsCollection implements Iterable<Path>, Serializable {
         return paths.iterator();
     }
 
+    @Override
     public boolean contains(Path path) {
         return paths.contains(path);
     }
 
+    @Override
     public PathsCollection add(Path... paths) {
         final List<Path> list = new ArrayList<>(this.paths.size() + paths.length);
         list.addAll(this.paths);
-        for (int i = 0; i < paths.length; ++i) {
-            list.add(paths[i]);
-        }
+        Collections.addAll(list, paths);
         return new PathsCollection(list);
     }
 
+    @Override
     public PathsCollection addFirst(Path... paths) {
         final List<Path> list = new ArrayList<>(this.paths.size() + paths.length);
-        for (int i = 0; i < paths.length; ++i) {
-            list.add(paths[i]);
-        }
+        Collections.addAll(list, paths);
         list.addAll(this.paths);
         return new PathsCollection(list);
     }
 
+    @Override
     public PathsCollection addAllFirst(Iterable<Path> i) {
         final List<Path> list = new ArrayList<>();
         i.forEach(list::add);
@@ -107,6 +107,7 @@ public class PathsCollection implements Iterable<Path>, Serializable {
         return new PathsCollection(list);
     }
 
+    @Override
     public Path resolveExistingOrNull(String path) {
         for (Path p : paths) {
             final Path resolved = p.resolve(path);

@@ -8,18 +8,20 @@ import static io.quarkus.devtools.testing.SnapshotTesting.assertThatMatchSnapsho
 import static io.quarkus.devtools.testing.SnapshotTesting.checkContains;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.testing.SnapshotTesting;
-import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTesting;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.testing.SnapshotTesting;
+import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTesting;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 class QuarkusCodestartGenerationTest {
 
@@ -76,8 +78,25 @@ class QuarkusCodestartGenerationTest {
         checkConfigProperties(projectDir);
 
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/com/andy/BonjourResource.java");
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/com/andy/NativeBonjourResourceIT.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/com/andy/BonjourResourceIT.java");
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/resources/META-INF/resources/index.html");
+    }
+
+    @Test
+    void verifyIndexExtensionList(TestInfo testInfo) throws Throwable {
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .addData(getGenerationTestInputData())
+                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
+                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy-jackson"))
+                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy-jsonb"))
+                .build();
+        final Path projectDir = testDirPath.resolve("verify-index-extensions-list");
+        getCatalog().createProject(input).generate(projectDir);
+
+        assertThatMatchSnapshot(testInfo, projectDir, "src/main/resources/META-INF/resources/index.html")
+                .satisfies(checkContains("RESTEasy JAX-RS"))
+                .satisfies(checkContains("RESTEasy Jackson"))
+                .satisfies(checkContains("RESTEasy JSON-B"));
     }
 
     @Test
@@ -85,7 +104,7 @@ class QuarkusCodestartGenerationTest {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addData(getGenerationTestInputData())
                 .addBoms(QuarkusCodestartTesting.getPlatformBoms())
-                .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
+                .addExtension(ArtifactCoords.fromString("io.quarkus:quarkus-resteasy:1.8"))
                 .addExtension(ArtifactCoords.fromString("commons-io:commons-io:2.5"))
 
                 .build();
@@ -102,6 +121,7 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("<dependency>\n" +
                         "      <groupId>io.quarkus</groupId>\n" +
                         "      <artifactId>quarkus-resteasy</artifactId>\n" +
+                        "      <version>1.8</version>\n" +
                         "    </dependency>\n"));
     }
 
@@ -133,9 +153,9 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("class BonjourResourceTest"))
                 .satisfies(checkContains("\"/bonjour\""));
 
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/kotlin/com/andy/NativeBonjourResourceIT.kt")
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/kotlin/com/andy/BonjourResourceIT.kt")
                 .satisfies(checkContains("package com.andy"))
-                .satisfies(checkContains("class NativeBonjourResourceIT : BonjourResourceTest"));
+                .satisfies(checkContains("class BonjourResourceIT : BonjourResourceTest"));
     }
 
     @Test
@@ -166,9 +186,9 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("class BonjourResourceTest"))
                 .satisfies(checkContains("\"/bonjour\""));
 
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/scala/com/andy/NativeBonjourResourceIT.scala")
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/scala/com/andy/BonjourResourceIT.scala")
                 .satisfies(checkContains("package com.andy"))
-                .satisfies(checkContains("class NativeBonjourResourceIT extends BonjourResourceTest"));
+                .satisfies(checkContains("class BonjourResourceIT extends BonjourResourceTest"));
     }
 
     @Test
@@ -186,7 +206,26 @@ class QuarkusCodestartGenerationTest {
 
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/org/acme/GreetingResource.java");
         assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/GreetingResourceTest.java");
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/NativeGreetingResourceIT.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/GreetingResourceIT.java");
+    }
+
+    @Test
+    void generateGradleDefaultJava(TestInfo testInfo) throws Throwable {
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .buildTool(BuildTool.GRADLE)
+                .addData(getGenerationTestInputData())
+                .build();
+        final Path projectDir = testDirPath.resolve("gradle-default-java");
+        getCatalog().createProject(input).generate(projectDir);
+
+        checkGradle(projectDir);
+        checkReadme(projectDir);
+        checkDockerfiles(projectDir, BuildTool.GRADLE);
+        checkConfigProperties(projectDir);
+
+        assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/org/acme/GreetingResource.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/GreetingResourceTest.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/native-test/java/org/acme/GreetingResourceIT.java");
     }
 
     @Test
@@ -205,7 +244,7 @@ class QuarkusCodestartGenerationTest {
 
         assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/org/acme/GreetingResource.java");
         assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/GreetingResourceTest.java");
-        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/NativeGreetingResourceIT.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/GreetingResourceIT.java");
     }
 
     @Test
@@ -228,7 +267,7 @@ class QuarkusCodestartGenerationTest {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .buildTool(BuildTool.GRADLE)
                 .addData(getGenerationTestInputData())
-                .addCodestarts(Collections.singletonList("github-action"))
+                .addCodestarts(Collections.singletonList("tooling-github-action"))
                 .build();
         Path projectDir = testDirPath.resolve("gradle-github");
         getCatalog().createProject(input).generate(projectDir);
@@ -245,7 +284,7 @@ class QuarkusCodestartGenerationTest {
                 .buildTool(BuildTool.GRADLE)
                 .noBuildToolWrapper()
                 .addData(getGenerationTestInputData())
-                .addCodestarts(Collections.singletonList("github-action"))
+                .addCodestarts(Collections.singletonList("tooling-github-action"))
                 .build();
         Path projectDir = testDirPath.resolve("gradle-nowrapper-github");
         getCatalog().createProject(input).generate(projectDir);
@@ -276,19 +315,25 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
                 .satisfies(checkContains("./mvnw package"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
-                .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
-                .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.17"))//TODO: make a test for java17
+                .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
+                .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
                 .satisfies(checkContains("./mvnw package -Dquarkus.package.type=legacy-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
-                .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
-                .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.17"))
+                .satisfies(checkContains("EXPOSE 8080"))
+                .satisfies(checkContains("USER 185"))
+                .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
+                .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
+        assertThat(projectDir.resolve("src/main/docker/Dockerfile.native-micro")).exists()
+                .satisfies(checkContains("./mvnw package -Dnative"))
+                .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image:2.0"))
+                .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
-                .satisfies(checkContains("./mvnw package -Pnative"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
-                .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
+                .satisfies(checkContains("./mvnw package -Dnative"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal"))
+                .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
     }
 
     private void checkDockerfilesWithGradle(Path projectDir) {
@@ -296,19 +341,25 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
                 .satisfies(checkContains("./gradlew build"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
-                .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
-                .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.17"))//TODO: make a test for java17
+                .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
+                .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
                 .satisfies(checkContains("./gradlew build -Dquarkus.package.type=legacy-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
-                .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
-                .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.17"))
+                .satisfies(checkContains("EXPOSE 8080"))
+                .satisfies(checkContains("USER 185"))
+                .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
+                .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
+        assertThat(projectDir.resolve("src/main/docker/Dockerfile.native-micro")).exists()
+                .satisfies(checkContains("./gradlew build -Dquarkus.package.type=native"))
+                .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image:2.0"))
+                .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
                 .satisfies(checkContains("./gradlew build -Dquarkus.package.type=native"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.4"))
-                .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal"))
+                .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
     }
 
     private void checkConfigProperties(Path projectDir) {

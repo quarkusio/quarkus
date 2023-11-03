@@ -2,9 +2,9 @@ package io.quarkus.resteasy.mutiny.common.runtime;
 
 import java.util.concurrent.ExecutorService;
 
-import javax.ws.rs.client.RxInvokerProvider;
-import javax.ws.rs.client.SyncInvoker;
-import javax.ws.rs.client.WebTarget;
+import jakarta.ws.rs.client.RxInvokerProvider;
+import jakarta.ws.rs.client.SyncInvoker;
+import jakarta.ws.rs.client.WebTarget;
 
 public class MultiInvokerProvider implements RxInvokerProvider<MultiRxInvoker> {
     WebTarget target;

@@ -5,7 +5,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -45,10 +45,9 @@ class NarayanaSTMProcessor {
     ReflectiveClassBuildItem registerFeature(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(Feature.NARAYANA_STM));
 
-        return new ReflectiveClassBuildItem(true, false,
-                ShadowNoFileLockStore.class.getName(),
+        return ReflectiveClassBuildItem.builder(ShadowNoFileLockStore.class.getName(),
                 CheckedActionFactoryImple.class.getName(),
-                Lock.class.getName());
+                Lock.class.getName()).methods().build();
     }
 
     // the software transactional memory implementation does not require a TSM
@@ -98,7 +97,7 @@ class NarayanaSTMProcessor {
 
         String[] classNames = proxies.toArray(new String[0]);
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, classNames));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(classNames).methods().fields().build());
 
         return new NativeImageProxyDefinitionBuildItem(classNames);
     }

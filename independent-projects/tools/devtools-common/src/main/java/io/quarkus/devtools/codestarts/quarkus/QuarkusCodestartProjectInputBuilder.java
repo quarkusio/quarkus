@@ -1,13 +1,5 @@
 package io.quarkus.devtools.codestarts.quarkus;
 
-import io.quarkus.devtools.codestarts.CodestartProjectInputBuilder;
-import io.quarkus.devtools.codestarts.DataKey;
-import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.AppContent;
-import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.extensions.Extensions;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -17,6 +9,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import io.quarkus.devtools.codestarts.CodestartProjectInputBuilder;
+import io.quarkus.devtools.codestarts.DataKey;
+import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.AppContent;
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.extensions.Extensions;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBuilder {
     private static final List<AppContent> FULL_CONTENT = Arrays.asList(AppContent.values());

@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Optional;
@@ -15,20 +16,20 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.CDI;
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.Servlet;
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.SessionTrackingMode;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.servlet.AsyncEvent;
+import jakarta.servlet.AsyncListener;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.SessionTrackingMode;
 
 import org.jboss.logging.Logger;
 
@@ -49,6 +50,8 @@ import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.HttpCompressionHandler;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
@@ -59,10 +62,12 @@ import io.undertow.httpcore.UndertowOptions;
 import io.undertow.security.api.AuthenticationMode;
 import io.undertow.security.api.NotificationReceiver;
 import io.undertow.security.api.SecurityNotification;
+import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.DefaultExchangeHandler;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.CachingResourceManager;
@@ -101,6 +106,7 @@ import io.undertow.servlet.spec.ServletContextImpl;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.ImmediateAuthenticationMechanismFactory;
 import io.undertow.vertx.VertxHttpExchange;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -151,23 +157,20 @@ public class UndertowDeploymentRecorder {
 
     }
 
+    final RuntimeValue<HttpConfiguration> httpConfiguration;
+
+    public UndertowDeploymentRecorder(RuntimeValue<HttpConfiguration> httpConfiguration) {
+        this.httpConfiguration = httpConfiguration;
+    }
+
     public static void setHotDeploymentResources(List<Path> resources) {
         hotDeploymentResourcePaths = resources;
     }
 
     public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
-            LaunchMode launchMode, ShutdownContext context, String contextPath, String httpRootPath, String defaultCharset,
+            LaunchMode launchMode, ShutdownContext context, String mountPoint, String defaultCharset,
             String requestCharacterEncoding, String responseCharacterEncoding, boolean proactiveAuth,
-            List<String> welcomeFiles) {
-        String realMountPoint;
-        if (contextPath.equals("/")) {
-            realMountPoint = httpRootPath;
-        } else if (httpRootPath.equals("/")) {
-            realMountPoint = contextPath;
-        } else {
-            realMountPoint = httpRootPath + contextPath;
-        }
-
+            List<String> welcomeFiles, final boolean hasSecurityCapability) {
         DeploymentInfo d = new DeploymentInfo();
         d.setDefaultRequestEncoding(requestCharacterEncoding);
         d.setDefaultResponseEncoding(responseCharacterEncoding);
@@ -175,7 +178,7 @@ public class UndertowDeploymentRecorder {
         d.setSessionIdGenerator(new QuarkusSessionIdGenerator());
         d.setClassLoader(getClass().getClassLoader());
         d.setDeploymentName(name);
-        d.setContextPath(realMountPoint);
+        d.setContextPath(mountPoint);
         d.setEagerFilterInit(true);
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
@@ -234,6 +237,10 @@ public class UndertowDeploymentRecorder {
         } else {
             d.setAuthenticationMode(AuthenticationMode.CONSTRAINT_DRIVEN);
         }
+        if (hasSecurityCapability) {
+            //Fixes NPE at io.undertow.security.impl.SecurityContextImpl.login(SecurityContextImpl.java:198)
+            d.setIdentityManager(CDI.current().select(IdentityManager.class).get());
+        }
         return new RuntimeValue<>(d);
     }
 
@@ -250,7 +257,7 @@ public class UndertowDeploymentRecorder {
             InstanceFactory<? extends Servlet> instanceFactory) throws Exception {
 
         InstanceFactory<? extends Servlet> factory = instanceFactory != null ? instanceFactory
-                : new QuarkusInstanceFactory(beanContainer.instanceFactory(servletClass));
+                : new QuarkusInstanceFactory(beanContainer.beanInstanceFactory(servletClass));
         ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) servletClass,
                 factory);
         deploymentInfo.getValue().addServlet(servletInfo);
@@ -302,7 +309,7 @@ public class UndertowDeploymentRecorder {
             InstanceFactory<? extends Filter> instanceFactory) throws Exception {
 
         InstanceFactory<? extends Filter> factory = instanceFactory != null ? instanceFactory
-                : new QuarkusInstanceFactory(beanContainer.instanceFactory(filterClass));
+                : new QuarkusInstanceFactory(beanContainer.beanInstanceFactory(filterClass));
         FilterInfo filterInfo = new FilterInfo(name, (Class<? extends Filter>) filterClass, factory);
         info.getValue().addFilter(filterInfo);
         filterInfo.setAsyncSupported(asyncSupported);
@@ -327,7 +334,7 @@ public class UndertowDeploymentRecorder {
         info.getValue()
                 .addListener(new ListenerInfo((Class<? extends EventListener>) listenerClass,
                         (InstanceFactory<? extends EventListener>) new QuarkusInstanceFactory<>(
-                                factory.instanceFactory(listenerClass))));
+                                factory.beanInstanceFactory(listenerClass))));
     }
 
     public void addMimeMapping(RuntimeValue<DeploymentInfo> info, String extension,
@@ -345,8 +352,8 @@ public class UndertowDeploymentRecorder {
     }
 
     public Handler<RoutingContext> startUndertow(ShutdownContext shutdown, ExecutorService executorService,
-            DeploymentManager manager, List<HandlerWrapper> wrappers, HttpConfiguration httpConfiguration,
-            ServletRuntimeConfig servletRuntimeConfig) throws Exception {
+            DeploymentManager manager, List<HandlerWrapper> wrappers,
+            ServletRuntimeConfig servletRuntimeConfig, HttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
 
         shutdown.addShutdownTask(new Runnable() {
             @Override
@@ -368,6 +375,7 @@ public class UndertowDeploymentRecorder {
                     .addPrefixPath(manager.getDeployment().getDeploymentInfo().getContextPath(), main);
             main = pathHandler;
         }
+        main = new CanonicalPathHandler(main);
         currentRoot = main;
 
         DefaultExchangeHandler defaultHandler = new DefaultExchangeHandler(ROOT_HANDLER);
@@ -379,6 +387,10 @@ public class UndertowDeploymentRecorder {
         UndertowOptionMap.Builder undertowOptions = UndertowOptionMap.builder();
         undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.maxParameters);
         UndertowOptionMap undertowOptionMap = undertowOptions.getMap();
+
+        Set<String> compressMediaTypes = httpBuildTimeConfig.enableCompression
+                ? Set.copyOf(httpBuildTimeConfig.compressMediaTypes.get())
+                : Collections.emptySet();
 
         return new Handler<RoutingContext>() {
             @Override
@@ -394,17 +406,31 @@ public class UndertowDeploymentRecorder {
                         event.getBody());
                 exchange.setPushHandler(VertxHttpRecorder.getRootHandler());
 
-                Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
+                // Note that we can't add an end handler in a separate HttpCompressionHandler because VertxHttpExchange does set
+                // its own end handler and so the end handlers added previously are just ignored...
+                if (!compressMediaTypes.isEmpty()) {
+                    event.addEndHandler(new Handler<AsyncResult<Void>>() {
+
+                        @Override
+                        public void handle(AsyncResult<Void> result) {
+                            if (result.succeeded()) {
+                                HttpCompressionHandler.compressIfNeeded(event, compressMediaTypes);
+                            }
+                        }
+                    });
+                }
+
+                Optional<MemorySize> maxBodySize = httpConfiguration.getValue().limits.maxBodySize;
                 if (maxBodySize.isPresent()) {
                     exchange.setMaxEntitySize(maxBodySize.get().asLongValue());
                 }
-                Duration readTimeout = httpConfiguration.readTimeout;
+                Duration readTimeout = httpConfiguration.getValue().readTimeout;
                 exchange.setReadTimeout(readTimeout.toMillis());
 
                 exchange.setUndertowOptions(undertowOptionMap);
 
-                //we eagerly dispatch to the exector, as Undertow needs to be blocking anyway
-                //its actually possible to be on a different IO thread at this point which confuses Undertow
+                //we eagerly dispatch to the executor, as Undertow needs to be blocking anyway
+                //it's actually possible to be on a different IO thread at this point which confuses Undertow
                 //see https://github.com/quarkusio/quarkus/issues/7782
                 if (BlockingOperationControl.isBlockingAllowed()) {
                     defaultHandler.handle(exchange);
@@ -455,7 +481,7 @@ public class UndertowDeploymentRecorder {
             info.getValue().setClassIntrospecter(new ClassIntrospecter() {
                 @Override
                 public <T> InstanceFactory<T> createInstanceFactory(Class<T> clazz) throws NoSuchMethodException {
-                    BeanContainer.Factory<T> res = beanContainer.instanceFactory(clazz);
+                    BeanContainer.Factory<T> res = beanContainer.beanInstanceFactory(clazz);
                     if (res == null) {
                         return defaultVal.createInstanceFactory(clazz);
                     }
@@ -532,7 +558,11 @@ public class UndertowDeploymentRecorder {
     }
 
     public void addServletContextAttribute(RuntimeValue<DeploymentInfo> deployment, String key, Object value1) {
-        deployment.getValue().addServletContextAttribute(key, value1);
+        if (value1 instanceof RuntimeValue) {
+            deployment.getValue().addServletContextAttribute(key, ((RuntimeValue<?>) value1).getValue());
+        } else {
+            deployment.getValue().addServletContextAttribute(key, value1);
+        }
     }
 
     public void addServletExtension(RuntimeValue<DeploymentInfo> deployment, ServletExtension extension) {
@@ -558,6 +588,15 @@ public class UndertowDeploymentRecorder {
                         // Not sure what to do here
                         ManagedContext requestContext = beanContainer.requestContext();
                         if (requestContext.isActive()) {
+                            if (currentVertxRequest.getCurrent() == null && exchange != null
+                                    && exchange.getDelegate() instanceof VertxHttpExchange) {
+                                // goal here is to add event to the Vert.X request when Smallrye Context Propagation
+                                // creates fresh instance of request context without the event; we experienced
+                                // the request context activated and terminated by ActivateRequestContextInterceptor
+                                // invoked for the SecurityIdentityAugmentor that was (re)created during permission checks
+                                addEventToVertxRequest(exchange);
+                            }
+
                             return action.call(exchange, context);
                         } else if (exchange == null) {
                             requestContext.activate();
@@ -572,9 +611,7 @@ public class UndertowDeploymentRecorder {
                             try {
                                 requestContext.activate(existingRequestContext);
 
-                                VertxHttpExchange delegate = (VertxHttpExchange) exchange.getDelegate();
-                                RoutingContext rc = (RoutingContext) delegate.getContext();
-                                currentVertxRequest.setCurrent(rc);
+                                RoutingContext rc = addEventToVertxRequest(exchange);
 
                                 if (association != null) {
                                     QuarkusHttpUser existing = (QuarkusHttpUser) rc.user();
@@ -624,6 +661,13 @@ public class UndertowDeploymentRecorder {
                                 }
                             }
                         }
+                    }
+
+                    private RoutingContext addEventToVertxRequest(HttpServerExchange exchange) {
+                        VertxHttpExchange delegate = (VertxHttpExchange) exchange.getDelegate();
+                        RoutingContext rc = (RoutingContext) delegate.getContext();
+                        currentVertxRequest.setCurrent(rc);
+                        return rc;
                     }
                 };
             }

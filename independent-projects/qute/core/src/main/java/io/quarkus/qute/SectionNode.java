@@ -1,41 +1,70 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.SectionHelper.SectionResolutionContext;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.qute.SectionHelper.SectionResolutionContext;
 
 /**
  * Section node.
  */
 class SectionNode implements TemplateNode {
 
-    static Builder builder(String helperName, Origin origin, Function<String, Expression> expressionFun,
-            Function<String, TemplateException> errorFun) {
-        return new Builder(helperName, origin, expressionFun, errorFun);
+    private static final Logger LOG = Logger.getLogger("io.quarkus.qute.nodeResolve");
+
+    static Builder builder(String helperName, Origin origin, Parser parser,
+            ErrorInitializer errorFun) {
+        return new Builder(helperName, origin, parser, errorFun);
     }
 
     final String name;
     final List<SectionBlock> blocks;
-    private final SectionHelper helper;
+    final SectionHelper helper;
     private final Origin origin;
+    private final boolean traceLevel;
 
     SectionNode(String name, List<SectionBlock> blocks, SectionHelper helper, Origin origin) {
         this.name = name;
         this.blocks = blocks;
         this.helper = helper;
         this.origin = origin;
+        this.traceLevel = LOG.isTraceEnabled();
+    }
+
+    public CompletionStage<ResultNode> resolve(ResolutionContext context, Map<String, Object> params) {
+        if (params == null) {
+            params = Collections.emptyMap();
+        }
+        if (traceLevel && !Parser.ROOT_HELPER_NAME.equals(name)) {
+            LOG.tracef("Resolve {#%s} started:%s", name, origin);
+            return helper.resolve(new SectionResolutionContextImpl(context, params)).thenApply(r -> {
+                LOG.tracef("Resolve {#%s} completed:%s", name, origin);
+                return r;
+            });
+        }
+        return helper.resolve(new SectionResolutionContextImpl(context, params));
     }
 
     @Override
     public CompletionStage<ResultNode> resolve(ResolutionContext context) {
-        return helper.resolve(new SectionResolutionContextImpl(context));
+        return resolve(context, null);
     }
 
     public Origin getOrigin() {
         return origin;
+    }
+
+    @Override
+    public boolean isSection() {
+        return true;
     }
 
     void optimizeNodes(Set<TemplateNode> nodes) {
@@ -60,6 +89,55 @@ class SectionNode implements TemplateNode {
         return expressions;
     }
 
+    public Expression findExpression(Predicate<Expression> predicate) {
+        for (SectionBlock block : blocks) {
+            Expression found = block.findExpression(predicate);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public List<ParameterDeclaration> getParameterDeclarations() {
+        List<ParameterDeclaration> declarations = null;
+        for (SectionBlock block : blocks) {
+            List<ParameterDeclaration> blockDeclarations = block.getParamDeclarations();
+            if (!blockDeclarations.isEmpty()) {
+                if (declarations == null) {
+                    declarations = new ArrayList<>();
+                }
+                declarations.addAll(blockDeclarations);
+            }
+        }
+        return declarations != null ? declarations : Collections.emptyList();
+    }
+
+    TemplateNode findNode(Predicate<TemplateNode> predicate) {
+        for (SectionBlock block : blocks) {
+            TemplateNode found = block.findNode(predicate);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    List<TemplateNode> findNodes(Predicate<TemplateNode> predicate) {
+        List<TemplateNode> ret = null;
+        for (SectionBlock block : blocks) {
+            List<TemplateNode> found = block.findNodes(predicate);
+            if (!found.isEmpty()) {
+                if (ret == null) {
+                    ret = new ArrayList<>();
+                }
+                ret.addAll(found);
+            }
+        }
+        return ret == null ? Collections.emptyList() : ret;
+    }
+
     static class Builder {
 
         final String helperName;
@@ -68,15 +146,16 @@ class SectionNode implements TemplateNode {
         private SectionBlock.Builder currentBlock;
         SectionHelperFactory<?> factory;
         private EngineImpl engine;
+        private final ErrorInitializer errorInitializer;
 
-        public Builder(String helperName, Origin origin, Function<String, Expression> expressionFun,
-                Function<String, TemplateException> errorFun) {
+        Builder(String helperName, Origin origin, Parser parser, ErrorInitializer errorInitializer) {
             this.helperName = helperName;
             this.origin = origin;
             this.blocks = new ArrayList<>();
-            // The main block is always present 
+            this.errorInitializer = errorInitializer;
+            // The main block is always present
             addBlock(SectionBlock
-                    .builder(SectionHelperFactory.MAIN_BLOCK_NAME, expressionFun, errorFun)
+                    .builder(SectionHelperFactory.MAIN_BLOCK_NAME, parser, errorInitializer)
                     .setOrigin(origin));
         }
 
@@ -106,35 +185,31 @@ class SectionNode implements TemplateNode {
             return this;
         }
 
-        SectionNode build() {
+        SectionNode build(Supplier<Template> currentTemlate) {
             ImmutableList.Builder<SectionBlock> builder = ImmutableList.builder();
             for (SectionBlock.Builder block : blocks) {
                 builder.add(block.build());
             }
             List<SectionBlock> blocks = builder.build();
             return new SectionNode(helperName, blocks,
-                    factory.initialize(new SectionInitContextImpl(engine, blocks, this::createParserError)), origin);
-        }
-
-        TemplateException createParserError(String message) {
-            StringBuilder builder = new StringBuilder("Parser error");
-            if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
-                builder.append(" in template [").append(origin.getTemplateId()).append("]");
-            }
-            builder.append(" on line ").append(origin.getLine()).append(": ")
-                    .append(message);
-            return new TemplateException(origin,
-                    builder.toString());
+                    factory.initialize(new SectionInitContextImpl(engine, blocks, errorInitializer, currentTemlate)), origin);
         }
 
     }
 
     class SectionResolutionContextImpl implements SectionResolutionContext {
 
+        private final Map<String, Object> params;
         private final ResolutionContext resolutionContext;
 
-        public SectionResolutionContextImpl(ResolutionContext resolutionContext) {
+        public SectionResolutionContextImpl(ResolutionContext resolutionContext, Map<String, Object> params) {
             this.resolutionContext = resolutionContext;
+            this.params = params;
+        }
+
+        @Override
+        public CompletionStage<Map<String, Object>> evaluate(Map<String, Expression> parameters) {
+            return Futures.evaluateParams(parameters, resolutionContext);
         }
 
         @Override
@@ -158,6 +233,17 @@ class SectionNode implements TemplateNode {
         @Override
         public ResolutionContext resolutionContext() {
             return resolutionContext;
+        }
+
+        @Override
+        public ResolutionContext newResolutionContext(Object data, Map<String, SectionBlock> extendingBlocks) {
+            return new ResolutionContextImpl(data, resolutionContext.getEvaluator(), extendingBlocks,
+                    resolutionContext::getAttribute);
+        }
+
+        @Override
+        public Map<String, Object> getParameters() {
+            return params;
         }
 
     }

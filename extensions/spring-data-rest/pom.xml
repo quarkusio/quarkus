@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-spring-data-rest-parent</artifactId>
-    <name>Quarkus - Spring Data REST</name>
+    <name>Quarkus - Spring Data - REST</name>
     <packaging>pom</packaging>
 
     <modules>

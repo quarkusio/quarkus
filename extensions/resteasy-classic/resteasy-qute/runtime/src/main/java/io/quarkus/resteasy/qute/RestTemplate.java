@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.qute;
 
-import javax.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.container.ResourceInfo;
 
 import org.jboss.resteasy.core.ResteasyContext;
 

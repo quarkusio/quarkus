@@ -2,7 +2,8 @@ package org.jboss.resteasy.reactive.common.util;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.ws.rs.core.Cookie;
+
+import jakarta.ws.rs.core.Cookie;
 
 public class CookieParser {
     public static List<Cookie> parseCookies(String cookieHeader) {
@@ -12,7 +13,7 @@ public class CookieParser {
         // cookie headers can be separated by "," (HTTP header separator), or ";" (Cookie separator)
         // FIXME: the current cookie RFC doesn't mention params for cookies sent by the client
         // doesn't mention $ as a prefix either
-        // FIXME: make this faster if we have a single cooke
+        // FIXME: make this faster if we have a single cookie
         try {
             List<Cookie> cookies = new ArrayList<>();
 

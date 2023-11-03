@@ -10,8 +10,6 @@ import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -25,18 +23,30 @@ public class OidcClientUserPasswordTestCase {
 
     private static Class<?>[] testClasses = {
             OidcClientResource.class,
+            OidcPublicClientResource.class,
             ProtectedResource.class
     };
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
                     .addAsResource("application-oidc-client-user-password.properties", "application.properties"));
 
     @Test
     public void testPasswordGrantToken() {
         String token = RestAssured.when().get("/client/token").body().asString();
+        RestAssured.given().auth().oauth2(token)
+                .when().get("/protected")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice"));
+
+    }
+
+    @Test
+    public void testPublicClientPasswordGrantToken() {
+        String token = RestAssured.when().get("/public-client/token").body().asString();
         RestAssured.given().auth().oauth2(token)
                 .when().get("/protected")
                 .then()

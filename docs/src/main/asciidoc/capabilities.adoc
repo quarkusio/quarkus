@@ -3,43 +3,99 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Extension Capabilities
+= Extension Capabilities
+include::_attributes.adoc[]
+:categories: writing-extensions
+:summary: How capabilities are implemented and used in Quarkus.
+:topics: extensions
+:extensions: io.quarkus:quarkus-core
 
-include::./attributes.adoc[]
+Quarkus extensions may provide certain capabilities and require certain capabilities to be provided by other extensions in an application to function properly.
 
-Quarkus extensions may declare in their descriptors (`META-INF/quarkus-extension.properties` found in the runtime extension JAR artifact) that they provide certain capabilities. A capability represents a technical aspect, e.g. an implementation of some functionality or a specification. Each capability has a name which should follow the Java package naming convetion, e.g. `io.quarkus.rest`.
+A capability represents a technical aspect, for example, it could be an implementation of some functionality, a contract or a specification. Each capability has a name which should follow the Java package naming convention, e.g. `io.quarkus.rest`.
+
+Capability promises and requirements are described in Quarkus extension descriptors - `META-INF/quarkus-extension.properties` entries of the runtime extension JAR artifacts.
 
 IMPORTANT: Only a single provider of any given capability is allowed in an application. If more than one provider of a capability is detected, the application build will fail with the corresponding error message.
+
+If one extension requires a certain capability, there must be another one among the application dependencies that provides that capability, otherwise the build will fail with the corresponding error message.
 
 At build time all the capabilities found in the application will be aggregated in an instance of the `io.quarkus.deployment.Capabilities` build item that extension build steps can inject to check whether a given capability is available or not.
 
 == Declaring capabilities
 
-The `quarkus-bootstrap-maven-plugin:extension-descriptor` Maven goal, that generates the extension descriptor, allows to declare provided capabilities in the following way:
+The `quarkus-extension-maven-plugin:extension-descriptor` Maven goal and the `extensionDescriptor` Gradle task, that generate extension descriptors, allow configuring provided and required capabilities in the following way:
+
+[role="primary asciidoc-tabs-sync-maven"]
+.Maven
+****
 [source,xml]
 ----
 <plugin>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+    <artifactId>quarkus-extension-maven-plugin</artifactId>
     <configuration>
         <capabilities>
-            <provides>io.quarkus.rest</provides>
-            <provides>io.quarkus.resteasy</provides>
+            <provides>io.quarkus.hibernate.orm</provides> <1>
+            <requires>io.quarkus.agroal</requires> <2>
         </capabilities>
     </configuration>
 </plugin>
 ----
+<1> the extension provides the `io.quarkus.hibernate.orm` capability (multiple `provides` elements are allowed)
+<2> the extension requires the `io.quarkus.agroal` capability to be provided to function properly (multiple `requires` elements are allowed)
 
-In this case, the extension is declaring two capabilities.
+****
 
-=== Declaring conditional capabilities
+[role="secondary asciidoc-tabs-sync-gradle-groovy"]
+.Gradle (Groovy DSL)
+****
+[source,groovy,subs=attributes+]
+----
+quarkusExtension {
+    capabilities {
+        provides 'io.quarkus.rest' <1>
+        requires 'io.quarkus.resteasy' <2>
+    }
+}
+----
+<1> the extension provides the `io.quarkus.hibernate.orm` capability (multiple `provides` elements are allowed)
+<2> the extension requires the `io.quarkus.agroal` capability to be provided to function properly (multiple `requires` elements are allowed)
 
-A capability may be provided only if a certain condition is satisfied, e.g. if a certain configuration option is enabled or based on some other condition. This could be expressed in the following way:
+NOTE: The Gradle extension plugin is still experimental and may change in the future.
+
+****
+
+[role="secondary asciidoc-tabs-sync-gradle-kotlin"]
+.Gradle (Kotlin DSL)
+****
+[source,kotlin,subs=attributes+]
+----
+quarkusExtension {
+    capabilities {
+        provides("io.quarkus.rest") <1>
+        requires("io.quarkus.resteasy") <2>
+    }
+}
+----
+<1> the extension provides the `io.quarkus.hibernate.orm` capability (multiple `provides` elements are allowed)
+<2> the extension requires the `io.quarkus.agroal` capability to be provided to function properly (multiple `requires` elements are allowed)
+
+NOTE: The Gradle extension plugin is still experimental and may change in the future.
+****
+
+=== Conditional capability promises and requirements
+
+A capability may be provided or required only if a certain condition is satisfied, for example, if a certain configuration option is enabled or based on some other condition. Here is how a conditional capability promise can be configured:
+
+[role="primary asciidoc-tabs-sync-maven"]
+.Maven
+****
 [source,xml]
 ----
 <plugin>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+    <artifactId>quarkus-extension-maven-plugin</artifactId>
     <configuration>
         <capabilities>
             <providesIf> <1>
@@ -56,7 +112,43 @@ A capability may be provided only if a certain condition is satisfied, e.g. if a
 
 NOTE: `providesIf` allows listing multiple `<positive>` as well as `<negative>` elements.
 
-In this case, `io.quarkus.container.image.openshift.deployment.OpenshiftBuild` should be included in one of the extension deployment dependencies and implement `java.util.function.BooleanSupplier`. At build time, the Quarkus bootstrap will create an instance of it and register `io.quarkus.container.image.openshift` capability only if its `getAsBoolean()` method returns true. 
+The corresponding `requiresIf` element is also supported.
+
+****
+
+[role="secondary asciidoc-tabs-sync-gradle-groovy"]
+.Gradle (Groovy DSL)
+****
+[source,groovy,subs=attributes+]
+----
+quarkusExtension {
+    capabilities {
+        provides 'io.quarkus.container.image.openshift' onlyIf ['io.quarkus.container.image.openshift.deployment.OpenshiftBuild'] <1>
+    }
+}
+----
+<1> condition that must be resolved to `true` by a class implementing `java.util.function.BooleanSupplier`
+
+NOTE: It is possible to specify `onlyIfNot` conditions as well. Conditions can also be set for required capabilities.
+****
+
+[role="secondary asciidoc-tabs-sync-gradle-kotlin"]
+.Gradle (Kotlin DSL)
+****
+[source,kotlin,subs=attributes+]
+----
+quarkusExtension {
+    capabilities {
+        provides("io.quarkus.container.image.openshift").onlyIf(["io.quarkus.container.image.openshift.deployment.OpenshiftBuild"]) <1>
+    }
+}
+----
+<1> condition that must be resolved to `true` by a class implementing `java.util.function.BooleanSupplier`
+
+NOTE: It is possible to specify `onlyIfNot` conditions as well. . Conditions can also be set for required capabilities.
+****
+
+In this case, `io.quarkus.container.image.openshift.deployment.OpenshiftBuild` should be included in one of the extension deployment dependencies and implement `java.util.function.BooleanSupplier`. At build time, the Quarkus bootstrap will create an instance of it and register `io.quarkus.container.image.openshift` capability only if its `getAsBoolean()` method returns true.
 
 An implementation of the `OpenshiftBuild` could look like this:
 [source,java]

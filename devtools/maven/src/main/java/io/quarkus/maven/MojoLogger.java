@@ -62,8 +62,10 @@ public class MojoLogger implements LoggerProvider {
                             text = invalidFormat(format, parameters);
                         }
                     }
-                    synchronized (MojoLogger.class) {
-                        doActualLog(log, level, text, thrown);
+                    if (!text.startsWith("JBoss Threads version")) {
+                        synchronized (MojoLogger.class) {
+                            doActualLog(log, level, text, thrown);
+                        }
                     }
                 }
             }

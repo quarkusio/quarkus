@@ -6,17 +6,16 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.ObserverMethod;
-import javax.inject.Singleton;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Disposes;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.ObserverMethod;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -35,8 +34,9 @@ public class StartupAnnotationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(StartMe.class, SingletonStartMe.class, DependentStartMe.class, ProducerStartMe.class))
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(StartMe.class, SingletonStartMe.class, DependentStartMe.class, ProducerStartMe.class,
+                            StartupMethods.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -71,8 +71,8 @@ public class StartupAnnotationTest {
 
     @Test
     public void testStartup() {
-        // StartMe, SingletonStartMe, ProducerStartMe, DependentStartMe
-        assertEquals(14, LOG.size(), "Unexpected number of log messages: " + LOG);
+        // StartMe, SingletonStartMe, ProducerStartMe, StartupMethods, DependentStartMe
+        assertEquals(23, LOG.size(), "Unexpected number of log messages: " + LOG);
         assertEquals("startMe_c", LOG.get(0));
         assertEquals("startMe_c", LOG.get(1));
         assertEquals("startMe_pc", LOG.get(2));
@@ -82,11 +82,20 @@ public class StartupAnnotationTest {
         assertEquals("produce_long", LOG.get(6));
         assertEquals("producer_pd", LOG.get(7));
         assertEquals("producer_pc", LOG.get(8));
-        assertEquals("produce_string", LOG.get(9));
+        assertEquals("dispose_long", LOG.get(9));
         assertEquals("producer_pd", LOG.get(10));
-        assertEquals("dependent_c", LOG.get(11));
-        assertEquals("dependent_pc", LOG.get(12));
-        assertEquals("dependent_pd", LOG.get(13));
+        assertEquals("producer_pc", LOG.get(11));
+        assertEquals("produce_string", LOG.get(12));
+        assertEquals("producer_pd", LOG.get(13));
+        assertEquals("producer_pc", LOG.get(14));
+        assertEquals("dispose_string", LOG.get(15));
+        assertEquals("producer_pd", LOG.get(16));
+        assertEquals("startup_pc", LOG.get(17));
+        assertEquals("startup_first", LOG.get(18));
+        assertEquals("startup_second", LOG.get(19));
+        assertEquals("dependent_c", LOG.get(20));
+        assertEquals("dependent_pc", LOG.get(21));
+        assertEquals("dependent_pd", LOG.get(22));
     }
 
     // This component should be started first
@@ -111,8 +120,8 @@ public class StartupAnnotationTest {
 
     }
 
-    // @Startup is added by an annotation transformer
-    @Unremovable // only classes annotated with @Startup are made unremovable 
+    // @Startup is added by an annotation transformer, the priority is ObserverMethod.DEFAULT_PRIORITY
+    @Unremovable // only classes annotated with @Startup are made unremovable
     @Singleton
     static class SingletonStartMe {
 
@@ -154,18 +163,26 @@ public class StartupAnnotationTest {
 
     static class ProducerStartMe {
 
-        @Startup(Integer.MAX_VALUE - 1)
+        @Startup(Integer.MAX_VALUE - 10)
         @Produces
         String produceString() {
             LOG.add("produce_string");
             return "ok";
         }
 
-        @Startup(Integer.MAX_VALUE - 2)
+        void disposeString(@Disposes String val) {
+            LOG.add("dispose_string");
+        }
+
+        @Startup(Integer.MAX_VALUE - 20)
         @Produces
         Long produceLong() {
             LOG.add("produce_long");
             return 1l;
+        }
+
+        void disposeLong(@Disposes Long val) {
+            LOG.add("dispose_long");
         }
 
         @PostConstruct
@@ -176,6 +193,26 @@ public class StartupAnnotationTest {
         @PreDestroy
         void destroy() {
             LOG.add("producer_pd");
+        }
+
+    }
+
+    static class StartupMethods {
+
+        @Startup(Integer.MAX_VALUE - 2)
+        String first() {
+            LOG.add("startup_first");
+            return "ok";
+        }
+
+        @Startup(Integer.MAX_VALUE - 1)
+        void second() {
+            LOG.add("startup_second");
+        }
+
+        @PostConstruct
+        void init() {
+            LOG.add("startup_pc");
         }
 
     }

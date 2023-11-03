@@ -1,13 +1,15 @@
 package io.quarkus.micrometer.runtime.export.handlers;
 
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ManagedContext;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
@@ -31,9 +33,34 @@ public class PrometheusHandler implements Handler<RoutingContext> {
             response.setStatusCode(500)
                     .setStatusMessage("Unable to resolve Prometheus registry instance");
         } else {
-            response.putHeader("Content-Type", TextFormat.CONTENT_TYPE_004)
-                    .end(Buffer.buffer(registry.scrape()));
+            ManagedContext requestContext = Arc.container().requestContext();
+            var acceptHeader = chooseContentType(routingContext.request().getHeader("Accept"));
+            if (requestContext.isActive()) {
+                doHandle(response, acceptHeader);
+            } else {
+                requestContext.activate();
+                try {
+                    doHandle(response, acceptHeader);
+                } finally {
+                    requestContext.terminate();
+                }
+            }
         }
+    }
+
+    private String chooseContentType(String acceptHeader) {
+        if (acceptHeader == null) {
+            return TextFormat.CONTENT_TYPE_OPENMETRICS_100;
+        }
+        if (acceptHeader.contains("text/plain") || acceptHeader.contains("text/html")) {
+            return TextFormat.CONTENT_TYPE_004;
+        }
+        return TextFormat.CONTENT_TYPE_OPENMETRICS_100;
+    }
+
+    private void doHandle(HttpServerResponse response, String acceptHeader) {
+        response.putHeader("Content-Type", acceptHeader)
+                .end(Buffer.buffer(registry.scrape(acceptHeader)));
     }
 
     private void setup() {

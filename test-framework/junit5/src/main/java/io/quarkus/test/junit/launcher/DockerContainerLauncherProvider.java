@@ -1,27 +1,30 @@
 package io.quarkus.test.junit.launcher;
 
+import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_HTTPS_PORT;
 import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_PORT;
-import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_WAIT_TIME_SECONDS;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.OptionalInt;
-import java.util.OptionalLong;
 import java.util.ServiceLoader;
 
-import org.eclipse.microprofile.config.Config;
-
+import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DefaultDockerContainerLauncher;
 import io.quarkus.test.common.DockerContainerArtifactLauncher;
 import io.quarkus.test.common.LauncherUtil;
+import io.quarkus.test.common.TestConfigUtil;
+import io.smallrye.config.SmallRyeConfig;
 
 public class DockerContainerLauncherProvider implements ArtifactLauncherProvider {
 
     @Override
     public boolean supportsArtifactType(String type) {
-        return "jar-container".equals(type) || "native-container".equals(type);
+        return isContainer(type);
     }
 
     @Override
@@ -38,19 +41,47 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
             } else {
                 launcher = new DefaultDockerContainerLauncher();
             }
-            Config config = LauncherUtil.installAndGetSomeConfig();
+            SmallRyeConfig config = (SmallRyeConfig) LauncherUtil.installAndGetSomeConfig();
             launcher.init(new DefaultDockerInitContext(
                     config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
-                    Duration.ofSeconds(config.getValue("quarkus.test.jar-wait-time", OptionalLong.class)
-                            .orElse(DEFAULT_WAIT_TIME_SECONDS)),
-                    config.getOptionalValue("quarkus.test.native-image-profile", String.class).orElse(null),
-                    ConfigUtil.argLineValue(config),
+                    TestConfigUtil.waitTimeValue(config),
+                    TestConfigUtil.integrationTestProfile(config),
+                    TestConfigUtil.argLineValue(config),
+                    TestConfigUtil.env(config),
+                    context.devServicesLaunchResult(),
                     containerImage,
-                    pullRequired));
+                    pullRequired,
+                    additionalExposedPorts(config),
+                    labels(config),
+                    volumeMounts(config)));
             return launcher;
         } else {
             throw new IllegalStateException("The container image to be launched could not be determined");
+        }
+    }
+
+    private Map<Integer, Integer> additionalExposedPorts(SmallRyeConfig config) {
+        try {
+            return config.getValues("quarkus.test.container.additional-exposed-ports", Integer.class, Integer.class);
+        } catch (NoSuchElementException e) {
+            return Collections.emptyMap();
+        }
+    }
+
+    private Map<String, String> volumeMounts(SmallRyeConfig config) {
+        try {
+            return config.getValues("quarkus.test.container.volume-mounts", String.class, String.class);
+        } catch (NoSuchElementException e) {
+            return Collections.emptyMap();
+        }
+    }
+
+    private Map<String, String> labels(SmallRyeConfig config) {
+        try {
+            return config.getValues("quarkus.test.container.labels", String.class, String.class);
+        } catch (NoSuchElementException e) {
+            return Collections.emptyMap();
         }
     }
 
@@ -58,13 +89,23 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
             implements DockerContainerArtifactLauncher.DockerInitContext {
         private final String containerImage;
         private final boolean pullRequired;
+        private final Map<Integer, Integer> additionalExposedPorts;
+        private Map<String, String> labels;
+        private Map<String, String> volumeMounts;
 
         public DefaultDockerInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
-                List<String> argLine,
-                String containerImage, boolean pullRequired) {
-            super(httpPort, httpsPort, waitTime, testProfile, argLine);
+                List<String> argLine, Map<String, String> env,
+                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult,
+                String containerImage, boolean pullRequired,
+                Map<Integer, Integer> additionalExposedPorts,
+                Map<String, String> labels,
+                Map<String, String> volumeMounts) {
+            super(httpPort, httpsPort, waitTime, testProfile, argLine, env, devServicesLaunchResult);
             this.containerImage = containerImage;
             this.pullRequired = pullRequired;
+            this.additionalExposedPorts = additionalExposedPorts;
+            this.labels = labels;
+            this.volumeMounts = volumeMounts;
         }
 
         @Override
@@ -76,5 +117,21 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         public boolean pullRequired() {
             return pullRequired;
         }
+
+        @Override
+        public Map<Integer, Integer> additionalExposedPorts() {
+            return additionalExposedPorts;
+        }
+
+        @Override
+        public Map<String, String> labels() {
+            return labels;
+        }
+
+        @Override
+        public Map<String, String> volumeMounts() {
+            return volumeMounts;
+        }
+
     }
 }

@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 public class LegacyJarQuarkusIntegrationTestIT extends QuarkusITBase {
 
     @Test
-    public void testFastJar() throws MavenInvocationException, IOException {
+    public void testLegacyJar() throws MavenInvocationException, IOException {
         doTest("qit-legacy-jar", "legacyjar");
     }
 }

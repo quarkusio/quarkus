@@ -1,12 +1,12 @@
 package io.quarkus.keycloak.pep.runtime;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.adapters.authorization.PolicyEnforcer;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
@@ -15,6 +15,7 @@ import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.Keyclo
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.KeycloakConfigPolicyEnforcer.PathCacheConfig;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Tls.Verification;
 import io.quarkus.oidc.runtime.OidcConfig;
@@ -25,19 +26,22 @@ import io.quarkus.vertx.http.runtime.HttpConfiguration;
 
 @Recorder
 public class KeycloakPolicyEnforcerRecorder {
+    final HttpConfiguration httpConfiguration;
+
+    public KeycloakPolicyEnforcerRecorder(HttpConfiguration httpConfiguration) {
+        this.httpConfiguration = httpConfiguration;
+    }
 
     public Supplier<PolicyEnforcerResolver> setup(OidcConfig oidcConfig, KeycloakPolicyEnforcerConfig config,
-            TlsConfig tlsConfig, HttpConfiguration httpConfiguration) {
-        PolicyEnforcer defaultPolicyEnforcer = createPolicyEnforcer(oidcConfig.defaultTenant, config.defaultTenant, tlsConfig,
-                httpConfiguration);
+            TlsConfig tlsConfig) {
+        PolicyEnforcer defaultPolicyEnforcer = createPolicyEnforcer(oidcConfig.defaultTenant, config.defaultTenant, tlsConfig);
         Map<String, PolicyEnforcer> policyEnforcerTenants = new HashMap<String, PolicyEnforcer>();
         for (Map.Entry<String, KeycloakPolicyEnforcerTenantConfig> tenant : config.namedTenants.entrySet()) {
             OidcTenantConfig oidcTenantConfig = oidcConfig.namedTenants.get(tenant.getKey());
             if (oidcTenantConfig == null) {
                 throw new ConfigurationException("Failed to find a matching OidcTenantConfig for tenant: " + tenant.getKey());
             }
-            policyEnforcerTenants.put(tenant.getKey(), createPolicyEnforcer(oidcTenantConfig, tenant.getValue(), tlsConfig,
-                    httpConfiguration));
+            policyEnforcerTenants.put(tenant.getKey(), createPolicyEnforcer(oidcTenantConfig, tenant.getValue(), tlsConfig));
         }
         return new Supplier<PolicyEnforcerResolver>() {
             @Override
@@ -50,9 +54,9 @@ public class KeycloakPolicyEnforcerRecorder {
 
     private static PolicyEnforcer createPolicyEnforcer(OidcTenantConfig oidcConfig,
             KeycloakPolicyEnforcerTenantConfig keycloakPolicyEnforcerConfig,
-            TlsConfig tlsConfig, HttpConfiguration httpConfiguration) {
+            TlsConfig tlsConfig) {
 
-        if (oidcConfig.applicationType == OidcTenantConfig.ApplicationType.WEB_APP
+        if (oidcConfig.applicationType.orElse(ApplicationType.SERVICE) == OidcTenantConfig.ApplicationType.WEB_APP
                 && oidcConfig.roles.source.orElse(null) != Source.accesstoken) {
             throw new OIDCException("Application 'web-app' type is only supported if access token is the source of roles");
         }
@@ -76,12 +80,21 @@ public class KeycloakPolicyEnforcerRecorder {
         if (trustAll) {
             adapterConfig.setDisableTrustManager(true);
             adapterConfig.setAllowAnyHostname(true);
+        } else if (oidcConfig.tls.trustStoreFile.isPresent()) {
+            adapterConfig.setTruststore(oidcConfig.tls.trustStoreFile.get().toString());
+            adapterConfig.setTruststorePassword(oidcConfig.tls.trustStorePassword.orElse("password"));
+            if (Verification.CERTIFICATE_VALIDATION == oidcConfig.tls.verification.orElse(Verification.REQUIRED)) {
+                adapterConfig.setAllowAnyHostname(true);
+            }
         }
         adapterConfig.setConnectionPoolSize(keycloakPolicyEnforcerConfig.connectionPoolSize);
 
         if (oidcConfig.proxy.host.isPresent()) {
-            adapterConfig.setProxyUrl(oidcConfig.proxy.host.get() + ":"
-                    + oidcConfig.proxy.port);
+            String host = oidcConfig.proxy.host.get();
+            if (!host.startsWith("http://") && !host.startsWith("https://")) {
+                host = URI.create(authServerUrl).getScheme() + "://" + host;
+            }
+            adapterConfig.setProxyUrl(host + ":" + oidcConfig.proxy.port);
         }
 
         PolicyEnforcerConfig enforcerConfig = getPolicyEnforcerConfig(keycloakPolicyEnforcerConfig,
@@ -89,7 +102,15 @@ public class KeycloakPolicyEnforcerRecorder {
 
         adapterConfig.setPolicyEnforcerConfig(enforcerConfig);
 
-        return new PolicyEnforcer(KeycloakDeploymentBuilder.build(adapterConfig), adapterConfig);
+        return PolicyEnforcer.builder()
+                .authServerUrl(adapterConfig.getAuthServerUrl())
+                .realm(adapterConfig.getRealm())
+                .clientId(adapterConfig.getResource())
+                .credentials(adapterConfig.getCredentials())
+                .bearerOnly(adapterConfig.isBearerOnly())
+                .enforcerConfig(enforcerConfig)
+                .httpClient(new HttpClientBuilder().build(adapterConfig))
+                .build();
     }
 
     private static Map<String, Object> getCredentials(OidcTenantConfig oidcConfig) {

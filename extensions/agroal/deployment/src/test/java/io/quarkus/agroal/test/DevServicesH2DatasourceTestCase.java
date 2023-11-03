@@ -8,23 +8,22 @@ import java.sql.Connection;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration.ExceptionSorter;
+import io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class DevServicesH2DatasourceTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
+            .withEmptyApplication()
             // Expect no warnings (in particular from Agroal)
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()
                     // There are other warnings: JDK8, TestContainers, drivers, ...
@@ -42,7 +41,8 @@ public class DevServicesH2DatasourceTestCase {
     public void testDatasource() throws Exception {
         AgroalConnectionPoolConfiguration configuration = dataSource.getConfiguration().connectionPoolConfiguration();
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:h2:"));
-        assertEquals("sa", configuration.connectionFactoryConfiguration().principal().getName());
+        assertEquals(DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME,
+                configuration.connectionFactoryConfiguration().principal().getName());
         assertEquals(20, configuration.maxSize());
         assertThat(configuration.exceptionSorter()).isInstanceOf(ExceptionSorter.emptyExceptionSorter().getClass());
 

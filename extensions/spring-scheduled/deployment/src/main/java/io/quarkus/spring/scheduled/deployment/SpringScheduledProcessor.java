@@ -24,8 +24,8 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
 import io.quarkus.scheduler.deployment.ScheduledBusinessMethodItem;
-import io.quarkus.scheduler.runtime.util.SchedulerUtils;
 
 /**
  * A simple processor that search for Spring Scheduled annotations in Beans and produce

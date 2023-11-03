@@ -37,7 +37,28 @@ public class InsertSectionHelper implements SectionHelper {
 
         @Override
         public InsertSectionHelper initialize(SectionInitContext context) {
-            return new InsertSectionHelper(context.getParameter("name"), context.getBlocks().get(0));
+            String name = context.getParameter("name");
+            if (context.getEngine().getSectionHelperFactories().containsKey(name)) {
+                throw context.error(
+                        "\\{#insert} defined in the \\{#include\\} conflicts with an existing section/tag: {name}")
+                        .code(Code.INSERT_SECTION_CONFLICT)
+                        .argument("name", name)
+                        .origin(context.getOrigin())
+                        .build();
+            }
+            return new InsertSectionHelper(name, context.getBlocks().get(0));
+        }
+
+    }
+
+    enum Code implements ErrorCode {
+
+        INSERT_SECTION_CONFLICT,
+        ;
+
+        @Override
+        public String getName() {
+            return "INSERT_" + name();
         }
 
     }

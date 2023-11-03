@@ -7,7 +7,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import javax.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.Bean;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
@@ -64,7 +64,7 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
                                 });
                     });
                 } else {
-                    log.warn("Vert.x context unavailable to perform healthcheck of reactive datasource `" + dataSourceName
+                    log.warn("Vert.x context unavailable to perform health check of reactive datasource `" + dataSourceName
                             + "`. This is unlikely to work correctly.");
                     pgPool.query(healthCheckSQL)
                             .execute(ar -> {
@@ -76,7 +76,7 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
                 //20 seconds is rather high, but using just 10 is often not enough on slow CI
                 //systems, especially if the connections have to be established for the first time.
                 databaseConnectionAttempt.get(20, TimeUnit.SECONDS);
-                builder.withData(dataSourceName, "up");
+                builder.withData(dataSourceName, "UP");
             } catch (RuntimeException | ExecutionException exception) {
                 operationsError(dataSourceName, exception);
                 builder.down();

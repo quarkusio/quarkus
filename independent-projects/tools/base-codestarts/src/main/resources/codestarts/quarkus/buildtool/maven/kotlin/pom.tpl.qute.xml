@@ -40,7 +40,7 @@
                 </executions>
                 <configuration>
                     <javaParameters>true</javaParameters>
-                    <jvmTarget>1.8</jvmTarget>
+                    <jvmTarget>{java.version}</jvmTarget>
                     <!-- Soon to be replaced by plugin that will pre-configure all necessary annotations -->
                     <compilerPlugins>
                         <plugin>all-open</plugin>
@@ -48,8 +48,15 @@
 
                     <pluginOptions>
                         <!-- Each annotation is placed on its own line -->
+                        {#if quarkus.platform.version.startsWith("2.") or quarkus.platform.version.startsWith("1.")}
                         <option>all-open:annotation=javax.ws.rs.Path</option>
                         <option>all-open:annotation=javax.enterprise.context.ApplicationScoped</option>
+                        <option>all-open:annotation=javax.persistence.Entity</option>
+                        {#else}
+                        <option>all-open:annotation=jakarta.ws.rs.Path</option>
+                        <option>all-open:annotation=jakarta.enterprise.context.ApplicationScoped</option>
+                        <option>all-open:annotation=jakarta.persistence.Entity</option>
+                        {/if}
                         <option>all-open:annotation=io.quarkus.test.junit.QuarkusTest</option>
                     </pluginOptions>
                 </configuration>

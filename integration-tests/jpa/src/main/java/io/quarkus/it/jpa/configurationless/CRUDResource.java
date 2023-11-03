@@ -3,21 +3,21 @@ package io.quarkus.it.jpa.configurationless;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
-import javax.transaction.UserTransaction;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
+import jakarta.transaction.UserTransaction;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import org.hibernate.cache.spi.TimestampsCache;
 import org.hibernate.internal.SessionImpl;
 
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.configuration.ProfileManager;
+import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
  * @author Emmanuel Bernard emmanuel@hibernate.org
@@ -82,7 +82,7 @@ public class CRUDResource {
     @Transactional
     @Path("/import")
     public Map<String, String> get() {
-        boolean isProdMode = ProfileManager.getActiveProfile().equals(LaunchMode.NORMAL.getDefaultProfile());
+        boolean isProdMode = ConfigUtils.isProfileActive(LaunchMode.NORMAL.getDefaultProfile());
         Gift gift = em.find(Gift.class, 100000L);
         Map<String, String> map = new HashMap<>();
         // Native tests are run under the 'prod' profile for now. In NORMAL mode, Quarkus doesn't execute the SQL import file

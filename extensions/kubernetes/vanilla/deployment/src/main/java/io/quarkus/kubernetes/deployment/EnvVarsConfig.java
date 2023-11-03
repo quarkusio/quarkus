@@ -34,7 +34,7 @@ public class EnvVarsConfig {
      * The map associating environment name to its associated value.
      */
     @ConfigItem
-    Map<String, String> vars;
+    Map<String, Optional<String>> vars;
 
     /**
      * The map recording the configuration of environment variable taking their value from resource (Secret or

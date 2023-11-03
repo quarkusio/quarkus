@@ -3,9 +3,9 @@ package io.quarkus.it.panache;
 import java.io.Serializable;
 import java.util.Objects;
 
-import javax.persistence.Embeddable;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 

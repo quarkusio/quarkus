@@ -4,11 +4,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.ArtifactInfoUtil;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 /**
  * A build item that represents the "quarkus.datasource.db-kind" value.
@@ -40,9 +40,9 @@ public final class DefaultDataSourceDbKindBuildItem extends MultiBuildItem {
     public String getScope(CurateOutcomeBuildItem curateOutcomeBuildItem) {
         if (scope == null) {
             Map.Entry<String, String> artifact = ArtifactInfoUtil.groupIdAndArtifactId(callerClass, curateOutcomeBuildItem);
-            for (AppDependency i : curateOutcomeBuildItem.getEffectiveModel().getFullDeploymentDeps()) {
-                if (i.getArtifact().getArtifactId().equals(artifact.getValue())
-                        && i.getArtifact().getGroupId().equals(artifact.getKey())) {
+            for (ResolvedDependency i : curateOutcomeBuildItem.getApplicationModel().getDependencies()) {
+                if (i.getArtifactId().equals(artifact.getValue())
+                        && i.getGroupId().equals(artifact.getKey())) {
                     scope = i.getScope();
                     break;
                 }
@@ -76,11 +76,11 @@ public final class DefaultDataSourceDbKindBuildItem extends MultiBuildItem {
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         if (defaultDbKinds.isEmpty()) {
             return Optional.empty();
-        } else if (defaultDbKinds.size() == 1) {
+        } else if (defaultDbKinds.stream().map(DefaultDataSourceDbKindBuildItem::getDbKind).distinct().count() == 1) {
             return Optional.of(defaultDbKinds.get(0).dbKind);
         } else {
             //if we have one and only one test scoped driver we assume it is the default
-            //if is commmon to use a different DB such as H2 in tests
+            //if is common to use a different DB such as H2 in tests
             DefaultDataSourceDbKindBuildItem testScopedDriver = null;
             for (DefaultDataSourceDbKindBuildItem i : defaultDbKinds) {
                 if (i.getScope(curateOutcomeBuildItem).equals(TEST)) {

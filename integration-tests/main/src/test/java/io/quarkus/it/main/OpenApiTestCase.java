@@ -8,9 +8,9 @@ import java.net.URLConnection;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -22,6 +22,7 @@ import io.quarkus.test.junit.QuarkusTest;
 public class OpenApiTestCase {
 
     private static final String DEFAULT_MEDIA_TYPE = "application/json";
+    private static final String DEFAULT_MEDIA_TYPE_PRIMITIVE = "text/plain";
 
     @TestHTTPResource("q/openapi")
     URL uri;
@@ -43,7 +44,7 @@ public class OpenApiTestCase {
         Assertions.assertNotNull(obj);
 
         Assertions.assertEquals("3.0.3", obj.getString("openapi"));
-        Assertions.assertEquals("Generated API", obj.getJsonObject("info").getString("title"));
+        Assertions.assertEquals("main-integration-test API", obj.getJsonObject("info").getString("title"));
         Assertions.assertEquals("1.0", obj.getJsonObject("info").getString("version"));
 
         JsonObject paths = obj.getJsonObject("paths");
@@ -63,9 +64,10 @@ public class OpenApiTestCase {
         // test RESTEasy extensions
 
         JsonObject schemasObj = obj.getJsonObject("components").getJsonObject("schemas");
-        String testSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE, testObj.getJsonObject("get").getJsonObject("responses"),
+        String testSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE_PRIMITIVE,
+                testObj.getJsonObject("get").getJsonObject("responses"),
                 schemasObj);
-        String rxSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE,
+        String rxSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE_PRIMITIVE,
                 injectionObj.getJsonObject("get").getJsonObject("responses"),
                 schemasObj);
         // make sure String, CompletionStage<String> and Single<String> are detected the same
@@ -74,7 +76,8 @@ public class OpenApiTestCase {
                 "Normal and RX/Single have same schema");
         JsonObject csObj = paths.getJsonObject("/test/cs");
         Assertions.assertEquals(testSchemaType,
-                schemaType("200", DEFAULT_MEDIA_TYPE, csObj.getJsonObject("get").getJsonObject("responses"), schemasObj),
+                schemaType("200", DEFAULT_MEDIA_TYPE_PRIMITIVE, csObj.getJsonObject("get").getJsonObject("responses"),
+                        schemasObj),
                 "Normal and RX/CS have same schema");
 
         JsonObject paramsObj = paths.getJsonObject("/test/params/{path}");
@@ -88,7 +91,8 @@ public class OpenApiTestCase {
         Assertions.assertEquals(1, keys.size());
         Assertions.assertEquals("get", keys.iterator().next());
 
-        String uniSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE, uniObj.getJsonObject("get").getJsonObject("responses"),
+        String uniSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE_PRIMITIVE,
+                uniObj.getJsonObject("get").getJsonObject("responses"),
                 schemasObj);
         // make sure String, CompletionStage<String> and Uni<String> are detected the same
         Assertions.assertEquals(testSchemaType,

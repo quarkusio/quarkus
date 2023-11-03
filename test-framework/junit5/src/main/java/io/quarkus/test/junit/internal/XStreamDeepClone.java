@@ -15,9 +15,13 @@ class XStreamDeepClone implements DeepClone {
         // avoid doing any work eagerly since the cloner is rarely used
         xStreamSupplier = () -> {
             XStream result = new XStream();
-            XStream.setupDefaultSecurity(result);
             result.allowTypesByRegExp(new String[] { ".*" });
             result.setClassLoader(classLoader);
+            result.registerConverter(new CustomListConverter(result.getMapper()));
+            result.registerConverter(new CustomSetConverter(result.getMapper()));
+            result.registerConverter(new CustomMapConverter(result.getMapper()));
+            result.registerConverter(new CustomMapEntryConverter(result.getMapper()));
+
             return result;
         };
     }

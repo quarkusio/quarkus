@@ -12,30 +12,24 @@ import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.smallrye.common.classloader.ClassPathUtils;
 import picocli.CommandLine;
-import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Model.CommandSpec;
-import picocli.CommandLine.Spec;
 
-@CommandLine.Command(name = "version", sortOptions = false, header = "Display version information.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "Options:%n")
+@CommandLine.Command(name = "version", header = "Display CLI version information.", hidden = true)
 public class Version implements CommandLine.IVersionProvider, Callable<Integer> {
 
     private static String version;
 
-    @Mixin
+    @CommandLine.Mixin(name = "output")
     OutputOptionMixin output;
 
-    @Mixin
+    @CommandLine.Mixin
     HelpOption helpOption;
 
     @CommandLine.ArgGroup(exclusive = false, validate = false)
     protected PropertiesOptions propertiesOptions = new PropertiesOptions();
 
-    @Spec
+    @CommandLine.Spec
     CommandSpec spec;
-
-    @CommandLine.Option(order = 3, names = {
-            "--dependencies" }, description = "Show project dependency versions")
-    boolean dependencies = false;
 
     @Override
     public Integer call() throws Exception {
@@ -46,7 +40,7 @@ public class Version implements CommandLine.IVersionProvider, Callable<Integer> 
 
     @Override
     public String[] getVersion() throws Exception {
-        return new String[] { "Client Version " + clientVersion() };
+        return new String[] { clientVersion() };
     }
 
     public static String clientVersion() {

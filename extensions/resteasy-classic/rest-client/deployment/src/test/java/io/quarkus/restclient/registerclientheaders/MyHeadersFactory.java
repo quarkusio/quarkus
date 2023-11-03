@@ -2,10 +2,10 @@ package io.quarkus.restclient.registerclientheaders;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import javax.enterprise.inject.spi.BeanManager;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 

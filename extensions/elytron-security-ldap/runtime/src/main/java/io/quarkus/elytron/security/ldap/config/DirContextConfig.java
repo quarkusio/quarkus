@@ -1,5 +1,6 @@
 package io.quarkus.elytron.security.ldap.config;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import org.wildfly.security.auth.realm.ldap.DirContextFactory;
@@ -34,6 +35,18 @@ public class DirContextConfig {
     @ConfigItem(defaultValue = "ignore")
     public DirContextFactory.ReferralMode referralMode;
 
+    /**
+     * The connect timeout
+     */
+    @ConfigItem(defaultValue = "5s")
+    public Duration connectTimeout;
+
+    /**
+     * The read timeout
+     */
+    @ConfigItem(defaultValue = "60s")
+    public Duration readTimeout;
+
     @Override
     public String toString() {
         return "DirContextConfig{" +
@@ -41,6 +54,8 @@ public class DirContextConfig {
                 ", principal=" + principal +
                 ", password=" + password +
                 ", referralMode=" + referralMode +
+                ", connectTimeout=" + connectTimeout +
+                ", readTimeout=" + readTimeout +
                 '}';
     }
 }

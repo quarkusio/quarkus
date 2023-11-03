@@ -3,21 +3,19 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus - Using Security with an LDAP Realm
-
-include::./attributes.adoc[]
+= Using Security with an LDAP Realm
+include::_attributes.adoc[]
+:categories: security
+:summary: This guide demonstrates how your Quarkus application can use a LDAP directory to store your user identities.
+:topics: security,identity-providers,ldap
+:extensions: io.quarkus:quarkus-elytron-security-ldap
 
 This guide demonstrates how your Quarkus application can use an LDAP server to authenticate and authorize your user identities.
 
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -31,6 +29,9 @@ The `/api/public` endpoint can be accessed anonymously.
 The `/api/admin` endpoint is protected with RBAC (Role-Based Access Control) where only users granted with the `adminRole` role can access. At this endpoint, we use the `@RolesAllowed` annotation to declaratively enforce the access constraint.
 The `/api/users/me` endpoint is also protected with RBAC (Role-Based Access Control) where only users granted with the `standardRole` role can access. As a response, it returns a JSON document with details about the user.
 
+WARNING: By default, Quarkus will restrict the use of JNDI within an application, as a precaution to try and mitigate any future vulnerabilities similar to Log4Shell. Because LDAP based auth requires JNDI
+this protection will be automatically disabled.
+
 == Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.
@@ -38,36 +39,29 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `security-ldap-quickstart` {quickstarts-tree-url}/security-ldap-quickstart[directory].
+The solution is located in the `security-ldap-quickstart` link:{quickstarts-tree-url}/security-ldap-quickstart[directory].
 
 == Creating the Maven Project
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=security-ldap-quickstart \
-    -Dextensions="elytron-security-ldap,resteasy" \
-    -DnoExamples
-cd security-ldap-quickstart
-----
+:create-app-artifact-id: security-ldap-quickstart
+:create-app-extensions: elytron-security-ldap,resteasy-reactive
+include::{includes}/devtools/create-app.adoc[]
 
-This command generates a Maven project, importing the `elytron-security-ldap` extension
+This command generates a project, importing the `elytron-security-ldap` extension
 which is a `wildfly-elytron-realm-ldap` adapter for Quarkus applications.
 
 If you already have your Quarkus project configured, you can add the `elytron-security-ldap` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="elytron-security-ldap"
-----
+:add-extension-extensions: elytron-security-ldap
+include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -75,19 +69,25 @@ This will add the following to your `pom.xml`:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-elytron-security-ldap")
+----
+
 == Writing the application
 
-Let's start by implementing the `/api/public` endpoint. As you can see from the source code below, it is just a regular JAX-RS resource:
+Let's start by implementing the `/api/public` endpoint. As you can see from the source code below, it is just a regular Jakarta REST resource:
 
 [source,java]
 ----
 package org.acme.elytron.security.ldap;
 
-import javax.annotation.security.PermitAll;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.annotation.security.PermitAll;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/api/public")
 public class PublicResource {
@@ -108,11 +108,11 @@ The source code for the `/api/admin` endpoint is also very simple. The main diff
 ----
 package org.acme.elytron.security.ldap;
 
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/api/admin")
 public class AdminResource {
@@ -127,18 +127,18 @@ public class AdminResource {
 ----
 
 Finally, let's consider the `/api/users/me` endpoint. As you can see from the source code below, we are trusting only users with the `standardRole` role.
-We are using `SecurityContext` to get access to the current authenticated Principal and we return the user's name. This information is loaded from the LDAP server.
+We are using `SecurityContext` to get access to the current authenticated Principal, and we return the user's name. This information is loaded from the LDAP server.
 
 [source,java]
 ----
 package org.acme.elytron.security.ldap;
 
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.SecurityContext;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.SecurityContext;
 
 @Path("/api/users")
 public class UserResource {
@@ -158,26 +158,32 @@ public class UserResource {
 ----
 quarkus.security.ldap.enabled=true
 
-quarkus.security.ldap.dir-context.principal=uid=tool,ou=accounts,o=YourCompany,c=DE
-quarkus.security.ldap.dir-context.url=ldaps://ldap.server.local
-quarkus.security.ldap.dir-context.password=PASSWORD
+quarkus.security.ldap.dir-context.principal=uid=admin,ou=system
+quarkus.security.ldap.dir-context.url=ldaps://ldap.server.local <1>
+quarkus.security.ldap.dir-context.password=secret
 
 quarkus.security.ldap.identity-mapping.rdn-identifier=uid
-quarkus.security.ldap.identity-mapping.search-base-dn=ou=users,ou=tool,o=YourCompany,c=DE
+quarkus.security.ldap.identity-mapping.search-base-dn=ou=Users,dc=quarkus,dc=io
 
 quarkus.security.ldap.identity-mapping.attribute-mappings."0".from=cn
-quarkus.security.ldap.identity-mapping.attribute-mappings."0".to=groups
-quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter=(member=uid={0})
-quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter-base-dn=ou=roles,ou=tool,o=YourCompany,c=DE
-----
+quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter=(member=uid={0},ou=Users,dc=quarkus,dc=io) <2>
+quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter-base-dn=ou=Roles,dc=quarkus,dc=io
 
-`{0}` is substituted by the `uid`, whereas `{1}` will be substituted by the `dn` of the user entry.
+%test.quarkus.security.ldap.dir-context.url=ldap://127.0.0.1:10389 <3>
+----
+<1> You need to provide the URL to an LDAP server. This example requires the LDAP server to have imported link:{quarkus-blob-url}/test-framework/ldap/src/main/resources/quarkus-io.ldif[this LDIF file].
+<2> `{0}` is substituted by the `uid`.
+<3> The URL used by our test resource. Tests may leverage `LdapServerTestResource` provided by Quarkus as link:{quickstarts-blob-url}/security-ldap-quickstart/src/test/java/org/acme/elytron/security/ldap/ElytronLdapExtensionTestResources.java[we do] in the test coverage of the example application.
 
 The `elytron-security-ldap` extension requires a dir-context and an identity-mapping with at least one attribute-mapping to authenticate the user and its identity.
 
 == Testing the Application
 
 The application is now protected and the identities are provided by our LDAP server.
+Let's start the application in dev mode:
+
+include::{includes}/devtools/dev.adoc[]
+
 The very first thing to check is to ensure the anonymous access works.
 
 [source,shell]
@@ -190,7 +196,7 @@ Content-Type: text/plain;charset=UTF-8
 public%
 ----
 
-Now, let's try a to hit a protected resource anonymously.
+Now, let's try to hit a protected resource anonymously.
 
 [source,shell]
 ----
@@ -248,4 +254,4 @@ include::{generated-dir}/config/quarkus-elytron-security-ldap.adoc[opts=optional
 == References
 
 * https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol[LDAP]
-* link:security[Quarkus Security]
+* xref:security-overview.adoc[Quarkus Security overview]

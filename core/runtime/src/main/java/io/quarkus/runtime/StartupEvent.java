@@ -4,7 +4,7 @@ package io.quarkus.runtime;
  * Event class that is fired on startup.
  *
  * This is fired on main method execution after all startup code has run,
- * so can be used to start threads etc in native image mode
+ * so can be used to start threads etc. in native image mode
  *
  * This event is observed as follows:
  *
@@ -17,5 +17,5 @@ package io.quarkus.runtime;
  * The annotated method can access other injected beans.
  *
  */
-public class StartupEvent {
+public class StartupEvent extends jakarta.enterprise.event.Startup {
 }

@@ -12,6 +12,34 @@ import io.quarkus.runtime.annotations.ConfigItem;
 @ConfigGroup
 public class GrpcClientConfiguration {
 
+    public static final String DNS = "dns";
+    public static final String XDS = "xds";
+
+    /**
+     * Use new Vert.x gRPC client support.
+     * By default, we still use previous Java gRPC support.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean useQuarkusGrpcClient;
+
+    /**
+     * Configure XDS usage, if enabled.
+     */
+    @ConfigItem
+    public ClientXds xds;
+
+    /**
+     * Configure InProcess usage, if enabled.
+     */
+    @ConfigItem
+    public InProcess inProcess;
+
+    /**
+     * Configure Stork usage with new Vert.x gRPC, if enabled.
+     */
+    @ConfigItem
+    public StorkConfig stork;
+
     /**
      * The gRPC service port.
      */
@@ -19,9 +47,15 @@ public class GrpcClientConfiguration {
     public int port;
 
     /**
-     * The host name / IP on which the service is exposed.
+     * The gRPC service test port.
      */
     @ConfigItem
+    public OptionalInt testPort;
+
+    /**
+     * The host name / IP on which the service is exposed.
+     */
+    @ConfigItem(defaultValue = "localhost")
     public String host;
 
     /**
@@ -30,8 +64,15 @@ public class GrpcClientConfiguration {
     public SslClientConfig ssl;
 
     /**
+     * Use a name resolver. Defaults to dns.
+     * If set to "stork", host will be treated as SmallRye Stork service name
+     */
+    @ConfigItem(defaultValue = DNS)
+    public String nameResolver;
+
+    /**
      * Whether {@code plain-text} should be used instead of {@code TLS}.
-     * Enables by default, except it TLS/SSL is configured. In this case, {@code plain-text} is disabled.
+     * Enabled by default, except if TLS/SSL is configured. In this case, {@code plain-text} is disabled.
      */
     @ConfigItem
     public Optional<Boolean> plainText;
@@ -55,7 +96,7 @@ public class GrpcClientConfiguration {
     public Optional<Duration> idleTimeout;
 
     /**
-     * The amount of time the sender of of a keep alive ping waits for an acknowledgement.
+     * The amount of time the sender of a keep alive ping waits for an acknowledgement.
      */
     @ConfigItem
     public Optional<Duration> keepAliveTimeout;
@@ -139,7 +180,8 @@ public class GrpcClientConfiguration {
 
     /**
      * Use a custom load balancing policy.
-     * Accepted values are: {@code pick_value}, {@code round_robin}, {@code grpclb}
+     * Accepted values are: {@code pick_first}, {@code round_robin}, {@code grpclb}.
+     * This value is ignored if name-resolver is set to 'stork'.
      */
     @ConfigItem(defaultValue = "pick_first")
     public String loadBalancingPolicy;
@@ -152,10 +194,6 @@ public class GrpcClientConfiguration {
 
     /**
      * The deadline used for each call.
-     * <p>
-     * The format uses the standard {@link java.time.Duration} format. You can also provide duration values starting with a
-     * number. In this case, if the value consists only of a number, the converter treats the value as seconds. Otherwise,
-     * {@code PT} is implicitly prepended to the value to obtain a standard {@link java.time.Duration} format.
      */
     @ConfigItem
     public Optional<Duration> deadline;

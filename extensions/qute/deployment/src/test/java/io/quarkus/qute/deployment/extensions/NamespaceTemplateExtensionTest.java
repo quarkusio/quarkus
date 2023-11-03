@@ -2,12 +2,15 @@ package io.quarkus.qute.deployment.extensions;
 
 import static io.quarkus.qute.TemplateExtension.ANY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import javax.enterprise.event.TransactionPhase;
-import javax.inject.Inject;
+import java.util.EnumSet;
+import java.util.Set;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import jakarta.enterprise.event.TransactionPhase;
+import jakarta.inject.Inject;
+
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -19,7 +22,10 @@ public class NamespaceTemplateExtensionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
+                    .addAsResource(new StringAsset(
+                            "{#for state in domain:states}{state.foo}{/for}"),
+                            "templates/foo.html")
                     .addClasses(StringExtensions.class, MyEnum.class, EnumExtensions.class));
 
     @Inject
@@ -33,6 +39,11 @@ public class NamespaceTemplateExtensionTest {
                 engine.parse("{str:format('%s',1)}").render());
         assertEquals("olleh",
                 engine.parse("{str:reverse('hello')}").render());
+        try {
+            engine.parse("{str:reverse(null)}").render();
+            fail();
+        } catch (NullPointerException expected) {
+        }
         assertEquals("foolish:olleh",
                 engine.parse("{str:foolish('hello')}").render());
         assertEquals("ONE=ONE",
@@ -43,6 +54,8 @@ public class NamespaceTemplateExtensionTest {
                 engine.parse("{str:quark}").render());
         assertEquals("QUARKUS!",
                 engine.parse("{str:quarkus}").render());
+        assertEquals("openclosed",
+                engine.getTemplate("foo").render());
     }
 
     @TemplateExtension(namespace = "str")
@@ -73,9 +86,17 @@ public class NamespaceTemplateExtensionTest {
     }
 
     public enum MyEnum {
-
         ONE,
         TWO
+    }
+
+    public enum State {
+        OPEN,
+        CLOSED;
+
+        public String getFoo() {
+            return toString().toLowerCase();
+        }
 
     }
 
@@ -89,6 +110,11 @@ public class NamespaceTemplateExtensionTest {
         @TemplateExtension(namespace = "txPhase", matchName = "*")
         static TransactionPhase enumValue(String value) {
             return TransactionPhase.valueOf(value);
+        }
+
+        @TemplateExtension(namespace = "domain")
+        static Set<State> states() {
+            return EnumSet.allOf(State.class);
         }
 
     }

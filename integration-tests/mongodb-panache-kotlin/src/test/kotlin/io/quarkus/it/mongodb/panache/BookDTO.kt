@@ -61,13 +61,25 @@ class BookDTO {
     @Override
     override fun toString(): String {
         return "BookDTO{" +
-                "title='" + title + '\'' +
-                ", author='" + author + '\'' +
-                ", id='" + id + '\'' +
-                ", transientDescription='" + transientDescription + '\'' +
-                ", creationDate='" + creationDate + '\'' +
-                ", categories=" + categories +
-                ", details=" + details +
-                '}'
+            "title='" +
+            title +
+            '\'' +
+            ", author='" +
+            author +
+            '\'' +
+            ", id='" +
+            id +
+            '\'' +
+            ", transientDescription='" +
+            transientDescription +
+            '\'' +
+            ", creationDate='" +
+            creationDate +
+            '\'' +
+            ", categories=" +
+            categories +
+            ", details=" +
+            details +
+            '}'
     }
 }

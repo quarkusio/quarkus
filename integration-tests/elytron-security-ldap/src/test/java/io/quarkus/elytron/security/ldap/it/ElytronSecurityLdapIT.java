@@ -1,8 +1,8 @@
 package io.quarkus.elytron.security.ldap.it;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 class ElytronSecurityLdapIT extends ElytronSecurityLdapTest {
 
 }

@@ -22,14 +22,13 @@ import java.util.Properties;
 import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
-import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.deployment.util.ProcessUtil;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.paths.PathList;
 
 /**
  * The main entry point for the dev mojo execution
@@ -87,22 +86,23 @@ public class DevModeMain implements Closeable {
                     }
                 }
             }
-            final PathsCollection.Builder appRoots = PathsCollection.builder();
-            Path p = Paths.get(context.getApplicationRoot().getMain().getClassesPath());
-            if (Files.exists(p)) {
-                appRoots.add(p);
+            final PathList.Builder appRootsBuilder = PathList.builder();
+            final Path classesPath = Path.of(context.getApplicationRoot().getMain().getClassesPath());
+            if (Files.exists(classesPath)) {
+                appRootsBuilder.add(classesPath);
             }
             if (context.getApplicationRoot().getMain().getResourcesOutputPath() != null
                     && !context.getApplicationRoot().getMain().getResourcesOutputPath()
                             .equals(context.getApplicationRoot().getMain().getClassesPath())) {
-                p = Paths.get(context.getApplicationRoot().getMain().getResourcesOutputPath());
-                if (Files.exists(p)) {
-                    appRoots.add(p);
+                final Path resourcesOutputPath = Paths.get(context.getApplicationRoot().getMain().getResourcesOutputPath());
+                if (Files.exists(resourcesOutputPath)) {
+                    appRootsBuilder.add(resourcesOutputPath);
                 }
             }
 
+            final PathList appRoots = appRootsBuilder.build();
             QuarkusBootstrap.Builder bootstrapBuilder = QuarkusBootstrap.builder()
-                    .setApplicationRoot(appRoots.build())
+                    .setApplicationRoot(appRoots)
                     .setIsolateDeployment(true)
                     .setLocalProjectDiscovery(context.isLocalProjectDiscovery())
                     .addAdditionalDeploymentArchive(path)
@@ -110,26 +110,12 @@ public class DevModeMain implements Closeable {
                     .setMode(context.getMode());
             if (context.getDevModeRunnerJarFile() != null) {
                 bootstrapBuilder.setTargetDirectory(context.getDevModeRunnerJarFile().getParentFile().toPath());
+            } else if (context.getApplicationRoot().getTargetDir() != null) {
+                bootstrapBuilder.setTargetDirectory(Path.of(context.getApplicationRoot().getTargetDir()));
             }
-            if (context.getProjectDir() != null) {
-                bootstrapBuilder.setProjectRoot(context.getProjectDir().toPath());
-            } else {
-                bootstrapBuilder.setProjectRoot(new File(".").toPath());
-            }
-            for (AppArtifactKey i : context.getLocalArtifacts()) {
+            bootstrapBuilder.setProjectRoot(resolveProjectRoot());
+            for (ArtifactKey i : context.getLocalArtifacts()) {
                 bootstrapBuilder.addLocalArtifact(i);
-            }
-
-            for (DevModeContext.ModuleInfo i : context.getAdditionalModules()) {
-                if (i.getMain().getClassesPath() != null) {
-                    Path classesPath = Paths.get(i.getMain().getClassesPath());
-                    bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(classesPath, true, false));
-                }
-                if (i.getMain().getResourcesOutputPath() != null
-                        && !i.getMain().getResourcesOutputPath().equals(i.getMain().getClassesPath())) {
-                    Path resourceOutputPath = Paths.get(i.getMain().getResourcesOutputPath());
-                    bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(resourceOutputPath, true, false));
-                }
             }
 
             linkDotEnvFile();
@@ -148,9 +134,21 @@ public class DevModeMain implements Closeable {
                     map);
         } catch (Throwable t) {
             log.error("Quarkus dev mode failed to start", t);
-            throw new RuntimeException(t);
+            throw (t instanceof RuntimeException ? (RuntimeException) t : new RuntimeException(t));
             //System.exit(1);
         }
+    }
+
+    private Path resolveProjectRoot() {
+        final Path projectRoot;
+        if (context.getProjectDir() != null) {
+            projectRoot = context.getProjectDir().toPath();
+        } else if (context.getApplicationRoot().getProjectDirectory() != null) {
+            projectRoot = Path.of(context.getApplicationRoot().getProjectDirectory());
+        } else {
+            projectRoot = new File(".").toPath();
+        }
+        return projectRoot;
     }
 
     // links the .env file to the directory where the process is running
@@ -189,6 +187,7 @@ public class DevModeMain implements Closeable {
             } catch (IOException | InterruptedException e) {
                 log.warn("Unable to link .env file", e);
             }
+            link.toFile().deleteOnExit();
         }
     }
 

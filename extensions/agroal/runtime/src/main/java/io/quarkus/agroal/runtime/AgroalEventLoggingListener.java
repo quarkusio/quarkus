@@ -10,10 +10,14 @@ final class AgroalEventLoggingListener implements AgroalDataSourceListener {
 
     private static final Logger log = Logger.getLogger("io.agroal.pool");
 
-    private final String datasourceName;
+    private static final String CONN_WITHOUT_TX = "Connection acquired without transaction.";
 
-    public AgroalEventLoggingListener(String name) {
+    private final String datasourceName;
+    private final boolean transactionRequirementWarningActive;
+
+    public AgroalEventLoggingListener(String name, boolean transactionRequirementWarningActive) {
         this.datasourceName = "Datasource '" + name + "'";
+        this.transactionRequirementWarningActive = transactionRequirementWarningActive;
     }
 
     @Override
@@ -39,6 +43,11 @@ final class AgroalEventLoggingListener implements AgroalDataSourceListener {
     @Override
     public void onConnectionCreation(Connection connection) {
         log.tracev("{0}: Created connection {1}", datasourceName, connection);
+    }
+
+    @Override
+    public void onConnectionLeak(Connection connection, Thread thread) {
+        log.infov("{0}: Connection leak of {1}", datasourceName, connection);
     }
 
     @Override
@@ -68,7 +77,11 @@ final class AgroalEventLoggingListener implements AgroalDataSourceListener {
 
     @Override
     public void onWarning(Throwable throwable) {
-        log.warnv("{0}: {1}", datasourceName, throwable.getMessage());
-        log.debug("Cause: ", throwable);
+        if (transactionRequirementWarningActive && CONN_WITHOUT_TX.equals(throwable.getMessage())) {
+            log.warnv(throwable, "{0}", datasourceName);
+        } else {
+            log.warnv("{0}: {1}", datasourceName, throwable.getMessage());
+            log.debug("Cause: ", throwable);
+        }
     }
 }

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.cloud.functions.Context;
 
+import io.cloudevents.CloudEvent;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.funqy.runtime.FunctionConstructor;
@@ -31,7 +32,7 @@ public class FunqyCloudFunctionsBindingRecorder {
 
     public void init(BeanContainer bc) {
         beanContainer = bc;
-        objectMapper = beanContainer.instance(ObjectMapper.class);
+        objectMapper = beanContainer.beanInstance(ObjectMapper.class);
 
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
             if (invoker.hasInput()) {
@@ -93,6 +94,20 @@ public class FunqyCloudFunctionsBindingRecorder {
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Handle CloudEventsFunction
+     *
+     * @param cloudEvent
+     */
+    public static void handle(CloudEvent cloudEvent) {
+        FunqyServerResponse response = dispatch(cloudEvent);
+
+        Object value = response.getOutput().await().indefinitely();
+        if (value != null) {
+            throw new RuntimeException("A background function cannot return a value");
         }
     }
 

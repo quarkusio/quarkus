@@ -2,10 +2,15 @@ name: Quarkus Documentation CI
 
 on:
   push:
+    branches-ignore:
+      - 'dependabot/**'
+      - 'jakarta-rewrite'
+      - '3.0'
     paths:
       - 'docs/src/main/asciidoc/**'
       - '.github/workflows/doc-build.yml'
   pull_request:
+    types: [opened, synchronize, reopened]
     paths:
       - 'docs/src/main/asciidoc/**'
       - '.github/workflows/doc-build.yml'
@@ -23,33 +28,53 @@ jobs:
         run: sleep 30
   build-doc:
     name: "Documentation Build"
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     # Skip main in forks
     if: "github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')"
     steps:
-      - uses: actions/checkout@v2
-      - uses: n1hility/cancel-previous-runs@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
       - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v3
         with:
+          distribution: temurin
           java-version: 11
       - name: Get Date
         id: get-date
         run: |
-          echo "::set-output name=date::$(/bin/date -u "+%Y-%m")"
+          echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
       - name: Cache Maven Repository
         id: cache-maven
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.m2/repository
           # refresh cache every month to avoid unlimited growth
           key: q2maven-doc-${{ steps.get-date.outputs.date }}
       - name: Build
         run: |
-          ./mvnw -Dquickly-ci -B --settings .github/mvn-settings.xml install
+          ./mvnw -DquicklyDocs -B --settings .github/mvn-settings.xml
+
       - name: Build Docs
         run: |
-          ./mvnw -e -B --settings .github/mvn-settings.xml clean org.asciidoctor:asciidoctor-maven-plugin:process-asciidoc -pl docs -Ddocumentation-pdf
+          if ./mvnw -e -B --settings .github/mvn-settings.xml clean package -pl docs -Dasciidoctor.fail-if=DEBUG ; then
+            echo "Build ok"
+          else
+            if [ -f docs/target/metadataErrors.md ]; then
+              echo "### Document Metadata Errors" >> $GITHUB_STEP_SUMMARY
+              cat docs/target/metadataErrors.md >> $GITHUB_STEP_SUMMARY
+            fi
+            exit 1
+          fi
+
+      - name: Store PR id
+        run: echo ${{ github.event.number }} > pr-id.txt
+
+      - name: Persist documentation
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation
+          path: |
+            pr-id.txt
+            docs/
+            target/asciidoc/generated/config/
+          retention-days: 1

@@ -15,12 +15,16 @@ public class LiquibaseFunctionalityTest {
     @Test
     @DisplayName("Migrates a schema correctly using integrated instance")
     public void testLiquibaseQuarkusFunctionality() {
+        doTestLiquibaseQuarkusFunctionality(isIncludeAllExpectedToWork());
+    }
+
+    static void doTestLiquibaseQuarkusFunctionality(boolean isIncludeAllExpectedToWork) {
         when()
                 .get("/liquibase/update")
                 .then()
                 .body(is(
                         "create-tables-1,test-1,create-view-inline,create-view-file-abs,create-view-file-rel,"
-                                + (isIncludeAllExpectedToWork() ? "includeAll-1,includeAll-2," : "")
+                                + (isIncludeAllExpectedToWork ? "includeAll-1,includeAll-2," : "")
                                 + "json-create-tables-1,json-test-1,"
                                 + "sql-create-tables-1,sql-test-1,"
                                 + "yaml-create-tables-1,yaml-test-1,"

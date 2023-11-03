@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -20,6 +19,9 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexReader;
 import org.jboss.jandex.IndexWriter;
 import org.jboss.jandex.Indexer;
+import org.jboss.jandex.UnsupportedVersion;
+
+import io.quarkus.fs.util.ZipUtils;
 
 public final class TestClassIndexer {
 
@@ -27,13 +29,16 @@ public final class TestClassIndexer {
     }
 
     public static Index indexTestClasses(Class<?> testClass) {
+        return indexTestClasses(getTestClassesLocation(testClass));
+    }
+
+    public static Index indexTestClasses(final Path testClassesLocation) {
         final Indexer indexer = new Indexer();
-        final Path testClassesLocation = getTestClassesLocation(testClass);
         try {
             if (Files.isDirectory(testClassesLocation)) {
                 indexTestClassesDir(indexer, testClassesLocation);
             } else {
-                try (FileSystem jarFs = FileSystems.newFileSystem(testClassesLocation, null)) {
+                try (FileSystem jarFs = ZipUtils.newFileSystem(testClassesLocation)) {
                     for (Path p : jarFs.getRootDirectories()) {
                         indexTestClassesDir(indexer, p);
                     }
@@ -46,7 +51,11 @@ public final class TestClassIndexer {
     }
 
     public static void writeIndex(Index index, Class<?> testClass) {
-        try (FileOutputStream fos = new FileOutputStream(indexPath(testClass).toFile(), false)) {
+        writeIndex(index, getTestClassesLocation(testClass), testClass);
+    }
+
+    public static void writeIndex(Index index, Path testClassLocation, Class<?> testClass) {
+        try (FileOutputStream fos = new FileOutputStream(indexPath(testClassLocation, testClass).toFile(), false)) {
             IndexWriter indexWriter = new IndexWriter(fos);
             indexWriter.write(index);
         } catch (IOException ignored) {
@@ -56,10 +65,16 @@ public final class TestClassIndexer {
     }
 
     public static Index readIndex(Class<?> testClass) {
-        Path path = indexPath(testClass);
+        return readIndex(getTestClassesLocation(testClass), testClass);
+    }
+
+    public static Index readIndex(Path testClassLocation, Class<?> testClass) {
+        Path path = indexPath(testClassLocation, testClass);
         if (path.toFile().exists()) {
             try (FileInputStream fis = new FileInputStream(path.toFile())) {
                 return new IndexReader(fis).read();
+            } catch (UnsupportedVersion e) {
+                throw new UnsupportedVersion("Can't read Jandex index from " + path + ": " + e.getMessage());
             } catch (IOException e) {
                 // be lenient since the error is recoverable
                 return indexTestClasses(testClass);
@@ -71,7 +86,11 @@ public final class TestClassIndexer {
     }
 
     private static Path indexPath(Class<?> testClass) {
-        return PathTestHelper.getTestClassesLocation(testClass).resolve(testClass.getSimpleName() + ".idx");
+        return indexPath(PathTestHelper.getTestClassesLocation(testClass), testClass);
+    }
+
+    private static Path indexPath(Path testClassLocation, Class<?> testClass) {
+        return testClassLocation.resolve(testClass.getSimpleName() + ".idx");
     }
 
     private static void indexTestClassesDir(Indexer indexer, final Path testClassesLocation) throws IOException {

@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import javax.persistence.EntityManager;
-import javax.persistence.LockModeType;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
@@ -18,8 +18,8 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     private CommonPanacheQueryImpl<Entity> delegate;
 
-    PanacheQueryImpl(EntityManager em, String query, String orderBy, Object paramsArrayOrMap) {
-        this.delegate = new CommonPanacheQueryImpl<Entity>(em, query, orderBy, paramsArrayOrMap);
+    PanacheQueryImpl(EntityManager em, String query, String originalQuery, String orderBy, Object paramsArrayOrMap) {
+        this.delegate = new CommonPanacheQueryImpl<>(em, query, originalQuery, orderBy, paramsArrayOrMap);
     }
 
     protected PanacheQueryImpl(CommonPanacheQueryImpl<Entity> delegate) {

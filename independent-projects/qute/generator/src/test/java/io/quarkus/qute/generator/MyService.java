@@ -1,6 +1,5 @@
 package io.quarkus.qute.generator;
 
-import io.quarkus.qute.TemplateData;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -10,6 +9,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import io.quarkus.qute.TemplateData;
 
 @TemplateData(ignore = "surname")
 public class MyService {
@@ -36,8 +37,24 @@ public class MyService {
         return true;
     }
 
+    public Boolean isActiveObject() {
+        return true;
+    }
+
+    public Boolean isActiveObjectNull() {
+        return null;
+    }
+
     public boolean hasItems() {
         return false;
+    }
+
+    public MyEnum myEnum() {
+        return MyEnum.BAR;
+    }
+
+    public MyEnum myEnumNull() {
+        return null;
     }
 
     public List<String> getList(int limit, String dummy) {
@@ -97,6 +114,10 @@ public class MyService {
 
     public static String quark() {
         return "ok";
+    }
+
+    public static int getDummy(int val) {
+        return val * 2;
     }
 
 }

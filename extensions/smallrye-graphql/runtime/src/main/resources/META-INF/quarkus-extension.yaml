@@ -10,5 +10,15 @@ metadata:
   - "web"
   categories:
   - "web"
-  guide: "https://quarkus.io/guides/microprofile-graphql"
-  status: "preview"
+  guide: "https://quarkus.io/guides/smallrye-graphql"
+  status: "stable"
+  config:
+  - "mp.graphql."
+  - "smallrye.graphql."
+  - "quarkus.smallrye-graphql."
+  codestart:
+    name: "smallrye-graphql"
+    languages:
+      - "java"
+      - "kotlin"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

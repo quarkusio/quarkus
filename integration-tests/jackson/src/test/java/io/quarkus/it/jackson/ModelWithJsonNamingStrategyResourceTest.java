@@ -18,7 +18,7 @@ public class ModelWithJsonNamingStrategyResourceTest {
                 .when().get("/json-naming/")
                 .then()
                 .statusCode(200)
-                .body(containsString("blog_title"));
+                .body(containsString("blog_title"), containsString("nm"));
     }
 
 }

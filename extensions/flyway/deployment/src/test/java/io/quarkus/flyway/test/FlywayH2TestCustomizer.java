@@ -38,7 +38,7 @@ public class FlywayH2TestCustomizer {
 
     void startH2() {
         try {
-            tcpServer = Server.createTcpServer("-tcpPort", String.valueOf(port));
+            tcpServer = Server.createTcpServer("-tcpPort", String.valueOf(port), "-ifNotExists");
             tcpServer.start();
             System.out.println("[INFO] Custom H2 database started in TCP server mode; server status: " + tcpServer.getStatus());
             if (initSqlFile != null) {
@@ -54,7 +54,7 @@ public class FlywayH2TestCustomizer {
         requireNonNull(initSqlFile, "Flyway-H2: init-sql must be specified!");
         final String url = buildDbURL();
         try {
-            System.out.println("[INFO] Custom H2 Intializing DB: " + url);
+            System.out.println("[INFO] Custom H2 Initializing DB: " + url);
             RunScript.execute(
                     url,
                     "sa",

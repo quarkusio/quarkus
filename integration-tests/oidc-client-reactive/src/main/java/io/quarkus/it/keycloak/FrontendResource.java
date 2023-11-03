@@ -1,9 +1,11 @@
 package io.quarkus.it.keycloak;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import java.util.function.Function;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
@@ -19,6 +21,14 @@ public class FrontendResource {
     @RestClient
     ProtectedResourceServiceReactiveFilter protectedResourceServiceReactiveFilter;
 
+    @Inject
+    @RestClient
+    ProtectedResourceServiceNamedFilter protectedResourceServiceNamedFilter;
+
+    @Inject
+    @RestClient
+    MisconfiguredClientFilter misconfiguredClientFilter;
+
     @GET
     @Path("userNameCustomFilter")
     @Produces("text/plain")
@@ -31,5 +41,27 @@ public class FrontendResource {
     @Produces("text/plain")
     public Uni<String> userNameReactive() {
         return protectedResourceServiceReactiveFilter.getUserName();
+    }
+
+    @GET
+    @Path("userNameNamedFilter")
+    @Produces("text/plain")
+    public Uni<String> userNameNamedFilter() {
+        return protectedResourceServiceNamedFilter.getUserName();
+    }
+
+    @GET
+    @Path("userNameMisconfiguredClientFilter")
+    @Produces("text/plain")
+    public Uni<String> userNameMisconfiguredClientFilter() {
+        return misconfiguredClientFilter.getUserName().onFailure(Throwable.class)
+                .recoverWithItem(new Function<Throwable, String>() {
+
+                    @Override
+                    public String apply(Throwable t) {
+                        return t.getMessage();
+                    }
+
+                });
     }
 }

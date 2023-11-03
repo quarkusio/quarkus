@@ -9,7 +9,9 @@ import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.comp
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.computeExtensionDocFileName;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.deriveConfigRootName;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getJavaDocSiteLink;
+import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getName;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.normalizeDurationValue;
+import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.toEnvVarName;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigInteger;
@@ -102,6 +104,16 @@ public class DocGeneratorUtilTest {
 
         value = getJavaDocSiteLink("java.util.List<java.lang.String>");
         assertEquals(OFFICIAL_JAVA_DOC_BASE_LINK + "java/util/List.html", value);
+    }
+
+    @Test
+    public void replaceNonAlphanumericByUnderscoresThenConvertToUpperCase() {
+        assertEquals("QUARKUS_DATASOURCE__DATASOURCE_NAME__JDBC_BACKGROUND_VALIDATION_INTERVAL",
+                toEnvVarName("quarkus.datasource.\"datasource-name\".jdbc.background-validation-interval"));
+        assertEquals(
+                "QUARKUS_SECURITY_JDBC_PRINCIPAL_QUERY__NAMED_PRINCIPAL_QUERIES__BCRYPT_PASSWORD_MAPPER_ITERATION_COUNT_INDEX",
+                toEnvVarName(
+                        "quarkus.security.jdbc.principal-query.\"named-principal-queries\".bcrypt-password-mapper.iteration-count-index"));
     }
 
     @Test
@@ -318,42 +330,89 @@ public class DocGeneratorUtilTest {
     }
 
     @Test
+    void getNameTest() {
+        String prefix = Constants.QUARKUS;
+        String name = Constants.HYPHENATED_ELEMENT_NAME;
+        String simpleClassName = "MyConfig";
+        String actual = getName(prefix, name, simpleClassName, ConfigPhase.RUN_TIME);
+        assertEquals("quarkus.my", actual);
+
+        prefix = "my.prefix";
+        name = "";
+        simpleClassName = "MyPrefix";
+        actual = getName(prefix, name, simpleClassName, ConfigPhase.RUN_TIME);
+        assertEquals("my.prefix", actual);
+
+        prefix = "";
+        name = "my.prefix";
+        simpleClassName = "MyPrefix";
+        actual = getName(prefix, name, simpleClassName, ConfigPhase.RUN_TIME);
+        assertEquals("my.prefix", actual);
+
+        prefix = "my";
+        name = "prefix";
+        simpleClassName = "MyPrefix";
+        actual = getName(prefix, name, simpleClassName, ConfigPhase.RUN_TIME);
+        assertEquals("my.prefix", actual);
+
+        prefix = Constants.QUARKUS;
+        name = "prefix";
+        simpleClassName = "SomethingElse";
+        actual = getName(prefix, name, simpleClassName, ConfigPhase.RUN_TIME);
+        assertEquals("quarkus.prefix", actual);
+
+        prefix = "";
+        name = Constants.HYPHENATED_ELEMENT_NAME;
+        simpleClassName = "SomethingElse";
+        actual = getName(prefix, name, simpleClassName, ConfigPhase.RUN_TIME);
+        assertEquals("quarkus.something-else", actual);
+    }
+
+    @Test
     public void derivingConfigRootNameTestCase() {
         // should hyphenate class name
         String simpleClassName = "RootName";
-        String actual = deriveConfigRootName(simpleClassName, ConfigPhase.RUN_TIME);
+        String actual = deriveConfigRootName(simpleClassName, "", ConfigPhase.RUN_TIME);
         assertEquals("quarkus.root-name", actual);
 
         // should hyphenate class name after removing Config(uration) suffix
         simpleClassName = "RootNameConfig";
-        actual = deriveConfigRootName(simpleClassName, ConfigPhase.BUILD_TIME);
+        actual = deriveConfigRootName(simpleClassName, "", ConfigPhase.BUILD_TIME);
         assertEquals("quarkus.root-name", actual);
 
         simpleClassName = "RootNameConfiguration";
-        actual = deriveConfigRootName(simpleClassName, ConfigPhase.BUILD_AND_RUN_TIME_FIXED);
+        actual = deriveConfigRootName(simpleClassName, "", ConfigPhase.BUILD_AND_RUN_TIME_FIXED);
         assertEquals("quarkus.root-name", actual);
 
         // should hyphenate class name after removing RunTimeConfig(uration) suffix
         simpleClassName = "RootNameRunTimeConfig";
-        actual = deriveConfigRootName(simpleClassName, ConfigPhase.RUN_TIME);
+        actual = deriveConfigRootName(simpleClassName, "", ConfigPhase.RUN_TIME);
         assertEquals("quarkus.root-name", actual);
 
         simpleClassName = "RootNameRuntimeConfig";
-        actual = deriveConfigRootName(simpleClassName, ConfigPhase.RUN_TIME);
+        actual = deriveConfigRootName(simpleClassName, "", ConfigPhase.RUN_TIME);
         assertEquals("quarkus.root-name", actual);
 
         simpleClassName = "RootNameRunTimeConfiguration";
-        actual = deriveConfigRootName(simpleClassName, ConfigPhase.RUN_TIME);
+        actual = deriveConfigRootName(simpleClassName, "", ConfigPhase.RUN_TIME);
         assertEquals("quarkus.root-name", actual);
 
         // should hyphenate class name after removing BuildTimeConfig(uration) suffix
         simpleClassName = "RootNameBuildTimeConfig";
-        actual = deriveConfigRootName(simpleClassName, ConfigPhase.BUILD_AND_RUN_TIME_FIXED);
+        actual = deriveConfigRootName(simpleClassName, "", ConfigPhase.BUILD_AND_RUN_TIME_FIXED);
         assertEquals("quarkus.root-name", actual);
 
         simpleClassName = "RootNameBuildTimeConfiguration";
-        actual = deriveConfigRootName(simpleClassName, ConfigPhase.BUILD_TIME);
+        actual = deriveConfigRootName(simpleClassName, "", ConfigPhase.BUILD_TIME);
         assertEquals("quarkus.root-name", actual);
+
+        simpleClassName = "RootName";
+        actual = deriveConfigRootName(simpleClassName, "prefix", ConfigPhase.RUN_TIME);
+        assertEquals("prefix.root-name", actual);
+
+        simpleClassName = "RootName";
+        actual = deriveConfigRootName(simpleClassName, "my.prefix", ConfigPhase.RUN_TIME);
+        assertEquals("my.prefix.root-name", actual);
     }
 
     @Test

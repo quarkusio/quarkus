@@ -1,7 +1,9 @@
 package io.quarkus.hibernate.orm.rest.data.panache.deployment.entity;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.is;
+
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.rest.data.panache.deployment.AbstractPostMethodTest;
@@ -11,9 +13,18 @@ class PanacheEntityResourcePostMethodTest extends AbstractPostMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Collection.class, CollectionsResource.class, AbstractEntity.class, AbstractItem.class,
                             Item.class, ItemsResource.class)
                     .addAsResource("application.properties")
                     .addAsResource("import.sql"));
+
+    @Test
+    void shouldCopyUserMethodsAnnotatedWithTransactional() {
+        given().accept("application/json")
+                .when().post("/collections/name/mycollection")
+                .then().statusCode(200)
+                .and().body("id", is("mycollection"))
+                .and().body("name", is("mycollection"));
+    }
 }

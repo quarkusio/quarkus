@@ -12,26 +12,27 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.MessageBodyWriter;
-import javax.ws.rs.ext.Providers;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.ContextResolver;
+import jakarta.ws.rs.ext.MessageBodyReader;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+import jakarta.ws.rs.ext.Providers;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.AnnotationValue.Kind;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.MediaTypeMap;
+import org.jboss.resteasy.microprofile.config.FilterConfigSource;
+import org.jboss.resteasy.microprofile.config.ServletConfigSource;
+import org.jboss.resteasy.microprofile.config.ServletContextConfigSource;
 import org.jboss.resteasy.plugins.interceptors.AcceptEncodingGZIPFilter;
 import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
 import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
@@ -50,12 +51,15 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.AdditionalStaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.common.runtime.ResteasyInjectorFactoryRecorder;
-import io.quarkus.resteasy.common.runtime.config.ResteasyConfigSourceProvider;
+import io.quarkus.resteasy.common.runtime.config.ResteasyConfigBuilder;
 import io.quarkus.resteasy.common.runtime.providers.ServerFormUrlEncodedProvider;
 import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
@@ -88,9 +92,11 @@ public class ResteasyCommonProcessor {
 
     private static final DotName QUARKUS_JSONB_CONTEXT_RESOLVER = DotName
             .createSimple("io.quarkus.resteasy.common.runtime.jsonb.QuarkusJsonbContextResolver");
-    private static final DotName JSONB = DotName.createSimple("javax.json.bind.Jsonb");
+    private static final DotName JSONB = DotName.createSimple("jakarta.json.bind.Jsonb");
     private static final DotName QUARKUS_JSONB_SERIALIZER = DotName
             .createSimple("io.quarkus.resteasy.common.runtime.jsonb.QuarkusJsonbSerializer");
+
+    private static final String APPLICATION_HAL_JSON = "application/hal+json";
 
     private static final String[] WILDCARD_MEDIA_TYPE_ARRAY = { MediaType.WILDCARD };
 
@@ -122,9 +128,20 @@ public class ResteasyCommonProcessor {
     }
 
     @BuildStep
-    void initConfigSourceProvider(BuildProducer<AdditionalStaticInitConfigSourceProviderBuildItem> initConfigSourceProvider) {
-        initConfigSourceProvider.produce(
-                new AdditionalStaticInitConfigSourceProviderBuildItem(ResteasyConfigSourceProvider.class.getName()));
+    void addStaticInitConfigSourceProvider(
+            Capabilities capabilities,
+            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+
+        if (!capabilities.isCapabilityWithPrefixPresent(Capability.SERVLET)) {
+            return;
+        }
+
+        staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(ResteasyConfigBuilder.class));
+
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ServletConfigSource.class,
+                ServletContextConfigSource.class,
+                FilterConfigSource.class).build());
     }
 
     @BuildStep
@@ -134,6 +151,14 @@ public class ResteasyCommonProcessor {
                 (capabilities.isCapabilityWithPrefixPresent(Capability.RESTEASY_JSON_JACKSON)
                         // RESTEASY_JSONB or RESTEASY_JSONB_CLIENT
                         || capabilities.isCapabilityWithPrefixPresent(Capability.RESTEASY_JSON_JSONB)));
+    }
+
+    @BuildStep
+    void disableDefaultExceptionMapper(BuildProducer<SystemPropertyBuildItem> systemProperties) {
+        // RESTEasy 6.2 introduced a default exception mapper (as per JAX-RS 3.1 spec)
+        // but we want to keep Quarkus consistent and have Vert.x handle the exceptions
+        // as we have a better error handling in our Vert.x error handler.
+        systemProperties.produce(new SystemPropertyBuildItem("dev.resteasy.exception.mapper", "false"));
     }
 
     @BuildStep
@@ -159,6 +184,7 @@ public class ResteasyCommonProcessor {
     JaxrsProvidersToRegisterBuildItem setupProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             CombinedIndexBuildItem indexBuildItem,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             List<ResteasyJaxrsProviderBuildItem> contributedProviderBuildItems,
             List<RestClientBuildItem> restClients,
             ResteasyConfigBuildItem resteasyConfig,
@@ -174,7 +200,6 @@ public class ResteasyCommonProcessor {
             if (i.target().kind() == AnnotationTarget.Kind.CLASS) {
                 annotatedProviders.add(i.target().asClass().name().toString());
             }
-            checkProperConfigAccessInProvider(i);
         }
         contributedProviders.addAll(annotatedProviders);
         Set<String> availableProviders = new HashSet<>(ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
@@ -199,7 +224,8 @@ public class ResteasyCommonProcessor {
             boolean needJsonSupport = restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.CONSUMES)
                     || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.PRODUCES)
                     || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.RESTEASY_SSE_ELEMENT_TYPE)
-                    || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.RESTEASY_PART_TYPE);
+                    || restJsonSupportNeeded(indexBuildItem, ResteasyDotNames.RESTEASY_PART_TYPE)
+                    || restJsonSupportNeededForHalCapability(capabilities, indexBuildItem);
             if (needJsonSupport) {
                 LOGGER.warn(
                         "Quarkus detected the need of REST JSON support but you have not provided the necessary JSON " +
@@ -240,12 +266,19 @@ public class ResteasyCommonProcessor {
 
         if (providersToRegister.contains("org.jboss.resteasy.plugins.providers.jsonb.JsonBindingProvider")) {
             // This abstract one is also accessed directly via reflection
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true,
-                    "org.jboss.resteasy.plugins.providers.jsonb.AbstractJsonBindingProvider"));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder("org.jboss.resteasy.plugins.providers.jsonb.AbstractJsonBindingProvider")
+                            .methods().fields().build());
         }
 
-        return new JaxrsProvidersToRegisterBuildItem(
+        JaxrsProvidersToRegisterBuildItem result = new JaxrsProvidersToRegisterBuildItem(
                 providersToRegister, contributedProviders, annotatedProviders, useBuiltinProviders);
+
+        // Providers that are also beans are unremovable
+        unremovableBeans.produce(new UnremovableBeanBuildItem(
+                b -> result.getProviders().contains(b.getBeanClass().toString())));
+
+        return result;
     }
 
     private String mutinySupportNeeded(CombinedIndexBuildItem indexBuildItem) {
@@ -299,6 +332,22 @@ public class ResteasyCommonProcessor {
         }
     }
 
+    @BuildStep
+    void registerNativeImageResources(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+        serviceProvider.produce(ServiceProviderBuildItem
+                .allProvidersFromClassPath(org.jboss.resteasy.spi.config.ConfigurationFactory.class.getName()));
+    }
+
+    /**
+     * ResourceCleaner contains java.lang.ref.Cleaner references which need to get
+     * runtime initialized.
+     */
+    @BuildStep
+    public RuntimeInitializedClassBuildItem runtimeInitResourceCleaner() {
+        return new RuntimeInitializedClassBuildItem(
+                "org.jboss.resteasy.spi.ResourceCleaner");
+    }
+
     private void registerJsonContextResolver(
             DotName jsonImplementation,
             DotName jsonContextResolver,
@@ -337,44 +386,36 @@ public class ResteasyCommonProcessor {
         return result;
     }
 
-    private void checkProperConfigAccessInProvider(AnnotationInstance instance) {
-        List<AnnotationInstance> configPropertyInstances = instance.target().asClass().annotations()
-                .get(ResteasyDotNames.CONFIG_PROPERTY);
-        if (configPropertyInstances == null) {
-            return;
-        }
-        for (AnnotationInstance configPropertyInstance : configPropertyInstances) {
-            if (configPropertyInstance.target().kind() != AnnotationTarget.Kind.FIELD) {
-                continue;
-            }
-            FieldInfo field = configPropertyInstance.target().asField();
-            Type fieldType = field.type();
-            if (ResteasyDotNames.CDI_INSTANCE.equals(fieldType.name())) {
-                continue;
-            }
-            LOGGER.warn(
-                    "Directly injecting a @" + ResteasyDotNames.CONFIG_PROPERTY.withoutPackagePrefix()
-                            + " into a JAX-RS provider may lead to unexpected results. To ensure proper results, please change the type of the field to "
-                            + ParameterizedType.create(ResteasyDotNames.CDI_INSTANCE, new Type[] { fieldType }, null)
-                            + ". Offending field is '" + field.name() + "' of class '" + field.declaringClass() + "'");
-        }
+    private boolean restJsonSupportNeededForHalCapability(Capabilities capabilities, CombinedIndexBuildItem indexBuildItem) {
+        return capabilities.isPresent(Capability.HAL)
+                && isMediaTypeFoundInAnnotation(indexBuildItem, ResteasyDotNames.PRODUCES, APPLICATION_HAL_JSON);
     }
 
     private boolean restJsonSupportNeeded(CombinedIndexBuildItem indexBuildItem, DotName mediaTypeAnnotation) {
+        return isMediaTypeFoundInAnnotation(indexBuildItem, mediaTypeAnnotation,
+                MediaType.APPLICATION_JSON, MediaType.APPLICATION_JSON_PATCH_JSON);
+    }
+
+    private boolean isMediaTypeFoundInAnnotation(CombinedIndexBuildItem indexBuildItem, DotName mediaTypeAnnotation,
+            String... mediaTypes) {
         for (AnnotationInstance annotationInstance : indexBuildItem.getIndex().getAnnotations(mediaTypeAnnotation)) {
             final AnnotationValue annotationValue = annotationInstance.value();
             if (annotationValue == null) {
                 continue;
             }
 
-            List<String> mediaTypes = Collections.emptyList();
+            List<String> foundMediaTypes = Collections.emptyList();
             if (annotationValue.kind() == Kind.ARRAY) {
-                mediaTypes = Arrays.asList(annotationValue.asStringArray());
+                foundMediaTypes = Arrays.asList(annotationValue.asStringArray());
             } else if (annotationValue.kind() == Kind.STRING) {
-                mediaTypes = Collections.singletonList(annotationValue.asString());
+                foundMediaTypes = Collections.singletonList(annotationValue.asString());
             }
-            return mediaTypes.contains(MediaType.APPLICATION_JSON)
-                    || mediaTypes.contains(MediaType.APPLICATION_JSON_PATCH_JSON);
+
+            for (int i = 0; i < mediaTypes.length; i++) {
+                if (foundMediaTypes.contains(mediaTypes[i])) {
+                    return true;
+                }
+            }
         }
 
         return false;
@@ -484,7 +525,7 @@ public class ResteasyCommonProcessor {
                 }
             }
 
-            // handle @PartType: we don't know if it's used for writing or reading so we register both
+            // handle @PartType: we don't know if it's used for writing or reading, so we register both
             for (AnnotationInstance partTypeAnnotation : index.getAnnotations(ResteasyDotNames.RESTEASY_PART_TYPE)) {
                 try {
                     MediaType partTypeMediaType = MediaType.valueOf(partTypeAnnotation.value().asString());
@@ -506,10 +547,12 @@ public class ResteasyCommonProcessor {
         if (mediaTypeMethodAnnotationInstance == null) {
             // no media types defined on the method, let's consider the class annotations
             AnnotationInstance mediaTypeClassAnnotationInstance = methodTarget.declaringClass()
-                    .classAnnotation(mediaTypeAnnotation);
+                    .declaredAnnotation(mediaTypeAnnotation);
             if (mediaTypeClassAnnotationInstance != null) {
-                if (collectDeclaredProvidersForMediaTypeAnnotationInstance(providersToRegister, categorizedProviders,
-                        mediaTypeClassAnnotationInstance.value().asStringArray(), methodTarget)) {
+                AnnotationValue mediaTypeClassValue = mediaTypeClassAnnotationInstance.value();
+                if ((mediaTypeClassValue != null)
+                        && collectDeclaredProvidersForMediaTypeAnnotationInstance(providersToRegister, categorizedProviders,
+                                mediaTypeClassValue.asStringArray(), methodTarget)) {
                     return true;
                 }
                 return false;
@@ -573,7 +616,7 @@ public class ResteasyCommonProcessor {
         //   if it is, then include a provider which can handle that element type.
         // - if no @SseElementType is present, check if the media type has the "element-type" parameter
         //   and if it does then include the provider which can handle that element-type
-        // - if neither of the above specifies an element-type then we by fallback to including text/plain
+        // - if neither of the above specifies an element-type then we fall back to including text/plain
         //   provider as a default
         if (matches(MediaType.SERVER_SENT_EVENTS_TYPE, mediaType)) {
             final Set<String> additionalProvidersToRegister = new HashSet<>();
@@ -591,7 +634,7 @@ public class ResteasyCommonProcessor {
             if (elementType != null) {
                 additionalProvidersToRegister.addAll(categorizedProviders.getPossible(MediaType.valueOf(elementType)));
             } else {
-                // add text/plain provider as a fallback default for SSE mediatype
+                // add text/plain provider as a fallback default for SSE media-type
                 additionalProvidersToRegister.addAll(categorizedProviders.getPossible(MediaType.TEXT_PLAIN_TYPE));
             }
             return additionalProvidersToRegister;
@@ -601,7 +644,7 @@ public class ResteasyCommonProcessor {
 
     /**
      * Compares the {@link MediaType#getType() type} and the {@link MediaType#getSubtype() subtype} to see if they are
-     * equal (case insensitive). If they are equal, then this method returns {@code true}, else returns {@code false}.
+     * equal (case-insensitive). If they are equal, then this method returns {@code true}, else returns {@code false}.
      * Unlike the {@link MediaType#equals(Object)}, this method doesn't take into account the {@link MediaType#getParameters()
      * parameters} during the equality check
      *

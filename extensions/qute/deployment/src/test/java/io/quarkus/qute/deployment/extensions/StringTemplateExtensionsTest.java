@@ -5,10 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.time.LocalDateTime;
 import java.util.Locale;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -19,7 +17,7 @@ public class StringTemplateExtensionsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
+            .withEmptyApplication();
 
     @Inject
     Engine engine;
@@ -43,6 +41,10 @@ public class StringTemplateExtensionsTest {
         assertEquals("Dienstag",
                 engine.parse("{str:fmt(locale,'%tA',now)}")
                         .data("now", LocalDateTime.of(2016, 7, 26, 12, 0), "locale", Locale.GERMAN)
+                        .render());
+        assertEquals("barbar1",
+                engine.parse("{foo + 'bar' + 1}")
+                        .data("foo", "bar")
                         .render());
     }
 

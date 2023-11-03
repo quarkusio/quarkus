@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import java.util.Collection;
+
 import org.jboss.jandex.AnnotationTarget;
 
 /**
@@ -9,7 +10,7 @@ import org.jboss.jandex.AnnotationTarget;
 public interface AlternativePriorities {
 
     /**
-     * 
+     *
      * @param target The bean class, producer method or field
      * @param stereotypes The collection of stereotypes
      * @return a computed priority value or {@code null}

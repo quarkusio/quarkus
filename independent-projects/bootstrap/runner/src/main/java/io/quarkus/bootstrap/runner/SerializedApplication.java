@@ -11,16 +11,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -36,7 +35,7 @@ public class SerializedApplication {
 
     public static final String META_INF_VERSIONS = "META-INF/versions/";
     // the files immediately (i.e. not recursively) under these paths should all be indexed
-    private static final Set<String> FULLY_INDEXED_PATHS = new LinkedHashSet<>(Arrays.asList("", "META-INF/services"));
+    private static final List<String> FULLY_INDEXED_PATHS = List.of("", "META-INF/services");
 
     private static final int MAGIC = 0XF0315432;
     private static final int VERSION = 2;
@@ -68,7 +67,7 @@ public class SerializedApplication {
             data.writeInt(VERSION);
             data.writeUTF(mainClass);
             data.writeShort(classPath.size());
-            Map<String, List<Integer>> directlyIndexedResourcesToCPJarIndex = new HashMap<>();
+            Map<String, List<Integer>> directlyIndexedResourcesToCPJarIndex = new LinkedHashMap<>();
             for (int i = 0; i < classPath.size(); i++) {
                 Path jar = classPath.get(i);
                 String relativePath = applicationRoot.relativize(jar).toString().replace('\\', '/');
@@ -163,7 +162,7 @@ public class SerializedApplication {
                     resourceDirectoryTracker.getResult(), parentFirstPackages,
                     nonExistentResources, FULLY_INDEXED_PATHS, directlyIndexedResourcesIndexMap);
             for (ClassLoadingResource classLoadingResource : allClassLoadingResources) {
-                classLoadingResource.init(runnerClassLoader);
+                classLoadingResource.init();
             }
             return new SerializedApplication(runnerClassLoader, mainClass);
         }
@@ -201,8 +200,8 @@ public class SerializedApplication {
                 }
             }
 
-            Set<String> dirs = new HashSet<>();
-            Map<String, List<String>> fullyIndexedPaths = new HashMap<>();
+            Set<String> dirs = new LinkedHashSet<>();
+            Map<String, List<String>> fullyIndexedPaths = new LinkedHashMap<>();
             Enumeration<? extends ZipEntry> entries = zip.entries();
             boolean hasDefaultPackage = false;
             while (entries.hasMoreElements()) {
@@ -210,7 +209,8 @@ public class SerializedApplication {
                 if (!entry.getName().contains("/")) {
                     hasDefaultPackage = true;
                     if (!entry.getName().isEmpty() && FULLY_INDEXED_PATHS.contains("")) {
-                        fullyIndexedPaths.computeIfAbsent("", s -> new ArrayList<>(10)).add(entry.getName());
+                        fullyIndexedPaths.computeIfAbsent("", SerializedApplication::newFullyIndexedPathsValue)
+                                .add(entry.getName());
                     }
                 } else if (!entry.isDirectory()) {
                     //some jars don't have correct directory entries
@@ -222,7 +222,7 @@ public class SerializedApplication {
                     if (entry.getName().startsWith(META_INF_VERSIONS)) {
                         //multi release jar
                         //we add all packages here
-                        //they may no be relevant for some versions, but that is fine
+                        //they may not be relevant for some versions, but that is fine
                         String part = entry.getName().substring(META_INF_VERSIONS.length());
                         int slash = part.indexOf("/");
                         if (slash != -1) {
@@ -233,12 +233,14 @@ public class SerializedApplication {
                         }
                     }
 
-                    for (String path : FULLY_INDEXED_PATHS) {
+                    for (int i = 0; i < FULLY_INDEXED_PATHS.size(); i++) {
+                        String path = FULLY_INDEXED_PATHS.get(i);
                         if (path.isEmpty()) {
                             continue;
                         }
                         if (entry.getName().startsWith(path)) {
-                            fullyIndexedPaths.computeIfAbsent(path, s -> new ArrayList<>(10)).add(entry.getName());
+                            fullyIndexedPaths.computeIfAbsent(path, SerializedApplication::newFullyIndexedPathsValue)
+                                    .add(entry.getName());
                         }
                     }
                 }
@@ -256,6 +258,10 @@ public class SerializedApplication {
             }
             return result;
         }
+    }
+
+    private static List<String> newFullyIndexedPathsValue(String ignored) {
+        return new ArrayList<>(10);
     }
 
     private static void collectPackages(Path jar, Set<String> dirs) throws IOException {
@@ -356,13 +362,12 @@ public class SerializedApplication {
         }
 
         Map<String, ClassLoadingResource[]> getResult() {
-            overrides.forEach(new BiConsumer<String, Set<? extends ClassLoadingResource>>() {
-                @Override
-                public void accept(String dir, Set<? extends ClassLoadingResource> jarResources) {
-                    result.put(dir, jarResources.toArray(EMPTY_ARRAY));
-                }
-            });
+            overrides.forEach(this::addToResult);
             return result;
+        }
+
+        private void addToResult(String dir, Set<? extends ClassLoadingResource> jarResources) {
+            result.put(dir, jarResources.toArray(EMPTY_ARRAY));
         }
     }
 

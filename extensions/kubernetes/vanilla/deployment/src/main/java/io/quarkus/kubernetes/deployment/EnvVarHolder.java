@@ -48,7 +48,7 @@ public interface EnvVarHolder {
 
         // override old-style with newer versions if present
         final EnvVarsConfig c = getEnv();
-        c.vars.forEach((k, v) -> validator.process(KubernetesEnvBuildItem.createSimpleVar(k, v, target)));
+        c.vars.forEach((k, v) -> validator.process(KubernetesEnvBuildItem.createSimpleVar(k, v.orElse(""), target)));
         c.fields.forEach((k, v) -> validator.process(KubernetesEnvBuildItem.createFromField(k, v, target)));
         c.configmaps
                 .ifPresent(cl -> cl.forEach(cm -> validator.process(KubernetesEnvBuildItem.createFromConfigMap(cm, target))));

@@ -17,6 +17,7 @@
 
     <modules>
         <module>common-runtime</module>
+        <module>event-server</module>
         <module>common-deployment</module>
         <module>runtime</module>
         <module>deployment</module>

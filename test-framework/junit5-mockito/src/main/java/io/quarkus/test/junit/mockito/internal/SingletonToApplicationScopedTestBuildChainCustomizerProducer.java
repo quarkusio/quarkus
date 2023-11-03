@@ -1,5 +1,6 @@
 package io.quarkus.test.junit.mockito.internal;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -15,6 +16,9 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
+import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.builder.BuildChainBuilder;
@@ -22,14 +26,19 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.test.junit.buildchain.TestBuildChainCustomizerProducer;
 import io.quarkus.test.junit.mockito.InjectMock;
+import io.quarkus.test.junit.mockito.InjectSpy;
+import io.quarkus.test.junit.mockito.MockitoConfig;
 
 public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implements TestBuildChainCustomizerProducer {
 
-    private static final DotName INJECT_MOCK = DotName.createSimple(InjectMock.class.getName());
+    static final DotName INJECT_MOCK = DotName.createSimple(io.quarkus.test.InjectMock.class.getName());
+    static final DotName DEPRECATED_INJECT_MOCK = DotName.createSimple(InjectMock.class.getName());
+    static final DotName INJECT_SPY = DotName.createSimple(InjectSpy.class.getName());
+    static final DotName MOCKITO_CONFIG = DotName.createSimple(MockitoConfig.class.getName());
 
     @Override
     public Consumer<BuildChainBuilder> produce(Index testClassesIndex) {
-        return new Consumer<BuildChainBuilder>() {
+        return new Consumer<>() {
 
             @Override
             public void accept(BuildChainBuilder buildChainBuilder) {
@@ -37,9 +46,16 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                     @Override
                     public void execute(BuildContext context) {
                         Set<DotName> mockTypes = new HashSet<>();
-                        List<AnnotationInstance> instances = testClassesIndex.getAnnotations(INJECT_MOCK);
+                        List<AnnotationInstance> instances = new ArrayList<>();
+                        instances.addAll(testClassesIndex.getAnnotations(DEPRECATED_INJECT_MOCK));
+                        instances.addAll(testClassesIndex.getAnnotations(INJECT_SPY));
+                        instances.addAll(testClassesIndex.getAnnotations(MOCKITO_CONFIG));
                         for (AnnotationInstance instance : instances) {
                             if (instance.target().kind() != AnnotationTarget.Kind.FIELD) {
+                                continue;
+                            }
+                            if (instance.name().equals(MOCKITO_CONFIG)
+                                    && !instance.target().asField().hasAnnotation(INJECT_MOCK)) {
                                 continue;
                             }
                             AnnotationValue allowScopeConversionValue = instance.value("convertScopes");
@@ -50,6 +66,16 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                         }
                         if (mockTypes.isEmpty()) {
                             return;
+                        }
+
+                        CustomScopeAnnotationsBuildItem scopes = context.consume(CustomScopeAnnotationsBuildItem.class);
+                        // A bean defining annotation cannot be bound to multiple default scopes
+                        Set<DotName> singletonBeanDefiningAnnotations = new HashSet<>();
+                        for (BeanDefiningAnnotationBuildItem annotation : context
+                                .consumeMulti(BeanDefiningAnnotationBuildItem.class)) {
+                            if (DotNames.SINGLETON.equals(annotation.getDefaultScope())) {
+                                singletonBeanDefiningAnnotations.add(annotation.getName());
+                            }
                         }
 
                         // TODO: this annotation transformer is too simplistic and should be replaced
@@ -67,14 +93,17 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                                 if (target.kind() == AnnotationTarget.Kind.CLASS) { // scope on bean case
                                     ClassInfo classInfo = target.asClass();
                                     if (isMatchingBean(classInfo)) {
-                                        if (classInfo.classAnnotation(DotNames.SINGLETON) != null) {
+                                        if (Annotations.contains(transformationContext.getAnnotations(), DotNames.SINGLETON)
+                                                || hasSingletonBeanDefiningAnnotation(transformationContext)) {
                                             replaceSingletonWithApplicationScoped(transformationContext);
                                         }
                                     }
                                 } else if (target.kind() == AnnotationTarget.Kind.METHOD) { // CDI producer case
                                     MethodInfo methodInfo = target.asMethod();
                                     if ((methodInfo.annotation(DotNames.PRODUCES) != null)
-                                            && (methodInfo.annotation(DotNames.SINGLETON) != null)) {
+                                            && (Annotations.contains(transformationContext.getAnnotations(),
+                                                    DotNames.SINGLETON)
+                                                    || hasSingletonBeanDefiningAnnotation(transformationContext))) {
                                         DotName returnType = methodInfo.returnType().name();
                                         if (mockTypes.contains(returnType)) {
                                             replaceSingletonWithApplicationScoped(transformationContext);
@@ -105,9 +134,20 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                                 }
                                 return false;
                             }
+
+                            private boolean hasSingletonBeanDefiningAnnotation(TransformationContext transformationContext) {
+                                if (singletonBeanDefiningAnnotations.isEmpty()
+                                        || scopes.isScopeIn(transformationContext.getAnnotations())) {
+                                    return false;
+                                }
+                                return Annotations.containsAny(transformationContext.getAnnotations(),
+                                        singletonBeanDefiningAnnotations);
+                            }
+
                         }));
                     }
-                }).produces(AnnotationsTransformerBuildItem.class).build();
+                }).produces(AnnotationsTransformerBuildItem.class).consumes(CustomScopeAnnotationsBuildItem.class)
+                        .consumes(BeanDefiningAnnotationBuildItem.class).build();
             }
         };
     }

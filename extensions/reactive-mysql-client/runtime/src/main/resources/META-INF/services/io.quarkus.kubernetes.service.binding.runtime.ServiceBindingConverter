@@ -1,0 +1,1 @@
+io.quarkus.reactive.mysql.client.runtime.MySQLServiceBindingConverter

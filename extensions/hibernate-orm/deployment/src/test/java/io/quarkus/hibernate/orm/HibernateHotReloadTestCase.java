@@ -11,16 +11,16 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ContinuousTestingTestUtils;
+import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.vertx.http.deployment.devmode.tests.TestStatus;
-import io.quarkus.vertx.http.testrunner.ContinuousTestingTestUtils;
 import io.restassured.RestAssured;
 
 public class HibernateHotReloadTestCase {
 
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, MyEntityTestResource.class)
                     .add(new StringAsset(
                             //TODO: we can't use devservices here because of issues with the class loading
@@ -85,7 +85,6 @@ public class HibernateHotReloadTestCase {
         ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
 
         TestStatus ts = utils.waitForNextCompletion();
-        ;
 
         Assertions.assertEquals(0L, ts.getTestsFailed());
         Assertions.assertEquals(1L, ts.getTestsPassed());

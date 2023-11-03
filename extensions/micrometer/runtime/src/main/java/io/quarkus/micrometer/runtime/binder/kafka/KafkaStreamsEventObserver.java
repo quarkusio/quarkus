@@ -1,7 +1,7 @@
 package io.quarkus.micrometer.runtime.binder.kafka;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import org.apache.kafka.streams.KafkaStreams;
 import org.jboss.logging.Logger;
@@ -13,7 +13,7 @@ import io.quarkus.runtime.ShutdownEvent;
 
 /**
  * Observer to create and register KafkaStreamsMetrics.
- * 
+ *
  * Must be separated from KafkaEventObserver, because they use different dependencies and if only "kafka-client" is used, the
  * classes from "kafka-streams" aren't loaded.
  */

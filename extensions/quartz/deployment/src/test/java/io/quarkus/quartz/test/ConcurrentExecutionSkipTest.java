@@ -8,22 +8,21 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.event.Observes;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.SkippedExecution;
+import io.quarkus.scheduler.SuccessfulExecution;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ConcurrentExecutionSkipTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Jobs.class));
 
     @Test
@@ -33,6 +32,8 @@ public class ConcurrentExecutionSkipTest {
             if (Jobs.SKIPPED_LATCH.await(10, TimeUnit.SECONDS)) {
                 // Exactly one job is blocked
                 assertEquals(1, Jobs.COUNTER.get());
+                // Skipped Execution does not fire SuccessfulExecution event
+                assertEquals(0, Jobs.SUCCESS_COUNTER.get());
                 // Unblock all executions
                 Jobs.BLOCKING_LATCH.countDown();
             } else {
@@ -49,6 +50,7 @@ public class ConcurrentExecutionSkipTest {
         static final CountDownLatch BLOCKING_LATCH = new CountDownLatch(1);
 
         static final AtomicInteger COUNTER = new AtomicInteger(0);
+        static final AtomicInteger SUCCESS_COUNTER = new AtomicInteger(0);
         static final CountDownLatch SKIPPED_LATCH = new CountDownLatch(1);
 
         @Scheduled(every = "1s", concurrentExecution = SKIP)
@@ -61,6 +63,10 @@ public class ConcurrentExecutionSkipTest {
 
         void onSkip(@Observes SkippedExecution event) {
             SKIPPED_LATCH.countDown();
+        }
+
+        void onSuccess(@Observes SuccessfulExecution event) {
+            SUCCESS_COUNTER.incrementAndGet();
         }
     }
 }

@@ -7,10 +7,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Event;
-import javax.enterprise.event.Observes;
-import javax.enterprise.event.ObservesAsync;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.ObservesAsync;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -27,9 +27,9 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * Tests that shutdown will wait for current requests to finish, up to the timeout specified.
- * 
+ *
  * This test records the current time, then sends a request to an endpoint that will take 50s to finish.
- * 
+ *
  * After undeploy we verify that less than 50s has elapsed, as the shutdown should have proceeded anyway once
  * the timeout of 100ms was reached.
  */
@@ -40,7 +40,7 @@ public class ShutdownTimeoutDefaultExecutorTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .setAllowTestClassOutsideDeployment(true)
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)

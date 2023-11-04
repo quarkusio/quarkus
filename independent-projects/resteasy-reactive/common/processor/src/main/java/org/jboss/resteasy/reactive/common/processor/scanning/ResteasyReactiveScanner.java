@@ -284,6 +284,18 @@ public class ResteasyReactiveScanner {
                         if (!scannedResources.containsKey(clazz.name())) {
                             scannedResources.put(clazz.name(), clazz);
                             scannedResourcePaths.put(clazz.name(), i.getValue());
+
+                            // check for server exception mapper method in implementation class of the interface.
+                            List<AnnotationInstance> exceptionMapperAnnotationInstances = clazz.annotationsMap()
+                                    .get(ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER);
+                            if (exceptionMapperAnnotationInstances != null) {
+                                for (AnnotationInstance instance : exceptionMapperAnnotationInstances) {
+                                    if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
+                                        continue;
+                                    }
+                                    methodExceptionMappers.add(instance.target().asMethod());
+                                }
+                            }
                         }
                     }
                 }

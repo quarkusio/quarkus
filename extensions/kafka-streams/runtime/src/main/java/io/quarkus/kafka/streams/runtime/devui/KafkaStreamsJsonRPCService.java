@@ -66,7 +66,7 @@ public class KafkaStreamsJsonRPCService {
 
     private static final RawTopologyItemParser SOURCE = new RawTopologyItemParser() {
         private final Pattern sourcePattern = Pattern
-                .compile("Source:\\s+(?<source>\\S+)\\s+\\(topics:\\s+\\[(?<topics>.*)\\]\\).*");
+                .compile("Source:\\s+(?<source>\\S+)\\s+\\(topics:\\s+((\\[(?<topics>.*)\\])|(?<regex>.*)\\)).*");
         private Matcher matcher;
 
         @Override
@@ -77,7 +77,11 @@ public class KafkaStreamsJsonRPCService {
 
         @Override
         public void accept(TopologyParserContext context) {
-            context.addSources(matcher.group("source"), matcher.group("topics").split(","));
+            if (matcher.group("topics") != null) {
+                context.addSources(matcher.group("source"), matcher.group("topics").split(","));
+            } else if (matcher.group("regex") != null) {
+                context.addRegexSource(matcher.group("source"), matcher.group("regex"));
+            }
         }
     };
 

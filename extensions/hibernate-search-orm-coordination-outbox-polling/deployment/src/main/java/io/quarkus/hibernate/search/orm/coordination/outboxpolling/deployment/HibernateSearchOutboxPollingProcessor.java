@@ -3,8 +3,8 @@ package io.quarkus.hibernate.search.orm.coordination.outboxpolling.deployment;
 import java.util.List;
 import java.util.Optional;
 
-import org.hibernate.search.mapper.orm.coordination.outboxpolling.cfg.HibernateOrmMapperOutboxPollingSettings;
-import org.hibernate.search.mapper.orm.coordination.outboxpolling.mapping.spi.HibernateOrmMapperOutboxPollingClasses;
+import org.hibernate.search.mapper.orm.outboxpolling.cfg.HibernateOrmMapperOutboxPollingSettings;
+import org.hibernate.search.mapper.orm.outboxpolling.mapping.spi.HibernateOrmMapperOutboxPollingClasses;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;

@@ -1206,12 +1206,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-hibernate-search-orm-coordination-outbox-polling</artifactId>
+                <artifactId>quarkus-hibernate-search-orm-outbox-polling</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-hibernate-search-orm-coordination-outbox-polling-deployment</artifactId>
+                <artifactId>quarkus-hibernate-search-orm-outbox-polling-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

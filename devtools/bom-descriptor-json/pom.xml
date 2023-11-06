@@ -839,7 +839,7 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-hibernate-search-orm-coordination-outbox-polling</artifactId>
+                    <artifactId>quarkus-hibernate-search-orm-elasticsearch</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>
@@ -852,7 +852,7 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-hibernate-search-orm-elasticsearch</artifactId>
+                    <artifactId>quarkus-hibernate-search-orm-outbox-polling</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>

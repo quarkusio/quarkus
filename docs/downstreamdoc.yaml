@@ -9,6 +9,7 @@ guides:
   - src/main/asciidoc/security-getting-started-tutorial.adoc
   - src/main/asciidoc/security-identity-providers.adoc
   - src/main/asciidoc/security-jpa.adoc
+  - src/main/asciidoc/security-oidc-auth0-tutorial.adoc
   - src/main/asciidoc/security-oidc-bearer-token-authentication.adoc
   - src/main/asciidoc/security-oidc-bearer-token-authentication-tutorial.adoc
   - src/main/asciidoc/security-oidc-code-flow-authentication.adoc

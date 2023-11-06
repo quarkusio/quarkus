@@ -561,6 +561,7 @@
                                                     <exclude>.project</exclude>
                                                     <exclude>.settings/*</exclude>
                                                     <exclude>target/*</exclude>
+                                                    <exclude>.cache/*</exclude>
                                                 </excludes>
                                                 <normalization>
                                                     <ignoreEmptyDirectories>true</ignoreEmptyDirectories>

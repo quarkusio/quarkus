@@ -1,6 +1,5 @@
 package io.quarkus.vertx.http.runtime;
 
-import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -31,18 +30,6 @@ public class AuthConfig {
      */
     @ConfigItem
     public Optional<String> realm;
-
-    /**
-     * The HTTP permissions
-     */
-    @ConfigItem(name = "permission")
-    public Map<String, PolicyMappingConfig> permissions;
-
-    /**
-     * The HTTP role based policies
-     */
-    @ConfigItem(name = "policy")
-    public Map<String, PolicyConfig> rolePolicy;
 
     /**
      * If this is true and credentials are present then a user will always be authenticated

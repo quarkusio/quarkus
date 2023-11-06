@@ -1,18 +1,13 @@
 package io.quarkus.vertx.http.runtime.management;
 
-import java.util.Map;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.CDI;
 
-import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.arc.runtime.BeanContainerListener;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.security.AbstractPathMatchingHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
-import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.AbstractAuthenticationHandler;
 import io.quarkus.vertx.http.runtime.security.ManagementInterfaceHttpAuthorizer;
 import io.quarkus.vertx.http.runtime.security.ManagementPathMatchingHttpSecurityPolicy;
@@ -22,21 +17,11 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class ManagementInterfaceSecurityRecorder {
 
-    final RuntimeValue<ManagementInterfaceConfiguration> httpConfiguration;
-    final ManagementInterfaceBuildTimeConfig buildTimeConfig;
-
-    public ManagementInterfaceSecurityRecorder(RuntimeValue<ManagementInterfaceConfiguration> httpConfiguration,
-            ManagementInterfaceBuildTimeConfig buildTimeConfig) {
-        this.httpConfiguration = httpConfiguration;
-        this.buildTimeConfig = buildTimeConfig;
-    }
-
     public Handler<RoutingContext> authenticationMechanismHandler(boolean proactiveAuthentication) {
         return new ManagementAuthenticationHandler(proactiveAuthentication);
     }
 
-    public Handler<RoutingContext> permissionCheckHandler(ManagementInterfaceBuildTimeConfig buildTimeConfig,
-            Map<String, Supplier<HttpSecurityPolicy>> policies) {
+    public Handler<RoutingContext> permissionCheckHandler() {
         return new Handler<RoutingContext>() {
             volatile ManagementInterfaceHttpAuthorizer authorizer;
 
@@ -48,17 +33,6 @@ public class ManagementInterfaceSecurityRecorder {
                     }
                 }
                 authorizer.checkPermission(event);
-            }
-        };
-    }
-
-    public BeanContainerListener initPermissions(ManagementInterfaceBuildTimeConfig buildTimeConfig,
-            Map<String, Supplier<HttpSecurityPolicy>> policies) {
-        return new BeanContainerListener() {
-            @Override
-            public void created(BeanContainer container) {
-                container.beanInstance(ManagementPathMatchingHttpSecurityPolicy.class)
-                        .init(buildTimeConfig.auth.permissions, policies, buildTimeConfig.rootPath);
             }
         };
     }
@@ -90,6 +64,11 @@ public class ManagementInterfaceSecurityRecorder {
             if (pathMatchingPolicy != null) {
                 event.put(AbstractPathMatchingHttpSecurityPolicy.class.getName(), pathMatchingPolicy);
             }
+        }
+
+        @Override
+        protected boolean httpPermissionsEmpty() {
+            return CDI.current().select(ManagementInterfaceConfiguration.class).get().auth.permissions.isEmpty();
         }
     }
 }

@@ -163,7 +163,7 @@
         <kotlin.coroutine.version>1.7.3</kotlin.coroutine.version>
         <azure.toolkit-lib.version>0.27.0</azure.toolkit-lib.version>
         <kotlin-serialization.version>1.6.0</kotlin-serialization.version>
-        <dekorate.version>4.0.0</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
+        <dekorate.version>4.0.3</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>3.0.2.Final</jboss-logmanager.version>
@@ -3291,7 +3291,7 @@
                 <artifactId>importmap</artifactId>
                 <version>${importmap.version}</version>
             </dependency>
-            
+
             <!-- Additional dependencies, keep in alphabetical order -->
             <dependency>
                 <groupId>biz.paluch.logging</groupId>

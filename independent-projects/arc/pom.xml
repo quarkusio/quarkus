@@ -55,9 +55,9 @@
         <!-- test versions -->
         <version.assertj>3.24.2</version.assertj>
         <version.junit5>5.10.0</version.junit5>
-        <version.kotlin>1.9.10</version.kotlin>
+        <version.kotlin>1.9.21</version.kotlin>
         <version.kotlin-coroutines>1.7.3</version.kotlin-coroutines>
-        <version.mockito>5.4.0</version.mockito>
+        <version.mockito>5.7.0</version.mockito>
         <!-- TCK versions -->
         <version.arquillian>1.7.0.Final</version.arquillian>
         <version.atinject-tck>2.0.1</version.atinject-tck>

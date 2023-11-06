@@ -18,7 +18,7 @@ Learn how to use the Quarkus OpenID Connect extension (`quarkus-oidc`) together 
 
 == Prerequisites
 
-Please review the following documentation before you begin:
+Review the following documentation before you begin:
 
 * link:https://auth0.com/docs/[Auth0 docs site]
 * xref:security-oidc-code-flow-authentication.adoc[Quarkus OpenID Connect Authorization code flow mechanism for protecting web applications]
@@ -26,7 +26,7 @@ Please review the following documentation before you begin:
 
 == Create an Auth0 application
 
-Go to the Auth0 dashboard and create a regular web application. 
+Go to the Auth0 dashboard and create a regular web application.
 For example, create an Auth0 application called `QuarkusAuth0`.
 
 image::auth0-create-application.png[Create Auth0 application]
@@ -41,7 +41,7 @@ Next, while still in the Auth0 dashboard, add some users to your application.
 
 image::auth0-add-user.png[Add Auth0 application users]
 
-Now that you have successfully created and configured your Auth0 application, you are ready to start creating and configuring a Quarkus endpoint. 
+Now that you have successfully created and configured your Auth0 application, you are ready to start creating and configuring a Quarkus endpoint.
 In the steps that follow, you will continue to configure and update the Auth0 application as well.
 
 == Create a Quarkus application
@@ -75,7 +75,7 @@ public class GreetingResource {
     @Inject
     @IdToken                                        <1>
     JsonWebToken idToken;
-	
+
     @GET
     @Authenticated                                  <2>
     @Produces(MediaType.TEXT_PLAIN)
@@ -90,7 +90,7 @@ public class GreetingResource {
 
 [NOTE]
 ====
-The access token acquired during the authorization code flow, alongside the ID token, is not used directly by the endpoint but is used only to access downstream services on behalf of the currently authenticated user. 
+The access token acquired during the authorization code flow, alongside the ID token, is not used directly by the endpoint but is used only to access downstream services on behalf of the currently authenticated user.
 More to come on the topic of "access tokens", later in this tutorial.
 ====
 
@@ -119,7 +119,7 @@ After completing this step, when you access the Quarkus \http://localhost:8080/h
 By default, Quarkus automatically uses the current request path as the callback path.
 But you can override the default behavior and configure a specific callback path by setting the Quarkus `quarkus.oidc.authentication.redirect-path` property.
 
-In production, your application will most likely have a larger URL space, with multiple endpoint addresses available. 
+In production, your application will most likely have a larger URL space, with multiple endpoint addresses available.
 In such cases, you can set a dedicated callback (redirect) path and register this URL in the provider's dashboard, as outlined in the following configuration example:
 
 `quarkus.oidc.authentication.redirect-path=/authenticated-welcome`
@@ -160,17 +160,17 @@ Finally, you will be redirected back to the Quarkus endpoint which will return t
 
 [TIP]
 ====
-Notice that the current username does not get returned. 
+Notice that the current username does not get returned.
 To learn more about why this behavior occurs, you can use OIDC Dev UI as explained in the xref:security-openid-connect-dev-services.adoc#dev-ui-all-oidc-providers[Dev UI for all OpenID Connect Providers] section of the "Dev Services and UI for OpenID Connect (OIDC)" guide and the following section.
 ====
 
 == Looking at Auth0 tokens in the OIDC Dev UI
 
-Quarkus provides a great xref:dev-ui-v2.adoc[Dev UI] experience. 
-Specifically, Quarkus offers built-in support for developing and testing OIDC endpoints with a Keycloak container.  
+Quarkus provides a great xref:dev-ui-v2.adoc[Dev UI] experience.
+Specifically, Quarkus offers built-in support for developing and testing OIDC endpoints with a Keycloak container.
 xref:security-openid-connect-dev-services.adoc#dev-services-for-keycloak[DevService for Keycloak] is automatically started and used if the address of the OIDC provider is not specified for the Quarkus `quarkus.oidc.auth-server-url` configuration property.
 
-You can continue using the Quarkus OIDC Dev UI when the provider is already configured. 
+You can continue using the Quarkus OIDC Dev UI when the provider is already configured.
 Use the following instructions to update your configuration:
 
 First, change your Quarkus application type from `web-app` to `hybrid`, as follows:
@@ -190,7 +190,7 @@ Typically, Quarkus must be configured with `quarkus.oidc.application-type=servic
 You also need to configure the Auth0 application to allow the callbacks to the OIDC Dev UI.
 Use the following URL format:
 
-`http://localhost:8080/q/dev-ui/io.quarkus.quarkus-oidc/${provider-name}-provider` 
+`http://localhost:8080/q/dev-ui/io.quarkus.quarkus-oidc/${provider-name}-provider`
 
 * Where in this example, the `${provider-name}` is `auth0`
 
@@ -206,12 +206,12 @@ Click *Auth0 provider* followed by *Login into Single Page Application*:
 
 image::auth0-devui-login-to-spa.png[Auth0 DevUI Login to SPA]
 
-You will be redirected to Auth0 to log in. 
+You will be redirected to Auth0 to log in.
 You will then be redirected to the OIDC Dev UI dashboard, as follows:
 
 image::auth0-devui-dashboard-without-name.png[Auth0 DevUI Dashboard Without Name]
 
-Here you can look at both ID and access tokens in the encoded and decoded formats, copy them to the clipboard or use them to test the service endpoint. We will test the endpoint later but for now let's check the ID token:
+Here, you can look at both ID and access tokens in the encoded and decoded formats, copy them to the clipboard or use them to test the service endpoint. We will test the endpoint later but for now let's check the ID token:
 
 image::auth0-idtoken-without-name.png[Auth0 IdToken without name]
 
@@ -258,7 +258,7 @@ public class GreetingResource {
     @Inject
     @IdToken
     JsonWebToken idToken;
-	
+
     @GET
     @Authenticated
     @Produces(MediaType.TEXT_PLAIN)
@@ -272,7 +272,7 @@ Now clear the browser cache, access http://localhost:8080/hello and finally the 
 
 == Logout support
 
-Now that you have the users signing in to Quarkus with the help from Auth0, you will likely would like to support a user initiated logout. Quarkus supports https://quarkus.io/guides/security-oidc-code-flow-authentication#logout-and-expiration[RP-initiated and other standard OIDC logout mechanisms, as well as the local session logout].
+Now that you have the users signing in to Quarkus with the help of Auth0, you probably want to support a user-initiated logout. Quarkus supports https://quarkus.io/guides/security-oidc-code-flow-authentication#logout-and-expiration[RP-initiated and other standard OIDC logout mechanisms, as well as the local session logout].
 
 Currently, Auth0 does not support the standard OIDC RP-initiated logout and does not provide an end session endpoint URL in its discoverable metadata, but it provides its own logout mechanism which works nearly exactly the same as the standard one.
 
@@ -328,14 +328,14 @@ public class GreetingResource {
     @Inject
     @IdToken
     JsonWebToken idToken;
-	
+
     @GET
     @Authenticated
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
         return "Hello, " + idToken.getClaim("name");
     }
-    
+
     @GET
     @Path("post-logout")
     @Produces(MediaType.TEXT_PLAIN)
@@ -364,11 +364,11 @@ image::auth0-allowed-logouts.png[Auth0 Allowed Logouts]
 Now logout directly from OIDC Dev UI and login as a new user - add more users to the registered Auth0 application if required.
 
 [[role-based-access-control]]
-== Role Based Access Control
+== Role-based access control
 
 We have confirmed that the Quarkus endpoint can be accessed by users who have authenticated with the help of `Auth0`.
 
-The next step is to introduce Role Based Access Control (RBAC) to have users in a specific role only, such as `admin`, be able to access the endpoint.
+The next step is to introduce role-based access control (RBAC) to have users in a specific role only, such as `admin`, be able to access the endpoint.
 
 See also the <<permission-based-access-control>> section below.
 
@@ -400,7 +400,7 @@ Note a custom Auth0 claim has to be namespace qualified, so the claim which will
 }
 ----
 
-The `Auth0` Login Flow diagramm should look like this now:
+The `Auth0` Login Flow diagram should look like this now:
 
 image::auth0-login-flow.png[Auth0 Login Flow]
 
@@ -436,14 +436,14 @@ public class GreetingResource {
     @Inject
     @IdToken
     JsonWebToken idToken;
-	
+
     @GET
     @RolesAllowed("admin")
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
         return "Hello, " + idToken.getClaim("name");
     }
-    
+
     @GET
     @Path("post-logout")
     @Produces(MediaType.TEXT_PLAIN)
@@ -487,7 +487,7 @@ Now, clear the browser cookie cache, access http://localhost:8080/hello again, a
 ====
 The main goal of this section is to explain how Quarkus can be tuned to accept `opaque` bearer Auth0 access tokens as opposed to Auth0 JWT access tokens because Auth0 access tokens issued during the authorization code flow are opaque by default and they can only be used to request `UserInfo` in addition to the information about the current user which is already available in ID token. Learning how to verify opaque tokens can be useful because many OIDC and OAuth2 providers will issue opaque access tokens only.
 
-Please see the <<token-propagation>> and <<jwt-access-tokens>> sections below for more information on how to configure Auth0 and Quarkus to have authorization code access tokens issued in the JWT format and propagated to service endpoints.
+For more information on how to configure Auth0 and Quarkus to have authorization code access tokens issued in the JWT format and propagated to service endpoints, see the following <<token-propagation>> and <<jwt-access-tokens>> sections.
 ====
 
 So far we have only tested the Quarkus endpoint using OIDC authorization code flow. In this flow you use the browser to access the Quarkus endpoint, Quarkus itself manages the authorization code flow, a user is redirected to Auth0, logs in, is redirected back to Quarkus, Quarkus completes the flow by exchanging the code for the ID, access, and refresh tokens, and works with the ID token representing the successful user authentication. The access token is not relevant at the moment. As mentioned earlier, in the authorization code flow, Quarkus will only use the access token to access downstream services on behalf of the currently authenticated user.
@@ -498,7 +498,7 @@ Lets go again to http://localhost:8080/q/dev, select the `OpenId Connect` card, 
 
 image::auth0-devui-accesstoken.png[Auth0 DevUI Access Token]
 
-This access token, as opposed to the ID token we looked at earlier, can not be verified by Quarkus directly. This is because the access token is in `JWE` (encrypted) as opposed to `JWS` (signed) format. You can see from the decoded token headers that it has been encrypted directly with a secret key known to Auth0 only, and therefore its content can not be decrypted by Quarkus. From the Quarkus's perspective this access token is an `opaque` one, Quarkus can not use public Auth0 asymmetric verification keys to verify it.
+This access token, as opposed to the ID token we looked at earlier, cannot be verified by Quarkus directly. This is because the access token is in `JWE` (encrypted) as opposed to `JWS` (signed) format. You can see from the decoded token headers that it has been encrypted directly with a secret key known to Auth0 only, and therefore its content cannot be decrypted by Quarkus. From the Quarkus's perspective this access token is an `opaque` one, Quarkus cannot use public Auth0 asymmetric verification keys to verify it.
 
 To confirm it, enter `/hello` as the `Service Address` in the `Test Service` area and press `With Access Token` and you will get the HTTP `401` status:
 
@@ -511,7 +511,7 @@ image::auth0-well-known-config.png[Auth0 Well Known Config]
 
 Therefore the other option, indirect access token verification, where the access token is used to acquire `UserInfo` from Auth0 can be used to accept and verify opaque Auth0 tokens. This option works because OIDC providers have to verify access tokens before they can issue `UserInfo` and Auth0 has a `UserInfo` endpoint.
 
-So lets configure Quarkus to request that the access tokens must be verified by using them to acquite `UserInfo`:
+So lets configure Quarkus to request that the access tokens must be verified by using them to acquire `UserInfo`:
 
 [source,configuration]
 ----
@@ -556,14 +556,14 @@ public class GreetingResource {
 
     @Inject
     UserInfo userInfo;
-	
+
     @GET
     @RolesAllowed("admin")
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
         return "Hello, " + userInfo.getName();
     }
-    
+
     @GET
     @Path("post-logout")
     @Produces(MediaType.TEXT_PLAIN)
@@ -581,13 +581,13 @@ image::auth0-devui-test-accesstoken-200.png[Auth0 Dev UI Test Access token]
 
 To confirm that it really does work, update the test endpoint to allow a `user` role only with `@RolesAllowed("user")`. Try to access the endpoint from OIDC Dev UI again, and you will get the HTTP `403` error. Revert the code back to `@RolesAllowed("admin")` to get the reassuring HTTP `200` status again.
 
-When verifying the opaque access token indirecly, by using it to request `UserInfo`, Quarkus will use `UserInfo` as the source of the roles information, if any. As it happens, Auth0 includes the custom role claim which was created earlier in the `UserInfo` response as well.
+When verifying the opaque access token indirectly, by using it to request `UserInfo`, Quarkus will use `UserInfo` as the source of the roles information, if any. As it happens, Auth0 includes the custom role claim which was created earlier in the `UserInfo` response as well.
 
 [NOTE]
 ====
-As has already been mentioned in the introduction to this section, the main goal of this section is to explain how Quarkus can verify opaque access tokens. In general, propagating access tokens whose only purpose is to allow retrieving `UserInfo` to services should be avoided unless the frontend JAX-RS endpoint or SPA prefers to delegate UserInfo retrieval to the trusted service.
+As has already been mentioned in the introduction to this section, the main goal of this section is to explain how Quarkus can verify opaque access tokens. In general, propagating access tokens whose only purpose is to allow retrieving `UserInfo` to services should be avoided unless the front-end JAX-RS endpoint or SPA prefers to delegate UserInfo retrieval to the trusted service.
 
-Please see the following <<token-propagation>> and <<jwt-access-tokens>> sections for a recommended approach of working with Auth0 access tokens.
+For a recommended approach of working with Auth0 access tokens, see the following <<token-propagation>> and <<jwt-access-tokens>> sections.
 ====
 
 [NOTE]
@@ -612,7 +612,7 @@ to your application's pom then you will see a Swagger link in OIDC Dev UI:
 
 image::auth0-devui-testservice-swagger.png[Auth0 Dev UI Test with Swagger]
 
-Click on the Swagger link and start testing the service.
+Click the Swagger link and start testing the service.
 ====
 
 [[token-propagation]]
@@ -622,16 +622,17 @@ Now that we have managed to use OIDC authorization code flow and used both ID to
 
 In fact, the last code example, showing the injected `UserInfo`, is a concrete example of the access token propagation, in this case, Quarkus propagates the Auth0 access token to the Auth0 `UserInfo` endpoint to acquire `UserInfo`. Quarkus does it without users having to do anything themselves.
 
-But what about propagating access tokens to some custom services ? It is very easy to achieve in Quarkus, both for the authorization code and bearer token flows. All you need to do is to create a Reactive REST Client interface for calling the service requiring a Bearer token access and annotate it with `@AccessToken` and the access token arriving to the frontend endpoint as the Auth0 Bearer access token or acquired by Quarkus after completing the Auth0 authorization code flow, will be propagated to the target microservice. This is as easy as it can get.
+But what about propagating access tokens to some custom services ? It is very easy to achieve in Quarkus, both for the authorization code and bearer token flows. All you need to do is to create a Reactive REST Client interface for calling the service requiring a Bearer token access and annotate it with `@AccessToken` and the access token arriving to the front-end endpoint as the Auth0 Bearer access token or acquired by Quarkus after completing the Auth0 authorization code flow, will be propagated to the target microservice. This is as easy as it can get.
 
-Please see xref:security-openid-connect-client-reference.adoc#reactive-token-propagation[OIDC token propagation] for more information about the token propagation and the following sections in this tutorial for a concrete example.
+For examples of propagating access tokens, see the following sections in this tutorial.
+For more information about token propagation, see xref:security-openid-connect-client-reference.adoc#reactive-token-propagation[OIDC token propagation].
 
 [[jwt-access-tokens]]
 === Access tokens in JWT format
 
 We have already looked in detail at how Quarkus OIDC can handle <<opaque-access-tokens>>, but we don't want to propagate Auth0 opaque tokens to micro services which do something useful on behalf on the currently authenticated user, beyond checking its UserInfo.
 
-A microservice which the frontend Quarkus application will access by propagating authorization code flow access tokens to it is represented in the Auth0 dashboard as an `API`. Lets add it in the `Applications/APIs`:
+A microservice which the front-end Quarkus application will access by propagating authorization code flow access tokens to it is represented in the Auth0 dashboard as an `API`. Lets add it in the `Applications/APIs`:
 
 image::auth0-api.png[Auth0 API]
 
@@ -721,7 +722,7 @@ public interface ApiEchoServiceClient {
 ----
 <1> Propagate access token as an HTTP `Authorization: Bearer accesstoken` header
 
-And update the configuration for the Quarkus frontend application, `GreetingResource`, which has been created earlier, to request that an authorization code flow access token (as opposed to ID token) includes an `aud` (audience) claim targeting `ApiEchoService`, as well as configure the base URL for the `ApiEchoService` REST client:
+And update the configuration for the Quarkus front-end application, `GreetingResource`, which has been created earlier, to request that an authorization code flow access token (as opposed to ID token) includes an `aud` (audience) claim targeting `ApiEchoService`, as well as configure the base URL for the `ApiEchoService` REST client:
 
 [source,configuration]
 ----
@@ -755,7 +756,7 @@ quarkus.test.native-image-profile=test
 ----
 <1> Pass an extra `audience` query parameter to the Auth0 authorization endpoint during the authorization code flow redirect from Quarkus to Auth0.
 It will ensure that the access token is issued in the JWT format and includes an `aud` (audience) claim which will contain `https://quarkus-auth0`.
-<2> Point `ApiEchoServiceClient` to the `ApiEchoService` endpoint. HTTP port in the `org.acme.ApiEchoServiceClient/mp-rest/url=http://localhost:${port}` property is parameterized to ensure the correct URL is built in dev, test and prod modes.
+<2> Point `ApiEchoServiceClient` to the `ApiEchoService` endpoint. HTTP port in the `org.acme.ApiEchoServiceClient/mp-rest/url=http://localhost:${port}` property is parameterized to ensure the correct URL is built while using the dev, test and prod modes.
 
 Finally update `GreetingResource` to request that `ApiEchoService` echoes a user name:
 
@@ -806,9 +807,9 @@ Open a browser, access http://localhost:8080/hello and get your name displayed i
 [[permission-based-access-control]]
 === Permission Based Access Control
 
-We have discussed in the <<role-based-access-control>> section how to get Quarkus to check a namespace qualified claim containing user roles and use this information to enforce Role Based Access Control. You have configured Auth0 to add the custom roles claim to both ID and access tokens.
+We have discussed in the <<role-based-access-control>> section how to get Quarkus to check a namespace qualified claim containing user roles and use this information to enforce role-based access control. You have configured Auth0 to add the custom roles claim to both ID and access tokens.
 
-However, Permission Based Access Control is better suited to the case where an access token is propagated by the frontend endpoint to a microservice which will check if a given access token has been authorized for this service to perform a concrete action, as opposed to this token vouching for a user be in a specific role. For example, being in the admin role does not necessarily mean the user is allowed to have a read and write access to some of this microservice's content.
+However, Permission Based Access Control is better suited to the case where an access token is propagated by the front-end endpoint to a microservice which will check if a given access token has been authorized for this service to perform a concrete action, as opposed to this token vouching for a user be in a specific role. For example, being in the admin role does not necessarily mean the user is allowed to have a read and write access to some of this microservice's content.
 
 Let's see how Permission Based Access Control constraints can be applied to `ApiEchoService`.
 
@@ -921,9 +922,9 @@ Press `r` and notice this test failing with `403` which is expected because the 
 
 image::auth0-test-failure-403.png[Auth0 test failure 403]
 
-Before fixing the test, let's review the options available for testing Quarkus endpoints secured by OIDC. These options may vary depending on what flow your application supports and how you prefer to test. Endpoints which use OIDC authorization code flow can be tested using xref:security-oidc-code-flow-authentication#integration-testing[one of these options] and endpoints which use Bearer token authentication can be tested using xref:security-oidc-bearer-token-authentication#integration-testing[one of these options].
+Before fixing the test, let's review the options available for testing Quarkus endpoints secured by OIDC. These options might vary, depending on which flow your application supports and how you prefer to test. Endpoints which use OIDC authorization code flow can be tested using xref:security-oidc-code-flow-authentication#integration-testing[one of these options] and endpoints which use Bearer token authentication can be tested using xref:security-oidc-bearer-token-authentication#integration-testing[one of these options].
 
-As you can see, testing of the endpoints secured with Auth0 can be done with the help of `Wiremock`, or `@TestSecurity` annotation. Please experiment with writing such tests on your own and reach out if you encounter any problems.
+As you can see, testing of the endpoints secured with Auth0 can be done with the help of `Wiremock`, or `@TestSecurity` annotation. Experiment with writing such tests on your own and reach out if you encounter any problems.
 
 In this tutorial though, we will use a recently added `OidcTestClient` to support testing endpoints which use live Auth0 development tenants.
 
@@ -949,7 +950,7 @@ image::auth0-password-grant.png[Auth0 password grant]
 It is important to clarify that we do not recommend using the deprecated OAuth2 `password` token grant in production. However using it can help testing the endpoint with tokens acquired from the live dev Auth0 tenant.
 ====
 
-`OidcTestClient` should be used to test applications accepting bearer tokens which will work for the endpoint developed in this tutorial as it supports both authorization code flow and bearer token authentication. You would need to use OIDC WireMock or `HtmlUnit` directly against the Auth0 dev tenant if only the authorization code flow was supported - in the latter case `HtmlUnit` test code would have to be aligned with how Auth0 challenges users to enter their credentials - please copy and paste an xref:security-oidc-code-flow-authentication#integration-testing-wiremock[HtmlUnit test fragment] from the documentation and experiment if you would like.
+`OidcTestClient` should be used to test applications accepting bearer tokens which will work for the endpoint developed in this tutorial as it supports both authorization code flow and bearer token authentication. You would need to use OIDC WireMock or `HtmlUnit` directly against the Auth0 dev tenant if only the authorization code flow was supported - in the latter case `HtmlUnit` test code would have to be aligned with how Auth0 challenges users to enter their credentials. If you like, you can copy the xref:security-oidc-code-flow-authentication#integration-testing-wiremock[HtmlUnit test fragment] from the documentation and experiment with it.
 
 In meantime we will now proceed with fixing the currently failing test using `OidcTestClient`.
 
@@ -971,7 +972,7 @@ First you must add the following dependency:
 testImplementation("io.quarkus:quarkus-test-oidc-server")
 ----
 
-which provides a utility class `io.quarkus.test.oidc.client.OidcTestClient` which can be used in tests for acquiring access tokens (This dependency also offers an OIDC WireMock support - please review the documentation how to use it for testing if you would like).
+which provides a utility class `io.quarkus.test.oidc.client.OidcTestClient` which can be used in tests for acquiring access tokens (This dependency also offers an OIDC WireMock support - review the documentation how to use it for testing if you want).
 
 Now update the test code like this:
 
@@ -994,12 +995,12 @@ import io.quarkus.test.oidc.client.OidcTestClient;
 public class GreetingResourceTest {
 
     static OidcTestClient oidcTestClient = new OidcTestClient();
-    
+
     @AfterAll
     public static void close() {
         client.close();
     }
-	
+
     @Test
     public void testHelloEndpoint() {
         given()
@@ -1025,7 +1026,7 @@ Press `r` again and have the test passing:
 
 image::auth0-test-success.png[Auth0 test success]
 
-By the way, if you would like you can run the tests in Continuous mode directly from DevUI:
+By the way, if you like, you can run the tests in Continuous mode directly from DevUI:
 
 image::auth0-continuous-testing.png[Auth0 Continuous testing]
 
@@ -1074,15 +1075,15 @@ Open a browser, access http://localhost:8080/hello and get the name displayed in
 
 == Troubleshooting
 
-The steps described in this tutorial should work exactly as the tutorial describes. You may have to clear the browser cookies when accessing the updated Quarkus endpoint if you have already completed the authentication. You might need to restart the Quarkus application manually in devmode but it is not expected. Please get in touch with the Quarkus team if you need help completing this tutorial.
+The steps described in this tutorial should work exactly as the tutorial describes. You might have to clear the browser cookies when accessing the updated Quarkus endpoint if you have already completed the authentication. You might need to restart the Quarkus application manually in devmode but it is not expected. If you need help completing this tutorial, you can get in touch with the Quarkus team.
 
 == Summary
 
-This tutorial demonstrated how Quarkus endpoints can be secured with the `quarkus-oidc` extension and Auth0 using Authorization code and Bearer token authentication flows, with both flows being supported by the same endpoint code. 
+This tutorial demonstrated how Quarkus endpoints can be secured with the `quarkus-oidc` extension and Auth0 using Authorization code and Bearer token authentication flows, with both flows being supported by the same endpoint code.
 Without writing a single line of code, you have added support for the custom Auth0 logout flow and enabled role-based access control with a custom Auth0 namespace qualified claim.
-Token propagation from the frontend endpoint to the microservice endpoint has been achieved by adding the `@AccessToken` annotation to the microservice REST client.
+Token propagation from the front-end endpoint to the microservice endpoint has been achieved by adding the `@AccessToken` annotation to the microservice REST client.
 Microservice endpoint activated the permission-based access control with the `@PermissionsAllowed` annotation.
-You used Quarkus dev mode to update the code and configuration without restarting the endpoint, and you also used the OIDC Dev UI to visualize and test Auth0 tokens. 
+You used Quarkus dev mode to update the code and configuration without restarting the endpoint, and you also used the OIDC Dev UI to visualize and test Auth0 tokens.
 You used the continuous testing feature of Quarkus to complement OIDC Dev UI tests with integration tests against the live Auth0 development tenant.
 Finally, you have run the application in JVM and native modes.
 

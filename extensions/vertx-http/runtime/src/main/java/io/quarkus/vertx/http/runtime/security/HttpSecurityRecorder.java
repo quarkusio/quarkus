@@ -1,20 +1,9 @@
 package io.quarkus.vertx.http.runtime.security;
 
-import static io.quarkus.security.PermissionsAllowed.PERMISSION_TO_ACTION_SEPARATOR;
-
-import java.lang.reflect.InvocationTargetException;
-import java.security.Permission;
-import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Base64;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -24,19 +13,14 @@ import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
-import io.quarkus.security.StringPermission;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.spi.runtime.MethodDescription;
-import io.quarkus.vertx.http.runtime.FormAuthConfig;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.smallrye.mutiny.CompositeException;
@@ -52,23 +36,6 @@ import io.vertx.ext.web.RoutingContext;
 public class HttpSecurityRecorder {
 
     private static final Logger log = Logger.getLogger(HttpSecurityRecorder.class);
-    protected static final Consumer<Throwable> NOOP_CALLBACK = new Consumer<Throwable>() {
-        @Override
-        public void accept(Throwable throwable) {
-
-        }
-    };
-
-    final RuntimeValue<HttpConfiguration> httpConfiguration;
-    final HttpBuildTimeConfig buildTimeConfig;
-
-    //the temp encryption key, persistent across dev mode restarts
-    static volatile String encryptionKey;
-
-    public HttpSecurityRecorder(RuntimeValue<HttpConfiguration> httpConfiguration, HttpBuildTimeConfig buildTimeConfig) {
-        this.httpConfiguration = httpConfiguration;
-        this.buildTimeConfig = buildTimeConfig;
-    }
 
     public Handler<RoutingContext> authenticationMechanismHandler(boolean proactiveAuthentication) {
         return new HttpAuthenticationHandler(proactiveAuthentication);
@@ -88,79 +55,12 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public BeanContainerListener initPermissions(HttpBuildTimeConfig buildTimeConfig,
-            Map<String, Supplier<HttpSecurityPolicy>> policies) {
-        return new BeanContainerListener() {
-            @Override
-            public void created(BeanContainer container) {
-                container.beanInstance(PathMatchingHttpSecurityPolicy.class)
-                        .init(buildTimeConfig.auth.permissions, policies, buildTimeConfig.rootPath);
-            }
-        };
-    }
-
-    public Supplier<FormAuthenticationMechanism> setupFormAuth() {
-
-        return new Supplier<FormAuthenticationMechanism>() {
-
-            @Override
-            public FormAuthenticationMechanism get() {
-                String key;
-                if (!httpConfiguration.getValue().encryptionKey.isPresent()) {
-                    if (encryptionKey != null) {
-                        //persist across dev mode restarts
-                        key = encryptionKey;
-                    } else {
-                        byte[] data = new byte[32];
-                        new SecureRandom().nextBytes(data);
-                        key = encryptionKey = Base64.getEncoder().encodeToString(data);
-                        log.warn("Encryption key was not specified for persistent FORM auth, using temporary key " + key);
-                    }
-                } else {
-                    key = httpConfiguration.getValue().encryptionKey.get();
-                }
-                FormAuthConfig form = buildTimeConfig.auth.form;
-                PersistentLoginManager loginManager = new PersistentLoginManager(key, form.cookieName, form.timeout.toMillis(),
-                        form.newCookieInterval.toMillis(), form.httpOnlyCookie, form.cookieSameSite.name(),
-                        form.cookiePath.orElse(null));
-                String loginPage = startWithSlash(form.loginPage.orElse(null));
-                String errorPage = startWithSlash(form.errorPage.orElse(null));
-                String landingPage = startWithSlash(form.landingPage.orElse(null));
-                String postLocation = startWithSlash(form.postLocation);
-                String usernameParameter = form.usernameParameter;
-                String passwordParameter = form.passwordParameter;
-                String locationCookie = form.locationCookie;
-                String cookiePath = form.cookiePath.orElse(null);
-                boolean redirectAfterLogin = form.redirectAfterLogin;
-                return new FormAuthenticationMechanism(loginPage, postLocation, usernameParameter, passwordParameter,
-                        errorPage, landingPage, redirectAfterLogin, locationCookie, form.cookieSameSite.name(), cookiePath,
-                        loginManager);
-            }
-        };
-    }
-
-    private static String startWithSlash(String page) {
-        if (page == null) {
-            return null;
-        }
-        return page.startsWith("/") ? page : "/" + page;
-    }
-
     public Supplier<?> setupBasicAuth(HttpBuildTimeConfig buildTimeConfig) {
         return new Supplier<BasicAuthenticationMechanism>() {
             @Override
             public BasicAuthenticationMechanism get() {
                 return new BasicAuthenticationMechanism(buildTimeConfig.auth.realm.orElse(null),
                         buildTimeConfig.auth.form.enabled);
-            }
-        };
-    }
-
-    public Supplier<?> setupMtlsClientAuth() {
-        return new Supplier<MtlsAuthenticationMechanism>() {
-            @Override
-            public MtlsAuthenticationMechanism get() {
-                return new MtlsAuthenticationMechanism();
             }
         };
     }
@@ -194,36 +94,6 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public BiFunction<String, String[], Permission> stringPermissionCreator() {
-        return StringPermission::new;
-    }
-
-    public BiFunction<String, String[], Permission> customPermissionCreator(String clazz, boolean acceptsActions) {
-        return new BiFunction<String, String[], Permission>() {
-            @Override
-            public Permission apply(String name, String[] actions) {
-                try {
-                    if (acceptsActions) {
-                        return (Permission) loadClass(clazz).getConstructors()[0].newInstance(name, actions);
-                    } else {
-                        return (Permission) loadClass(clazz).getConstructors()[0].newInstance(name);
-                    }
-                } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                    throw new RuntimeException(
-                            String.format("Failed to create Permission - class '%s', name '%s', actions '%s'", clazz,
-                                    name, Arrays.toString(actions)),
-                            e);
-                }
-            }
-        };
-    }
-
-    public Supplier<HttpSecurityPolicy> createRolesAllowedPolicy(List<String> rolesAllowed,
-            Map<String, List<String>> roleToPermissionsStr, BiFunction<String, String[], Permission> permissionCreator) {
-        final Map<String, Set<Permission>> roleToPermissions = createPermissions(roleToPermissionsStr, permissionCreator);
-        return new SupplierImpl<>(new RolesAllowedHttpSecurityPolicy(rolesAllowed, roleToPermissions));
-    }
-
     public Supplier<EagerSecurityInterceptorStorage> createSecurityInterceptorStorage(
             Map<RuntimeValue<MethodDescription>, Consumer<RoutingContext>> endpointRuntimeValToInterceptor) {
 
@@ -240,63 +110,12 @@ public class HttpSecurityRecorder {
         };
     }
 
-    private static Map<String, Set<Permission>> createPermissions(Map<String, List<String>> roleToPermissions,
-            BiFunction<String, String[], Permission> permissionCreator) {
-        // role -> created permissions
-        Map<String, Set<Permission>> result = new HashMap<>();
-        for (Map.Entry<String, List<String>> e : roleToPermissions.entrySet()) {
-
-            // collect permission actions
-            // perm1:action1,perm2:action2,perm1:action3 -> perm1:action1,action3 and perm2:action2
-            Map<String, PermissionToActions> cache = new HashMap<>();
-            final String role = e.getKey();
-            for (String permissionToAction : e.getValue()) {
-                // parse permission to actions and add it to cache
-                addPermissionToAction(cache, role, permissionToAction);
-            }
-
-            // create permissions
-            var permissions = new HashSet<Permission>();
-            for (PermissionToActions permission : cache.values()) {
-                permissions.add(permission.create(permissionCreator));
-            }
-
-            result.put(role, Set.copyOf(permissions));
+    public void setBuildTimeNamedPolicies(Map<String, Supplier<HttpSecurityPolicy>> buildTimeNamedPolicies) {
+        Map<String, HttpSecurityPolicy> nameToPolicy = new HashMap<>();
+        for (Map.Entry<String, Supplier<HttpSecurityPolicy>> nameToSupplier : buildTimeNamedPolicies.entrySet()) {
+            nameToPolicy.put(nameToSupplier.getKey(), nameToSupplier.getValue().get());
         }
-        return Map.copyOf(result);
-    }
-
-    private static void addPermissionToAction(Map<String, PermissionToActions> cache, String role, String permissionToAction) {
-        final String permissionName;
-        final String action;
-        // incoming value is either in format perm1:action1 or perm1 (with or withot action)
-        if (permissionToAction.contains(PERMISSION_TO_ACTION_SEPARATOR)) {
-            // perm1:action1
-            var permToActions = permissionToAction.split(PERMISSION_TO_ACTION_SEPARATOR);
-            if (permToActions.length != 2) {
-                throw new ConfigurationException(
-                        String.format("Invalid permission format '%s', please use exactly one permission to action separator",
-                                permissionToAction));
-            }
-            permissionName = permToActions[0].trim();
-            action = permToActions[1].trim();
-        } else {
-            // perm1
-            permissionName = permissionToAction.trim();
-            action = null;
-        }
-
-        if (permissionName.isEmpty()) {
-            throw new ConfigurationException(
-                    String.format("Invalid permission name '%s' for role '%s'", permissionToAction, role));
-        }
-
-        cache.computeIfAbsent(permissionName, new Function<String, PermissionToActions>() {
-            @Override
-            public PermissionToActions apply(String s) {
-                return new PermissionToActions(s);
-            }
-        }).addAction(action);
+        PathMatchingHttpSecurityPolicy.replaceNamedBuildTimePolicies(nameToPolicy);
     }
 
     public static abstract class DefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {
@@ -380,10 +199,16 @@ public class HttpSecurityRecorder {
                 event.put(AbstractPathMatchingHttpSecurityPolicy.class.getName(), pathMatchingPolicy);
             }
         }
+
+        @Override
+        protected boolean httpPermissionsEmpty() {
+            return CDI.current().select(HttpConfiguration.class).get().auth.permissions.isEmpty();
+        }
     }
 
     public static abstract class AbstractAuthenticationHandler implements Handler<RoutingContext> {
         volatile HttpAuthenticator authenticator;
+        volatile Boolean patchMatchingPolicyEnabled = null;
         final boolean proactiveAuthentication;
 
         public AbstractAuthenticationHandler(boolean proactiveAuthentication) {
@@ -397,7 +222,12 @@ public class HttpSecurityRecorder {
             }
             //we put the authenticator into the routing context so it can be used by other systems
             event.put(HttpAuthenticator.class.getName(), authenticator);
-            setPathMatchingPolicy(event);
+            if (patchMatchingPolicyEnabled == null) {
+                setPatchMatchingPolicyEnabled();
+            }
+            if (patchMatchingPolicyEnabled) {
+                setPathMatchingPolicy(event);
+            }
 
             //register the default auth failure handler
             if (proactiveAuthentication) {
@@ -523,34 +353,14 @@ public class HttpSecurityRecorder {
             }
         }
 
-        protected abstract void setPathMatchingPolicy(RoutingContext event);
-    }
-
-    private static final class PermissionToActions {
-        private final String permissionName;
-        private final Set<String> actions;
-
-        private PermissionToActions(String permissionName) {
-            this.permissionName = permissionName;
-            this.actions = new HashSet<>();
-        }
-
-        private void addAction(String action) {
-            if (action != null) {
-                this.actions.add(action);
+        private synchronized void setPatchMatchingPolicyEnabled() {
+            if (patchMatchingPolicyEnabled == null) {
+                patchMatchingPolicyEnabled = !httpPermissionsEmpty();
             }
         }
 
-        private Permission create(BiFunction<String, String[], Permission> permissionCreator) {
-            return permissionCreator.apply(permissionName, actions.toArray(new String[0]));
-        }
-    }
+        protected abstract void setPathMatchingPolicy(RoutingContext event);
 
-    private static Class<?> loadClass(String className) {
-        try {
-            return Thread.currentThread().getContextClassLoader().loadClass(className);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Unable to load class '" + className + "' for creating permission", e);
-        }
+        protected abstract boolean httpPermissionsEmpty();
     }
 }

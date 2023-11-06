@@ -2095,6 +2095,14 @@ public class QuteProcessor {
         List<ResolvedDependency> extensionArtifacts = curateOutcome.getApplicationModel().getDependencies().stream()
                 .filter(Dependency::isRuntimeExtensionArtifact).collect(Collectors.toList());
 
+        // Make sure the new templates are watched as well
+        watchedPaths.produce(HotDeploymentWatchedFileBuildItem.builder().setLocationPredicate(new Predicate<String>() {
+            @Override
+            public boolean test(String path) {
+                return path.startsWith(BASE_PATH);
+            }
+        }).build());
+
         for (ResolvedDependency artifact : extensionArtifacts) {
             if (isApplicationArchive(artifact, allApplicationArchives)) {
                 // Skip extension archives that are also application archives

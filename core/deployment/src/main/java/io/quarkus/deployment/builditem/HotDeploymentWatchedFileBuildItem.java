@@ -9,8 +9,15 @@ import io.quarkus.builder.item.MultiBuildItem;
  * {@link io.quarkus.bootstrap.devmode.DependenciesFilter#getReloadableModules(io.quarkus.bootstrap.model.ApplicationModel)
  * reloadable module} that, if modified, may result in a hot redeployment when in the dev mode.
  * <p>
- * A file may be identified with an exact location or a matching predicate. See {@link Builder#setLocation(String)} and
+ * A file may be identified with an location or a matching predicate. See {@link Builder#setLocation(String)} and
  * {@link Builder#setLocationPredicate(Predicate)}.
+ *
+ * The location may be:
+ * <ul>
+ * <li>a relative OS-agnostic file path where {@code /} is used as a separator; e.g. {@code foo/bar.txt}</li>
+ * <li>an absolute OS-specific file path; e.g. {@code /home/foo/bar.txt}</li>
+ * <li>a glob pattern as defined in {@link java.nio.file.FileSystem#getPathMatcher(String)}; e.g. {@code *.sample}</li>
+ * </ul>
  * <p>
  * If multiple build items match the same file then the final value of {@code restartNeeded} is computed as a logical OR of all
  * the {@link #isRestartNeeded()} values.

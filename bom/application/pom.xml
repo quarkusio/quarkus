@@ -409,6 +409,15 @@
                 <scope>import</scope>
             </dependency>
 
+            <!-- Hibernate Search -->
+            <dependency>
+                <groupId>org.hibernate.search</groupId>
+                <artifactId>hibernate-search-bom</artifactId>
+                <version>${hibernate-search.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- Mutiny and Vert.x Mutiny Binding BOMs -->
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
@@ -5036,27 +5045,6 @@
                 <groupId>org.hibernate</groupId>
                 <artifactId>quarkus-local-cache</artifactId>
                 <version>${hibernate-quarkus-local-cache.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.search</groupId>
-                <artifactId>hibernate-search-backend-elasticsearch</artifactId>
-                <version>${hibernate-search.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.search</groupId>
-                <artifactId>hibernate-search-backend-elasticsearch-aws</artifactId>
-                <version>${hibernate-search.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.search</groupId>
-                <artifactId>hibernate-search-mapper-orm-outbox-polling</artifactId>
-                <version>${hibernate-search.version}</version>
-            </dependency>
-            <!-- Also manage the version of the relocation artifact just in case -->
-            <dependency>
-                <groupId>org.hibernate.search</groupId>
-                <artifactId>hibernate-search-mapper-orm-coordination-outbox-polling</artifactId>
-                <version>${hibernate-search.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.search</groupId>

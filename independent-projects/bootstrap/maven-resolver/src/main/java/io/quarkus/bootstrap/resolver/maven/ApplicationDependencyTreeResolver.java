@@ -332,8 +332,8 @@ public class ApplicationDependencyTreeResolver {
         final byte prevWalkingFlags = walkingFlags;
         final ExtensionDependency prevLastVisitedRtExtNode = lastVisitedRuntimeExtNode;
 
-        final boolean popExclusions;
-        if (popExclusions = !node.getDependency().getExclusions().isEmpty()) {
+        final boolean popExclusions = !node.getDependency().getExclusions().isEmpty();
+        if (popExclusions) {
             exclusionStack.addLast(node.getDependency().getExclusions());
         }
 
@@ -448,10 +448,18 @@ public class ApplicationDependencyTreeResolver {
         final DependencySelector selector = dependent.exclusions == null ? null
                 : new ExclusionDependencySelector(dependent.exclusions);
         for (Artifact conditionalArtifact : dependent.info.conditionalDeps) {
-            if (selector != null && !selector.selectDependency(new Dependency(conditionalArtifact, "runtime"))) {
+            if (selector != null && !selector.selectDependency(new Dependency(conditionalArtifact, JavaScopes.RUNTIME))) {
                 continue;
             }
             final ExtensionInfo conditionalInfo = getExtensionInfoOrNull(conditionalArtifact);
+            if (conditionalInfo == null) {
+                log.warn(dependent.info.runtimeArtifact + " declares a conditional dependency on " + conditionalArtifact
+                        + " that is not a Quarkus extension and will be ignored");
+                continue;
+            }
+            if (conditionalInfo.activated) {
+                continue;
+            }
             final ConditionalDependency conditionalDep = new ConditionalDependency(conditionalInfo, dependent);
             conditionalDepsToProcess.add(conditionalDep);
             collectConditionalDependencies(conditionalDep.getExtensionDependency());

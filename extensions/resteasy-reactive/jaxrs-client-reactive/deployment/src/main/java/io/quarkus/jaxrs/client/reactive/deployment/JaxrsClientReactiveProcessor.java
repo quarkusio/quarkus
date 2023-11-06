@@ -2644,7 +2644,7 @@ public class JaxrsClientReactiveProcessor {
             if (isCollection(valueType, index)) {
                 if (valueType.kind() == PARAMETERIZED_TYPE) {
                     Type paramType = valueType.asParameterizedType().arguments().get(0);
-                    if (paramType.kind() == CLASS) {
+                    if ((paramType.kind() == CLASS) || (paramType.kind() == PARAMETERIZED_TYPE)) {
                         componentType = paramType.name().toString();
                     }
                 }
@@ -2671,7 +2671,7 @@ public class JaxrsClientReactiveProcessor {
             } else if (isCollection(type, index)) {
                 if (type.kind() == PARAMETERIZED_TYPE) {
                     Type paramType = type.asParameterizedType().arguments().get(0);
-                    if (paramType.kind() == CLASS) {
+                    if ((paramType.kind() == CLASS) || (paramType.kind() == PARAMETERIZED_TYPE)) {
                         componentType = paramType.name().toString();
                     }
                 }

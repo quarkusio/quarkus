@@ -14,9 +14,11 @@ import jakarta.transaction.RollbackException;
 import jakarta.transaction.SystemException;
 import jakarta.transaction.UserTransaction;
 
-import org.hibernate.search.mapper.orm.coordination.outboxpolling.cluster.impl.Agent;
-import org.hibernate.search.mapper.orm.coordination.outboxpolling.cluster.impl.AgentState;
-import org.hibernate.search.mapper.orm.coordination.outboxpolling.event.impl.OutboxEvent;
+import org.hibernate.search.mapper.orm.outboxpolling.cluster.impl.Agent;
+import org.hibernate.search.mapper.orm.outboxpolling.cluster.impl.AgentState;
+import org.hibernate.search.mapper.orm.outboxpolling.cluster.impl.OutboxPollingAgentAdditionalJaxbMappingProducer;
+import org.hibernate.search.mapper.orm.outboxpolling.event.impl.OutboxEvent;
+import org.hibernate.search.mapper.orm.outboxpolling.event.impl.OutboxPollingOutboxEventAdditionalJaxbMappingProducer;
 
 public class OutboxPollingTestUtils {
 
@@ -47,7 +49,9 @@ public class OutboxPollingTestUtils {
                 .pollInterval(Duration.ofMillis(5))
                 .atMost(Duration.ofSeconds(10)) // CI can be rather slow...
                 .untilAsserted(() -> inTransaction(userTransaction, () -> {
-                    List<Agent> agents = entityManager.createQuery("select a from Agent a order by a.id", Agent.class)
+                    List<Agent> agents = entityManager
+                            .createQuery("select a from " + OutboxPollingAgentAdditionalJaxbMappingProducer.ENTITY_NAME
+                                    + " a order by a.id", Agent.class)
                             .getResultList();
                     assertThat(agents)
                             .hasSize(expectedAgentCount)
@@ -65,7 +69,8 @@ public class OutboxPollingTestUtils {
                 .atMost(Duration.ofSeconds(20)) // CI can be rather slow...
                 .untilAsserted(() -> inTransaction(userTransaction, () -> {
                     List<OutboxEvent> events = entityManager
-                            .createQuery("select e from OutboxEvent e order by e.id", OutboxEvent.class)
+                            .createQuery("select e from " + OutboxPollingOutboxEventAdditionalJaxbMappingProducer.ENTITY_NAME
+                                    + " e order by e.id", OutboxEvent.class)
                             .getResultList();
                     assertThat(events).isEmpty();
                 }));

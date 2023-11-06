@@ -2,7 +2,7 @@ package io.quarkus.hibernate.search.orm.coordination.outboxpolling.runtime;
 
 import java.util.Optional;
 
-import org.hibernate.search.mapper.orm.coordination.outboxpolling.cfg.UuidGenerationStrategy;
+import org.hibernate.search.mapper.orm.outboxpolling.cfg.UuidGenerationStrategy;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -83,20 +83,18 @@ public interface HibernateSearchOutboxPollingBuildTimeConfigPersistenceUnit {
         Optional<UuidGenerationStrategy> uuidGenStrategy();
 
         /**
-         * The name of the Hibernate ORM basic type used for representing an UUID in the agent table.
+         * The name of the Hibernate ORM basic type used for representing an UUID in the outbox event table.
          *
          * Refer to
-         * link:{hibernate-orm-docs-url}#basic-legacy-provided[this section of the Hibernate ORM documentation]
-         * to see the list of available UUID representations provided by Hibernate ORM.
+         * link:{hibernate-orm-docs-url}#basic-uuid[this section of the Hibernate ORM documentation]
+         * to see the possible UUID representations.
          *
-         * A user defined type can also be supplied.
-         *
-         * Defaults to the special value `default`, which will result into one of `uuid`/`uuid-binary`/`uuid-char`
+         * Defaults to the special value `default`, which will result into one of `char`/`binary`
          * depending on the database kind.
          *
          * @asciidoclet
          */
-        @ConfigDocDefault("uuid/uuid-binary/uuid-char depending on the database kind")
+        @ConfigDocDefault("char/binary depending on the database kind")
         Optional<String> uuidType();
 
     }
@@ -145,17 +143,15 @@ public interface HibernateSearchOutboxPollingBuildTimeConfigPersistenceUnit {
          * The name of the Hibernate ORM basic type used for representing an UUID in the outbox event table.
          *
          * Refer to
-         * link:{hibernate-orm-docs-url}#basic-legacy-provided[this section of the Hibernate ORM documentation]
-         * to see the list of available UUID representations provided by Hibernate ORM.
+         * link:{hibernate-orm-docs-url}#basic-uuid[this section of the Hibernate ORM documentation]
+         * to see the possible UUID representations.
          *
-         * A user defined type can also be supplied.
-         *
-         * Defaults to the special value `default`, which will result into one of `uuid`/`uuid-binary`/`uuid-char`
+         * Defaults to the special value `default`, which will result into one of `char`/`binary`
          * depending on the database kind.
          *
          * @asciidoclet
          */
-        @ConfigDocDefault("uuid/uuid-binary/uuid-char depending on the database kind")
+        @ConfigDocDefault("char/binary depending on the database kind")
         Optional<String> uuidType();
 
     }

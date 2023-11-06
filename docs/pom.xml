@@ -40,7 +40,7 @@
 
         <!-- Keep these in sync with the full versions in bom/application/pom.xml -->
         <hibernate-orm.version-for-documentation>6.4</hibernate-orm.version-for-documentation>
-        <hibernate-search.version-for-documentation>6.2</hibernate-search.version-for-documentation>
+        <hibernate-search.version-for-documentation>7.0</hibernate-search.version-for-documentation>
     </properties>
 
     <name>Quarkus - Documentation</name>

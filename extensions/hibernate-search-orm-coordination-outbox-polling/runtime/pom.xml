@@ -32,7 +32,7 @@
         </dependency>
         <dependency>
             <groupId>org.hibernate.search</groupId>
-            <artifactId>hibernate-search-mapper-orm-coordination-outbox-polling-orm6</artifactId>
+            <artifactId>hibernate-search-mapper-orm-outbox-polling</artifactId>
         </dependency>
     </dependencies>
 

@@ -411,7 +411,7 @@ AgroalDataSource inventoryDataSource;
 If you use the link:https://quarkus.io/extensions/io.quarkus/quarkus-smallrye-health[`quarkus-smallrye-health`] extension, the `quarkus-agroal` and reactive client extensions automatically add a readiness health check to validate the datasource.
 
 When you access your application’s health readiness endpoint, `/q/health/ready` by default, you receive information about the datasource validation status.
-If you have multiple datasources, all datasources are checked, and if a single datasource validation failure occurs, the status changes to`DOWN`.
+If you have multiple datasources, all datasources are checked, and if a single datasource validation failure occurs, the status changes to `DOWN`.
 
 This behavior can be disabled by using the `quarkus.datasource.health.enabled` property.
 
@@ -419,7 +419,7 @@ To exclude only a particular datasource from the health check, use:
 
 [source,properties]
 ----
- `quarkus.datasource."datasource-name".health-exclude=true`
+quarkus.datasource."datasource-name".health-exclude=true
 ----
 
 === Datasource metrics

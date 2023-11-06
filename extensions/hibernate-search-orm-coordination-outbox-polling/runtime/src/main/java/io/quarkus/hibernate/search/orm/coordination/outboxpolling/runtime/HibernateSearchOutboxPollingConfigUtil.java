@@ -5,7 +5,7 @@ import java.util.OptionalInt;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import org.hibernate.search.mapper.orm.coordination.outboxpolling.cfg.HibernateOrmMapperOutboxPollingSettings;
+import org.hibernate.search.mapper.orm.outboxpolling.cfg.HibernateOrmMapperOutboxPollingSettings;
 
 public final class HibernateSearchOutboxPollingConfigUtil {
 

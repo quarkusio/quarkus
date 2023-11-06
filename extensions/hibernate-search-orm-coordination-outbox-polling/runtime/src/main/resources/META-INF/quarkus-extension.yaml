@@ -5,6 +5,7 @@ metadata:
   keywords:
   - "hibernate-search-orm-elasticsearch"
   - "hibernate-search-elasticsearch"
+  - "hibernate-search-orm-outbox-polling"
   - "hibernate-search-orm-coordination-outbox-polling"
   - "search"
   - "full-text"

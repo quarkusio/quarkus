@@ -8,8 +8,8 @@ import java.util.List;
 import jakarta.inject.Inject;
 
 import org.hibernate.SessionFactory;
-import org.hibernate.search.mapper.orm.coordination.outboxpolling.cfg.HibernateOrmMapperOutboxPollingSettings;
-import org.hibernate.search.mapper.orm.coordination.outboxpolling.cfg.UuidGenerationStrategy;
+import org.hibernate.search.mapper.orm.outboxpolling.cfg.HibernateOrmMapperOutboxPollingSettings;
+import org.hibernate.search.mapper.orm.outboxpolling.cfg.UuidGenerationStrategy;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ public class ConfigPropertiesTest {
             .overrideConfigKey("quarkus.hibernate-search-orm.coordination.entity-mapping.agent.schema", "myagentschema")
             .overrideConfigKey("quarkus.hibernate-search-orm.coordination.entity-mapping.agent.table", "myagenttable")
             .overrideConfigKey("quarkus.hibernate-search-orm.coordination.entity-mapping.agent.uuid-gen-strategy", "random")
-            .overrideConfigKey("quarkus.hibernate-search-orm.coordination.entity-mapping.agent.uuid-type", "uuid-char")
+            .overrideConfigKey("quarkus.hibernate-search-orm.coordination.entity-mapping.agent.uuid-type", "char")
             .overrideConfigKey("quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.catalog",
                     "myoutboxeventcatalog")
             .overrideConfigKey("quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.schema",
@@ -46,7 +46,7 @@ public class ConfigPropertiesTest {
                     "myoutboxeventtable")
             .overrideConfigKey("quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.uuid-gen-strategy",
                     "time")
-            .overrideConfigKey("quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.uuid-type", "uuid-binary")
+            .overrideConfigKey("quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.uuid-type", "binary")
             .overrideConfigKey("quarkus.hibernate-search-orm.coordination.event-processor.enabled", "false")
             .overrideConfigKey("quarkus.hibernate-search-orm.coordination.event-processor.shards.total-count", "10")
             .overrideConfigKey("quarkus.hibernate-search-orm.coordination.event-processor.shards.assigned", "1,2")
@@ -70,7 +70,7 @@ public class ConfigPropertiesTest {
             .overrideConfigKey("quarkus.hibernate-search-orm.\"pu1\".coordination.entity-mapping.agent.uuid-gen-strategy",
                     "time")
             .overrideConfigKey("quarkus.hibernate-search-orm.\"pu1\".coordination.entity-mapping.agent.uuid-type",
-                    "uuid-binary")
+                    "binary")
             .overrideConfigKey("quarkus.hibernate-search-orm.\"pu1\".coordination.entity-mapping.outbox-event.catalog",
                     "myoutboxeventcatalogpu1")
             .overrideConfigKey("quarkus.hibernate-search-orm.\"pu1\".coordination.entity-mapping.outbox-event.schema",
@@ -80,7 +80,7 @@ public class ConfigPropertiesTest {
             .overrideConfigKey(
                     "quarkus.hibernate-search-orm.\"pu1\".coordination.entity-mapping.outbox-event.uuid-gen-strategy", "random")
             .overrideConfigKey("quarkus.hibernate-search-orm.\"pu1\".coordination.entity-mapping.outbox-event.uuid-type",
-                    "uuid-char")
+                    "char")
             .overrideConfigKey("quarkus.hibernate-search-orm.\"pu1\".coordination.event-processor.enabled", "false")
             .overrideConfigKey("quarkus.hibernate-search-orm.\"pu1\".coordination.event-processor.shards.total-count", "110")
             .overrideConfigKey("quarkus.hibernate-search-orm.\"pu1\".coordination.event-processor.shards.assigned", "11,12")
@@ -144,7 +144,7 @@ public class ConfigPropertiesTest {
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_ENTITY_MAPPING_AGENT_TABLE, "myagenttable"),
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_ENTITY_MAPPING_AGENT_UUID_GEN_STRATEGY,
                                 UuidGenerationStrategy.RANDOM),
-                        entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_ENTITY_MAPPING_AGENT_UUID_TYPE, "uuid-char"),
+                        entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_ENTITY_MAPPING_AGENT_UUID_TYPE, "char"),
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_ENTITY_MAPPING_OUTBOXEVENT_CATALOG,
                                 "myoutboxeventcatalog"),
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_ENTITY_MAPPING_OUTBOXEVENT_SCHEMA,
@@ -154,7 +154,7 @@ public class ConfigPropertiesTest {
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_ENTITY_MAPPING_OUTBOXEVENT_UUID_GEN_STRATEGY,
                                 UuidGenerationStrategy.TIME),
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_ENTITY_MAPPING_OUTBOXEVENT_UUID_TYPE,
-                                "uuid-binary"),
+                                "binary"),
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_EVENT_PROCESSOR_ENABLED, false),
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_EVENT_PROCESSOR_SHARDS_TOTAL_COUNT, 10),
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_EVENT_PROCESSOR_SHARDS_ASSIGNED,
@@ -183,7 +183,7 @@ public class ConfigPropertiesTest {
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_ENTITY_MAPPING_AGENT_UUID_GEN_STRATEGY,
                                 UuidGenerationStrategy.TIME),
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_ENTITY_MAPPING_AGENT_UUID_TYPE,
-                                "uuid-binary"),
+                                "binary"),
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_ENTITY_MAPPING_OUTBOXEVENT_CATALOG,
                                 "myoutboxeventcatalogpu1"),
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_ENTITY_MAPPING_OUTBOXEVENT_SCHEMA,
@@ -193,7 +193,7 @@ public class ConfigPropertiesTest {
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_ENTITY_MAPPING_OUTBOXEVENT_UUID_GEN_STRATEGY,
                                 UuidGenerationStrategy.RANDOM),
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_ENTITY_MAPPING_OUTBOXEVENT_UUID_TYPE,
-                                "uuid-char"),
+                                "char"),
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_EVENT_PROCESSOR_ENABLED, false),
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_EVENT_PROCESSOR_SHARDS_TOTAL_COUNT, 110),
                         entry(HibernateOrmMapperOutboxPollingSettings.COORDINATION_EVENT_PROCESSOR_SHARDS_ASSIGNED,

@@ -49,9 +49,11 @@ public class ModuleBuildDurationReport implements Runnable {
       required = true)
   private String logFilePath;
 
-  @CommandLine.Option(names = { "-s",
-      "--sort" }, description = "Sort order"
-          + "%Possible values: ${COMPLETION-CANDIDATES}", defaultValue = "execution")
+  @CommandLine.Option(
+      names = { "-s", "--sort" },
+      description = "Sort order"
+          + "%nPossible values: ${COMPLETION-CANDIDATES}",
+      defaultValue = "execution")
   private Sort sort;
 
   public static void main(String... args) {

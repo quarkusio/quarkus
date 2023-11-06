@@ -1422,7 +1422,8 @@ public class QuteProcessor {
                 // myArray[0], myArray.1
                 try {
                     Integer.parseInt(name);
-                    match.setValues(null, match.type().asArrayType().constituent());
+                    Type constituent = match.type().asArrayType().constituent();
+                    match.setValues(match.assignabilityCheck.computingIndex.getClassByName(constituent.name()), constituent);
                     return true;
                 } catch (NumberFormatException e) {
                     // not an integer index
@@ -1436,7 +1437,8 @@ public class QuteProcessor {
                 Expression param = params.get(0);
                 Object literalValue = param.getLiteral();
                 if (literalValue == null || literalValue instanceof Integer) {
-                    match.setValues(null, match.type().asArrayType().constituent());
+                    Type constituent = match.type().asArrayType().constituent();
+                    match.setValues(match.assignabilityCheck.computingIndex.getClassByName(constituent.name()), constituent);
                     return true;
                 }
             } else if (name.equals("take") || name.equals("takeLast")) {

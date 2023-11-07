@@ -126,9 +126,19 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
     Template parse() {
 
-        sectionStack.addFirst(SectionNode.builder(ROOT_HELPER_NAME, origin(0), this, this)
+        SectionNode.Builder rootBuilder = SectionNode.builder(ROOT_HELPER_NAME, syntheticOrigin(), this, this)
                 .setEngine(engine)
-                .setHelperFactory(ROOT_SECTION_HELPER_FACTORY));
+                .setHelperFactory(ROOT_SECTION_HELPER_FACTORY);
+        sectionStack.addFirst(rootBuilder);
+
+        // Add synthetic nodes for param declarations added by parser hooks
+        Map<String, String> bindings = scopeStack.peek().getBindings();
+        if (bindings != null && !bindings.isEmpty()) {
+            for (Entry<String, String> e : bindings.entrySet()) {
+                rootBuilder.currentBlock().addNode(
+                        new ParameterDeclarationNode(e.getValue(), e.getKey(), null, syntheticOrigin()));
+            }
+        }
 
         long start = System.nanoTime();
         Reader r = reader;
@@ -1064,6 +1074,10 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
     Origin origin(int lineCharacterOffset) {
         return new OriginImpl(line, lineCharacter - lineCharacterOffset, lineCharacter, templateId, generatedId, variant);
+    }
+
+    Origin syntheticOrigin() {
+        return new OriginImpl(-1, -1, -1, templateId, generatedId, variant);
     }
 
     private List<List<TemplateNode>> readLines(SectionNode rootNode) {

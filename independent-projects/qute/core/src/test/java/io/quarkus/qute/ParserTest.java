@@ -3,6 +3,7 @@ package io.quarkus.qute;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -165,6 +166,10 @@ public class ParserTest {
         assertEquals(8, itemNameOrigin.getLine());
         assertEquals(1, itemNameOrigin.getLineCharacterStart());
         assertEquals(11, itemNameOrigin.getLineCharacterEnd());
+        ParameterDeclaration pd = template.getParameterDeclarations().get(0);
+        assertEquals(1, pd.getOrigin().getLine());
+        assertEquals("foo", pd.getKey());
+        assertNull(pd.getDefaultValue());
     }
 
     @Test
@@ -316,9 +321,16 @@ public class ParserTest {
             public void beforeParsing(ParserHelper parserHelper) {
                 parserHelper.addContentFilter(contents -> contents.replace("bard", "bar"));
                 parserHelper.addContentFilter(contents -> contents.replace("${", "$\\{"));
+                parserHelper.addParameter("foo", String.class.getName());
             }
         }).build().parse("${foo}::{bard}");
         assertEquals("${foo}::true", template.data("bar", true).render());
+        List<ParameterDeclaration> paramDeclarations = template.getParameterDeclarations();
+        assertEquals(1, paramDeclarations.size());
+        ParameterDeclaration pd = paramDeclarations.get(0);
+        assertEquals("foo", pd.getKey());
+        assertEquals("|java.lang.String|", pd.getTypeInfo());
+        assertTrue(pd.getOrigin().isSynthetic());
     }
 
     @Test

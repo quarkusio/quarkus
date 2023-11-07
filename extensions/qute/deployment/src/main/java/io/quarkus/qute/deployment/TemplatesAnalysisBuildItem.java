@@ -1,5 +1,7 @@
 package io.quarkus.qute.deployment;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -60,6 +62,23 @@ public final class TemplatesAnalysisBuildItem extends SimpleBuildItem {
                 }
             }
             return null;
+        }
+
+        /**
+         * Non-synthetic declarations go first, then sorted by the line.
+         *
+         * @return the sorted list of parameter declarations
+         */
+        public List<ParameterDeclaration> getSortedParameterDeclarations() {
+            List<ParameterDeclaration> ret = new ArrayList<>(parameterDeclarations);
+            ret.sort(new Comparator<ParameterDeclaration>() {
+                @Override
+                public int compare(ParameterDeclaration pd1, ParameterDeclaration pd2) {
+                    int ret = Boolean.compare(pd1.getOrigin().isSynthetic(), pd2.getOrigin().isSynthetic());
+                    return ret == 0 ? Integer.compare(pd1.getOrigin().getLine(), pd2.getOrigin().getLine()) : ret;
+                }
+            });
+            return ret;
         }
 
         @Override

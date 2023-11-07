@@ -280,9 +280,9 @@ quarkus.oidc.introspection-credentials.secret=introspection-user-secret
 ----
 
 [[oidc-client-filters]]
-==== OIDC client request customization
+==== OIDC request customization
 
-You can customize OIDC client requests by registering one or more `OidcClientRequestFiler` implementations which can update or add new request headers, please see xref:security-openid-connect-client-reference#oidc-client-filters[Client request customization] for more information.
+You can customize OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFiler` implementations which can update or add new request headers, please see xref:security-openid-connect-client-reference#oidc-client-filters[Client request customization] for more information.
 
 ==== Redirecting to and from the OIDC provider
 

@@ -1,17 +1,14 @@
-CREATE DATABASE IF NOT EXISTS base;
-CREATE USER IF NOT EXISTS 'jane'@'%' IDENTIFIED BY 'abc';
+CREATE OR REPLACE DATABASE base;
+CREATE OR REPLACE DATABASE mycompany;
+CREATE OR REPLACE DATABASE inventory;
+CREATE OR REPLACE DATABASE inventorymycompany;
+
+CREATE OR REPLACE USER 'jane'@'%' IDENTIFIED BY 'abc';
 GRANT ALL privileges ON base.* TO 'jane'@'%';
-
-CREATE DATABASE IF NOT EXISTS mycompany;
-CREATE USER IF NOT EXISTS 'john'@'%' IDENTIFIED BY 'def';
-GRANT ALL privileges ON mycompany.* TO 'john'@'%';
-
-CREATE DATABASE IF NOT EXISTS inventory;
-CREATE USER IF NOT EXISTS 'jane'@'%' IDENTIFIED BY 'abc';
 GRANT ALL privileges ON inventory.* TO 'jane'@'%';
 
-CREATE DATABASE IF NOT EXISTS inventorymycompany;
-CREATE USER IF NOT EXISTS 'john'@'%' IDENTIFIED BY 'def';
+CREATE OR REPLACE USER 'john'@'%' IDENTIFIED BY 'def';
+GRANT ALL privileges ON mycompany.* TO 'john'@'%';
 GRANT ALL privileges ON inventorymycompany.* TO 'john'@'%';
 
 FLUSH PRIVILEGES;

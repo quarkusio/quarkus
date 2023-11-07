@@ -40,12 +40,12 @@ Because it is an OAuth 2.0 Authorization server, the token also references the c
 Any user with a valid token can access the `/api/users/me` endpoint.
 As a response, it returns a JSON document with user details obtained from the information in the token.
 
-The `/api/admin` endpoint is protected with RBAC (Role-Based Access Control), which only users with the `admin` role can access.
+The `/api/admin` endpoint is protected with RBAC (role-based access control), which only users with the `admin` role can access.
 At this endpoint, the `@RolesAllowed` annotation is used to enforce the access constraint declaratively.
 
 == Solution
 
-Follow the instructions in the next sections and create the application step by step.
+Follow the instructions in the next sections to create the application step by step.
 You can also go straight to the completed example.
 
 You can clone the Git repository by running the command `git clone {quickstarts-clone-url}`, or you can download an {quickstarts-archive-url}[archive].
@@ -84,15 +84,14 @@ The following configuration gets added to your build file:
 * Using Maven (pom.xml):
 +
 ====
---
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-oidc</artifactId>
+   <groupId>io.quarkus</groupId>
+   <artifactId>quarkus-oidc</artifactId>
 </dependency>
 ----
---
 ====
 +
 * Using Gradle (build.gradle):
@@ -209,7 +208,7 @@ Where:
 The `%prod.` profile prefix ensures that `Dev Services for Keycloak` launches a container when you run the application in development (dev) mode.
 For more information, see the <<keycloak-dev-mode>> section.
 
-* `quarkus.oidc.client-id` sets a client-ID that identifies the application.
+* `quarkus.oidc.client-id` sets a client ID that identifies the application.
 * `quarkus.oidc.credentials.secret` sets the client secret, which is used by the `client_secret_basic` authentication method.
 
 For more information, see the Quarkus xref:security-oidc-configuration-properties-reference.adoc[OpenID Connect (OIDC) configuration properties] guide.
@@ -226,7 +225,7 @@ Do not start the Keycloak server when you run the application in dev mode; `Dev 
 For more information, see the <<keycloak-dev-mode>> section.
 ====
 +
-. To start a Keycloak server, you can use Docker to run the following command:
+. To start a Keycloak server, you can use Docker to run the following command, where the `keycloak.version` is set to version `17.0.0` or later:
 +
 ====
 [source,bash,subs=attributes+]
@@ -234,7 +233,6 @@ For more information, see the <<keycloak-dev-mode>> section.
 docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 ====
-* Where the `keycloak.version` is set to version `17.0.0` or later.
 . You can access your Keycloak Server at http://localhost:8180[localhost:8180].
 . To access the Keycloak Administration Console, log in as the `admin` user by using the following login credentials:
 
@@ -248,7 +246,7 @@ For more information, see the Keycloak documentation about link:https://www.keyc
 
 [NOTE]
 ====
-If you want to use the Keycloak Admin Client to configure your server from your application, you need to include either the `quarkus-keycloak-admin-client` or the `quarkus-keycloak-admin-client-reactive` (if the application uses `quarkus-rest-client-reactive`) extension.
+If you want to use the Keycloak Admin Client to configure your server from your application, you must include either the `quarkus-keycloak-admin-client` or the `quarkus-keycloak-admin-client-reactive` (if the application uses `quarkus-rest-client-reactive`) extension.
 For more information, see the link:{url-quarkusio-guides}security-keycloak-admin-client[Quarkus Keycloak Admin Client] guide.
 
 ====
@@ -262,14 +260,15 @@ For more information, see the link:{url-quarkusio-guides}security-keycloak-admin
 ====
 include::{includes}/devtools/dev.adoc[]
 ====
-* link:{quarkusio-guides}/security-openid-connect-dev-services[Dev Services for Keycloak] will start a Keycloak container and import a `quarkus-realm.json`.
++
+link:{quarkusio-guides}/security-openid-connect-dev-services[Dev Services for Keycloak] will start a Keycloak container and import a `quarkus-realm.json`.
 . Open a link:{url-quarkusio-guides}dev-ui[Dev UI], which you can find at http://localhost:8080/q/dev-v1[/q/dev-v1], then click a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
 . When prompted to log in to a `Single Page Application` provided by `OpenID Connect Dev UI`, do the following steps:
 
- * Log in as `alice` (password: `alice`), who has a `user` role.
+ .. Log in as `alice` (password: `alice`), who has a `user` role.
  ** Accessing `/api/admin` returns `403`.
  ** Accessing `/api/users/me` returns `200`.
- * Log out and log in as `admin` (password: `admin`), who has both `admin` and `user` roles.
+ .. Log out and log back in as `admin` (password: `admin`), who has both `admin` and `user` roles.
  ** Accessing `/api/admin` returns `200`.
  ** Accessing `/api/users/me` returns `200`.
 

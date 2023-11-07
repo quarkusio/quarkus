@@ -39,7 +39,7 @@ public class QuarkusBootstrap implements Serializable {
     private final PathCollection applicationRoot;
 
     /**
-     * The root of the project. This may be different to the application root for tests that
+     * The root of the project. This may be different from the application root for tests that
      * run in a different directory.
      */
     private final Path projectRoot;

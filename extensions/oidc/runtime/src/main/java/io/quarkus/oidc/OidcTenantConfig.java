@@ -381,6 +381,81 @@ public class OidcTenantConfig extends OidcCommonConfig {
         }
     }
 
+    /**
+     * Configuration for controlling how JsonWebKeySet containing verification keys should be acquired and managed.
+     */
+    @ConfigItem
+    public Jwks jwks = new Jwks();
+
+    @ConfigGroup
+    public static class Jwks {
+
+        /**
+         * If JWK verification keys should be fetched at the moment a connection to the OIDC provider
+         * is initialized.
+         * <p/>
+         * Disabling this property will delay the key acquisition until the moment the current token
+         * has to be verified. Typically it can only be necessary if the token or other telated request properties
+         * provide an additional context which is required to resolve the keys correctly.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean resolveEarly = true;
+
+        /**
+         * Maximum number of JWK keys that can be cached.
+         * This property will be ignored if the {@link #resolveEarly} property is set to true.
+         */
+        @ConfigItem(defaultValue = "10")
+        public int cacheSize = 10;
+
+        /**
+         * Number of minutes a JWK key can be cached for.
+         * This property will be ignored if the {@link #resolveEarly} property is set to true.
+         */
+        @ConfigItem(defaultValue = "10M")
+        public Duration cacheTimeToLive = Duration.ofMinutes(10);
+
+        /**
+         * Cache timer interval.
+         * If this property is set then a timer will check and remove the stale entries periodically.
+         * This property will be ignored if the {@link #resolveEarly} property is set to true.
+         */
+        @ConfigItem
+        public Optional<Duration> cleanUpTimerInterval = Optional.empty();
+
+        public int getCacheSize() {
+            return cacheSize;
+        }
+
+        public void setCacheSize(int cacheSize) {
+            this.cacheSize = cacheSize;
+        }
+
+        public Duration getCacheTimeToLive() {
+            return cacheTimeToLive;
+        }
+
+        public void setCacheTimeToLive(Duration cacheTimeToLive) {
+            this.cacheTimeToLive = cacheTimeToLive;
+        }
+
+        public Optional<Duration> getCleanUpTimerInterval() {
+            return cleanUpTimerInterval;
+        }
+
+        public void setCleanUpTimerInterval(Duration cleanUpTimerInterval) {
+            this.cleanUpTimerInterval = Optional.of(cleanUpTimerInterval);
+        }
+
+        public boolean isResolveEarly() {
+            return resolveEarly;
+        }
+
+        public void setResolveEarly(boolean resolveEarly) {
+            this.resolveEarly = resolveEarly;
+        }
+    }
+
     @ConfigGroup
     public static class Frontchannel {
         /**

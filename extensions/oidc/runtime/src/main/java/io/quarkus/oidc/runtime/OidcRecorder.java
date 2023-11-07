@@ -352,17 +352,16 @@ public class OidcRecorder {
                 .transformToUni(new Function<OidcProviderClient, Uni<? extends OidcProvider>>() {
                     @Override
                     public Uni<OidcProvider> apply(OidcProviderClient client) {
-                        if (client.getMetadata().getJsonWebKeySetUri() != null
+                        if (oidcConfig.jwks.resolveEarly
+                                && client.getMetadata().getJsonWebKeySetUri() != null
                                 && !oidcConfig.token.requireJwtIntrospectionOnly) {
                             return getJsonWebSetUni(client, oidcConfig).onItem()
                                     .transform(new Function<JsonWebKeySet, OidcProvider>() {
-
                                         @Override
                                         public OidcProvider apply(JsonWebKeySet jwks) {
                                             return new OidcProvider(client, oidcConfig, jwks,
                                                     readTokenDecryptionKey(oidcConfig));
                                         }
-
                                     });
                         } else {
                             return Uni.createFrom()
@@ -405,7 +404,7 @@ public class OidcRecorder {
     protected static Uni<JsonWebKeySet> getJsonWebSetUni(OidcProviderClient client, OidcTenantConfig oidcConfig) {
         if (!oidcConfig.isDiscoveryEnabled().orElse(true)) {
             final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
-            return client.getJsonWebKeySet().onFailure(OidcCommonUtils.oidcEndpointNotAvailable())
+            return client.getJsonWebKeySet(null).onFailure(OidcCommonUtils.oidcEndpointNotAvailable())
                     .retry()
                     .withBackOff(OidcCommonUtils.CONNECTION_BACKOFF_DURATION, OidcCommonUtils.CONNECTION_BACKOFF_DURATION)
                     .expireIn(connectionDelayInMillisecs)
@@ -419,7 +418,7 @@ public class OidcRecorder {
                     .onFailure()
                     .invoke(client::close);
         } else {
-            return client.getJsonWebKeySet();
+            return client.getJsonWebKeySet(null);
         }
     }
 
@@ -479,7 +478,7 @@ public class OidcRecorder {
                                             + " Use 'quarkus.oidc.user-info-path' if the discovery is disabled."));
                         }
                         return Uni.createFrom()
-                                .item(new OidcProviderClient(client, metadata, oidcConfig, clientRequestFilters));
+                                .item(new OidcProviderClient(client, vertx, metadata, oidcConfig, clientRequestFilters));
                     }
 
                 });

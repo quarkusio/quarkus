@@ -9,11 +9,8 @@ import java.util.Set;
 
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.lang.InvalidAlgorithmException;
 import org.jose4j.lang.JoseException;
 
-import io.quarkus.logging.Log;
 import io.quarkus.oidc.OIDCException;
 
 public class JsonWebKeySet {
@@ -86,13 +83,8 @@ public class JsonWebKeySet {
         return keysWithS256Thumbprints.get(x5tS256);
     }
 
-    public Key getKeyWithoutKeyIdAndThumbprint(JsonWebSignature jws) {
-        try {
-            List<Key> keys = keysWithoutKeyIdAndThumbprint.get(jws.getKeyType());
-            return keys == null || keys.size() != 1 ? null : keys.get(0);
-        } catch (InvalidAlgorithmException ex) {
-            Log.debug("Token 'alg'(algorithm) header value is invalid", ex);
-            return null;
-        }
+    public Key getKeyWithoutKeyIdAndThumbprint(String keyType) {
+        List<Key> keys = keysWithoutKeyIdAndThumbprint.get(keyType);
+        return keys == null || keys.size() != 1 ? null : keys.get(0);
     }
 }

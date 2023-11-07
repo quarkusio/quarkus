@@ -731,7 +731,7 @@ It is the maximum time a connection remains in the pool before it is closed and 
 The `max-lifetime` allows ensuring the pool has fresh connections with up-to-date configuration.
 
 NOTE: The `max-lifetime` is disabled by default but is an important configuration when using a credentials
-provider that provides time limited credentials, like the link:credentials-provider.adoc[Vault credentials provider].
+provider that provides time limited credentials, like the xref:credentials-provider.adoc[Vault credentials provider].
 
 For example, you could ensure connections are recycled after 60 minutes:
 

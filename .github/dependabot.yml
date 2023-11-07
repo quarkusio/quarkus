@@ -9,6 +9,10 @@ updates:
     open-pull-requests-limit: 6
     labels:
       - area/dependencies
+    groups:
+      patches:
+        update-types:
+        - "patch"
     allow:
       - dependency-name: org.jboss:jboss-parent
       - dependency-name: org.jboss.resteasy:*

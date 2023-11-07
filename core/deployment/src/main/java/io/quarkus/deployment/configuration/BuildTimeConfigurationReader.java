@@ -474,6 +474,7 @@ public final class BuildTimeConfigurationReader {
         final Map<String, String> allBuildTimeValues = new TreeMap<>();
         final Map<String, String> buildTimeRunTimeValues = new TreeMap<>();
         final Map<String, String> runTimeDefaultValues = new TreeMap<>();
+        final Map<String, String> runTimeValues = new TreeMap<>();
 
         final Map<ConverterType, Converter<?>> convByType = new HashMap<>();
 
@@ -593,7 +594,7 @@ public final class BuildTimeConfigurationReader {
                         // it's a run-time default (record for later)
                         ConfigValue configValue = withoutExpansion(() -> runtimeDefaultsConfig.getConfigValue(propertyName));
                         if (configValue.getValue() != null) {
-                            runTimeDefaultValues.put(configValue.getNameProfiled(), configValue.getValue());
+                            runTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
                         }
                     }
 
@@ -604,7 +605,7 @@ public final class BuildTimeConfigurationReader {
                     // it's not managed by us; record it
                     ConfigValue configValue = withoutExpansion(() -> runtimeDefaultsConfig.getConfigValue(propertyName));
                     if (configValue.getValue() != null) {
-                        runTimeDefaultValues.put(configValue.getNameProfiled(), configValue.getValue());
+                        runTimeValues.put(configValue.getNameProfiled(), configValue.getValue());
                     }
 
                     // in the case the user defined compound keys in YAML (or similar config source, that quotes the name)
@@ -655,7 +656,7 @@ public final class BuildTimeConfigurationReader {
                     unknownBuildProperties.remove(property);
                     ConfigValue value = config.getConfigValue(property);
                     if (value != null && value.getRawValue() != null) {
-                        runTimeDefaultValues.put(property, value.getRawValue());
+                        runTimeValues.put(property, value.getRawValue());
                     }
                 }
             }
@@ -664,6 +665,7 @@ public final class BuildTimeConfigurationReader {
                     .setAllBuildTimeValues(allBuildTimeValues)
                     .setBuildTimeRunTimeValues(filterActiveProfileProperties(buildTimeRunTimeValues))
                     .setRunTimeDefaultValues(filterActiveProfileProperties(runTimeDefaultValues))
+                    .setRuntimeValues(runTimeValues)
                     .setBuildTimePatternMap(buildTimePatternMap)
                     .setBuildTimeRunTimePatternMap(buildTimeRunTimePatternMap)
                     .setRunTimePatternMap(runTimePatternMap)
@@ -1139,6 +1141,7 @@ public final class BuildTimeConfigurationReader {
         final Map<String, String> allBuildTimeValues;
         final Map<String, String> buildTimeRunTimeValues;
         final Map<String, String> runTimeDefaultValues;
+        final Map<String, String> runTimeValues;
 
         final ConfigPatternMap<Container> buildTimePatternMap;
         final ConfigPatternMap<Container> buildTimeRunTimePatternMap;
@@ -1162,6 +1165,7 @@ public final class BuildTimeConfigurationReader {
             this.allBuildTimeValues = builder.getAllBuildTimeValues();
             this.buildTimeRunTimeValues = builder.getBuildTimeRunTimeValues();
             this.runTimeDefaultValues = builder.getRunTimeDefaultValues();
+            this.runTimeValues = builder.getRuntimeValues();
 
             this.buildTimePatternMap = builder.getBuildTimePatternMap();
             this.buildTimeRunTimePatternMap = builder.getBuildTimeRunTimePatternMap();
@@ -1217,6 +1221,10 @@ public final class BuildTimeConfigurationReader {
 
         public Map<String, String> getRunTimeDefaultValues() {
             return runTimeDefaultValues;
+        }
+
+        public Map<String, String> getRunTimeValues() {
+            return runTimeValues;
         }
 
         public ConfigPatternMap<Container> getBuildTimePatternMap() {
@@ -1280,6 +1288,7 @@ public final class BuildTimeConfigurationReader {
             private Map<String, String> allBuildTimeValues;
             private Map<String, String> buildTimeRunTimeValues;
             private Map<String, String> runTimeDefaultValues;
+            private Map<String, String> runtimeValues;
             private ConfigPatternMap<Container> buildTimePatternMap;
             private ConfigPatternMap<Container> buildTimeRunTimePatternMap;
             private ConfigPatternMap<Container> runTimePatternMap;
@@ -1324,6 +1333,15 @@ public final class BuildTimeConfigurationReader {
 
             Builder setRunTimeDefaultValues(final Map<String, String> runTimeDefaultValues) {
                 this.runTimeDefaultValues = runTimeDefaultValues;
+                return this;
+            }
+
+            Map<String, String> getRuntimeValues() {
+                return runtimeValues;
+            }
+
+            Builder setRuntimeValues(final Map<String, String> runtimeValues) {
+                this.runtimeValues = runtimeValues;
                 return this;
             }
 

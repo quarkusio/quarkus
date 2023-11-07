@@ -200,11 +200,14 @@ public class ConfigGenerationBuildStep {
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
 
-        // Default Values collected from mappings / roots and build item
+        // Default values from @ConfigRoot
         Map<String, String> defaultValues = new HashMap<>(configItem.getReadResult().getRunTimeDefaultValues());
+        // Default values from build item RunTimeConfigurationDefaultBuildItem override
         for (RunTimeConfigurationDefaultBuildItem e : runTimeDefaults) {
             defaultValues.put(e.getKey(), e.getValue());
         }
+        // Recorded values from build time from any other source (higher ordinal then defaults, so override)
+        defaultValues.putAll(configItem.getReadResult().getRunTimeValues());
 
         Set<String> converters = discoverService(Converter.class, reflectiveClass);
         Set<String> interceptors = discoverService(ConfigSourceInterceptor.class, reflectiveClass);

@@ -104,7 +104,6 @@ import io.quarkus.qute.EngineConfiguration;
 import io.quarkus.qute.ErrorCode;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expression.VirtualMethodPart;
-import io.quarkus.qute.Expressions;
 import io.quarkus.qute.LoopSectionHelper;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ParameterDeclaration;
@@ -121,7 +120,6 @@ import io.quarkus.qute.TemplateExtension;
 import io.quarkus.qute.TemplateGlobal;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateLocator;
-import io.quarkus.qute.TemplateNode;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.Variant;
@@ -657,49 +655,9 @@ public class QuteProcessor {
             }
         });
 
-        // It's a file-based template
-        // We need to find out whether the parsed template represents a checked template
-        Map<String, String> pathToPathWithoutSuffix = new HashMap<>();
-        for (String path : filePaths.getFilePaths()) {
-            for (String suffix : config.suffixes) {
-                if (path.endsWith(suffix)) {
-                    // Remove the suffix and add to Map
-                    pathToPathWithoutSuffix.put(path, path.substring(0, path.length() - (suffix.length() + 1)));
-                    break;
-                }
-            }
-
-            // Path has already no suffix
-            if (!pathToPathWithoutSuffix.containsKey(path)) {
-                pathToPathWithoutSuffix.put(path, path);
-            }
-        }
-
-        // Checked Template id -> method parameter declaration
-        Map<String, Map<String, MethodParameterDeclaration>> checkedTemplateIdToParamDecl = new HashMap<>();
-        for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
-            if (checkedTemplate.isFragment()) {
-                continue;
-            }
-            for (Entry<String, String> entry : checkedTemplate.bindings.entrySet()) {
-                checkedTemplateIdToParamDecl
-                        .computeIfAbsent(checkedTemplate.templateId, s -> new HashMap<>())
-                        .put(entry.getKey(), new MethodParameterDeclaration(entry.getValue(), entry.getKey()));
-            }
-        }
-
-        // Message Bundle Template id -> method parameter declaration
-        Map<String, Map<String, MethodParameterDeclaration>> msgBundleTemplateIdToParamDecl = new HashMap<>();
-        for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
-            MethodInfo method = messageBundleMethod.getMethod();
-            for (ListIterator<Type> it = method.parameterTypes().listIterator(); it.hasNext();) {
-                Type paramType = it.next();
-                String name = MessageBundleProcessor.getParameterName(method, it.previousIndex());
-                msgBundleTemplateIdToParamDecl
-                        .computeIfAbsent(messageBundleMethod.getTemplateId(), s -> new HashMap<>())
-                        .put(name, new MethodParameterDeclaration(getCheckedTemplateParameterTypeName(paramType), name));
-            }
-        }
+        Map<String, MessageBundleMethodBuildItem> messageBundleMethodsMap = messageBundleMethods.stream()
+                .filter(MessageBundleMethodBuildItem::isValidatable)
+                .collect(Collectors.toMap(MessageBundleMethodBuildItem::getTemplateId, Function.identity()));
 
         builder.addParserHook(new ParserHook() {
 
@@ -715,8 +673,17 @@ public class QuteProcessor {
                                 getCheckedTemplateParameterTypeName(global.getVariableType()).toString());
                     }
 
-                    addMethodParamsToParserHelper(parserHelper, pathToPathWithoutSuffix.get(templateId),
-                            checkedTemplateIdToParamDecl);
+                    // It's a file-based template
+                    // We need to find out whether the parsed template represents a checked template
+                    String path = templatePathWithoutSuffix(templateId, config);
+                    for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
+                        if (checkedTemplate.templateId.equals(path)) {
+                            for (Entry<String, String> entry : checkedTemplate.bindings.entrySet()) {
+                                parserHelper.addParameter(entry.getKey(), entry.getValue());
+                            }
+                            break;
+                        }
+                    }
 
                     if (templateId.startsWith(TemplatePathBuildItem.TAGS)) {
                         parserHelper.addParameter(UserTagSectionHelper.Factory.ARGS,
@@ -724,7 +691,16 @@ public class QuteProcessor {
                     }
                 }
 
-                addMethodParamsToParserHelper(parserHelper, templateId, msgBundleTemplateIdToParamDecl);
+                // If needed add params to message bundle templates
+                MessageBundleMethodBuildItem messageBundleMethod = messageBundleMethodsMap.get(templateId);
+                if (messageBundleMethod != null) {
+                    MethodInfo method = messageBundleMethod.getMethod();
+                    for (ListIterator<Type> it = method.parameterTypes().listIterator(); it.hasNext();) {
+                        Type paramType = it.next();
+                        String name = MessageBundleProcessor.getParameterName(method, it.previousIndex());
+                        parserHelper.addParameter(name, getCheckedTemplateParameterTypeName(paramType));
+                    }
+                }
             }
 
         }).build();
@@ -736,17 +712,7 @@ public class QuteProcessor {
         for (TemplatePathBuildItem path : templatePaths) {
             Template template = dummyEngine.getTemplate(path.getPath());
             if (template != null) {
-                String templateIdWithoutSuffix = pathToPathWithoutSuffix.get(template.getId());
-
-                final List<ParameterDeclaration> parameterDeclarations;
-                if (checkedTemplateIdToParamDecl.isEmpty()) {
-                    parameterDeclarations = template.getParameterDeclarations();
-                } else {
-                    // Add method parameter declarations if they were not overridden in the template
-                    parameterDeclarations = mergeParamDeclarations(
-                            template.getParameterDeclarations(),
-                            checkedTemplateIdToParamDecl.get(templateIdWithoutSuffix));
-                }
+                String templateIdWithoutSuffix = templatePathWithoutSuffix(template.getId(), config);
 
                 if (!checkedFragments.isEmpty()) {
                     for (CheckedTemplateBuildItem checkedFragment : checkedFragments) {
@@ -766,21 +732,15 @@ public class QuteProcessor {
                 }
 
                 analysis.add(new TemplateAnalysis(null, template.getGeneratedId(), template.getExpressions(),
-                        parameterDeclarations, path.getPath(), template.getFragmentIds()));
+                        template.getParameterDeclarations(), path.getPath(), template.getFragmentIds()));
             }
         }
 
         // Message bundle templates
         for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
             Template template = dummyEngine.parse(messageBundleMethod.getTemplate(), null, messageBundleMethod.getTemplateId());
-
-            // Add method parameter declarations if they were not overridden in the template
-            List<ParameterDeclaration> paramDeclarations = mergeParamDeclarations(
-                    template.getParameterDeclarations(),
-                    msgBundleTemplateIdToParamDecl.get(messageBundleMethod.getTemplateId()));
-
             analysis.add(new TemplateAnalysis(messageBundleMethod.getTemplateId(), template.getGeneratedId(),
-                    template.getExpressions(), paramDeclarations,
+                    template.getExpressions(), template.getParameterDeclarations(),
                     messageBundleMethod.getMethod().declaringClass().name() + "#" + messageBundleMethod.getMethod().name()
                             + "()",
                     template.getFragmentIds()));
@@ -789,6 +749,17 @@ public class QuteProcessor {
         LOGGER.debugf("Finished analysis of %s templates in %s ms", analysis.size(),
                 TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
         return new TemplatesAnalysisBuildItem(analysis);
+    }
+
+    private String templatePathWithoutSuffix(String path, QuteConfig config) {
+        for (String suffix : config.suffixes) {
+            if (path.endsWith(suffix)) {
+                // Remove the suffix
+                path = path.substring(0, path.length() - (suffix.length() + 1));
+                break;
+            }
+        }
+        return path;
     }
 
     @BuildStep
@@ -923,29 +894,6 @@ public class QuteProcessor {
         }
 
         return builder.toString();
-    }
-
-    private List<ParameterDeclaration> mergeParamDeclarations(List<ParameterDeclaration> parameterDeclarations,
-            Map<String, MethodParameterDeclaration> paramNameToDeclaration) {
-        if (paramNameToDeclaration != null) {
-            Map<String, ParameterDeclaration> mergeResult = new HashMap<>(paramNameToDeclaration);
-            for (ParameterDeclaration paramDeclaration : parameterDeclarations) {
-                // Template parameter declarations override method parameter declarations
-                mergeResult.put(paramDeclaration.getKey(), paramDeclaration);
-            }
-            return List.copyOf(mergeResult.values());
-        }
-        return parameterDeclarations;
-    }
-
-    private void addMethodParamsToParserHelper(ParserHelper parserHelper, String templateId,
-            Map<String, Map<String, MethodParameterDeclaration>> templateIdToParamDecl) {
-        var paramNameToDeclaration = templateIdToParamDecl.get(templateId);
-        if (paramNameToDeclaration != null) {
-            for (MethodParameterDeclaration parameterDeclaration : paramNameToDeclaration.values()) {
-                parserHelper.addParameter(parameterDeclaration.getKey(), parameterDeclaration.getParamType());
-            }
-        }
     }
 
     @BuildStep
@@ -1481,17 +1429,24 @@ public class QuteProcessor {
             // data:
             Expression.Part firstPart = expression.getParts().get(0);
             String firstPartName = firstPart.getName();
-            for (ParameterDeclaration paramDeclaration : templateAnalysis.parameterDeclarations) {
-                if (paramDeclaration.getKey().equals(firstPartName)) {
-                    // Data Namespace expression has bounded parameter declaration
-                    dataNamespaceTypeInfo = TypeInfos
-                            .create(paramDeclaration.getTypeInfo(), firstPart, index, templateIdToPathFun,
-                                    expression.getOrigin())
-                            .asTypeInfo();
+            // FIXME This is not entirely correct
+            // First we try to find a non-synthetic param declaration that matches the given name,
+            // and then we try the synthetic ones.
+            // However, this might result in confusing behavior when type-safe templates are used together with type-safe expressions.
+            // But this should not be a common use case.
+            ParameterDeclaration paramDeclaration = null;
+            for (ParameterDeclaration pd : templateAnalysis.getSortedParameterDeclarations()) {
+                if (pd.getKey().equals(firstPartName)) {
+                    paramDeclaration = pd;
                     break;
                 }
             }
-            if (dataNamespaceTypeInfo == null) {
+            if (paramDeclaration != null) {
+                dataNamespaceTypeInfo = TypeInfos
+                        .create(paramDeclaration.getTypeInfo(), firstPart, index, templateIdToPathFun,
+                                expression.getOrigin())
+                        .asTypeInfo();
+            } else {
                 putResult(match, results, expression);
                 ignored = true;
             }
@@ -3536,41 +3491,6 @@ public class QuteProcessor {
             return "BUILD_" + name();
         }
 
-    }
-
-    private static final class MethodParameterDeclaration implements ParameterDeclaration {
-
-        private final String paramType;
-        private final String paramName;
-
-        private MethodParameterDeclaration(String paramType, String paramName) {
-            this.paramType = paramType;
-            this.paramName = paramName;
-        }
-
-        public String getParamType() {
-            return paramType;
-        }
-
-        @Override
-        public String getTypeInfo() {
-            return Expressions.typeInfoFrom(paramType);
-        }
-
-        @Override
-        public String getKey() {
-            return paramName;
-        }
-
-        @Override
-        public Expression getDefaultValue() {
-            return null;
-        }
-
-        @Override
-        public TemplateNode.Origin getOrigin() {
-            return null;
-        }
     }
 
 }

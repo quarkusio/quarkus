@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.ws.rs.NotSupportedException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
@@ -73,7 +74,7 @@ public class MediaTypeMapper implements ServerRestHandler {
             selectedHolder = resourcesByConsumes.get(MediaType.WILDCARD_TYPE);
         }
         if (selectedHolder == null) {
-            throw new WebApplicationException(Response.status(Response.Status.UNSUPPORTED_MEDIA_TYPE).build());
+            throw new NotSupportedException("The content-type header value did not match the value in @Consumes");
         }
         RuntimeResource selectedResource;
         if (selectedHolder.mtWithoutParamsToResource.size() == 1) {

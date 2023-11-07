@@ -21,7 +21,6 @@ public class BuildDependencyGraphVisitor {
 
     private final MavenArtifactResolver resolver;
     private final ApplicationModelBuilder appBuilder;
-    private final StringBuilder buf;
     private final Consumer<String> buildTreeConsumer;
     private final List<Boolean> depth;
 
@@ -35,10 +34,8 @@ public class BuildDependencyGraphVisitor {
         this.appBuilder = appBuilder;
         this.buildTreeConsumer = buildTreeConsumer;
         if (buildTreeConsumer == null) {
-            buf = null;
             depth = null;
         } else {
-            buf = new StringBuilder();
             depth = new ArrayList<>();
         }
     }
@@ -97,7 +94,7 @@ public class BuildDependencyGraphVisitor {
     }
 
     private void consume(DependencyNode node) {
-        buf.setLength(0);
+        var buf = new StringBuilder();
         if (!depth.isEmpty()) {
             for (int i = 0; i < depth.size() - 1; ++i) {
                 if (depth.get(i)) {

@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -115,7 +114,17 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
 
     public static Collection<Dependency> getDeploymentOnlyDeps(ApplicationModel model) {
         return model.getDependencies().stream().filter(d -> d.isDeploymentCp() && !d.isRuntimeCp())
-                .map(d -> new ArtifactDependency(d)).collect(Collectors.toSet());
+                .map(ArtifactDependency::new).collect(Collectors.toSet());
+    }
+
+    public static Collection<Dependency> getDependenciesWithFlag(ApplicationModel model, int flag) {
+        var set = new HashSet<Dependency>();
+        for (var d : model.getDependencies(flag)) {
+            if (d.isFlagSet(flag)) {
+                set.add(new ArtifactDependency(d));
+            }
+        }
+        return set;
     }
 
     @Override
@@ -159,7 +168,7 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
             }
         }
 
-        List<String> missingEntries = Collections.emptyList();
+        List<String> missingEntries = List.of();
         for (String entry : expectedLib) {
             if (!actualMainLib.remove(entry)) {
                 if (missingEntries.isEmpty()) {

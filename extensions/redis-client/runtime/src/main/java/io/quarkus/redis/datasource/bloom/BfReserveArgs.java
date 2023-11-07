@@ -41,8 +41,8 @@ public class BfReserveArgs implements RedisCommandExtraArguments {
     }
 
     @Override
-    public List<String> toArgs() {
-        List<String> list = new ArrayList<>();
+    public List<Object> toArgs() {
+        List<Object> list = new ArrayList<>();
         if (expansion > 0) {
             list.add("EXPANSION");
             list.add(Integer.toString(expansion));

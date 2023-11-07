@@ -8,17 +8,17 @@ import io.quarkus.redis.datasource.codecs.Codec;
 public interface RedisCommandExtraArguments {
 
     /**
-     * @return the list of arguments, encoded as a list of String.
+     * @return the list of arguments.
      */
-    default List<String> toArgs() {
+    default List<Object> toArgs() {
         return toArgs(null);
     }
 
     /**
      * @param encoder an optional encoder to encode some of the values
-     * @return the list of arguments, encoded as a list of String.
+     * @return the list of arguments.
      */
-    default List<String> toArgs(Codec encoder) {
+    default List<Object> toArgs(Codec encoder) {
         return Collections.emptyList();
     }
 

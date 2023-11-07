@@ -97,8 +97,8 @@ public class XClaimArgs implements RedisCommandExtraArguments {
     }
 
     @Override
-    public List<String> toArgs() {
-        List<String> args = new ArrayList<>();
+    public List<Object> toArgs() {
+        List<Object> args = new ArrayList<>();
 
         if (idle != null) {
             args.add("IDLE");

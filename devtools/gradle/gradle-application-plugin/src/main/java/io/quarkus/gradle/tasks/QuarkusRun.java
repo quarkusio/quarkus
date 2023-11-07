@@ -14,15 +14,18 @@ import javax.inject.Inject;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.model.ObjectFactory;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.AugmentAction;
@@ -36,6 +39,7 @@ import io.quarkus.gradle.extension.QuarkusPluginExtension;
 public abstract class QuarkusRun extends QuarkusBuildTask {
     private final Property<File> workingDirectory;
     private final SourceSet mainSourceSet;
+    private final ListProperty<String> jvmArgs;
 
     @Inject
     public QuarkusRun() {
@@ -50,6 +54,8 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
 
         workingDirectory = objectFactory.property(File.class);
         workingDirectory.convention(getProject().provider(() -> QuarkusPluginExtension.getLastFile(getCompilationOutput())));
+
+        jvmArgs = objectFactory.listProperty(String.class);
     }
 
     /**
@@ -73,6 +79,22 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
     @Deprecated
     public void setWorkingDir(String workingDir) {
         workingDirectory.set(getProject().file(workingDir));
+    }
+
+    @Input
+    public ListProperty<String> getJvmArguments() {
+        return jvmArgs;
+    }
+
+    @Internal
+    public List<String> getJvmArgs() {
+        return jvmArgs.get();
+    }
+
+    @SuppressWarnings("unused")
+    @Option(description = "Set JVM arguments", option = "jvm-args")
+    public void setJvmArgs(List<String> jvmArgs) {
+        this.jvmArgs.set(jvmArgs);
     }
 
     @TaskAction
@@ -122,6 +144,10 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
                         throw new RuntimeException("Should never reach this!");
                     }
                     List<String> args = (List<String>) cmd.get(0);
+                    if (getJvmArguments().isPresent() && !getJvmArguments().get().isEmpty()) {
+                        args.addAll(1, getJvmArgs());
+                    }
+
                     getProject().getLogger().info("Executing \"" + String.join(" ", args) + "\"");
                     Path wd = (Path) cmd.get(1);
                     File wdir = wd != null ? wd.toFile() : workingDirectory.get();

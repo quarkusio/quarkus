@@ -254,6 +254,10 @@
                                         <wait>
                                             <time>20000</time>
                                             <healthy>true</healthy>
+                                            <exec>
+                                                <breakOnError>true</breakOnError>
+                                                <postStart>bash -c eval\ ${@} -- mysql -h localhost -uroot -psecret &lt;/etc/mysql/conf.d/init.sql</postStart>
+                                            </exec>
                                         </wait>
                                         <volumes>
                                             <bind>

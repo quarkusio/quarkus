@@ -1,5 +1,6 @@
 package io.quarkus.rest.client.reactive.jackson.runtime.serialisers;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
@@ -13,11 +14,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 final class JacksonUtil {
 
+    private static final ConcurrentMap<ResolverMapKey, ObjectMapper> contextResolverMap = new ConcurrentHashMap<>();
+
     private JacksonUtil() {
     }
 
-    static ObjectMapper getObjectMapperFromContext(Class<?> type, MediaType responseMediaType, RestClientRequestContext context,
-            ConcurrentMap<ResolverMapKey, ObjectMapper> contextResolverMap) {
+    static ObjectMapper getObjectMapperFromContext(MediaType responseMediaType, RestClientRequestContext context) {
         Providers providers = getProviders(context);
         if (providers == null) {
             return null;
@@ -31,11 +33,11 @@ final class JacksonUtil {
         }
         if (contextResolver != null) {
             var cr = contextResolver;
-            var key = new ResolverMapKey(type, context.getConfiguration(), context.getInvokedMethod().getDeclaringClass());
+            var key = new ResolverMapKey(context.getConfiguration(), context.getInvokedMethod().getDeclaringClass());
             return contextResolverMap.computeIfAbsent(key, new Function<>() {
                 @Override
                 public ObjectMapper apply(ResolverMapKey resolverMapKey) {
-                    return cr.getContext(resolverMapKey.getType());
+                    return cr.getContext(resolverMapKey.getRestClientClass());
                 }
             });
         }

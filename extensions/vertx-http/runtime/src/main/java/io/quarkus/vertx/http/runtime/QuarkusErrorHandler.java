@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -91,6 +92,12 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                 //disabled, this should be handled elsewhere and if we get to this point bad things have happened,
                 //so it is better to send a response than to hang
                 event.response().end();
+                return;
+            }
+
+            if (event.failure() instanceof RejectedExecutionException) {
+                // No more worker threads - return a 503
+                event.response().setStatusCode(HttpResponseStatus.SERVICE_UNAVAILABLE.code()).end();
                 return;
             }
         } catch (IllegalStateException e) {

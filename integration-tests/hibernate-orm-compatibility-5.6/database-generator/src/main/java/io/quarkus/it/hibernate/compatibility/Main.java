@@ -72,7 +72,7 @@ public class Main {
                 checkEqual(createdEntity.duration, loadedEntity.duration);
                 checkEqual(createdEntity.uuid, loadedEntity.uuid);
                 checkEqual(createdEntity.instant, loadedEntity.instant);
-                checkEqual(createdEntity.offsetTime.withOffsetSameInstant(ZoneId.systemDefault().getRules().getOffset(Instant.now())),
+                checkEqual(createdEntity.offsetTime.toLocalTime().atOffset(ZoneId.systemDefault().getRules().getOffset(Instant.now())),
                         loadedEntity.offsetTime);
                 checkEqual(createdEntity.offsetDateTime.atZoneSameInstant(ZoneId.systemDefault()).toOffsetDateTime(),
                         loadedEntity.offsetDateTime);

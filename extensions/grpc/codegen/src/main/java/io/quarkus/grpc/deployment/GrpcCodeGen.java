@@ -1,5 +1,6 @@
 package io.quarkus.grpc.deployment;
 
+import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
 
@@ -56,6 +57,9 @@ public class GrpcCodeGen implements CodeGenProvider {
     private static final String SCAN_FOR_IMPORTS = "quarkus.generate-code.grpc.scan-for-imports";
 
     private static final String POST_PROCESS_SKIP = "quarkus.generate.code.grpc-post-processing.skip";
+    private static final String GENERATE_DESCRIPTOR_SET = "quarkus.generate-code.grpc.descriptor-set.generate";
+    private static final String DESCRIPTOR_SET_OUTPUT_DIR = "quarkus.generate-code.grpc.descriptor-set.output-dir";
+    private static final String DESCRIPTOR_SET_FILENAME = "quarkus.generate-code.grpc.descriptor-set.name";
 
     private Executables executables;
     private String input;
@@ -149,6 +153,11 @@ public class GrpcCodeGen implements CodeGenProvider {
                         "--q-grpc_out=" + outDir,
                         "--grpc_out=" + outDir,
                         "--java_out=" + outDir));
+
+                if (shouldGenerateDescriptorSet(context.config())) {
+                    command.add(String.format("--descriptor_set_out=%s", getDescriptorSetOutputFile(context)));
+                }
+
                 command.addAll(protoFiles);
 
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
@@ -260,6 +269,25 @@ public class GrpcCodeGen implements CodeGenProvider {
     private boolean isGeneratingFromAppDependenciesEnabled(Config config) {
         return config.getOptionalValue(SCAN_DEPENDENCIES_FOR_PROTO, String.class)
                 .filter(value -> !"none".equals(value)).isPresent();
+    }
+
+    private boolean shouldGenerateDescriptorSet(Config config) {
+        return config.getOptionalValue(GENERATE_DESCRIPTOR_SET, Boolean.class).orElse(FALSE);
+    }
+
+    private Path getDescriptorSetOutputFile(CodeGenContext context) throws IOException {
+        var dscOutputDir = context.config().getOptionalValue(DESCRIPTOR_SET_OUTPUT_DIR, String.class)
+                .map(context.workDir()::resolve)
+                .orElseGet(context::outDir);
+
+        if (Files.notExists(dscOutputDir)) {
+            Files.createDirectories(dscOutputDir);
+        }
+
+        var dscFilename = context.config().getOptionalValue(DESCRIPTOR_SET_FILENAME, String.class)
+                .orElse("descriptor_set.dsc");
+
+        return dscOutputDir.resolve(dscFilename).normalize();
     }
 
     private Collection<String> gatherDirectoriesWithImports(Path workDir, CodeGenContext context) throws CodeGenException {

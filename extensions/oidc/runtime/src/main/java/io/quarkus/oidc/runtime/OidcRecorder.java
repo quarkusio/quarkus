@@ -30,7 +30,7 @@ import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.OidcTenantConfig.TokenStateManager.Strategy;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.TenantIdentityProvider;
-import io.quarkus.oidc.common.OidcClientRequestFilter;
+import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.runtime.LaunchMode;
@@ -434,7 +434,7 @@ public class OidcRecorder {
 
         WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
 
-        List<OidcClientRequestFilter> clientRequestFilters = OidcCommonUtils.getClientRequestCustomizer();
+        List<OidcRequestFilter> clientRequestFilters = OidcCommonUtils.getClientRequestCustomizer();
 
         Uni<OidcConfigurationMetadata> metadataUni = null;
         if (!oidcConfig.discoveryEnabled.orElse(true)) {

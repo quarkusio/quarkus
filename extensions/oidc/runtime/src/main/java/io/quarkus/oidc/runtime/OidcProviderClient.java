@@ -15,7 +15,7 @@ import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
-import io.quarkus.oidc.common.OidcClientRequestFilter;
+import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.OidcEndpointAccessException;
@@ -45,12 +45,12 @@ public class OidcProviderClient implements Closeable {
     private final String clientSecretBasicAuthScheme;
     private final String introspectionBasicAuthScheme;
     private final Key clientJwtKey;
-    private final List<OidcClientRequestFilter> filters;
+    private final List<OidcRequestFilter> filters;
 
     public OidcProviderClient(WebClient client,
             OidcConfigurationMetadata metadata,
             OidcTenantConfig oidcConfig,
-            List<OidcClientRequestFilter> filters) {
+            List<OidcRequestFilter> filters) {
         this.client = client;
         this.metadata = metadata;
         this.oidcConfig = oidcConfig;
@@ -220,8 +220,8 @@ public class OidcProviderClient implements Closeable {
     }
 
     private HttpRequest<Buffer> filter(HttpRequest<Buffer> request, Buffer body) {
-        for (OidcClientRequestFilter filter : filters) {
-            filter.filter(request, body);
+        for (OidcRequestFilter filter : filters) {
+            filter.filter(request, body, null);
         }
         return request;
     }

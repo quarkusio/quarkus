@@ -17,7 +17,7 @@ import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClientConfig;
 import io.quarkus.oidc.client.OidcClientException;
 import io.quarkus.oidc.client.Tokens;
-import io.quarkus.oidc.common.OidcClientRequestFilter;
+import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.smallrye.mutiny.Uni;
@@ -46,12 +46,12 @@ public class OidcClientImpl implements OidcClient {
     private final String clientSecretBasicAuthScheme;
     private final Key clientJwtKey;
     private final OidcClientConfig oidcConfig;
-    private final List<OidcClientRequestFilter> filters;
+    private final List<OidcRequestFilter> filters;
     private volatile boolean closed;
 
     public OidcClientImpl(WebClient client, String tokenRequestUri, String tokenRevokeUri, String grantType,
             MultiMap tokenGrantParams, MultiMap commonRefreshGrantParams, OidcClientConfig oidcClientConfig,
-            List<OidcClientRequestFilter> filters) {
+            List<OidcRequestFilter> filters) {
         this.client = client;
         this.tokenRequestUri = tokenRequestUri;
         this.tokenRevokeUri = tokenRevokeUri;
@@ -260,8 +260,8 @@ public class OidcClientImpl implements OidcClient {
     }
 
     private HttpRequest<Buffer> filter(HttpRequest<Buffer> request, Buffer body) {
-        for (OidcClientRequestFilter filter : filters) {
-            filter.filter(request, body);
+        for (OidcRequestFilter filter : filters) {
+            filter.filter(request, body, null);
         }
         return request;
     }

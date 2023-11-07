@@ -17,7 +17,7 @@ import io.quarkus.oidc.client.OidcClientConfig.Grant;
 import io.quarkus.oidc.client.OidcClientException;
 import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.Tokens;
-import io.quarkus.oidc.common.OidcClientRequestFilter;
+import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.runtime.TlsConfig;
@@ -122,7 +122,7 @@ public class OidcClientRecorder {
 
         WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx.get()), options);
 
-        List<OidcClientRequestFilter> clientRequestFilters = OidcCommonUtils.getClientRequestCustomizer();
+        List<OidcRequestFilter> clientRequestFilters = OidcCommonUtils.getClientRequestCustomizer();
 
         Uni<OidcConfigurationMetadata> tokenUrisUni = null;
         if (OidcCommonUtils.isAbsoluteUrl(oidcConfig.tokenPath)) {
@@ -211,7 +211,7 @@ public class OidcClientRecorder {
     }
 
     private static Uni<OidcConfigurationMetadata> discoverTokenUris(WebClient client,
-            List<OidcClientRequestFilter> clientRequestFilters,
+            List<OidcRequestFilter> clientRequestFilters,
             String authServerUrl, OidcClientConfig oidcConfig) {
         final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
         return OidcCommonUtils.discoverMetadata(client, clientRequestFilters, authServerUrl, connectionDelayInMillisecs)

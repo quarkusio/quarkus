@@ -873,9 +873,9 @@ quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".min-lev
 ----
 
 [[oidc-client-filters]]
-== Client request customization
+== OIDC request customization
 
-You can customize OIDC client requests by registering one or more `OidcClientRequestFiler` implementations which can update or add new request headers, for example, a filter can analyze the request body and add its digest as a new header value:
+You can customize OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFiler` implementations which can update or add new request headers, for example, a filter can analyze the request body and add its digest as a new header value:
 
 [source,java]
 ----
@@ -884,17 +884,18 @@ package io.quarkus.it.keycloak;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.Unremovable;
-import io.quarkus.oidc.common.OidcClientRequestFilter;
+import io.quarkus.oidc.common.OidcRequestContextProperties;
+import io.quarkus.oidc.common.OidcRequestFilter;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 
 @ApplicationScoped
 @Unremovable
-public class OidcClientRequestCustomizer implements OidcClientRequestFilter {
+public class OidcRequestCustomizer implements OidcRequestFilter {
 
     @Override
-    public void filter(HttpRequest<Buffer> request, Buffer buffer) {
+    public void filter(HttpRequest<Buffer> request, Buffer buffer, OidcRequestContextProperties contextProperties) {
         HttpMethod method = request.method();
         String uri = request.uri();
         if (method == HttpMethod.POST && uri.endsWith("/service") && buffer != null) {

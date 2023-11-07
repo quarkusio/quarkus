@@ -40,8 +40,8 @@ public class XGroupCreateArgs implements RedisCommandExtraArguments {
     }
 
     @Override
-    public List<String> toArgs() {
-        List<String> args = new ArrayList<>();
+    public List<Object> toArgs() {
+        List<Object> args = new ArrayList<>();
         if (mkstream) {
             args.add("MKSTREAM");
         }

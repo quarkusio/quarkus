@@ -208,6 +208,9 @@ public final class OidcUtils {
             return convertJsonArrayToList((JsonArray) claimValue);
         } else if (claimValue != null) {
             String sep = rolesConfig.getRoleClaimSeparator().isPresent() ? rolesConfig.getRoleClaimSeparator().get() : " ";
+            if (claimValue.toString().isBlank()) {
+                return Collections.emptyList();
+            }
             return Arrays.asList(claimValue.toString().split(sep));
         } else {
             return Collections.emptyList();
@@ -237,6 +240,10 @@ public final class OidcUtils {
     private static List<String> convertJsonArrayToList(JsonArray claimValue) {
         List<String> list = new ArrayList<>(claimValue.size());
         for (int i = 0; i < claimValue.size(); i++) {
+            String claimValueStr = claimValue.getString(i);
+            if (claimValueStr == null || claimValueStr.isBlank()) {
+                continue;
+            }
             list.add(claimValue.getString(i));
         }
         return list;

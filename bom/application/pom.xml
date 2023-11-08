@@ -179,7 +179,7 @@
         <javaparser.version>3.25.6</javaparser.version>
         <okhttp.version>3.14.9</okhttp.version><!-- keep in sync with okio -->
         <okio.version>1.17.6</okio.version><!-- keep in sync with okhttp -->
-        <hibernate-quarkus-local-cache.version>0.2.1</hibernate-quarkus-local-cache.version>
+        <hibernate-quarkus-local-cache.version>0.3.0</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.9.2</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP7</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>

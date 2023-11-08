@@ -184,7 +184,7 @@ public class GeoSearchArgs<V> implements RedisCommandExtraArguments {
     }
 
     @Override
-    public List<String> toArgs(Codec codec) {
+    public List<Object> toArgs(Codec codec) {
         // Validation
         if (any && count == -1) {
             throw new IllegalArgumentException("ANY can only be used if COUNT is also set");
@@ -198,7 +198,7 @@ public class GeoSearchArgs<V> implements RedisCommandExtraArguments {
             throw new IllegalArgumentException("FROMMEMBER and FROMLONLAT cannot be used together");
         }
 
-        List<String> list = new ArrayList<>();
+        List<Object> list = new ArrayList<>();
         if (member != null) {
             list.add("FROMMEMBER");
             list.add(new String(codec.encode(member), StandardCharsets.UTF_8));
@@ -249,7 +249,7 @@ public class GeoSearchArgs<V> implements RedisCommandExtraArguments {
         return withCoordinates;
     }
 
-    private void putFlag(List<String> list, boolean flag, String value) {
+    private void putFlag(List<Object> list, boolean flag, String value) {
         if (flag) {
             list.add(value);
         }

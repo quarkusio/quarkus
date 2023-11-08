@@ -88,7 +88,7 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
 
     }
 
-    private final List<String> commands = new ArrayList<>();
+    private final List<Object> commands = new ArrayList<>();
     private BitFieldType previousBitFieldType;
 
     /**
@@ -351,7 +351,7 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
         }
     }
 
-    public List<String> toArgs() {
+    public List<Object> toArgs() {
         return commands;
     }
 

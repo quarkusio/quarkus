@@ -155,9 +155,12 @@ public interface Template {
     Optional<Variant> getVariant();
 
     /**
+     * Returns all type parameter declarations of the template, including the declarations added by a
+     * {@link io.quarkus.qute.ParserHook}.
+     * <p>
      * If invoked upon a fragment instance then delegate to the defining template.
      *
-     * @return an immutable list of all parameter declarations defined in the template
+     * @return an immutable list of all type parameter declarations defined in the template
      */
     List<ParameterDeclaration> getParameterDeclarations();
 

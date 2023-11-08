@@ -5,20 +5,36 @@ on:
     workflows: [ "Quarkus CI" ]
     types: [ completed ]
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   publish-build-scans:
-    if: github.repository == 'quarkusio/quarkus'
+    if: github.repository == 'quarkusio/quarkus' && github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
     steps:
-      - name: Verify Terms of Service acceptance job passed
-        uses: gradle/github-actions/terms-of-service-acceptance/verify@v1-beta
-        with:
-          terms-of-service-acceptance-workflow-job-name: 'run-terms-of-service-acceptance'
+      - uses: actions/checkout@v4
+      - name: Extract preapproved developers list
+        id: extract-preapproved-developers
+        run: |
+          preapproveddevelopers=$(cat .github/develocity-preapproved-developers.json)
+          echo "preapproved-developpers=${preapproveddevelopers}" >> $GITHUB_OUTPUT
       - name: Publish Maven Build Scans
         uses: gradle/github-actions/maven-build-scan/publish@v1-beta
+        if: ${{ contains(fromJson(steps.extract-preapproved-developers.outputs.preapproved-developpers).preapproved-developers, github.event.workflow_run.actor.login) }}
         with:
           develocity-url: 'https://ge.quarkus.io'
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
           skip-comment: true
+      - name: Push to summary
+        run: |
+          echo -n "Pull request: " >> ${GITHUB_STEP_SUMMARY}
+          cat pr-number.out >> ${GITHUB_STEP_SUMMARY}
+          echo >> ${GITHUB_STEP_SUMMARY}
+          echo >> ${GITHUB_STEP_SUMMARY}
+          echo "| Job | Status | Build scan |" >> ${GITHUB_STEP_SUMMARY}
+          echo "|---|---|---|" >> ${GITHUB_STEP_SUMMARY}
+          cat publication.out >> ${GITHUB_STEP_SUMMARY}

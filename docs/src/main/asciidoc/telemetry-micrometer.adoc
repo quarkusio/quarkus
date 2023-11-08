@@ -603,8 +603,59 @@ The `@Timed` annotation will wrap the execution of a method and will emit the fo
 in addition to any tags defined on the annotation itself:
 class, method, and exception (either "none" or the simple class name of a detected exception).
 
-Using annotations is limited, as you can't dynamically assign meaningful tag values.
-Also note that many methods, e.g. REST endpoint methods or Vert.x Routes, are counted and timed by the micrometer extension out of the box.
+Parameters to `@Counted` and `@Timed` can be annotated with `@MeterTag` to dynamically assign meaningful tag values.
+
+`MeterTag.resolver` can be used to extract a tag from a method parameter, by creating a bean
+implementing `io.micrometer.common.annotation.ValueResolver` and referring to this class: `@MeterTag(resolver=CustomResolver.class)
+
+`MeterTag.expression` is also supported, but you have to implement the evaluation of the expression
+by creating a bean implementing `io.micrometer.common.annotation.ValueExpressionResolver` that can evaluate expressions.
+
+[source,java]
+----
+enum Currency { USD, EUR }
+
+@Singleton
+class EnumOrdinalResolver implements ValueResolver {
+    @Override
+    public String resolve(Object parameter) {
+        if(parameter instanceof Enum) {
+            return String.valueOf(((Enum<?>) parameter).ordinal());
+        }
+        return null;
+    }
+}
+
+@Singleton
+public class MyExpressionResolver implements ValueExpressionResolver {
+    @Override
+    public String resolve(String expression, Object parameter) {
+        return someParser.parse(expression).evaluate(parameter);
+    }
+}
+
+// tags = type=with_enum, currency=${currency.toString()}
+@Timed(value="time_something", extraTags = {"type", "with_enum"})
+public Something calculateSomething(@MeterTag Currency currency) { ... }
+
+// tags = type=with_enum, the_currency=${currency.toString()}
+@Timed(value="time_something", extraTags = {"type", "with_enum"})
+public Something calculateSomething(@MeterTag(key="the_currency") Currency currency) { ... }
+
+// tags = type=with_enum, currency=${currency.ordinal()}
+@Timed(value="time_something", extraTags = {"type", "with_enum"})
+public Something calculateSomething(@MeterTag(resolver=EnumOrdinalResolver.class) Currency currency) { ... }
+
+// tags = type=with_enum, currency=${currency.ordinal()}
+@Timed(value="time_something", extraTags = {"type", "with_enum"})
+public Something calculateSomething(@MeterTag(expression="currency.ordinal()") Currency currency) { ... }
+----
+
+IMPORTANT: Provided tag values MUST BE of LOW-CARDINALITY.
+High-cardinality values can lead to performance and storage issues in your metrics backend (a "cardinality explosion").
+Tag values should not use end-user data, since those could be high-cardinality.
+
+Many methods, like REST endpoint methods or Vert.x Routes, are counted and timed by the micrometer extension out of the box.
 
 == Support for the MicroProfile Metrics API
 

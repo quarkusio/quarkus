@@ -51,6 +51,7 @@ import io.quarkus.micrometer.runtime.MeterFilterConstraints;
 import io.quarkus.micrometer.runtime.MeterRegistryCustomizer;
 import io.quarkus.micrometer.runtime.MeterRegistryCustomizerConstraint;
 import io.quarkus.micrometer.runtime.MeterRegistryCustomizerConstraints;
+import io.quarkus.micrometer.runtime.MeterTagsSupport;
 import io.quarkus.micrometer.runtime.MicrometerCounted;
 import io.quarkus.micrometer.runtime.MicrometerCountedInterceptor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
@@ -73,6 +74,7 @@ public class MicrometerProcessor {
     private static final DotName COUNTED_INTERCEPTOR = DotName.createSimple(MicrometerCountedInterceptor.class.getName());
     private static final DotName TIMED_ANNOTATION = DotName.createSimple(Timed.class.getName());
     private static final DotName TIMED_INTERCEPTOR = DotName.createSimple(MicrometerTimedInterceptor.class.getName());
+    private static final DotName METER_TAG_SUPPORT = DotName.createSimple(MeterTagsSupport.class.getName());
 
     public static class MicrometerEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
@@ -123,6 +125,7 @@ public class MicrometerProcessor {
                 .addBeanClass(COUNTED_ANNOTATION.toString())
                 .addBeanClass(COUNTED_BINDING.toString())
                 .addBeanClass(COUNTED_INTERCEPTOR.toString())
+                .addBeanClass(METER_TAG_SUPPORT.toString())
                 .build());
 
         // @Timed is registered as an additional interceptor binding

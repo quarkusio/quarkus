@@ -3291,7 +3291,7 @@
                 <artifactId>importmap</artifactId>
                 <version>${importmap.version}</version>
             </dependency>
-            
+
             <!-- Additional dependencies, keep in alphabetical order -->
             <dependency>
                 <groupId>biz.paluch.logging</groupId>
@@ -6343,6 +6343,12 @@
                             <excludeScopes>test</excludeScopes>
                             <excludeArtifactKeys>
                                 <key>junit:junit</key> <!-- comes from the jackson-bom -->
+
+                                <!-- jboss-parent:40 still manages jdk-misc, but does not define version.jdk-misc anymore. -->
+                                <!-- We can just remove it because is not needed anyway. -->
+                                <!-- The exclusion can be removed once all imported BOMs depend on jboss-parent:41+ -->
+                                <!-- See also https://github.com/jboss/jboss-parent-pom/issues/236 -->
+                                <key>org.jboss:jdk-misc</key>
                             </excludeArtifactKeys>
                         </configuration>
                     </execution>

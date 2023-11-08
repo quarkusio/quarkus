@@ -43,7 +43,8 @@ final class Sync implements CacheTransactionSynchronization {
         tasks[index++] = task;
     }
 
-    public long getCurrentTransactionStartTimestamp() {
+    @Override
+    public long getCachingTimestamp() {
         return transactionStartTimestamp;
     }
 

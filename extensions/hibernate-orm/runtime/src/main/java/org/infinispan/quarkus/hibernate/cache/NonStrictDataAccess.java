@@ -135,7 +135,7 @@ final class NonStrictDataAccess implements InternalDataAccess {
     public boolean afterInsert(Object session, Object key, Object value, Object version) {
         assert value != null;
         assert version != null;
-        final long timestamp = ((SharedSessionContractImplementor) session).getTransactionStartTimestamp();
+        final long timestamp = ((SharedSessionContractImplementor) session).getCacheTransactionSynchronization().getCachingTimestamp();
         cache.compute(key, new ComputeFn(new VersionedEntry(value, version, timestamp), internalRegion));
         return true;
     }
@@ -144,7 +144,7 @@ final class NonStrictDataAccess implements InternalDataAccess {
     public boolean afterUpdate(Object session, Object key, Object value, Object currentVersion, Object previousVersion, SoftLock lock) {
         assert value != null;
         assert currentVersion != null;
-        final long timestamp = ((SharedSessionContractImplementor) session).getTransactionStartTimestamp();
+        final long timestamp = ((SharedSessionContractImplementor) session).getCacheTransactionSynchronization().getCachingTimestamp();
         cache.compute(key, new ComputeFn(new VersionedEntry(value, currentVersion, timestamp), internalRegion));
         return true;
     }

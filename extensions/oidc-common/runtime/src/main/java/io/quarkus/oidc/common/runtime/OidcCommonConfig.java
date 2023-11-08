@@ -250,7 +250,7 @@ public class OidcCommonConfig {
             public Optional<String> keyFile = Optional.empty();
 
             /**
-             * If provided, indicates that JWT is signed using a private key from a keystore
+             * If provided, indicates that JWT is signed using a private key from a keystore.
              */
             @ConfigItem
             public Optional<String> keyStoreFile = Optional.empty();
@@ -432,7 +432,7 @@ public class OidcCommonConfig {
         public Optional<Verification> verification = Optional.empty();
 
         /**
-         * An optional keystore which holds the certificate information instead of specifying separate files.
+         * An optional keystore that holds the certificate information instead of specifying separate files.
          */
         @ConfigItem
         public Optional<Path> keyStoreFile = Optional.empty();

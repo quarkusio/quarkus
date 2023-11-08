@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.datasource.search.AggregateArgs;
 import io.quarkus.redis.datasource.search.CreateArgs;
+import io.quarkus.redis.datasource.search.DistanceMetric;
 import io.quarkus.redis.datasource.search.Document;
 import io.quarkus.redis.datasource.search.FieldOptions;
 import io.quarkus.redis.datasource.search.FieldType;
@@ -28,11 +29,11 @@ import io.quarkus.redis.datasource.search.QueryArgs;
 import io.quarkus.redis.datasource.search.SearchCommands;
 import io.quarkus.redis.datasource.search.SearchQueryResponse;
 import io.quarkus.redis.datasource.search.SpellCheckArgs;
+import io.quarkus.redis.datasource.search.VectorAlgorithm;
+import io.quarkus.redis.datasource.search.VectorType;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Request;
 
 /**
  * Lots of tests are using await().untilAsserted as the indexing process runs in the background.
@@ -852,13 +853,16 @@ public class SearchCommandsTest extends DatasourceTestBase {
 
     @Test
     void testKNearestNeighborsDouble() {
-        redis.sendAndAwait(Request.cmd(Command.FT_CREATE)
-                .arg("IDX:double")
-                .arg("ON").arg("JSON")
-                .arg("PREFIX").arg("1").arg("indexed:")
-                .arg("SCHEMA")
-                .arg("$.vector").arg("AS").arg("vector").arg("VECTOR").arg("HNSW")
-                .arg("6").arg("DIM").arg("6").arg("DISTANCE_METRIC").arg("COSINE").arg("TYPE").arg("FLOAT64"));
+        ds.search().ftCreate("IDX:double",
+                new CreateArgs()
+                        .onJson()
+                        .prefixes("indexed:")
+                        .indexedField("$.vector", "vector", FieldType.VECTOR,
+                                new FieldOptions()
+                                        .vectorAlgorithm(VectorAlgorithm.HNSW)
+                                        .dimension(6)
+                                        .distanceMetric(DistanceMetric.COSINE)
+                                        .vectorType(VectorType.FLOAT64)));
 
         double[] queryVector = new double[] { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0 };
 
@@ -881,13 +885,16 @@ public class SearchCommandsTest extends DatasourceTestBase {
 
     @Test
     void testKNearestNeighborsFloat() {
-        redis.sendAndAwait(Request.cmd(Command.FT_CREATE)
-                .arg("IDX:float")
-                .arg("ON").arg("JSON")
-                .arg("PREFIX").arg("1").arg("indexed:")
-                .arg("SCHEMA")
-                .arg("$.vector").arg("AS").arg("vector").arg("VECTOR").arg("HNSW")
-                .arg("6").arg("DIM").arg("6").arg("DISTANCE_METRIC").arg("COSINE").arg("TYPE").arg("FLOAT32"));
+        ds.search().ftCreate("IDX:float",
+                new CreateArgs()
+                        .onJson()
+                        .prefixes("indexed:")
+                        .indexedField("$.vector", "vector", FieldType.VECTOR,
+                                new FieldOptions()
+                                        .vectorAlgorithm(VectorAlgorithm.HNSW)
+                                        .dimension(6)
+                                        .distanceMetric(DistanceMetric.COSINE)
+                                        .vectorType(VectorType.FLOAT32)));
 
         float[] queryVector = new float[] { 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f };
 

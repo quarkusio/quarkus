@@ -364,6 +364,7 @@ public class QueryArgs implements RedisCommandExtraArguments {
 
     /**
      * Defines a parameter with a byte array value.
+     *
      * @param name the parameter name
      * @param value the parameter value as byte array
      * @return the current {@code QueryArgs}
@@ -375,6 +376,7 @@ public class QueryArgs implements RedisCommandExtraArguments {
 
     /**
      * Defines a parameter with a float array value.
+     *
      * @param name the parameter name
      * @param value the parameter value as array of floats
      * @return the current {@code QueryArgs}
@@ -386,6 +388,7 @@ public class QueryArgs implements RedisCommandExtraArguments {
 
     /**
      * Defines a parameter with a double array value.
+     *
      * @param name the parameter name
      * @param value the parameter value as array of doubles
      * @return the current {@code QueryArgs}
@@ -397,6 +400,7 @@ public class QueryArgs implements RedisCommandExtraArguments {
 
     /**
      * Defines a parameter with an int array value.
+     *
      * @param name the parameter name
      * @param value the parameter value as array of ints
      * @return the current {@code QueryArgs}
@@ -408,6 +412,7 @@ public class QueryArgs implements RedisCommandExtraArguments {
 
     /**
      * Defines a parameter with a long array value.
+     *
      * @param name the parameter name
      * @param value the parameter value as array of longs
      * @return the current {@code QueryArgs}

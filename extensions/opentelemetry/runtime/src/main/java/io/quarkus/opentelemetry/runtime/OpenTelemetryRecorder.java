@@ -10,6 +10,7 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
 
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.spi.Converter;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
@@ -20,8 +21,6 @@ import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.DurationConverter;
-import io.smallrye.config.ConfigValue;
-import io.smallrye.config.NameIterator;
 import io.smallrye.config.SmallRyeConfig;
 import io.vertx.core.Vertx;
 
@@ -89,46 +88,58 @@ public class OpenTelemetryRecorder {
                 // load new properties
                 for (String propertyName : config.getPropertyNames()) {
                     if (propertyName.startsWith("quarkus.otel.")) {
-                        ConfigValue configValue = config.getConfigValue(propertyName);
-                        if (configValue.getValue() != null) {
-                            NameIterator name = new NameIterator(propertyName);
-                            name.next();
-                            oTelConfigs.put(name.getName().substring(name.getPosition() + 1), getValue(configValue));
-                        }
+                        String value = getValue(config, propertyName);
+                        oTelConfigs.put(propertyName.substring(8), value);
                     }
                 }
                 return oTelConfigs;
             }
 
-            /**
-             * Transforms the value to what OTel expects
-             * TODO: this is super simplistic, and should be more modular if needed
-             */
-            private String getValue(ConfigValue configValue) {
-                String name = configValue.getName();
-                if (name.endsWith("timeout") || name.endsWith("delay")) {
-                    String value = configValue.getValue();
-                    if (DurationConverter.DIGITS.asPredicate().test(value)) {
-                        // OTel regards values without a unit to me milliseconds instead of seconds
-                        // that java.time.Duration assumes, so let's just not do any conversion and let OTel handle with it
-                        return value;
-                    }
-                    Duration duration;
-                    try {
-                        duration = DurationConverter.parseDuration(value);
-                    } catch (Exception ignored) {
-                        // it's not a Duration, so we can't do much
-                        return configValue.getValue();
-                    }
-                    try {
-                        return duration.toMillis() + "ms";
-                    } catch (Exception ignored) {
-                        return duration.toSeconds() + "s";
-                    }
+            private String getValue(SmallRyeConfig config, String propertyName) {
+                if (propertyName.endsWith("timeout") || propertyName.endsWith("delay")) {
+                    return config.getValue(propertyName, OTelDurationConverter.INSTANCE);
+                } else {
+                    return config.getValue(propertyName, String.class);
                 }
-                return configValue.getValue();
             }
         };
     }
 
+    /**
+     * Transforms the value to what OTel expects
+     * TODO: this is super simplistic, and should be more modular if needed
+     */
+    private static class OTelDurationConverter implements Converter<String> {
+        static OTelDurationConverter INSTANCE = new OTelDurationConverter();
+
+        @Override
+        public String convert(final String value) throws IllegalArgumentException, NullPointerException {
+            if (value == null) {
+                throw new NullPointerException();
+            }
+
+            if (DurationConverter.DIGITS.asPredicate().test(value)) {
+                // OTel regards values without a unit to me milliseconds instead of seconds
+                // that java.time.Duration assumes, so let's just not do any conversion and let OTel handle with it
+                return value;
+            }
+            Duration duration;
+            try {
+                duration = DurationConverter.parseDuration(value);
+            } catch (Exception ignored) {
+                // it's not a Duration, so we can't do much
+                return value;
+            }
+
+            if (duration == null) {
+                return value;
+            }
+
+            try {
+                return duration.toMillis() + "ms";
+            } catch (Exception ignored) {
+                return duration.toSeconds() + "s";
+            }
+        }
+    }
 }

@@ -924,8 +924,10 @@ public class NativeImageBuildStep {
 
                 if (nativeConfig.autoServiceLoaderRegistration()) {
                     addExperimentalVMOption(nativeImageArgs, "-H:+UseServiceLoaderFeature");
-                    //When enabling, at least print what exactly is being added:
-                    nativeImageArgs.add("-H:+TraceServiceLoaderFeature");
+                    if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) < 0) {
+                        // When enabling, at least print what exactly is being added. Only possible in <23.1.0
+                        nativeImageArgs.add("-H:+TraceServiceLoaderFeature");
+                    }
                 } else {
                     addExperimentalVMOption(nativeImageArgs, "-H:-UseServiceLoaderFeature");
                 }

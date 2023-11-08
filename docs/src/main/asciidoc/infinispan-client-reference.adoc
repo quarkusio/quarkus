@@ -52,7 +52,7 @@ You need at least one running instance of the Infinispan Server.
 
 .Development mode
 
-If you are running a Docker instance, you can use link:infinispan-dev-services.adoc[Infinispan Dev Services]
+If you are running a Docker instance, you can use xref:infinispan-dev-services.adoc[Infinispan Dev Services]
 and connect without configuration.
 
 If you want to run the server yourself using Docker, check out the 5-minute https://infinispan.org/get-started/[Getting stated with Infinispan]

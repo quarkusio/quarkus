@@ -64,6 +64,7 @@ import io.quarkus.oidc.deployment.devservices.OidcDevServicesBuildItem;
 import io.quarkus.oidc.runtime.devui.OidcDevServicesUtils;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
@@ -626,8 +627,11 @@ public class KeycloakDevServicesProcessor {
                     keycloakUrl + "/realms/master/protocol/openid-connect/token",
                     "admin-cli", null, "admin", "admin", null)
                     .await().atMost(oidcConfig.devui.webClientTimeout);
+        } catch (TimeoutException e) {
+            LOG.error("Admin token can not be acquired due to a client connection timeout. " +
+                    "You may try increasing the `quarkus.oidc.devui.web-client-timeout` property.");
         } catch (Throwable t) {
-            LOG.errorf("Admin token can not be acquired: %s", t.getMessage());
+            LOG.error("Admin token can not be acquired", t);
         }
         return null;
     }
@@ -673,7 +677,7 @@ public class KeycloakDevServicesProcessor {
         } catch (Throwable t) {
             errors.add(String.format("Realm %s can not be created: %s", realm.getRealm(), t.getMessage()));
 
-            LOG.errorf("Realm %s can not be created: %s", realm.getRealm(), t.getMessage());
+            LOG.errorf(t, "Realm %s can not be created", realm.getRealm());
         }
     }
 

@@ -43,9 +43,9 @@ public class DevUIReactiveMessagingJsonRPCTest extends DevUIJsonRPCTest {
                 consumerExists = typeAndDescriptionExist(consumers, "CHANNEL",
                         "<code>io.quarkus.test.devui.MyProcessor#channel</code>");
             }
-            JsonNode publisher = channel.get("publisher");
-            if (publisher != null) {
-                publisherExists = typeAndDescriptionExist(publisher, "PROCESSOR",
+            JsonNode publishers = channel.get("publishers");
+            if (publishers != null) {
+                publisherExists = typeAndDescriptionExist(publishers, "PROCESSOR",
                         "<code>io.quarkus.test.devui.MyProcessor#process()</code>");
             }
         }

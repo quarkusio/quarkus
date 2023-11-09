@@ -24,7 +24,7 @@ public class ReactiveMessagingJsonRpcService {
     private JsonObject toJson(DevReactiveMessagingInfos.DevChannelInfo channel) {
         JsonObject json = new JsonObject();
         json.put("name", channel.getName());
-        json.put("publisher", toJson(channel.getPublisher()));
+        json.put("publishers", toJson(channel.getPublishers()));
         json.put("consumers", toJson(channel.getConsumers()));
         return json;
     }

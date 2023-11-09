@@ -41,6 +41,16 @@ final class TopologyParserContext {
                 });
     }
 
+    void addRegexSource(String source, String regex) {
+        currentNode = source;
+        final var cleanRegex = regex.trim();
+        if (!cleanRegex.isEmpty()) {
+            sources.add(cleanRegex);
+            graphviz.addRegexSource(source, cleanRegex);
+            mermaid.addRegexSource(source, cleanRegex);
+        }
+    }
+
     void addStores(String[] stores, String processor, boolean join) {
         currentNode = processor;
         Arrays.stream(stores)
@@ -71,8 +81,8 @@ final class TopologyParserContext {
             final var res = new ArrayList<String>();
 
             res.add("digraph {");
-            res.add(" fontname=\"Helvetica\"; fontsize=\"10\";");
-            res.add(" node [style=filled fillcolor=white color=\"#C9B7DD\" shape=box fontname=\"Helvetica\" fontsize=\"10\"];");
+            res.add(" fontname=Helvetica; fontsize=10;");
+            res.add(" node [style=filled fillcolor=white color=\"#C9B7DD\" shape=box fontname=Helvetica fontsize=10];");
             nodes.forEach(n -> res.add(' ' + n + ';'));
             subGraphs.entrySet().forEach(e -> {
                 res.add(" subgraph cluster" + e.getKey() + " {");
@@ -80,11 +90,6 @@ final class TopologyParserContext {
                 e.getValue().forEach(v -> res.add("  " + v + ';'));
                 res.add(" }");
             });
-            for (int i = 0; i < subGraphs.size(); i++) {
-                res.add(" subgraph cluster" + i + " {");
-                res.add("  label=\"Sub-Topology: " + i + "\"; color=\"#C8C879\"; bgcolor=\"#FFFFDE\";");
-                res.add(" }");
-            }
             edges.forEach(e -> res.add(' ' + e + ';'));
             res.add("}");
 
@@ -105,6 +110,15 @@ final class TopologyParserContext {
             nodes.add(toId(topic) + " [label=\"" + toLabel(topic) + "\" shape=invhouse margin=\"0,0\"]");
             nodes.add(toId(source) + " [label=\"" + toLabel(source) + "\"]");
             edges.add(toId(topic) + " -> " + toId(source));
+            subGraphs.get(currentGraph).add(toId(source));
+        }
+
+        private void addRegexSource(String source, String regex) {
+            final var regexId = "REGEX_" + nodes.size();
+            final var regexLabel = regex.replaceAll("\\\\", "\\\\\\\\");
+            nodes.add(regexId + " [label=\"" + regexLabel + "\" shape=invhouse style=dashed margin=\"0,0\"]");
+            nodes.add(toId(source) + " [label=\"" + toLabel(source) + "\"]");
+            edges.add(regexId + " -> " + toId(source));
             subGraphs.get(currentGraph).add(toId(source));
         }
 
@@ -162,6 +176,10 @@ final class TopologyParserContext {
 
         private void addSource(String source, String topic) {
             endpoints.add(topic + '[' + topic + "] --> " + source + '(' + toName(source) + ')');
+        }
+
+        private void addRegexSource(String source, String regex) {
+            endpoints.add("REGEX_" + endpoints.size() + '[' + regex + "] --> " + source + '(' + toName(source) + ')');
         }
 
         private void addTarget(String target, String node) {

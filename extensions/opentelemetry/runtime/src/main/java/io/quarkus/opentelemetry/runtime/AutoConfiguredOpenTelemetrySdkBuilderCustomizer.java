@@ -3,6 +3,8 @@ package io.quarkus.opentelemetry.runtime;
 import static java.lang.Boolean.TRUE;
 import static java.util.Collections.emptyList;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -71,12 +73,21 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 .filter(sn -> !sn.equals(appConfig.name.orElse("unset")))
                                 .orElse(null);
 
+                        // must be resolved at startup, once.
+                        String hostname = null;
+                        try {
+                            hostname = InetAddress.getLocalHost().getHostName();
+                        } catch (UnknownHostException e) {
+                            hostname = "unknown";
+                        }
+
                         // Merge resource instances with env attributes
                         Resource resource = resources.stream()
                                 .reduce(Resource.empty(), Resource::merge)
                                 .merge(TracerUtil.mapResourceAttributes(
                                         oTelRuntimeConfig.resourceAttributes().orElse(emptyList()),
-                                        serviceName)); // from properties
+                                        serviceName, // from properties
+                                        hostname));
                         return consolidatedResource.merge(resource);
                     } else {
                         return Resource.builder().build();

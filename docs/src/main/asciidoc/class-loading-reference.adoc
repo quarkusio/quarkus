@@ -8,7 +8,6 @@ include::_attributes.adoc[]
 :categories: architecture
 :summary: Learn more about Quarkus class loading infrastructure.
 :topics: internals,extensions
-:extensions: io.quarkus:quarkus-core
 
 This document explains the Quarkus class loading architecture. It is intended for extension
 authors and advanced users who want to understand exactly how Quarkus works.

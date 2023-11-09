@@ -120,6 +120,15 @@ if [ -f target/indexByType.yaml ]; then
   echo
 fi
 
+if [ -f target/relations.yaml ]; then
+  echo
+  echo "Copying target/relations.yaml to $TARGET_INDEX/relations.yaml"
+  mkdir -p $TARGET_INDEX
+  echo "# Generated file. Do not edit" > $TARGET_INDEX/relations.yaml
+  cat target/relations.yaml >> $TARGET_INDEX/relations.yaml
+  echo
+fi
+
 echo "Sync done!"
 echo "=========="
 

@@ -8,7 +8,7 @@ include::_attributes.adoc[]
 :categories: security
 :keywords: sso oidc security keycloak
 :summary: Start Keycloak or other providers automatically in dev and test modes.
-:topics: security,oidc,keycloak,devservices,tooling,testing,devmode
+:topics: security,oidc,keycloak,dev-services,testing,dev-mode
 :extensions: io.quarkus:quarkus-oidc
 
 This guide covers the Dev Services and UI for OpenID Connect (OIDC) Keycloak provider and explains how to support Dev Services and UI for other OpenID Connect providers.

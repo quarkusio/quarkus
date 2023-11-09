@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: messaging
 :summary: Start Apache Kafka automatically in dev and test modes.
-:topics: messaging,kafka,devservices,tooling,testing,devmode
+:topics: messaging,kafka,dev-services,testing,dev-mode
 :extensions: io.quarkus:quarkus-kafka-client,io.quarkus:quarkus-smallrye-reactive-messaging-kafka
 
 If any Kafka-related extension is present (e.g. `quarkus-smallrye-reactive-messaging-kafka`), Dev Services for Kafka automatically starts a Kafka broker in dev mode and when running tests.

@@ -8,7 +8,6 @@ include::_attributes.adoc[]
 :categories: writing-extensions
 :summary: Trigger the inclusion on additional extensions based on certain conditions.
 :topics: extensions
-:extensions: io.quarkus:quarkus-core
 
 Quarkus extension dependencies are usually configured in the same way as any other project dependencies in the project's build file, e.g. the Maven `pom.xml` or the Gradle build scripts. However, there are dependency types that aren't yet supported out-of-the-box by Maven and Gradle. What we refer here to as "conditional dependencies" is one example.
 

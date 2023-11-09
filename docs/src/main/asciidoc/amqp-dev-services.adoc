@@ -8,7 +8,7 @@ include::_attributes.adoc[]
 :categories: messaging
 :summary: Start AMQP automatically in dev and test modes.
 :extensions: io.quarkus:quarkus-smallrye-reactive-messaging-amqp
-:topics: messaging,amqp,devservices,tooling,testing,devmode
+:topics: messaging,amqp,dev-services,testing,dev-mode
 
 Dev Services for AMQP automatically starts an AMQP 1.0 broker in dev mode and when running tests.
 So, you don't have to start a broker manually.

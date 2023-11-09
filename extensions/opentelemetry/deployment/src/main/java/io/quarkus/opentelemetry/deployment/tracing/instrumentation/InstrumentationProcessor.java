@@ -81,7 +81,15 @@ public class InstrumentationProcessor {
     @BuildStep(onlyIf = GrpcExtensionAvailable.class)
     void grpcTracers(BuildProducer<AdditionalBeanBuildItem> additionalBeans, OTelBuildConfig config) {
         if (config.instrument().grpc()) {
-            additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingServerInterceptor.class));
+            if (ConfigProvider.getConfig()
+                    // FIXME this property, from quarkus-grpc should be a build time one.
+                    .getOptionalValue("quarkus.grpc.server.use-separate-server", Boolean.class)
+                    .orElse(true)) {
+                // separated server requires the server interceptor, otherwise the vert.x instrumentation will be used.
+                additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingServerInterceptor.class));
+            } else {
+                // TODO add grpc related attributes to existing vert.x span.
+            }
             additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingClientInterceptor.class));
         }
     }

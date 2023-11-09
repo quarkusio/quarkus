@@ -1,7 +1,8 @@
 import { QwcHotReloadElement, html, css } from 'qwc-hot-reload-element';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { JsonRpc } from 'jsonrpc';
-
+import { devuiState } from 'devui-state';
+import { notifier } from 'notifier';
 import { Graphviz } from "@hpcc-js/wasm/graphviz.js";
 
 import '@vaadin/details';
@@ -52,7 +53,7 @@ export class QwcKafkaStreamsTopology extends QwcHotReloadElement {
                           <vaadin-tab id="graphvizTab">Graphviz</vaadin-tab>
                           <vaadin-tab id="mermaidTab">Mermaid</vaadin-tab>
                         </vaadin-tabs>
-                        <vaadin-vertical-layout theme="padding"><p>${this._tabContent}</p></vaadin-vertical-layout>`;
+                        <vaadin-vertical-layout theme="padding"><p id="svgSpan">${this._tabContent}</p></vaadin-vertical-layout>`;
         }
 
         return html`<qwc-no-data message="You do not have any Topology."
@@ -81,11 +82,33 @@ export class QwcKafkaStreamsTopology extends QwcHotReloadElement {
     _selectGraphTab() {
       if (this._graphviz) {
         let g = this._graphviz.dot(this._topology.graphviz);
-        this._tabContent = html`${unsafeHTML(g)}`;
+        this._tabContent = html`${unsafeHTML(g)}
+                                <qui-badge level="contrast" icon="font-awesome-solid:download" clickable @click=${() => this._downloadTopologyAsPng()}>
+                                  <span>Download as PNG</span>
+                                </qui-badge>`;
       } else {
         this._tabContent = html`Graph engine not started.`;
       }
     }
+
+    _downloadTopologyAsPng() {
+     	let svgData = this.renderRoot?.querySelector('#svgSpan').getElementsByTagName("svg")[0];
+     	let img = new Image(svgData.width.baseVal.value, svgData.height.baseVal.value);
+     	img.src = `data:image/svg+xml;base64,${btoa(new XMLSerializer().serializeToString(svgData))}`;
+     	img.onload = function () {
+     		let cnv = document.createElement('canvas');
+     		cnv.width = img.width;
+     		cnv.height = img.height;
+     		cnv.getContext("2d").drawImage(img, 0, 0);
+     		cnv.toBlob((blob) => {
+     			let lnk = document.createElement('a');
+     			lnk.href = URL.createObjectURL(blob);
+     			lnk.download = "Topology-" + devuiState.applicationInfo.applicationName + "-" + new Date().toISOString().replace(/\D/g,'') + ".png";
+     			lnk.click();
+     			notifier.showSuccessMessage(lnk.download + " downloaded.", 'bottom-end');
+     		});
+     	}
+     }
 
     _selectDetailsTab() {
       this._tabContent = html`<table>

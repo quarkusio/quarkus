@@ -22,6 +22,7 @@ jobs:
         run: |
           echo "preapproved-developpers<<EOF" >> $GITHUB_OUTPUT
           cat .github/develocity-preapproved-developers.json >> $GITHUB_OUTPUT
+          echo >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
       - name: Publish Maven Build Scans
         uses: gradle/github-actions/maven-build-scan/publish@v1-beta
@@ -31,6 +32,7 @@ jobs:
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
           skip-comment: true
       - name: Push to summary
+        if: ${{ contains(fromJson(steps.extract-preapproved-developers.outputs.preapproved-developpers).preapproved-developers, github.event.workflow_run.actor.login) }}
         run: |
           echo -n "Pull request: " >> ${GITHUB_STEP_SUMMARY}
           cat pr-number.out >> ${GITHUB_STEP_SUMMARY}

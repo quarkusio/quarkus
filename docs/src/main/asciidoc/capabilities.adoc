@@ -8,7 +8,6 @@ include::_attributes.adoc[]
 :categories: writing-extensions
 :summary: How capabilities are implemented and used in Quarkus.
 :topics: extensions
-:extensions: io.quarkus:quarkus-core
 
 Quarkus extensions may provide certain capabilities and require certain capabilities to be provided by other extensions in an application to function properly.
 

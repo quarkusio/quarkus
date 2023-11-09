@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: Start a Kubernetes API server automatically in dev and test modes.
-:topics: devservices,kubernetes,tooling,testing,devmode
+:topics: dev-services,kubernetes,testing,dev-mode
 :extensions: io.quarkus:quarkus-kubernetes-client
 
 Dev Services for Kubernetes automatically starts a Kubernetes API server in dev mode and when running tests.

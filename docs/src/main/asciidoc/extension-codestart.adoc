@@ -8,7 +8,6 @@ include::_attributes.adoc[]
 :categories: writing-extensions
 :summary: Provide users with initial code for extensions when generating Quarkus applications on code.quarkus.io and all the Quarkus tooling. This guide explains how to create and configure a Codestart for an extension.
 :topics: extensions,codestarts
-:extensions: io.quarkus:quarkus-core
 
 This guide explains how to create and configure a Quarkus Codestart for an extension.
 

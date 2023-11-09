@@ -87,8 +87,7 @@ quarkus.http.auth.permission.permit1.methods=GET,HEAD
 The request is rejected if it matches one or more permission sets based on the path but none of the required methods.
 
 TIP: Given the preceding permission set, `GET /public/foo` would match both the path and method and therefore be allowed.
-In contrast, `POST /public/foo` would match the path but not the method.
-It would therefore be rejected.
+In contrast, `POST /public/foo` would match the path but not the method, and, therefore, be rejected.
 
 [[matching-multiple-paths]]
 === Matching multiple paths: longest path wins
@@ -237,7 +236,7 @@ For more information, see link:https://quarkus.io/blog/path-resolution-in-quarku
 [[standard-security-annotations]]
 == Authorization using annotations
 
-{project-name} includes built-in security to allow for  link:https://en.wikipedia.org/wiki/Role-based_access_control[Role-Based Access Control (RBAC)]
+{project-name} includes built-in security to allow for link:https://en.wikipedia.org/wiki/Role-based_access_control[Role-Based Access Control (RBAC)]
 based on the common security annotations `@RolesAllowed`, `@DenyAll`, `@PermitAll` on REST endpoints and CDI beans.
 
 .{project-name} annotation types summary
@@ -492,7 +491,7 @@ NOTE: `@PermissionsAllowed` is not repeatable on the class level due to a limita
 For more information, see the xref:cdi-reference.adoc#repeatable-interceptor-bindings[Repeatable interceptor bindings] section of the Quarkus "CDI reference" guide.
 
 The easiest way to add permissions to a role-enabled `SecurityIdentity` instance is to map roles to permissions.
-Use <<authorization-using-configuration>> to grant the required  `SecurityIdentity` permissions for `CRUDResource` endpoints to authenticated requests, as outlined in the following example:
+Use <<authorization-using-configuration>> to grant the required `SecurityIdentity` permissions for `CRUDResource` endpoints to authenticated requests, as outlined in the following example:
 
 [source,properties]
 ----
@@ -607,8 +606,8 @@ public class LibraryService {
 ----
 <1> The formal parameter `update` is identified as the first `Library` parameter and gets passed to the `LibraryPermission` class.
 However, the `LibraryPermission` must be instantiated each time the `updateLibrary` method is invoked.
-<2> Here, the first `Library` parameter is `migrate`, therefore the `library` parameter gets marked explicitly through `PermissionsAllowed#params`.
-The permission constructor and the annotated method must have the parameter `library` set, otherwise, validation fails.
+<2> Here, the first `Library` parameter is `migrate`; therefore, the `library` parameter gets marked explicitly through `PermissionsAllowed#params`.
+The permission constructor and the annotated method must have the parameter `library` set; otherwise, validation fails.
 
 .Example of a resource secured with the `LibraryPermission`
 
@@ -722,7 +721,7 @@ public class PermissionsIdentityAugmentor implements SecurityIdentityAugmentor {
 Because `MediaLibrary` is the `TvLibrary` class parent, a user with the `admin` role is also permitted to modify `TvLibrary`.
 <2> You can add a permission checker through `io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder#addPermissionChecker`.
 
-CAUTION: Annotation permissions do not work with the custom xref:security-customization.adoc#jaxrs-security-context[Custom Jakarta REST SecurityContext] because there are no permissions in `jakarta.ws.rs.core.SecurityContext`.
+CAUTION: Annotation-based permissions do not work with custom xref:security-customization.adoc#jaxrs-security-context[Jakarta REST SecurityContexts] because there are no permissions in `jakarta.ws.rs.core.SecurityContext`.
 
 == References
 
@@ -730,5 +729,5 @@ CAUTION: Annotation permissions do not work with the custom xref:security-custom
 * xref:security-architecture.adoc[Quarkus Security architecture]
 * xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
 * xref:security-basic-authentication.adoc[Basic authentication]
-* xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]
+* xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence]
 * xref:security-oidc-bearer-token-authentication.adoc#token-scopes-and-security-identity-permissions[OpenID Connect Bearer Token Scopes And SecurityIdentity Permissions]

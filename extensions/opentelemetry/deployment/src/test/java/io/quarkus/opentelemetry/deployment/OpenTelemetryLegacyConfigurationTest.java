@@ -57,7 +57,7 @@ class OpenTelemetryLegacyConfigurationTest {
         assertEquals(TRUE, oTelRuntimeConfig.traces().includeStaticResources());
         assertEquals("always_off", oTelBuildConfig.traces().sampler());
         assertTrue(oTelRuntimeConfig.traces().samplerArg().isPresent());
-        assertEquals(2.0d, oTelRuntimeConfig.traces().samplerArg().get());
+        assertEquals("2.0d", oTelRuntimeConfig.traces().samplerArg().get());
         assertEquals(FALSE, otlpExporterBuildConfig.enabled());
         assertTrue(otlpExporterRuntimeConfig.traces().legacyEndpoint().isPresent());
         assertTrue(otlpExporterRuntimeConfig.traces().headers().isPresent());

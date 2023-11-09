@@ -1,5 +1,8 @@
 package io.quarkus.oidc.runtime;
 
+import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
+
 import java.security.Key;
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +21,7 @@ import org.jose4j.jwk.PublicJsonWebKey;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
@@ -25,6 +29,8 @@ import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.OidcTenantConfig.TokenStateManager.Strategy;
 import io.quarkus.oidc.TenantConfigResolver;
+import io.quarkus.oidc.TenantIdentityProvider;
+import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.runtime.LaunchMode;
@@ -32,6 +38,10 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.request.TokenAuthenticationRequest;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
@@ -62,7 +72,7 @@ public class OidcRecorder {
     public Supplier<TenantConfigBean> setup(OidcConfig config, Supplier<Vertx> vertx, TlsConfig tlsConfig) {
         final Vertx vertxValue = vertx.get();
 
-        String defaultTenantId = config.defaultTenant.getTenantId().orElse(OidcUtils.DEFAULT_TENANT_ID);
+        String defaultTenantId = config.defaultTenant.getTenantId().orElse(DEFAULT_TENANT_ID);
         TenantConfigContext defaultTenantContext = createStaticTenantContext(vertxValue, config.defaultTenant,
                 !config.namedTenants.isEmpty(), tlsConfig, defaultTenantId);
 
@@ -176,7 +186,7 @@ public class OidcRecorder {
 
         try {
             if (!oidcConfig.getAuthServerUrl().isPresent()) {
-                if (OidcUtils.DEFAULT_TENANT_ID.equals(oidcConfig.tenantId.get())) {
+                if (DEFAULT_TENANT_ID.equals(oidcConfig.tenantId.get())) {
                     ArcContainer container = Arc.container();
                     if (container != null
                             && (container.instance(TenantConfigResolver.class).isAvailable() || checkNamedTenants)) {
@@ -424,12 +434,15 @@ public class OidcRecorder {
 
         WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
 
+        List<OidcRequestFilter> clientRequestFilters = OidcCommonUtils.getClientRequestCustomizer();
+
         Uni<OidcConfigurationMetadata> metadataUni = null;
         if (!oidcConfig.discoveryEnabled.orElse(true)) {
             metadataUni = Uni.createFrom().item(createLocalMetadata(oidcConfig, authServerUriString));
         } else {
             final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
-            metadataUni = OidcCommonUtils.discoverMetadata(client, authServerUriString, connectionDelayInMillisecs)
+            metadataUni = OidcCommonUtils
+                    .discoverMetadata(client, clientRequestFilters, authServerUriString, connectionDelayInMillisecs)
                     .onItem()
                     .transform(new Function<JsonObject, OidcConfigurationMetadata>() {
                         @Override
@@ -465,7 +478,8 @@ public class OidcRecorder {
                                     "UserInfo is required but the OpenID Provider UserInfo endpoint is not configured."
                                             + " Use 'quarkus.oidc.user-info-path' if the discovery is disabled."));
                         }
-                        return Uni.createFrom().item(new OidcProviderClient(client, metadata, oidcConfig));
+                        return Uni.createFrom()
+                                .item(new OidcProviderClient(client, metadata, oidcConfig, clientRequestFilters));
                     }
 
                 });
@@ -492,5 +506,67 @@ public class OidcRecorder {
                 routingContext.put(OidcUtils.TENANT_ID_ATTRIBUTE, tenantId);
             }
         };
+    }
+
+    public Supplier<TenantIdentityProvider> createTenantIdentityProvider(String tenantName) {
+        return new Supplier<TenantIdentityProvider>() {
+            @Override
+            public TenantIdentityProvider get() {
+                return new TenantSpecificOidcIdentityProvider(tenantName);
+            }
+        };
+    }
+
+    private static final class TenantSpecificOidcIdentityProvider extends OidcIdentityProvider
+            implements TenantIdentityProvider {
+
+        private final String tenantId;
+        private final BlockingSecurityExecutor blockingExecutor;
+
+        private TenantSpecificOidcIdentityProvider(String tenantId) {
+            super(Arc.container().instance(DefaultTenantConfigResolver.class).get(),
+                    Arc.container().instance(BlockingSecurityExecutor.class).get());
+            this.blockingExecutor = Arc.container().instance(BlockingSecurityExecutor.class).get();
+            if (tenantId.equals(DEFAULT_TENANT_ID)) {
+                OidcConfig config = Arc.container().instance(OidcConfig.class).get();
+                this.tenantId = config.defaultTenant.getTenantId().orElse(OidcUtils.DEFAULT_TENANT_ID);
+            } else {
+                this.tenantId = tenantId;
+            }
+        }
+
+        @Override
+        public Uni<SecurityIdentity> authenticate(AccessTokenCredential token) {
+            return authenticate(new TokenAuthenticationRequest(token));
+        }
+
+        @Override
+        protected Uni<TenantConfigContext> resolveTenantConfigContext(TokenAuthenticationRequest request,
+                AuthenticationRequestContext context) {
+            return tenantResolver.resolveContext(tenantId).onItem().ifNull().failWith(new Supplier<Throwable>() {
+                @Override
+                public Throwable get() {
+                    return new OIDCException("Failed to resolve tenant context");
+                }
+            });
+        }
+
+        @Override
+        protected Map<String, Object> getRequestData(TokenAuthenticationRequest request) {
+            RoutingContext context = getRoutingContextAttribute(request);
+            if (context != null) {
+                return context.data();
+            }
+            return new HashMap<>();
+        }
+
+        private Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request) {
+            return authenticate(request, new AuthenticationRequestContext() {
+                @Override
+                public Uni<SecurityIdentity> runBlocking(Supplier<SecurityIdentity> function) {
+                    return blockingExecutor.executeBlocking(function);
+                }
+            });
+        }
     }
 }

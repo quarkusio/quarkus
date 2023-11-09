@@ -510,7 +510,7 @@ triage:
         - docs/src/main/asciidoc/security-authorize-web-endpoints-reference.adoc
         - docs/src/main/asciidoc/security-basic-authentication.adoc
         - docs/src/main/asciidoc/security-basic-authentication-howto.adoc
-        - docs/src/main/asciidoc/security-basic-authentication-tutorial.adoc
+        - docs/src/main/asciidoc/security-getting-started-tutorial.adoc
         - docs/src/main/asciidoc/security-identity-providers.adoc
         - docs/src/main/asciidoc/security-identity-providers-concept.adoc
         - docs/src/main/asciidoc/security-jpa.adoc

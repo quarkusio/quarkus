@@ -7,7 +7,6 @@
 :icons: font
 :generated-dir: ../../../../target/asciidoc/generated
 :code-examples: {generated-dir}/examples
-:doc-guides: ./
 :doc-examples: ./_examples
 :imagesdir: ./images
 :includes: ./_includes

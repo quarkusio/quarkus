@@ -16,9 +16,23 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public final class TransactionManagerConfiguration {
     /**
      * The node name used by the transaction manager.
+     * Must not exceed a length of 28 bytes.
+     *
+     * @see #shortenNodeNameIfNecessary
      */
     @ConfigItem(defaultValue = "quarkus")
     public String nodeName;
+
+    /**
+     * Whether the node name should be shortened if necessary.
+     * The node name must not exceed a length of 28 bytes. If this property is set to {@code true}, and the node name exceeds 28
+     * bytes, the node name is shortened by calculating the <a href="https://en.wikipedia.org/wiki/SHA-2">SHA-224</a> hash,
+     * which has a length of 28 bytes.
+     *
+     * @see #nodeName
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean shortenNodeNameIfNecessary;
 
     /**
      * The default transaction timeout.

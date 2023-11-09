@@ -151,9 +151,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <reactive-oracledb.url>vertx-reactive:oracle:thin:@localhost:1521/FREEPDB1</reactive-oracledb.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

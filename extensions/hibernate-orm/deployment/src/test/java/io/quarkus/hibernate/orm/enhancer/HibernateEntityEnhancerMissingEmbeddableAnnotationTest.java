@@ -39,8 +39,10 @@ class HibernateEntityEnhancerMissingEmbeddableAnnotationTest {
             .assertException(ex -> assertThat(ex)
                     .isNotNull()
                     .hasMessageContainingAll(
-                            EntityWithEmbedded.EmbeddableMissingAnnotation.class.getName(),
-                            "is used as an embeddable but does not have an @Embeddable annotation"));
+                            "Type " + EntityWithEmbedded.EmbeddableMissingAnnotation.class.getName(),
+                            "must be annotated with @Embeddable, because it is used as an embeddable",
+                            "This type is used in class " + EntityWithEmbedded.EmbeddableWithAnnotation.class.getName(),
+                            "for attribute ", "embeddableMissingAnnotation"));
 
     // Just test that the embedded non-ID works correctly over a persist/retrieve cycle
     @Test

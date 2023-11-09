@@ -14,18 +14,23 @@ import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
+import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Provider;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret;
@@ -45,6 +50,7 @@ import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.ProxyOptions;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcCommonUtils {
@@ -421,9 +427,14 @@ public class OidcCommonUtils {
                 || (t instanceof OidcEndpointAccessException && ((OidcEndpointAccessException) t).getErrorStatus() == 404));
     }
 
-    public static Uni<JsonObject> discoverMetadata(WebClient client, String authServerUrl, long connectionDelayInMillisecs) {
+    public static Uni<JsonObject> discoverMetadata(WebClient client, List<OidcRequestFilter> filters,
+            String authServerUrl, long connectionDelayInMillisecs) {
         final String discoveryUrl = authServerUrl + OidcConstants.WELL_KNOWN_CONFIGURATION;
-        return client.getAbs(discoveryUrl).send().onItem().transform(resp -> {
+        HttpRequest<Buffer> request = client.getAbs(discoveryUrl);
+        for (OidcRequestFilter filter : filters) {
+            filter.filter(request, null, null);
+        }
+        return request.send().onItem().transform(resp -> {
             if (resp.statusCode() == 200) {
                 return resp.bodyAsJsonObject();
             } else {
@@ -465,5 +476,14 @@ public class OidcCommonUtils {
             out.write(buf, 0, r);
         }
         return out.toByteArray();
+    }
+
+    public static List<OidcRequestFilter> getClientRequestCustomizer() {
+        ArcContainer container = Arc.container();
+        if (container != null) {
+            return container.listAll(OidcRequestFilter.class).stream().map(handle -> handle.get())
+                    .collect(Collectors.toList());
+        }
+        return List.of();
     }
 }

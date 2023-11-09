@@ -1655,6 +1655,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
     public static enum Provider {
         APPLE,
+        DISCORD,
         FACEBOOK,
         GITHUB,
         GOOGLE,

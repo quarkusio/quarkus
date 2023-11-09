@@ -279,6 +279,11 @@ quarkus.oidc.introspection-credentials.name=introspection-user-name
 quarkus.oidc.introspection-credentials.secret=introspection-user-secret
 ----
 
+[[oidc-client-filters]]
+==== OIDC request customization
+
+You can customize OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFiler` implementations which can update or add new request headers, please see xref:security-openid-connect-client-reference#oidc-client-filters[Client request customization] for more information.
+
 ==== Redirecting to and from the OIDC provider
 
 When a user is redirected to the OpenID Connect provider to authenticate, the redirect URL includes a `redirect_uri` query parameter, which indicates to the provider where the user has to be redirected to when the authentication is complete.
@@ -1230,7 +1235,7 @@ Future<void> callQuarkusService() async {
 === Cross-origin resource sharing
 
 If you plan to consume this application from a single-page application running on a different domain, you need to configure cross-origin resource sharing (CORS).
-For more information, see the xref:http-reference.adoc#cors-filter[CORS filter] section of the "HTTP reference" guide.
+For more information, see the xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide.
 
 === Calling Cloud provider services
 

@@ -185,8 +185,17 @@ For applications running in a production environment, do not store passwords as 
 However, it is possible to store passwords as plain text with the `@Password(PasswordType.CLEAR)` annotation when operating in a test environment.
 ====
 
+[TIP]
+====
+The xref:hibernate-orm.adoc#multitenancy[Hibernate Multitenancy] is supported and you can store the user entity in a persistence unit with enabled multitenancy.
+However, if your `io.quarkus.hibernate.orm.runtime.tenant.TenantResolver` must access the `io.vertx.ext.web.RoutingContext` to resolve request details, you must disable proactive authentication.
+For more information about proactive authentication, please see the Quarkus xref:security-proactive-authentication.adoc[Proactive authentication] guide.
+====
+
+include::{generated-dir}/config/quarkus-security-jpa.adoc[opts=optional, leveloffset=+2]
+
 == References
 
-* xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]
+* xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence]
 * xref:security-identity-providers.adoc[Identity providers]
 * xref:security-overview.adoc[Quarkus Security overview]

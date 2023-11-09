@@ -99,7 +99,7 @@ public class ResteasyReactiveClientProvider implements ResteasyClientProvider {
         }
         // if any Jackson properties were configured, disallow reuse - this is done in order to provide forward compatibility with new Jackson configuration options
         for (String propertyName : ConfigProvider.getConfig().getPropertyNames()) {
-            if (propertyName.startsWith("io.quarkus.jackson")) {
+            if (propertyName.startsWith("quarkus.jackson")) {
                 return false;
             }
         }

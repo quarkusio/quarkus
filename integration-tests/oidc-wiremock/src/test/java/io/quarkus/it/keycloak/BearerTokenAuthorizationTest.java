@@ -5,13 +5,16 @@ import static org.hamcrest.Matchers.equalTo;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
+import org.jose4j.jwx.HeaderParameterNames;
 import org.junit.jupiter.api.Test;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -49,6 +52,7 @@ public class BearerTokenAuthorizationTest {
     public void testAccessResourceAzure() throws Exception {
         String azureJwk = readFile("jwks.json");
         wireMockServer.stubFor(WireMock.get("/auth/azure/jwk")
+                .withHeader("Authorization", matching("ID token"))
                 .willReturn(WireMock.aResponse().withBody(azureJwk)));
         String azureToken = readFile("token.txt");
         RestAssured.given().auth().oauth2(azureToken)
@@ -135,6 +139,31 @@ public class BearerTokenAuthorizationTest {
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("admin"));
+    }
+
+    @Test
+    public void testAccessAdminResourceWithWrongCertThumbprint() {
+        RestAssured.given().auth().oauth2(getAccessTokenWithWrongThumbprint("admin", Set.of("admin")))
+                .when().get("/api/admin/bearer-no-introspection")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void testAccessAdminResourceWithCertS256Thumbprint() {
+        RestAssured.given().auth().oauth2(getAccessTokenWithS256Thumbprint("admin", Set.of("admin")))
+                .when().get("/api/admin/bearer-no-introspection")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("admin"));
+    }
+
+    @Test
+    public void testAccessAdminResourceWithWrongCertS256Thumbprint() {
+        RestAssured.given().auth().oauth2(getAccessTokenWithWrongS256Thumbprint("admin", Set.of("admin")))
+                .when().get("/api/admin/bearer-no-introspection")
+                .then()
+                .statusCode(401);
     }
 
     @Test
@@ -256,6 +285,34 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testAcquiringIdentityOutsideOfHttpRequest() {
+        String tenant = "bearer";
+        String user = "alice";
+        String role = "user";
+        assertSecurityIdentityAcquired(tenant, user, role);
+
+        tenant = "bearer-role-claim-path";
+        user = "admin";
+        role = "admin";
+        assertSecurityIdentityAcquired(tenant, user, role);
+
+        // test with event bus
+        RestAssured.given().auth().oauth2(getAccessToken("alice", Set.of("customer"))).body("ProductXYZ").post("order/bearer")
+                .then().statusCode(204);
+        Awaitility
+                .await()
+                .atMost(Duration.ofSeconds(10))
+                .ignoreExceptions()
+                .untilAsserted(() -> RestAssured.given().get("order/bearer").then().statusCode(200).body(Matchers.is("alice")));
+    }
+
+    private static void assertSecurityIdentityAcquired(String tenant, String user, String role) {
+        String jsonPath = tenant + "." + user + ".findAll{ it == \"" + role + "\"}.size()";
+        RestAssured.given().when().get("/startup-service").then().statusCode(200)
+                .body(jsonPath, Matchers.is(1));
+    }
+
+    @Test
     public void testInvalidBearerToken() {
         wireMockServer.stubFor(WireMock.post("/auth/realms/quarkus/protocol/openid-connect/token/introspect")
                 .withRequestBody(matching(".*token=invalid_token.*"))
@@ -295,6 +352,33 @@ public class BearerTokenAuthorizationTest {
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
                 .jws().thumbprint(OidcWiremockTestResource.getCertificate())
+                .sign("privateKeyWithoutKid.jwk");
+    }
+
+    private String getAccessTokenWithWrongThumbprint(String userName, Set<String> groups) {
+        return Jwt.preferredUserName(userName)
+                .groups(groups)
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .jws().header(HeaderParameterNames.X509_CERTIFICATE_THUMBPRINT, "123")
+                .sign("privateKeyWithoutKid.jwk");
+    }
+
+    private String getAccessTokenWithS256Thumbprint(String userName, Set<String> groups) {
+        return Jwt.preferredUserName(userName)
+                .groups(groups)
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .jws().thumbprintS256(OidcWiremockTestResource.getCertificate())
+                .sign("privateKeyWithoutKid.jwk");
+    }
+
+    private String getAccessTokenWithWrongS256Thumbprint(String userName, Set<String> groups) {
+        return Jwt.preferredUserName(userName)
+                .groups(groups)
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .jws().header(HeaderParameterNames.X509_CERTIFICATE_SHA256_THUMBPRINT, "123")
                 .sign("privateKeyWithoutKid.jwk");
     }
 

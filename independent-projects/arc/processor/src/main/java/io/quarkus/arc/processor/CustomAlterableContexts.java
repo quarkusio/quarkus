@@ -1,5 +1,6 @@
 package io.quarkus.arc.processor;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,11 +20,12 @@ public class CustomAlterableContexts {
         this.applicationClassPredicate = applicationClassPredicate;
     }
 
-    public CustomAlterableContextInfo add(Class<? extends AlterableContext> contextClass, Boolean isNormal) {
+    public CustomAlterableContextInfo add(Class<? extends AlterableContext> contextClass, Boolean isNormal,
+            Class<? extends Annotation> scopeAnnotation) {
         String generatedName = contextClass.getName() + "_InjectableContext";
         boolean isApplicationClass = applicationClassPredicate.test(DotName.createSimple(contextClass));
         CustomAlterableContextInfo result = new CustomAlterableContextInfo(contextClass, isNormal, generatedName,
-                isApplicationClass);
+                isApplicationClass, scopeAnnotation);
         registered.add(result);
         return result;
     }
@@ -52,13 +54,15 @@ public class CustomAlterableContexts {
         public final Boolean isNormal;
         public final String generatedName;
         public final boolean isApplicationClass;
+        public final Class<? extends Annotation> scopeAnnotation;
 
         CustomAlterableContextInfo(Class<? extends AlterableContext> contextClass, Boolean isNormal,
-                String generatedName, boolean isApplicationClass) {
+                String generatedName, boolean isApplicationClass, Class<? extends Annotation> scopeAnnotation) {
             this.contextClass = contextClass;
             this.isNormal = isNormal;
             this.generatedName = generatedName;
             this.isApplicationClass = isApplicationClass;
+            this.scopeAnnotation = scopeAnnotation;
         }
     }
 }

@@ -167,8 +167,8 @@ public class FileSystemWatcherTestCase {
 
     private FileChangeEvent[] consumeEvents() throws InterruptedException {
         FileChangeEvent[] nextEvents = new FileChangeEvent[2];
-        Collection<FileChangeEvent> results = this.results.poll(1, TimeUnit.SECONDS);
-        Collection<FileChangeEvent> secondResults = this.secondResults.poll(1, TimeUnit.SECONDS);
+        Collection<FileChangeEvent> results = this.results.poll(3, TimeUnit.SECONDS);
+        Collection<FileChangeEvent> secondResults = this.secondResults.poll(3, TimeUnit.SECONDS);
         Assertions.assertNotNull(results);
         Assertions.assertNotNull(secondResults);
         Assertions.assertEquals(1, results.size());

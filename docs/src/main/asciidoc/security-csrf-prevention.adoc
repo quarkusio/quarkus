@@ -170,7 +170,7 @@ quarkus.csrf-reactive.cookie-http-only=false
 ====
 If you would like to enforce CSRF prevention in a Cross-origin environment, please avoid supporting all Origins.
 
-Restrict supported Origins to trusted Origins only, see xref:http-reference.adoc#cors-filter[Cross-origin resource sharing] for more information.
+Restrict supported Origins to trusted Origins only, see xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide for more information.
 ====
 
 == Restrict CSRF token verification
@@ -328,5 +328,5 @@ include::{generated-dir}/config/quarkus-csrf-reactive.adoc[leveloffset=+1, opts=
 * https://owasp.org/www-community/attacks/csrf[OWASP Cross-Site Request Forgery]
 * xref:resteasy-reactive.adoc[RESTEasy Reactive]
 * xref:qute-reference.adoc[Qute Reference]
-* xref:http-reference.adoc#cors-filter[Cross-origin resource sharing]
+* xref:security-cors.adoc#cors-filter[Cross-origin resource sharing]
 * xref:security-overview.adoc[Quarkus Security overview]

@@ -10,19 +10,12 @@ import jakarta.ws.rs.core.Configuration;
  */
 public final class ResolverMapKey {
 
-    private final Class<?> type;
     private final Configuration configuration;
-
     private final Class<?> restClientClass;
 
-    public ResolverMapKey(Class<?> type, Configuration configuration, Class<?> restClientClass) {
-        this.type = type;
+    public ResolverMapKey(Configuration configuration, Class<?> restClientClass) {
         this.configuration = configuration;
         this.restClientClass = restClientClass;
-    }
-
-    public Class<?> getType() {
-        return type;
     }
 
     public Configuration getConfiguration() {
@@ -42,12 +35,12 @@ public final class ResolverMapKey {
             return false;
         }
         ResolverMapKey that = (ResolverMapKey) o;
-        return Objects.equals(type, that.type) && Objects.equals(configuration, that.configuration)
+        return Objects.equals(configuration, that.configuration)
                 && Objects.equals(restClientClass, that.restClientClass);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, configuration, restClientClass);
+        return Objects.hash(configuration, restClientClass);
     }
 }

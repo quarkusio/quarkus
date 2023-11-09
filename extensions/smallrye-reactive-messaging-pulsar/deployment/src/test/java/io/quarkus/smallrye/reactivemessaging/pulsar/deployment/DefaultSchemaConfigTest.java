@@ -23,7 +23,6 @@ import org.apache.pulsar.client.api.Messages;
 import org.apache.pulsar.client.api.Schema;
 import org.assertj.core.groups.Tuple;
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -47,6 +46,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.pulsar.SchemaProviderRecorder;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
 import io.smallrye.common.annotation.Identifier;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -54,6 +54,8 @@ import io.smallrye.config.common.MapBackedConfigSource;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.smallrye.reactive.messaging.Targeted;
+import io.smallrye.reactive.messaging.TargetedMessages;
 import io.smallrye.reactive.messaging.pulsar.OutgoingMessage;
 import io.smallrye.reactive.messaging.pulsar.PulsarBatchMessage;
 import io.smallrye.reactive.messaging.pulsar.PulsarMessage;
@@ -77,6 +79,7 @@ public class DefaultSchemaConfigTest {
 
         List<Class<?>> classes = new ArrayList<>(Arrays.asList(classesToIndex));
         classes.add(Incoming.class);
+        classes.add(Outgoing.class);
         DefaultSchemaDiscoveryState discovery = new DefaultSchemaDiscoveryState(index(classes)) {
             @Override
             Config getConfig() {
@@ -122,9 +125,9 @@ public class DefaultSchemaConfigTest {
 
             assertThat(syntheticBean.alreadyGeneratedSchema).containsExactlyInAnyOrderEntriesOf(generatedSchemas);
         } finally {
-            // must not leak the Config instance associated to the system classloader
+            // must not leak the lazily-initialized Config instance associated to the system classloader
             if (customConfig == null) {
-                ConfigProviderResolver.instance().releaseConfig(discovery.getConfig());
+                QuarkusConfigFactory.setConfig(null);
             }
         }
     }
@@ -2035,6 +2038,34 @@ public class DefaultSchemaConfigTest {
         @Incoming("channel2")
         void method2(String msg) {
 
+        }
+
+    }
+
+    @Test
+    void targetedOutgoings() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.incoming.channel1.schema", "STRING"),
+                tuple("mp.messaging.incoming.channel2.schema", "STRING"),
+        };
+        doTest(expectations, TargetedOutgoings.class);
+    }
+
+
+    private static class TargetedOutgoings {
+
+        @Incoming("channel1")
+        @Outgoing("out1")
+        @Outgoing("out2")
+        Targeted method1(String msg) {
+            return null;
+        }
+
+        @Incoming("channel2")
+        @Outgoing("out3")
+        @Outgoing("out4")
+        TargetedMessages method2(String msg) {
+            return null;
         }
 
     }

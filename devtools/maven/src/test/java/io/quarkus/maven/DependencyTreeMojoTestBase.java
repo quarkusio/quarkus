@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -98,7 +97,8 @@ public abstract class DependencyTreeMojoTestBase {
             System.setOut(defaultOut);
         }
 
-        assertEquals(readInLowCase(Paths.get("").toAbsolutePath().resolve("target").resolve("test-classes")
+        assertEquals(readInLowCase(Path.of("").normalize().toAbsolutePath()
+                .resolve("target").resolve("test-classes")
                 .resolve(app.getArtifactFileName() + "." + mode())), readInLowCase(mojoLog));
     }
 

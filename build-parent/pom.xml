@@ -101,7 +101,7 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
-        <keycloak.version>22.0.4</keycloak.version>
+        <keycloak.version>22.0.5</keycloak.version>
         <keycloak.wildfly.version>19.0.3</keycloak.wildfly.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
@@ -484,6 +484,110 @@
                 <groupId>org.mvnpm</groupId>
                 <artifactId>echarts</artifactId>
                 <version>${echarts.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+
+            <!-- hpcc-js Wasm / Graphviz and dependencies -->
+            <dependency>
+                <groupId>org.mvnpm.at.hpcc-js</groupId>
+                <artifactId>wasm</artifactId>
+                <version>2.14.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>yargs</artifactId>
+                <version>17.7.2</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>cliui</artifactId>
+                <version>8.0.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>escalade</artifactId>
+                <version>3.1.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>get-caller-file</artifactId>
+                <version>2.0.5</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>require-directory</artifactId>
+                <version>2.1.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>string-width</artifactId>
+                <version>4.2.3</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>y18n</artifactId>
+                <version>5.0.8</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>yargs-parser</artifactId>
+                <version>21.1.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>strip-ansi</artifactId>
+                <version>6.0.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>wrap-ansi</artifactId>
+                <version>7.0.0</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>emoji-regex</artifactId>
+                <version>8.0.0</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>is-fullwidth-code-point</artifactId>
+                <version>3.0.0</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>ansi-regex</artifactId>
+                <version>5.0.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>ansi-styles</artifactId>
+                <version>4.3.0</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>color-convert</artifactId>
+                <version>2.0.1</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>color-name</artifactId>
+                <version>1.1.4</version>
                 <scope>runtime</scope>
             </dependency>
 

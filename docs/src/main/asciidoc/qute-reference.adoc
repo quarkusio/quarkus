@@ -2632,7 +2632,13 @@ WARNING: Unlike with `@Inject` the templates obtained via `RestTemplate` are not
 
 === Development Mode
 
-In the development mode, all files located in `src/main/resources/templates` are watched for changes and modifications are immediately visible.
+In the development mode, all files located in `src/main/resources/templates` are watched for changes.
+By default, a template modification results in an application restart that also triggers build-time validations.
+
+However, it's possible to use the `quarkus.qute.dev-mode.no-restart-templates` configuration property to specify the templates for which the application is not restarted.
+The configration value is a regular expression that matches the template path relative from the `templates` directory and `/` is used as a path separator.
+For example, `quarkus.qute.dev-mode.no-restart-templates=templates/foo.html` matches the template `src/main/resources/templates/foo.html`.
+The matching templates are reloaded and only runtime validations are performed.
 
 [[type-safe-message-bundles]]
 === Type-safe Message Bundles

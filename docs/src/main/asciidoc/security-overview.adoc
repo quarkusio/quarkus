@@ -41,8 +41,9 @@ For more information, see the Quarkus xref:security-customization.adoc[Security 
 
 == Getting started with Quarkus Security
 
-To get started with security in Quarkus, consider combining the Quarkus built-in xref:security-basic-authentication.adoc[Basic authentication] with the Jakarta Persistence identity provider to enable role-based access control (RBAC).
-Complete the steps in the xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication] tutorial.
+To get started with security in Quarkus, consider securing your Quarkus application endpoints with the built-in Quarkus xref:security-basic-authentication.adoc[Basic authentication] and the Jakarta Persistence identity provider and enabling role-based access control.
+
+Complete the steps in the xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence] tutorial.
 
 After successfully securing your Quarkus application with Basic authentication, you can increase the security further by adding more advanced authentication mechanisms, for example, the xref:security-oidc-code-flow-authentication.adoc[OpenID Connect (OIDC) authorization code flow mechanism].
 
@@ -56,7 +57,7 @@ Guidance for testing Quarkus Security features and ensuring that your Quarkus ap
 === Cross-origin resource sharing
 
 To make your Quarkus application accessible to another application running on a different domain, you need to configure cross-origin resource sharing (CORS).
-For more information about the CORS filter that Quarkus provides, see the Quarkus xref:http-reference.adoc#cors-filter[CORS filter] section of the "HTTP reference" guide.
+For more information about the CORS filter that Quarkus provides, see the Quarkus xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide.
 
 [[csrf-prevention]]
 === Cross-Site Request Forgery (CSRF) prevention
@@ -77,6 +78,11 @@ Secrets engines are components that store, generate, or encrypt data.
 Quarkus provides comprehensive HashiCorp Vault support.
 For more information, see the link:{vault-guide}[Quarkus and HashiCorp Vault] documentation.
 
+== Secrets in environment properties
+
+Quarkus provides support to store secrets in environment properties.
+See xref:config.adoc#secrets-in-environment-properties[store secrets in an environment properties file].
+
 [[secure-serialization]]
 === Secure serialization
 
@@ -96,6 +102,6 @@ For information about security vulnerabilities, see the xref:security-vulnerabil
 
 == References
 
-* xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]
+* xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence]
 * xref:security-oidc-code-flow-authentication-tutorial.adoc[Protect a web application by using OIDC authorization code flow]
 * xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a service application by using OIDC Bearer token authentication]

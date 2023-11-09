@@ -517,15 +517,24 @@ public class BearerTokenAuthorizationTest {
                                     + "introspection_client_id:none,introspection_client_secret:none,active:true,userinfo:alice,cache-size:0"));
         }
 
+        // verifies empty scope claim makes no difference (e.g. doesn't cause NPE)
+        RestAssured.given().auth().oauth2(getAccessTokenWithEmptyScopeFromSimpleOidc("2"))
+                .when().get("/tenant/tenant-oidc-introspection-only/api/user")
+                .then()
+                .statusCode(200)
+                .body(equalTo(
+                        "tenant-oidc-introspection-only:alice,client_id:client-introspection-only,"
+                                + "introspection_client_id:none,introspection_client_secret:none,active:true,userinfo:alice,cache-size:0"));
+
         RestAssured.given().auth().oauth2(getAccessTokenFromSimpleOidc("987654321", "2"))
                 .when().get("/tenant/tenant-oidc-introspection-only/api/user")
                 .then()
                 .statusCode(401);
 
         RestAssured.when().get("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
-        RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("4"));
+        RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("5"));
         RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
-        RestAssured.when().get("/oidc/userinfo-endpoint-call-count").then().body(equalTo("4"));
+        RestAssured.when().get("/oidc/userinfo-endpoint-call-count").then().body(equalTo("5"));
         RestAssured.when().get("/cache/size").then().body(equalTo("0"));
     }
 
@@ -694,13 +703,21 @@ public class BearerTokenAuthorizationTest {
     }
 
     private String getAccessTokenFromSimpleOidc(String subject, String kid) {
+        return getAccessTokenFromSimpleOidc(subject, kid, "/oidc/accesstoken");
+    }
+
+    private String getAccessTokenWithEmptyScopeFromSimpleOidc(String kid) {
+        return getAccessTokenFromSimpleOidc("123456789", kid, "/oidc/accesstoken-empty-scope");
+    }
+
+    private static String getAccessTokenFromSimpleOidc(String subject, String kid, String tokenEndpoint) {
         String json = RestAssured
                 .given()
                 .queryParam("sub", subject)
                 .queryParam("kid", kid)
                 .formParam("grant_type", "authorization_code")
                 .when()
-                .post("/oidc/accesstoken")
+                .post(tokenEndpoint)
                 .body().asString();
         JsonObject object = new JsonObject(json);
         return object.getString("access_token");

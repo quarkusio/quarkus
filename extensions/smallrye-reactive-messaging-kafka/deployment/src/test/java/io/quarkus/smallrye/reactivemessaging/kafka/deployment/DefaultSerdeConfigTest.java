@@ -26,7 +26,6 @@ import org.apache.kafka.common.serialization.Serializer;
 import org.assertj.core.api.Assert;
 import org.assertj.core.groups.Tuple;
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -47,6 +46,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.common.MapBackedConfigSource;
@@ -54,6 +54,8 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.operators.multi.split.MultiSplitter;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.smallrye.reactive.messaging.Targeted;
+import io.smallrye.reactive.messaging.TargetedMessages;
 import io.smallrye.reactive.messaging.kafka.KafkaRecord;
 import io.smallrye.reactive.messaging.kafka.KafkaRecordBatch;
 import io.smallrye.reactive.messaging.kafka.Record;
@@ -124,9 +126,9 @@ public class DefaultSerdeConfigTest {
                     .flatExtracting(ReflectiveClassBuildItem::getClassNames)
                     .allSatisfy(s -> assertThat(reflectiveNames).satisfiesOnlyOnce(c -> c.apply(s)));
         } finally {
-            // must not leak the Config instance associated to the system classloader
+            // must not leak the lazily-initialized Config instance associated to the system classloader
             if (customConfig == null) {
-                ConfigProviderResolver.instance().releaseConfig(discovery.getConfig());
+                QuarkusConfigFactory.setConfig(null);
             }
         }
     }
@@ -2885,6 +2887,35 @@ public class DefaultSerdeConfigTest {
         @Incoming("channel2")
         void method2(Record<CustomDto, CustomDto> msg) {
 
+        }
+
+    }
+
+
+    @Test
+    void targetedOutgoings() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.incoming.channel1.value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"),
+                tuple("mp.messaging.incoming.channel2.value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"),
+        };
+        doTest(expectations, TargetedOutgoings.class);
+    }
+
+
+    private static class TargetedOutgoings {
+
+        @Incoming("channel1")
+        @Outgoing("out1")
+        @Outgoing("out2")
+        Targeted method1(String msg) {
+            return null;
+        }
+
+        @Incoming("channel2")
+        @Outgoing("out3")
+        @Outgoing("out4")
+        TargetedMessages method2(String msg) {
+            return null;
         }
 
     }

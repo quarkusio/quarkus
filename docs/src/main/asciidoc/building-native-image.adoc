@@ -103,7 +103,8 @@ GraalVM {graalvm-version} is required.
 
 1. Install GraalVM if you haven't already. You have a few options for this:
 ** Download the appropriate archive from <https://github.com/graalvm/mandrel/releases> or <https://github.com/graalvm/graalvm-ce-builds/releases>, and unpack it like you would any other JDK.
-** Use platform-specific install tools like https://sdkman.io/jdks#Oracle[sdkman], https://github.com/graalvm/homebrew-tap[homebrew], or https://github.com/ScoopInstaller/Java[scoop].
+** Use platform-specific installer tools like https://sdkman.io/jdks#graalce[sdkman], https://github.com/graalvm/homebrew-tap[homebrew], or https://github.com/ScoopInstaller/Java[scoop].
+We recommend the _community edition_ of GraalVM. For example, install it with `sdk install java 21-graalce`.
 2. Configure the runtime environment. Set `GRAALVM_HOME` environment variable to the GraalVM installation directory, for example:
 +
 [source,bash]
@@ -705,7 +706,7 @@ COPY --chown=quarkus:quarkus pom.xml /code/
 RUN mkdir /musl && \
     curl -L -o musl.tar.gz https://more.musl.cc/11.2.1/x86_64-linux-musl/x86_64-linux-musl-native.tgz && \
     tar -xvzf musl.tar.gz -C /musl --strip-components 1 && \
-    curl -L -o zlib.tar.gz https://www.zlib.net/zlib-1.2.13.tar.gz && \
+    curl -L -o zlib.tar.gz https://github.com/madler/zlib/releases/download/v1.2.13/zlib-1.2.13.tar.gz && \
     mkdir zlib && tar -xvzf zlib.tar.gz -C zlib --strip-components 1 && \
     cd zlib && ./configure --static --prefix=/musl && \
     make && make install && \

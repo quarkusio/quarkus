@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -16,6 +17,7 @@ import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClientConfig;
 import io.quarkus.oidc.client.OidcClientException;
 import io.quarkus.oidc.client.Tokens;
+import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.smallrye.mutiny.Uni;
@@ -44,10 +46,12 @@ public class OidcClientImpl implements OidcClient {
     private final String clientSecretBasicAuthScheme;
     private final Key clientJwtKey;
     private final OidcClientConfig oidcConfig;
+    private final List<OidcRequestFilter> filters;
     private volatile boolean closed;
 
     public OidcClientImpl(WebClient client, String tokenRequestUri, String tokenRevokeUri, String grantType,
-            MultiMap tokenGrantParams, MultiMap commonRefreshGrantParams, OidcClientConfig oidcClientConfig) {
+            MultiMap tokenGrantParams, MultiMap commonRefreshGrantParams, OidcClientConfig oidcClientConfig,
+            List<OidcRequestFilter> filters) {
         this.client = client;
         this.tokenRequestUri = tokenRequestUri;
         this.tokenRevokeUri = tokenRevokeUri;
@@ -55,6 +59,7 @@ public class OidcClientImpl implements OidcClient {
         this.commonRefreshGrantParams = commonRefreshGrantParams;
         this.grantType = grantType;
         this.oidcConfig = oidcClientConfig;
+        this.filters = filters;
         this.clientSecretBasicAuthScheme = OidcCommonUtils.initClientSecretBasicAuth(oidcClientConfig);
         this.clientJwtKey = OidcCommonUtils.initClientJwtKey(oidcClientConfig);
     }
@@ -159,7 +164,8 @@ public class OidcClientImpl implements OidcClient {
             }
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed
-        Uni<HttpResponse<Buffer>> response = request.sendBuffer(OidcCommonUtils.encodeForm(body))
+        Buffer buffer = OidcCommonUtils.encodeForm(body);
+        Uni<HttpResponse<Buffer>> response = filter(request, buffer).sendBuffer(buffer)
                 .onFailure(ConnectException.class)
                 .retry()
                 .atMost(oidcConfig.connectionRetryCount)
@@ -251,5 +257,12 @@ public class OidcClientImpl implements OidcClient {
         if (closed) {
             throw new IllegalStateException("OidcClient " + oidcConfig.getId().get() + " is closed");
         }
+    }
+
+    private HttpRequest<Buffer> filter(HttpRequest<Buffer> request, Buffer body) {
+        for (OidcRequestFilter filter : filters) {
+            filter.filter(request, body, null);
+        }
+        return request;
     }
 }

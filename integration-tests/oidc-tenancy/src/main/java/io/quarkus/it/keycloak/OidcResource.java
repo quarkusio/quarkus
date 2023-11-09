@@ -238,6 +238,16 @@ public class OidcResource {
     }
 
     @POST
+    @Path("accesstoken-empty-scope")
+    @Produces("application/json")
+    public String testAccessTokenWithEmptyScope(@QueryParam("kid") String kid, @QueryParam("sub") String subject) {
+        return "{\"access_token\": \"" + jwt(null, subject, kid, true) + "\"," +
+                "   \"token_type\": \"Bearer\"," +
+                "   \"refresh_token\": \"123456789\"," +
+                "   \"expires_in\": 300 }";
+    }
+
+    @POST
     @Path("opaque-token")
     @Produces("application/json")
     public String testOpaqueToken(@QueryParam("kid") String kid) {
@@ -290,6 +300,10 @@ public class OidcResource {
     }
 
     private String jwt(String audience, String subject, String kid) {
+        return jwt(audience, subject, kid, false);
+    }
+
+    private String jwt(String audience, String subject, String kid, boolean withEmptyScope) {
         JwtClaimsBuilder builder = Jwt.claim("typ", "Bearer")
                 .upn("alice")
                 .preferredUserName("alice")
@@ -300,6 +314,10 @@ public class OidcResource {
         }
         if (subject != null) {
             builder.subject(subject);
+        }
+
+        if (withEmptyScope) {
+            builder.claim("scope", "");
         }
 
         return builder.jws().keyId(kid)

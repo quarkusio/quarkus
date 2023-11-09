@@ -223,6 +223,15 @@ public class ArcConfig {
     @ConfigItem
     public ArcContextPropagationConfig contextPropagation;
 
+    /**
+     * If set to {@code true}, the container should try to optimize the contexts for some of the scopes.
+     * <p>
+     * Typically, some implementation parts of the context for {@link jakarta.enterprise.context.ApplicationScoped} could be
+     * pregenerated during build.
+     */
+    @ConfigItem(defaultValue = "true", generateDocumentation = false)
+    public boolean optimizeContexts;
+
     public final boolean isRemoveUnusedBeansFieldValid() {
         return ALLOWED_REMOVE_UNUSED_BEANS_VALUES.contains(removeUnusedBeans.toLowerCase());
     }

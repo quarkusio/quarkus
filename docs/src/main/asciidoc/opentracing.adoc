@@ -16,7 +16,7 @@ interactive web applications.
 
 [IMPORTANT]
 ====
-xref:opentelemetry.adoc[OpenTelemetry] is the recommended approach to tracing and telemetry for Quarkus.
+xref:opentelemetry.adoc[OpenTelemetry] is the recommended approach to tracing and telemetry for Quarkus and xref:telemetry-opentracing-to-otel-tutorial.adoc[a guide to help with the migration] is available.
 
 When Quarkus will upgrade to Eclipse MicroProfile 6, the SmallRye OpenTracing support will be discontinued.
 ====

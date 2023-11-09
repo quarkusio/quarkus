@@ -276,7 +276,7 @@ public class ApplicationDependencyTreeResolver {
     }
 
     private DependencyNode resolveRuntimeDeps(CollectRequest request) throws AppModelResolverException {
-        RepositorySystemSession session = resolver.getSession();
+        var session = resolver.getSession();
         if (!CONVERGED_TREE_ONLY && collectReloadableModules) {
             final DefaultRepositorySystemSession mutableSession;
             mutableSession = new DefaultRepositorySystemSession(resolver.getSession());
@@ -308,7 +308,8 @@ public class ApplicationDependencyTreeResolver {
             session = mutableSession;
         }
         try {
-            return resolver.getSystem().resolveDependencies(session, new DependencyRequest().setCollectRequest(request))
+            return resolver.getSystem().resolveDependencies(session,
+                    new DependencyRequest().setCollectRequest(request))
                     .getRoot();
         } catch (DependencyResolutionException e) {
             final Artifact a = request.getRoot() == null ? request.getRootArtifact() : request.getRoot().getArtifact();
@@ -332,8 +333,8 @@ public class ApplicationDependencyTreeResolver {
         final byte prevWalkingFlags = walkingFlags;
         final ExtensionDependency prevLastVisitedRtExtNode = lastVisitedRuntimeExtNode;
 
-        final boolean popExclusions;
-        if (popExclusions = !node.getDependency().getExclusions().isEmpty()) {
+        final boolean popExclusions = !node.getDependency().getExclusions().isEmpty();
+        if (popExclusions) {
             exclusionStack.addLast(node.getDependency().getExclusions());
         }
 
@@ -354,11 +355,11 @@ public class ApplicationDependencyTreeResolver {
                             artifact.getArtifactId(), artifact.getVersion());
                 }
                 dep = toAppArtifact(artifact, module)
-                        .setRuntimeCp()
-                        .setDeploymentCp()
                         .setOptional(node.getDependency().isOptional())
                         .setScope(node.getDependency().getScope())
-                        .setDirect(isWalkingFlagOn(COLLECT_DIRECT_DEPS));
+                        .setDirect(isWalkingFlagOn(COLLECT_DIRECT_DEPS))
+                        .setRuntimeCp()
+                        .setDeploymentCp();
                 if (extDep != null) {
                     dep.setRuntimeExtensionArtifact();
                     if (isWalkingFlagOn(COLLECT_TOP_EXTENSION_RUNTIME_NODES)) {
@@ -448,10 +449,18 @@ public class ApplicationDependencyTreeResolver {
         final DependencySelector selector = dependent.exclusions == null ? null
                 : new ExclusionDependencySelector(dependent.exclusions);
         for (Artifact conditionalArtifact : dependent.info.conditionalDeps) {
-            if (selector != null && !selector.selectDependency(new Dependency(conditionalArtifact, "runtime"))) {
+            if (selector != null && !selector.selectDependency(new Dependency(conditionalArtifact, JavaScopes.RUNTIME))) {
                 continue;
             }
             final ExtensionInfo conditionalInfo = getExtensionInfoOrNull(conditionalArtifact);
+            if (conditionalInfo == null) {
+                log.warn(dependent.info.runtimeArtifact + " declares a conditional dependency on " + conditionalArtifact
+                        + " that is not a Quarkus extension and will be ignored");
+                continue;
+            }
+            if (conditionalInfo.activated) {
+                continue;
+            }
             final ConditionalDependency conditionalDep = new ConditionalDependency(conditionalInfo, dependent);
             conditionalDepsToProcess.add(conditionalDep);
             collectConditionalDependencies(conditionalDep.getExtensionDependency());
@@ -583,8 +592,7 @@ public class ApplicationDependencyTreeResolver {
         return false;
     }
 
-    private DependencyNode collectDependencies(Artifact artifact, Collection<Exclusion> exclusions)
-            throws BootstrapDependencyProcessingException {
+    private DependencyNode collectDependencies(Artifact artifact, Collection<Exclusion> exclusions) {
         try {
             return managedDeps.isEmpty()
                     ? resolver.collectDependencies(artifact, List.of(), mainRepos, exclusions).getRoot()

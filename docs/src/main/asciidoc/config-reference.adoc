@@ -706,9 +706,9 @@ options exposed by a `org.eclipse.microprofile.config.Config` instance. Which me
 build configuration options since MicroProfile Config specification allows configuration sources not to expose all the property names they provide to users.
 ====
 
-== Config property values injected during static intialization phase
+== Config property values injected during static initialization phase
 
-Quarkus collects the config property values injected in CDI beans during xref:writing-extensions.adoc#bootstrap-three-phases[static intialization phase].
+Quarkus collects the config property values injected in CDI beans during xref:writing-extensions.adoc#bootstrap-three-phases[static initialization phase].
 The collected values are then compared with their runtime initialization counterparts and if a mismatch is detected the application startup fails.
 How can it happen?
 For example, let's have a CDI bean `org.acme.MyBean`.
@@ -739,9 +739,9 @@ public class MyBean {
 }
 ----
 <1> The config property is injected when the bean is created and the value is fixed.
-<2> In this particular case, the observer `@Initialized(ApplicationScoped.class)` caused the initialization of the bean. However, there are other possibilities. For example, some extensions initialize components during static intialization phase.
+<2> In this particular case, the observer `@Initialized(ApplicationScoped.class)` caused the initialization of the bean. However, there are other possibilities. For example, some extensions initialize components during static initialization phase.
 
-You can annotate an injected field/parameter with `@io.quarkus.runtime.annotations.StaticInitSafe` to mark the injected configuration object as safe to be initialized during the static intialization phase.
+You can annotate an injected field/parameter with `@io.quarkus.runtime.annotations.StaticInitSafe` to mark the injected configuration object as safe to be initialized during the static initialization phase.
 
 [source,java]
 ----

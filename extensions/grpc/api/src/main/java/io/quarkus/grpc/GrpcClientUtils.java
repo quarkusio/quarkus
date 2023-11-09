@@ -29,10 +29,11 @@ public class GrpcClientUtils {
         client = getProxiedObject(client);
 
         if (client instanceof AbstractStub) {
-            return (T) MetadataUtils.attachHeaders((AbstractStub) client, extraHeaders);
+            return (T) ((AbstractStub) client).withInterceptors(MetadataUtils.newAttachHeadersInterceptor(extraHeaders));
         } else if (client instanceof MutinyClient) {
             MutinyClient mutinyClient = (MutinyClient) client;
-            AbstractStub stub = MetadataUtils.attachHeaders(mutinyClient.getStub(), extraHeaders);
+            AbstractStub stub = mutinyClient.getStub()
+                    .withInterceptors(MetadataUtils.newAttachHeadersInterceptor(extraHeaders));
             return (T) ((MutinyClient) client).newInstanceWithStub(stub);
         } else {
             throw new IllegalArgumentException("Unsupported client type " + client.getClass());

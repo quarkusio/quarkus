@@ -38,6 +38,10 @@ public class Scope {
         return parentScope != null ? parentScope.getBinding(binding) : null;
     }
 
+    Map<String, String> getBindings() {
+        return bindings;
+    }
+
     public String getBindingTypeOrDefault(String binding, String defaultValue) {
         String type = getBinding(binding);
         return type != null ? type : defaultValue;

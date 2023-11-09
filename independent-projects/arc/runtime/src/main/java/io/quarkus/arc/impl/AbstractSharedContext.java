@@ -16,10 +16,14 @@ import io.quarkus.arc.InjectableContext;
 
 abstract class AbstractSharedContext implements InjectableContext, InjectableContext.ContextState {
 
-    protected final ComputingCache<String, ContextInstanceHandle<?>> instances;
+    protected final ContextInstances instances;
 
     public AbstractSharedContext() {
-        this.instances = new ComputingCache<>();
+        this(new ComputingCacheContextInstances());
+    }
+
+    public AbstractSharedContext(ContextInstances instances) {
+        this.instances = Objects.requireNonNull(instances);
     }
 
     @SuppressWarnings("unchecked")
@@ -47,7 +51,7 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
         if (!Scopes.scopeMatches(this, bean)) {
             throw Scopes.scopeDoesNotMatchException(this, bean);
         }
-        ContextInstanceHandle<?> handle = instances.getValueIfPresent(bean.getIdentifier());
+        ContextInstanceHandle<?> handle = instances.getIfPresent(bean.getIdentifier());
         return handle != null ? (T) handle.get() : null;
     }
 
@@ -63,7 +67,7 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
 
     @Override
     public Map<InjectableBean<?>, Object> getContextualInstances() {
-        return instances.getPresentValues().stream()
+        return instances.getAllPresent().stream()
                 .collect(Collectors.toUnmodifiableMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
     }
 
@@ -83,7 +87,7 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
 
     @Override
     public synchronized void destroy() {
-        Set<ContextInstanceHandle<?>> values = instances.getPresentValues();
+        Set<ContextInstanceHandle<?>> values = instances.getAllPresent();
         // Destroy the producers first
         for (Iterator<ContextInstanceHandle<?>> iterator = values.iterator(); iterator.hasNext();) {
             ContextInstanceHandle<?> instanceHandle = iterator.next();

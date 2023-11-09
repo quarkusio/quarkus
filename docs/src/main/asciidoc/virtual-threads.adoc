@@ -134,12 +134,15 @@ According to link:{vthreadjep}[JEP 425] this can happen in two situations:
 - when it executes a blocking operation inside a native method or a foreign function
 
 It can be reasonably easy to avoid these situations in your code, but verifying every dependency you use is hard.
-Typically, while experimenting with virtual threads, we realized that old versions of the link:{pgsql-driver}[postgresql-JDBC driver]
-results in frequent pinning.
+Typically, while experimenting with virtual threads, we realized that versions older than 42.6.0 of the link:{pgsql-driver}[postgresql-JDBC driver] result in frequent pinning.
 Most JDBC drivers still pin the carrier thread.
-Even worse, lots of widespread libraries are pinning and would require code changes.
+Even worse, many libraries require code changes.
 
 For more information, see link:https://quarkus.io/blog/virtual-thread-1/[When Quarkus meets Virtual Threads]
+
+IMPORTANT: This information about pinning cases applies to PostgreSQL JDBC driver 42.5.4 and earlier.
+For PostgreSQL JDBC driver 42.6.0 and later, virtually all synchronized methods have been replaced by reentrant locks.
+For more information, see the link:https://jdbc.postgresql.org/changelogs/2023-03-17-42.6.0-release/[Notable Changes] for PostgreSQL JDBC driver 42.6.0.
 
 [[pooling]]
 ==== The pooling case
@@ -318,21 +321,20 @@ If would not fail the tests, but at least dump start traces if the code pins the
         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
         <maven.home>${maven.home}</maven.home>
       </systemPropertyVariables>
-      <argLine>--enable-preview -Djdk.tracePinnedThreads</argLine>
+      <argLine>-Djdk.tracePinnedThreads</argLine>
   </configuration>
 </plugin>
 ----
 
-NOTE: The `--enable-preview` flag is not necessary with Java 21.
-
 == Run application using virtual threads
 
-Prior to Java 21, virtual threads are still an experimental feature, you need to start your application with the `--enable-preview` flag:
 
 [source, bash]
 ----
-java --enable-preview -jar target/quarkus-app/quarkus-run.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
+
+TIP: Prior to Java 21, virtual threads were still an experimental feature, you need to start your application with the `--enable-preview` flag.
 
 == Build containers for application using virtual threads
 
@@ -348,13 +350,11 @@ To containerize your Quarkus application that use `@RunOnVirtualThread`, add the
 quarkus.container-image.build=true
 quarkus.container-image.group=<your-group-name>
 quarkus.container-image.name=<you-container-name>
-quarkus.jib.base-jvm-image=eclipse-temurin:20.0.1_9-jre-ubi9-minimal <1>
+quarkus.jib.base-jvm-image=eclipse-temurin:21-ubi9-minimal <1>
 quarkus.jib.platforms=linux/amd64,linux/arm64 <2>
-quarkus.jib.jvm-arguments=--enable-preview <3>
 ----
-<1> Make sure you use a base image supporting virtual threads. Here we use an image providing Java 20.
+<1> Make sure you use a base image supporting virtual threads. Here we use an image providing Java 21.
 <2> Select the target architecture. You can select more than one to build multi-archs images.
-<3> Don't forget to use the `--enable-preview` flag if you are not using Java 21+.
 
 Then, build your container as you would do usually.
 For example, if you are using Maven, run:
@@ -524,7 +524,10 @@ When it happens, the test fails.
 The `@ShouldNotPin` can also be used on methods directly.
 
 The _junit5-virtual-threads_ also provides a `@ShouldPin` annotation for cases where pinning is unavoidable.
-The following snippet demonstrates the `@ShouldPin` annotation usage and the possibility to inject a `ThreadPinnedEvents` instance in your test to verify when the carrier thread was pinned manually.
+The following snippet demonstrates the `@ShouldPin` annotation usage.
+
+// This is not possible because of a classloading issue - See https://github.com/quarkusio/quarkus/issues/36569 :
+// and the possibility to inject a `ThreadPinnedEvents` instance in your test to verify when the carrier thread was pinned manually.
 
 [source, java]
 ----
@@ -543,14 +546,6 @@ public class LoomUnitExampleTest {
     @ShouldPin(atMost = 1)
     public void testThatShouldPinAtMostOnce() {
         codeUnderTest.pin();
-    }
-
-    @Test
-    public void testThatShouldNotPin(ThreadPinnedEvents events) { // Inject an object to check the pin events
-        Assertions.assertTrue(events.getEvents().isEmpty());
-        codeUnderTest.pin();
-        await().until(() -> events.getEvents().size() > 0);
-        Assertions.assertEquals(events.getEvents().size(), 1);
     }
 
 }

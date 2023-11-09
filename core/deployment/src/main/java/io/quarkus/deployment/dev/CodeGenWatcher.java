@@ -27,7 +27,9 @@ class CodeGenWatcher {
 
     CodeGenWatcher(CuratedApplication curatedApplication, DevModeContext context) throws CodeGenException {
         final QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
-        final List<CodeGenData> codeGens = CodeGenerator.init(deploymentClassLoader, context.getAllModules());
+        final List<CodeGenData> codeGens = CodeGenerator.init(curatedApplication.getApplicationModel(),
+                context.getBuildSystemProperties(),
+                deploymentClassLoader, context.getAllModules());
         if (codeGens.isEmpty()) {
             fsWatchUtil = null;
             this.deploymentClassLoader = null;

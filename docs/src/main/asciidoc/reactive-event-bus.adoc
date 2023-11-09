@@ -26,7 +26,7 @@ However, it is limited to single-event behavior (no stream) and to local message
 == Installing
 
 This mechanism uses the Vert.x EventBus, so you need to enable the `vertx` extension to use this feature.
-If you are creating a new project, set the `extensions` parameter are follows:
+If you are creating a new project, set the `extensions` parameter as follows:
 
 :create-app-artifact-id: vertx-quickstart
 :create-app-extensions: vertx,resteasy-reactive

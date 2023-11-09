@@ -72,7 +72,7 @@ class QuarkusModelBuilderTest {
                 new File(projectDir, quarkusModel.getApplicationModule().getId().getArtifactId()), true);
 
         final Collection<WorkspaceModule> projectModules = quarkusModel.getWorkspaceModules();
-        assertEquals(projectModules.size(), 2);
+        assertEquals(2, projectModules.size());
         for (WorkspaceModule p : projectModules) {
             assertProjectModule(p, new File(projectDir, p.getId().getArtifactId()),
                     quarkusModel.getApplicationModule().getId().equals(p.getId()));
@@ -106,7 +106,7 @@ class QuarkusModelBuilderTest {
                 new File(projectDir, quarkusModel.getApplicationModule().getId().getArtifactId()), true);
 
         final Collection<WorkspaceModule> projectModules = quarkusModel.getWorkspaceModules();
-        assertEquals(projectModules.size(), 2);
+        assertEquals(2, projectModules.size());
         for (WorkspaceModule p : projectModules) {
             assertProjectModule(p, new File(projectDir, p.getId().getArtifactId()),
                     quarkusModel.getApplicationModule().getId().equals(p.getId()));

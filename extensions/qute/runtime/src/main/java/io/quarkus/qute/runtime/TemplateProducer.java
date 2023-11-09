@@ -1,9 +1,12 @@
 package io.quarkus.qute.runtime;
 
 import java.lang.annotation.Annotation;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +35,7 @@ import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateInstanceBase;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
+import io.quarkus.runtime.LaunchMode;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -44,7 +48,10 @@ public class TemplateProducer {
 
     private final Map<String, TemplateVariants> templateVariants;
 
-    TemplateProducer(Engine engine, QuteContext context, ContentTypes contentTypes) {
+    // In the dev mode, we need to keep track of injected templates so that we can clear the cached values
+    private final List<WeakReference<InjectableTemplate>> injectedTemplates;
+
+    TemplateProducer(Engine engine, QuteContext context, ContentTypes contentTypes, LaunchMode launchMode) {
         this.engine = engine;
         Map<String, TemplateVariants> templateVariants = new HashMap<>();
         for (Entry<String, List<String>> entry : context.getVariants().entrySet()) {
@@ -53,6 +60,7 @@ public class TemplateProducer {
             templateVariants.put(entry.getKey(), var);
         }
         this.templateVariants = Collections.unmodifiableMap(templateVariants);
+        this.injectedTemplates = launchMode == LaunchMode.DEVELOPMENT ? Collections.synchronizedList(new ArrayList<>()) : null;
         LOGGER.debugf("Initializing Qute variant templates: %s", templateVariants);
     }
 
@@ -71,7 +79,7 @@ public class TemplateProducer {
                 LOGGER.warnf("Parameter name not present - using the method name as the template name instead %s", name);
             }
         }
-        return new InjectableTemplate(name, templateVariants, engine);
+        return newInjectableTemplate(name);
     }
 
     @Produces
@@ -87,14 +95,38 @@ public class TemplateProducer {
         if (path == null || path.isEmpty()) {
             throw new IllegalStateException("No template location specified");
         }
-        return new InjectableTemplate(path, templateVariants, engine);
+        return newInjectableTemplate(path);
     }
 
     /**
      * Used by NativeCheckedTemplateEnhancer to inject calls to this method in the native type-safe methods.
      */
     public Template getInjectableTemplate(String path) {
-        return new InjectableTemplate(path, templateVariants, engine);
+        return newInjectableTemplate(path);
+    }
+
+    public void clearInjectedTemplates() {
+        if (injectedTemplates != null) {
+            synchronized (injectedTemplates) {
+                for (Iterator<WeakReference<InjectableTemplate>> it = injectedTemplates.iterator(); it.hasNext();) {
+                    WeakReference<InjectableTemplate> ref = it.next();
+                    InjectableTemplate template = ref.get();
+                    if (template == null) {
+                        it.remove();
+                    } else if (template.unambiguousTemplate != null) {
+                        template.unambiguousTemplate.clear();
+                    }
+                }
+            }
+        }
+    }
+
+    private Template newInjectableTemplate(String path) {
+        InjectableTemplate template = new InjectableTemplate(path, templateVariants, engine);
+        if (injectedTemplates != null) {
+            injectedTemplates.add(new WeakReference<>(template));
+        }
+        return template;
     }
 
     /**

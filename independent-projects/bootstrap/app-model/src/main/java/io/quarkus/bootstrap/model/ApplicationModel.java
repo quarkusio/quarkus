@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
@@ -26,20 +25,27 @@ public interface ApplicationModel {
     ResolvedDependency getAppArtifact();
 
     /**
-     * All the dependencies of an application including runtime and build time dependencies.
+     * Returns application dependencies that are included into the runtime and augmentation (Quarkus build time)
+     * classpath.
      *
      * @return application runtime and build time dependencies
      */
     Collection<ResolvedDependency> getDependencies();
 
     /**
+     * Returns application dependencies with the requested flags set.
+     *
+     * @param flags dependency flags that must be set for a dependency to be included in the result
+     * @return application dependencies that have requested flags set
+     */
+    Iterable<ResolvedDependency> getDependencies(int flags);
+
+    /**
      * Runtime dependencies of an application
      *
      * @return runtime dependencies of an application
      */
-    default Collection<ResolvedDependency> getRuntimeDependencies() {
-        return getDependencies().stream().filter(Dependency::isRuntimeCp).collect(Collectors.toList());
-    }
+    Collection<ResolvedDependency> getRuntimeDependencies();
 
     /**
      * Quarkus platforms (BOMs) found in the configuration of an application

@@ -103,13 +103,15 @@ description: "A Jakarta REST implementation utilizing build time processing and 
   \ the extensions that depend on it." <4>
 scm:
   url: "https://github.com/quarkusio/quarkus" <5>
+sponsor: A Sponsoring Organisation <6>
 ----
 
 <1> Quarkus version the extension was built with
 <2> https://quarkus.io/guides/capabilities[Capabilities] this extension provides
 <3> Direct dependencies on other extensions
 <4> Description that can be displayed to users. In this case, the description was copied from the `pom.xml` of the extension module but it could also be provided in the template file.
-<5> The source code repository of this extension. In GitHub Actions builds, it will be determined automatically. For other GitHub repositories, it can be controlled by setting a `GITHUB_REPOSITORY` environment variable.
+<5> The source code repository of this extension. Optional, and will often be set automatically. In GitHub Actions builds, it will be inferred from the CI environment. For other GitHub repositories, it can be controlled by setting a `GITHUB_REPOSITORY` environment variable.
+<6> The sponsor(s) of this extension. Optional, and will sometimes be determined automatically from commit history.
 
 [[quarkus-extension-properties]]
 == META-INF/quarkus-extension.properties

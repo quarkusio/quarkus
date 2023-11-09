@@ -92,6 +92,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         private AlternativePriorities alternativePriorities;
         private final List<BuildCompatibleExtension> buildCompatibleExtensions;
         private boolean strictCompatibility = false;
+        private boolean optimizeContexts = false;
 
         public Builder() {
             resourceReferenceProviders = new ArrayList<>();
@@ -213,6 +214,11 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             return this;
         }
 
+        public Builder optimizeContexts(boolean value) {
+            this.optimizeContexts = value;
+            return this;
+        }
+
         public ArcTestContainer build() {
             return new ArcTestContainer(this);
         }
@@ -248,6 +254,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     private final List<BuildCompatibleExtension> buildCompatibleExtensions;
 
     private final boolean strictCompatibility;
+    private final boolean optimizeContexts;
 
     public ArcTestContainer(Class<?>... beanClasses) {
         this.resourceReferenceProviders = Collections.emptyList();
@@ -271,6 +278,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.alternativePriorities = null;
         this.buildCompatibleExtensions = Collections.emptyList();
         this.strictCompatibility = false;
+        this.optimizeContexts = false;
     }
 
     public ArcTestContainer(Builder builder) {
@@ -295,6 +303,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.alternativePriorities = builder.alternativePriorities;
         this.buildCompatibleExtensions = builder.buildCompatibleExtensions;
         this.strictCompatibility = builder.strictCompatibility;
+        this.optimizeContexts = builder.optimizeContexts;
     }
 
     // this is where we start Arc, we operate on a per-method basis
@@ -403,14 +412,16 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
                 }
             }
 
+            String deploymentName = testClass.getName().replace('.', '_');
             BeanProcessor.Builder builder = BeanProcessor.builder()
-                    .setName(testClass.getName().replace('.', '_'))
+                    .setName(deploymentName)
                     .setImmutableBeanArchiveIndex(immutableBeanArchiveIndex)
                     .setComputingBeanArchiveIndex(BeanArchives.buildComputingBeanArchiveIndex(getClass().getClassLoader(),
                             new ConcurrentHashMap<>(), immutableBeanArchiveIndex))
                     .setApplicationIndex(applicationIndex)
                     .setBuildCompatibleExtensions(buildCompatibleExtensions)
-                    .setStrictCompatibility(strictCompatibility);
+                    .setStrictCompatibility(strictCompatibility)
+                    .setOptimizeContexts(optimizeContexts);
             if (!resourceAnnotations.isEmpty()) {
                 builder.addResourceAnnotations(resourceAnnotations.stream()
                         .map(c -> DotName.createSimple(c.getName()))
@@ -469,7 +480,10 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
                     .setContextClassLoader(testClassLoader);
 
             // Now we are ready to initialize Arc
-            Arc.initialize(ArcInitConfig.builder().setStrictCompatibility(strictCompatibility).build());
+            ArcInitConfig.Builder initConfigBuilder = ArcInitConfig.builder();
+            initConfigBuilder.setStrictCompatibility(strictCompatibility);
+            initConfigBuilder.setOptimizeContexts(optimizeContexts);
+            Arc.initialize(initConfigBuilder.build());
 
         } catch (Throwable e) {
             if (shouldFail) {

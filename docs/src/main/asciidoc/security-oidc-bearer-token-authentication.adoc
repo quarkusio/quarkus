@@ -336,7 +336,7 @@ For example, here is how you can use `keycloak.js` to authenticate the users and
 
 === Cross Origin Resource Sharing
 
-If you plan to consume your OpenID Connect `service` application from a Single Page Application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the xref:http-reference.adoc#cors-filter[HTTP CORS documentation] for more details.
+If you plan to consume your OpenID Connect `service` application from a Single Page Application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide for more details.
 
 === Provider Endpoint configuration
 
@@ -1023,6 +1023,92 @@ If you set `quarkus.oidc.client-id` but your endpoint does not require remote ac
 
 Note Quarkus `web-app` applications always require `quarkus.oidc.client-id` property.
 
+== Authentication after HTTP request has completed
+
+Sometimes, `SecurityIdentity` for a given token must be created when there is no active HTTP request context.
+The `quarkus-oidc` extension provides `io.quarkus.oidc.TenantIdentityProvider` to convert a token to a `SecurityIdentity` instance.
+For example, one situation when you must verify the token after HTTP request has completed is when you are
+processing messages with the xref:vertx.adoc#event-bus[Vert.x event bus].
+In the example below, the 'product-order' message is consumed within different CDI request context, therefore
+an injected `SecurityIdentity` would not correctly represent the verified identity and be anonymous.
+
+[source,java]
+----
+package org.acme.quickstart.oidc;
+
+import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import io.vertx.core.eventbus.EventBus;
+
+@Path("order")
+public class OrderResource {
+
+    @Inject
+    EventBus eventBus;
+
+    @POST
+    public void order(String product, @HeaderParam(AUTHORIZATION) String bearer) {
+        String rawToken = bearer.substring("Bearer ".length()); <1>
+        eventBus.publish("product-order", new Product(product, 1, rawToken));
+    }
+}
+----
+<1> At this point, token is not verified when proactive authentication is disabled.
+
+[source,java]
+----
+package org.acme.quickstart.oidc;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.TenantFeature;
+import io.quarkus.oidc.TenantIdentityProvider;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.ConsumeEvent;
+import io.smallrye.common.annotation.Blocking;
+
+@ApplicationScoped
+public class OrderService {
+
+    @TenantFeature("tenantId")
+    @Inject
+    TenantIdentityProvider identityProvider;
+
+    @Inject
+    TenantIdentityProvider defaultIdentityProvider; <1>
+
+    @Blocking
+    @ConsumeEvent("product-order")
+    void processOrder(Product product) {
+        String rawToken = product.customerAccessToken;
+        AccessTokenCredential token = new AccessTokenCredential(rawToken);
+        SecurityIdentity = identityProvider.authenticate(token).await().indefinitely(); <2>
+        ...
+    }
+
+}
+----
+<1> For default tenant, the `TenantFeature` qualifier is optional.
+<2> Executes token verification and converts the token to a `SecurityIdentity`.
+
+[NOTE]
+====
+When the provider is used during an HTTP request, the tenant configuration can be resolved as described in
+the xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy] guide.
+However, when there is no active HTTP request, you need to select tenant explicitly with the `io.quarkus.oidc.TenantFeature` qualifier.
+====
+
+[WARNING]
+====
+xref:security-openid-connect-multitenancy.adoc#tenant-config-resolver[Dynamic tenant configuration resolution] is currently not supported.
+Authentication that requires dynamic tenant will fail.
+====
+
 == References
 
 * xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]
@@ -1038,3 +1124,4 @@ Note Quarkus `web-app` applications always require `quarkus.oidc.client-id` prop
 * xref:security-authentication-mechanisms.adoc#combining-authentication-mechanisms[Combining authentication mechanisms]
 * xref:security-overview.adoc[Quarkus Security overview]
 * xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]
+* xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy]

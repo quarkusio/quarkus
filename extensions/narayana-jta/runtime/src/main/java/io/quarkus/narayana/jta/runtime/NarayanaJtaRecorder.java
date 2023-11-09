@@ -1,6 +1,9 @@
 package io.quarkus.narayana.jta.runtime;
 
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -29,6 +32,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 
 @Recorder
 public class NarayanaJtaRecorder {
+    public static final String HASH_ALGORITHM_FOR_SHORTENING = "SHA-224";
 
     private static Properties defaultProperties;
 
@@ -37,12 +41,26 @@ public class NarayanaJtaRecorder {
     public void setNodeName(final TransactionManagerConfiguration transactions) {
 
         try {
+            if (transactions.nodeName.getBytes(StandardCharsets.UTF_8).length > 28
+                    && transactions.shortenNodeNameIfNecessary) {
+                shortenNodeName(transactions);
+            }
             arjPropertyManager.getCoreEnvironmentBean().setNodeIdentifier(transactions.nodeName);
             jtaPropertyManager.getJTAEnvironmentBean().setXaRecoveryNodes(Collections.singletonList(transactions.nodeName));
             TxControl.setXANodeName(transactions.nodeName);
-        } catch (CoreEnvironmentBeanException e) {
-            e.printStackTrace();
+        } catch (CoreEnvironmentBeanException | NoSuchAlgorithmException e) {
+            log.error("Could not set node name", e);
         }
+    }
+
+    private static void shortenNodeName(TransactionManagerConfiguration transactions) throws NoSuchAlgorithmException {
+        String originalNodeName = transactions.nodeName;
+        log.warnf("Node name \"%s\" is longer than 28 bytes, shortening it by using %s.", originalNodeName,
+                HASH_ALGORITHM_FOR_SHORTENING);
+        final byte[] nodeNameAsBytes = originalNodeName.getBytes();
+        MessageDigest messageDigest224 = MessageDigest.getInstance(HASH_ALGORITHM_FOR_SHORTENING);
+        transactions.nodeName = new String(messageDigest224.digest(nodeNameAsBytes), StandardCharsets.UTF_8);
+        log.warnf("New node name is \"%s\"", transactions.nodeName);
     }
 
     public void setDefaultProperties(Properties properties) {

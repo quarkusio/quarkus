@@ -42,6 +42,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
@@ -484,6 +485,11 @@ public final class TestProcessor {
     @BuildStep(onlyIf = Never.class)
     void neverRunThisOne() {
         throw new IllegalStateException("Not supposed to run!");
+    }
+
+    @BuildStep
+    void recordProperty(BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfigurationDefault) {
+        runTimeConfigurationDefault.produce(new RunTimeConfigurationDefaultBuildItem("recorded.property", "from-build-step"));
     }
 
     public static final class Never implements BooleanSupplier {

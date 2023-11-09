@@ -57,7 +57,7 @@ public class BeanDeployment {
 
     private static final Logger LOGGER = Logger.getLogger(BeanDeployment.class);
 
-    private final String name;
+    final String name;
     private final BuildContextImpl buildContext;
 
     private final IndexView beanArchiveComputingIndex;
@@ -99,7 +99,7 @@ public class BeanDeployment {
 
     private final List<InjectionPointInfo> injectionPoints;
 
-    private final boolean removeUnusedBeans;
+    final boolean removeUnusedBeans;
 
     private final List<Predicate<BeanInfo>> unusedExclusions;
 

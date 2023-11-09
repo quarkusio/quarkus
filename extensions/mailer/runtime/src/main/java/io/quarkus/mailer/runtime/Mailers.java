@@ -128,7 +128,8 @@ public class Mailers {
 
     private MailClient createMailClient(Vertx vertx, MailerRuntimeConfig config, TlsConfig tlsConfig) {
         io.vertx.ext.mail.MailConfig cfg = toVertxMailConfig(config, tlsConfig);
-        return MailClient.createShared(vertx, cfg);
+        // Do not create a shared instance, as we want separated connection pool for each SMTP servers.
+        return MailClient.create(vertx, cfg);
     }
 
     private io.vertx.ext.mail.DKIMSignOptions toVertxDkimSignOptions(DkimSignOptionsConfig optionsConfig) {

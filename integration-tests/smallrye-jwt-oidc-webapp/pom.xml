@@ -16,6 +16,7 @@
 
     <properties>
         <keycloak.url>http://localhost:8180/auth</keycloak.url>
+        <reactive-oracledb.url>vertx-reactive:oracle:thin:@localhost:1521/FREEPDB1</reactive-oracledb.url>
     </properties>
 
     <dependencies>
@@ -225,10 +226,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <keycloak.url>http://localhost:8180/auth</keycloak.url>
-                <reactive-oracledb.url>vertx-reactive:oracle:thin:@localhost:1521/FREEPDB1</reactive-oracledb.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

@@ -1,6 +1,7 @@
 package io.quarkus.oidc.runtime;
 
 import static io.quarkus.oidc.common.runtime.OidcConstants.TOKEN_SCOPE;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -14,6 +15,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -45,6 +47,7 @@ import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder;
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
@@ -205,6 +208,9 @@ public final class OidcUtils {
             return convertJsonArrayToList((JsonArray) claimValue);
         } else if (claimValue != null) {
             String sep = rolesConfig.getRoleClaimSeparator().isPresent() ? rolesConfig.getRoleClaimSeparator().get() : " ";
+            if (claimValue.toString().isBlank()) {
+                return Collections.emptyList();
+            }
             return Arrays.asList(claimValue.toString().split(sep));
         } else {
             return Collections.emptyList();
@@ -234,21 +240,23 @@ public final class OidcUtils {
     private static List<String> convertJsonArrayToList(JsonArray claimValue) {
         List<String> list = new ArrayList<>(claimValue.size());
         for (int i = 0; i < claimValue.size(); i++) {
+            String claimValueStr = claimValue.getString(i);
+            if (claimValueStr == null || claimValueStr.isBlank()) {
+                continue;
+            }
             list.add(claimValue.getString(i));
         }
         return list;
     }
 
-    static QuarkusSecurityIdentity validateAndCreateIdentity(
-            RoutingContext vertxContext, TokenCredential credential,
+    static QuarkusSecurityIdentity validateAndCreateIdentity(Map<String, Object> requestData, TokenCredential credential,
             TenantConfigContext resolvedContext, JsonObject tokenJson, JsonObject rolesJson, UserInfo userInfo,
-            TokenIntrospection introspectionResult) {
+            TokenIntrospection introspectionResult, TokenAuthenticationRequest request) {
 
         OidcTenantConfig config = resolvedContext.oidcConfig;
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
         builder.addCredential(credential);
-        AuthorizationCodeTokens codeTokens = vertxContext != null ? vertxContext.get(AuthorizationCodeTokens.class.getName())
-                : null;
+        AuthorizationCodeTokens codeTokens = (AuthorizationCodeTokens) requestData.get(AuthorizationCodeTokens.class.getName());
         if (codeTokens != null) {
             RefreshToken refreshTokenCredential = new RefreshToken(codeTokens.getRefreshToken());
             builder.addCredential(refreshTokenCredential);
@@ -265,6 +273,7 @@ public final class OidcUtils {
         }
         builder.addAttribute(QUARKUS_IDENTITY_EXPIRE_TIME, jwtPrincipal.getExpirationTime());
         builder.setPrincipal(jwtPrincipal);
+        var vertxContext = getRoutingContextAttribute(request);
         setRoutingContextAttribute(builder, vertxContext);
         setSecurityIdentityRoles(builder, config, rolesJson);
         setSecurityIdentityPermissions(builder, config, rolesJson);

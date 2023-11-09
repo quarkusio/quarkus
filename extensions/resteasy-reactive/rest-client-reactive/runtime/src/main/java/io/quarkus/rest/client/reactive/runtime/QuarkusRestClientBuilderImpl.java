@@ -232,6 +232,12 @@ public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
     }
 
     @Override
+    public QuarkusRestClientBuilder loggingBodyLimit(Integer limit) {
+        proxy.loggingBodyLimit(limit);
+        return this;
+    }
+
+    @Override
     public <T> T build(Class<T> clazz) throws IllegalStateException, RestClientDefinitionException {
         return proxy.build(clazz);
     }

@@ -160,7 +160,7 @@ public class QuteProcessor {
     private static final String CHECKED_TEMPLATE_BASE_PATH = "basePath";
     private static final String CHECKED_TEMPLATE_DEFAULT_NAME = "defaultName";
     private static final String IGNORE_FRAGMENTS = "ignoreFragments";
-    private static final String BASE_PATH = "templates";
+    private static final String DEFAULT_ROOT_PATH = "templates";
 
     private static final Set<String> ITERATION_METADATA_KEYS = Set.of("count", "index", "indexParity", "hasNext", "odd",
             "isOdd", "even", "isEven", "isLast", "isFirst");
@@ -182,6 +182,20 @@ public class QuteProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.QUTE);
+    }
+
+    @BuildStep
+    TemplateRootBuildItem defaultTemplateRoot() {
+        return new TemplateRootBuildItem(DEFAULT_ROOT_PATH);
+    }
+
+    @BuildStep
+    TemplateRootsBuildItem collectTemplateRoots(List<TemplateRootBuildItem> templateRoots) {
+        Set<String> roots = new HashSet<>();
+        for (TemplateRootBuildItem root : templateRoots) {
+            roots.add(root.getPath());
+        }
+        return new TemplateRootsBuildItem(Set.copyOf(roots));
     }
 
     @BuildStep
@@ -2045,9 +2059,9 @@ public class QuteProcessor {
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
-            QuteConfig config)
+            QuteConfig config,
+            TemplateRootsBuildItem templateRoots)
             throws IOException {
-        Set<Path> basePaths = new HashSet<>();
         Set<ApplicationArchive> allApplicationArchives = applicationArchives.getAllApplicationArchives();
         List<ResolvedDependency> extensionArtifacts = curateOutcome.getApplicationModel().getDependencies().stream()
                 .filter(Dependency::isRuntimeExtensionArtifact).collect(Collectors.toList());
@@ -2056,7 +2070,12 @@ public class QuteProcessor {
         watchedPaths.produce(HotDeploymentWatchedFileBuildItem.builder().setLocationPredicate(new Predicate<String>() {
             @Override
             public boolean test(String path) {
-                return path.startsWith(BASE_PATH);
+                for (String rootPath : templateRoots) {
+                    if (path.startsWith(rootPath)) {
+                        return true;
+                    }
+                }
+                return false;
             }
         }).build());
 
@@ -2065,51 +2084,64 @@ public class QuteProcessor {
                 // Skip extension archives that are also application archives
                 continue;
             }
-            for (Path path : artifact.getResolvedPaths()) {
-                if (Files.isDirectory(path)) {
-                    // Try to find the templates in the root dir
-                    try (Stream<Path> paths = Files.list(path)) {
-                        Path basePath = paths.filter(QuteProcessor::isBasePath).findFirst().orElse(null);
-                        if (basePath != null) {
-                            LOGGER.debugf("Found extension templates dir: %s", path);
-                            scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
-                                    config);
-                            break;
-                        }
-                    }
+            for (Path resolvedPath : artifact.getResolvedPaths()) {
+                if (Files.isDirectory(resolvedPath)) {
+                    scanPath(resolvedPath, resolvedPath, config, templateRoots, watchedPaths, templatePaths,
+                            nativeImageResources);
                 } else {
-                    try (FileSystem artifactFs = ZipUtils.newFileSystem(path)) {
-                        Path basePath = artifactFs.getPath(BASE_PATH);
-                        if (Files.exists(basePath)) {
-                            LOGGER.debugf("Found extension templates in: %s", path);
-                            scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
-                                    config);
+                    try (FileSystem artifactFs = ZipUtils.newFileSystem(resolvedPath)) {
+                        for (String templateRoot : templateRoots) {
+                            Path artifactBasePath = artifactFs.getPath(templateRoot);
+                            if (Files.exists(artifactBasePath)) {
+                                LOGGER.debugf("Found extension templates in: %s", resolvedPath);
+                                scan(artifactBasePath, artifactBasePath, templateRoot + "/", watchedPaths, templatePaths,
+                                        nativeImageResources,
+                                        config);
+                            }
                         }
                     } catch (IOException e) {
-                        LOGGER.warnf(e, "Unable to create the file system from the path: %s", path);
+                        LOGGER.warnf(e, "Unable to create the file system from the path: %s", resolvedPath);
                     }
                 }
             }
         }
         for (ApplicationArchive archive : allApplicationArchives) {
             archive.accept(tree -> {
-                for (Path rootDir : tree.getRoots()) {
+                for (Path root : tree.getRoots()) {
                     // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect
                     // a wrong directory name on case-insensitive file systems
-                    try (Stream<Path> rootDirPaths = Files.list(rootDir)) {
-                        Path basePath = rootDirPaths.filter(QuteProcessor::isBasePath).findFirst().orElse(null);
-                        if (basePath != null) {
-                            LOGGER.debugf("Found templates dir: %s", basePath);
-                            basePaths.add(basePath);
-                            scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
-                                    config);
-                            break;
-                        }
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
+                    scanPath(root, root, config, templateRoots, watchedPaths, templatePaths, nativeImageResources);
                 }
             });
+        }
+    }
+
+    private void scanPath(Path rootPath, Path path, QuteConfig config, TemplateRootsBuildItem templateRoots,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
+            BuildProducer<TemplatePathBuildItem> templatePaths,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources) {
+        if (!Files.isDirectory(path)) {
+            return;
+        }
+        try (Stream<Path> paths = Files.list(path)) {
+            for (Path file : paths.collect(Collectors.toList())) {
+                if (Files.isDirectory(file)) {
+                    // Iterate over the directories in the root
+                    // "/io", "/META-INF", "/templates", "/web", etc.
+                    Path relativePath = rootPath.relativize(file);
+                    if (templateRoots.isRoot(relativePath)) {
+                        LOGGER.debugf("Found templates dir: %s", file);
+                        scan(file, file, file.getFileName() + "/", watchedPaths, templatePaths,
+                                nativeImageResources,
+                                config);
+                    } else if (templateRoots.maybeRoot(relativePath)) {
+                        // Scan the path recursively because the template root may be nested, for example "/web/public"
+                        scanPath(rootPath, file, config, templateRoots, watchedPaths, templatePaths, nativeImageResources);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -2367,7 +2399,8 @@ public class QuteProcessor {
     void initialize(BuildProducer<SyntheticBeanBuildItem> syntheticBeans, QuteRecorder recorder,
             List<GeneratedValueResolverBuildItem> generatedValueResolvers, List<TemplatePathBuildItem> templatePaths,
             Optional<TemplateVariantsBuildItem> templateVariants,
-            List<GeneratedTemplateInitializerBuildItem> templateInitializers) {
+            List<GeneratedTemplateInitializerBuildItem> templateInitializers,
+            TemplateRootsBuildItem templateRoots) {
 
         List<String> templates = new ArrayList<>();
         List<String> tags = new ArrayList<>();
@@ -2391,7 +2424,8 @@ public class QuteProcessor {
                 .supplier(recorder.createContext(generatedValueResolvers.stream()
                         .map(GeneratedValueResolverBuildItem::getClassName).collect(Collectors.toList()), templates,
                         tags, variants, templateInitializers.stream()
-                                .map(GeneratedTemplateInitializerBuildItem::getClassName).collect(Collectors.toList())))
+                                .map(GeneratedTemplateInitializerBuildItem::getClassName).collect(Collectors.toList()),
+                        templateRoots.getPaths().stream().map(p -> p + "/").collect(Collectors.toSet())))
                 .done());
     }
 
@@ -3351,10 +3385,6 @@ public class QuteProcessor {
             }
         }
         return false;
-    }
-
-    private static boolean isBasePath(Path path) {
-        return path.getFileName().toString().equals(BASE_PATH);
     }
 
     private void checkDuplicatePaths(List<TemplatePathBuildItem> templatePaths) {

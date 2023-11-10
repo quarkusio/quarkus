@@ -14,6 +14,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
@@ -75,8 +76,7 @@ public class EngineProducer {
     private final ContentTypes contentTypes;
     private final List<String> tags;
     private final List<String> suffixes;
-    private final String basePath;
-    private final String tagPath;
+    private final Set<String> templateRoots;
     private final Pattern templatePathExclude;
     private final Locale defaultLocale;
     private final Charset defaultCharset;
@@ -89,8 +89,7 @@ public class EngineProducer {
             @All List<NamespaceResolver> namespaceResolvers) {
         this.contentTypes = contentTypes;
         this.suffixes = config.suffixes;
-        this.basePath = "templates/";
-        this.tagPath = basePath + TAGS;
+        this.templateRoots = context.getTemplateRoots();
         this.tags = context.getTags();
         this.templatePathExclude = config.templatePathExclude;
         this.defaultLocale = locales.defaultLocale;
@@ -300,14 +299,6 @@ public class EngineProducer {
         Qute.clearCache();
     }
 
-    String getBasePath() {
-        return basePath;
-    }
-
-    String getTagPath() {
-        return tagPath;
-    }
-
     private Resolver createResolver(String resolverClassName) {
         try {
             Class<?> resolverClazz = Thread.currentThread()
@@ -337,29 +328,31 @@ public class EngineProducer {
     }
 
     private Optional<TemplateLocation> locate(String path) {
-        URL resource = null;
-        String templatePath = basePath + path;
-        LOGGER.debugf("Locate template for %s", templatePath);
         if (templatePathExclude.matcher(path).matches()) {
             return Optional.empty();
         }
-        resource = locatePath(templatePath);
-        if (resource == null) {
-            // Try path with suffixes
-            for (String suffix : suffixes) {
-                String pathWithSuffix = path + "." + suffix;
-                if (templatePathExclude.matcher(pathWithSuffix).matches()) {
-                    continue;
-                }
-                templatePath = basePath + pathWithSuffix;
-                resource = locatePath(templatePath);
-                if (resource != null) {
-                    break;
+        for (String templateRoot : templateRoots) {
+            URL resource = null;
+            String templatePath = templateRoot + path;
+            LOGGER.debugf("Locate template for %s", templatePath);
+            resource = locatePath(templatePath);
+            if (resource == null) {
+                // Try path with suffixes
+                for (String suffix : suffixes) {
+                    String pathWithSuffix = path + "." + suffix;
+                    if (templatePathExclude.matcher(pathWithSuffix).matches()) {
+                        continue;
+                    }
+                    templatePath = templateRoot + pathWithSuffix;
+                    resource = locatePath(templatePath);
+                    if (resource != null) {
+                        break;
+                    }
                 }
             }
-        }
-        if (resource != null) {
-            return Optional.of(new ResourceTemplateLocation(resource, createVariant(templatePath)));
+            if (resource != null) {
+                return Optional.of(new ResourceTemplateLocation(resource, createVariant(templatePath)));
+            }
         }
         return Optional.empty();
     }

@@ -310,18 +310,20 @@ class RestClientReactiveProcessor {
                             continue;
                         }
                     }
-                    DotName providerDotName = providerClass.name();
+
+                    List<DotName> providerInterfaceNames = providerClass.interfaceNames();
                     // don't register server specific types
-                    if (providerDotName.equals(ResteasyReactiveDotNames.CONTAINER_REQUEST_FILTER)
-                            || providerDotName.equals(ResteasyReactiveDotNames.CONTAINER_RESPONSE_FILTER)
-                            || providerDotName.equals(ResteasyReactiveDotNames.EXCEPTION_MAPPER)) {
+                    if (providerInterfaceNames.contains(ResteasyReactiveDotNames.CONTAINER_REQUEST_FILTER)
+                            || providerInterfaceNames.contains(ResteasyReactiveDotNames.CONTAINER_RESPONSE_FILTER)
+                            || providerInterfaceNames.contains(ResteasyReactiveDotNames.EXCEPTION_MAPPER)) {
                         continue;
                     }
 
-                    if (providerClass.interfaceNames().contains(ResteasyReactiveDotNames.FEATURE)) {
+                    if (providerInterfaceNames.contains(ResteasyReactiveDotNames.FEATURE)) {
                         continue; // features should not be automatically registered for the client, see javadoc for Feature
                     }
 
+                    DotName providerDotName = providerClass.name();
                     int priority = getAnnotatedPriority(index, providerDotName.toString(), Priorities.USER);
 
                     constructor.invokeVirtualMethod(

@@ -177,17 +177,17 @@
                             <goal>integration-test</goal>
                             <goal>verify</goal>
                         </goals>
-                        <configuration>
-                            <systemPropertyVariables>
-                                {#if generate-native}
-                                <native.image.path>$\{project.build.directory}/$\{project.build.finalName}-runner</native.image.path>
-                                {/if}
-                                <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                                <maven.home>$\{maven.home}</maven.home>
-                            </systemPropertyVariables>
-                        </configuration>
                     </execution>
                 </executions>
+                <configuration>
+                    <systemPropertyVariables>
+                        {#if generate-native}
+                        <native.image.path>$\{project.build.directory}/$\{project.build.finalName}-runner</native.image.path>
+                        {/if}
+                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        <maven.home>$\{maven.home}</maven.home>
+                    </systemPropertyVariables>
+                </configuration>
             </plugin>
         </plugins>
     </build>

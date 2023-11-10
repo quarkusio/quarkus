@@ -557,7 +557,7 @@
             <dependency>
                 <groupId>org.mvnpm</groupId>
                 <artifactId>emoji-regex</artifactId>
-                <version>8.0.0</version>
+                <version>10.3.0</version>
                 <scope>runtime</scope>
             </dependency>
             <dependency>

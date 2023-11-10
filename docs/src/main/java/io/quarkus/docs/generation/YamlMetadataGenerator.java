@@ -125,7 +125,7 @@ public class YamlMetadataGenerator {
         om.writeValue(targetDir.resolve("indexByType.yaml").toFile(), index);
         om.writeValue(targetDir.resolve("indexByFile.yaml").toFile(), metadata);
 
-        om.writeValue(targetDir.resolve("relations.yaml").toFile(), index.relationsByFile(metadata));
+        om.writeValue(targetDir.resolve("relations.yaml").toFile(), index.relationsByUrl(metadata));
 
         om.writeValue(targetDir.resolve("errorsByType.yaml").toFile(), messages);
         om.writeValue(targetDir.resolve("errorsByFile.yaml").toFile(), messages.allByFile());
@@ -462,8 +462,8 @@ public class YamlMetadataGenerator {
                     .collect(Collectors.toMap(v -> v.filename, v -> v, (o1, o2) -> o1, TreeMap::new));
         }
 
-        public Map<String, DocRelations> relationsByFile(Map<String, DocMetadata> metadataByFile) {
-            Map<String, DocRelations> relationsByFile = new TreeMap<>();
+        public Map<String, DocRelations> relationsByUrl(Map<String, DocMetadata> metadataByFile) {
+            Map<String, DocRelations> relationsByUrl = new TreeMap<>();
 
             for (Entry<String, DocMetadata> currentMetadataEntry : metadataByFile.entrySet()) {
                 DocRelations docRelations = new DocRelations();
@@ -482,7 +482,8 @@ public class YamlMetadataGenerator {
                     }
                     if (extensionMatches > 0) {
                         docRelations.sameExtensions.add(
-                                new DocRelation(candidateMetadata.getTitle(), candidateMetadata.getUrl(), extensionMatches));
+                                new DocRelation(candidateMetadata.getTitle(), candidateMetadata.getUrl(),
+                                        candidateMetadata.getType(), extensionMatches));
                     }
 
                     int topicMatches = 0;
@@ -494,16 +495,17 @@ public class YamlMetadataGenerator {
                     if (topicMatches > 0 && (!candidateMetadata.getTopics().contains(COMPATIBILITY_TOPIC)
                             || currentMetadataEntry.getValue().getTopics().contains(COMPATIBILITY_TOPIC))) {
                         docRelations.sameTopics
-                                .add(new DocRelation(candidateMetadata.getTitle(), candidateMetadata.getUrl(), topicMatches));
+                                .add(new DocRelation(candidateMetadata.getTitle(), candidateMetadata.getUrl(),
+                                        candidateMetadata.getType(), topicMatches));
                     }
                 }
 
                 if (!docRelations.isEmpty()) {
-                    relationsByFile.put(currentMetadataEntry.getKey(), docRelations);
+                    relationsByUrl.put(currentMetadataEntry.getValue().getUrl(), docRelations);
                 }
             }
 
-            return relationsByFile;
+            return relationsByUrl;
         }
 
         // convenience
@@ -649,9 +651,9 @@ public class YamlMetadataGenerator {
     @JsonInclude(value = Include.NON_EMPTY)
     public static class DocRelations {
 
-        Set<DocRelation> sameTopics = new TreeSet<>(DocRelationComparator.INSTANCE);
+        final Set<DocRelation> sameTopics = new TreeSet<>(DocRelationComparator.INSTANCE);
 
-        Set<DocRelation> sameExtensions = new TreeSet<>(DocRelationComparator.INSTANCE);
+        final Set<DocRelation> sameExtensions = new TreeSet<>(DocRelationComparator.INSTANCE);
 
         public Set<DocRelation> getSameTopics() {
             return sameTopics;
@@ -670,15 +672,18 @@ public class YamlMetadataGenerator {
     @JsonInclude(value = Include.NON_EMPTY)
     public static class DocRelation {
 
-        String title;
+        final String title;
 
-        String url;
+        final String url;
 
-        int matches;
+        final String type;
 
-        DocRelation(String title, String url, int matches) {
+        final int matches;
+
+        DocRelation(String title, String url, String type, int matches) {
             this.title = title;
             this.url = url;
+            this.type = type;
             this.matches = matches;
         }
 
@@ -688,6 +693,10 @@ public class YamlMetadataGenerator {
 
         public String getUrl() {
             return url;
+        }
+
+        public String getType() {
+            return type;
         }
 
         public int getMatches() {

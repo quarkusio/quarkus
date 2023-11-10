@@ -22,6 +22,16 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-openshift-client</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>openshift-model-operator</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>openshift-model-operator-hub</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

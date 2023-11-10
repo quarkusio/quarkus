@@ -9,7 +9,6 @@ include::_attributes.adoc[]
 :categories: core,getting-started,observability
 :diataxis-type: reference
 :topics: logging,observability
-:extensions: io.quarkus:quarkus-core
 
 Read about the use of logging API in Quarkus, configuring logging output, and using logging adapters to unify the output from other logging APIs.
 

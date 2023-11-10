@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 :diataxis-type: tutorial
 :categories: getting-started, data, core
 :summary: Discover some of the features that make developing with Quarkus a joyful experience.
-:topics: getting-started,devservices
+:topics: getting-started,dev-services
 
 This tutorial shows you how to create an application which writes to and reads from a database.
 You will use Dev Services, so you will not actually download, configure, or even start the database yourself.

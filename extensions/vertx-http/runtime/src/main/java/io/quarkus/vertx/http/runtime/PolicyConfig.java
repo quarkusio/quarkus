@@ -36,6 +36,7 @@ public class PolicyConfig {
      * Permissions granted by this policy will be created with a `java.security.Permission` implementation
      * specified by this configuration property. The permission class must declare exactly one constructor
      * that accepts permission name (`String`) or permission name and actions (`String`, `String[]`).
+     * Permission class must be registered for reflection if you run your application in a native mode.
      */
     @ConfigItem(defaultValue = "io.quarkus.security.StringPermission")
     public String permissionClass = StringPermission.class.getName();

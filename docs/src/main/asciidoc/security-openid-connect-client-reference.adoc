@@ -14,7 +14,7 @@ This reference guide explains how to use:
 
 The access tokens managed by these extensions can be used as HTTP Authorization Bearer tokens to access the remote services.
 
-Please also see xref:security-openid-connect-client.adoc[OpenID Connect Client and Token Propagation Quickstart].
+Also see xref:security-openid-connect-client.adoc[OpenID Connect Client and Token Propagation Quickstart].
 
 == OidcClient
 
@@ -45,7 +45,7 @@ quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus
 
 `OidcClient` will discover that the token endpoint URL is `http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens`.
 
-Alternatively, if the discovery endpoint is not available or you would like to save on the discovery endpoint round-trip, you can disable the discovery and configure the token endpoint address with a relative path value, for example:
+Alternatively, if the discovery endpoint is not available or you want to save on the discovery endpoint round-trip, you can disable the discovery and configure the token endpoint address with a relative path value, for example:
 
 [source, properties]
 ----
@@ -62,7 +62,7 @@ A more compact way to configure the token endpoint URL without the discovery is 
 quarkus.oidc-client.token-path=http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/tokens
 ----
 
-Setting 'quarkus.oidc-client.auth-server-url' and 'quarkus.oidc-client.discovery-enabled' is not required in this case.
+Setting `quarkus.oidc-client.auth-server-url` and `quarkus.oidc-client.discovery-enabled` is not required in this case.
 
 === Supported Token Grants
 
@@ -109,7 +109,7 @@ It can be further customized using a `quarkus.oidc-client.grant-options.password
 
 ==== Other Grants
 
-`OidcClient` can also help with acquiring the tokens using the grants which require some extra input parameters which can not be captured in the configuration. These grants are `refresh_token` (with the external refresh token), `authorization_code`, as well as two grants which can be used to exchange the current access token, `urn:ietf:params:oauth:grant-type:token-exchange` and `urn:ietf:params:oauth:grant-type:jwt-bearer`.
+`OidcClient` can also help with acquiring the tokens using the grants which require some extra input parameters which cannot be captured in the configuration. These grants are `refresh_token` (with the external refresh token), `authorization_code`, as well as two grants which can be used to exchange the current access token, `urn:ietf:params:oauth:grant-type:token-exchange` and `urn:ietf:params:oauth:grant-type:jwt-bearer`.
 
 Using the `refresh_token` grant which uses an out-of-band refresh token to acquire a new set of tokens will be required if the existing refresh token has been posted to the current Quarkus endpoint for it to acquire the access token. In this case `OidcClient` needs to be configured as follows:
 
@@ -123,7 +123,7 @@ quarkus.oidc-client.grant.type=refresh
 
 and then you can use `OidcClient.refreshTokens` method with a provided refresh token to get the access token.
 
-Using the `urn:ietf:params:oauth:grant-type:token-exchange` or `urn:ietf:params:oauth:grant-type:jwt-bearer` grants may be required if you are building a complex microservices application and would like to avoid the same `Bearer` token be propagated to and used by more than one service. Please see <<token-propagation-reactive,Token Propagation in MicroProfile RestClient Reactive filter>> and <<token-propagation,Token Propagation in MicroProfile RestClient filter>> for more details.
+Using the `urn:ietf:params:oauth:grant-type:token-exchange` or `urn:ietf:params:oauth:grant-type:jwt-bearer` grants might be required if you are building a complex microservices application and want to avoid the same `Bearer` token be propagated to and used by more than one service. See <<token-propagation-reactive,Token Propagation in MicroProfile RestClient Reactive filter>> and <<token-propagation,Token Propagation in MicroProfile RestClient filter>> for more details.
 
 Using `OidcClient` to support the `authorization code` grant might be required if for some reason you cannot use the xref:security-oidc-code-flow-authentication.adoc[Quarkus OIDC extension] to support Authorization Code Flow. If there is a very good reason for you to implement Authorization Code Flow then you can configure `OidcClient` as follows:
 
@@ -139,7 +139,7 @@ and then you can use `OidcClient.accessTokens` method accepting a Map of extra p
 
 ==== Grant scopes
 
-You may need to request that a specific set of scopes is associated with an issued access token.
+You might need to request that a specific set of scopes is associated with an issued access token.
 Use a dedicated `quarkus.oidc-client.scopes` list property, for example: `quarkus.oidc-client.scopes=email,phone`
 
 === Use OidcClient directly
@@ -201,7 +201,7 @@ public class OidcClientResource {
 
     @GET
     public String getResponse() {
-        //  Get the access token which may have been refreshed.
+        //  Get the access token, which might have been refreshed.
         String accessToken = tokens.getAccessToken();
         // Use the access token to configure MP RestClient Authorization header/etc
     }
@@ -381,7 +381,7 @@ It works similarly to the way `OidcClientRequestFilter` does (see <<oidc-client-
 
 `OidcClientRequestReactiveFilter` delays an initial token acquisition until it is executed to avoid blocking an IO thread.
 
-You can selectively register `OidcClientRequestReactiveFilter` by using either io.quarkus.oidc.client.reactive.filter.OidcClientFilter or org.eclipse.microprofile.rest.client.annotation.RegisterProvider annotations:
+You can selectively register `OidcClientRequestReactiveFilter` by using either `io.quarkus.oidc.client.reactive.filter.OidcClientFilter` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotations:
 
 [source,java]
 ----
@@ -545,18 +545,18 @@ You can also inject named `Tokens`, see <<named-oidc-clients,Inject named OidcCl
 === Refreshing Access Tokens
 
 `OidcClientRequestReactiveFilter`, `OidcClientRequestFilter` and `Tokens` producers will refresh the current expired access token if the refresh token is available.
-Additionally, `quarkus.oidc-client.refresh-token-time-skew` property can be used for a preemptive access token refreshment to avoid sending nearly expired access tokens which may cause HTTP 401 errors. For example if this property is set to `3S` and the access token will expire in less than 3 seconds then this token will be auto-refreshed.
+Additionally, `quarkus.oidc-client.refresh-token-time-skew` property can be used for a preemptive access token refreshment to avoid sending nearly expired access tokens that might cause HTTP 401 errors. For example if this property is set to `3S` and the access token will expire in less than 3 seconds then this token will be auto-refreshed.
 
 If the access token needs to be refreshed but no refresh token is available then an attempt will be made to acquire a new token using the configured grant such as `client_credentials`.
 
-Please note that some OpenID Connect Providers will not return a refresh token in a `client_credentials` grant response. For example, starting from Keycloak 12 a refresh token will not be returned by default for `client_credentials`. The providers may also restrict a number of times a refresh token can be used.
+Note that some OpenID Connect Providers will not return a refresh token in a `client_credentials` grant response. For example, starting from Keycloak 12 a refresh token will not be returned by default for `client_credentials`. The providers might also restrict the number of times a refresh token can be used.
 
 [[revoke-access-tokens]]
 === Revoking Access Tokens
 
 If your OpenId Connect provider such as Keycloak supports a token revocation endpoint then `OidcClient#revokeAccessToken` can be used to revoke the current access token. The revocation endpoint URL will be discovered alongside the token request URI or can be configured with `quarkus.oidc-client.revoke-path`.
 
-You may want to have the access token revoked if using this token with a REST client fails with HTTP `401` or the access token has already been used for a long time and you'd like to refresh it.
+You might want to have the access token revoked if using this token with a REST client fails with HTTP `401` or the access token has already been used for a long time and you'd like to refresh it.
 
 This can be achieved by requesting a token refresh using a refresh token. However, if the refresh token is not available then you can refresh it by revoking it first and then request a new access token.
 
@@ -638,7 +638,7 @@ quarkus.oidc-client.client-id=quarkus-app
 quarkus.oidc-client.credentials.jwt.key-file=privateKey.pem
 ----
 
-`private_key_jwt` with the key store file, signature algorithm is `RS256`:
+`private_key_jwt` with the keystore file, signature algorithm is `RS256`:
 
 [source,properties]
 ----
@@ -704,7 +704,7 @@ quarkus.oidc-client.credentials.jwt.issuer=${apple.issuer}
 
 ==== Mutual TLS
 
-Some OpenID Connect Providers may require that a client is authenticated as part of the `Mutual TLS` (`mTLS`) authentication process.
+Some OpenID Connect Providers require that a client is authenticated as part of the mutual TLS (`mTLS`) authentication process.
 
 `quarkus-oidc-client` can be configured as follows to support `mTLS`:
 
@@ -760,7 +760,7 @@ Add the following dependencies to your test project:
 </dependency>
 ----
 
-Write Wiremock based `QuarkusTestResourceLifecycleManager`, for example:
+Write a Wiremock-based `QuarkusTestResourceLifecycleManager`, for example:
 [source, java]
 ----
 package io.quarkus.it.keycloak;
@@ -817,7 +817,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
 }
 ----
 
-Prepare the REST test endpoints, you can have the test frontend endpoint which uses the injected MP REST client with a registered OidcClient filter to invoke on the downstream endpoint which echoes the token back, for example, see the `integration-tests/oidc-client-wiremock` in the `main` Quarkus repository.
+Prepare the REST test endpoints. You can have the test front-end endpoint, which uses the injected MP REST client with a registered OidcClient filter, call the downstream endpoint. This endpoint echoes the token back. For example, see the `integration-tests/oidc-client-wiremock` in the `main` Quarkus repository.
 
 Set `application.properties`, for example:
 
@@ -842,7 +842,7 @@ If you work with Keycloak then you can use the same approach as described in the
 
 === How to check the errors in the logs
 
-Please enable `io.quarkus.oidc.client.runtime.OidcClientImpl` `TRACE` level logging to see more details about the token acquisition and refresh errors:
+Enable `io.quarkus.oidc.client.runtime.OidcClientImpl` `TRACE` level logging to see more details about the token acquisition and refresh errors:
 
 [source, properties]
 ----
@@ -850,7 +850,7 @@ quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientImpl".level=TRACE
 quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientImpl".min-level=TRACE
 ----
 
-Please enable `io.quarkus.oidc.client.runtime.OidcClientRecorder` `TRACE` level logging to see more details about the OidcClient initialization errors:
+Enable `io.quarkus.oidc.client.runtime.OidcClientRecorder` `TRACE` level logging to see more details about the OidcClient initialization errors:
 
 [source, properties]
 ----
@@ -916,7 +916,7 @@ quarkus.oidc-token-propagation.exchange-token=true
 
 Note `AccessTokenRequestReactiveFilter` will use `OidcClient` to exchange the current token, and you can use `quarkus.oidc-client.grant-options.exchange` to set the additional exchange properties expected by your OpenID Connect Provider.
 
-If you work with providers such as `Azure` that link:https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-on-behalf-of-flow#example[require using] link:https://www.rfc-editor.org/rfc/rfc7523#section-2.1[JWT bearer token grant] to exhange the current token then you can configure `AccessTokenRequestReactiveFilter` to exchange the token like this:
+If you work with providers such as `Azure` that link:https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-on-behalf-of-flow#example[require using] link:https://www.rfc-editor.org/rfc/rfc7523#section-2.1[JWT bearer token grant] to exchange the current token then you can configure `AccessTokenRequestReactiveFilter` to exchange the token like this:
 
 [source,properties]
 ----
@@ -944,7 +944,7 @@ When you need to propagate the current Authorization Code Flow access token then
 
 However, the direct end to end Bearer token propagation should be avoided if possible. For example, `Client -> Service A -> Service B` where `Service B` receives a token sent by `Client` to `Service A`. In such cases `Service B` will not be able to distinguish if the token came from `Service A` or from `Client` directly. For `Service B` to verify the token came from `Service A` it should be able to assert a new issuer and audience claims.
 
-Additionally, a complex application may need to exchange or update the tokens before propagating them. For example, the access context might be different when `Service A` is accessing `Service B`. In this case, `Service A` might be granted a narrow or a completely different set of scopes to access `Service B`.
+Additionally, a complex application might need to exchange or update the tokens before propagating them. For example, the access context might be different when `Service A` is accessing `Service B`. In this case, `Service A` might be granted a narrow or a completely different set of scopes to access `Service B`.
 
 The following sections show how `AccessTokenRequestFilter` and `JsonWebTokenRequestFilter` can help.
 
@@ -1003,7 +1003,7 @@ quarkus.oidc-client.grant-options.exchange.audience=quarkus-app-exchange
 quarkus.oidc-token-propagation.exchange-token=true
 ----
 
-If you work with providers such as `Azure` that link:https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-on-behalf-of-flow#example[require using] link:https://www.rfc-editor.org/rfc/rfc7523#section-2.1[JWT bearer token grant] to exhange the current token then you can configure `AccessTokenRequestFilter` to exchange the token like this:
+If you work with providers such as `Azure` that link:https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-on-behalf-of-flow#example[require using] link:https://www.rfc-editor.org/rfc/rfc7523#section-2.1[JWT bearer token grant] to exchange the current token then you can configure `AccessTokenRequestFilter` to exchange the token like this:
 
 [source,properties]
 ----
@@ -1080,13 +1080,13 @@ smallrye.jwt.new-token.audience=http://downstream-resource
 smallrye.jwt.new-token.override-matching-claims=true
 ----
 
-As already noted above, please use `AccessTokenRequestFilter` if you work with Keycloak or OpenID Connect Provider which supports a Token Exchange protocol.
+As already noted above, use `AccessTokenRequestFilter` if you work with Keycloak or OpenID Connect Provider which supports a Token Exchange protocol.
 
 [[integration-testing-token-propagation]]
 === Testing
 
 You can generate the tokens as described in xref:security-oidc-bearer-token-authentication.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] section.
-Prepare the REST test endpoints, you can have the test frontend endpoint which uses the injected MP REST client with a registered token propagation filter to invoke on the downstream endpoint, for example, see the `integration-tests/oidc-token-propagation` in the `main` Quarkus repository.
+Prepare the REST test endpoints. You can have the test front-end endpoint, which uses the injected MP REST client with a registered token propagation filter, call the downstream endpoint. For example, see the `integration-tests/oidc-token-propagation` in the `main` Quarkus repository.
 
 [[reactive-token-propagation]]
 == Token Propagation Reactive
@@ -1104,7 +1104,7 @@ Add the following Maven Dependency:
 The `quarkus-oidc-token-propagation-reactive` extension provides `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter` which can be used to propagate the current `Bearer` or `Authorization Code Flow` access tokens.
 
 The `quarkus-oidc-token-propagation-reactive` extension (as opposed to the non-reactive `quarkus-oidc-token-propagation` extension) does not currently support the exchanging or resigning the tokens before the propagation.
-However, these features may be added in the future.
+However, these features might be added in the future.
 
 == References
 

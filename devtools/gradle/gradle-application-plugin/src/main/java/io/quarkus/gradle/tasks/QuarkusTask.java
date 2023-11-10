@@ -20,8 +20,7 @@ import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.utilities.OS;
 
 public abstract class QuarkusTask extends DefaultTask {
-    private static final List<String> WORKER_BUILD_FORK_OPTIONS = List.of("quarkus.package.",
-            "quarkus.application.", "quarkus.gradle-worker.", "quarkus.analytics.");
+    private static final List<String> WORKER_BUILD_FORK_OPTIONS = List.of("quarkus.");
 
     private final transient QuarkusPluginExtension extension;
     protected final File projectDir;
@@ -89,7 +88,7 @@ public abstract class QuarkusTask extends DefaultTask {
         }
 
         // It's kind of a "very big hammer" here, but this way we ensure that all necessary properties
-        // ("quarkus.package.*","quarkus.application,*", "quarkus.gradle-worker.*") from all configuration sources
+        // "quarkus.*" from all configuration sources
         // are (forcefully) used in the Quarkus build - even properties defined on the QuarkusPluginExtension.
         // This prevents that settings from e.g. a application.properties takes precedence over an explicit
         // setting in Gradle project properties, the Quarkus extension or even via the environment or system

@@ -2,13 +2,12 @@ package io.quarkus.smallrye.health.runtime;
 
 import io.smallrye.health.SmallRyeHealth;
 import io.smallrye.health.SmallRyeHealthReporter;
-import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 public class SmallRyeReadinessHandler extends SmallRyeHealthHandlerBase {
 
     @Override
-    protected Uni<SmallRyeHealth> getHealth(SmallRyeHealthReporter reporter, RoutingContext ctx) {
-        return reporter.getReadinessAsync();
+    protected SmallRyeHealth getHealth(SmallRyeHealthReporter reporter, RoutingContext routingContext) {
+        return reporter.getReadiness();
     }
 }

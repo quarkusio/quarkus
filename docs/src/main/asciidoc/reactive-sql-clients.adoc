@@ -207,7 +207,7 @@ client.query("DROP TABLE IF EXISTS fruits").execute()
     .await().indefinitely();
 ----
 
-NOTE: Wondering why we need block until the latest query is completed?
+NOTE: Wondering why we need to block until the latest query is completed?
 This code is part of a `@PostConstruct` method and Quarkus invokes it synchronously.
 As a consequence, returning prematurely could lead to serving requests while the database is not ready yet.
 
@@ -413,7 +413,7 @@ We will use https://jquery.com/[jQuery] to simplify interactions with the backen
 </html>
 ----
 
-In the Javascript code, we need a function to refresh the list of fruits when:
+In the JavaScript code, we need a function to refresh the list of fruits when:
 
 * the page is loaded, or
 * a fruit is added, or
@@ -814,7 +814,7 @@ public class PipeliningExample {
     PgPool client;
 
     public Uni<String> favoriteFruitAndVegetable() {
-        // Explicitely acquire a connection
+        // Explicitly acquire a connection
         return client.withConnection(conn -> {
             Uni<String> favoriteFruit = conn.query("SELECT name FROM fruits WHERE preferred IS TRUE").execute()
                     .onItem().transform(rows -> rows.iterator().next().getString("name"));

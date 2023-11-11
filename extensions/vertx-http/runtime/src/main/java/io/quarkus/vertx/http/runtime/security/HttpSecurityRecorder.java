@@ -110,12 +110,22 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public void setBuildTimeNamedPolicies(Map<String, Supplier<HttpSecurityPolicy>> buildTimeNamedPolicies) {
-        Map<String, HttpSecurityPolicy> nameToPolicy = new HashMap<>();
-        for (Map.Entry<String, Supplier<HttpSecurityPolicy>> nameToSupplier : buildTimeNamedPolicies.entrySet()) {
-            nameToPolicy.put(nameToSupplier.getKey(), nameToSupplier.getValue().get());
-        }
-        PathMatchingHttpSecurityPolicy.replaceNamedBuildTimePolicies(nameToPolicy);
+    public RuntimeValue<HttpSecurityPolicy> createNamedHttpSecurityPolicy(Supplier<HttpSecurityPolicy> policySupplier,
+            String name) {
+        return new RuntimeValue<>(new HttpSecurityPolicy() {
+            private final HttpSecurityPolicy delegate = policySupplier.get();
+
+            @Override
+            public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
+                    AuthorizationRequestContext requestContext) {
+                return delegate.checkPermission(request, identity, requestContext);
+            }
+
+            @Override
+            public String name() {
+                return name;
+            }
+        });
     }
 
     public static abstract class DefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {

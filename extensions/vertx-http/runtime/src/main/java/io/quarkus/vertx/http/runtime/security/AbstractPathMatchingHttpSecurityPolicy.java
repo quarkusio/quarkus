@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import jakarta.enterprise.inject.Instance;
+
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -34,8 +36,8 @@ public class AbstractPathMatchingHttpSecurityPolicy {
     private final PathMatcher<List<HttpMatcher>> pathMatcher = new PathMatcher<>();
 
     AbstractPathMatchingHttpSecurityPolicy(Map<String, PolicyMappingConfig> permissions,
-            Map<String, PolicyConfig> rolePolicy, String rootPath, Map<String, HttpSecurityPolicy> namedBuildTimePolicies) {
-        init(permissions, toNamedHttpSecPolicies(rolePolicy, namedBuildTimePolicies), rootPath);
+            Map<String, PolicyConfig> rolePolicy, String rootPath, Instance<HttpSecurityPolicy> installedPolicies) {
+        init(permissions, toNamedHttpSecPolicies(rolePolicy, installedPolicies), rootPath);
     }
 
     public String getAuthMechanismName(RoutingContext routingContext) {
@@ -158,11 +160,21 @@ public class AbstractPathMatchingHttpSecurityPolicy {
     }
 
     private static Map<String, HttpSecurityPolicy> toNamedHttpSecPolicies(Map<String, PolicyConfig> rolePolicies,
-            Map<String, HttpSecurityPolicy> namedBuildTimePolicies) {
+            Instance<HttpSecurityPolicy> installedPolicies) {
         Map<String, HttpSecurityPolicy> namedPolicies = new HashMap<>();
-        if (!namedBuildTimePolicies.isEmpty()) {
-            namedPolicies.putAll(namedBuildTimePolicies);
+        for (Instance.Handle<HttpSecurityPolicy> handle : installedPolicies.handles()) {
+            if (handle.getBean().getBeanClass().getSuperclass() == AbstractPathMatchingHttpSecurityPolicy.class) {
+                continue;
+            }
+            var policy = handle.get();
+            if (policy.name() != null) {
+                if (policy.name().isBlank()) {
+                    throw new ConfigurationException("HTTP Security policy '" + policy + "' name must not be blank");
+                }
+                namedPolicies.put(policy.name(), policy);
+            }
         }
+
         for (Map.Entry<String, PolicyConfig> e : rolePolicies.entrySet()) {
             PolicyConfig policyConfig = e.getValue();
             if (policyConfig.permissions.isEmpty()) {

@@ -33,6 +33,7 @@ import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder;
 import io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
@@ -45,10 +46,18 @@ public class HttpSecurityProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void produceNamedHttpSecurityPolicies(List<HttpSecurityPolicyBuildItem> httpSecurityPolicyBuildItems,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
             HttpSecurityRecorder recorder) {
         if (!httpSecurityPolicyBuildItems.isEmpty()) {
-            recorder.setBuildTimeNamedPolicies(httpSecurityPolicyBuildItems.stream().collect(
-                    Collectors.toMap(HttpSecurityPolicyBuildItem::getName, HttpSecurityPolicyBuildItem::getPolicySupplier)));
+            httpSecurityPolicyBuildItems.forEach(item -> syntheticBeanProducer
+                    .produce(SyntheticBeanBuildItem
+                            .configure(HttpSecurityPolicy.class)
+                            .named(HttpSecurityPolicy.class.getName() + "." + item.getName())
+                            .runtimeValue(recorder.createNamedHttpSecurityPolicy(item.getPolicySupplier(), item.getName()))
+                            .addType(HttpSecurityPolicy.class)
+                            .scope(Singleton.class)
+                            .unremovable()
+                            .done()));
         }
     }
 

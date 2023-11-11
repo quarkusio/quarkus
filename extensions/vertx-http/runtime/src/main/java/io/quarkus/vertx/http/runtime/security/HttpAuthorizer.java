@@ -23,10 +23,12 @@ public class HttpAuthorizer extends AbstractHttpAuthorizer {
     }
 
     private static List<HttpSecurityPolicy> toList(Instance<HttpSecurityPolicy> installedPolicies) {
-        List<HttpSecurityPolicy> policies = new ArrayList<>();
+        List<HttpSecurityPolicy> globalPolicies = new ArrayList<>();
         for (HttpSecurityPolicy i : installedPolicies) {
-            policies.add(i);
+            if (i.name() == null) {
+                globalPolicies.add(i);
+            }
         }
-        return policies;
+        return globalPolicies;
     }
 }

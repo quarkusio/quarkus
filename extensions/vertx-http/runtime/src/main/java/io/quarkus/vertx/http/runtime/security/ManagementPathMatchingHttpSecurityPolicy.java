@@ -1,7 +1,6 @@
 package io.quarkus.vertx.http.runtime.security;
 
-import java.util.Map;
-
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
 
 import io.quarkus.runtime.Startup;
@@ -18,8 +17,8 @@ import io.quarkus.vertx.http.runtime.management.ManagementInterfaceConfiguration
 public class ManagementPathMatchingHttpSecurityPolicy extends AbstractPathMatchingHttpSecurityPolicy {
 
     ManagementPathMatchingHttpSecurityPolicy(ManagementInterfaceBuildTimeConfig buildTimeConfig,
-            ManagementInterfaceConfiguration runTimeConfig) {
-        super(runTimeConfig.auth.permissions, runTimeConfig.auth.rolePolicy, buildTimeConfig.rootPath, Map.of());
+            ManagementInterfaceConfiguration runTimeConfig, Instance<HttpSecurityPolicy> installedPolicies) {
+        super(runTimeConfig.auth.permissions, runTimeConfig.auth.rolePolicy, buildTimeConfig.rootPath, installedPolicies);
     }
 
 }

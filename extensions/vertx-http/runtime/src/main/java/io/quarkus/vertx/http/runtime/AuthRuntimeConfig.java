@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.util.Map;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -22,4 +23,16 @@ public class AuthRuntimeConfig {
      */
     @ConfigItem(name = "policy")
     public Map<String, PolicyConfig> rolePolicy;
+
+    /**
+     * The authentication realm
+     */
+    @ConfigItem
+    public Optional<String> realm;
+
+    /**
+     * Form Auth config
+     */
+    @ConfigItem
+    public FormAuthRuntimeConfig form;
 }

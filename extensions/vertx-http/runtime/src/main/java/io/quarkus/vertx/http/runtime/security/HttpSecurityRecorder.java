@@ -21,7 +21,6 @@ import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.spi.runtime.MethodDescription;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.smallrye.mutiny.CompositeException;
 import io.smallrye.mutiny.Uni;
@@ -51,16 +50,6 @@ public class HttpSecurityRecorder {
                     authorizer = CDI.current().select(HttpAuthorizer.class).get();
                 }
                 authorizer.checkPermission(event);
-            }
-        };
-    }
-
-    public Supplier<?> setupBasicAuth(HttpBuildTimeConfig buildTimeConfig) {
-        return new Supplier<BasicAuthenticationMechanism>() {
-            @Override
-            public BasicAuthenticationMechanism get() {
-                return new BasicAuthenticationMechanism(buildTimeConfig.auth.realm.orElse(null),
-                        buildTimeConfig.auth.form.enabled);
             }
         };
     }

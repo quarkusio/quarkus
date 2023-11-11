@@ -23,6 +23,7 @@ import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
 import io.quarkus.vertx.http.runtime.FormAuthConfig;
+import io.quarkus.vertx.http.runtime.FormAuthRuntimeConfig;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.smallrye.mutiny.Uni;
@@ -74,22 +75,23 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
             key = httpConfiguration.encryptionKey.get();
         }
         FormAuthConfig form = buildTimeConfig.auth.form;
-        this.loginManager = new PersistentLoginManager(key, form.cookieName, form.timeout.toMillis(),
-                form.newCookieInterval.toMillis(), form.httpOnlyCookie, form.cookieSameSite.name(),
-                form.cookiePath.orElse(null));
-        this.loginPage = startWithSlash(form.loginPage.orElse(null));
-        this.errorPage = startWithSlash(form.errorPage.orElse(null));
-        this.landingPage = startWithSlash(form.landingPage.orElse(null));
+        FormAuthRuntimeConfig runtimeForm = httpConfiguration.auth.form;
+        this.loginManager = new PersistentLoginManager(key, runtimeForm.cookieName, runtimeForm.timeout.toMillis(),
+                runtimeForm.newCookieInterval.toMillis(), runtimeForm.httpOnlyCookie, runtimeForm.cookieSameSite.name(),
+                runtimeForm.cookiePath.orElse(null));
+        this.loginPage = startWithSlash(runtimeForm.loginPage.orElse(null));
+        this.errorPage = startWithSlash(runtimeForm.errorPage.orElse(null));
+        this.landingPage = startWithSlash(runtimeForm.landingPage.orElse(null));
         this.postLocation = startWithSlash(form.postLocation);
-        this.usernameParameter = form.usernameParameter;
-        this.passwordParameter = form.passwordParameter;
-        this.locationCookie = form.locationCookie;
-        this.cookiePath = form.cookiePath.orElse(null);
-        boolean redirectAfterLogin = form.redirectAfterLogin;
+        this.usernameParameter = runtimeForm.usernameParameter;
+        this.passwordParameter = runtimeForm.passwordParameter;
+        this.locationCookie = runtimeForm.locationCookie;
+        this.cookiePath = runtimeForm.cookiePath.orElse(null);
+        boolean redirectAfterLogin = runtimeForm.redirectAfterLogin;
         this.redirectToLandingPage = landingPage != null && redirectAfterLogin;
         this.redirectToLoginPage = loginPage != null;
         this.redirectToErrorPage = errorPage != null;
-        this.cookieSameSite = CookieSameSite.valueOf(form.cookieSameSite.name());
+        this.cookieSameSite = CookieSameSite.valueOf(runtimeForm.cookieSameSite.name());
     }
 
     public FormAuthenticationMechanism(String loginPage, String postLocation,

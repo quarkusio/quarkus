@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.deployment;
 
 import static io.quarkus.arc.processor.DotNames.APPLICATION_SCOPED;
+import static io.quarkus.arc.processor.DotNames.DEFAULT_BEAN;
 import static io.quarkus.arc.processor.DotNames.SINGLETON;
 
 import java.util.List;
@@ -11,12 +12,14 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Singleton;
 
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -30,7 +33,6 @@ import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConf
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
-import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder;
@@ -41,6 +43,8 @@ import io.vertx.core.http.ClientAuth;
 import io.vertx.ext.web.RoutingContext;
 
 public class HttpSecurityProcessor {
+
+    private static final DotName BASIC_AUTH_MECH_NAME = DotName.createSimple(BasicAuthenticationMechanism.class);
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
@@ -79,26 +83,23 @@ public class HttpSecurityProcessor {
     }
 
     @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
-    @Record(ExecutionTime.STATIC_INIT)
-    SyntheticBeanBuildItem initBasicAuth(
-            HttpSecurityRecorder recorder,
-            HttpBuildTimeConfig buildTimeConfig,
+    AdditionalBeanBuildItem initBasicAuth(HttpBuildTimeConfig buildTimeConfig,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformerProducer,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
-        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(BasicAuthenticationMechanism.class)
-                .types(HttpAuthenticationMechanism.class)
-                .scope(Singleton.class)
-                .supplier(recorder.setupBasicAuth(buildTimeConfig));
+
         if (!buildTimeConfig.auth.form.enabled && !isMtlsClientAuthenticationEnabled(buildTimeConfig)
                 && !buildTimeConfig.auth.basic.orElse(false)) {
             //if not explicitly enabled we make this a default bean, so it is the fallback if nothing else is defined
-            configurator.defaultBean();
+            annotationsTransformerProducer.produce(new AnnotationsTransformerBuildItem(AnnotationsTransformer
+                    .appliedToClass()
+                    .whenClass(cl -> BASIC_AUTH_MECH_NAME.equals(cl.name()))
+                    .thenTransform(t -> t.add(DEFAULT_BEAN))));
             if (buildTimeConfig.auth.basic.isPresent() && buildTimeConfig.auth.basic.get()) {
                 securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
             }
         }
 
-        return configurator.done();
+        return AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(BasicAuthenticationMechanism.class).build();
     }
 
     public static boolean applicationBasicAuthRequired(HttpBuildTimeConfig buildTimeConfig,

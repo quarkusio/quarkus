@@ -155,6 +155,12 @@ public class ReactiveResource {
 The same is true for your third-party libraries.
 If they happen to depend on servlets you need to find a migration path for them.
 
+=== Log authentication and authorization failures
+
+The RESTEasy Reactive endpoint security checks are performed before xref:cdi.adoc#interceptors[CDI interceptors] are invoked.
+The safest approach to log Quarkus Security authentication exceptions is to ensure that proactive authentication is enabled and to use Vert.x HTTP route failure handlers.
+For more information, see the xref:security-proactive-authentication.adoc#customize-auth-exception-responses[Customize authentication exception responses] section of the Proactive authentication guide.
+
 == Client
 
 The Reactive REST Client (`quarkus-rest-client-reactive` and its dependencies) replace the legacy `quarkus-rest-client` but leverage Quarkus' build time processing

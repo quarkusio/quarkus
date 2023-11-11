@@ -94,6 +94,7 @@ public class HelloService {
 }
 ----
 
+[[customize-auth-exception-responses]]
 == Customize authentication exception responses
 
 You can use Jakarta REST `ExceptionMapper` to capture Quarkus Security authentication exceptions such as `io.quarkus.security.AuthenticationFailedException`, for example:

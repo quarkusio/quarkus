@@ -99,6 +99,21 @@ quarkus {
 }
 ----
 
+== Generating Descriptor Set
+Protocol Buffers do not contain descriptions of their own types. Thus, given only a raw message without the corresponding .proto file defining its type, it is difficult to extract any useful data. However, the contents of a .proto file can itself be https://protobuf.dev/programming-guides/techniques/#self-description[represented using protocol buffers].
+
+By default, Quarkus does not generate these descriptors. Quarkus does provide several configuration options for generating them. These would be added to your `application.properties` or `application.yml` file:
+
+* `quarkus.generate-code.grpc.descriptor-set.generate`
+** Set to `true` to enable generation
+* `quarkus.generate-code.grpc.descriptor-set.output-dir`
+** Set this to a value relative to the project's build directory (i.e. `target` for Maven, `build` for Gradle)
+** Maven default value: `target/generated-sources/grpc`
+** Gradle default value: `$buildDir/classes/java/quarkus-generated-sources/grpc`
+* `quarkus.generate-code.grpc.descriptor-set.name`
+** Name of the descriptor set file to generate
+** Default value: `descriptor_set.dsc`
+
 == Configuring gRPC code generation for dependencies
 
 You may have dependencies that contain `\*.proto` files you want to compile to Java sources.

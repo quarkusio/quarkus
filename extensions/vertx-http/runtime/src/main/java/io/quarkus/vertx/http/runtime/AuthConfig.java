@@ -26,12 +26,6 @@ public class AuthConfig {
     public FormAuthConfig form;
 
     /**
-     * The authentication realm
-     */
-    @ConfigItem
-    public Optional<String> realm;
-
-    /**
      * If this is true and credentials are present then a user will always be authenticated
      * before the request progresses.
      *

@@ -8,17 +8,26 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * An HTTP Security policy, that controls which requests are allowed to proceed.
- *
- * There are two different ways these policies can be installed. The easiest is to just create a CDI bean, in which
- * case the policy will be invoked on every request.
- *
- * Alternatively HttpSecurityPolicyBuildItem can be used to create a named policy. This policy can then be referenced
- * in the application.properties path matching rules, which allows this policy to be applied to specific requests.
+ * CDI beans implementing this interface are invoked on every request unless they define {@link #name()}.
+ * The policy with {@link #name()} can then be referenced in the application.properties path matching rules,
+ * which allows this policy to be applied only to specific requests.
  */
 public interface HttpSecurityPolicy {
 
     Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext);
+
+    /**
+     * HTTP Security policy name referenced in the application.properties path matching rules, which allows this
+     * policy to be applied to specific requests. The name must not be blank. When the name is {@code null}, policy
+     * will be applied to every request.
+     *
+     * @return policy name
+     */
+    default String name() {
+        // null == global policy
+        return null;
+    }
 
     /**
      * The results of a permission check

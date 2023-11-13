@@ -50,7 +50,7 @@
         <version.gizmo>1.7.0</version.gizmo>
         <version.jandex>3.1.5</version.jandex>
         <version.jboss-logging>3.5.3.Final</version.jboss-logging>
-        <version.mutiny>2.2.0</version.mutiny>
+        <version.mutiny>2.5.1</version.mutiny>
         <version.bridger>1.6.Final</version.bridger>
         <!-- test versions -->
         <version.assertj>3.24.2</version.assertj>

@@ -215,9 +215,10 @@ public class HttpSecurityProcessor {
                 && !buildTimeConfig.auth.basic.orElse(false)) {
             //if not explicitly enabled we make this a default bean, so it is the fallback if nothing else is defined
             configurator.defaultBean();
-            if (buildTimeConfig.auth.basic.isPresent() && buildTimeConfig.auth.basic.get()) {
-                securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
-            }
+        }
+
+        if (buildTimeConfig.auth.basic.isPresent() && buildTimeConfig.auth.basic.get()) {
+            securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
         }
 
         return configurator.done();

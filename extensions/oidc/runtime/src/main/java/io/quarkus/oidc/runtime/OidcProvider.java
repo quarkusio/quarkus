@@ -35,6 +35,7 @@ import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.CertificateChain;
 import io.quarkus.oidc.TokenCustomizer;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
@@ -86,7 +87,7 @@ public class OidcProvider implements Closeable {
         this.oidcConfig = oidcConfig;
         this.tokenCustomizer = tokenCustomizer;
         this.asymmetricKeyResolver = jwks == null ? null
-                : new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval);
+                : new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval, oidcConfig.certificateChain);
         if (client != null && oidcConfig != null && !oidcConfig.jwks.resolveEarly) {
             this.keyResolverProvider = new DynamicVerificationKeyResolver(client, oidcConfig);
         } else {
@@ -103,7 +104,13 @@ public class OidcProvider implements Closeable {
         this.client = null;
         this.oidcConfig = oidcConfig;
         this.tokenCustomizer = TokenCustomizerFinder.find(oidcConfig);
-        this.asymmetricKeyResolver = new LocalPublicKeyResolver(publicKeyEnc);
+        if (publicKeyEnc != null) {
+            this.asymmetricKeyResolver = new LocalPublicKeyResolver(publicKeyEnc);
+        } else if (oidcConfig.certificateChain.trustStoreFile.isPresent()) {
+            this.asymmetricKeyResolver = new CertChainPublicKeyResolver(oidcConfig.certificateChain);
+        } else {
+            throw new IllegalStateException("Neither public key nor certificate chain verification modes are enabled");
+        }
         this.keyResolverProvider = null;
         this.issuer = checkIssuerProp();
         this.audience = checkAudienceProp();
@@ -399,10 +406,16 @@ public class OidcProvider implements Closeable {
         volatile JsonWebKeySet jwks;
         volatile long lastForcedRefreshTime;
         volatile long forcedJwksRefreshIntervalMilliSecs;
+        final CertChainPublicKeyResolver chainResolverFallback;
 
-        JsonWebKeyResolver(JsonWebKeySet jwks, Duration forcedJwksRefreshInterval) {
+        JsonWebKeyResolver(JsonWebKeySet jwks, Duration forcedJwksRefreshInterval, CertificateChain chain) {
             this.jwks = jwks;
             this.forcedJwksRefreshIntervalMilliSecs = forcedJwksRefreshInterval.toMillis();
+            if (chain.trustStoreFile.isPresent()) {
+                chainResolverFallback = new CertChainPublicKeyResolver(chain);
+            } else {
+                chainResolverFallback = null;
+            }
         }
 
         @Override
@@ -453,10 +466,15 @@ public class OidcProvider implements Closeable {
                 }
             }
 
+            if (key == null && chainResolverFallback != null) {
+                LOG.debug("JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set,"
+                        + " falling back to the certificate chain resolver");
+                key = chainResolverFallback.resolveKey(jws, nestingContext);
+            }
+
             if (key == null) {
                 throw new UnresolvableKeyException(
-                        String.format("JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set",
-                                kid));
+                        "JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set");
             } else {
                 return key;
             }
@@ -539,12 +557,6 @@ public class OidcProvider implements Closeable {
 
     public OidcConfigurationMetadata getMetadata() {
         return client.getMetadata();
-    }
-
-    private static interface RefreshableVerificationKeyResolver extends VerificationKeyResolver {
-        default Uni<Void> refresh() {
-            return Uni.createFrom().voidItem();
-        }
     }
 
     private static class CustomClaimsValidator implements Validator {

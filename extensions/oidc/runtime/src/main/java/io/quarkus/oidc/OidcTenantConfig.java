@@ -1,5 +1,6 @@
 package io.quarkus.oidc;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -169,6 +170,66 @@ public class OidcTenantConfig extends OidcCommonConfig {
      */
     @ConfigItem
     public Logout logout = new Logout();
+
+    /**
+     * Configuration of the certificate chain which can be used to verify tokens.
+     * If the certificate chain trusstore is configured then the tokens can be verified using the certificate
+     * chain inlined in the Base64-encoded format as an `x5c` header in the token itself.
+     */
+    @ConfigItem
+    public CertificateChain certificateChain = new CertificateChain();
+
+    @ConfigGroup
+    public static class CertificateChain {
+        /**
+         * Truststore file which keeps thumbprints of the trusted certificates
+         */
+        @ConfigItem
+        public Optional<Path> trustStoreFile = Optional.empty();
+
+        /**
+         * A parameter to specify the password of the truststore file if it is configured with {@link #trustStoreFile}.
+         */
+        @ConfigItem
+        public Optional<String> trustStorePassword;
+
+        /**
+         * A parameter to specify the alias of the truststore certificate.
+         */
+        @ConfigItem
+        public Optional<String> trustStoreCertAlias = Optional.empty();
+
+        /**
+         * An optional parameter to specify type of the truststore file. If not given, the type is automatically detected
+         * based on the file name.
+         */
+        @ConfigItem
+        public Optional<String> trustStoreFileType = Optional.empty();
+
+        public Optional<Path> getTrustStoreFile() {
+            return trustStoreFile;
+        }
+
+        public void setTrustStoreFile(Path trustStoreFile) {
+            this.trustStoreFile = Optional.of(trustStoreFile);
+        }
+
+        public Optional<String> getTrustStoreCertAlias() {
+            return trustStoreCertAlias;
+        }
+
+        public void setTrustStoreCertAlias(String trustStoreCertAlias) {
+            this.trustStoreCertAlias = Optional.of(trustStoreCertAlias);
+        }
+
+        public Optional<String> getTrustStoreFileType() {
+            return trustStoreFileType;
+        }
+
+        public void setTrustStoreFileType(Optional<String> trustStoreFileType) {
+            this.trustStoreFileType = trustStoreFileType;
+        }
+    }
 
     /**
      * Different options to configure authorization requests
@@ -1810,5 +1871,13 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
     public void setCodeGrant(CodeGrant codeGrant) {
         this.codeGrant = codeGrant;
+    }
+
+    public CertificateChain getCertificateChain() {
+        return certificateChain;
+    }
+
+    public void setCertificateChain(CertificateChain certificateChain) {
+        this.certificateChain = certificateChain;
     }
 }

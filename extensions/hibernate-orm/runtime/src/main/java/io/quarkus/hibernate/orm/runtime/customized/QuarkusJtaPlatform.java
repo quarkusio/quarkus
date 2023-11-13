@@ -1,25 +1,40 @@
 package io.quarkus.hibernate.orm.runtime.customized;
 
+import static jakarta.transaction.Status.STATUS_ACTIVE;
+
 import jakarta.transaction.Synchronization;
 import jakarta.transaction.SystemException;
 import jakarta.transaction.Transaction;
 import jakarta.transaction.TransactionManager;
+import jakarta.transaction.TransactionSynchronizationRegistry;
 import jakarta.transaction.UserTransaction;
 
-import org.hibernate.engine.transaction.internal.jta.JtaStatusHelper;
 import org.hibernate.engine.transaction.jta.platform.internal.TransactionManagerAccess;
 import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
 import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatformException;
+
+import io.quarkus.arc.Arc;
 
 public final class QuarkusJtaPlatform implements JtaPlatform, TransactionManagerAccess {
 
     public static final QuarkusJtaPlatform INSTANCE = new QuarkusJtaPlatform();
 
+    private volatile TransactionSynchronizationRegistry transactionSynchronizationRegistry;
     private volatile TransactionManager transactionManager;
     private volatile UserTransaction userTransaction;
 
     private QuarkusJtaPlatform() {
         //nothing
+    }
+
+    public TransactionSynchronizationRegistry retrieveTransactionSynchronizationRegistry() {
+        TransactionSynchronizationRegistry transactionSynchronizationRegistry = this.transactionSynchronizationRegistry;
+        if (transactionSynchronizationRegistry == null) {
+            transactionSynchronizationRegistry = Arc.container().instance(TransactionSynchronizationRegistry.class).get();
+
+            this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
+        }
+        return transactionSynchronizationRegistry;
     }
 
     @Override
@@ -63,7 +78,8 @@ public final class QuarkusJtaPlatform implements JtaPlatform, TransactionManager
 
     @Override
     public boolean canRegisterSynchronization() {
-        return JtaStatusHelper.isActive(getTransactionManager());
+        // no need to check STATUS_MARKED_ROLLBACK since synchronizations can't be registered in that state
+        return retrieveTransactionSynchronizationRegistry().getTransactionStatus() == STATUS_ACTIVE;
     }
 
     @Override

@@ -1,17 +1,21 @@
 package io.quarkus.smallrye.graphql.runtime;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.jboss.logging.Logger;
 
+import io.netty.util.concurrent.ScheduledFuture;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.graphql.websocket.GraphQLWebSocketSession;
 import io.smallrye.graphql.websocket.GraphQLWebsocketHandler;
 import io.smallrye.graphql.websocket.graphqltransportws.GraphQLTransportWSSubprotocolHandler;
 import io.smallrye.graphql.websocket.graphqlws.GraphQLWSSubprotocolHandler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.ServerWebSocket;
+import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -54,9 +58,31 @@ public class SmallRyeGraphQLOverWebSocketHandler extends SmallRyeGraphQLAbstract
                             serverWebSocket.close();
                             return;
                     }
+
+                    QuarkusHttpUser user = (QuarkusHttpUser) ctx.user();
+                    ScheduledFuture<?> authExpiryFuture = null;
+                    if (user != null) {
+                        //close the connection when the identity expires
+                        Long expire = user.getSecurityIdentity().getAttribute("quarkus.identity.expire-time");
+                        if (expire != null) {
+                            authExpiryFuture = ((ConnectionBase) ctx.request().connection()).channel().eventLoop()
+                                    .schedule(() -> {
+                                        if (!serverWebSocket.isClosed()) {
+                                            serverWebSocket.close();
+                                        }
+                                    }, (expire * 1000) - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+                        }
+                    }
+
                     log.debugf("Starting websocket with subprotocol = %s", subprotocol);
                     GraphQLWebsocketHandler finalHandler = handler;
-                    serverWebSocket.closeHandler(v -> finalHandler.onClose());
+                    ScheduledFuture<?> finalAuthExpiryFuture = authExpiryFuture;
+                    serverWebSocket.closeHandler(v -> {
+                        finalHandler.onClose();
+                        if (finalAuthExpiryFuture != null) {
+                            finalAuthExpiryFuture.cancel(false);
+                        }
+                    });
                     serverWebSocket.endHandler(v -> finalHandler.onEnd());
                     serverWebSocket.exceptionHandler(finalHandler::onThrowable);
                     serverWebSocket.textMessageHandler(finalHandler::onMessage);

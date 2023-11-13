@@ -201,6 +201,13 @@ public class DevUIProcessor {
                             .build());
         }
 
+        Handler<RoutingContext> endpointInfoHandler = recorder.endpointInfoHandler(basepath);
+
+        routeProducer.produce(
+                nonApplicationRootPathBuildItem.routeBuilder().route(DEVUI + SLASH + "endpoints.json")
+                        .handler(endpointInfoHandler)
+                        .build());
+
         // For the Vaadin router (So that bookmarks/url refreshes work)
         for (DevUIRoutesBuildItem devUIRoutesBuildItem : devUIRoutesBuildItems) {
             String route = devUIRoutesBuildItem.getPath();

@@ -286,7 +286,7 @@ public class JaxrsClientReactiveProcessor {
         reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem
                 .builder(scannedParameterContainers.stream().map(name -> name.toString()).collect(Collectors.toSet())
                         .toArray(new String[0]))
-                .fields().build());
+                .methods().fields().build());
 
         if (resourceScanningResultBuildItem.isEmpty()
                 || resourceScanningResultBuildItem.get().getResult().getClientInterfaces().isEmpty()) {

@@ -44,7 +44,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.RuntimeType;
@@ -284,8 +283,7 @@ public class JaxrsClientReactiveProcessor {
             scannedParameterContainers.addAll(parameterContainersBuildItem.getClassNames());
         }
         reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem
-                .builder(scannedParameterContainers.stream().map(name -> name.toString()).collect(Collectors.toSet())
-                        .toArray(new String[0]))
+                .builder(scannedParameterContainers.stream().map(DotName::toString).distinct().toArray(String[]::new))
                 .methods().fields().build());
 
         if (resourceScanningResultBuildItem.isEmpty()

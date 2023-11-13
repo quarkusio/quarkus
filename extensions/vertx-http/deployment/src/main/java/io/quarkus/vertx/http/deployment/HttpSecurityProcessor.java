@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;

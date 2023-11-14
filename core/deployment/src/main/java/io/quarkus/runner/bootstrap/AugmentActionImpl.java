@@ -228,12 +228,10 @@ public class AugmentActionImpl implements AugmentAction {
         if (lastResult.getPath() != null) {
             properties.put("path", outputTargetBuildItem.getOutputDirectory().relativize(lastResult.getPath()).toString());
         }
-        Map<String, Object> metadata = lastResult.getMetadata();
+        Map<String, String> metadata = lastResult.getMetadata();
         if (metadata != null) {
-            for (Map.Entry<String, Object> entry : metadata.entrySet()) {
-                if (entry.getValue() instanceof String) {
-                    properties.put("metadata." + entry.getKey(), entry.getValue());
-                }
+            for (Map.Entry<String, String> entry : metadata.entrySet()) {
+                properties.put("metadata." + entry.getKey(), entry.getValue());
             }
         }
         try (FileOutputStream fos = new FileOutputStream(quarkusArtifactMetadataPath.toFile())) {

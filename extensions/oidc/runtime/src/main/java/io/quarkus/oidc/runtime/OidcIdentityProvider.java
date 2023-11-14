@@ -142,7 +142,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     primaryTokenUni = verifySelfSignedTokenUni(resolvedContext, request.getToken().getToken());
                 }
             } else {
-                primaryTokenUni = verifyTokenUni(requestData, resolvedContext, request.getToken().getToken(),
+                primaryTokenUni = verifyTokenUni(requestData, resolvedContext, request.getToken(),
                         isIdToken(request), null);
             }
 
@@ -192,7 +192,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                         }
 
                         Uni<TokenVerificationResult> tokenUni = verifyTokenUni(requestData, resolvedContext,
-                                request.getToken().getToken(),
+                                request.getToken(),
                                 false, userInfo);
 
                         return tokenUni.onItemOrFailure()
@@ -421,14 +421,15 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 && (resolvedContext.oidcConfig.authentication.verifyAccessToken
                         || resolvedContext.oidcConfig.roles.source.orElse(null) == Source.accesstoken)) {
             final String codeAccessToken = (String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE);
-            return verifyTokenUni(requestData, resolvedContext, codeAccessToken, false, userInfo);
+            return verifyTokenUni(requestData, resolvedContext, new AccessTokenCredential(codeAccessToken), false, userInfo);
         } else {
             return NULL_CODE_ACCESS_TOKEN_UNI;
         }
     }
 
     private Uni<TokenVerificationResult> verifyTokenUni(Map<String, Object> requestData, TenantConfigContext resolvedContext,
-            String token, boolean enforceAudienceVerification, UserInfo userInfo) {
+            TokenCredential tokenCred, boolean enforceAudienceVerification, UserInfo userInfo) {
+        final String token = tokenCred.getToken();
         if (OidcUtils.isOpaqueToken(token)) {
             if (!resolvedContext.oidcConfig.token.allowOpaqueTokenIntrospection) {
                 LOG.debug("Token is opaque but the opaque token introspection is not allowed");
@@ -452,7 +453,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             // Verify JWT token with the remote introspection
             LOG.debug("Starting the JWT token introspection");
             return introspectTokenUni(resolvedContext, token, false);
-        } else {
+        } else if (resolvedContext.oidcConfig.jwks.resolveEarly) {
             // Verify JWT token with the local JWK keys with a possible remote introspection fallback
             final String nonce = (String) requestData.get(OidcConstants.NONCE);
             try {
@@ -470,6 +471,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     return Uni.createFrom().failure(t);
                 }
             }
+        } else {
+            final String nonce = (String) requestData.get(OidcConstants.NONCE);
+            return resolveJwksAndVerifyTokenUni(resolvedContext, tokenCred, enforceAudienceVerification,
+                    resolvedContext.oidcConfig.token.isSubjectRequired(), nonce);
         }
     }
 
@@ -486,6 +491,15 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         return resolvedContext.provider.refreshJwksAndVerifyJwtToken(token, enforceAudienceVerification, subjectRequired, nonce)
                 .onFailure(f -> fallbackToIntrospectionIfNoMatchingKey(f, resolvedContext))
                 .recoverWithUni(f -> introspectTokenUni(resolvedContext, token, true));
+    }
+
+    private Uni<TokenVerificationResult> resolveJwksAndVerifyTokenUni(TenantConfigContext resolvedContext,
+            TokenCredential tokenCred,
+            boolean enforceAudienceVerification, boolean subjectRequired, String nonce) {
+        return resolvedContext.provider
+                .getKeyResolverAndVerifyJwtToken(tokenCred, enforceAudienceVerification, subjectRequired, nonce)
+                .onFailure(f -> fallbackToIntrospectionIfNoMatchingKey(f, resolvedContext))
+                .recoverWithUni(f -> introspectTokenUni(resolvedContext, tokenCred.getToken(), true));
     }
 
     private static boolean fallbackToIntrospectionIfNoMatchingKey(Throwable f, TenantConfigContext resolvedContext) {

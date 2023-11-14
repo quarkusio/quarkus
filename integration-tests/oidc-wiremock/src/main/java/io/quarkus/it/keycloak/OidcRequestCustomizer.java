@@ -3,6 +3,7 @@ package io.quarkus.it.keycloak;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.vertx.core.http.HttpMethod;
@@ -18,7 +19,22 @@ public class OidcRequestCustomizer implements OidcRequestFilter {
         HttpMethod method = request.method();
         String uri = request.uri();
         if (method == HttpMethod.GET && uri.endsWith("/auth/azure/jwk")) {
-            request.putHeader("Authorization", "ID token");
+            String token = contextProps.getString(OidcRequestContextProperties.TOKEN);
+            AccessTokenCredential tokenCred = contextProps.get(OidcRequestContextProperties.TOKEN_CREDENTIAL,
+                    AccessTokenCredential.class);
+            // or
+            // IdTokenCredential tokenCred = contextProps.get(OidcRequestContextProperties.TOKEN_CREDENTIAL,
+            //                                                 IdTokenCredential.class);
+            // or
+            // TokenCredential tokenCred = contextProps.get(OidcRequestContextProperties.TOKEN_CREDENTIAL,
+            //                                                 TokenCredential.class);
+            // if either access or ID token has to be verified and check is it an instanceof
+            // AccessTokenCredential or IdTokenCredential
+            // or simply
+            // String token = contextProps.getString(OidcRequestContextProperties.TOKEN);
+            if (token.equals(tokenCred.getToken())) {
+                request.putHeader("Authorization", "Access token: " + token);
+            }
         }
     }
 

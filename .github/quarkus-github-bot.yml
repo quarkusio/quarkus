@@ -407,13 +407,13 @@ triage:
         - extensions/google-cloud-functions
         - integration-tests/google-cloud-functions
     - id: mandrel
-      labels: [area/mandrel]
+      labels: [area/native-image]
       titleBody: "mandrel"
       notify: [galderz, zakkak, Karm]
     - id: native-image
       labels: [area/native-image]
       title: "\\bnative\\b"
-      notify: []
+      notify: [zakkak]
     - id: awt
       labels: [area/graphics]
       expression: |
@@ -421,7 +421,7 @@ triage:
               || matches("sun.java2d", titleBody)
               || matches("javax.imageio", titleBody)
               || matches("sun.awt", titleBody)
-      notify: [galderz, zakkak, Karm]
+      notify: [galderz, Karm]
       notifyInPullRequest: true
       directories:
         - extensions/awt/

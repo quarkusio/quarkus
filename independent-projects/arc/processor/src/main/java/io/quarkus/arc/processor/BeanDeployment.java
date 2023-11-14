@@ -286,7 +286,7 @@ public class BeanDeployment {
         buildContext.putInternal(Key.INJECTION_POINTS, Collections.unmodifiableList(this.injectionPoints));
 
         if (buildCompatibleExtensions != null) {
-            buildCompatibleExtensions.runRegistration(beanArchiveComputingIndex, beans, observers);
+            buildCompatibleExtensions.runRegistration(beanArchiveComputingIndex, beans, interceptors, observers);
         }
 
         return registerSyntheticBeans(beanRegistrars, buildContext);

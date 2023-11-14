@@ -16,6 +16,7 @@ import jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension;
 import jakarta.interceptor.Interceptor;
 
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.JandexReflection;
 
 // only this class uses reflection, everything else in this package is reflection-free
 class ExtensionInvoker {
@@ -83,43 +84,8 @@ class ExtensionInvoker {
             throws ReflectiveOperationException {
 
         Class<?>[] parameterTypes = new Class[arguments.size()];
-
         for (int i = 0; i < parameterTypes.length; i++) {
-            Object argument = arguments.get(i);
-            Class<?> argumentClass = argument.getClass();
-
-            // beware of ordering! subtypes must precede supertypes
-            if (jakarta.enterprise.lang.model.declarations.ClassInfo.class.isAssignableFrom(argumentClass)) {
-                parameterTypes[i] = jakarta.enterprise.lang.model.declarations.ClassInfo.class;
-            } else if (jakarta.enterprise.lang.model.declarations.MethodInfo.class.isAssignableFrom(argumentClass)) {
-                parameterTypes[i] = jakarta.enterprise.lang.model.declarations.MethodInfo.class;
-            } else if (jakarta.enterprise.lang.model.declarations.FieldInfo.class.isAssignableFrom(argumentClass)) {
-                parameterTypes[i] = jakarta.enterprise.lang.model.declarations.FieldInfo.class;
-            } else if (jakarta.enterprise.inject.build.compatible.spi.ScannedClasses.class.isAssignableFrom(argumentClass)) {
-                parameterTypes[i] = jakarta.enterprise.inject.build.compatible.spi.ScannedClasses.class;
-            } else if (jakarta.enterprise.inject.build.compatible.spi.MetaAnnotations.class.isAssignableFrom(argumentClass)) {
-                parameterTypes[i] = jakarta.enterprise.inject.build.compatible.spi.MetaAnnotations.class;
-            } else if (jakarta.enterprise.inject.build.compatible.spi.ClassConfig.class.isAssignableFrom(argumentClass)) {
-                parameterTypes[i] = jakarta.enterprise.inject.build.compatible.spi.ClassConfig.class;
-            } else if (jakarta.enterprise.inject.build.compatible.spi.MethodConfig.class.isAssignableFrom(argumentClass)) {
-                parameterTypes[i] = jakarta.enterprise.inject.build.compatible.spi.MethodConfig.class;
-            } else if (jakarta.enterprise.inject.build.compatible.spi.FieldConfig.class.isAssignableFrom(argumentClass)) {
-                parameterTypes[i] = jakarta.enterprise.inject.build.compatible.spi.FieldConfig.class;
-            } else if (jakarta.enterprise.inject.build.compatible.spi.BeanInfo.class.isAssignableFrom(argumentClass)) {
-                parameterTypes[i] = jakarta.enterprise.inject.build.compatible.spi.BeanInfo.class;
-            } else if (jakarta.enterprise.inject.build.compatible.spi.ObserverInfo.class.isAssignableFrom(argumentClass)) {
-                parameterTypes[i] = jakarta.enterprise.inject.build.compatible.spi.ObserverInfo.class;
-            } else if (jakarta.enterprise.inject.build.compatible.spi.SyntheticComponents.class
-                    .isAssignableFrom(argumentClass)) {
-                parameterTypes[i] = jakarta.enterprise.inject.build.compatible.spi.SyntheticComponents.class;
-            } else if (jakarta.enterprise.inject.build.compatible.spi.Messages.class.isAssignableFrom(argumentClass)) {
-                parameterTypes[i] = jakarta.enterprise.inject.build.compatible.spi.Messages.class;
-            } else if (jakarta.enterprise.inject.build.compatible.spi.Types.class.isAssignableFrom(argumentClass)) {
-                parameterTypes[i] = jakarta.enterprise.inject.build.compatible.spi.Types.class;
-            } else {
-                // should never happen, internal error (or missing error handling) if it does
-                throw new IllegalArgumentException("Unexpected extension method argument: " + argument);
-            }
+            parameterTypes[i] = JandexReflection.loadRawType(method.parameterType(i));
         }
 
         Class<?> extensionClass = extensionClasses.get(method.extensionClass.name().toString());
@@ -136,7 +102,6 @@ class ExtensionInvoker {
     }
 
     /**
-     *
      * @return {@code true} if no {@link BuildCompatibleExtension} was found, {@code false} otherwise
      */
     boolean isEmpty() {

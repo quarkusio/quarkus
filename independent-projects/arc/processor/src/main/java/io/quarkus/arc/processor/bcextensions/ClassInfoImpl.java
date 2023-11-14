@@ -166,7 +166,7 @@ class ClassInfoImpl extends DeclarationInfoImpl<org.jboss.jandex.ClassInfo> impl
             alreadySeen.add(clazz.name());
 
             DotName superClassName = clazz.superName();
-            if (!DotNames.OBJECT.equals(superClassName)) {
+            if (superClassName != null && !DotNames.OBJECT.equals(superClassName)) {
                 org.jboss.jandex.ClassInfo superClass = jandexIndex.getClassByName(superClassName);
                 workQueue.add(superClass);
             }

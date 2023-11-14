@@ -56,7 +56,7 @@ export class QwcInfo extends LitElement {
     }
         
     async load() {
-        const response = await fetch(this._infoUrl)
+        const response = await fetch(this._infoUrl);
         const data = await response.json();
         this._info = data;
     }
@@ -72,7 +72,7 @@ export class QwcInfo extends LitElement {
         }else{
             return html`
             <div style="color: var(--lumo-secondary-text-color);width: 95%;" >
-                <div>Fetching infomation...</div>
+                <div>Fetching information...</div>
                 <vaadin-progress-bar indeterminate></vaadin-progress-bar>
             </div>
             `;

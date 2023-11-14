@@ -187,7 +187,7 @@
         <lit-state.version>1.7.0</lit-state.version>
         <echarts.version>5.4.3</echarts.version>
         <wc-codemirror.version>2.1.0</wc-codemirror.version>
-        <es-module-shims.version>1.8.0</es-module-shims.version>
+        <es-module-shims.version>1.8.1</es-module-shims.version>
         <path-to-regexp.version>2.4.0</path-to-regexp.version>
     </properties>
 

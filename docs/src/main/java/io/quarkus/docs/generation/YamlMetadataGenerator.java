@@ -7,11 +7,13 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
@@ -27,6 +29,7 @@ import org.asciidoctor.SafeMode;
 import org.asciidoctor.ast.Document;
 import org.asciidoctor.ast.StructuralNode;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.exc.StreamWriteException;
@@ -54,6 +57,8 @@ public class YamlMetadataGenerator {
 
     final static String INCL_ATTRIBUTES = "include::_attributes.adoc[]\n";
     final static String YAML_FRONTMATTER = "---\n";
+
+    private static final String COMPATIBILITY_TOPIC = "compatibility";
 
     public static void main(String[] args) throws Exception {
         System.out.println("[INFO] Creating YAML metadata generator: " + List.of(args));
@@ -119,6 +124,8 @@ public class YamlMetadataGenerator {
 
         om.writeValue(targetDir.resolve("indexByType.yaml").toFile(), index);
         om.writeValue(targetDir.resolve("indexByFile.yaml").toFile(), metadata);
+
+        om.writeValue(targetDir.resolve("relations.yaml").toFile(), index.relationsByUrl(metadata));
 
         om.writeValue(targetDir.resolve("errorsByType.yaml").toFile(), messages);
         om.writeValue(targetDir.resolve("errorsByFile.yaml").toFile(), messages.allByFile());
@@ -455,6 +462,52 @@ public class YamlMetadataGenerator {
                     .collect(Collectors.toMap(v -> v.filename, v -> v, (o1, o2) -> o1, TreeMap::new));
         }
 
+        public Map<String, DocRelations> relationsByUrl(Map<String, DocMetadata> metadataByFile) {
+            Map<String, DocRelations> relationsByUrl = new TreeMap<>();
+
+            for (Entry<String, DocMetadata> currentMetadataEntry : metadataByFile.entrySet()) {
+                DocRelations docRelations = new DocRelations();
+
+                for (Entry<String, DocMetadata> candidateMetadataEntry : metadataByFile.entrySet()) {
+                    if (candidateMetadataEntry.getKey().equals(currentMetadataEntry.getKey())) {
+                        continue;
+                    }
+
+                    DocMetadata candidateMetadata = candidateMetadataEntry.getValue();
+                    int extensionMatches = 0;
+                    for (String extension : currentMetadataEntry.getValue().getExtensions()) {
+                        if (candidateMetadata.getExtensions().contains(extension)) {
+                            extensionMatches++;
+                        }
+                    }
+                    if (extensionMatches > 0) {
+                        docRelations.sameExtensions.add(
+                                new DocRelation(candidateMetadata.getTitle(), candidateMetadata.getUrl(),
+                                        candidateMetadata.getType(), extensionMatches));
+                    }
+
+                    int topicMatches = 0;
+                    for (String topic : currentMetadataEntry.getValue().getTopics()) {
+                        if (candidateMetadata.getTopics().contains(topic)) {
+                            topicMatches++;
+                        }
+                    }
+                    if (topicMatches > 0 && (!candidateMetadata.getTopics().contains(COMPATIBILITY_TOPIC)
+                            || currentMetadataEntry.getValue().getTopics().contains(COMPATIBILITY_TOPIC))) {
+                        docRelations.sameTopics
+                                .add(new DocRelation(candidateMetadata.getTitle(), candidateMetadata.getUrl(),
+                                        candidateMetadata.getType(), topicMatches));
+                    }
+                }
+
+                if (!docRelations.isEmpty()) {
+                    relationsByUrl.put(currentMetadataEntry.getValue().getUrl(), docRelations);
+                }
+            }
+
+            return relationsByUrl;
+        }
+
         // convenience
         public Map<String, FileMessages> messagesByFile() {
             return messages.allByFile();
@@ -592,6 +645,78 @@ public class YamlMetadataGenerator {
         @Override
         public int compareTo(DocMetadata that) {
             return this.title.compareTo(that.title);
+        }
+    }
+
+    @JsonInclude(value = Include.NON_EMPTY)
+    public static class DocRelations {
+
+        final Set<DocRelation> sameTopics = new TreeSet<>(DocRelationComparator.INSTANCE);
+
+        final Set<DocRelation> sameExtensions = new TreeSet<>(DocRelationComparator.INSTANCE);
+
+        public Set<DocRelation> getSameTopics() {
+            return sameTopics;
+        }
+
+        public Set<DocRelation> getSameExtensions() {
+            return sameExtensions;
+        }
+
+        @JsonIgnore
+        public boolean isEmpty() {
+            return sameTopics.isEmpty() && sameExtensions.isEmpty();
+        }
+    }
+
+    @JsonInclude(value = Include.NON_EMPTY)
+    public static class DocRelation {
+
+        final String title;
+
+        final String url;
+
+        final String type;
+
+        final int matches;
+
+        DocRelation(String title, String url, String type, int matches) {
+            this.title = title;
+            this.url = url;
+            this.type = type;
+            this.matches = matches;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public int getMatches() {
+            return matches;
+        }
+    }
+
+    public static class DocRelationComparator implements Comparator<DocRelation> {
+
+        static final DocRelationComparator INSTANCE = new DocRelationComparator();
+
+        @Override
+        public int compare(DocRelation o1, DocRelation o2) {
+            int compareMatches = o2.matches - o1.matches;
+
+            if (compareMatches != 0) {
+                return compareMatches;
+            }
+
+            return o1.title.compareToIgnoreCase(o2.title);
         }
     }
 

@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Dev Services for Pulsar
 include::_attributes.adoc[]
 :categories: messaging
-:topics: messaging,reactive-messaging,pulsar,devservices,tooling,testing,devmode
+:topics: messaging,reactive-messaging,pulsar,dev-services,testing,dev-mode
 :extensions: io.quarkus:quarkus-smallrye-reactive-messaging-pulsar
 
 With Quarkus Smallrye Reactive Messaging Pulsar extension (`quarkus-smallrye-reactive-messaging-pulsar`)

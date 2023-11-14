@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: writing-extensions
 :topics: extensions,codestarts
-:extensions: io.quarkus:quarkus-core
 
 Quarkus extensions are distributed as Maven JAR artifacts that application and other libraries may depend on. When a Quarkus application project is built, tested or edited using the Quarkus dev tools, Quarkus extension JAR artifacts will be identified on the application classpath by the presence of the Quarkus extension metadata files in them.
 This document describes the purpose of each Quarkus extension metadata file and its content.

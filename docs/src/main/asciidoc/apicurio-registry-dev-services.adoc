@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: messaging
 :summary: Start Apicurio Registry automatically in dev and test modes.
-:topics: messaging,kafka,apicurio,registry,devservices,tooling,testing,devmode
+:topics: messaging,kafka,apicurio,registry,dev-services,dev-mode,testing
 :extensions: io.quarkus:quarkus-apicurio-registry-avro,io.quarkus:quarkus-smallrye-reactive-messaging-kafka
 
 If an extension for schema registry, such as `quarkus-apicurio-registry-avro` or `quarkus-confluent-registry-avro`, is present, Dev Services for Apicurio Registry automatically starts an Apicurio Registry instance in dev mode and when running tests.

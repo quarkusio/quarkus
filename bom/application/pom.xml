@@ -23,7 +23,7 @@
         <jandex.version>3.1.5</jandex.version>
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.inject.version>1</javax.inject.version>
-        <parsson.version>1.1.4</parsson.version>
+        <parsson.version>1.1.5</parsson.version>
         <resteasy-microprofile.version>2.1.4.Final</resteasy-microprofile.version>
         <resteasy-spring-web.version>3.0.2.Final</resteasy-spring-web.version>
         <resteasy.version>6.2.6.Final</resteasy.version>
@@ -51,7 +51,7 @@
         <microprofile-lra.version>2.0</microprofile-lra.version>
         <microprofile-openapi.version>3.1.1</microprofile-openapi.version>
         <smallrye-common.version>2.2.0</smallrye-common.version>
-        <smallrye-config.version>3.4.1</smallrye-config.version>
+        <smallrye-config.version>3.4.4</smallrye-config.version>
         <smallrye-health.version>4.0.4</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>3.7.0</smallrye-open-api.version>
@@ -129,7 +129,7 @@
         <h2.version>2.2.224</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions -->
         <postgresql-jdbc.version>42.6.0</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.2.0</mariadb-jdbc.version>
-        <mysql-jdbc.version>8.0.30</mysql-jdbc.version>
+        <mysql-jdbc.version>8.0.33</mysql-jdbc.version>
         <mssql-jdbc.version>12.4.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.3.0.23.09</oracle-jdbc.version>
@@ -139,7 +139,7 @@
         <rest-assured.version>5.3.0</rest-assured.version>
         <junit.jupiter.version>5.10.0</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
-        <infinispan.version>14.0.19.Final</infinispan.version>
+        <infinispan.version>14.0.20.Final</infinispan.version>
         <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
         <netty.version>4.1.100.Final</netty.version>
@@ -3280,7 +3280,7 @@
                 <artifactId>importmap</artifactId>
                 <version>${importmap.version}</version>
             </dependency>
-            
+
             <!-- Additional dependencies, keep in alphabetical order -->
             <dependency>
                 <groupId>biz.paluch.logging</groupId>
@@ -6294,6 +6294,12 @@
                             <excludeScopes>test</excludeScopes>
                             <excludeArtifactKeys>
                                 <key>junit:junit</key> <!-- comes from the jackson-bom -->
+
+                                <!-- jboss-parent:40 still manages jdk-misc, but does not define version.jdk-misc anymore. -->
+                                <!-- We can just remove it because is not needed anyway. -->
+                                <!-- The exclusion can be removed once all imported BOMs depend on jboss-parent:41+ -->
+                                <!-- See also https://github.com/jboss/jboss-parent-pom/issues/236 -->
+                                <key>org.jboss:jdk-misc</key>
                             </excludeArtifactKeys>
                         </configuration>
                     </execution>

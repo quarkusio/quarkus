@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: core
 :summary: A list of all extensions that support Dev Services and their configuration options.
-:topics: devservices,tooling,testing,devmode
+:topics: dev-services,dev-mode,testing
 
 Quarkus supports the automatic provisioning of unconfigured services in development and test mode. We refer to this capability
 as Dev Services. From a developer's perspective this means that if you include an extension and don't configure it then

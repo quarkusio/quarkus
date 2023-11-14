@@ -407,7 +407,7 @@ triage:
         - extensions/google-cloud-functions
         - integration-tests/google-cloud-functions
     - id: mandrel
-      labels: [area/mandrel]
+      labels: [area/native-image]
       titleBody: "mandrel"
       notify: [galderz, zakkak, Karm]
     - id: native-image

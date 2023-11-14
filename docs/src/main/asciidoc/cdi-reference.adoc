@@ -530,6 +530,25 @@ public class CustomTracerConfiguration {
 `@DefaultBean` allows extensions (or any other code for that matter) to provide defaults while backing off if beans of that type are supplied in any
 way Quarkus supports.
 
+Default beans can optionally declare `@jakarta.annotation.Priority`.
+If there is no priority defined, `@Priority(0)` is assumed.
+Priority value is used for bean ordering and during typesafe resolution to disambiguate multiple matching default beans.
+
+[source,java]
+----
+@Dependent
+public class CustomizedDefaultConfiguration {
+
+    @Produces
+    @DefaultBean
+    @Priority(100)
+    public Configuration customizedConfiguration(){
+        // create a customized default Configuration
+        // this will have priority over previously defined default bean
+    }
+}
+----
+
 [[enable_build_profile]]
 === Enabling Beans for Quarkus Build Profile
 

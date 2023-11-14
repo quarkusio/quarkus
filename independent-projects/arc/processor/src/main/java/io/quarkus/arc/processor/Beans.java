@@ -511,6 +511,7 @@ public final class Beans {
 
     static BeanInfo resolveAmbiguity(Collection<BeanInfo> resolved) {
         List<BeanInfo> resolvedAmbiguity = new ArrayList<>(resolved);
+        BeanInfo selected = null;
         // First eliminate default beans
         for (Iterator<BeanInfo> iterator = resolvedAmbiguity.iterator(); iterator.hasNext();) {
             BeanInfo beanInfo = iterator.next();
@@ -520,9 +521,22 @@ public final class Beans {
         }
         if (resolvedAmbiguity.size() == 1) {
             return resolvedAmbiguity.get(0);
+        } else if (resolvedAmbiguity.isEmpty()) {
+            // all beans were default beans, we attempt to sort them based on priority
+            resolvedAmbiguity = new ArrayList<>(resolved);
+            resolvedAmbiguity.sort(Beans::compareDefaultBeans);
+            Integer highest = getDefaultBeanPriority(resolvedAmbiguity.get(0));
+            for (Iterator<BeanInfo> iterator = resolvedAmbiguity.iterator(); iterator.hasNext();) {
+                if (!highest.equals(getDefaultBeanPriority(iterator.next()))) {
+                    iterator.remove();
+                }
+            }
+            if (resolvedAmbiguity.size() == 1) {
+                selected = resolvedAmbiguity.get(0);
+            }
+            return selected;
         }
 
-        BeanInfo selected = null;
         for (Iterator<BeanInfo> iterator = resolvedAmbiguity.iterator(); iterator.hasNext();) {
             BeanInfo beanInfo = iterator.next();
             // Eliminate beans that are not alternatives, except for producer methods and fields of beans that are alternatives
@@ -578,6 +592,23 @@ public final class Beans {
                     bean2.getBeanClass(), priority2));
         }
 
+        return priority2.compareTo(priority1);
+    }
+
+    // gets bean priority or fall back to using default value of 0 for ordering purposes
+    private static Integer getDefaultBeanPriority(BeanInfo bean) {
+        Integer beanPriority = bean.getPriority();
+        if (beanPriority == null) {
+            beanPriority = 0;
+        }
+        return beanPriority;
+    }
+
+    private static int compareDefaultBeans(BeanInfo bean1, BeanInfo bean2) {
+        // The highest priority wins
+        Integer priority1, priority2;
+        priority2 = bean2.getPriority() == null ? 0 : bean2.getPriority();
+        priority1 = bean1.getPriority() == null ? 0 : bean1.getPriority();
         return priority2.compareTo(priority1);
     }
 

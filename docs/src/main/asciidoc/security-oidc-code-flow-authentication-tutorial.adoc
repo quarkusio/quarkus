@@ -11,7 +11,7 @@ To learn more about the OIDC authorization code flow mechanism, see xref:securit
 To learn about how well-known social providers such as Google, GitHub, Microsoft, Twitter, Apple, Facebook, and Spotify can be used with Quarkus OIDC, see xref:security-openid-connect-providers.adoc[Configuring Well-Known OpenID Connect Providers].
 See also, xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus].
 
-If you want to protect your service applications by using OIDC Bearer token authentication, see xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer token authentication].
+If you want to protect your service applications by using OIDC Bearer token authentication, see xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication].
 
 == Prerequisites
 
@@ -170,7 +170,7 @@ The `quarkus.oidc.application-type` property is set to `web-app` in order to tel
 
 Finally, the `quarkus.http.auth.permission.authenticated` permission is set to tell Quarkus about the paths you want to protect.
 In this case, all paths are being protected by a policy that ensures that only `authenticated` users are allowed to access.
-For more information, see xref:security-authorization-of-web-endpoints-reference.adoc[Security Authorization Guide].
+For more information, see xref:security-authorize-web-endpoints-reference.adoc[Security Authorization Guide].
 
 === Start and configure the Keycloak server
 
@@ -266,4 +266,3 @@ After you have completed this tutorial, explore xref:security-oidc-bearer-token-
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
-

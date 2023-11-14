@@ -11,15 +11,23 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.arc.Unremovable;
+import io.quarkus.test.QuarkusUnitTest;
 
 @Unremovable
 @ApplicationScoped
 public class TestSpanExporter implements SpanExporter {
+
+    @RegisterExtension
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .withEmptyApplication()
+            .overrideConfigKey("quarkus.otel.devservices.enabled", "false");
     private final List<SpanData> finishedSpanItems = new CopyOnWriteArrayList<>();
     private volatile boolean isStopped = false;
 

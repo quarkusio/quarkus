@@ -1,0 +1,40 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Dev Services for OpenTelemetry
+:extension-status: preview
+include::_attributes.adoc[]
+:categories: data
+:summary: Start OpenTelemetry automatically in dev and test modes.
+
+Quarkus supports a feature called Dev Services that allows you to run collect traces without any config.
+What that means practically, is that if you have docker running and have not configured `quarkus.otel.exporter.otlp.traces.endpoint`,
+Quarkus will automatically start a Jaeger container when running tests or dev mode, and automatically configure the connection.
+
+Available properties to customize the OpenTelemetry DevService.
+
+include::{generated-dir}/config/quarkus-opentelemetry-config-group-devservices-dev-services-config.adoc[opts=optional, leveloffset=+1]
+
+When running the production version of the application, the exporter connection needs to be configured as normal,
+so if you want to include a production tracing config in your `application.properties` and continue to use Dev Services
+we recommend that you use the `%prod.` profile to define your exporter configuration settings.
+
+Dev Services for OpenTelemetry relies on Docker to start the server.
+If your environment does not support Docker, you will need to start the server manually, or connect to an already running server.
+
+== Shared server
+
+In case you are running multiple microservices the OpenTelemetry Dev Service will by default start one shared container.
+To disable this feature and have individual containers per microservice, please set the `quarkus.otel.devservices.shared` accordingly.
+Furthermore, Dev Services for OpenTelemetry implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single server.
+This results in having _all_ traces from all traced microservices in the same container. Even after the original microservice is
+shut down, the container persists.
+
+
+NOTE: Dev Services for OpenTelemetry starts the container with the `quarkus-dev-service-otel` label which is used to identify the container.
+
+If you need multiple (shared) servers, you can configure the `quarkus.otel.devservices.service-name` attribute and indicate the server name.
+It looks for a container with the same value, or starts a new one if none can be found.
+The default service name is `quarkus`.

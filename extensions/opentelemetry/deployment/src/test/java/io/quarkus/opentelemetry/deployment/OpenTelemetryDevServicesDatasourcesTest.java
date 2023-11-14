@@ -45,7 +45,8 @@ public class OpenTelemetryDevServicesDatasourcesTest {
                                     "quarkus.datasource.jdbc.telemetry=true\n" +
                                     "quarkus.otel.traces.exporter=test-span-exporter\n" +
                                     "quarkus.otel.bsp.export.timeout=1s\n" +
-                                    "quarkus.otel.bsp.schedule.delay=50\n"),
+                                    "quarkus.otel.bsp.schedule.delay=50\n" +
+                                    "quarkus.otel.devservices.enabled=false\n"),
                             "application.properties"));
 
     @Test

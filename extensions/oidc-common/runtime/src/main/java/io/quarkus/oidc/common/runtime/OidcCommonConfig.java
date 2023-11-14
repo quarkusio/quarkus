@@ -59,13 +59,12 @@ public class OidcCommonConfig {
     public Optional<Duration> connectionDelay = Optional.empty();
 
     /**
-     * The number of times an attempt to re-establish an already available connection will be repeated for.
-     * Note this property is different to the `connection-delay` property which is only effective during the initial OIDC
+     * The number of times an attempt to re-establish an already available connection will be repeated.
+     * Note this property is different from the `connection-delay` property, which is only effective during the initial OIDC
      * connection creation.
-     * This property is used to try to recover the existing connection which may have been temporarily lost.
-     * For example, if a request to the OIDC token endpoint fails due to a connection exception then the request will be retried
-     * for
-     * a number of times configured by this property.
+     * This property is used to try to recover an existing connection that may have been temporarily lost.
+     * For example, if a request to the OIDC token endpoint fails due to a connection exception, then the request will be
+     * retried the number of times configured by this property.
      */
     @ConfigItem(defaultValue = "3")
     public int connectionRetryCount = 3;

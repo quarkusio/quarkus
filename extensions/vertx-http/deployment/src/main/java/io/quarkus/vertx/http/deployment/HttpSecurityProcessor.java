@@ -104,9 +104,10 @@ public class HttpSecurityProcessor {
                     .appliedToClass()
                     .whenClass(cl -> BASIC_AUTH_MECH_NAME.equals(cl.name()))
                     .thenTransform(t -> t.add(DEFAULT_BEAN))));
-            if (buildTimeConfig.auth.basic.isPresent() && buildTimeConfig.auth.basic.get()) {
-                securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
-            }
+        }
+
+        if (buildTimeConfig.auth.basic.isPresent() && buildTimeConfig.auth.basic.get()) {
+            securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
         }
 
         return AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(BasicAuthenticationMechanism.class).build();

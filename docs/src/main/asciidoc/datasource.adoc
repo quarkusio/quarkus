@@ -561,10 +561,11 @@ For more information, see the link:https://db.apache.org/derby/docs/10.8/devguid
 
 Example:: `jdbc:h2:tcp://localhost/~/test`, `jdbc:h2:mem:myDB`
 
-H2 is an embedded database that can run as a server, based on a file, or run completely in memory.
+H2 is a database that can run in embedded or server mode.
+It can use a file storage or run entirely in memory.
 All of these options are available as listed above.
 
-For more information, see the link:https://h2database.com/html/features.html?highlight=url&search=url#database_url[official documentation].
+For more information, see the link:https://h2database.com/html/features.html#database_url[official documentation].
 
 ==== MariaDB
 
@@ -592,7 +593,7 @@ hostDescription:: `<host>[:<portnumber>] or address=(host=<host>)[(port=<portnum
 
 Example:: `jdbc:mysql://localhost:3306/test`
 
-For more information, see the link:https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference.html[official documentation].
+For more information, see the link:https://dev.mysql.com/doc/connector-j/en/[official documentation].
 
 ===== MySQL limitations
 

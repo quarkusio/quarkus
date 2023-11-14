@@ -23,7 +23,7 @@ To disable proactive authentication in Quarkus, set the following attribute in t
 
 [source,xml,options="nowrap",role="white-space-pre"]
 ----
-`quarkus.http.auth.proactive=false`
+quarkus.http.auth.proactive=false
 ----
 
 If you disable proactive authentication, the authentication process runs only when an identity is requested.
@@ -42,7 +42,7 @@ You can still access `SecurityIdentity` synchronously with `public SecurityIdent
 The same is also valid for xref:reactive-routes.adoc[Reactive routes] if a route response is synchronous.
 ====
 
-xref:security-authorization.adoc#standard-security-annotations[Standard security annotations] on CDI beans are not supported on an I/O thread if a non-void secured method returns a value synchronously and proactive authentication is disabled because they need to access `SecurityIdentity`.
+xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[Standard security annotations] on CDI beans are not supported on an I/O thread if a non-void secured method returns a value synchronously and proactive authentication is disabled because they need to access `SecurityIdentity`.
 
 In the following example, `HelloResource` and `HelloService` are defined.
 Any GET request to `/hello` will run on the I/O thread and throw a `BlockingOperationNotAllowedException` exception.

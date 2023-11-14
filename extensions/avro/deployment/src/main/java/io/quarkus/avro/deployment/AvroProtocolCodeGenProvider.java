@@ -22,8 +22,8 @@ public class AvroProtocolCodeGenProvider extends AvroCodeGenProviderBase impleme
     }
 
     @Override
-    public String inputExtension() {
-        return "avpr";
+    public String[] inputExtensions() {
+        return new String[] { "avpr" };
     }
 
     @Override

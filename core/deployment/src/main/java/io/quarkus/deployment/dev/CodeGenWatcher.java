@@ -41,19 +41,21 @@ class CodeGenWatcher {
             final Config config = CodeGenerator.getConfig(curatedApplication.getApplicationModel(), LaunchMode.DEVELOPMENT,
                     properties, deploymentClassLoader);
             for (CodeGenData codeGen : codeGens) {
-                watchers.add(new FSWatchUtil.Watcher(codeGen.sourceDir, codeGen.provider.inputExtension(),
-                        modifiedPaths -> {
-                            codeGenLock.lock();
-                            try {
-                                CodeGenerator.trigger(deploymentClassLoader,
-                                        codeGen,
-                                        curatedApplication.getApplicationModel(), config, false);
-                            } catch (Exception any) {
-                                log.warn("Code generation failed", any);
-                            } finally {
-                                codeGenLock.unlock();
-                            }
-                        }));
+                for (String ext : codeGen.provider.inputExtensions()) {
+                    watchers.add(new FSWatchUtil.Watcher(codeGen.sourceDir, ext,
+                            modifiedPaths -> {
+                                codeGenLock.lock();
+                                try {
+                                    CodeGenerator.trigger(deploymentClassLoader,
+                                            codeGen,
+                                            curatedApplication.getApplicationModel(), config, false);
+                                } catch (Exception any) {
+                                    log.warn("Code generation failed", any);
+                                } finally {
+                                    codeGenLock.unlock();
+                                }
+                            }));
+                }
             }
             fsWatchUtil = new FSWatchUtil();
             fsWatchUtil.observe(watchers, 500);

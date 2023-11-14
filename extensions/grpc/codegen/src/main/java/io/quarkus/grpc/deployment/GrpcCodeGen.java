@@ -70,8 +70,8 @@ public class GrpcCodeGen implements CodeGenProvider {
     }
 
     @Override
-    public String inputExtension() {
-        return "proto";
+    public String[] inputExtensions() {
+        return new String[] { "proto" };
     }
 
     @Override

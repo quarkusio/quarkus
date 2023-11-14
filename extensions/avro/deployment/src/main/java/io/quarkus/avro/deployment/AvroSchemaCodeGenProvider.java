@@ -26,8 +26,8 @@ public class AvroSchemaCodeGenProvider extends AvroCodeGenProviderBase implement
     }
 
     @Override
-    public String inputExtension() {
-        return "avsc";
+    public String[] inputExtensions() {
+        return new String[] { "avsc" };
     }
 
     void init() {

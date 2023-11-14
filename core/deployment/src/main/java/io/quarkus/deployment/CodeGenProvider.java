@@ -22,11 +22,27 @@ public interface CodeGenProvider {
 
     /**
      * File extension that CodeGenProvider will generate code from
+     * Deprecated: use inputExtensions instead
      *
      * @return file extension
      */
+    @Deprecated
+    default String inputExtension() {
+        return null;
+    }
+
+    /**
+     * File extensions that CodeGenProvider will generate code from
+     *
+     * @return file extensions
+     */
     @NotNull
-    String inputExtension();
+    default String[] inputExtensions() {
+        if (inputExtension() != null) {
+            return new String[] { inputExtension() };
+        }
+        return new String[] {};
+    }
 
     /**
      * Name of the directory containing input files for a given {@link CodeGenProvider} implementation

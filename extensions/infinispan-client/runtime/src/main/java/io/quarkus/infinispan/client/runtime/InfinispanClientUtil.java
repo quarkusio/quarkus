@@ -3,11 +3,13 @@ package io.quarkus.infinispan.client.runtime;
 import java.util.Collection;
 import java.util.List;
 
+import io.quarkus.infinispan.client.runtime.spi.InfinispanConstants;
+
 public final class InfinispanClientUtil {
 
     public static final String DEFAULT_INFINISPAN_DEV_SERVICE_NAME = "infinispan";
-    public static final String DEFAULT_INFINISPAN_CLIENT_NAME = "<default>";
-    public static final String INFINISPAN_CLIENT_CONFIG_ROOT_NAME = "infinispan-client";
+    public static final String DEFAULT_INFINISPAN_CLIENT_NAME = InfinispanConstants.DEFAULT_INFINISPAN_CLIENT_NAME;
+    public static final String INFINISPAN_CLIENT_CONFIG_ROOT_NAME = InfinispanConstants.INFINISPAN_CLIENT_CONFIG_ROOT_NAME;
 
     public static boolean isDefault(String infinispanClientName) {
         return DEFAULT_INFINISPAN_CLIENT_NAME.equals(infinispanClientName);

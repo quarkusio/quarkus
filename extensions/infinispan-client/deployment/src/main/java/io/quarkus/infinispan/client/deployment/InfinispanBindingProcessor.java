@@ -7,6 +7,7 @@ import java.util.List;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.infinispan.client.deployment.spi.InfinispanClientBuildItem;
 import io.quarkus.infinispan.client.runtime.InfinispanClientUtil;
 import io.quarkus.kubernetes.service.binding.spi.ServiceBindingQualifierBuildItem;
 

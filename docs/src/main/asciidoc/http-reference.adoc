@@ -546,7 +546,150 @@ link:https://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#predicates
 
 If you are using a `web.xml` file as your configuration file, you can place it in the `src/main/resources/META-INF` directory.
 
-=== Built-in route order values
+[[vertx-web-sessions]]
+== Sessions
+
+Quarkus includes support for sessions, based on https://vertx.io/docs/vertx-web/java/#_handling_sessions[Vert.x Web sessions].
+
+By default, sessions are disabled.
+To enable them, set the `quarkus.http.sessions.mode` configuration property to:
+
+`in-memory`:: for sessions stored in memory of the Quarkus application
+`redis`:: for sessions stored in an external Redis server; requires using the Quarkus Redis Client extension
+`infinispan`:: for sessions stored in an external Infinispan data grid; requires using the Quarkus Infinispan Client extension
+
+This configuration property is fixed at build time and cannot be changed at runtime.
+
+WARNING: Undertow includes its own support for sessions.
+If Undertow is present, Vert.x Web sessions cannot be enabled.
+
+Sessions require using a cookie, which holds the session identifier.
+By default, the cookie name is `JSESSIONID`.
+Cookieless sessions are not supported.
+Storing session data directly into the session cookie is not supported either.
+
+=== Accessing sessions
+
+When sessions are enabled, the Vert.x Web `Session` object may be obtained from the current `RoutingContext` using `RoutingContext.session()`.
+Alternatively, the `io.vertx.ext.web.Session` object may be injected.
+
+When using non-clustered in-memory sessions, arbitrary objects may be stored into a session.
+
+With Redis, Infinispan, or cluster-wide in-memory sessions, the following data types may be stored into a session:
+
+* primitive wrapper types
+** `java.lang.Boolean`
+** `java.lang.Byte`
+** `java.lang.Short`
+** `java.lang.Integer`
+** `java.lang.Long`
+** `java.lang.Float`
+** `java.lang.Double`
+** `java.lang.Character`
+* `java.lang.String`
+* `byte[]`
+* `io.vertx.core.buffer.Buffer`
+* `io.vertx.core.json.JsonObject`
+* `io.vertx.core.json.JsonArray`
+
+Session data are stored in a _session store_.
+At the beginning of request processing, session data are loaded from the session store and put into the `Session` object.
+The `Session` object contains an independent snapshot of session data and can be accessed freely during request processing.
+When the response is being written, session data are stored back to the session store.
+
+Session data are loaded and stored as an entire whole, which means that they are always internally consistent.
+In case of concurrent access to the session, the initial session state (at the beginning of a request) is identical to the final session state of some previous request.
+There is no guarantee that modifications will survive (another conflicting write may win the race).
+
+[WARNING]
+====
+In case of non-clustered in-memory sessions, requests share the `Session` object and the instances stored in it.
+It is your responsibility as an application programmer to properly synchronize access to these shared data.
+
+With Redis or Infinispan, the `Session` objects are truly independent snapshots.
+There are no objects shared between requests in this case.
+====
+
+Loading and storing session data in a fine-grained fashion (per individual attribute) is not supported, which makes reasoning about concurrent session access easier.
+It also means you need to pay attention to the session size.
+
+Persisting session data back to the session store is initiated when response headers are written, but the operation is otherwise asynchronous to response body writing.
+It is possible that persisting the session to the session store takes longer than writing the entire response, especially in case of tiny responses.
+
+=== General configuration
+
+include::{generated-dir}/config/quarkus-vertx-http-config-group-sessions-build-time-config.adoc[leveloffset=+1, opts=optional]
+
+include::{generated-dir}/config/quarkus-vertx-http-config-group-sessions-config.adoc[leveloffset=+1, opts=optional]
+
+=== In-memory sessions
+
+When `quarkus.http.sessions.mode` is set to `in-memory`, session data are stored in a Vert.x shared map.
+By default, that shared map is _local_, which means that the session data are stored only in the JVM heap of the Quarkus application.
+
+In this mode, if an application is deployed in multiple replicas fronted with a load balancer, it is necessary to enable sticky sessions (also known as session affinity) on the load balancer.
+Still, losing a replica means losing all sessions stored on that replica.
+In a multi-replica deployment, it is recommended to use an external session store (Redis or Infinispan).
+
+Alternatively, if Vert.x clustering is configured, in-memory sessions may also be configured to be _cluster-wide_.
+In this mode, a Vert.x _cluster-wide_ shared map is used to store session data, which means that sticky sessions are not necessary and losing one replica doesn't lead to session data loss.
+
+include::{generated-dir}/config/quarkus-http-sessions-in-memory-sessions-in-memory-config.adoc[leveloffset=+1, opts=optional]
+
+=== Redis sessions
+
+When `quarkus.http.sessions.mode` is set to `redis`, session data are stored in an external Redis server.
+The xref:./redis.adoc[Quarkus Redis Client] extension must be present and a connection to the Redis server used to store session data must be configured there.
+
+By default, the default (unnamed) Redis connection is used.
+To select a different (named) Redis connection, set the `quarkus.http.sessions.redis.client-name` configuration property.
+For example:
+
+[source,properties]
+----
+quarkus.http.sessions.mode=redis
+quarkus.http.sessions.redis.client-name=web-sessions <1>
+
+quarkus.redis.web-sessions.hosts=redis://localhost:6379/7 <2>
+----
+<1> Use the `web-sessions` Redis client for storing session data.
+<2> Use database `7` on the Redis server at `localhost:6379`.
+
+The Redis-based session store requires an entire Redis database for itself.
+When using a standalone Redis server, you can use a https://redis.io/commands/select/[logical database] that is not used for other purposes.
+If you want to store session data into a Redis cluster, you need to dedicate an entire cluster, because Redis cluster only supports database zero.
+
+include::{generated-dir}/config/quarkus-redis-sessions.adoc[leveloffset=+1, opts=optional]
+
+=== Infinispan sessions
+
+When `quarkus.http.sessions.mode` is set to `infinispan`, session data are stored in an external Infinispan data grid.
+The xref:./infinispan-client.adoc[Quarkus Infinispan Client] extension must be present and a connection to the Infinispan data grid used to store session data must be configured there.
+
+By default, the default (unnamed) Infinispan connection is used.
+To select a different (named) Infinispan connection, set the `quarkus.http.sessions.infinispan.client-name` configuration property.
+For example:
+
+[source,properties]
+----
+quarkus.http.sessions.mode=infinispan
+quarkus.http.sessions.infinispan.client-name=web-sessions <1>
+
+quarkus.infinispan-client.web-sessions.hosts=localhost:11222 <2>
+----
+<1> Use the `web-sessions` Infinispan client for storing session data.
+<2> Use the Infinispan data grid at `localhost:11222`.
+
+By default, the Infinispan cache used for storing session data is called `quarkus.sessions`.
+To use a different cache, set the `quarkus.http.sessions.infinispan.cache-name` configuration property.
+
+The Infinispan-based session store verifies if the configured cache exists.
+If it does not, it is created automatically from the `DIST_SYNC` default template.
+Therefore, the Infinispan client must be configured to connect as a user with permissions equivalent to at least the `deployer` Infinispan role.
+
+include::{generated-dir}/config/quarkus-infinispan-sessions.adoc[leveloffset=+1, opts=optional]
+
+== Built-in route order values
 
 Route order values are the values that are specified via Vert.x route `io.vertx.ext.web.Route.order(int)` function.
 
@@ -565,6 +708,7 @@ Route order constants defined in `io.quarkus.vertx.http.runtime.RouteConstants` 
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_BODY_HANDLER_MANAGEMENT` | Body handler for the management router.
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_HEADERS` | Handlers that add headers specified in the configuration.
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_CORS_MANAGEMENT` | CORS-Origin handler of the management router.
+| `Integer.MIN_VALUE` | `ROUTE_ORDER_SESSION_HANDLER` | Session handler, if enabled in the configuration.
 | `Integer.MIN_VALUE + 1` | `ROUTE_ORDER_BODY_HANDLER` | Body handler.
 | `-2` | `ROUTE_ORDER_UPLOAD_LIMIT` | Route that enforces the upload body size limit.
 | `0` | `ROUTE_ORDER_COMPRESSION` | Compression handler.

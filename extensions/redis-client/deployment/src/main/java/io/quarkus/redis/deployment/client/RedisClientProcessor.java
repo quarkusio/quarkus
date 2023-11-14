@@ -48,6 +48,8 @@ import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.client.RedisHostsProvider;
 import io.quarkus.redis.client.RedisOptionsCustomizer;
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;
+import io.quarkus.redis.deployment.client.spi.RedisClientBuildItem;
+import io.quarkus.redis.deployment.client.spi.RequestedRedisClientBuildItem;
 import io.quarkus.redis.runtime.client.RedisClientRecorder;
 import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.quarkus.runtime.LaunchMode;
@@ -127,7 +129,8 @@ public class RedisClientProcessor {
             VertxBuildItem vertxBuildItem,
             ApplicationArchivesBuildItem applicationArchivesBuildItem, LaunchModeBuildItem launchMode,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
-            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
+            BuildProducer<RedisClientBuildItem> clientSuppliers) {
 
         // Collect the used redis clients, the unused clients will not be instantiated.
         Set<String> names = new HashSet<>();
@@ -177,6 +180,9 @@ public class RedisClientProcessor {
                     .produce(configureAndCreateSyntheticBean(name, RedisClient.class, recorder.getLegacyRedisClient(name)));
             syntheticBeans.produce(configureAndCreateSyntheticBean(name, ReactiveRedisClient.class,
                     recorder.getLegacyReactiveRedisClient(name)));
+
+            // build items
+            clientSuppliers.produce(new RedisClientBuildItem(recorder.getRedisClient(name), name));
         }
 
         recorder.cleanup(shutdown);

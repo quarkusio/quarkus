@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -60,6 +61,7 @@ import io.quarkus.vertx.http.runtime.CurrentRequestProducer;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.SessionsBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxConfigBuilder;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder;
@@ -72,6 +74,7 @@ import io.vertx.core.http.impl.Http1xServerRequest;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.sstore.SessionStore;
 
 class VertxHttpProcessor {
 
@@ -268,7 +271,7 @@ class VertxHttpProcessor {
             }
         }
 
-        /**
+        /*
          * To create mainrouter when `${quarkus.http.root-path}` is not {@literal /}
          * Refer https://github.com/quarkusio/quarkus/issues/34261
          */
@@ -314,7 +317,9 @@ class VertxHttpProcessor {
             ShutdownConfig shutdownConfig,
             LiveReloadConfig lrc,
             CoreVertxBuildItem core, // Injected to be sure that Vert.x has been produced before calling this method.
-            ExecutorBuildItem executorBuildItem)
+            ExecutorBuildItem executorBuildItem,
+            List<SessionStoreProviderBuildItem> sessionStoreProvider,
+            Capabilities capabilities)
             throws BuildException, IOException {
 
         Optional<DefaultRouteBuildItem> defaultRoute;
@@ -366,6 +371,41 @@ class VertxHttpProcessor {
             }
         }
 
+        if (httpBuildTimeConfig.sessions.mode != SessionsBuildTimeConfig.SessionsMode.DISABLED
+                && capabilities.isPresent(Capability.SERVLET)) {
+            throw new IllegalStateException("Vert.x Web sessions may not be enabled together with Undertow; "
+                    + "use Undertow (servlet) sessions instead");
+        }
+
+        Supplier<SessionStore> sessionStore = null;
+        switch (httpBuildTimeConfig.sessions.mode) {
+            case DISABLED:
+                break;
+            case IN_MEMORY:
+                sessionStore = recorder.createInMemorySessionStore();
+                break;
+            case REDIS:
+                if (sessionStoreProvider.isEmpty()) {
+                    throw new IllegalStateException("Redis-based session store was configured, "
+                            + "but the Quarkus Redis Client extension is missing");
+                }
+                if (sessionStoreProvider.size() > 1) {
+                    throw new IllegalStateException("Internal error, multiple session store providers exist");
+                }
+                sessionStore = sessionStoreProvider.get(0).getProvider();
+                break;
+            case INFINISPAN:
+                if (sessionStoreProvider.isEmpty()) {
+                    throw new IllegalStateException("Infinispan-based session store was configured, "
+                            + "but the Quarkus Infinispan Client extension is missing");
+                }
+                if (sessionStoreProvider.size() > 1) {
+                    throw new IllegalStateException("Internal error, multiple session store providers exist");
+                }
+                sessionStore = sessionStoreProvider.get(0).getProvider();
+                break;
+        }
+
         recorder.finalizeRouter(beanContainer.getValue(),
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
                 listOfFilters, listOfManagementInterfaceFilters,
@@ -376,7 +416,8 @@ class VertxHttpProcessor {
                 nonApplicationRootPathBuildItem.getNonApplicationRootPath(),
                 launchMode.getLaunchMode(),
                 !requireBodyHandlerBuildItems.isEmpty(), bodyHandler, gracefulShutdownFilter,
-                shutdownConfig, executorBuildItem.getExecutorProxy());
+                shutdownConfig, executorBuildItem.getExecutorProxy(),
+                sessionStore);
 
         return new ServiceStartBuildItem("vertx-http");
     }

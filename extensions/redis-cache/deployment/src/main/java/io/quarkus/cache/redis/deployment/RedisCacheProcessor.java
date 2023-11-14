@@ -34,7 +34,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.redis.deployment.client.RequestedRedisClientBuildItem;
+import io.quarkus.redis.deployment.client.spi.RequestedRedisClientBuildItem;
 import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.smallrye.mutiny.Uni;
 

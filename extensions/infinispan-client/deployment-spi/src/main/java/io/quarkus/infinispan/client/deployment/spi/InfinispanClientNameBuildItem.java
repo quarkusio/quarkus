@@ -1,4 +1,4 @@
-package io.quarkus.infinispan.client.deployment;
+package io.quarkus.infinispan.client.deployment.spi;
 
 import io.quarkus.builder.item.MultiBuildItem;
 

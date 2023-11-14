@@ -1,7 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 /**
- * Route order value constants used in Quarkus, update {@code reactive-routes.adoc} when changing this class.
+ * Route order value constants used in Quarkus, update {@code http-reference.adoc} when changing this class.
  */
 @SuppressWarnings("JavadocDeclaration")
 public final class RouteConstants {
@@ -33,6 +33,10 @@ public final class RouteConstants {
      * Order value ({@value #ROUTE_ORDER_CORS_MANAGEMENT}) for the CORS-Origin handler of the management router.
      */
     public static final int ROUTE_ORDER_CORS_MANAGEMENT = Integer.MIN_VALUE;
+    /**
+     * Order value ({@value #ROUTE_ORDER_SESSION_HANDLER}) for the session handler, if enabled in the configuration.
+     */
+    public static final int ROUTE_ORDER_SESSION_HANDLER = Integer.MIN_VALUE;
     /**
      * Order value ({@value #ROUTE_ORDER_BODY_HANDLER}) for the body handler.
      */

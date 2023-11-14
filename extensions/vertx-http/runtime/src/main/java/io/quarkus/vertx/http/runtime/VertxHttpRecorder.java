@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.BindException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -104,6 +105,10 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
+import io.vertx.ext.web.handler.SessionHandler;
+import io.vertx.ext.web.sstore.ClusteredSessionStore;
+import io.vertx.ext.web.sstore.LocalSessionStore;
+import io.vertx.ext.web.sstore.SessionStore;
 
 @Recorder
 public class VertxHttpRecorder {
@@ -187,18 +192,25 @@ public class VertxHttpRecorder {
     final HttpBuildTimeConfig httpBuildTimeConfig;
     final ManagementInterfaceBuildTimeConfig managementBuildTimeConfig;
     final RuntimeValue<HttpConfiguration> httpConfiguration;
+    final RuntimeValue<SessionsInMemoryConfig> inMemorySessionsConfiguration;
 
     final RuntimeValue<ManagementInterfaceConfiguration> managementConfiguration;
     private static volatile Handler<HttpServerRequest> managementRouter;
 
+    final RuntimeValue<VertxConfiguration> vertxConfiguration;
+
     public VertxHttpRecorder(HttpBuildTimeConfig httpBuildTimeConfig,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             RuntimeValue<HttpConfiguration> httpConfiguration,
-            RuntimeValue<ManagementInterfaceConfiguration> managementConfiguration) {
+            RuntimeValue<SessionsInMemoryConfig> inMemorySessionsConfiguration,
+            RuntimeValue<ManagementInterfaceConfiguration> managementConfiguration,
+            RuntimeValue<VertxConfiguration> vertxConfiguration) {
         this.httpBuildTimeConfig = httpBuildTimeConfig;
         this.httpConfiguration = httpConfiguration;
+        this.inMemorySessionsConfiguration = inMemorySessionsConfiguration;
         this.managementBuildTimeConfig = managementBuildTimeConfig;
         this.managementConfiguration = managementConfiguration;
+        this.vertxConfiguration = vertxConfiguration;
     }
 
     public static void setHotReplacement(Handler<RoutingContext> handler, HotReplacementContext hrc) {
@@ -346,6 +358,23 @@ public class VertxHttpRecorder {
         mainRouter.getValue().mountSubRouter(frameworkPath, frameworkRouter.getValue());
     }
 
+    public Supplier<SessionStore> createInMemorySessionStore() {
+        return new Supplier<SessionStore>() {
+            @Override
+            public SessionStore get() {
+                Vertx vertx = VertxCoreRecorder.getVertx().get();
+                SessionsInMemoryConfig config = inMemorySessionsConfiguration.getValue();
+                if (config.clusterWide
+                        && vertxConfiguration.getValue().cluster() != null
+                        && vertxConfiguration.getValue().cluster().clustered()) {
+                    return ClusteredSessionStore.create(vertx, config.mapName, config.retryTimeout.toMillis());
+                } else {
+                    return LocalSessionStore.create(vertx, config.mapName);
+                }
+            }
+        };
+    }
+
     public void finalizeRouter(BeanContainer container, Consumer<Route> defaultRouteHandler,
             List<Filter> filterList, List<Filter> managementInterfaceFilterList, Supplier<Vertx> vertx,
             LiveReloadConfig liveReloadConfig, Optional<RuntimeValue<Router>> mainRouterRuntimeValue,
@@ -355,7 +384,7 @@ public class VertxHttpRecorder {
             LaunchMode launchMode, boolean requireBodyHandler,
             Handler<RoutingContext> bodyHandler,
             GracefulShutdownFilter gracefulShutdownFilter, ShutdownConfig shutdownConfig,
-            Executor executor) {
+            Executor executor, Supplier<SessionStore> sessionStore) {
         HttpConfiguration httpConfiguration = this.httpConfiguration.getValue();
         // install the default route at the end
         Router httpRouteRouter = httpRouterRuntimeValue.getValue();
@@ -412,6 +441,28 @@ public class VertxHttpRecorder {
         HttpServerCommonHandlers.applyFilters(filtersInConfig, httpRouteRouter);
         // Headers sent on any request, regardless of the response
         HttpServerCommonHandlers.applyHeaders(httpConfiguration.header, httpRouteRouter);
+
+        if (sessionStore != null) {
+            SessionsConfig sessions = httpConfiguration.sessions;
+            String cookiePath;
+            if (sessions.path.isEmpty() || "/".equals(sessions.path)) {
+                cookiePath = rootPath.endsWith("/") ? rootPath.substring(0, rootPath.length() - 1) : rootPath;
+            } else {
+                cookiePath = rootPath
+                        + (rootPath.endsWith("/") ? "" : "/")
+                        + (sessions.path.startsWith("/") ? sessions.path.substring(1) : sessions.path);
+            }
+            SessionHandler sessionHandler = SessionHandler.create(sessionStore.get())
+                    .setSessionTimeout(sessions.timeout.toMillis())
+                    .setMinLength(sessions.idLength)
+                    .setSessionCookiePath(cookiePath)
+                    .setSessionCookieName(sessions.cookieName)
+                    .setCookieHttpOnlyFlag(sessions.cookieHttpOnly)
+                    .setCookieSecureFlag(sessions.cookieSecure.isEnabled(httpConfiguration.insecureRequests))
+                    .setCookieSameSite(sessions.cookieSameSite.orElse(null))
+                    .setCookieMaxAge(sessions.cookieMaxAge.map(Duration::toMillis).orElse(-1L));
+            httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(sessionHandler);
+        }
 
         Handler<HttpServerRequest> root;
         if (rootPath.equals("/")) {

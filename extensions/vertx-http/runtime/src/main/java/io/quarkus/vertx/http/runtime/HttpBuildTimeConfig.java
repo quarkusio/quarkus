@@ -98,4 +98,10 @@ public class HttpBuildTimeConfig {
      */
     @ConfigItem
     public OptionalInt compressionLevel;
+
+    /**
+     * Configuration of Vert.x Web sessions.
+     */
+    @ConfigItem
+    public SessionsBuildTimeConfig sessions;
 }

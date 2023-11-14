@@ -15,7 +15,7 @@ import io.vertx.core.spi.ExecutorServiceFactory;
 
 public class QuarkusExecutorFactory implements ExecutorServiceFactory {
     static volatile ExecutorService sharedExecutor;
-    private static final AtomicInteger executorCount = new AtomicInteger(0);
+    private static final AtomicInteger executorCount = new AtomicInteger();
     private static final Logger log = Logger.getLogger(QuarkusExecutorFactory.class);
 
     private final VertxConfiguration conf;

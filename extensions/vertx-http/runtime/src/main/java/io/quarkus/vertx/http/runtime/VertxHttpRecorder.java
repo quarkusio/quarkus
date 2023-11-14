@@ -1036,7 +1036,7 @@ public class VertxHttpRecorder {
 
         @Override
         public void start(Promise<Void> startFuture) {
-            final AtomicInteger remainingCount = new AtomicInteger(0);
+            final AtomicInteger remainingCount = new AtomicInteger();
             boolean httpServerEnabled = httpOptions != null && insecureRequests != HttpConfiguration.InsecureRequests.DISABLED;
             if (httpServerEnabled) {
                 remainingCount.incrementAndGet();
@@ -1196,7 +1196,7 @@ public class VertxHttpRecorder {
         @Override
         public void stop(Promise<Void> stopFuture) {
 
-            final AtomicInteger remainingCount = new AtomicInteger(0);
+            final AtomicInteger remainingCount = new AtomicInteger();
             if (httpServer != null) {
                 remainingCount.incrementAndGet();
             }

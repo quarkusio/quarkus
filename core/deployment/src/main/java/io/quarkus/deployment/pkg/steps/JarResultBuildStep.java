@@ -176,7 +176,7 @@ public class JarResultBuildStep {
     ArtifactResultBuildItem jarOutput(JarBuildItem jarBuildItem) {
         if (jarBuildItem.getLibraryDir() != null) {
             return new ArtifactResultBuildItem(jarBuildItem.getPath(), PackageConfig.JAR,
-                    Collections.singletonMap("library-dir", jarBuildItem.getLibraryDir()));
+                    Collections.singletonMap("library-dir", jarBuildItem.getLibraryDir().toString()));
         } else {
             return new ArtifactResultBuildItem(jarBuildItem.getPath(), PackageConfig.JAR, Collections.emptyMap());
         }

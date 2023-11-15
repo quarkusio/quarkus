@@ -83,6 +83,7 @@ class QuarkusCodestartCatalogTest {
         assertThat(projectDefinition.getBaseCodestarts()).hasSize(4);
         assertThat(projectDefinition.getExtraCodestarts()).extracting(Codestart::getName)
                 .containsExactlyInAnyOrder("tooling-dockerfiles",
+                        "tooling-quarkus-cli-wrapper",
                         "tooling-maven-wrapper");
     }
 
@@ -138,6 +139,7 @@ class QuarkusCodestartCatalogTest {
                 .containsExactlyInAnyOrder(
                         "tooling-dockerfiles",
                         "tooling-maven-wrapper",
+                        "tooling-quarkus-cli-wrapper",
                         "resteasy-codestart");
     }
 

@@ -12,8 +12,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.dekorate.prometheus.model.Endpoint;
-import io.dekorate.prometheus.model.ServiceMonitor;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.quarkus.builder.Version;
@@ -23,7 +21,7 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithMetricsCustomAbsoluteTest {
+public class KubernetesWithMetricsNoServiceMonitor {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
@@ -33,9 +31,9 @@ public class KubernetesWithMetricsCustomAbsoluteTest {
             .setRun(true)
             .setLogFileName("k8s.log")
             .overrideConfigKey("quarkus.http.port", "9090")
-            .overrideConfigKey("quarkus.micrometer.export.prometheus.path", "/absolute-metrics")
+            .overrideConfigKey("quarkus.smallrye-metrics.path", "/met")
+            .overrideConfigKey("quarkus.kubernetes.prometheus.generate-service-monitor", "false")
             .overrideConfigKey("quarkus.kubernetes.prometheus.prefix", "example.io")
-            .overrideConfigKey("quarkus.kubernetes.prometheus.scrape", "example.io/should_be_scraped")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-micrometer-registry-prometheus", Version.getVersion())));
 
@@ -73,31 +71,17 @@ public class KubernetesWithMetricsCustomAbsoluteTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getMetadata()).satisfies(meta -> {
-                        // Annotations will have a different default prefix,
-                        // and the scrape annotation was specifically configured
-                        assertThat(meta.getAnnotations()).contains(entry("example.io/should_be_scraped", "true"),
-                                entry("example.io/path", "/absolute-metrics"), entry("example.io/port", "9090"),
-                                entry("example.io/scheme", "http"));
+                        // Annotations should not have been created in this configuration.
+                        assertThat(meta.getAnnotations()).contains(
+                                entry("prometheus.io/scrape", "true"),
+                                entry("prometheus.io/path", "/met"),
+                                entry("prometheus.io/port", "9090"),
+                                entry("prometheus.io/scheme", "http"));
                     });
                 });
             });
-
-            assertThat(kubernetesList).filteredOn(i -> i.getKind().equals("ServiceMonitor")).singleElement()
-                    .isInstanceOfSatisfying(ServiceMonitor.class, s -> {
-                        assertThat(s.getMetadata()).satisfies(m -> {
-                            assertThat(m.getName()).isEqualTo("metrics");
-                        });
-
-                        assertThat(s.getSpec()).satisfies(spec -> {
-                            assertThat(spec.getEndpoints()).hasSize(1);
-                            assertThat(spec.getEndpoints().get(0)).isInstanceOfSatisfying(Endpoint.class, e -> {
-                                assertThat(e.getScheme()).isEqualTo("http");
-                                assertThat(e.getTargetPort().getStrVal()).isEqualTo("9090");
-                                assertThat(e.getPath()).isEqualTo("/absolute-metrics");
-                            });
-                        });
-                    });
         });
-    }
 
+        assertThat(kubernetesList).filteredOn(i -> i.getKind().equals("ServiceMonitor")).isEmpty();
+    }
 }

@@ -58,6 +58,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.metrics.MetricsFactory;
+import io.quarkus.smallrye.graphql.runtime.ExtraScalar;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLConfig;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLConfigMapping;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLLocaleResolver;
@@ -99,6 +100,7 @@ import io.smallrye.graphql.schema.model.Group;
 import io.smallrye.graphql.schema.model.InputType;
 import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Reference;
+import io.smallrye.graphql.schema.model.Scalars;
 import io.smallrye.graphql.schema.model.Schema;
 import io.smallrye.graphql.schema.model.Type;
 import io.smallrye.graphql.schema.model.UnionType;
@@ -305,9 +307,10 @@ public class SmallRyeGraphQLProcessor {
             SmallRyeGraphQLConfig graphQLConfig) {
 
         activateFederation(graphQLConfig, systemPropertyProducer, graphQLFinalIndexBuildItem);
+        graphQLConfig.extraScalars.ifPresent(this::registerExtraScalarsInSchema);
         Schema schema = SchemaBuilder.build(graphQLFinalIndexBuildItem.getFinalIndex(), graphQLConfig.autoNameStrategy);
 
-        RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema);
+        RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema, graphQLConfig);
         graphQLInitializedProducer.produce(new SmallRyeGraphQLInitializedBuildItem(initialized));
 
         // Make sure the complex object from the application can work in native mode
@@ -317,6 +320,15 @@ public class SmallRyeGraphQLProcessor {
         // Make sure the GraphQL Java classes needed for introspection can work in native mode
         reflectiveClassProducer
                 .produce(ReflectiveClassBuildItem.builder(getGraphQLJavaClasses()).methods().fields().build());
+    }
+
+    private void registerExtraScalarsInSchema(List<ExtraScalar> extraScalars) {
+        for (ExtraScalar extraScalar : extraScalars) {
+            switch (extraScalar) {
+                case UUID:
+                    Scalars.addUuid();
+            }
+        }
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

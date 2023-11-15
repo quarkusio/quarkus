@@ -692,7 +692,11 @@ public class ArcContainerImpl implements ArcContainer {
 
         // First remove the default beans
         List<InjectableBean<?>> nonDefault = new ArrayList<>(matching);
-        nonDefault.removeIf(InjectableBean::isDefaultBean);
+        for (Iterator<InjectableBean<?>> iterator = nonDefault.iterator(); iterator.hasNext();) {
+            if (iterator.next().isDefaultBean()) {
+                iterator.remove();
+            }
+        }
         if (nonDefault.isEmpty()) {
             // All the matching beans were default
             // Sort them by priority, uses 0 when no priority was defined
@@ -714,7 +718,11 @@ public class ArcContainerImpl implements ArcContainer {
 
         // More than one non-default bean remains - eliminate beans that don't have a priority
         List<InjectableBean<?>> priorityBeans = new ArrayList<>(nonDefault);
-        priorityBeans.removeIf(not(ArcContainerImpl::isAlternativeOrDeclaredOnAlternative));
+        for (Iterator<InjectableBean<?>> iterator = priorityBeans.iterator(); iterator.hasNext();) {
+            if (!isAlternativeOrDeclaredOnAlternative(iterator.next())) {
+                iterator.remove();
+            }
+        }
         if (priorityBeans.isEmpty()) {
             // No alternative/priority beans are present
             return Set.copyOf(nonDefault);

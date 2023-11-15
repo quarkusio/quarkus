@@ -61,6 +61,7 @@ import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLLocaleResolver;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRecorder;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRuntimeConfig;
 import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -129,6 +130,10 @@ public class SmallRyeGraphQLProcessor {
     private static final String SUBPROTOCOL_GRAPHQL_TRANSPORT_WS = "graphql-transport-ws";
     private static final List<String> SUPPORTED_WEBSOCKET_SUBPROTOCOLS = List.of(SUBPROTOCOL_GRAPHQL_WS,
             SUBPROTOCOL_GRAPHQL_TRANSPORT_WS);
+
+    private static final int GRAPHQL_WEBSOCKET_HANDLER_ORDER = (-1 * FilterBuildItem.AUTHORIZATION) + 1;
+
+    private static final String GRAPHQL_MEDIA_TYPE = "application/graphql+json";
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> featureProducer) {
@@ -332,7 +337,7 @@ public class SmallRyeGraphQLProcessor {
                         runBlocking);
 
         HttpRootPathBuildItem.Builder subscriptionsBuilder = httpRootPathBuildItem.routeBuilder()
-                .orderedRoute(graphQLConfig.rootPath, Integer.MIN_VALUE)
+                .orderedRoute(graphQLConfig.rootPath, GRAPHQL_WEBSOCKET_HANDLER_ORDER)
                 .handler(graphqlOverWebsocketHandler);
         routeProducer.produce(subscriptionsBuilder.build());
 

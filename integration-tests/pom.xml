@@ -274,6 +274,7 @@
                 <module>smallrye-metrics</module>
                 <module>smallrye-graphql</module>
                 <module>smallrye-graphql-client</module>
+                <module>smallrye-graphql-client-keycloak</module>
                 <module>smallrye-opentracing</module>
                 <module>jpa-without-entity</module>
                 <module>quartz</module>

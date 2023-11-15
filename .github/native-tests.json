@@ -110,8 +110,8 @@
         },
         {
             "category": "Misc3",
-            "timeout": 65,
-            "test-modules": "kubernetes-client, openshift-client, kubernetes-service-binding-jdbc, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-metrics, smallrye-opentracing",
+            "timeout": 80,
+            "test-modules": "kubernetes-client, openshift-client, kubernetes-service-binding-jdbc, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-graphql-client-keycloak, smallrye-metrics, smallrye-opentracing",
             "os-name": "ubuntu-latest"
         },
         {

@@ -527,7 +527,7 @@
             <dependency>
                 <groupId>org.mvnpm</groupId>
                 <artifactId>string-width</artifactId>
-                <version>4.2.3</version>
+                <version>7.0.0</version>
                 <scope>runtime</scope>
             </dependency>
             <dependency>

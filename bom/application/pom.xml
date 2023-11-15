@@ -31,8 +31,9 @@
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
-        <opentelemetry.version>1.30.1</opentelemetry.version>
-        <opentelemetry-alpha.version>1.30.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry.version>1.31.0</opentelemetry.version>
+        <opentelemetry-alpha.version>1.31.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry-semconv.version>1.21.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.0.3.Final</quarkus-http.version>
         <micrometer.version>1.11.5</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
@@ -61,7 +62,7 @@
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.1</smallrye-reactive-types-converter.version>
         <smallrye-mutiny-vertx-binding.version>3.7.2</smallrye-mutiny-vertx-binding.version>
-        <smallrye-reactive-messaging.version>4.10.1</smallrye-reactive-messaging.version>
+        <smallrye-reactive-messaging.version>4.11.0</smallrye-reactive-messaging.version>
         <smallrye-stork.version>2.4.0</smallrye-stork.version>
         <jakarta.activation.version>2.1.2</jakarta.activation.version>
         <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
@@ -6212,6 +6213,23 @@
                 <groupId>org.apache.james</groupId>
                 <artifactId>apache-mime4j</artifactId>
                 <version>${mime4j.version}</version>
+            </dependency>
+
+            <!-- OpenTelemetry libs not in BOM -->
+            <dependency>
+                <groupId>io.opentelemetry.semconv</groupId>
+                <artifactId>opentelemetry-semconv</artifactId>
+                <version>${opentelemetry-semconv.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>io.opentelemetry</groupId>
+                        <artifactId>opentelemetry-bom</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>io.opentelemetry</groupId>
+                        <artifactId>opentelemetry-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <!-- Relocations -->

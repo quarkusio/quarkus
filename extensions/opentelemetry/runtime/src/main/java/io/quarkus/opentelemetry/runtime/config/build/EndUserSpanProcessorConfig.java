@@ -15,8 +15,8 @@ public interface EndUserSpanProcessorConfig {
      * Enable the {@link io.quarkus.opentelemetry.runtime.exporter.otlp.EndUserSpanProcessor}.
      * <p>
      * The {@link io.quarkus.opentelemetry.runtime.exporter.otlp.EndUserSpanProcessor} adds
-     * the {@link io.opentelemetry.semconv.trace.attributes.SemanticAttributes.ENDUSER_ID}
-     * and {@link io.opentelemetry.semconv.trace.attributes.SemanticAttributes.ENDUSER_ROLE} to the Span.
+     * the {@link io.opentelemetry.semconv.SemanticAttributes.ENDUSER_ID}
+     * and {@link io.opentelemetry.semconv.SemanticAttributes.ENDUSER_ROLE} to the Span.
      */
     @WithDefault("false")
     Optional<Boolean> enabled();

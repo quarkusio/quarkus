@@ -206,7 +206,7 @@
         <strimzi-oauth.nimbus.version>9.24.4</strimzi-oauth.nimbus.version>
         <java-buildpack-client.version>0.0.6</java-buildpack-client.version>
         <org-crac.version>0.1.1</org-crac.version>
-        <sshd-common.version>2.9.2</sshd-common.version>
+        <sshd-common.version>2.10.0</sshd-common.version>
         <mime4j.version>0.8.9</mime4j.version>
     </properties>
 

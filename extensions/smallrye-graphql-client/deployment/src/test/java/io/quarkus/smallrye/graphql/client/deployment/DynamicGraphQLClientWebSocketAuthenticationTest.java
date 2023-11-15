@@ -6,9 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.smallrye.common.annotation.NonBlocking;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.json.JsonValue;
 
@@ -20,11 +20,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.graphql.api.Subscription;
 import io.smallrye.graphql.client.Response;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder;
 import io.smallrye.mutiny.Multi;
+import io.vertx.core.http.UpgradeRejectedException;
 
 /**
  * Due to the complexity of establishing a WebSocket, WebSocket/Subscription testing of the GraphQL server is done here,
@@ -71,7 +73,7 @@ public class DynamicGraphQLClientWebSocketAuthenticationTest {
                 hasCompleted.set(true);
             });
 
-            await().untilTrue(hasCompleted);
+            await().atMost(Duration.ofSeconds(60)).untilTrue(hasCompleted);
             assertTrue(hasData.get());
         }
     }
@@ -124,7 +126,7 @@ public class DynamicGraphQLClientWebSocketAuthenticationTest {
                 returned.set(true);
             }, throwable -> Assertions.fail(throwable));
 
-            await().untilTrue(returned);
+            await().atMost(Duration.ofSeconds(60)).untilTrue(returned);
         }
     }
 
@@ -141,13 +143,17 @@ public class DynamicGraphQLClientWebSocketAuthenticationTest {
     }
 
     @Test
-    public void testUnauthenticatedForQueryWebSocket() throws Exception {
+    public void testUnauthenticatedForQueryWebSocketWithOnlyHttpBasedPermission() throws Exception {
         DynamicGraphQLClientBuilder clientBuilder = DynamicGraphQLClientBuilder.newBuilder()
                 .url(url)
                 .executeSingleOperationsOverWebsocket(true);
         try (DynamicGraphQLClient client = clientBuilder.build()) {
-            Response response = client.executeSync("{ foo { message} }");
-            assertEquals(JsonValue.ValueType.NULL, response.getData().get("foo").getValueType());
+            try {
+                client.executeSync("{ baz { message} }");
+                Assertions.fail("WebSocket upgrade should fail");
+            } catch (UpgradeRejectedException e) {
+                // ok
+            }
         }
     }
 
@@ -185,6 +191,11 @@ public class DynamicGraphQLClientWebSocketAuthenticationTest {
             return new Foo("bar");
         }
 
+        @Query
+        public Foo baz() {
+            return new Foo("baz");
+        }
+
         @Subscription
         @RolesAllowed("fooRole")
         public Multi<Foo> fooSub() {
@@ -199,6 +210,14 @@ public class DynamicGraphQLClientWebSocketAuthenticationTest {
         public Multi<Foo> barSub() {
             return Multi.createFrom().emitter(emitter -> {
                 emitter.emit(new Foo("bar"));
+                emitter.complete();
+            });
+        }
+
+        @Subscription
+        public Multi<Foo> bazSub() {
+            return Multi.createFrom().emitter(emitter -> {
+                emitter.emit(new Foo("baz"));
                 emitter.complete();
             });
         }

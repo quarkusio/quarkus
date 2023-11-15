@@ -134,7 +134,7 @@
         <infinispan.version>14.0.9.Final</infinispan.version>
         <infinispan.protostream.version>4.6.2.Final</infinispan.protostream.version>
         <caffeine.version>2.9.3</caffeine.version>
-        <netty.version>4.1.94.Final</netty.version>
+        <netty.version>4.1.100.Final</netty.version>
         <brotli4j.version>1.12.0</brotli4j.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>

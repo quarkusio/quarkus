@@ -1,7 +1,36 @@
 package io.quarkus.devtools.commands;
 
-import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.*;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.CLASS_NAME_BASE;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.EXTENSION_DESCRIPTION;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.EXTENSION_FULL_NAME;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.EXTENSION_GUIDE;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.EXTENSION_ID;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.EXTENSION_NAME;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.GROUP_ID;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.HAS_DOCS_MODULE;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.IT_PARENT_ARTIFACT_ID;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.IT_PARENT_GROUP_ID;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.IT_PARENT_RELATIVE_PATH;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.IT_PARENT_VERSION;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.JAVA_VERSION;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.MAVEN_COMPILER_PLUGIN_VERSION;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.MAVEN_QUARKUS_EXTENSION_PLUGIN;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.MAVEN_SUREFIRE_PLUGIN_VERSION;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.NAMESPACE_ID;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.NAMESPACE_NAME;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.PACKAGE_NAME;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.PARENT_ARTIFACT_ID;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.PARENT_GROUP_ID;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.PARENT_RELATIVE_PATH;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.PARENT_VERSION;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.PROPERTIES_FROM_PARENT;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.QUARKUS_BOM_ARTIFACT_ID;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.QUARKUS_BOM_GROUP_ID;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.QUARKUS_BOM_VERSION;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.QUARKUS_VERSION;
+import static io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData.VERSION;
 import static io.quarkus.devtools.commands.handlers.CreateExtensionCommandHandler.readPom;
+import static io.quarkus.devtools.project.JavaVersion.computeJavaVersion;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
@@ -29,6 +58,8 @@ import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.CreateExtensionCommandHandler;
 import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.JavaVersion;
+import io.quarkus.devtools.project.SourceType;
 import io.quarkus.maven.utilities.MojoUtils;
 
 /**
@@ -73,6 +104,7 @@ public class CreateExtension {
     private String bomRelativeDir = "bom/application";
     private String extensionsRelativeDir = "extensions";
     private boolean withCodestart;
+    private String javaVersion;
 
     public CreateExtension(final Path baseDir) {
         this.baseDir = requireNonNull(baseDir, "extensionDirPath is required");
@@ -165,6 +197,11 @@ public class CreateExtension {
         return this;
     }
 
+    public CreateExtension javaVersion(String javaVersion) {
+        this.javaVersion = javaVersion;
+        return this;
+    }
+
     public CreateExtension withCodestart(boolean withCodestart) {
         this.withCodestart = withCodestart;
         return this;
@@ -226,6 +263,10 @@ public class CreateExtension {
         data.putIfAbsent(CLASS_NAME_BASE, toCapCamelCase(extensionId));
         data.put(EXTENSION_FULL_NAME,
                 data.getRequiredStringValue(NAMESPACE_NAME) + data.getRequiredStringValue(EXTENSION_NAME));
+
+        // for now, we only support Java extensions
+        data.put(JAVA_VERSION, javaVersion == null ? JavaVersion.DEFAULT_JAVA_VERSION_FOR_EXTENSION
+                : computeJavaVersion(SourceType.JAVA, javaVersion));
 
         final String runtimeArtifactId = getRuntimeArtifactIdFromData();
 

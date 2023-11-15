@@ -110,6 +110,9 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "platformVersion", required = false)
     private String bomVersion;
 
+    /**
+     * Version of Java used to build the project.
+     */
     @Parameter(property = "javaVersion")
     private String javaVersion;
 

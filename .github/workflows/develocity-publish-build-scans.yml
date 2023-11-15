@@ -34,10 +34,4 @@ jobs:
       - name: Push to summary
         if: ${{ contains(fromJson(steps.extract-preapproved-developers.outputs.preapproved-developpers).preapproved-developers, github.event.workflow_run.actor.login) }}
         run: |
-          echo -n "Pull request: " >> ${GITHUB_STEP_SUMMARY}
-          cat pr-number.out >> ${GITHUB_STEP_SUMMARY}
-          echo >> ${GITHUB_STEP_SUMMARY}
-          echo >> ${GITHUB_STEP_SUMMARY}
-          echo "| Job | Status | Build scan |" >> ${GITHUB_STEP_SUMMARY}
-          echo "|---|---|---|" >> ${GITHUB_STEP_SUMMARY}
-          cat publication.out >> ${GITHUB_STEP_SUMMARY}
+          cat build-metadata.json >> ${GITHUB_STEP_SUMMARY}

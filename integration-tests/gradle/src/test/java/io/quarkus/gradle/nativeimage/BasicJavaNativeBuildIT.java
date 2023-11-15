@@ -20,7 +20,7 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
     public void shouldBuildNativeImage() throws Exception {
         final File projectDir = getProjectDir("basic-java-native-module");
 
-        final BuildResult build = runGradleWrapper(projectDir, "clean", "buildNative", "-Dquarkus.package.type=fast-jar");
+        final BuildResult build = runGradleWrapper(projectDir, "clean", "buildNative");
 
         assertThat(build.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
         final String buildOutput = build.getOutput();
@@ -48,7 +48,7 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
     public void shouldBuildNativeImageWithCustomName() throws Exception {
         final File projectDir = getProjectDir("basic-java-native-module");
 
-        final BuildResult build = runGradleWrapper(projectDir, "clean", "buildNative", "-Dquarkus.package.type=fast-jar",
+        final BuildResult build = runGradleWrapper(projectDir, "clean", "buildNative",
                 "-Dquarkus.package.output-name=test");
 
         assertThat(build.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
@@ -78,7 +78,7 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
     public void shouldBuildNativeImageWithCustomNameWithoutSuffix() throws Exception {
         final File projectDir = getProjectDir("basic-java-native-module");
 
-        final BuildResult build = runGradleWrapper(projectDir, "clean", "buildNative", "-Dquarkus.package.type=fast-jar",
+        final BuildResult build = runGradleWrapper(projectDir, "clean", "buildNative",
                 "-Dquarkus.package.output-name=test", "-Dquarkus.package.add-runner-suffix=false");
 
         assertThat(build.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);

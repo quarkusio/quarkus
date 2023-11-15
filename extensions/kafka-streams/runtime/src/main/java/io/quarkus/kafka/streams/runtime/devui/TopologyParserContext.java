@@ -18,47 +18,52 @@ final class TopologyParserContext {
     final Mermaid mermaid = new Mermaid();
 
     void addSubTopology(String subTopology) {
-        subTopologies.add(subTopology);
-        graphviz.addSubTopology(subTopology);
-        mermaid.addSubTopology(subTopology);
+        final var cleanSubTopology = clean(subTopology);
+        subTopologies.add(cleanSubTopology);
+        graphviz.addSubTopology(cleanSubTopology);
+        mermaid.addSubTopology(cleanSubTopology);
     }
 
     void addSink(String sink, String topic) {
-        sinks.add(topic);
-        currentNode = sink;
-        graphviz.addSink(sink, topic);
-        mermaid.addSink(sink, topic);
+        final var cleanTopic = clean(topic);
+        sinks.add(cleanTopic);
+        final var cleanSink = clean(sink);
+        currentNode = clean(cleanSink);
+        graphviz.addSink(cleanSink, cleanTopic);
+        mermaid.addSink(cleanSink, cleanTopic);
     }
 
     void addSources(String source, String[] topics) {
-        currentNode = source;
+        currentNode = clean(source);
         Arrays.stream(topics)
                 .map(String::trim).filter(topic -> !topic.isEmpty())
                 .forEachOrdered(topic -> {
-                    sources.add(topic);
-                    graphviz.addSource(source, topic);
-                    mermaid.addSource(source, topic);
+                    final var cleanTopic = clean(topic);
+                    sources.add(cleanTopic);
+                    graphviz.addSource(currentNode, cleanTopic);
+                    mermaid.addSource(currentNode, cleanTopic);
                 });
     }
 
     void addRegexSource(String source, String regex) {
-        currentNode = source;
-        final var cleanRegex = regex.trim();
+        currentNode = clean(source);
+        final var cleanRegex = clean(regex);
         if (!cleanRegex.isEmpty()) {
             sources.add(cleanRegex);
-            graphviz.addRegexSource(source, cleanRegex);
-            mermaid.addRegexSource(source, cleanRegex);
+            graphviz.addRegexSource(currentNode, cleanRegex);
+            mermaid.addRegexSource(currentNode, cleanRegex);
         }
     }
 
     void addStores(String[] stores, String processor, boolean join) {
-        currentNode = processor;
+        currentNode = clean(processor);
         Arrays.stream(stores)
                 .map(String::trim).filter(store -> !store.isEmpty())
                 .forEachOrdered(store -> {
-                    this.stores.add(store);
-                    graphviz.addStore(store, currentNode, join);
-                    mermaid.addStore(store, currentNode, join);
+                    final var cleanStore = clean(store);
+                    this.stores.add(cleanStore);
+                    graphviz.addStore(cleanStore, currentNode, join);
+                    mermaid.addStore(cleanStore, currentNode, join);
                 });
     }
 
@@ -66,9 +71,14 @@ final class TopologyParserContext {
         Arrays.stream(targets)
                 .map(String::trim).filter(target -> !("none".equals(target) || target.isEmpty()))
                 .forEachOrdered(target -> {
-                    graphviz.addTarget(target, currentNode);
-                    mermaid.addTarget(target, currentNode);
+                    final var cleanTarget = clean(target);
+                    graphviz.addTarget(cleanTarget, currentNode);
+                    mermaid.addTarget(cleanTarget, currentNode);
                 });
+    }
+
+    private static String clean(String name) {
+        return name != null ? name.trim().replaceAll("\"", "") : null;
     }
 
     static final class Graphviz {
@@ -138,7 +148,7 @@ final class TopologyParserContext {
         }
 
         private static String toId(String name) {
-            return name.replaceAll("-", "_");
+            return '\"' + name + '\"';
         }
 
         private static String toLabel(String name) {

@@ -1036,6 +1036,8 @@ public class VertxHttpRecorder {
 
         @Override
         public void start(Promise<Void> startFuture) {
+            assert Context.isOnEventLoopThread();
+
             final AtomicInteger remainingCount = new AtomicInteger(0);
             boolean httpServerEnabled = httpOptions != null && insecureRequests != HttpConfiguration.InsecureRequests.DISABLED;
             if (httpServerEnabled) {
@@ -1254,18 +1256,17 @@ public class VertxHttpRecorder {
         public void beforeCheckpoint(org.crac.Context<? extends Resource> context) throws Exception {
             Promise<Void> p = Promise.promise();
             stop(p);
-            CountDownLatch latch = new CountDownLatch(1);
-            p.future().onComplete(event -> latch.countDown());
-            latch.await();
+            p.future().toCompletionStage().toCompletableFuture().get();
         }
 
         @Override
         public void afterRestore(org.crac.Context<? extends Resource> context) throws Exception {
             Promise<Void> p = Promise.promise();
-            start(p);
-            CountDownLatch latch = new CountDownLatch(1);
-            p.future().onComplete(event -> latch.countDown());
-            latch.await();
+            // The verticle must be started by the event-loop thread; the thread calling
+            // afterRestore will likely do so for all suspended verticles, and had we called
+            // this directly the verticles would all share the same context (run on the same thread).
+            this.context.runOnContext(nil -> start(p));
+            p.future().toCompletionStage().toCompletableFuture().get();
         }
 
     }

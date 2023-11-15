@@ -72,7 +72,6 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.StreamingLogHandlerBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
-import io.quarkus.deployment.builditem.WebSocketLogHandlerBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
@@ -229,7 +228,6 @@ public final class LoggingResourceProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             LogCategoryMinLevelDefaultsBuildItem categoryMinLevelDefaults,
             Optional<StreamingLogHandlerBuildItem> streamingLogStreamHandlerBuildItem,
-            Optional<WebSocketLogHandlerBuildItem> wsLogStreamHandlerBuildItem,
             List<LogHandlerBuildItem> handlerBuildItems,
             List<NamedLogHandlersBuildItem> namedHandlerBuildItems,
             List<LogConsoleFormatBuildItem> consoleFormatItems,
@@ -257,11 +255,6 @@ public final class LoggingResourceProcessor {
             }
             if (bannerBuildItem != null) {
                 possibleSupplier = bannerBuildItem.getBannerSupplier();
-            }
-            // Old Dev UI Log Stream
-            RuntimeValue<Optional<Handler>> wsDevUiLogHandler = null;
-            if (wsLogStreamHandlerBuildItem.isPresent()) {
-                wsDevUiLogHandler = wsLogStreamHandlerBuildItem.get().getHandlerValue();
             }
 
             // New Dev UI Log Stream
@@ -297,7 +290,7 @@ public final class LoggingResourceProcessor {
             shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(
                     recorder.initializeLogging(log, buildLog, discoveredLogComponents,
                             categoryMinLevelDefaults.content, alwaysEnableLogStream,
-                            wsDevUiLogHandler, streamingDevUiLogHandler, handlers, namedHandlers,
+                            streamingDevUiLogHandler, handlers, namedHandlers,
                             possibleConsoleFormatters, possibleFileFormatters, possibleSyslogFormatters,
                             possibleSupplier, launchModeBuildItem.getLaunchMode(), true)));
             LogConfig logConfig = new LogConfig();

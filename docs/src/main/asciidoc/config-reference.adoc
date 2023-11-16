@@ -79,17 +79,33 @@ nor `\_` with `_`: `FOO_BAR_0_` or `FOO_BAR_0__BAZ`
 
 [CAUTION]
 ====
-In some situations, looking up the exact property name is impossible. For instance, when looking
-up a configuration that is part of a `Map`, and the property name contains a dynamic segment (the `Map` key). In this
-case, Quarkus relies upon each source’s list of property names. These must be converted back to their most likely
-dotted format for Environment Variables.
+In some situations, looking up the exact property name is impossible. This is the case for configuration names that
+contain user defined path segments.
 
-By default, the underscore `_` of an Environment Variable name always maps to a dot `.`. If the property name contains
-a dash or some other special character, that property name can be specified in another Config Source, with the expected
-dotted format. It will provide additional information to perform a two-way conversion and match the property names.
+Applying the conversion rules for Environment Variables names, `quarkus.datasource."datasource-name".jdbc.url` becomes
+`QUARKUS_DATASOURCE\__DATASOURCE_NAME__JDBC_URL`. The configuration will work as expected if both properties are
+available in the Config system.
 
-To correctly lookup `Map` properties where `FOO_BAR_BAZ` is the property name and `BAR_BAZ` is the key, add
-`foo.bar-baz` in a source with an ordinal lower than the EnvConfigSource (`300`).
+If only `QUARKUS_DATASOURCE\__DATASOURCE_NAME__JDBC_URL` is present, the Config system needs to reconvert the
+configuration name to its most likely dotted format. This works fine for fixed configuration segments, but not for
+names that contain dynamic segments. In this case, Quarkus is unable to determine if `DATASOURCE_NAME` should be
+converted to `datasource.name` or `datasource-name` (or any other special character separator).
+
+For this reason, such properties always require their dotted version name in another source (the value can be left
+empty) to disambiguate the Environment Variable name. It will provide additional information to perform a two-way
+conversion and match the property names together.
+
+[source,properties]
+----
+# value can be left empty
+quarkus.datasource."datasource-name".jdbc.url=
+----
+
+[source,bash]
+----
+EXPORT QUARKUS_DATASOURCE__DATASOURCE_NAME__JDBC_URL=jdbc:postgresql://localhost:5432/database
+----
+
 ====
 
 
@@ -101,7 +117,7 @@ To correctly lookup `Map` properties where `FOO_BAR_BAZ` is the property name an
 ----
 QUARKUS_DATASOURCE_PASSWORD=youshallnotpass <1>
 ----
-<1> The name `QUARKUS_DATASOURCE_PASSWORD` the same conversion rules used for <<environment-variables>>.
+<1> The name `QUARKUS_DATASOURCE_PASSWORD` follows the same conversion rules used for <<environment-variables>>.
 
 For `dev` mode, this file can be placed in the root of the project, but it is advised to **not** check it in to version
 control because it typically contains passwords, access tokens, API keys or other secrets.

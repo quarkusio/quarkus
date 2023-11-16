@@ -21,7 +21,7 @@
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>3.11.0</compiler-plugin.version>
         <kotlin.version>1.9.10</kotlin.version>
-        <dokka.version>1.9.0</dokka.version>
+        <dokka.version>1.9.10</dokka.version>
         <scala.version>2.13.8</scala.version>
         <scala-maven-plugin.version>4.8.1</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->

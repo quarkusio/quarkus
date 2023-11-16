@@ -57,7 +57,10 @@ For more information, see the xref:security-customization.adoc#security-identity
 
 == Supported authentication mechanisms
 
-To learn more about security authentication in Quarkus and the supported mechanisms and protocols, see the Quarkus xref:security-authentication-mechanisms.adoc[Authentication mechanisms in Quarkus] guide.
+The Quarkus Security framework supports multiple authentication mechanisms, which can also be combined.
+Some supported authentication mechanisms are built into Quarkus, while others require you to add an extension. 
+
+To learn about security authentication in Quarkus and the supported mechanisms and protocols, see the Quarkus xref:security-authentication-mechanisms.adoc[Authentication mechanisms in Quarkus] guide.
 
 == Proactive authentication
 
@@ -67,7 +70,7 @@ For more information, see the Quarkus xref:security-proactive-authentication.ado
 
 == Quarkus Security customization
 
-Quarkus Security is also highly customizable.
+Quarkus Security is customizable.
 You can customize the following core security components of Quarkus:
 
 * `HttpAuthenticationMechanism`

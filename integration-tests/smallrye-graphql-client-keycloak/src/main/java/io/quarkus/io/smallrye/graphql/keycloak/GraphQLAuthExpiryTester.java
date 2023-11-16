@@ -8,9 +8,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
-import io.restassured.RestAssured;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder;
@@ -26,19 +23,14 @@ import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder;
 @Path("/")
 public class GraphQLAuthExpiryTester {
 
-    @ConfigProperty(name = "quarkus.oidc.auth-server-url")
-    String keycloakRealm;
-
     @GET
-    @Path("/dynamic-subscription-auth-expiry/{url}")
+    @Path("/dynamic-subscription-auth-expiry/{token}/{url}")
     @Blocking
-    public void dynamicSubscription(@PathParam("url") String url)
+    public void dynamicSubscription(@PathParam("token") String token, @PathParam("url") String url)
             throws Exception {
-        String authHeader = getAuthHeader();
-
         DynamicGraphQLClientBuilder clientBuilder = DynamicGraphQLClientBuilder.newBuilder()
                 .url(url + "/graphql")
-                .header("Authorization", authHeader)
+                .header("Authorization", "Bearer " + token)
                 .executeSingleOperationsOverWebsocket(true);
 
         try (DynamicGraphQLClient client = clientBuilder.build()) {
@@ -67,17 +59,4 @@ public class GraphQLAuthExpiryTester {
         }
     }
 
-    private String getAuthHeader() {
-        io.restassured.response.Response response = RestAssured.given()
-                .contentType("application/x-www-form-urlencoded")
-                .accept("application/json")
-                .formParam("username", "alice")
-                .formParam("password", "alice")
-                .param("client_id", "quarkus-app")
-                .param("client_secret", "secret")
-                .formParam("grant_type", "password")
-                .post(keycloakRealm + "/protocol/openid-connect/token");
-
-        return "Bearer " + response.getBody().jsonPath().getString("access_token");
-    }
 }

@@ -218,7 +218,7 @@ YAML and JSON structures can be read in an application.yaml file.
 
 Certainly, here's a step-by-step guide on how to use complex configuration structures with Quarkus:
 
-<1> Define Your Configuration Interface.
+* Define Your Configuration Interface.
 
 [source,java]
 ----
@@ -234,7 +234,7 @@ public interface ServiceConfig {
 }
 ----
 
-<2> Create the appropriate JSON structure and store it in a YAML file.
+* Create the appropriate JSON structure and store it in a YAML file.
 
 [source,yaml]
 ----

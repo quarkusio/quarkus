@@ -68,7 +68,7 @@ public class SmallRyeGraphQLOverWebSocketHandler extends SmallRyeGraphQLAbstract
                                         @Override
                                         public void handle(Long event) {
                                             if (!serverWebSocket.isClosed()) {
-                                                serverWebSocket.close();
+                                                serverWebSocket.close((short) 1008, "Authentication expired");
                                             }
                                         }
                                     });

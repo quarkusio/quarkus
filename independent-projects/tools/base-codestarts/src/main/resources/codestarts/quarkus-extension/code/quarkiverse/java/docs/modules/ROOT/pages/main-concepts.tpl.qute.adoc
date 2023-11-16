@@ -1,0 +1,13 @@
+= {extension.full-name} - Main Concepts
+
+include::./includes/attributes.adoc[]
+
+== How it works
+
+TIP: Describe how the extension works here.
+
+== Web Dependencies
+
+TIP: List/describe any web dependencies for your extension.
+
+TIP: Check this page for inspiration: https://docs.quarkiverse.io/quarkus-web-bundler/dev/main-concepts.html[Quarkus Web Bundler - Main Concepts, window="_blank"]

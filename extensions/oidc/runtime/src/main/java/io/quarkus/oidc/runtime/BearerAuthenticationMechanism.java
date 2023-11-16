@@ -1,10 +1,11 @@
 package io.quarkus.oidc.runtime;
 
+import java.util.function.Function;
+
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
@@ -14,9 +15,6 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
 public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMechanism {
-
-    protected static final ChallengeData UNAUTHORIZED_CHALLENGE = new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
-            HttpHeaderNames.WWW_AUTHENTICATE, OidcConstants.BEARER_SCHEME);
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager, OidcTenantConfig oidcTenantConfig) {
@@ -29,7 +27,14 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
     }
 
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
-        return Uni.createFrom().item(UNAUTHORIZED_CHALLENGE);
+        Uni<TenantConfigContext> tenantContext = resolver.resolveContext(context);
+        return tenantContext.onItem().transformToUni(new Function<TenantConfigContext, Uni<? extends ChallengeData>>() {
+            @Override
+            public Uni<ChallengeData> apply(TenantConfigContext tenantContext) {
+                return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
+                        HttpHeaderNames.WWW_AUTHENTICATE, tenantContext.oidcConfig.token.authorizationScheme));
+            }
+        });
     }
 
     private String extractBearerToken(RoutingContext context, OidcTenantConfig oidcConfig) {
@@ -49,7 +54,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
             return headerValue;
         }
 
-        if (!OidcConstants.BEARER_SCHEME.equalsIgnoreCase(scheme)) {
+        if (!oidcConfig.token.authorizationScheme.equalsIgnoreCase(scheme)) {
             return null;
         }
 

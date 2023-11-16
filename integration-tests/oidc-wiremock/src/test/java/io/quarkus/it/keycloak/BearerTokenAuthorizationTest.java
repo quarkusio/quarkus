@@ -263,6 +263,17 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testBearerToken() {
+        String token = getAccessToken("alice", Set.of("user"));
+
+        RestAssured.given().auth().oauth2(token).when()
+                .get("/api/users/me/bearer")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("alice"));
+    }
+
+    @Test
     public void testBearerTokenWrongIssuer() {
         String token = getAccessTokenWrongIssuer("alice", Set.of("user"));
 
@@ -282,6 +293,38 @@ public class BearerTokenAuthorizationTest {
                 .then()
                 .statusCode(401)
                 .header("WWW-Authenticate", equalTo("Bearer"));
+    }
+
+    @Test
+    public void testBearerTokenIdScheme() {
+        String token = getAccessToken("alice", Set.of("user"));
+
+        RestAssured.given().header("Authorization", "ID " + token).when()
+                .get("/api/users/me/bearer-id")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("alice"));
+    }
+
+    @Test
+    public void testBearerTokenIdSchemeButBearerSchemeIsUsed() {
+        String token = getAccessToken("alice", Set.of("user"));
+
+        RestAssured.given().auth().oauth2(token).when()
+                .get("/api/users/me/bearer-id")
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
+    public void testBearerTokenIdSchemeWrongIssuer() {
+        String token = getAccessTokenWrongIssuer("alice", Set.of("user"));
+
+        RestAssured.given().auth().oauth2(token).when()
+                .get("/api/users/me/bearer-id")
+                .then()
+                .statusCode(401)
+                .header("WWW-Authenticate", equalTo("ID"));
     }
 
     @Test

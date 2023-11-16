@@ -6,10 +6,12 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.graphql.websocket.GraphQLWebSocketSession;
 import io.smallrye.graphql.websocket.GraphQLWebsocketHandler;
 import io.smallrye.graphql.websocket.graphqltransportws.GraphQLTransportWSSubprotocolHandler;
 import io.smallrye.graphql.websocket.graphqlws.GraphQLWSSubprotocolHandler;
+import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.ext.web.RoutingContext;
@@ -54,9 +56,34 @@ public class SmallRyeGraphQLOverWebSocketHandler extends SmallRyeGraphQLAbstract
                             serverWebSocket.close();
                             return;
                     }
+
+                    QuarkusHttpUser user = (QuarkusHttpUser) ctx.user();
+                    long cancellation = -1L; // Do not use 0, as you won't be able to distinguish between not set, and the first task Id
+                    if (user != null) {
+                        //close the connection when the identity expires
+                        Long expire = user.getSecurityIdentity().getAttribute("quarkus.identity.expire-time");
+                        if (expire != null) {
+                            cancellation = ctx.vertx().setTimer((expire * 1000) - System.currentTimeMillis(),
+                                    new Handler<Long>() {
+                                        @Override
+                                        public void handle(Long event) {
+                                            if (!serverWebSocket.isClosed()) {
+                                                serverWebSocket.close((short) 1008, "Authentication expired");
+                                            }
+                                        }
+                                    });
+                        }
+                    }
+
                     log.debugf("Starting websocket with subprotocol = %s", subprotocol);
                     GraphQLWebsocketHandler finalHandler = handler;
-                    serverWebSocket.closeHandler(v -> finalHandler.onClose());
+                    long finalCancellation = cancellation;
+                    serverWebSocket.closeHandler(v -> {
+                        finalHandler.onClose();
+                        if (finalCancellation != -1) {
+                            ctx.vertx().cancelTimer(finalCancellation);
+                        }
+                    });
                     serverWebSocket.endHandler(v -> finalHandler.onEnd());
                     serverWebSocket.exceptionHandler(finalHandler::onThrowable);
                     serverWebSocket.textMessageHandler(finalHandler::onMessage);

@@ -22,8 +22,9 @@ public class GraphQLAuthExpiryTest {
 
     @Test
     public void testDynamicClientWebSocketAuthenticationExpiry() {
+        String token = KeycloakRealmResourceManager.getAccessToken();
         when()
-                .get("/dynamic-subscription-auth-expiry/" + url.toString())
+                .get("/dynamic-subscription-auth-expiry/" + token + "/" + url.toString())
                 .then()
                 .log().everything()
                 .statusCode(204);

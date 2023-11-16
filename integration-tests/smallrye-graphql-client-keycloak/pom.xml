@@ -30,8 +30,13 @@
             <artifactId>quarkus-resteasy-deployment</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -85,7 +90,15 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

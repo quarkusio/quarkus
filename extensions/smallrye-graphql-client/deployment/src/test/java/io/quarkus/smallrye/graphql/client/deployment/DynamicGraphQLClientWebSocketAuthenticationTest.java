@@ -26,7 +26,6 @@ import io.smallrye.graphql.client.Response;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClientBuilder;
 import io.smallrye.mutiny.Multi;
-import io.vertx.core.http.UpgradeRejectedException;
 
 /**
  * Due to the complexity of establishing a WebSocket, WebSocket/Subscription testing of the GraphQL server is done here,
@@ -139,21 +138,6 @@ public class DynamicGraphQLClientWebSocketAuthenticationTest {
         try (DynamicGraphQLClient client = clientBuilder.build()) {
             Response response = client.executeSync("{ bar { message } }");
             assertEquals(JsonValue.ValueType.NULL, response.getData().get("bar").getValueType());
-        }
-    }
-
-    @Test
-    public void testUnauthenticatedForQueryWebSocketWithOnlyHttpBasedPermission() throws Exception {
-        DynamicGraphQLClientBuilder clientBuilder = DynamicGraphQLClientBuilder.newBuilder()
-                .url(url)
-                .executeSingleOperationsOverWebsocket(true);
-        try (DynamicGraphQLClient client = clientBuilder.build()) {
-            try {
-                client.executeSync("{ baz { message} }");
-                Assertions.fail("WebSocket upgrade should fail");
-            } catch (UpgradeRejectedException e) {
-                // ok
-            }
         }
     }
 

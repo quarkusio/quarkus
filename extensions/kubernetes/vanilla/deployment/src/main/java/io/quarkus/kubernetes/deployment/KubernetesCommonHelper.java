@@ -996,12 +996,21 @@ public class KubernetesCommonHelper {
                             now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd - HH:mm:ss Z")), new String[0]))));
         }
 
-        if (config.getPrometheusConfig().annotations) {
-            // Add metrics annotations
-            metricsConfiguration.ifPresent(m -> {
-                String path = m.metricsEndpoint();
-                String prefix = config.getPrometheusConfig().prefix;
-                if (port.isPresent() && path != null) {
+        // Add metrics annotations
+        metricsConfiguration.ifPresent(m -> {
+            String path = m.metricsEndpoint();
+            String prefix = config.getPrometheusConfig().prefix;
+            if (port.isPresent() && path != null) {
+                if (config.getPrometheusConfig().generateServiceMonitor) {
+                    result.add(new DecoratorBuildItem(target, new AddServiceMonitorResourceDecorator(
+                            config.getPrometheusConfig().scheme.orElse("http"),
+                            config.getPrometheusConfig().port.orElse(String.valueOf(port.get().getContainerPort())),
+                            config.getPrometheusConfig().path.orElse(path),
+                            10,
+                            true)));
+                }
+
+                if (config.getPrometheusConfig().annotations) {
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
                             config.getPrometheusConfig().scrape.orElse(prefix + "/scrape"), "true",
                             PROMETHEUS_ANNOTATION_TARGETS)));
@@ -1014,8 +1023,8 @@ public class KubernetesCommonHelper {
                             config.getPrometheusConfig().scheme.orElse(prefix + "/scheme"), "http",
                             PROMETHEUS_ANNOTATION_TARGETS)));
                 }
-            });
-        }
+            }
+        });
 
         //Add metrics annotations
         return result;

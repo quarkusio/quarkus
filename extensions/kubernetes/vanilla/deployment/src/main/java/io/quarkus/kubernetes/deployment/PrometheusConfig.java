@@ -26,6 +26,16 @@ public class PrometheusConfig {
     boolean annotations;
 
     /**
+     * When true (the default), emit a set of annotations to identify
+     * services that should be scraped by prometheus for metrics.
+     *
+     * In configurations that use the Prometheus operator with ServiceMonitor,
+     * annotations may not be necessary.
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean generateServiceMonitor;
+
+    /**
      * Define the annotation prefix used for scrape values, this value will be used
      * as the base for other annotation name defaults. Altering the base for generated
      * annotations can make it easier to define re-labeling rules and avoid unexpected

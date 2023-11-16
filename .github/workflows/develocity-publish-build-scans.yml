@@ -11,10 +11,11 @@ defaults:
 
 jobs:
   publish-build-scans:
-    if: github.repository == 'quarkusio/quarkus' && github.event.workflow_run.event == 'pull_request'
+    if: github.repository == 'quarkusio/quarkus' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
+      checks: write
     steps:
       - uses: actions/checkout@v4
       - name: Extract preapproved developers list
@@ -31,7 +32,9 @@ jobs:
           develocity-url: 'https://ge.quarkus.io'
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
           skip-comment: true
-      - name: Push to summary
-        if: ${{ contains(fromJson(steps.extract-preapproved-developers.outputs.preapproved-developpers).preapproved-developers, github.event.workflow_run.actor.login) }}
-        run: |
-          cat build-metadata.json >> ${GITHUB_STEP_SUMMARY}
+      - name: Inject build scans in reports
+        uses: quarkusio/action-helpers@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          action: inject-build-scans
+          workflow-run-id: ${{ github.event.workflow_run.id }}

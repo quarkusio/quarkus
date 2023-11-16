@@ -62,7 +62,7 @@ _For more information about how to install the Quarkus CLI and use it, please re
 ----
 mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
 ifdef::create-app-stream[]
-    -DplatformVersion={create-app-stream} \
+    -DplatformVersion={quarkus-version} \
 endif::[]
     -DprojectGroupId={create-app-group-id} \
 ifdef::create-app-extensions[]

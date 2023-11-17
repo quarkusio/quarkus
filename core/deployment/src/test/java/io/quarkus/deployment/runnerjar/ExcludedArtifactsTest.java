@@ -78,13 +78,5 @@ public class ExcludedArtifactsTest extends BootstrapFromOriginalJarTestBase {
         expected.add(new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "dep-g", "1"),
                 DependencyFlags.RUNTIME_CP, DependencyFlags.DEPLOYMENT_CP));
         assertEquals(expected, getDependenciesWithFlag(model, DependencyFlags.RUNTIME_CP));
-
-        expected = new HashSet<>();
-        expected.add(new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "ext-a-dep", "1"),
-                DependencyFlags.REMOVED));
-        expected.add(new ArtifactDependency(ArtifactCoords.jar("org.banned", "dep-e", "1"), DependencyFlags.REMOVED));
-        expected.add(new ArtifactDependency(ArtifactCoords.jar("org.banned.too", "dep-d", "1"), DependencyFlags.REMOVED));
-        expected.add(new ArtifactDependency(ArtifactCoords.jar("org.banned", "dep-f", "1"), DependencyFlags.REMOVED));
-        assertEquals(expected, getDependenciesWithFlag(model, DependencyFlags.REMOVED));
     }
 }

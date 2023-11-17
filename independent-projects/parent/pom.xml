@@ -422,7 +422,7 @@
                                 </systemProperties>
                                 <runtimeClassPath>
                                     <ignoredFiles>
-                                        <ignoredFile>**/quarkus-ide-launcher-*.jar</ignoredFile>
+                                        <ignoredFile>META-INF/ide-deps/**</ignoredFile>
                                     </ignoredFiles>
                                 </runtimeClassPath>
                             </normalization>

@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.test.search.shard_failure;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 
@@ -39,12 +39,13 @@ public class ShardFailureIgnoreDefaultTest {
             session.toEntityManager().persist(new MyEntity2("42"));
         });
         QuarkusTransaction.joiningExisting().run(() -> {
-            assertThat(session.search(List.of(MyEntity1.class, MyEntity2.class))
+            assertThatThrownBy(() -> session.search(List.of(MyEntity1.class, MyEntity2.class))
                     .where(f -> f.wildcard().field("text").matching("4*"))
                     .fetchHits(20))
                     // MyEntity2 fails because "text" is an integer field there
-                    // We expect that index (shard) to be ignored
-                    .hasSize(1);
+                    // We expect an exception
+                    .hasMessageContaining("Elasticsearch request failed",
+                            "\"type\": \"query_shard_exception\"");
         });
     }
 }

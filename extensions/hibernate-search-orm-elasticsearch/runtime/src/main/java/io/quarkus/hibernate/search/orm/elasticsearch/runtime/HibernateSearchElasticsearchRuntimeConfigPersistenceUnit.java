@@ -523,10 +523,8 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         /**
          * Whether partial shard failures are ignored (`true`)
          * or lead to Hibernate Search throwing an exception (`false`).
-         * <p>
-         * Will default to `false` in Hibernate Search 7.
          */
-        @WithDefault("true")
+        @WithDefault("false")
         boolean ignore();
     }
 

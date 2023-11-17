@@ -132,7 +132,7 @@
         <mssql-jdbc.version>12.4.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.3.0.23.09</oracle-jdbc.version>
-        <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
+        <derby-jdbc.version>10.17.1.0</derby-jdbc.version>
         <db2-jdbc.version>11.5.8.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>5.3.2</rest-assured.version>

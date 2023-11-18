@@ -37,20 +37,16 @@ public class ClientCalls {
     }
 
     public static <I, O> Uni<O> manyToOne(Multi<I> items, Function<StreamObserver<O>, StreamObserver<I>> delegate) {
-        return Uni.createFrom().emitter((new Consumer<UniEmitter<? super O>>() {
-            @Override
-            public void accept(UniEmitter<? super O> emitter) {
-                AtomicReference<Flow.Subscription> cancellable = new AtomicReference<>();
-                UniStreamObserver<O> observer = new UniStreamObserver<>(emitter.onTermination(() -> {
-                    var subscription = cancellable.getAndSet(Subscriptions.CANCELLED);
-                    if (subscription != null) {
-                        subscription.cancel();
-                    }
-                }));
-                StreamObserver<I> request = delegate.apply(observer);
-                subscribeToUpstreamAndForwardToStreamObserver(items, cancellable, request);
-            }
-
+        return Uni.createFrom().emitter((emitter -> {
+            AtomicReference<Flow.Subscription> cancellable = new AtomicReference<>();
+            UniStreamObserver<O> observer = new UniStreamObserver<>(emitter.onTermination(() -> {
+                var subscription = cancellable.getAndSet(Subscriptions.CANCELLED);
+                if (subscription != null) {
+                    subscription.cancel();
+                }
+            }));
+            StreamObserver<I> request = delegate.apply(observer);
+            subscribeToUpstreamAndForwardToStreamObserver(items, cancellable, request);
         }));
     }
 
@@ -58,52 +54,33 @@ public class ClientCalls {
             AtomicReference<Flow.Subscription> cancellable,
             StreamObserver<I> request) {
         items.subscribe().with(
-                new Consumer<Flow.Subscription>() {
-                    @Override
-                    public void accept(Flow.Subscription subscription) {
-                        if (!cancellable.compareAndSet(null, subscription)) {
-                            subscription.cancel();
-                        } else {
-                            subscription.request(Long.MAX_VALUE);
-                        }
+                subscription -> {
+                    if (!cancellable.compareAndSet(null, subscription)) {
+                        subscription.cancel();
+                    } else {
+                        subscription.request(Long.MAX_VALUE);
                     }
                 },
 
-                new Consumer<I>() {
-                    @Override
-                    public void accept(I v) {
-                        if (cancellable.get() != null && cancellable.get() != Subscriptions.CANCELLED) {
-                            request.onNext(v);
-                        }
+                v -> {
+                    if (cancellable.get() != null && cancellable.get() != Subscriptions.CANCELLED) {
+                        request.onNext(v);
                     }
                 },
-                new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) {
-                        request.onError(throwable);
-                    }
-                },
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        request.onCompleted();
-                    }
-                });
+                request::onError,
+                request::onCompleted);
     }
 
     public static <I, O> Multi<O> manyToMany(Multi<I> items, Function<StreamObserver<O>, StreamObserver<I>> delegate) {
-        return Multi.createFrom().emitter((new Consumer<MultiEmitter<? super O>>() {
-            @Override
-            public void accept(MultiEmitter<? super O> emitter) {
-                AtomicReference<Flow.Subscription> cancellable = new AtomicReference<>();
-                StreamObserver<I> request = delegate.apply(new MultiStreamObserver<>(emitter.onTermination(() -> {
-                    var subscription = cancellable.getAndSet(Subscriptions.CANCELLED);
-                    if (subscription != null) {
-                        subscription.cancel();
-                    }
-                })));
-                subscribeToUpstreamAndForwardToStreamObserver(items, cancellable, request);
-            }
+        return Multi.createFrom().emitter((emitter -> {
+            AtomicReference<Flow.Subscription> cancellable = new AtomicReference<>();
+            StreamObserver<I> request = delegate.apply(new MultiStreamObserver<>(emitter.onTermination(() -> {
+                var subscription = cancellable.getAndSet(Subscriptions.CANCELLED);
+                if (subscription != null) {
+                    subscription.cancel();
+                }
+            })));
+            subscribeToUpstreamAndForwardToStreamObserver(items, cancellable, request);
         }));
 
     }

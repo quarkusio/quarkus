@@ -91,12 +91,7 @@ public interface BeanContainer {
 
     interface Factory<T> {
 
-        Factory<Object> EMPTY = new Factory<Object>() {
-            @Override
-            public Instance<Object> create() {
-                return null;
-            }
-        };
+        Factory<Object> EMPTY = () -> null;
 
         /**
          *

@@ -13,12 +13,7 @@ public final class CfgXmlAccessServiceInitiatorQuarkus implements StandardServic
 
     @Override
     public CfgXmlAccessService initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-        return new CfgXmlAccessService() {
-            @Override
-            public LoadedConfig getAggregatedConfig() {
-                return null;
-            }
-        };
+        return () -> null;
     }
 
     @Override

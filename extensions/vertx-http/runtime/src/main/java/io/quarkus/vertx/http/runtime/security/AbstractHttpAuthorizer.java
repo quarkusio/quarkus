@@ -56,24 +56,15 @@ abstract class AbstractHttpAuthorizer {
                 }
             }
             try {
-                return Uni.createFrom().emitter(new Consumer<UniEmitter<? super HttpSecurityPolicy.CheckResult>>() {
-                    @Override
-                    public void accept(UniEmitter<? super HttpSecurityPolicy.CheckResult> uniEmitter) {
-
-                        ExecutorRecorder.getCurrent().execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    HttpSecurityPolicy.CheckResult val = function.apply(context,
-                                            identity.await().indefinitely());
-                                    uniEmitter.complete(val);
-                                } catch (Throwable t) {
-                                    uniEmitter.fail(t);
-                                }
-                            }
-                        });
+                return Uni.createFrom().emitter(uniEmitter -> ExecutorRecorder.getCurrent().execute(() -> {
+                    try {
+                        HttpSecurityPolicy.CheckResult val = function.apply(context,
+                                identity.await().indefinitely());
+                        uniEmitter.complete(val);
+                    } catch (Throwable t) {
+                        uniEmitter.fail(t);
                     }
-                });
+                }));
             } catch (Exception e) {
                 return Uni.createFrom().failure(e);
             }
@@ -113,32 +104,26 @@ abstract class AbstractHttpAuthorizer {
         //get the current checker
         HttpSecurityPolicy res = permissionCheckers.get(index);
         res.checkPermission(routingContext, identity, CONTEXT)
-                .subscribe().with(new Consumer<HttpSecurityPolicy.CheckResult>() {
-                    @Override
-                    public void accept(HttpSecurityPolicy.CheckResult checkResult) {
-                        if (!checkResult.isPermitted()) {
-                            doDeny(identity, routingContext);
+                .subscribe().with(checkResult -> {
+                    if (!checkResult.isPermitted()) {
+                        doDeny(identity, routingContext);
+                    } else {
+                        if (checkResult.getAugmentedIdentity() != null) {
+                            doPermissionCheck(routingContext, Uni.createFrom().item(checkResult.getAugmentedIdentity()),
+                                    index + 1, checkResult.getAugmentedIdentity(), permissionCheckers);
                         } else {
-                            if (checkResult.getAugmentedIdentity() != null) {
-                                doPermissionCheck(routingContext, Uni.createFrom().item(checkResult.getAugmentedIdentity()),
-                                        index + 1, checkResult.getAugmentedIdentity(), permissionCheckers);
-                            } else {
-                                //attempt to run the next checker
-                                doPermissionCheck(routingContext, identity, index + 1, augmentedIdentity, permissionCheckers);
-                            }
+                            //attempt to run the next checker
+                            doPermissionCheck(routingContext, identity, index + 1, augmentedIdentity, permissionCheckers);
                         }
                     }
-                }, new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) {
-                        // we don't fail event if it's already failed with same exception as we don't want to process
-                        // the exception twice;at this point, the exception could be failed by the default auth failure handler
-                        if (!routingContext.response().ended() && !throwable.equals(routingContext.failure())) {
-                            routingContext.fail(throwable);
-                        } else if (!(throwable instanceof AuthenticationFailedException)) {
-                            //don't log auth failure
-                            log.error("Exception occurred during authorization", throwable);
-                        }
+                }, throwable -> {
+                    // we don't fail event if it's already failed with same exception as we don't want to process
+                    // the exception twice;at this point, the exception could be failed by the default auth failure handler
+                    if (!routingContext.response().ended() && !throwable.equals(routingContext.failure())) {
+                        routingContext.fail(throwable);
+                    } else if (!(throwable instanceof AuthenticationFailedException)) {
+                        //don't log auth failure
+                        log.error("Exception occurred during authorization", throwable);
                     }
                 });
     }

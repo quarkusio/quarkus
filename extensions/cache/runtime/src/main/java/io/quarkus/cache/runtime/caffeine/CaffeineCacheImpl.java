@@ -61,12 +61,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
         if (recordStats) {
             LOGGER.tracef("Recording Caffeine stats for cache [%s]", cacheInfo.name);
             statsCounter = new ConcurrentStatsCounter();
-            builder.recordStats(new Supplier<StatsCounter>() {
-                @Override
-                public StatsCounter get() {
-                    return statsCounter;
-                }
-            });
+            builder.recordStats(() -> statsCounter);
         } else {
             LOGGER.tracef("Caffeine stats recording is disabled for cache [%s]", cacheInfo.name);
             statsCounter = StatsCounter.disabledStatsCounter();
@@ -87,12 +82,9 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                  * Even if CompletionStage is eager, the Supplier used below guarantees that the cache value computation will be
                  * delayed until subscription time. In other words, the cache value computation is done lazily.
                  */
-                new Supplier<CompletionStage<V>>() {
-                    @Override
-                    public CompletionStage<V> get() {
-                        CompletionStage<Object> caffeineValue = getFromCaffeine(key, valueLoader);
-                        return cast(caffeineValue);
-                    }
+                (Supplier<CompletionStage<V>>) () -> {
+                    CompletionStage<Object> caffeineValue = getFromCaffeine(key, valueLoader);
+                    return cast(caffeineValue);
                 });
     }
 
@@ -100,25 +92,19 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
         return Uni.createFrom()
-                .completionStage(new Supplier<CompletionStage<V>>() {
-                    @Override
-                    public CompletionStage<V> get() {
-                        // When stats are enabled we need to call statsCounter.recordHits(1)/statsCounter.recordMisses(1) accordingly
-                        StatsRecorder recorder = recordStats ? new OperationalStatsRecorder() : NoopStatsRecorder.INSTANCE;
-                        @SuppressWarnings("unchecked")
-                        CompletionStage<V> result = (CompletionStage<V>) cache.asMap().computeIfAbsent(key,
-                                new Function<Object, CompletableFuture<Object>>() {
-                                    @Override
-                                    public CompletableFuture<Object> apply(Object key) {
-                                        recorder.onValueAbsent();
-                                        return valueLoader.apply((K) key)
-                                                .map(TO_CACHE_VALUE)
-                                                .subscribeAsCompletionStage();
-                                    }
-                                });
-                        recorder.doRecord(key);
-                        return result;
-                    }
+                .completionStage((Supplier<CompletionStage<V>>) () -> {
+                    // When stats are enabled we need to call statsCounter.recordHits(1)/statsCounter.recordMisses(1) accordingly
+                    StatsRecorder recorder = recordStats ? new OperationalStatsRecorder() : NoopStatsRecorder.INSTANCE;
+                    @SuppressWarnings("unchecked")
+                    CompletionStage<V> result = (CompletionStage<V>) cache.asMap().computeIfAbsent(key,
+                            key1 -> {
+                                recorder.onValueAbsent();
+                                return valueLoader.apply((K) key1)
+                                        .map(TO_CACHE_VALUE)
+                                        .subscribeAsCompletionStage();
+                            });
+                    recorder.doRecord(key);
+                    return result;
                 }).map(fromCacheValue());
     }
 
@@ -183,20 +169,17 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     }
 
     private CompletableFuture<Object> unwrapCacheValueOrThrowable(CompletableFuture<Object> cacheValue) {
-        return cacheValue.thenApply(new Function<>() {
-            @Override
-            public Object apply(Object value) {
-                // If there's a throwable encapsulated into a CaffeineComputationThrowable, it must be rethrown.
-                if (value instanceof CaffeineComputationThrowable) {
-                    Throwable cause = ((CaffeineComputationThrowable) value).getCause();
-                    if (cause instanceof RuntimeException) {
-                        throw (RuntimeException) cause;
-                    } else {
-                        throw new CacheException(cause);
-                    }
+        return cacheValue.thenApply(value -> {
+            // If there's a throwable encapsulated into a CaffeineComputationThrowable, it must be rethrown.
+            if (value instanceof CaffeineComputationThrowable) {
+                Throwable cause = ((CaffeineComputationThrowable) value).getCause();
+                if (cause instanceof RuntimeException) {
+                    throw (RuntimeException) cause;
                 } else {
-                    return NullValueConverter.fromCacheValue(value);
+                    throw new CacheException(cause);
                 }
+            } else {
+                return NullValueConverter.fromCacheValue(value);
             }
         });
     }
@@ -204,34 +187,25 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     @Override
     public Uni<Void> invalidate(Object key) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
-        return Uni.createFrom().item(new Supplier<Void>() {
-            @Override
-            public Void get() {
-                cache.synchronous().invalidate(key);
-                return null;
-            }
+        return Uni.createFrom().item(() -> {
+            cache.synchronous().invalidate(key);
+            return null;
         });
     }
 
     @Override
     public Uni<Void> invalidateAll() {
-        return Uni.createFrom().item(new Supplier<Void>() {
-            @Override
-            public Void get() {
-                cache.synchronous().invalidateAll();
-                return null;
-            }
+        return Uni.createFrom().item(() -> {
+            cache.synchronous().invalidateAll();
+            return null;
         });
     }
 
     @Override
     public Uni<Void> invalidateIf(Predicate<Object> predicate) {
-        return Uni.createFrom().item(new Supplier<Void>() {
-            @Override
-            public Void get() {
-                cache.asMap().keySet().removeIf(predicate);
-                return null;
-            }
+        return Uni.createFrom().item(() -> {
+            cache.asMap().keySet().removeIf(predicate);
+            return null;
         });
     }
 
@@ -243,7 +217,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     @SuppressWarnings("unchecked")
     @Override
     public <V> void put(Object key, CompletableFuture<V> valueFuture) {
-        cache.put(key, (CompletableFuture<Object>) valueFuture);
+        cache.put(key, valueFuture);
     }
 
     @Override
@@ -351,20 +325,8 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
     }
 
-    private static final Function<Object, Object> FROM_CACHE_VALUE = new Function<Object, Object>() {
+    private static final Function<Object, Object> FROM_CACHE_VALUE = NullValueConverter::fromCacheValue;
 
-        @Override
-        public Object apply(Object value) {
-            return NullValueConverter.fromCacheValue(value);
-        }
-    };
-
-    private static final Function<Object, Object> TO_CACHE_VALUE = new Function<Object, Object>() {
-
-        @Override
-        public Object apply(Object value) {
-            return NullValueConverter.toCacheValue(value);
-        }
-    };
+    private static final Function<Object, Object> TO_CACHE_VALUE = NullValueConverter::toCacheValue;
 
 }

@@ -193,14 +193,14 @@ public class FunctionScannerBuildStep {
 
             final String name = classInfo.name().toString();
             transformers
-                    .produce(new BytecodeTransformerBuildItem(name, new BiFunction<String, ClassVisitor, ClassVisitor>() {
+                    .produce(new BytecodeTransformerBuildItem(name, new BiFunction<>() {
                         @Override
                         public ClassVisitor apply(String className, ClassVisitor classVisitor) {
-                            ClassVisitor cv = new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
+                            return new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
 
                                 @Override
                                 public void visit(int version, int access, String name, String signature, String superName,
-                                        String[] interfaces) {
+                                                  String[] interfaces) {
                                     super.visit(version, access, name, signature, superName, interfaces);
                                     MethodVisitor ctor = visitMethod(Modifier.PUBLIC | Opcodes.ACC_SYNTHETIC, "<init>", "()V",
                                             null,
@@ -213,7 +213,6 @@ public class FunctionScannerBuildStep {
                                     ctor.visitEnd();
                                 }
                             };
-                            return cv;
                         }
                     }));
         }

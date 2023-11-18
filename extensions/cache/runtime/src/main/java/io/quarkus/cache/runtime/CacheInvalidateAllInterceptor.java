@@ -47,21 +47,13 @@ public class CacheInvalidateAllInterceptor extends CacheInterceptor {
             ReturnType returnType) {
         LOGGER.trace("Invalidating all cache entries in a non-blocking way");
         var uni = Multi.createFrom().iterable(interceptionContext.getInterceptorBindings())
-                .onItem().transformToUniAndMerge(new Function<CacheInvalidateAll, Uni<? extends Void>>() {
-                    @Override
-                    public Uni<Void> apply(CacheInvalidateAll binding) {
-                        return invalidateAll(binding);
-                    }
-                })
+                .onItem().transformToUniAndMerge(this::invalidateAll)
                 .onItem().ignoreAsUni()
-                .onItem().transformToUni(new Function<Object, Uni<?>>() {
-                    @Override
-                    public Uni<?> apply(Object ignored) {
-                        try {
-                            return asyncInvocationResultToUni(invocationContext.proceed(), returnType);
-                        } catch (Exception e) {
-                            throw new CacheException(e);
-                        }
+                .onItem().transformToUni((Function<Object, Uni<?>>) ignored -> {
+                    try {
+                        return asyncInvocationResultToUni(invocationContext.proceed(), returnType);
+                    } catch (Exception e) {
+                        throw new CacheException(e);
                     }
                 });
         return createAsyncResult(uni, returnType);

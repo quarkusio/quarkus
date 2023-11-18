@@ -88,32 +88,14 @@ public class BuildTimeEnabledProcessor {
 
     @BuildStep
     void ifBuildProperty(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> conditions) {
-        buildProperty(IF_BUILD_PROPERTY, IF_BUILD_PROPERTY_CONTAINER, new BiFunction<String, String, Boolean>() {
-            @Override
-            public Boolean apply(String stringValue, String expectedStringValue) {
-                return stringValue.equals(expectedStringValue);
-            }
-        }, index.getIndex(), new BiConsumer<AnnotationTarget, Boolean>() {
-            @Override
-            public void accept(AnnotationTarget target, Boolean enabled) {
-                conditions.produce(new BuildTimeConditionBuildItem(target, enabled));
-            }
-        });
+        buildProperty(IF_BUILD_PROPERTY, IF_BUILD_PROPERTY_CONTAINER, String::equals,
+                index.getIndex(), (target, enabled) -> conditions.produce(new BuildTimeConditionBuildItem(target, enabled)));
     }
 
     @BuildStep
     void unlessBuildProperty(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> conditions) {
-        buildProperty(UNLESS_BUILD_PROPERTY, UNLESS_BUILD_PROPERTY_CONTAINER, new BiFunction<String, String, Boolean>() {
-            @Override
-            public Boolean apply(String stringValue, String expectedStringValue) {
-                return !stringValue.equals(expectedStringValue);
-            }
-        }, index.getIndex(), new BiConsumer<AnnotationTarget, Boolean>() {
-            @Override
-            public void accept(AnnotationTarget target, Boolean enabled) {
-                conditions.produce(new BuildTimeConditionBuildItem(target, enabled));
-            }
-        });
+        buildProperty(UNLESS_BUILD_PROPERTY, UNLESS_BUILD_PROPERTY_CONTAINER, (stringValue, expectedStringValue) -> !stringValue.equals(expectedStringValue),
+                index.getIndex(), (target, enabled) -> conditions.produce(new BuildTimeConditionBuildItem(target, enabled)));
     }
 
     void buildProperty(DotName annotationName, DotName containingAnnotationName, BiFunction<String, String, Boolean> testFun,

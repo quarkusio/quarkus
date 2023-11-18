@@ -14,12 +14,7 @@ public class ContinuousTestingRecorder {
         ContinuousTestingJsonRPCService continuousTestingJsonRPCService = beanContainer
                 .beanInstance(ContinuousTestingJsonRPCService.class);
         ContinuousTestingSharedStateManager.addStateListener(continuousTestingJsonRPCService);
-        context.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                ContinuousTestingSharedStateManager.removeStateListener(continuousTestingJsonRPCService);
-            }
-        });
+        context.addShutdownTask(() -> ContinuousTestingSharedStateManager.removeStateListener(continuousTestingJsonRPCService));
         return new RuntimeValue<>(continuousTestingJsonRPCService != null);
     }
 

@@ -44,7 +44,7 @@ public abstract class AbstractInterceptorBuildItem extends MultiBuildItem implem
         return registerAsBean;
     }
 
-    public static abstract class Builder<T extends AbstractInterceptorBuildItem, B extends Builder<T, B>> {
+    public abstract static class Builder<T extends AbstractInterceptorBuildItem, B extends Builder<T, B>> {
         private final String className;
 
         private Integer priority;

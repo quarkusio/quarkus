@@ -144,44 +144,38 @@ public class ArcDevConsoleProcessor {
 
         arcBeanInfoProducer.produce(new ArcBeanInfoBuildItem(beanInfos));
 
-        routes.produce(new DevConsoleRouteBuildItem("toggleBeanDescription", "POST", new Handler<RoutingContext>() {
-            @Override
-            public void handle(RoutingContext context) {
-                Object val = DevConsoleManager.getGlobal(BEAN_DESCRIPTION);
-                if (val != null && val.equals("simple")) {
-                    val = "full";
-                } else {
-                    val = "simple";
-                }
-                DevConsoleManager.setGlobal(BEAN_DESCRIPTION, val);
-                context.response()
-                        .putHeader("location", "beanDependencyGraph?beanId=" + context.request().getParam("beanId"))
-                        .setStatusCode(302).end();
+        routes.produce(new DevConsoleRouteBuildItem("toggleBeanDescription", "POST", context -> {
+            Object val = DevConsoleManager.getGlobal(BEAN_DESCRIPTION);
+            if (val != null && val.equals("simple")) {
+                val = "full";
+            } else {
+                val = "simple";
             }
+            DevConsoleManager.setGlobal(BEAN_DESCRIPTION, val);
+            context.response()
+                    .putHeader("location", "beanDependencyGraph?beanId=" + context.request().getParam("beanId"))
+                    .setStatusCode(302).end();
         }));
 
-        routes.produce(new DevConsoleRouteBuildItem("setMaxDependencyLevel", "POST", new Handler<RoutingContext>() {
-            @Override
-            public void handle(RoutingContext context) {
-                context.request().setExpectMultipart(true);
-                context.request().endHandler(new Handler<Void>() {
-                    @Override
-                    public void handle(Void ignore) {
-                        Integer val = null;
-                        try {
-                            val = Integer.parseInt(context.request().getFormAttribute("maxDepLevel"));
-                        } catch (NumberFormatException ignored) {
-                        }
-                        if (val != null) {
-                            DevConsoleManager.setGlobal(MAX_DEPENDENCY_LEVEL, val);
-                        }
-                        context.response()
-                                .putHeader("location", "beanDependencyGraph?beanId=" + context.request().getParam("beanId"))
-                                .setStatusCode(302).end();
+        routes.produce(new DevConsoleRouteBuildItem("setMaxDependencyLevel", "POST", context -> {
+            context.request().setExpectMultipart(true);
+            context.request().endHandler(new Handler<Void>() {
+                @Override
+                public void handle(Void ignore) {
+                    Integer val = null;
+                    try {
+                        val = Integer.parseInt(context.request().getFormAttribute("maxDepLevel"));
+                    } catch (NumberFormatException ignored) {
                     }
-                });
+                    if (val != null) {
+                        DevConsoleManager.setGlobal(MAX_DEPENDENCY_LEVEL, val);
+                    }
+                    context.response()
+                            .putHeader("location", "beanDependencyGraph?beanId=" + context.request().getParam("beanId"))
+                            .setStatusCode(302).end();
+                }
+            });
 
-            }
         }));
     }
 

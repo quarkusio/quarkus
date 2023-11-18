@@ -47,21 +47,13 @@ public class CacheInvalidateInterceptor extends CacheInterceptor {
             CacheInterceptionContext<CacheInvalidate> interceptionContext, ReturnType returnType) {
         LOGGER.trace("Invalidating cache entries in a non-blocking way");
         var uni = Multi.createFrom().iterable(interceptionContext.getInterceptorBindings())
-                .onItem().transformToUniAndMerge(new Function<CacheInvalidate, Uni<? extends Void>>() {
-                    @Override
-                    public Uni<Void> apply(CacheInvalidate binding) {
-                        return invalidate(binding, invocationContext.getParameters());
-                    }
-                })
+                .onItem().transformToUniAndMerge(binding -> invalidate(binding, invocationContext.getParameters()))
                 .onItem().ignoreAsUni()
-                .onItem().transformToUni(new Function<Object, Uni<?>>() {
-                    @Override
-                    public Uni<?> apply(Object ignored) {
-                        try {
-                            return asyncInvocationResultToUni(invocationContext.proceed(), returnType);
-                        } catch (Exception e) {
-                            throw new CacheException(e);
-                        }
+                .onItem().transformToUni((Function<Object, Uni<?>>) ignored -> {
+                    try {
+                        return asyncInvocationResultToUni(invocationContext.proceed(), returnType);
+                    } catch (Exception e) {
+                        throw new CacheException(e);
                     }
                 });
         return createAsyncResult(uni, returnType);
@@ -81,11 +73,6 @@ public class CacheInvalidateInterceptor extends CacheInterceptor {
         RemoteCache cache = getRemoteCacheManager().getCache(binding.cacheName());
         Object key = getCacheKey(parameters);
         LOGGER.debugf("Invalidating entry with key [%s] from cache [%s]", key, binding.cacheName());
-        return Uni.createFrom().completionStage(new Supplier<>() {
-            @Override
-            public CompletionStage<Void> get() {
-                return cache.removeAsync(key);
-            }
-        });
+        return Uni.createFrom().completionStage((Supplier<CompletionStage<? extends Void>>) () -> cache.removeAsync(key));
     }
 }

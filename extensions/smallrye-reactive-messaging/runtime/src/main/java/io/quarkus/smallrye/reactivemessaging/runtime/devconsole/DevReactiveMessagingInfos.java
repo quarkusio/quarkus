@@ -25,76 +25,72 @@ public class DevReactiveMessagingInfos {
     private final LazyValue<List<DevChannelInfo>> channels;
 
     public DevReactiveMessagingInfos() {
-        this.channels = new LazyValue<>(new Supplier<List<DevChannelInfo>>() {
+        this.channels = new LazyValue<>(() -> {
+            ArcContainer container = Arc.container();
+            SmallRyeReactiveMessagingContext context = container.instance(SmallRyeReactiveMessagingContext.class)
+                    .get();
 
-            @Override
-            public List<DevChannelInfo> get() {
-                ArcContainer container = Arc.container();
-                SmallRyeReactiveMessagingContext context = container.instance(SmallRyeReactiveMessagingContext.class)
-                        .get();
+            // collect all channels
+            Map<String, Component> publishers = new HashMap<>();
+            Map<String, List<Component>> consumers = new HashMap<>();
+            Function<String, List<Component>> fun = e -> new ArrayList<>();
 
-                // collect all channels
-                Map<String, Component> publishers = new HashMap<>();
-                Map<String, List<Component>> consumers = new HashMap<>();
-                Function<String, List<Component>> fun = e -> new ArrayList<>();
+            // Unfortunately, there is no easy way to obtain the connectors metadata
+            Connectors connectors = container.instance(Connectors.class).get();
+            publishers.putAll(connectors.outgoingConnectors);
+            for (Entry<String, Component> entry : connectors.incomingConnectors.entrySet()) {
+                consumers.computeIfAbsent(entry.getKey(), fun)
+                        .add(entry.getValue());
+            }
 
-                // Unfortunately, there is no easy way to obtain the connectors metadata
-                Connectors connectors = container.instance(Connectors.class).get();
-                publishers.putAll(connectors.outgoingConnectors);
-                for (Entry<String, Component> entry : connectors.incomingConnectors.entrySet()) {
-                    consumers.computeIfAbsent(entry.getKey(), fun)
-                            .add(entry.getValue());
-                }
-
-                for (EmitterConfiguration emitter : context.getEmitterConfigurations()) {
-                    publishers.put(emitter.name(),
-                            new Component(ComponentType.EMITTER,
-                                    emitter.broadcast() ? "<span class=\"annotation\">&#64;Broadcast</span> "
-                                            : "" + asCode(DevConsoleRecorder.EMITTERS.get(emitter.name()))));
-                }
-                for (ChannelConfiguration channel : context.getChannelConfigurations()) {
-                    consumers.computeIfAbsent(channel.channelName, fun)
-                            .add(new Component(ComponentType.CHANNEL,
-                                    asCode(DevConsoleRecorder.CHANNELS.get(channel.channelName))));
-                }
-                for (MediatorConfiguration mediator : context.getMediatorConfigurations()) {
-                    boolean isProcessor = !mediator.getIncoming().isEmpty() && mediator.getOutgoing() != null;
-                    if (isProcessor) {
-                        publishers.put(mediator.getOutgoing(),
-                                new Component(ComponentType.PROCESSOR, asMethod(mediator.methodAsString())));
-                        for (String incoming : mediator.getIncoming()) {
-                            consumers.computeIfAbsent(incoming, fun)
-                                    .add(new Component(ComponentType.PROCESSOR,
-                                            asMethod(mediator.methodAsString())));
-                        }
-                    } else if (mediator.getOutgoing() != null) {
-                        StringBuilder builder = new StringBuilder();
-                        builder.append(asMethod(mediator.methodAsString()));
-                        if (mediator.getBroadcast()) {
-                            builder.append("[broadcast: true]");
-                        }
-                        publishers.put(mediator.getOutgoing(),
-                                new Component(ComponentType.PUBLISHER, builder.toString()));
-                    } else if (!mediator.getIncoming().isEmpty()) {
-                        for (String incoming : mediator.getIncoming()) {
-                            consumers.computeIfAbsent(incoming, fun)
-                                    .add(new Component(ComponentType.SUBSCRIBER,
-                                            asMethod(mediator.methodAsString())));
-                        }
+            for (EmitterConfiguration emitter : context.getEmitterConfigurations()) {
+                publishers.put(emitter.name(),
+                        new Component(ComponentType.EMITTER,
+                                emitter.broadcast() ? "<span class=\"annotation\">&#64;Broadcast</span> "
+                                        : "" + asCode(DevConsoleRecorder.EMITTERS.get(emitter.name()))));
+            }
+            for (ChannelConfiguration channel : context.getChannelConfigurations()) {
+                consumers.computeIfAbsent(channel.channelName, fun)
+                        .add(new Component(ComponentType.CHANNEL,
+                                asCode(DevConsoleRecorder.CHANNELS.get(channel.channelName))));
+            }
+            for (MediatorConfiguration mediator : context.getMediatorConfigurations()) {
+                boolean isProcessor = !mediator.getIncoming().isEmpty() && mediator.getOutgoing() != null;
+                if (isProcessor) {
+                    publishers.put(mediator.getOutgoing(),
+                            new Component(ComponentType.PROCESSOR, asMethod(mediator.methodAsString())));
+                    for (String incoming : mediator.getIncoming()) {
+                        consumers.computeIfAbsent(incoming, fun)
+                                .add(new Component(ComponentType.PROCESSOR,
+                                        asMethod(mediator.methodAsString())));
+                    }
+                } else if (mediator.getOutgoing() != null) {
+                    StringBuilder builder = new StringBuilder();
+                    builder.append(asMethod(mediator.methodAsString()));
+                    if (mediator.getBroadcast()) {
+                        builder.append("[broadcast: true]");
+                    }
+                    publishers.put(mediator.getOutgoing(),
+                            new Component(ComponentType.PUBLISHER, builder.toString()));
+                } else if (!mediator.getIncoming().isEmpty()) {
+                    for (String incoming : mediator.getIncoming()) {
+                        consumers.computeIfAbsent(incoming, fun)
+                                .add(new Component(ComponentType.SUBSCRIBER,
+                                        asMethod(mediator.methodAsString())));
                     }
                 }
-
-                Set<String> channels = new HashSet<>();
-                channels.addAll(publishers.keySet());
-                channels.addAll(consumers.keySet());
-
-                List<DevChannelInfo> infos = new ArrayList<>();
-                for (String channel : channels) {
-                    infos.add(new DevChannelInfo(channel, publishers.get(channel), consumers.get(channel)));
-                }
-                Collections.sort(infos);
-                return infos;
             }
+
+            Set<String> channels = new HashSet<>();
+            channels.addAll(publishers.keySet());
+            channels.addAll(consumers.keySet());
+
+            List<DevChannelInfo> infos = new ArrayList<>();
+            for (String channel : channels) {
+                infos.add(new DevChannelInfo(channel, publishers.get(channel), consumers.get(channel)));
+            }
+            Collections.sort(infos);
+            return infos;
         });
     }
 

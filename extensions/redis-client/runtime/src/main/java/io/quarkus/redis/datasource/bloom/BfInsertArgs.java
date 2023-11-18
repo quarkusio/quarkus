@@ -92,7 +92,7 @@ public class BfInsertArgs implements RedisCommandExtraArguments {
 
         if (errorRate != -1.0) {
             list.add("ERROR");
-            list.add(new BigDecimal(errorRate).toPlainString()); // Prevent E notation
+            list.add(BigDecimal.valueOf(errorRate).toPlainString()); // Prevent E notation
         }
 
         if (expansion > 0) {

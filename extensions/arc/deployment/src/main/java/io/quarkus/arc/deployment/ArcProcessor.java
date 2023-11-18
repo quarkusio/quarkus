@@ -332,30 +332,20 @@ public class ArcProcessor {
         // unremovable beans specified in application.properties
         if (arcConfig.unremovableTypes.isPresent()) {
             List<Predicate<ClassInfo>> classPredicates = initClassPredicates(arcConfig.unremovableTypes.get());
-            builder.addRemovalExclusion(new Predicate<BeanInfo>() {
-                @Override
-                public boolean test(BeanInfo beanInfo) {
-                    ClassInfo beanClass = beanInfo.getImplClazz();
-                    if (beanClass != null) {
-                        // if any of the predicates match, we make the given bean unremovable
-                        for (Predicate<ClassInfo> predicate : classPredicates) {
-                            if (predicate.test(beanClass)) {
-                                return true;
-                            }
+            builder.addRemovalExclusion(beanInfo -> {
+                ClassInfo beanClass = beanInfo.getImplClazz();
+                if (beanClass != null) {
+                    // if any of the predicates match, we make the given bean unremovable
+                    for (Predicate<ClassInfo> predicate : classPredicates) {
+                        if (predicate.test(beanClass)) {
+                            return true;
                         }
                     }
-                    return false;
                 }
+                return false;
             });
         }
-        if (testClassPredicate.isPresent()) {
-            builder.addRemovalExclusion(new Predicate<BeanInfo>() {
-                @Override
-                public boolean test(BeanInfo bean) {
-                    return testClassPredicate.get().getPredicate().test(bean.getBeanClass().toString());
-                }
-            });
-        }
+        testClassPredicate.ifPresent(testClassPredicateBuildItem -> builder.addRemovalExclusion(bean -> testClassPredicateBuildItem.getPredicate().test(bean.getBeanClass().toString())));
         builder.setTransformUnproxyableClasses(arcConfig.transformUnproxyableClasses);
         builder.setTransformPrivateInjectedFields(arcConfig.transformPrivateInjectedFields);
         builder.setFailOnInterceptedPrivateMethod(arcConfig.failOnInterceptedPrivateMethod);
@@ -722,37 +712,17 @@ public class ArcProcessor {
             if (val.endsWith(packMatch)) {
                 // Package matches
                 final String pack = val.substring(0, val.length() - packMatch.length());
-                predicates.add(new Predicate<ClassInfo>() {
-                    @Override
-                    public boolean test(ClassInfo c) {
-                        return DotNames.packageName(c.name()).equals(pack);
-                    }
-                });
+                predicates.add(c -> DotNames.packageName(c.name()).equals(pack));
             } else if (val.endsWith(packStarts)) {
                 // Package starts with
                 final String prefix = val.substring(0, val.length() - packStarts.length());
-                predicates.add(new Predicate<ClassInfo>() {
-                    @Override
-                    public boolean test(ClassInfo c) {
-                        return DotNames.packageName(c.name()).startsWith(prefix);
-                    }
-                });
+                predicates.add(c -> DotNames.packageName(c.name()).startsWith(prefix));
             } else if (val.contains(".")) {
                 // Fully qualified name matches
-                predicates.add(new Predicate<ClassInfo>() {
-                    @Override
-                    public boolean test(ClassInfo c) {
-                        return c.name().toString().equals(val);
-                    }
-                });
+                predicates.add(c -> c.name().toString().equals(val));
             } else {
                 // Simple name matches
-                predicates.add(new Predicate<ClassInfo>() {
-                    @Override
-                    public boolean test(ClassInfo c) {
-                        return DotNames.simpleName(c).equals(val);
-                    }
-                });
+                predicates.add(c -> DotNames.simpleName(c).equals(val));
             }
         }
         return predicates;
@@ -828,16 +798,13 @@ public class ArcProcessor {
             // Also make all beans that match the List<> injection points unremovable
             beanDeployment.initBeanByTypeMap();
             // And make all the matching beans unremovable
-            unremovableBeans.produce(new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
-                @Override
-                public boolean test(BeanInfo bean) {
-                    for (TypeAndQualifiers tq : unremovables) {
-                        if (Beans.matches(bean, tq)) {
-                            return true;
-                        }
+            unremovableBeans.produce(new UnremovableBeanBuildItem(bean -> {
+                for (TypeAndQualifiers tq : unremovables) {
+                    if (Beans.matches(bean, tq)) {
+                        return true;
                     }
-                    return false;
                 }
+                return false;
             }));
         }
     }

@@ -238,7 +238,7 @@ public class CommonPanacheQueryImpl<Entity> {
                     AbstractJpaOperations.bindParameters(countQuery, (Map<String, Object>) paramsArrayOrMap);
                 else
                     AbstractJpaOperations.bindParameters(countQuery, (Object[]) paramsArrayOrMap);
-                return applyFilters(session, () -> countQuery.getSingleResult());
+                return applyFilters(session, countQuery::getSingleResult);
             });
         }
         return count;
@@ -255,7 +255,7 @@ public class CommonPanacheQueryImpl<Entity> {
     public <T extends Entity> Uni<List<T>> list() {
         return em.flatMap(session -> {
             Mutiny.Query<?> jpaQuery = createQuery(session);
-            return (Uni) applyFilters(session, () -> jpaQuery.getResultList());
+            return (Uni) applyFilters(session, jpaQuery::getResultList);
         });
     }
 

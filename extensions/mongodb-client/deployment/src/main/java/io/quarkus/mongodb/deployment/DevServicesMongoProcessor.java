@@ -109,22 +109,19 @@ public class DevServicesMongoProcessor {
 
         if (first) {
             first = false;
-            Runnable closeTask = new Runnable() {
-                @Override
-                public void run() {
-                    if (devServices != null) {
-                        for (Closeable i : devServices) {
-                            try {
-                                i.close();
-                            } catch (Throwable t) {
-                                log.error("Failed to stop database", t);
-                            }
+            Runnable closeTask = () -> {
+                if (devServices != null) {
+                    for (Closeable i : devServices) {
+                        try {
+                            i.close();
+                        } catch (Throwable t) {
+                            log.error("Failed to stop database", t);
                         }
                     }
-                    first = true;
-                    devServices = null;
-                    capturedProperties = null;
                 }
+                first = true;
+                devServices = null;
+                capturedProperties = null;
             };
             closeBuildItem.addCloseTask(closeTask, true);
         }

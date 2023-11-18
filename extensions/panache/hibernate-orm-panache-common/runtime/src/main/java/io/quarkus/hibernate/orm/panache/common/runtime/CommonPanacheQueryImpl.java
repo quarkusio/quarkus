@@ -31,10 +31,7 @@ public class CommonPanacheQueryImpl<Entity> {
         void close();
     }
 
-    private static final NonThrowingCloseable NO_FILTERS = new NonThrowingCloseable() {
-        @Override
-        public void close() {
-        }
+    private static final NonThrowingCloseable NO_FILTERS = () -> {
     };
 
     private Object paramsArrayOrMap;
@@ -388,12 +385,9 @@ public class CommonPanacheQueryImpl<Entity> {
             }
             filter.validate();
         }
-        return new NonThrowingCloseable() {
-            @Override
-            public void close() {
-                for (Entry<String, Map<String, Object>> entry : filters.entrySet()) {
-                    session.disableFilter(entry.getKey());
-                }
+        return () -> {
+            for (Entry<String, Map<String, Object>> entry : filters.entrySet()) {
+                session.disableFilter(entry.getKey());
             }
         };
     }

@@ -116,7 +116,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public void persist(Stream<?> entities) {
-        entities.forEach(entity -> persist(entity));
+        entities.forEach(this::persist);
     }
 
     public void delete(Object entity) {

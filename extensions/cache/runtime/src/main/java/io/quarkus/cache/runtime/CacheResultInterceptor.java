@@ -71,32 +71,26 @@ public class CacheResultInterceptor extends CacheInterceptor {
                     return createAsyncResult(cacheValue, returnType);
                 }
                 cacheValue = cacheValue.ifNoItem().after(Duration.ofMillis(binding.lockTimeout()))
-                        .recoverWithUni(new Supplier<Uni<?>>() {
-                            @Override
-                            public Uni<?> get() {
-                                try {
-                                    return asyncInvocationResultToUni(invocationContext.proceed(), returnType);
-                                } catch (CacheException e) {
-                                    throw e;
-                                } catch (Exception e) {
-                                    throw new CacheException(e);
-                                }
+                        .recoverWithUni(() -> {
+                            try {
+                                return asyncInvocationResultToUni(invocationContext.proceed(), returnType);
+                            } catch (CacheException e) {
+                                throw e;
+                            } catch (Exception e) {
+                                throw new CacheException(e);
                             }
                         });
                 return createAsyncResult(cacheValue, returnType);
             } else {
-                Uni<Object> cacheValue = cache.get(key, new Function<Object, Object>() {
-                    @Override
-                    public Object apply(Object k) {
-                        try {
-                            LOGGER.debugf("Adding entry with key [%s] into cache [%s]",
-                                    key, binding.cacheName());
-                            return invocationContext.proceed();
-                        } catch (CacheException e) {
-                            throw e;
-                        } catch (Throwable e) {
-                            throw new CacheException(e);
-                        }
+                Uni<Object> cacheValue = cache.get(key, k -> {
+                    try {
+                        LOGGER.debugf("Adding entry with key [%s] into cache [%s]",
+                                key, binding.cacheName());
+                        return invocationContext.proceed();
+                    } catch (CacheException e) {
+                        throw e;
+                    } catch (Throwable e) {
+                        throw new CacheException(e);
                     }
                 });
                 Object value;

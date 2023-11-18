@@ -71,7 +71,7 @@ public class DevServicesLambdaProcessor {
         if (override.isPresent()) {
             supplier = override.get().getServer();
         } else {
-            supplier = () -> new MockEventServer();
+            supplier = MockEventServer::new;
         }
 
         server = supplier.get();

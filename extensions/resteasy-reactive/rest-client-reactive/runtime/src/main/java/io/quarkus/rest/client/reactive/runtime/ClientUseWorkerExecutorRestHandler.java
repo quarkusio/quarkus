@@ -18,12 +18,7 @@ import io.vertx.core.Context;
 public class ClientUseWorkerExecutorRestHandler implements ClientRestHandler {
 
     private volatile Executor executor;
-    private final Supplier<Executor> supplier = new Supplier<Executor>() {
-        @Override
-        public Executor get() {
-            return ExecutorRecorder.getCurrent();
-        }
-    };
+    private final Supplier<Executor> supplier = ExecutorRecorder::getCurrent;
 
     @Override
     public void handle(RestClientRequestContext requestContext) throws Exception {

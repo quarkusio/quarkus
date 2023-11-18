@@ -332,7 +332,7 @@ public class S2iProcessor {
 
     private static void s2iBuild(OpenShiftClient client, List<HasMetadata> buildResources, File binaryFile,
             S2iConfig s2iConfig) {
-        distinct(buildResources).stream().filter(i -> i instanceof BuildConfig).map(i -> (BuildConfig) i)
+        distinct(buildResources).stream().filter(BuildConfig.class::isInstance).map(i -> (BuildConfig) i)
                 .forEach(bc -> s2iBuild(client, bc, binaryFile, s2iConfig));
     }
 

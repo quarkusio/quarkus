@@ -382,23 +382,20 @@ public class DockerProcessor {
 
         @Override
         public Runnable apply(InputStream t) {
-            return new Runnable() {
-                @Override
-                public void run() {
-                    try (InputStreamReader isr = new InputStreamReader(t);
-                            BufferedReader reader = new BufferedReader(isr)) {
+            return () -> {
+                try (InputStreamReader isr = new InputStreamReader(t);
+                        BufferedReader reader = new BufferedReader(isr)) {
 
-                        for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-                            if (line.startsWith("Successfully built")) {
-                                String[] parts = line.split(" ");
-                                if (parts.length == 3)
-                                    id.set(parts[2]);
-                            }
-                            log.info(line);
+                    for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+                        if (line.startsWith("Successfully built")) {
+                            String[] parts = line.split(" ");
+                            if (parts.length == 3)
+                                id.set(parts[2]);
                         }
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        log.info(line);
                     }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
             };
         }

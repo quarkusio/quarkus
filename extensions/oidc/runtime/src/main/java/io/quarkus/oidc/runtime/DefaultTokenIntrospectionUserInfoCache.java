@@ -45,15 +45,10 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
     private void init(Vertx vertx) {
         if (cacheConfig.maxSize > 0) {
             cacheMap = new ConcurrentHashMap<>();
-            if (cacheConfig.cleanUpTimerInterval.isPresent()) {
-                vertx.setPeriodic(cacheConfig.cleanUpTimerInterval.get().toMillis(), new Handler<Long>() {
-                    @Override
-                    public void handle(Long event) {
-                        // Remove all the entries which have expired
-                        removeInvalidEntries();
-                    }
-                });
-            }
+            cacheConfig.cleanUpTimerInterval.ifPresent(duration -> vertx.setPeriodic(duration.toMillis(), event -> {
+                // Remove all the entries which have expired
+                removeInvalidEntries();
+            }));
         } else {
             cacheMap = Collections.emptyMap();
         }

@@ -193,7 +193,7 @@ public class CommonPanacheQueryImpl<Entity> {
         if (this.collation != null) {
             find.collation(collation);
         }
-        batchSize.ifPresent(batchSize -> find.batchSize(batchSize));
+        batchSize.ifPresent(find::batchSize);
         manageOffsets(find, limit);
 
         try (MongoCursor<T> cursor = find.sort(sort).iterator()) {

@@ -173,13 +173,10 @@ public class KnativeEventsBindingRecorder {
             BeanContainer beanContainer,
             Executor executor) {
 
-        shutdown.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                FunctionConstructor.CONTAINER = null;
-                objectMapper = null;
-                typeTriggers = null;
-            }
+        shutdown.addShutdownTask(() -> {
+            FunctionConstructor.CONTAINER = null;
+            objectMapper = null;
+            typeTriggers = null;
         });
 
         FunctionConstructor.CONTAINER = beanContainer;

@@ -53,26 +53,15 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
 
     public static DevServicesDatasourceConfigurationHandlerBuildItem jdbc(String dbKind) {
         return new DevServicesDatasourceConfigurationHandlerBuildItem(dbKind,
-                new BiFunction<String, DevServicesDatasourceProvider.RunningDevServicesDatasource, Map<String, String>>() {
-
-                    @Override
-                    public Map<String, String> apply(String dsName,
-                            DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevDb) {
-                        String jdbcUrl = runningDevDb.getJdbcUrl();
-                        // we use datasourceURLPropNames to generate quoted and unquoted versions of the property key,
-                        // because depending on whether a user configured other JDBC properties
-                        // one of the URLs may be ignored
-                        // see https://github.com/quarkusio/quarkus/issues/21387
-                        return datasourceURLPropNames(dsName).stream()
-                                .collect(Collectors.toMap(Function.identity(), ignored -> jdbcUrl));
-                    }
-
-                }, new Predicate<String>() {
-                    @Override
-                    public boolean test(String dsName) {
-                        return ConfigUtils.isAnyPropertyPresent(datasourceURLPropNames(dsName));
-                    }
-                });
+                (dsName, runningDevDb) -> {
+                    String jdbcUrl = runningDevDb.getJdbcUrl();
+                    // we use datasourceURLPropNames to generate quoted and unquoted versions of the property key,
+                    // because depending on whether a user configured other JDBC properties
+                    // one of the URLs may be ignored
+                    // see https://github.com/quarkusio/quarkus/issues/21387
+                    return datasourceURLPropNames(dsName).stream()
+                            .collect(Collectors.toMap(Function.identity(), ignored -> jdbcUrl));
+                }, dsName -> ConfigUtils.isAnyPropertyPresent(datasourceURLPropNames(dsName)));
     }
 
     private static List<String> datasourceURLPropNames(String dsName) {
@@ -81,24 +70,15 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
 
     public static DevServicesDatasourceConfigurationHandlerBuildItem reactive(String dbKind) {
         return new DevServicesDatasourceConfigurationHandlerBuildItem(dbKind,
-                new BiFunction<String, DevServicesDatasourceProvider.RunningDevServicesDatasource, Map<String, String>>() {
-                    @Override
-                    public Map<String, String> apply(String dsName,
-                            DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevDb) {
-                        String reactiveUrl = runningDevDb.getReactiveUrl();
-                        // we use datasourceURLPropNames to generate quoted and unquoted versions of the property key,
-                        // because depending on whether a user configured other reactive properties
-                        // one of the URLs may be ignored
-                        // see https://github.com/quarkusio/quarkus/issues/21387
-                        return datasourceReactiveURLPropNames(dsName).stream()
-                                .collect(Collectors.toMap(Function.identity(), ignored -> reactiveUrl));
-                    }
-                }, new Predicate<String>() {
-                    @Override
-                    public boolean test(String dsName) {
-                        return ConfigUtils.isAnyPropertyPresent(datasourceReactiveURLPropNames(dsName));
-                    }
-                });
+                (dsName, runningDevDb) -> {
+                    String reactiveUrl = runningDevDb.getReactiveUrl();
+                    // we use datasourceURLPropNames to generate quoted and unquoted versions of the property key,
+                    // because depending on whether a user configured other reactive properties
+                    // one of the URLs may be ignored
+                    // see https://github.com/quarkusio/quarkus/issues/21387
+                    return datasourceReactiveURLPropNames(dsName).stream()
+                            .collect(Collectors.toMap(Function.identity(), ignored -> reactiveUrl));
+                }, dsName -> ConfigUtils.isAnyPropertyPresent(datasourceReactiveURLPropNames(dsName)));
     }
 
     private static List<String> datasourceReactiveURLPropNames(String dsName) {

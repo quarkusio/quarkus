@@ -27,44 +27,28 @@ public class QueryObjectMapper {
             };
         }
         if (clz.equals(long.class) || clz.equals(Long.class)) {
-            return (strVal) -> {
-                return Long.valueOf(strVal);
-            };
+            return Long::valueOf;
         }
         if (clz.equals(int.class) || clz.equals(Integer.class)) {
-            return (strVal) -> {
-                return Integer.valueOf(strVal);
-            };
+            return Integer::valueOf;
         }
         if (clz.equals(short.class) || clz.equals(Short.class)) {
-            return (strVal) -> {
-                return Short.valueOf(strVal);
-            };
+            return Short::valueOf;
         }
         if (clz.equals(float.class) || clz.equals(Float.class)) {
-            return (strVal) -> {
-                return Float.valueOf(strVal);
-            };
+            return Float::valueOf;
         }
         if (clz.equals(double.class) || clz.equals(Double.class)) {
-            return (strVal) -> {
-                return Double.valueOf(strVal);
-            };
+            return Double::valueOf;
         }
         if (clz.equals(boolean.class) || clz.equals(Boolean.class)) {
-            return (strVal) -> {
-                return Boolean.valueOf(strVal);
-            };
+            return Boolean::valueOf;
         }
         if (clz.equals(byte.class) || clz.equals(Byte.class)) {
-            return (strVal) -> {
-                return Byte.valueOf(strVal);
-            };
+            return Byte::valueOf;
         }
         if (clz.equals(OffsetDateTime.class)) {
-            return (strVal) -> {
-                return OffsetDateTime.parse(strVal);
-            };
+            return OffsetDateTime::parse;
         }
         return null;
     }

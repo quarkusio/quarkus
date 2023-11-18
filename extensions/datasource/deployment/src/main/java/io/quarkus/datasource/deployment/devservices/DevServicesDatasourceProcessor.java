@@ -162,22 +162,19 @@ public class DevServicesDatasourceProcessor {
 
         if (first) {
             first = false;
-            Runnable closeTask = new Runnable() {
-                @Override
-                public void run() {
-                    if (databases != null) {
-                        for (Closeable i : databases) {
-                            try {
-                                i.close();
-                            } catch (Throwable t) {
-                                log.error("Failed to stop database", t);
-                            }
+            Runnable closeTask = () -> {
+                if (databases != null) {
+                    for (Closeable i : databases) {
+                        try {
+                            i.close();
+                        } catch (Throwable t) {
+                            log.error("Failed to stop database", t);
                         }
                     }
-                    first = true;
-                    databases = null;
-                    cachedProperties = null;
                 }
+                first = true;
+                databases = null;
+                cachedProperties = null;
             };
             closeBuildItem.addCloseTask(closeTask, true);
         }

@@ -47,12 +47,7 @@ public class ArcRecorder {
         ArcContainer container = Arc.initialize(ArcInitConfig.builder()
                 .setCurrentContextFactory(currentContextFactory != null ? currentContextFactory.getValue() : null)
                 .setStrictCompatibility(strictCompatibility).build());
-        shutdown.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                Arc.shutdown();
-            }
-        });
+        shutdown.addShutdownTask(() -> Arc.shutdown());
         return container;
     }
 
@@ -105,39 +100,19 @@ public class ArcRecorder {
 
         fireLifecycleEvent(container, new StartupEvent(), mockBeanClasses);
 
-        context.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                fireLifecycleEvent(container, new ShutdownEvent(ApplicationLifecycleManager.shutdownReason), mockBeanClasses);
-            }
-        });
+        context.addShutdownTask(() -> fireLifecycleEvent(container, new ShutdownEvent(ApplicationLifecycleManager.shutdownReason), mockBeanClasses));
     }
 
     public Function<SyntheticCreationalContext<?>, Object> createFunction(RuntimeValue<?> value) {
-        return new Function<SyntheticCreationalContext<?>, Object>() {
-            @Override
-            public Object apply(SyntheticCreationalContext<?> t) {
-                return value.getValue();
-            }
-        };
+        return t -> value.getValue();
     }
 
     public Function<SyntheticCreationalContext<?>, Object> createFunction(Supplier<?> supplier) {
-        return new Function<SyntheticCreationalContext<?>, Object>() {
-            @Override
-            public Object apply(SyntheticCreationalContext<?> t) {
-                return supplier.get();
-            }
-        };
+        return t -> supplier.get();
     }
 
     public Function<SyntheticCreationalContext<?>, Object> createFunction(Object returnedProxy) {
-        return new Function<SyntheticCreationalContext<?>, Object>() {
-            @Override
-            public Object apply(SyntheticCreationalContext<?> t) {
-                return returnedProxy;
-            }
-        };
+        return t -> returnedProxy;
     }
 
     public void initTestApplicationClassPredicate(Set<String> applicationBeanClasses) {

@@ -16,7 +16,7 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
-final public class DefaultLambdaIdentityProvider implements IdentityProvider<DefaultLambdaAuthenticationRequest> {
+public final class DefaultLambdaIdentityProvider implements IdentityProvider<DefaultLambdaAuthenticationRequest> {
 
     @Override
     public Class<DefaultLambdaAuthenticationRequest> getRequestType() {

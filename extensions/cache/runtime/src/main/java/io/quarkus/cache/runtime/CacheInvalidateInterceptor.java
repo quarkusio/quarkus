@@ -46,21 +46,13 @@ public class CacheInvalidateInterceptor extends CacheInterceptor {
             ReturnType returnType) {
         LOGGER.trace("Invalidating cache entries in a non-blocking way");
         var uni = Multi.createFrom().iterable(interceptionContext.getInterceptorBindings())
-                .onItem().transformToUniAndMerge(new Function<CacheInvalidate, Uni<? extends Void>>() {
-                    @Override
-                    public Uni<Void> apply(CacheInvalidate binding) {
-                        return invalidate(binding, interceptionContext.getCacheKeyParameterPositions(), invocationContext);
-                    }
-                })
+                .onItem().transformToUniAndMerge(binding -> invalidate(binding, interceptionContext.getCacheKeyParameterPositions(), invocationContext))
                 .onItem().ignoreAsUni()
-                .onItem().transformToUni(new Function<Object, Uni<?>>() {
-                    @Override
-                    public Uni<?> apply(Object ignored) {
-                        try {
-                            return asyncInvocationResultToUni(invocationContext.proceed(), returnType);
-                        } catch (Exception e) {
-                            throw new CacheException(e);
-                        }
+                .onItem().transformToUni((Function<Object, Uni<?>>) ignored -> {
+                    try {
+                        return asyncInvocationResultToUni(invocationContext.proceed(), returnType);
+                    } catch (Exception e) {
+                        throw new CacheException(e);
                     }
                 });
         return createAsyncResult(uni, returnType);

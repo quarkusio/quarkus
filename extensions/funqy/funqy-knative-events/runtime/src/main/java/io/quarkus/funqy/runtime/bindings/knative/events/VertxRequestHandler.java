@@ -573,12 +573,9 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         // The invoker set the output, but we need to extend that output (a Uni) with a termination block deactivating the
         // request context if activated.
         funqyResponse.setOutput(funqyResponse.getOutput()
-                .onTermination().invoke(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (requestContext.isActive()) {
-                            requestContext.terminate();
-                        }
+                .onTermination().invoke(() -> {
+                    if (requestContext.isActive()) {
+                        requestContext.terminate();
                     }
                 }));
         return funqyResponse;

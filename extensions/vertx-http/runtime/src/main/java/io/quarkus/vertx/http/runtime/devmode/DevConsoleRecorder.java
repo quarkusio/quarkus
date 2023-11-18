@@ -24,23 +24,13 @@ public class DevConsoleRecorder {
     public void addInfo(String groupId, String artifactId, String name, Supplier<? extends Object> supplier) {
         Map<String, Map<String, Object>> info = DevConsoleManager.getTemplateInfo();
         Map<String, Object> data = info.computeIfAbsent(groupId + "." + artifactId,
-                new Function<String, Map<String, Object>>() {
-                    @Override
-                    public Map<String, Object> apply(String s) {
-                        return new HashMap<>();
-                    }
-                });
+                s -> new HashMap<>());
         data.put(name, supplier.get());
     }
 
     public void initConfigFun() {
         SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
-        DevConsoleManager.setGlobal("devui-config-fun", new Function<String, Optional<String>>() {
-            @Override
-            public Optional<String> apply(String name) {
-                return config.getOptionalValue(name, String.class);
-            }
-        });
+        DevConsoleManager.setGlobal("devui-config-fun", (Function<String, Optional<String>>) name -> config.getOptionalValue(name, String.class));
     }
 
     /**
@@ -75,13 +65,7 @@ public class DevConsoleRecorder {
 
         ContinuousTestWebSocketHandler handler = new ContinuousTestWebSocketHandler();
         ContinuousTestingSharedStateManager.addStateListener(handler);
-        context.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                ContinuousTestingSharedStateManager.removeStateListener(handler);
-
-            }
-        });
+        context.addShutdownTask(() -> ContinuousTestingSharedStateManager.removeStateListener(handler));
         return handler;
     }
 }

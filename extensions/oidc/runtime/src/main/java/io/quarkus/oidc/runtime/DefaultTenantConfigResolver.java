@@ -85,44 +85,38 @@ public class DefaultTenantConfigResolver {
 
     Uni<OidcTenantConfig> resolveConfig(RoutingContext context) {
         return getDynamicTenantConfig(context)
-                .map(new Function<OidcTenantConfig, OidcTenantConfig>() {
-                    @Override
-                    public OidcTenantConfig apply(OidcTenantConfig tenantConfig) {
-                        if (tenantConfig == null) {
-                            TenantConfigContext tenant = getStaticTenantContext(context);
-                            if (tenant != null) {
-                                tenantConfig = tenant.oidcConfig;
-                            }
+                .map(tenantConfig -> {
+                    if (tenantConfig == null) {
+                        TenantConfigContext tenant = getStaticTenantContext(context);
+                        if (tenant != null) {
+                            tenantConfig = tenant.oidcConfig;
                         }
-                        return tenantConfig;
                     }
+                    return tenantConfig;
                 });
     }
 
     Uni<TenantConfigContext> resolveContext(RoutingContext context) {
-        return getDynamicTenantContext(context).chain(new Function<TenantConfigContext, Uni<? extends TenantConfigContext>>() {
-            @Override
-            public Uni<? extends TenantConfigContext> apply(TenantConfigContext tenantConfigContext) {
-                if (tenantConfigContext != null) {
-                    return Uni.createFrom().item(tenantConfigContext);
-                }
-                TenantConfigContext tenantContext = getStaticTenantContext(context);
-                if (tenantContext != null && !tenantContext.ready) {
-
-                    // check if the connection has already been created
-                    TenantConfigContext readyTenantContext = tenantConfigBean.getDynamicTenantsConfig()
-                            .get(tenantContext.oidcConfig.tenantId.get());
-                    if (readyTenantContext == null) {
-                        LOG.debugf("Tenant '%s' is not initialized yet, trying to create OIDC connection now",
-                                tenantContext.oidcConfig.tenantId.get());
-                        return tenantConfigBean.getTenantConfigContextFactory().apply(tenantContext.oidcConfig);
-                    } else {
-                        tenantContext = readyTenantContext;
-                    }
-                }
-
-                return Uni.createFrom().item(tenantContext);
+        return getDynamicTenantContext(context).chain(tenantConfigContext -> {
+            if (tenantConfigContext != null) {
+                return Uni.createFrom().item(tenantConfigContext);
             }
+            TenantConfigContext tenantContext = getStaticTenantContext(context);
+            if (tenantContext != null && !tenantContext.ready) {
+
+                // check if the connection has already been created
+                TenantConfigContext readyTenantContext = tenantConfigBean.getDynamicTenantsConfig()
+                        .get(tenantContext.oidcConfig.tenantId.get());
+                if (readyTenantContext == null) {
+                    LOG.debugf("Tenant '%s' is not initialized yet, trying to create OIDC connection now",
+                            tenantContext.oidcConfig.tenantId.get());
+                    return tenantConfigBean.getTenantConfigContextFactory().apply(tenantContext.oidcConfig);
+                } else {
+                    tenantContext = readyTenantContext;
+                }
+            }
+
+            return Uni.createFrom().item(tenantContext);
         });
     }
 
@@ -206,21 +200,18 @@ public class DefaultTenantConfigResolver {
 
     private Uni<TenantConfigContext> getDynamicTenantContext(RoutingContext context) {
 
-        return getDynamicTenantConfig(context).chain(new Function<OidcTenantConfig, Uni<? extends TenantConfigContext>>() {
-            @Override
-            public Uni<? extends TenantConfigContext> apply(OidcTenantConfig tenantConfig) {
-                if (tenantConfig != null) {
-                    String tenantId = tenantConfig.getTenantId()
-                            .orElseThrow(() -> new OIDCException("Tenant configuration must have tenant id"));
-                    TenantConfigContext tenantContext = tenantConfigBean.getDynamicTenantsConfig().get(tenantId);
-                    if (tenantContext == null) {
-                        return tenantConfigBean.getTenantConfigContextFactory().apply(tenantConfig);
-                    } else {
-                        return Uni.createFrom().item(tenantContext);
-                    }
+        return getDynamicTenantConfig(context).chain(tenantConfig -> {
+            if (tenantConfig != null) {
+                String tenantId = tenantConfig.getTenantId()
+                        .orElseThrow(() -> new OIDCException("Tenant configuration must have tenant id"));
+                TenantConfigContext tenantContext = tenantConfigBean.getDynamicTenantsConfig().get(tenantId);
+                if (tenantContext == null) {
+                    return tenantConfigBean.getTenantConfigContextFactory().apply(tenantConfig);
+                } else {
+                    return Uni.createFrom().item(tenantContext);
                 }
-                return Uni.createFrom().nullItem();
             }
+            return Uni.createFrom().nullItem();
         });
     }
 

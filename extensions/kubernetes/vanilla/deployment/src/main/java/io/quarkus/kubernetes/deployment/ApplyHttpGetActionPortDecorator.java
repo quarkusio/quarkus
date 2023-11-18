@@ -10,6 +10,7 @@ import io.dekorate.kubernetes.decorator.AbstractAddProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddSidecarDecorator;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
+import io.dekorate.utils.Metadata;
 import io.fabric8.kubernetes.api.builder.Builder;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.HTTPGetActionFluent;
@@ -56,14 +57,14 @@ public class ApplyHttpGetActionPortDecorator extends Decorator<HTTPGetActionFlue
 
     @Override
     public void visit(List<Map.Entry<String, Object>> path, HTTPGetActionFluent<?> action) {
-        boolean inMatchingProbe = probeKind == ANY || path.stream().map(e -> e.getKey()).anyMatch(i -> i.equals(probeKind));
+        boolean inMatchingProbe = probeKind == ANY || path.stream().map(Map.Entry::getKey).anyMatch(i -> i.equals(probeKind));
         if (!inMatchingProbe) {
             return;
         }
 
         boolean inMatchingContainer = container == ANY || path.stream()
-                .map(e -> e.getValue())
-                .filter(v -> v instanceof ContainerBuilder)
+                .map(Map.Entry::getValue)
+                .filter(ContainerBuilder.class::isInstance)
                 .map(v -> (ContainerBuilder) v)
                 .anyMatch(c -> c.getName() != null && c.getName().equals(container));
 
@@ -72,11 +73,11 @@ public class ApplyHttpGetActionPortDecorator extends Decorator<HTTPGetActionFlue
         }
 
         boolean inMatchingResource = deployment == ANY || path.stream()
-                .map(e -> e.getValue())
-                .filter(v -> v instanceof Builder)
+                .map(Map.Entry::getValue)
+                .filter(Builder.class::isInstance)
                 .map(v -> (Builder) v)
-                .map(b -> getMetadata(b))
-                .filter(m -> m.isPresent())
+                .map(Metadata::getMetadata)
+                .filter(Optional::isPresent)
                 .map(Optional::get)
                 .anyMatch(m -> m.getName() != null && m.getName().equals(deployment));
 

@@ -195,7 +195,7 @@ public class CommonReactivePanacheQueryImpl<Entity> {
     public <T extends Entity> Uni<Optional<T>> firstResultOptional() {
         FindOptions options = buildOptions(1);
         Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
-        return results.collect().first().map(o -> Optional.ofNullable(o));
+        return results.collect().first().map(Optional::ofNullable);
     }
 
     @SuppressWarnings("unchecked")

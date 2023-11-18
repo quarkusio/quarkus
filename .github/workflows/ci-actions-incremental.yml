@@ -732,6 +732,7 @@ jobs:
           path: |
             **/target/*-reports/TEST-*.xml
             target/build-report.json
+            **/target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
       - name: Save Build Scan
@@ -926,7 +927,7 @@ jobs:
           path: |
             **/target/*-reports/TEST-*.xml
             target/build-report.json
-            target/gradle-build-scan-url.txt
+            **/target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
       - name: Save Build Scan
@@ -1023,7 +1024,7 @@ jobs:
             **/target/*-reports/TEST-*.xml
             **/build/test-results/test/TEST-*.xml
             target/build-report.json
-            target/gradle-build-scan-url.txt
+            **/target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
       - name: Save Build Scan

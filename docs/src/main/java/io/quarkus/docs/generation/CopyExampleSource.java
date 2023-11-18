@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -121,7 +122,7 @@ public class CopyExampleSource {
                                 // Replace {{source}} in comment lines with the relative source path
                                 try (BufferedReader br = new BufferedReader(
                                         new InputStreamReader(Files.newInputStream(sourcePath, StandardOpenOption.READ),
-                                                "UTF-8"))) {
+                                                StandardCharsets.UTF_8))) {
                                     try (PrintWriter bw = new PrintWriter(new OutputStreamWriter(
                                             Files.newOutputStream(targetPath, StandardOpenOption.CREATE,
                                                     StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)))) {

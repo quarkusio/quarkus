@@ -17,6 +17,7 @@ import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
 import io.quarkus.vertx.http.runtime.webjar.WebJarNotFoundHandler;
 import io.quarkus.vertx.http.runtime.webjar.WebJarStaticHandler;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
+import io.smallrye.graphql.scalar.GraphQLScalarTypes;
 import io.smallrye.graphql.schema.model.Schema;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Route;
@@ -25,10 +26,25 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class SmallRyeGraphQLRecorder {
 
-    public RuntimeValue<Boolean> createExecutionService(BeanContainer beanContainer, Schema schema) {
+    public RuntimeValue<Boolean> createExecutionService(BeanContainer beanContainer,
+            Schema schema,
+            SmallRyeGraphQLConfig graphQLConfig) {
         GraphQLProducer graphQLProducer = beanContainer.beanInstance(GraphQLProducer.class);
+        if (graphQLConfig.extraScalars.isPresent()) {
+            registerExtraScalars(graphQLConfig.extraScalars.get());
+        }
         GraphQLSchema graphQLSchema = graphQLProducer.initialize(schema);
         return new RuntimeValue<>(graphQLSchema != null);
+    }
+
+    private void registerExtraScalars(List<ExtraScalar> extraScalars) {
+        for (ExtraScalar extraScalar : extraScalars) {
+            switch (extraScalar) {
+                case UUID:
+                    GraphQLScalarTypes.addUuid();
+                    break;
+            }
+        }
     }
 
     public Handler<RoutingContext> executionHandler(RuntimeValue<Boolean> initialized, boolean allowGet,

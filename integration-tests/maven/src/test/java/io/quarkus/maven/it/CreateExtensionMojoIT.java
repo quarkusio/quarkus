@@ -111,6 +111,19 @@ public class CreateExtensionMojoIT extends QuarkusPlatformAwareMojoTestBase {
                         "quarkus-my-quarkiverse-ext/integration-tests/src/test/java/io/quarkiverse/my/quarkiverse/ext/it/MyQuarkiverseExtResourceTest.java");
         assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/pom.xml");
         assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/runtime/pom.xml");
+        assertThatMatchSnapshot(testInfo, testDirPath,
+                "quarkus-my-quarkiverse-ext/runtime/src/main/resources/META-INF/quarkus-extension.yaml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/LICENSE");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/README.md");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/build.yml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/pre-release.yml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/quarkus-snapshot.yaml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/.github/workflows/release.yml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/pom.xml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/antora.yml");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/modules/ROOT/nav.adoc");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/docs/modules/ROOT/pages/index.adoc");
+        assertThatMatchSnapshot(testInfo, testDirPath, "quarkus-my-quarkiverse-ext/integration-tests/pom.xml");
     }
 
     @Test

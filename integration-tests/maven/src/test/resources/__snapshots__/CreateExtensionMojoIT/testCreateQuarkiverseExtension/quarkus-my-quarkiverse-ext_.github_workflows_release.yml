@@ -1,0 +1,74 @@
+name: Quarkiverse Release
+
+on:
+  pull_request:
+    types: [closed]
+    paths:
+      - '.github/project.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: release
+    if: ${{github.event.pull_request.merged == true}}
+
+    steps:
+      - uses: radcortez/project-metadata-action@main
+        name: Retrieve project metadata
+        id: metadata
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          metadata-file-path: '.github/project.yml'
+
+      - uses: actions/checkout@v3
+
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 11
+          cache: 'maven'
+          server-id: ossrh
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+
+      - name: Configure Git author
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Update latest release version in docs
+        run: |
+          mvn -B -ntp -pl docs -am generate-resources -Denforcer.skip -Dformatter.skip -Dimpsort.skip
+          if ! git diff --quiet docs/modules/ROOT/pages/includes/attributes.adoc; then
+            git add docs/modules/ROOT/pages/includes/attributes.adoc
+            git commit -m "Update the latest release version ${{steps.metadata.outputs.current-version}} in documentation"
+          fi
+
+      - name: Maven release ${{steps.metadata.outputs.current-version}}
+        run: |
+          mvn -B release:prepare -Prelease -DreleaseVersion=${{steps.metadata.outputs.current-version}} -DdevelopmentVersion=${{steps.metadata.outputs.next-version}}
+          mvn -B release:perform -Darguments=-DperformRelease -DperformRelease -Prelease
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+
+      - name: Push changes to ${{github.base_ref}} branch
+        run: |
+          git push
+          git push origin ${{steps.metadata.outputs.current-version}}

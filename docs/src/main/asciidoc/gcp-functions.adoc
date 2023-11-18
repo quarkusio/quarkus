@@ -490,6 +490,8 @@ To use it, you must add the following test dependency in your `pom.xml`.
 This extension provides a `@WithFunction` annotation that can be used to annotate `@QuarkusTest` test cases to start a Cloud Function invoker before you test cases and stop it at the end.
 This annotation must be configured with the type of the function you want to launch, and optionally the name of the function in case you have multiple functions inside your application.
 
+The default Quarkus test port configuration (`quarkus.http.test-port`) will be honored and if you set it to 0 a random port will be assigned to the function invoker.
+
 === The HttpFunction
 
 [source,java]

@@ -54,9 +54,9 @@
         <smallrye-health.version>4.0.4</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>3.7.0</smallrye-open-api.version>
-        <smallrye-graphql.version>2.5.1</smallrye-graphql.version>
+        <smallrye-graphql.version>2.6.0</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.2.6</smallrye-fault-tolerance.version>
-        <smallrye-jwt.version>4.3.1</smallrye-jwt.version>
+        <smallrye-jwt.version>4.4.0</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.1.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.1</smallrye-reactive-types-converter.version>
@@ -71,7 +71,7 @@
         <jakarta.enterprise.cdi-api.version>4.0.1</jakarta.enterprise.cdi-api.version>
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
         <jakarta.interceptor-api.version>2.1.0</jakarta.interceptor-api.version>
-        <jakarta.json-api.version>2.1.2</jakarta.json-api.version>
+        <jakarta.json-api.version>2.1.3</jakarta.json-api.version>
         <jakarta.json.bind-api.version>3.0.0</jakarta.json.bind-api.version>
         <jakarta.mail.version>2.0.1</jakarta.mail.version>
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
@@ -172,12 +172,12 @@
         <liquibase-mongodb.version>4.24.0</liquibase-mongodb.version>
         <snakeyaml.version>2.2</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
-        <mongo-client.version>4.11.0</mongo-client.version>
+        <mongo-client.version>4.11.1</mongo-client.version>
         <mongo-crypt.version>1.8.0</mongo-crypt.version>
         <proton-j.version>0.34.1</proton-j.version>
         <javaparser.version>3.25.5</javaparser.version>
         <okhttp.version>3.14.9</okhttp.version><!-- keep in sync with okio -->
-        <okio.version>1.17.2</okio.version><!-- keep in sync with okhttp -->
+        <okio.version>1.17.6</okio.version><!-- keep in sync with okhttp -->
         <hibernate-quarkus-local-cache.version>0.2.1</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.9.2</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP7</quarkus-spring-api.version>
@@ -198,7 +198,7 @@
         <picocli.version>4.7.5</picocli.version>
         <google-cloud-functions.version>1.1.0</google-cloud-functions.version>
         <commons-compress.version>1.24.0</commons-compress.version>
-        <commons-text.version>1.10.0</commons-text.version>
+        <commons-text.version>1.11.0</commons-text.version>
         <gson.version>2.10.1</gson.version>
         <log4j2-jboss-logmanager.version>1.1.1.Final</log4j2-jboss-logmanager.version>
         <log4j2-api.version>2.20.0</log4j2-api.version>
@@ -5173,8 +5173,20 @@
                 </exclusions>
             </dependency>
             <dependency>
+                <!-- this artifact has been relocated to com.mysql:mysql-connector-j -->
                 <groupId>mysql</groupId>
                 <artifactId>mysql-connector-java</artifactId>
+                <version>${mysql-jdbc.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.protobuf</groupId>
+                        <artifactId>protobuf-java</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.mysql</groupId>
+                <artifactId>mysql-connector-j</artifactId>
                 <version>${mysql-jdbc.version}</version>
                 <exclusions>
                     <exclusion>

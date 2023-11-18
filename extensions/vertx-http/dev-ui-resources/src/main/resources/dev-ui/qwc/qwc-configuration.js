@@ -35,7 +35,7 @@ export class QwcConfiguration extends observeState(LitElement) {
         flex-direction: column;
         overflow: hidden;
       }
-    
+
       .confTopBar {
         display: flex;
         justify-content: space-between;
@@ -50,7 +50,7 @@ export class QwcConfiguration extends observeState(LitElement) {
         vertical-align: top;
         width: 100%;
       }
-      
+
       .description {
         padding: 1em;
       }
@@ -70,7 +70,7 @@ export class QwcConfiguration extends observeState(LitElement) {
         cursor: pointer;
         color: var(--lumo-primary-color);
       }
-      
+
       .lock-icon {
         color: var(--lumo-contrast-60pct);
         font-size: small;
@@ -100,6 +100,15 @@ export class QwcConfiguration extends observeState(LitElement) {
     constructor() {
         super();
 
+        this._detailsOpenedItem = [];
+        this._busy = null;
+
+        this._showOnlyOwnProperties = false;
+        this._searchTerm = '';
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
         this._filteredValue = this.routerController.getQueryParameter("filter");
 
         if(this._filteredValue){
@@ -109,15 +118,10 @@ export class QwcConfiguration extends observeState(LitElement) {
             this._allConfiguration = e.result;
             this._visibleConfiguration = e.result;
             this._filtered = e.result;
-        })
+        });
         this.jsonRpc.getAllValues().then(e => {
             this._values = e.result;
         });
-        this._detailsOpenedItem = [];
-        this._busy = null;
-
-        this._showOnlyOwnProperties = false;
-        this._searchTerm = '';
     }
 
     render() {
@@ -219,7 +223,7 @@ export class QwcConfiguration extends observeState(LitElement) {
                         </vaadin-grid-sort-column>
 
                         <vaadin-grid-sort-column width="45%" resizable flex-grow="0"
-                                            header="Name" 
+                                            header="Name"
                                             path="name"
                                             class="cell"
                                             ${columnBodyRenderer(this._nameRenderer, [])}>
@@ -306,11 +310,11 @@ export class QwcConfiguration extends observeState(LitElement) {
                 </vaadin-integer-field>`;
         } else if (prop.typeName === "java.lang.Float" || prop.typeName === "java.lang.Double") {
             return html`
-                <vaadin-number-field class="input-column" 
-                                    theme="small" 
-                                    id="input-${prop.name}" 
-                                    placeholder="${prop.defaultValue}" 
-                                    value="${actualValue}" 
+                <vaadin-number-field class="input-column"
+                                    theme="small"
+                                    id="input-${prop.name}"
+                                    placeholder="${prop.defaultValue}"
+                                    value="${actualValue}"
                                     @keydown="${this._keydown}">
                     <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
                     <vaadin-icon slot="suffix" icon="font-awesome-solid:floppy-disk" class="save-button"
@@ -332,26 +336,26 @@ export class QwcConfiguration extends observeState(LitElement) {
                 defaultValue = prop.defaultValue;
             }
             return html`
-                <vaadin-select class="input-column" 
-                                id="select-${prop.name}" 
-                                theme="small" 
-                                .items="${items}" 
+                <vaadin-select class="input-column"
+                                id="select-${prop.name}"
+                                theme="small"
+                                .items="${items}"
                                 .value="${defaultValue}"
                                 @change="${this._selectChanged}">
                             <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
-                
+
                 </vaadin-select>
             `;
         } else {
             return html`
-                <vaadin-text-field class="input-column" 
-                                    theme="small" 
+                <vaadin-text-field class="input-column"
+                                    theme="small"
                                     value="${actualValue}"
-                                    placeholder="${prop.defaultValue}" 
-                                    id="input-${prop.name}" 
+                                    placeholder="${prop.defaultValue}"
+                                    id="input-${prop.name}"
                                     @keydown="${this._keydown}">
                         <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
-                        <vaadin-icon slot="suffix" icon="font-awesome-solid:floppy-disk" class="save-button" 
+                        <vaadin-icon slot="suffix" icon="font-awesome-solid:floppy-disk" class="save-button"
                                     id="save-button-${prop.name}" @click="${this._saveClicked}"></vaadin-icon>
                     </vaadin-button>
                 </vaadin-text-field>
@@ -374,7 +378,7 @@ export class QwcConfiguration extends observeState(LitElement) {
             }
         }
         res = res.toUpperCase();
-        
+
         let def = "<strong>Default value: </strong> None";
         if (prop.defaultValue) {
             def = "<strong>Default value: </strong>" + prop.defaultValue;

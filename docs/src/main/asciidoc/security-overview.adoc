@@ -45,7 +45,7 @@ To get started with security in Quarkus, consider securing your Quarkus applicat
 
 Complete the steps in the xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence] tutorial.
 
-After successfully securing your Quarkus application with Basic authentication, you can increase the security further by adding more advanced authentication mechanisms, for example, the xref:security-oidc-code-flow-authentication.adoc[OpenID Connect (OIDC) authorization code flow mechanism].
+After successfully securing your Quarkus application with Basic authentication, you can increase the security further by adding more advanced authentication mechanisms, for example, the Quarkus xref:security-oidc-code-flow-authentication.adoc[OpenID Connect (OIDC) authorization code flow mechanism] guide.
 
 == Quarkus Security testing
 
@@ -57,7 +57,7 @@ Guidance for testing Quarkus Security features and ensuring that your Quarkus ap
 === Cross-origin resource sharing
 
 To make your Quarkus application accessible to another application running on a different domain, you need to configure cross-origin resource sharing (CORS).
-For more information about the CORS filter that Quarkus provides, see the Quarkus xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide.
+For more information about the CORS filter that Quarkus provides, see the xref:security-cors.adoc#cors-filter[CORS filter] section of the Quarkus "Cross-origin resource sharing" guide.
 
 [[csrf-prevention]]
 === Cross-Site Request Forgery (CSRF) prevention
@@ -69,7 +69,7 @@ For more information, see the Quarkus xref:security-csrf-prevention.adoc[Cross-S
 === SameSite cookies
 
 You can add a link:https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite[SameSite] cookie property to any of the cookies set by a Quarkus endpoint.
-For more information, see the Quarkus xref:http-reference.adoc#same-site-cookie[SameSite cookies] guide.
+For more information, see the xref:http-reference.adoc#same-site-cookie[SameSite cookies] section of the Quarkus "HTTP reference" guide.
 
 [[secrets-engines]]
 === Secrets engines
@@ -81,19 +81,20 @@ For more information, see the link:{vault-guide}[Quarkus and HashiCorp Vault] do
 == Secrets in environment properties
 
 Quarkus provides support to store secrets in environment properties.
-See xref:config.adoc#secrets-in-environment-properties[store secrets in an environment properties file].
+For more information, see the Quarkus xref:config.adoc#secrets-in-environment-properties[store secrets in an environment properties file] guide.
 
 [[secure-serialization]]
 === Secure serialization
 
 If your Quarkus Security architecture includes RESTEasy Reactive and Jackson, Quarkus can limit the fields that are included in JSON serialization based on the configured security.
-For more information, see the Quarkus xref:resteasy-reactive.adoc#secure-serialization[Writing REST services with RESTEasy Reactive] guide.
+For more information, see the xref:resteasy-reactive.adoc#secure-serialization[JSON serialisation] section of the Quarkus “Writing REST services with RESTEasy Reactive” guide.
+
 
 [[rest-data-panache]]
 === Secure auto-generated resources by REST Data with Panache
 
 If you use the REST Data with Panache extension to auto-generate your resources, you can still use security annotations within the package `jakarta.annotation.security`.
-For more information, see the xref:rest-data-panache.adoc#securing-endpoints[Securing auto-generated resources] section of the Quarkus "Generating Jakarta REST resources with Panache" guide.
+For more information, see the xref:rest-data-panache.adoc#securing-endpoints[Securing endpoints] section of the Quarkus "Generating Jakarta REST resources with Panache" guide.
 
 == Security vulnerability detection
 
@@ -102,6 +103,7 @@ For information about security vulnerabilities, see the xref:security-vulnerabil
 
 == References
 
+* xref:security-basic-authentication.adoc[Basic authentication]
 * xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence]
 * xref:security-oidc-code-flow-authentication-tutorial.adoc[Protect a web application by using OIDC authorization code flow]
 * xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a service application by using OIDC Bearer token authentication]

@@ -38,3 +38,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           action: inject-build-scans
           workflow-run-id: ${{ github.event.workflow_run.id }}
+      - name: Output JSON file
+        run: |
+          if [ -f build-metadata.json ]; then jq '.' build-metadata.json >> $GITHUB_STEP_SUMMARY; fi

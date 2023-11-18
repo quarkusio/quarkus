@@ -2,7 +2,6 @@ guides:
   - src/main/asciidoc/datasource.adoc
   - src/main/asciidoc/logging.adoc
   - src/main/asciidoc/security-architecture.adoc
-  - src/main/asciidoc/security-authentication-mechanisms.adoc
   - src/main/asciidoc/security-authorize-web-endpoints-reference.adoc
   - src/main/asciidoc/security-basic-authentication.adoc
   - src/main/asciidoc/security-basic-authentication-howto.adoc

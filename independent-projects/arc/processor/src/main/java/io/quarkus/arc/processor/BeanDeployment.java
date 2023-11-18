@@ -1663,7 +1663,7 @@ public class BeanDeployment {
 
     }
 
-    static abstract class RegistrationContextImpl implements BuildContext {
+    abstract static class RegistrationContextImpl implements BuildContext {
 
         protected final BuildContext parent;
         protected final BeanDeployment beanDeployment;

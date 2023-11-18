@@ -3,6 +3,7 @@ package io.quarkus.bootstrap.model;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -197,9 +198,7 @@ public class ApplicationModelBuilder {
                                     final String[] split = value.split(",");
                                     resources = new HashSet<>(existingResources.size() + split.length);
                                     resources.addAll(existingResources);
-                                    for (String s : split) {
-                                        resources.add(s);
-                                    }
+                                    Collections.addAll(resources, split);
                                 }
                                 log.debugf("Extension %s is excluding resources %s from artifact %s", extension, resources,
                                         key);

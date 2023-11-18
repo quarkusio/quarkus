@@ -88,119 +88,113 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         Uni<HttpClientRequest> future = createRequest(requestContext);
 
         // DNS failures happen before we send the request
-        future.subscribe().with(new Consumer<>() {
-            @Override
-            public void accept(HttpClientRequest httpClientRequest) {
-                // adapt headers to HTTP/2 depending on the underlying HTTP connection
-                ClientSendRequestHandler.this.adaptRequest(httpClientRequest);
+        future.subscribe().with(httpClientRequest -> {
+            // adapt headers to HTTP/2 depending on the underlying HTTP connection
+            ClientSendRequestHandler.this.adaptRequest(httpClientRequest);
 
-                if (requestContext.isMultipart()) {
-                    Promise<HttpClientRequest> requestPromise = Promise.promise();
-                    QuarkusMultipartFormUpload actualEntity;
-                    try {
-                        actualEntity = ClientSendRequestHandler.this.setMultipartHeadersAndPrepareBody(httpClientRequest,
-                                requestContext);
-                        if (loggingScope != LoggingScope.NONE) {
-                            clientLogger.logRequest(httpClientRequest, null, true);
-                        }
+            if (requestContext.isMultipart()) {
+                Promise<HttpClientRequest> requestPromise = Promise.promise();
+                QuarkusMultipartFormUpload actualEntity;
+                try {
+                    actualEntity = ClientSendRequestHandler.this.setMultipartHeadersAndPrepareBody(httpClientRequest,
+                            requestContext);
+                    if (loggingScope != LoggingScope.NONE) {
+                        clientLogger.logRequest(httpClientRequest, null, true);
+                    }
 
-                        Pipe<Buffer> pipe = actualEntity.pipe(); // Shouldn't this be called in an earlier phase ?
-                        requestPromise.future().onComplete(ar -> {
+                    Pipe<Buffer> pipe = actualEntity.pipe(); // Shouldn't this be called in an earlier phase ?
+                    requestPromise.future().onComplete(ar -> {
 
-                            if (ar.succeeded()) {
-                                HttpClientRequest req = ar.result();
-                                if (httpClientRequest.headers() == null
-                                        || !httpClientRequest.headers().contains(HttpHeaders.CONTENT_LENGTH)) {
-                                    req.setChunked(true);
+                        if (ar.succeeded()) {
+                            HttpClientRequest req = ar.result();
+                            if (httpClientRequest.headers() == null
+                                    || !httpClientRequest.headers().contains(HttpHeaders.CONTENT_LENGTH)) {
+                                req.setChunked(true);
+                            }
+                            pipe.endOnFailure(false);
+                            pipe.to(req, ar2 -> {
+                                if (ar2.failed()) {
+                                    req.reset(0L, ar2.cause());
                                 }
-                                pipe.endOnFailure(false);
-                                pipe.to(req, ar2 -> {
-                                    if (ar2.failed()) {
-                                        req.reset(0L, ar2.cause());
+                            });
+                            actualEntity.run();
+                        } else {
+                            pipe.close();
+                        }
+                    });
+                    Future<HttpClientResponse> sent = httpClientRequest.response();
+                    requestPromise.complete(httpClientRequest);
+                    attachSentHandlers(sent, httpClientRequest, requestContext);
+                } catch (Throwable e) {
+                    reportFinish(e, requestContext);
+                    requestContext.resume(e);
+                    return;
+                }
+            } else if (requestContext.isFileUpload()) {
+                Vertx vertx = Vertx.currentContext().owner();
+                Object entity = requestContext.getEntity().getEntity();
+                String filePathToUpload = null;
+                if (entity instanceof File) {
+                    filePathToUpload = ((File) entity).getAbsolutePath();
+                } else if (entity instanceof Path) {
+                    filePathToUpload = ((Path) entity).toAbsolutePath().toString();
+                }
+                vertx.fileSystem()
+                        .open(filePathToUpload, new OpenOptions().setRead(true).setWrite(false),
+                                new Handler<>() {
+                                    @Override
+                                    public void handle(AsyncResult<AsyncFile> openedAsyncFile) {
+                                        if (openedAsyncFile.failed()) {
+                                            requestContext.resume(openedAsyncFile.cause());
+                                            return;
+                                        }
+
+                                        MultivaluedMap<String, String> headerMap = requestContext.getRequestHeaders()
+                                                .asMap();
+                                        updateRequestHeadersFromConfig(requestContext, headerMap);
+
+                                        // set the Vertx headers after we've run the interceptors because they can modify them
+                                        setVertxHeaders(httpClientRequest, headerMap);
+
+                                        Future<HttpClientResponse> sent = httpClientRequest.send(openedAsyncFile.result());
+                                        attachSentHandlers(sent, httpClientRequest, requestContext);
                                     }
                                 });
-                                actualEntity.run();
-                            } else {
-                                pipe.close();
-                            }
-                        });
-                        Future<HttpClientResponse> sent = httpClientRequest.response();
-                        requestPromise.complete(httpClientRequest);
-                        attachSentHandlers(sent, httpClientRequest, requestContext);
-                    } catch (Throwable e) {
-                        reportFinish(e, requestContext);
-                        requestContext.resume(e);
-                        return;
-                    }
-                } else if (requestContext.isFileUpload()) {
-                    Vertx vertx = Vertx.currentContext().owner();
-                    Object entity = requestContext.getEntity().getEntity();
-                    String filePathToUpload = null;
-                    if (entity instanceof File) {
-                        filePathToUpload = ((File) entity).getAbsolutePath();
-                    } else if (entity instanceof Path) {
-                        filePathToUpload = ((Path) entity).toAbsolutePath().toString();
-                    }
-                    vertx.fileSystem()
-                            .open(filePathToUpload, new OpenOptions().setRead(true).setWrite(false),
-                                    new Handler<>() {
-                                        @Override
-                                        public void handle(AsyncResult<AsyncFile> openedAsyncFile) {
-                                            if (openedAsyncFile.failed()) {
-                                                requestContext.resume(openedAsyncFile.cause());
-                                                return;
-                                            }
-
-                                            MultivaluedMap<String, String> headerMap = requestContext.getRequestHeaders()
-                                                    .asMap();
-                                            updateRequestHeadersFromConfig(requestContext, headerMap);
-
-                                            // set the Vertx headers after we've run the interceptors because they can modify them
-                                            setVertxHeaders(httpClientRequest, headerMap);
-
-                                            Future<HttpClientResponse> sent = httpClientRequest.send(openedAsyncFile.result());
-                                            attachSentHandlers(sent, httpClientRequest, requestContext);
-                                        }
-                                    });
-                } else {
-                    Future<HttpClientResponse> sent;
-                    Buffer actualEntity;
-                    try {
-                        actualEntity = ClientSendRequestHandler.this
-                                .setRequestHeadersAndPrepareBody(httpClientRequest, requestContext);
-                    } catch (Throwable e) {
-                        requestContext.resume(e);
-                        return;
-                    }
-                    if (actualEntity == AsyncInvokerImpl.EMPTY_BUFFER) {
-                        sent = httpClientRequest.send();
-                        if (loggingScope != LoggingScope.NONE) {
-                            clientLogger.logRequest(httpClientRequest, null, false);
-                        }
-                    } else {
-                        sent = httpClientRequest.send(actualEntity);
-                        if (loggingScope != LoggingScope.NONE) {
-                            clientLogger.logRequest(httpClientRequest, actualEntity, false);
-                        }
-                    }
-                    attachSentHandlers(sent, httpClientRequest, requestContext);
+            } else {
+                Future<HttpClientResponse> sent;
+                Buffer actualEntity;
+                try {
+                    actualEntity = ClientSendRequestHandler.this
+                            .setRequestHeadersAndPrepareBody(httpClientRequest, requestContext);
+                } catch (Throwable e) {
+                    requestContext.resume(e);
+                    return;
                 }
+                if (actualEntity == AsyncInvokerImpl.EMPTY_BUFFER) {
+                    sent = httpClientRequest.send();
+                    if (loggingScope != LoggingScope.NONE) {
+                        clientLogger.logRequest(httpClientRequest, null, false);
+                    }
+                } else {
+                    sent = httpClientRequest.send(actualEntity);
+                    if (loggingScope != LoggingScope.NONE) {
+                        clientLogger.logRequest(httpClientRequest, actualEntity, false);
+                    }
+                }
+                attachSentHandlers(sent, httpClientRequest, requestContext);
             }
-        }, new Consumer<>() {
-            @Override
-            public void accept(Throwable event) {
-                // set some properties to prevent NPEs down the chain
-                requestContext.setResponseHeaders(new MultivaluedTreeMap<>());
-                requestContext.setResponseReasonPhrase("unknown");
+        }, event -> {
+            // set some properties to prevent NPEs down the chain
+            requestContext.setResponseHeaders(new MultivaluedTreeMap<>());
+            requestContext.setResponseReasonPhrase("unknown");
 
-                if (event instanceof IOException) {
-                    ProcessingException throwable = new ProcessingException(event);
-                    reportFinish(throwable, requestContext);
-                    requestContext.resume(throwable);
-                } else {
-                    requestContext.resume(event);
-                    reportFinish(event, requestContext);
-                }
+            if (event instanceof IOException) {
+                ProcessingException throwable = new ProcessingException(event);
+                reportFinish(throwable, requestContext);
+                requestContext.resume(throwable);
+            } else {
+                requestContext.resume(event);
+                reportFinish(event, requestContext);
             }
         });
     }
@@ -208,160 +202,154 @@ public class ClientSendRequestHandler implements ClientRestHandler {
     private void attachSentHandlers(Future<HttpClientResponse> sent,
             HttpClientRequest httpClientRequest,
             RestClientRequestContext requestContext) {
-        sent.onSuccess(new Handler<>() {
-            @Override
-            public void handle(HttpClientResponse clientResponse) {
-                try {
-                    requestContext.initialiseResponse(clientResponse);
-                    int status = clientResponse.statusCode();
-                    if (requestContext.getCallStatsCollector() != null) {
-                        if (status >= 500 && status < 600) {
-                            reportFinish(new InternalServerErrorException(),
-                                    requestContext);
-                        } else {
-                            reportFinish(null, requestContext);
-                        }
-                    }
-
-                    if (isResponseMultipart(requestContext)) {
-                        QuarkusMultipartResponseDecoder multipartDecoder = new QuarkusMultipartResponseDecoder(
-                                clientResponse);
-
-                        clientResponse.handler(multipartDecoder::offer);
-
-                        clientResponse.endHandler(new Handler<>() {
-                            @Override
-                            public void handle(Void event) {
-                                multipartDecoder.offer(LastHttpContent.EMPTY_LAST_CONTENT);
-
-                                List<InterfaceHttpData> datas = multipartDecoder.getBodyHttpDatas();
-                                requestContext.setResponseMultipartParts(datas);
-
-                                if (loggingScope != LoggingScope.NONE) {
-                                    clientLogger.logResponse(clientResponse, false);
-                                }
-
-                                requestContext.resume();
-                            }
-                        });
-                    } else if (!requestContext.isRegisterBodyHandler()) {
-                        clientResponse.pause();
-                        if (loggingScope != LoggingScope.NONE) {
-                            clientLogger.logResponse(clientResponse, false);
-                        }
-                        requestContext.resume();
+        sent.onSuccess(clientResponse -> {
+            try {
+                requestContext.initialiseResponse(clientResponse);
+                int status = clientResponse.statusCode();
+                if (requestContext.getCallStatsCollector() != null) {
+                    if (status >= 500 && status < 600) {
+                        reportFinish(new InternalServerErrorException(),
+                                requestContext);
                     } else {
-                        if (requestContext.isFileDownload()) {
-                            // when downloading a file we copy the bytes to the file system and manually set the entity type
-                            // this is needed because large files can cause OOM or exceed the InputStream limit (of 2GB)
+                        reportFinish(null, requestContext);
+                    }
+                }
 
-                            clientResponse.pause();
-                            Vertx vertx = Vertx.currentContext().owner();
-                            vertx.fileSystem().createTempFile("rest-client", "",
-                                    new Handler<>() {
-                                        @Override
-                                        public void handle(AsyncResult<String> tempFileCreation) {
-                                            if (tempFileCreation.failed()) {
-                                                reportFinish(tempFileCreation.cause(), requestContext);
-                                                requestContext.resume(tempFileCreation.cause());
-                                                return;
-                                            }
-                                            String tmpFilePath = tempFileCreation.result();
-                                            vertx.fileSystem().open(tmpFilePath,
-                                                    new OpenOptions().setWrite(true),
-                                                    new Handler<>() {
-                                                        @Override
-                                                        public void handle(AsyncResult<AsyncFile> asyncFileOpened) {
-                                                            if (asyncFileOpened.failed()) {
-                                                                reportFinish(asyncFileOpened.cause(), requestContext);
-                                                                requestContext.resume(asyncFileOpened.cause());
-                                                                return;
-                                                            }
-                                                            final AsyncFile tmpAsyncFile = asyncFileOpened.result();
-                                                            final Pump downloadPump = Pump.pump(clientResponse,
-                                                                    tmpAsyncFile);
-                                                            downloadPump.start();
+                if (isResponseMultipart(requestContext)) {
+                    QuarkusMultipartResponseDecoder multipartDecoder = new QuarkusMultipartResponseDecoder(
+                            clientResponse);
 
-                                                            clientResponse.resume();
-                                                            clientResponse.endHandler(new Handler<>() {
-                                                                public void handle(Void event) {
-                                                                    tmpAsyncFile.flush(new Handler<>() {
-                                                                        public void handle(AsyncResult<Void> flushed) {
-                                                                            if (flushed.failed()) {
-                                                                                reportFinish(flushed.cause(),
-                                                                                        requestContext);
-                                                                                requestContext.resume(flushed.cause());
-                                                                                return;
-                                                                            }
+                    clientResponse.handler(multipartDecoder::offer);
 
-                                                                            if (loggingScope != LoggingScope.NONE) {
-                                                                                clientLogger.logRequest(
-                                                                                        httpClientRequest, null, false);
-                                                                            }
+                    clientResponse.endHandler(new Handler<>() {
+                        @Override
+                        public void handle(Void event) {
+                            multipartDecoder.offer(LastHttpContent.EMPTY_LAST_CONTENT);
 
-                                                                            requestContext.setTmpFilePath(tmpFilePath);
-                                                                            requestContext.resume();
-                                                                        }
-                                                                    });
-                                                                }
-                                                            });
-                                                        }
-                                                    });
-                                        }
-                                    });
+                            List<InterfaceHttpData> datas = multipartDecoder.getBodyHttpDatas();
+                            requestContext.setResponseMultipartParts(datas);
 
-                        } else if (requestContext.isInputStreamDownload()) {
                             if (loggingScope != LoggingScope.NONE) {
                                 clientLogger.logResponse(clientResponse, false);
                             }
-                            //TODO: make timeout configureable
-                            requestContext
-                                    .setResponseEntityStream(
-                                            new VertxClientInputStream(clientResponse, 100000, requestContext));
+
                             requestContext.resume();
-                        } else {
-                            clientResponse.bodyHandler(new Handler<>() {
-                                @Override
-                                public void handle(Buffer buffer) {
-                                    if (loggingScope != LoggingScope.NONE) {
-                                        clientLogger.logResponse(clientResponse, false);
-                                    }
-                                    try {
-                                        if (buffer.length() > 0) {
-                                            requestContext.setResponseEntityStream(
-                                                    new ByteArrayInputStream(buffer.getBytes()));
-                                        } else {
-                                            requestContext.setResponseEntityStream(null);
-                                        }
-                                        requestContext.resume();
-                                    } catch (Throwable t) {
-                                        requestContext.resume(t);
-                                    }
-                                }
-                            });
                         }
+                    });
+                } else if (!requestContext.isRegisterBodyHandler()) {
+                    clientResponse.pause();
+                    if (loggingScope != LoggingScope.NONE) {
+                        clientLogger.logResponse(clientResponse, false);
                     }
-                } catch (Throwable t) {
-                    reportFinish(t, requestContext);
-                    requestContext.resume(t);
+                    requestContext.resume();
+                } else {
+                    if (requestContext.isFileDownload()) {
+                        // when downloading a file we copy the bytes to the file system and manually set the entity type
+                        // this is needed because large files can cause OOM or exceed the InputStream limit (of 2GB)
+
+                        clientResponse.pause();
+                        Vertx vertx = Vertx.currentContext().owner();
+                        vertx.fileSystem().createTempFile("rest-client", "",
+                                new Handler<>() {
+                                    @Override
+                                    public void handle(AsyncResult<String> tempFileCreation) {
+                                        if (tempFileCreation.failed()) {
+                                            reportFinish(tempFileCreation.cause(), requestContext);
+                                            requestContext.resume(tempFileCreation.cause());
+                                            return;
+                                        }
+                                        String tmpFilePath = tempFileCreation.result();
+                                        vertx.fileSystem().open(tmpFilePath,
+                                                new OpenOptions().setWrite(true),
+                                                new Handler<>() {
+                                                    @Override
+                                                    public void handle(AsyncResult<AsyncFile> asyncFileOpened) {
+                                                        if (asyncFileOpened.failed()) {
+                                                            reportFinish(asyncFileOpened.cause(), requestContext);
+                                                            requestContext.resume(asyncFileOpened.cause());
+                                                            return;
+                                                        }
+                                                        final AsyncFile tmpAsyncFile = asyncFileOpened.result();
+                                                        final Pump downloadPump = Pump.pump(clientResponse,
+                                                                tmpAsyncFile);
+                                                        downloadPump.start();
+
+                                                        clientResponse.resume();
+                                                        clientResponse.endHandler(new Handler<>() {
+                                                            public void handle(Void event) {
+                                                                tmpAsyncFile.flush(new Handler<>() {
+                                                                    public void handle(AsyncResult<Void> flushed) {
+                                                                        if (flushed.failed()) {
+                                                                            reportFinish(flushed.cause(),
+                                                                                    requestContext);
+                                                                            requestContext.resume(flushed.cause());
+                                                                            return;
+                                                                        }
+
+                                                                        if (loggingScope != LoggingScope.NONE) {
+                                                                            clientLogger.logRequest(
+                                                                                    httpClientRequest, null, false);
+                                                                        }
+
+                                                                        requestContext.setTmpFilePath(tmpFilePath);
+                                                                        requestContext.resume();
+                                                                    }
+                                                                });
+                                                            }
+                                                        });
+                                                    }
+                                                });
+                                    }
+                                });
+
+                    } else if (requestContext.isInputStreamDownload()) {
+                        if (loggingScope != LoggingScope.NONE) {
+                            clientLogger.logResponse(clientResponse, false);
+                        }
+                        //TODO: make timeout configureable
+                        requestContext
+                                .setResponseEntityStream(
+                                        new VertxClientInputStream(clientResponse, 100000, requestContext));
+                        requestContext.resume();
+                    } else {
+                        clientResponse.bodyHandler(new Handler<>() {
+                            @Override
+                            public void handle(Buffer buffer) {
+                                if (loggingScope != LoggingScope.NONE) {
+                                    clientLogger.logResponse(clientResponse, false);
+                                }
+                                try {
+                                    if (buffer.length() > 0) {
+                                        requestContext.setResponseEntityStream(
+                                                new ByteArrayInputStream(buffer.getBytes()));
+                                    } else {
+                                        requestContext.setResponseEntityStream(null);
+                                    }
+                                    requestContext.resume();
+                                } catch (Throwable t) {
+                                    requestContext.resume(t);
+                                }
+                            }
+                        });
+                    }
                 }
+            } catch (Throwable t) {
+                reportFinish(t, requestContext);
+                requestContext.resume(t);
             }
         })
-                .onFailure(new Handler<>() {
-                    @Override
-                    public void handle(Throwable failure) {
-                        if (failure instanceof HttpClosedException) {
-                            // This is because of the Rest Client TCK
-                            // HttpClosedException is a runtime exception. If we complete with that exception, it gets
-                            // unwrapped by the rest client proxy and thus fails the TCK.
-                            // By creating an IOException, we avoid that and provide a meaningful exception (because
-                            // it's an I/O exception)
-                            requestContext.resume(new ProcessingException(new IOException(failure.getMessage())));
-                        } else if (failure instanceof IOException) {
-                            requestContext.resume(new ProcessingException(failure));
-                        } else {
-                            requestContext.resume(failure);
-                        }
+                .onFailure(failure -> {
+                    if (failure instanceof HttpClosedException) {
+                        // This is because of the Rest Client TCK
+                        // HttpClosedException is a runtime exception. If we complete with that exception, it gets
+                        // unwrapped by the rest client proxy and thus fails the TCK.
+                        // By creating an IOException, we avoid that and provide a meaningful exception (because
+                        // it's an I/O exception)
+                        requestContext.resume(new ProcessingException(new IOException(failure.getMessage())));
+                    } else if (failure instanceof IOException) {
+                        requestContext.resume(new ProcessingException(failure));
+                    } else {
+                        requestContext.resume(failure);
                     }
                 });
     }
@@ -419,12 +407,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         r.setTimeout((Long) readTimeout);
                     }
                 })
-                .onItem().transformToUni(new Function<RequestOptions, Uni<? extends HttpClientRequest>>() {
-                    @Override
-                    public Uni<? extends HttpClientRequest> apply(RequestOptions options) {
-                        return AsyncResultUni.toUni(handler -> httpClient.request(options, handler));
-                    }
-                });
+                .onItem().transformToUni(options -> AsyncResultUni.toUni(handler -> httpClient.request(options, handler)));
     }
 
     private boolean shouldMeasureTime(RestClientRequestContext state) {

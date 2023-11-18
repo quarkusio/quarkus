@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
 import java.util.Properties;
 
 import org.apache.commons.cli.CommandLine;
@@ -31,9 +32,7 @@ public class BootstrapMavenOptionsParser {
 
             if (argsWoProps == null) {
                 argsWoProps = new ArrayList<>(args.length);
-                for (int i = 0; i < argI - 1; ++i) {
-                    argsWoProps.add(args[i]);
-                }
+                argsWoProps.addAll(Arrays.asList(args).subList(0, argI - 1));
             }
 
             if (userProps == null) {

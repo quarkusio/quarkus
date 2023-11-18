@@ -434,11 +434,8 @@ public class BeanProcessor {
     }
 
     public BeanDeployment process() throws IOException, InterruptedException, ExecutionException {
-        Consumer<BytecodeTransformer> unsupportedBytecodeTransformer = new Consumer<BytecodeTransformer>() {
-            @Override
-            public void accept(BytecodeTransformer transformer) {
-                throw new UnsupportedOperationException();
-            }
+        Consumer<BytecodeTransformer> unsupportedBytecodeTransformer = transformer -> {
+            throw new UnsupportedOperationException();
         };
         registerCustomContexts();
         registerScopes();

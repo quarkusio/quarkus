@@ -157,16 +157,13 @@ public class ArcContainerImpl implements ArcContainer {
         this.interceptors = List.copyOf(interceptors);
         this.decorators = List.copyOf(decorators);
         this.observers = List.copyOf(observers);
-        this.removedBeans = new LazyValue<>(new Supplier<List<RemovedBean>>() {
-            @Override
-            public List<RemovedBean> get() {
-                List<RemovedBean> removed = new ArrayList<>();
-                for (Supplier<Collection<RemovedBean>> supplier : removedBeans) {
-                    removed.addAll(supplier.get());
-                }
-                LOGGER.debugf("Loaded %s removed beans lazily", removed.size());
-                return List.copyOf(removed);
+        this.removedBeans = new LazyValue<>(() -> {
+            List<RemovedBean> removed = new ArrayList<>();
+            for (Supplier<Collection<RemovedBean>> supplier : removedBeans) {
+                removed.addAll(supplier.get());
             }
+            LOGGER.debugf("Loaded %s removed beans lazily", removed.size());
+            return List.copyOf(removed);
         });
         this.transitiveInterceptorBindings = Map.copyOf(transitiveInterceptorBindings);
         this.registeredQualifiers = new Qualifiers(qualifiers, qualifierNonbindingMembers);
@@ -276,12 +273,7 @@ public class ArcContainerImpl implements ArcContainer {
         if (bean == null) {
             return null;
         }
-        return new Supplier<InstanceHandle<T>>() {
-            @Override
-            public InstanceHandle<T> get() {
-                return beanInstanceHandle(bean, null);
-            }
-        };
+        return () -> beanInstanceHandle(bean, null);
     }
 
     @Override

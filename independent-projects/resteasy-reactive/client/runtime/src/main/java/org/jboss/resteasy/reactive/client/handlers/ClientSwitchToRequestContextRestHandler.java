@@ -26,17 +26,7 @@ public class ClientSwitchToRequestContextRestHandler implements ClientRestHandle
         Context captured = clientRequestContext.getContext();
         if (captured != null && current != captured) {
             requestContext.suspend();
-            requestContext.resume(new Executor() {
-                @Override
-                public void execute(Runnable command) {
-                    captured.runOnContext(new Handler<Void>() {
-                        @Override
-                        public void handle(Void unused) {
-                            command.run();
-                        }
-                    });
-                }
-            });
+            requestContext.resume(command -> captured.runOnContext(unused -> command.run()));
         }
     }
 }

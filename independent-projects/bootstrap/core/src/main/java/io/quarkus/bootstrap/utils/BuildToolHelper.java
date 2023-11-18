@@ -20,9 +20,9 @@ public class BuildToolHelper {
 
     private static final Logger log = Logger.getLogger(BuildToolHelper.class);
 
-    private final static String[] DEVMODE_REQUIRED_TASKS = new String[] { "classes" };
-    private final static String[] TEST_REQUIRED_TASKS = new String[] { "classes", "testClasses", "integrationTestClasses" };
-    private final static List<String> ENABLE_JAR_PACKAGING = Collections
+    private static final String[] DEVMODE_REQUIRED_TASKS = new String[] { "classes" };
+    private static final String[] TEST_REQUIRED_TASKS = new String[] { "classes", "testClasses", "integrationTestClasses" };
+    private static final List<String> ENABLE_JAR_PACKAGING = Collections
             .singletonList("-Dorg.gradle.java.compile-classpath-packaging=true");
 
     public enum BuildTool {

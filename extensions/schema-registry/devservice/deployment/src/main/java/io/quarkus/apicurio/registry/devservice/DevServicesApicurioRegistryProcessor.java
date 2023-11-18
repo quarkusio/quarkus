@@ -101,16 +101,13 @@ public class DevServicesApicurioRegistryProcessor {
         // Configure the watch dog
         if (first) {
             first = false;
-            Runnable closeTask = new Runnable() {
-                @Override
-                public void run() {
-                    if (devService != null) {
-                        shutdownApicurioRegistry();
-                    }
-                    first = true;
-                    devService = null;
-                    cfg = null;
+            Runnable closeTask = () -> {
+                if (devService != null) {
+                    shutdownApicurioRegistry();
                 }
+                first = true;
+                devService = null;
+                cfg = null;
             };
             closeBuildItem.addCloseTask(closeTask, true);
         }

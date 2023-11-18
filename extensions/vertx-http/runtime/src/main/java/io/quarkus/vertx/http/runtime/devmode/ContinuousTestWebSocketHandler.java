@@ -45,24 +45,16 @@ public class ContinuousTestWebSocketHandler
     public void handle(RoutingContext event) {
 
         if ("websocket".equalsIgnoreCase(event.request().getHeader(HttpHeaderNames.UPGRADE))) {
-            event.request().toWebSocket(new Handler<>() {
-                @Override
-                public void handle(AsyncResult<ServerWebSocket> event) {
-                    if (event.succeeded()) {
-                        ServerWebSocket socket = event.result();
-                        if (lastMessage != null) {
-                            socket.writeTextMessage(lastMessage);
-                        }
-                        sockets.add(socket);
-                        socket.closeHandler(new Handler<Void>() {
-                            @Override
-                            public void handle(Void event) {
-                                sockets.remove(socket);
-                            }
-                        });
-                    } else {
-                        log.error("Failed to connect to test server", event.cause());
+            event.request().toWebSocket(event1 -> {
+                if (event1.succeeded()) {
+                    ServerWebSocket socket = event1.result();
+                    if (lastMessage != null) {
+                        socket.writeTextMessage(lastMessage);
                     }
+                    sockets.add(socket);
+                    socket.closeHandler(event11 -> sockets.remove(socket));
+                } else {
+                    log.error("Failed to connect to test server", event1.cause());
                 }
             });
         } else {

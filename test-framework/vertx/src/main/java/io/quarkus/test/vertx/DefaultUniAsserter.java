@@ -27,12 +27,7 @@ class DefaultUniAsserter implements UniAsserter {
     public <T> UniAsserter assertThat(Supplier<Uni<T>> uni, Consumer<T> asserter) {
         execution = uniFromSupplier(uni)
                 .onItem()
-                .invoke(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) {
-                        asserter.accept((T) o);
-                    }
-                });
+                .invoke((Consumer<Object>) o -> asserter.accept((T) o));
         return this;
     }
 
@@ -52,12 +47,7 @@ class DefaultUniAsserter implements UniAsserter {
     public <T> UniAsserter assertEquals(Supplier<Uni<T>> uni, T t) {
         execution = uniFromSupplier(uni)
                 .onItem()
-                .invoke(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) {
-                        Assertions.assertEquals(t, o);
-                    }
-                });
+                .invoke((Consumer<Object>) o -> Assertions.assertEquals(t, o));
         return this;
     }
 
@@ -65,12 +55,7 @@ class DefaultUniAsserter implements UniAsserter {
     public <T> UniAsserter assertSame(Supplier<Uni<T>> uni, T t) {
         execution = uniFromSupplier(uni)
                 .onItem()
-                .invoke(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) {
-                        Assertions.assertSame(t, o);
-                    }
-                });
+                .invoke((Consumer<Object>) o -> Assertions.assertSame(t, o));
         return this;
     }
 
@@ -83,24 +68,14 @@ class DefaultUniAsserter implements UniAsserter {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private <T> Uni<T> uniFromSupplier(Supplier<Uni<T>> uni) {
         return execution.onItem()
-                .transformToUni((Function) new Function<Object, Uni<T>>() {
-                    @Override
-                    public Uni<T> apply(Object o) {
-                        return uni.get();
-                    }
-                });
+                .transformToUni((Function) o -> uni.get());
     }
 
     @Override
     public <T> UniAsserter assertNotEquals(Supplier<Uni<T>> uni, T t) {
         execution = uniFromSupplier(uni)
                 .onItem()
-                .invoke(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) {
-                        Assertions.assertNotEquals(t, o);
-                    }
-                });
+                .invoke((Consumer<Object>) o -> Assertions.assertNotEquals(t, o));
         return this;
     }
 
@@ -108,12 +83,7 @@ class DefaultUniAsserter implements UniAsserter {
     public <T> UniAsserter assertNotSame(Supplier<Uni<T>> uni, T t) {
         execution = uniFromSupplier(uni)
                 .onItem()
-                .invoke(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) {
-                        Assertions.assertNotSame(t, o);
-                    }
-                });
+                .invoke((Consumer<Object>) o -> Assertions.assertNotSame(t, o));
         return this;
     }
 
@@ -152,21 +122,16 @@ class DefaultUniAsserter implements UniAsserter {
     @Override
     public <T> UniAsserter assertFailedWith(Supplier<Uni<T>> uni, Consumer<Throwable> c) {
         execution = execution.onItem()
-                .transformToUni((Function) new Function<Object, Uni<T>>() {
-                    @Override
-                    public Uni<T> apply(Object obj) {
-                        return uni.get().onItemOrFailure().transformToUni((o, t) -> {
-                            if (t == null) {
-                                return Uni.createFrom().failure(() -> Assertions.fail("Uni did not contain a failure."));
-                            } else {
-                                return Uni.createFrom().item(() -> {
-                                    c.accept(t);
-                                    return null;
-                                });
-                            }
+                .transformToUni((Function) obj -> uni.get().onItemOrFailure().transformToUni((o, t) -> {
+                    if (t == null) {
+                        return Uni.createFrom().failure(() -> Assertions.fail("Uni did not contain a failure."));
+                    } else {
+                        return Uni.createFrom().item(() -> {
+                            c.accept(t);
+                            return null;
                         });
                     }
-                });
+                }));
         return this;
     }
 

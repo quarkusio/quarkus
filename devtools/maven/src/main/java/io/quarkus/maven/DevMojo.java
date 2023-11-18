@@ -968,15 +968,12 @@ public class DevMojo extends AbstractMojo {
             process = processBuilder.start();
 
             //https://github.com/quarkusio/quarkus/issues/232
-            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    process.destroy();
-                    try {
-                        process.waitFor();
-                    } catch (InterruptedException e) {
-                        getLog().warn("Unable to properly wait for dev-mode end", e);
-                    }
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                process.destroy();
+                try {
+                    process.waitFor();
+                } catch (InterruptedException e) {
+                    getLog().warn("Unable to properly wait for dev-mode end", e);
                 }
             }, "Development Mode Shutdown Hook"));
         }

@@ -40,96 +40,92 @@ public class BuildMetricsDevConsoleProcessor {
         return new DevConsoleTemplateInfoBuildItem("buildMetrics",
                 // We need to read the data lazily because the build is not finished yet at the time this build item is produced
                 // This also means that no parsing is done until the build steps view is actually used
-                new LazyValue<Map<String, Object>>(new Supplier<Map<String, Object>>() {
+                new LazyValue<Map<String, Object>>(() -> {
+                    Map<String, Object> metrics = new HashMap<>();
+                    Map<String, JsonObject> stepIdToRecord = new HashMap<>();
+                    Map<Integer, JsonObject> recordIdToRecord = new HashMap<>();
+                    Map<String, List<JsonObject>> threadToRecords = new HashMap<>();
+                    long buildDuration = 0;
+                    LocalTime buildStarted = null;
 
-                    @Override
-                    public Map<String, Object> get() {
-                        Map<String, Object> metrics = new HashMap<>();
-                        Map<String, JsonObject> stepIdToRecord = new HashMap<>();
-                        Map<Integer, JsonObject> recordIdToRecord = new HashMap<>();
-                        Map<String, List<JsonObject>> threadToRecords = new HashMap<>();
-                        long buildDuration = 0;
-                        LocalTime buildStarted = null;
+                    Path metricsJsonFile = buildSystemTarget.getOutputDirectory().resolve("build-metrics.json");
+                    if (Files.isReadable(metricsJsonFile)) {
+                        try {
+                            JsonObject data = new JsonObject(Files.readString(metricsJsonFile));
+                            buildDuration = data.getLong("duration");
+                            buildStarted = LocalDateTime
+                                    .parse(data.getString("started"), DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalTime();
 
-                        Path metricsJsonFile = buildSystemTarget.getOutputDirectory().resolve("build-metrics.json");
-                        if (Files.isReadable(metricsJsonFile)) {
-                            try {
-                                JsonObject data = new JsonObject(Files.readString(metricsJsonFile));
-                                buildDuration = data.getLong("duration");
-                                buildStarted = LocalDateTime
-                                        .parse(data.getString("started"), DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalTime();
-
-                                JsonArray records = data.getJsonArray("records");
-                                for (Object record : records) {
-                                    JsonObject recordObj = (JsonObject) record;
-                                    recordObj.put("encodedStepId", URLEncoder.encode(recordObj.getString("stepId"),
-                                            StandardCharsets.UTF_8.toString()));
-                                    String thread = recordObj.getString("thread");
-                                    stepIdToRecord.put(recordObj.getString("stepId"), recordObj);
-                                    recordIdToRecord.put(recordObj.getInteger("id"), recordObj);
-                                    List<JsonObject> steps = threadToRecords.get(thread);
-                                    if (steps == null) {
-                                        steps = new ArrayList<>();
-                                        threadToRecords.put(thread, steps);
-                                    }
-                                    steps.add(recordObj);
+                            JsonArray records = data.getJsonArray("records");
+                            for (Object record : records) {
+                                JsonObject recordObj = (JsonObject) record;
+                                recordObj.put("encodedStepId", URLEncoder.encode(recordObj.getString("stepId"),
+                                        StandardCharsets.UTF_8.toString()));
+                                String thread = recordObj.getString("thread");
+                                stepIdToRecord.put(recordObj.getString("stepId"), recordObj);
+                                recordIdToRecord.put(recordObj.getInteger("id"), recordObj);
+                                List<JsonObject> steps = threadToRecords.get(thread);
+                                if (steps == null) {
+                                    steps = new ArrayList<>();
+                                    threadToRecords.put(thread, steps);
                                 }
-
-                                metrics.put("records", records);
-                                metrics.put("items", data.getJsonArray("items"));
-                                metrics.put("itemsCount", data.getInteger("itemsCount"));
-                                metrics.put("duration", buildDuration);
-                            } catch (IOException e) {
-                                LOG.error(e);
+                                steps.add(recordObj);
                             }
+
+                            metrics.put("records", records);
+                            metrics.put("items", data.getJsonArray("items"));
+                            metrics.put("itemsCount", data.getInteger("itemsCount"));
+                            metrics.put("duration", buildDuration);
+                        } catch (IOException e) {
+                            LOG.error(e);
                         }
-
-                        // Build dependency graphs
-                        Map<String, DependecyGraph> dependencyGraphs = new HashMap<>();
-                        for (Map.Entry<String, JsonObject> e : stepIdToRecord.entrySet()) {
-                            dependencyGraphs.put(e.getKey(),
-                                    buildDependencyGraph(e.getValue(), stepIdToRecord, recordIdToRecord));
-                        }
-                        metrics.put("dependencyGraphs", dependencyGraphs);
-
-                        // Time slots
-                        long slotDuration = Math.max(10, buildDuration / 100);
-                        List<Long> slots = new ArrayList<>();
-                        long currentSlot = slotDuration;
-                        while (currentSlot < buildDuration) {
-                            slots.add(currentSlot);
-                            currentSlot += slotDuration;
-                        }
-                        if (currentSlot != buildDuration) {
-                            slots.add(buildDuration);
-                        }
-                        metrics.put("slots", slots);
-
-                        Map<String, List<List<String>>> threadToSlotRecords = new HashMap<>();
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
-
-                        for (Map.Entry<String, List<JsonObject>> entry : threadToRecords.entrySet()) {
-                            String thread = entry.getKey();
-                            List<JsonObject> records = entry.getValue();
-                            List<List<String>> threadSlots = new ArrayList<>();
-
-                            for (Long slot : slots) {
-                                List<String> slotRecords = new ArrayList<>();
-                                for (JsonObject record : records) {
-                                    LocalTime started = LocalTime.parse(record.getString("started"), formatter);
-                                    long startAt = Duration.between(buildStarted, started).toMillis();
-                                    if (startAt < slot && (slot - slotDuration) < (startAt + record.getLong("duration"))) {
-                                        slotRecords.add(record.getString("stepId"));
-                                    }
-                                }
-                                threadSlots.add(slotRecords);
-                            }
-                            threadToSlotRecords.put(thread, threadSlots);
-                        }
-                        metrics.put("threadSlotRecords", threadToSlotRecords);
-
-                        return metrics;
                     }
+
+                    // Build dependency graphs
+                    Map<String, DependecyGraph> dependencyGraphs = new HashMap<>();
+                    for (Map.Entry<String, JsonObject> e : stepIdToRecord.entrySet()) {
+                        dependencyGraphs.put(e.getKey(),
+                                buildDependencyGraph(e.getValue(), stepIdToRecord, recordIdToRecord));
+                    }
+                    metrics.put("dependencyGraphs", dependencyGraphs);
+
+                    // Time slots
+                    long slotDuration = Math.max(10, buildDuration / 100);
+                    List<Long> slots = new ArrayList<>();
+                    long currentSlot = slotDuration;
+                    while (currentSlot < buildDuration) {
+                        slots.add(currentSlot);
+                        currentSlot += slotDuration;
+                    }
+                    if (currentSlot != buildDuration) {
+                        slots.add(buildDuration);
+                    }
+                    metrics.put("slots", slots);
+
+                    Map<String, List<List<String>>> threadToSlotRecords = new HashMap<>();
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+
+                    for (Map.Entry<String, List<JsonObject>> entry : threadToRecords.entrySet()) {
+                        String thread = entry.getKey();
+                        List<JsonObject> records = entry.getValue();
+                        List<List<String>> threadSlots = new ArrayList<>();
+
+                        for (Long slot : slots) {
+                            List<String> slotRecords = new ArrayList<>();
+                            for (JsonObject record : records) {
+                                LocalTime started = LocalTime.parse(record.getString("started"), formatter);
+                                long startAt = Duration.between(buildStarted, started).toMillis();
+                                if (startAt < slot && (slot - slotDuration) < (startAt + record.getLong("duration"))) {
+                                    slotRecords.add(record.getString("stepId"));
+                                }
+                            }
+                            threadSlots.add(slotRecords);
+                        }
+                        threadToSlotRecords.put(thread, threadSlots);
+                    }
+                    metrics.put("threadSlotRecords", threadToSlotRecords);
+
+                    return metrics;
                 }));
 
     }

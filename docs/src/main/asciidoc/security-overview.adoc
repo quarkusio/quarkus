@@ -38,7 +38,7 @@ For more information, see the Quarkus xref:security-customization.adoc[Security 
 To get started with security in Quarkus, consider combining the Quarkus built-in xref:security-basic-authentication.adoc[Basic authentication] with the Jakarta Persistence identity provider to enable role-based access control (RBAC).
 Complete the steps in the xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication] tutorial.
 
-After successfully securing your Quarkus application with Basic authentication, you can increase the security further by adding more advanced authentication mechanisms, for example, the xref:security-oidc-code-flow-authentication.adoc[OpenID Connect (OIDC) authorization code flow mechanism].
+After successfully securing your Quarkus application with Basic authentication, you can increase the security further by adding more advanced authentication mechanisms, for example, the Quarkus xref:security-oidc-code-flow-authentication.adoc[OpenID Connect (OIDC) authorization code flow mechanism] guide.
 
 == Quarkus Security testing
 
@@ -62,26 +62,26 @@ For more information, see the Quarkus xref:security-csrf-prevention.adoc[Cross-S
 === SameSite cookies
 
 You can add a link:https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite[SameSite] cookie property to any of the cookies set by a Quarkus endpoint.
-For more information, see the Quarkus xref:http-reference.adoc#same-site-cookie[SameSite cookies] guide.
+For more information, see the xref:http-reference.adoc#same-site-cookie[SameSite cookies] section of the Quarkus "HTTP reference" guide.
 
 [[secrets-engines]]
 === Secrets engines
 Secrets engines are components that store, generate, or encrypt data.
 
-Quarkus provides comprehensive HashiCorp Vault support.
-For more information, see the link:{vault-guide}[Quarkus and HashiCorp Vault] documentation.
+Quarkus provides additional extensions in Quarkiverse for securely storing credentials, for example, link:{vault-guide}[Quarkus and HashiCorp Vault].
 
 [[secure-serialization]]
 === Secure serialization
 
 If your Quarkus Security architecture includes RESTEasy Reactive and Jackson, Quarkus can limit the fields that are included in JSON serialization based on the configured security.
-For more information, see the Quarkus xref:resteasy-reactive.adoc#secure-serialization[Writing REST services with RESTEasy Reactive] guide.
+For more information, see the xref:resteasy-reactive.adoc#secure-serialization[JSON serialisation] section of the Quarkus “Writing REST services with RESTEasy Reactive” guide.
+
 
 [[rest-data-panache]]
 === Secure auto-generated resources by REST Data with Panache
 
 If you use the REST Data with Panache extension to auto-generate your resources, you can still use security annotations within the package `jakarta.annotation.security`.
-For more information, see the xref:rest-data-panache.adoc#securing-endpoints[Securing auto-generated resources] section of the Quarkus "Generating Jakarta REST resources with Panache" guide.
+For more information, see the xref:rest-data-panache.adoc#securing-endpoints[Securing endpoints] section of the Quarkus "Generating Jakarta REST resources with Panache" guide.
 
 == Security vulnerability detection
 
@@ -90,6 +90,7 @@ For information about security vulnerabilities, see the xref:security-vulnerabil
 
 == References
 
+* xref:security-basic-authentication.adoc[Basic authentication]
 * xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]
 * xref:security-oidc-code-flow-authentication-tutorial.adoc[Protect a web application by using OIDC authorization code flow]
 * xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a service application by using OIDC Bearer token authentication]

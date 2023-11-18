@@ -380,12 +380,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             recordingProxyFactories.put(theClass, factory);
 
             if (theClass.getClassLoader() instanceof QuarkusClassLoader) {
-                ((QuarkusClassLoader) theClass.getClassLoader()).addCloseTask(new Runnable() {
-                    @Override
-                    public void run() {
-                        recordingProxyFactories.remove(theClass);
-                    }
-                });
+                ((QuarkusClassLoader) theClass.getClassLoader()).addCloseTask(() -> recordingProxyFactories.remove(theClass));
             }
             return recordingProxy;
         } catch (IllegalAccessException | InstantiationException e) {
@@ -556,46 +551,40 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 final DeferredArrayStoreParameter recorderInstance = existingRecorderValues.get(call.theClass);
                 recorderInstance.prepare(context);
                 //write the method invocation. Everything in the instruction group is scoped to a single method
-                context.writeInstruction(new InstructionGroup() {
-                    @Override
-                    public void write(MethodContext context, MethodCreator method, ResultHandle array) {
-                        ResultHandle[] params = new ResultHandle[call.parameters.length];
+                context.writeInstruction((context1, method, array1) -> {
+                    ResultHandle[] params = new ResultHandle[call.parameters.length];
 
-                        //now we actually load the arguments
-                        //this will retrieve them from the array and create a ResultHandle
-                        //(or possible re-use an existing ResultHandler if there is already one for the current method)
-                        for (int i = 0; i < call.parameters.length; ++i) {
-                            params[i] = context.loadDeferred(call.deferredParameters[i]);
-                        }
-                        //do the invocation
-                        ResultHandle callResult = method.invokeVirtualMethod(ofMethod(call.method.getDeclaringClass(),
-                                call.method.getName(), call.method.getReturnType(), call.method.getParameterTypes()),
-                                context.loadDeferred(recorderInstance), params);
+                    //now we actually load the arguments
+                    //this will retrieve them from the array and create a ResultHandle
+                    //(or possible re-use an existing ResultHandler if there is already one for the current method)
+                    for (int i = 0; i < call.parameters.length; ++i) {
+                        params[i] = context1.loadDeferred(call.deferredParameters[i]);
+                    }
+                    //do the invocation
+                    ResultHandle callResult = method.invokeVirtualMethod(ofMethod(call.method.getDeclaringClass(),
+                            call.method.getName(), call.method.getReturnType(), call.method.getParameterTypes()),
+                            context1.loadDeferred(recorderInstance), params);
 
-                        if (call.method.getReturnType() != void.class) {
-                            if (call.returnedProxy != null) {
-                                //if the invocation had a return value put it in the startup context
-                                //to make it available to other recorders (and also this recorder)
-                                method.invokeVirtualMethod(
-                                        ofMethod(StartupContext.class, "putValue", void.class, String.class, Object.class),
-                                        method.getMethodParam(0), method.load(call.proxyId), callResult);
-                            }
+                    if (call.method.getReturnType() != void.class) {
+                        if (call.returnedProxy != null) {
+                            //if the invocation had a return value put it in the startup context
+                            //to make it available to other recorders (and also this recorder)
+                            method.invokeVirtualMethod(
+                                    ofMethod(StartupContext.class, "putValue", void.class, String.class, Object.class),
+                                    method.getMethodParam(0), method.load(call.proxyId), callResult);
                         }
                     }
                 });
             } else if (set instanceof NewInstance) {
-                context.writeInstruction(new InstructionGroup() {
-                    @Override
-                    public void write(MethodContext context, MethodCreator method, ResultHandle array) {
-                        //this instruction creates a new instance
-                        //it just goes in the startup context
-                        NewInstance ni = (NewInstance) set;
-                        ResultHandle val = method.newInstance(ofConstructor(ni.theClass));
-                        ResultHandle rv = method.newInstance(ofConstructor(RuntimeValue.class, Object.class), val);
-                        method.invokeVirtualMethod(
-                                ofMethod(StartupContext.class, "putValue", void.class, String.class, Object.class),
-                                method.getMethodParam(0), method.load(ni.proxyId), rv);
-                    }
+                context.writeInstruction((context12, method, array12) -> {
+                    //this instruction creates a new instance
+                    //it just goes in the startup context
+                    NewInstance ni = (NewInstance) set;
+                    ResultHandle val = method.newInstance(ofConstructor(ni.theClass));
+                    ResultHandle rv = method.newInstance(ofConstructor(RuntimeValue.class, Object.class), val);
+                    method.invokeVirtualMethod(
+                            ofMethod(StartupContext.class, "putValue", void.class, String.class, Object.class),
+                            method.getMethodParam(0), method.load(ni.proxyId), rv);
                 });
             } else {
                 throw new RuntimeException("unknown type " + set);
@@ -1503,7 +1492,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     out = method.newInstance(
                             ofConstructor(finalNonDefaultConstructorHolder.constructor.getDeclaringClass(),
                                     finalNonDefaultConstructorHolder.constructor.getParameterTypes()),
-                            Arrays.stream(finalCtorHandles).map(m -> context.loadDeferred(m))
+                            Arrays.stream(finalCtorHandles).map(context::loadDeferred)
                                     .toArray(ResultHandle[]::new));
                 } else {
                     if (List.class.isAssignableFrom(param.getClass()) && expectedType == List.class) {
@@ -1556,12 +1545,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     //then prepare the steps (i.e. creating the values to be placed into this object)
                     i.prepare(context);
                     //now actually run the steps (i.e. actually stick the values into the object)
-                    context.writeInstruction(new InstructionGroup() {
-                        @Override
-                        public void write(MethodContext context, MethodCreator method, ResultHandle array) {
-                            i.handle(context, method, objectValue);
-                        }
-                    });
+                    context.writeInstruction((context1, method, array) -> i.handle(context1, method, objectValue));
                 }
                 super.doPrepare(context);
             }
@@ -2015,13 +1999,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
         void doPrepare(MethodContext context) {
             //write out some bytecode to load the object into the array
             //this happens in a new instruction group
-            context.writeInstruction(new InstructionGroup() {
-                @Override
-                public void write(MethodContext context, MethodCreator method, ResultHandle array) {
-                    originalResultHandle = createValue(context, method, array);
-                    originalRhMethod = method;
-                    originalArrayResultHandle = array;
-                }
+            context.writeInstruction((context1, method, array) -> {
+                originalResultHandle = createValue(context1, method, array);
+                originalRhMethod = method;
+                originalArrayResultHandle = array;
             });
             prepared = true;
         }

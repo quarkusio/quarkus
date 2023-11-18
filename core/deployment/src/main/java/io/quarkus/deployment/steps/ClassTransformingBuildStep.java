@@ -117,64 +117,61 @@ public class ClassTransformingBuildStep {
         final ConcurrentLinkedDeque<Future<TransformedClassesBuildItem.TransformedClass>> transformed = new ConcurrentLinkedDeque<>();
         final Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar = new HashMap<>();
         ClassLoader transformCl = Thread.currentThread().getContextClassLoader();
-        lastTransformers = new BiFunction<String, byte[], byte[]>() {
-            @Override
-            public byte[] apply(String className, byte[] originalBytes) {
+        lastTransformers = (className, originalBytes) -> {
 
-                List<BytecodeTransformerBuildItem> classTransformers = bytecodeTransformers.get(className);
-                if (classTransformers == null) {
+            List<BytecodeTransformerBuildItem> classTransformers = bytecodeTransformers.get(className);
+            if (classTransformers == null) {
+                return originalBytes;
+            }
+            boolean continueOnFailure = classTransformers.stream()
+                    .filter(a -> !a.isContinueOnFailure())
+                    .findAny().isEmpty();
+            List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = classTransformers.stream()
+                    .sorted(Comparator.comparingInt(BytecodeTransformerBuildItem::getPriority))
+                    .map(BytecodeTransformerBuildItem::getVisitorFunction)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            List<BiFunction<String, byte[], byte[]>> preVisitFunctions = classTransformers.stream()
+                    .sorted(Comparator.comparingInt(BytecodeTransformerBuildItem::getPriority))
+                    .map(BytecodeTransformerBuildItem::getInputTransformer)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            ClassLoader old = Thread.currentThread().getContextClassLoader();
+            try {
+                Thread.currentThread().setContextClassLoader(transformCl);
+                String classFileName = className.replace('.', '/') + ".class";
+                List<ClassPathElement> archives = cl.getElementsWithResource(classFileName);
+                if (!archives.isEmpty()) {
+                    ClassPathElement classPathElement = archives.get(0);
+                    byte[] classData = classPathElement.getResource(classFileName).getData();
+                    Set<String> constValues = constScanning.get(className);
+                    if (constValues != null && !noConstScanning.contains(className)) {
+                        if (!ConstPoolScanner.constPoolEntryPresent(classData, constValues)) {
+                            return originalBytes;
+                        }
+                    }
+                    byte[] data = transformClass(className, visitors, classData, preVisitFunctions,
+                            classReaderOptions.getOrDefault(className, 0));
+                    TransformedClassesBuildItem.TransformedClass transformedClass = new TransformedClassesBuildItem.TransformedClass(
+                            className, data,
+                            classFileName, eager.contains(className));
+                    return transformedClass.getData();
+                } else {
                     return originalBytes;
                 }
-                boolean continueOnFailure = classTransformers.stream()
-                        .filter(a -> !a.isContinueOnFailure())
-                        .findAny().isEmpty();
-                List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = classTransformers.stream()
-                        .sorted(Comparator.comparingInt(BytecodeTransformerBuildItem::getPriority))
-                        .map(BytecodeTransformerBuildItem::getVisitorFunction)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
-                List<BiFunction<String, byte[], byte[]>> preVisitFunctions = classTransformers.stream()
-                        .sorted(Comparator.comparingInt(BytecodeTransformerBuildItem::getPriority))
-                        .map(BytecodeTransformerBuildItem::getInputTransformer)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
-                ClassLoader old = Thread.currentThread().getContextClassLoader();
-                try {
-                    Thread.currentThread().setContextClassLoader(transformCl);
-                    String classFileName = className.replace('.', '/') + ".class";
-                    List<ClassPathElement> archives = cl.getElementsWithResource(classFileName);
-                    if (!archives.isEmpty()) {
-                        ClassPathElement classPathElement = archives.get(0);
-                        byte[] classData = classPathElement.getResource(classFileName).getData();
-                        Set<String> constValues = constScanning.get(className);
-                        if (constValues != null && !noConstScanning.contains(className)) {
-                            if (!ConstPoolScanner.constPoolEntryPresent(classData, constValues)) {
-                                return originalBytes;
-                            }
-                        }
-                        byte[] data = transformClass(className, visitors, classData, preVisitFunctions,
-                                classReaderOptions.getOrDefault(className, 0));
-                        TransformedClassesBuildItem.TransformedClass transformedClass = new TransformedClassesBuildItem.TransformedClass(
-                                className, data,
-                                classFileName, eager.contains(className));
-                        return transformedClass.getData();
+            } catch (Throwable e) {
+                if (continueOnFailure) {
+                    if (log.isDebugEnabled()) {
+                        log.errorf(e, "Failed to transform %s", className);
                     } else {
-                        return originalBytes;
+                        log.errorf("Failed to transform %s", className);
                     }
-                } catch (Throwable e) {
-                    if (continueOnFailure) {
-                        if (log.isDebugEnabled()) {
-                            log.errorf(e, "Failed to transform %s", className);
-                        } else {
-                            log.errorf("Failed to transform %s", className);
-                        }
-                        return originalBytes;
-                    } else {
-                        throw e;
-                    }
-                } finally {
-                    Thread.currentThread().setContextClassLoader(old);
+                    return originalBytes;
+                } else {
+                    throw e;
                 }
+            } finally {
+                Thread.currentThread().setContextClassLoader(old);
             }
         };
         for (Map.Entry<String, List<BytecodeTransformerBuildItem>> entry : bytecodeTransformers

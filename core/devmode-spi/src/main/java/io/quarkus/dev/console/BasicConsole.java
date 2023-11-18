@@ -14,12 +14,7 @@ public class BasicConsole extends QuarkusConsole {
 
     private static final Logger log = Logger.getLogger(BasicConsole.class.getName());
 
-    private static final ThreadLocal<Boolean> DISABLE_FILTER = new ThreadLocal<>() {
-        @Override
-        protected Boolean initialValue() {
-            return false;
-        }
-    };
+    private static final ThreadLocal<Boolean> DISABLE_FILTER = ThreadLocal.withInitial(() -> false);
     final Consumer<String> output;
     final Supplier<Integer> input;
     final boolean inputSupport;

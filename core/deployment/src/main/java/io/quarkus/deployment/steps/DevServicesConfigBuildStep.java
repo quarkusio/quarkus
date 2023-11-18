@@ -55,12 +55,7 @@ class DevServicesConfigBuildStep {
                 }
             }
         } else {
-            shutdownBuildItem.addCloseTask(new Runnable() {
-                @Override
-                public void run() {
-                    oldConfig = null;
-                }
-            }, true);
+            shutdownBuildItem.addCloseTask(() -> oldConfig = null, true);
         }
         oldConfig = newProperties;
 

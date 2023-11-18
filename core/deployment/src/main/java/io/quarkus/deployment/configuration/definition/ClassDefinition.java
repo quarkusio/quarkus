@@ -56,7 +56,7 @@ public abstract class ClassDefinition extends Definition {
         return member;
     }
 
-    public static abstract class ClassMember extends Member {
+    public abstract static class ClassMember extends Member {
         public abstract ClassDefinition getEnclosingDefinition();
 
         public final String getName() {
@@ -69,7 +69,7 @@ public abstract class ClassDefinition extends Definition {
 
         public abstract String getPropertyName();
 
-        public static abstract class Specification {
+        public abstract static class Specification {
             Specification() {
             }
 
@@ -79,7 +79,7 @@ public abstract class ClassDefinition extends Definition {
         }
     }
 
-    static abstract class LeafMember extends ClassMember {
+    abstract static class LeafMember extends ClassMember {
         private final ClassDefinition classDefinition;
         private final Field field;
         private final FieldDescriptor descriptor;
@@ -130,7 +130,7 @@ public abstract class ClassDefinition extends Definition {
             return propertyName;
         }
 
-        public static abstract class Specification extends ClassMember.Specification {
+        public abstract static class Specification extends ClassMember.Specification {
             final Field field;
 
             Specification(final Field field) {
@@ -253,7 +253,7 @@ public abstract class ClassDefinition extends Definition {
         }
     }
 
-    public static abstract class Builder extends Definition.Builder {
+    public abstract static class Builder extends Definition.Builder {
         Builder() {
         }
 

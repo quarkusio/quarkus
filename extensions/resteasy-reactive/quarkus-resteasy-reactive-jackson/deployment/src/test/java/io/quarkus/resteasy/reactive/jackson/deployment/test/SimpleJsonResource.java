@@ -56,6 +56,8 @@ public class SimpleJsonResource extends SuperClass<Person> {
         Person person = new Person();
         person.setFirst("Bob");
         person.setLast("Builder");
+        person.setAddress("10 Downing St");
+        person.setBirthDate("November 30, 1874");
         return person;
     }
 
@@ -247,6 +249,8 @@ public class SimpleJsonResource extends SuperClass<Person> {
                 Person person = new Person();
                 person.setFirst("Bob");
                 person.setLast("Builder");
+                person.setAddress("10 Downing St");
+                person.setBirthDate("November 30, 1874");
                 response.resume(person);
             }
         }).start();
@@ -285,6 +289,8 @@ public class SimpleJsonResource extends SuperClass<Person> {
         Person person = new Person();
         person.setFirst("Bob");
         person.setLast("Builder");
+        person.setAddress("10 Downing St");
+        person.setBirthDate("November 30, 1874");
         return Multi.createFrom().items(person);
     }
 
@@ -294,6 +300,8 @@ public class SimpleJsonResource extends SuperClass<Person> {
         Person person = new Person();
         person.setFirst("Bob");
         person.setLast("Builder");
+        person.setAddress("10 Downing St");
+        person.setBirthDate("November 30, 1874");
         Person person2 = new Person();
         person2.setFirst("Bob2");
         person2.setLast("Builder2");

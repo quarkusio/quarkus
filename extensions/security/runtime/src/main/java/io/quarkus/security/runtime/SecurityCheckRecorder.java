@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -66,6 +67,16 @@ public class SecurityCheckRecorder {
                 resolveRolesAllowedConfigExp(allowedRoles, configExpIndexes, configKeys));
         configExpRolesAllowedChecks.add(check);
         return check;
+    }
+
+    /* STATIC INIT */
+    public void recordRolesAllowedConfigExpression(String configExpression, int configKeyIndex,
+            BiConsumer<String, Supplier<String[]>> configValueRecorder) {
+        QuarkusSecurityRolesAllowedConfigBuilder.addProperty(configKeyIndex, configExpression);
+        // one configuration expression resolves to string array because the expression can be list treated as list
+        Supplier<String[]> configValSupplier = resolveRolesAllowedConfigExp(new String[] { configExpression },
+                new int[] { 0 }, new int[] { configKeyIndex });
+        configValueRecorder.accept(configExpression, configValSupplier);
     }
 
     private static Supplier<String[]> resolveRolesAllowedConfigExp(String[] allowedRoles, int[] configExpIndexes,

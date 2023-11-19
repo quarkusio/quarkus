@@ -470,9 +470,9 @@ import io.fabric8.kubernetes.client.utils.Serialization
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 
 ...
-
-Serialization.jsonMapper().registerModule(KotlinModule())
-Serialization.yamlMapper().registerModule(KotlinModule())
+val kotlinModule = KotlinModule.Builder().build()
+Serialization.jsonMapper().registerModule(kotlinModule)
+Serialization.yamlMapper().registerModule(kotlinModule)
 ----
 
 _Please test this carefully on compilation to native images and fallback to Java-compatible Jackson bindings if you experience problems._

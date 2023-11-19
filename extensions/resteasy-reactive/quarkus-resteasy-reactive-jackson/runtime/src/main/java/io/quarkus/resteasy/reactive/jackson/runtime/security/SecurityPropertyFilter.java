@@ -12,6 +12,23 @@ import io.quarkus.security.identity.SecurityIdentity;
 public class SecurityPropertyFilter extends SimpleBeanPropertyFilter {
 
     static final String FILTER_ID = "securityFilter";
+    private volatile InstanceHandle<RolesAllowedConfigExpStorage> rolesAllowedConfigExpStorage;
+
+    private RolesAllowedConfigExpStorage getRolesAllowedConfigExpStorage(ArcContainer container) {
+        if (rolesAllowedConfigExpStorage == null) {
+            synchronized (this) {
+                if (rolesAllowedConfigExpStorage == null) {
+                    rolesAllowedConfigExpStorage = container.instance(RolesAllowedConfigExpStorage.class);
+                }
+            }
+        }
+
+        if (rolesAllowedConfigExpStorage.isAvailable()) {
+            return rolesAllowedConfigExpStorage.get();
+        } else {
+            return null;
+        }
+    }
 
     @Override
     protected boolean include(PropertyWriter writer) {
@@ -31,7 +48,21 @@ public class SecurityPropertyFilter extends SimpleBeanPropertyFilter {
         }
 
         SecurityIdentity securityIdentity = instance.get();
+        RolesAllowedConfigExpStorage rolesConfigExpStorage = getRolesAllowedConfigExpStorage(container);
         for (String role : secureField.rolesAllowed()) {
+            if (rolesConfigExpStorage != null) {
+                // role config expression => resolved roles
+                String[] roles = rolesConfigExpStorage.getRoles(role);
+                if (roles != null) {
+                    for (String r : roles) {
+                        if (securityIdentity.hasRole(r)) {
+                            return true;
+                        }
+                    }
+                    continue;
+                }
+                // at this point, we know 'role' is not a configuration expression
+            }
             if (securityIdentity.hasRole(role)) {
                 return true;
             }

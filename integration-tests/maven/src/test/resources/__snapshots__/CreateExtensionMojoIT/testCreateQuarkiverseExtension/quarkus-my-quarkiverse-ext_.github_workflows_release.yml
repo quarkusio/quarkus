@@ -54,7 +54,7 @@ jobs:
 
       - name: Update latest release version in docs
         run: |
-          mvn -B -ntp -pl docs -am generate-resources -Denforcer.skip -Dformatter.skip -Dimpsort.skip
+          mvn -B -ntp -pl docs -am package -DskipTests -DskipITs -Denforcer.skip -Dformatter.skip -Dimpsort.skip
           if ! git diff --quiet docs/modules/ROOT/pages/includes/attributes.adoc; then
             git add docs/modules/ROOT/pages/includes/attributes.adoc
             git commit -m "Update the latest release version ${{steps.metadata.outputs.current-version}} in documentation"

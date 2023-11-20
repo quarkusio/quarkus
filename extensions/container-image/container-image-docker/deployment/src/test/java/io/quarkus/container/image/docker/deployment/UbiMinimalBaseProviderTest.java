@@ -16,7 +16,7 @@ class UbiMinimalBaseProviderTest {
         Path path = getPath("ubi-java11");
         var result = sut.determine(path);
         assertThat(result).hasValueSatisfying(v -> {
-            assertThat(v.getBaseImage()).isEqualTo("registry.access.redhat.com/ubi8/ubi-minimal:8.8");
+            assertThat(v.getBaseImage()).isEqualTo("registry.access.redhat.com/ubi8/ubi-minimal:8.9");
             assertThat(v.getJavaVersion()).isEqualTo(11);
         });
     }
@@ -26,8 +26,18 @@ class UbiMinimalBaseProviderTest {
         Path path = getPath("ubi-java17");
         var result = sut.determine(path);
         assertThat(result).hasValueSatisfying(v -> {
-            assertThat(v.getBaseImage()).isEqualTo("registry.access.redhat.com/ubi8/ubi-minimal");
+            assertThat(v.getBaseImage()).isEqualTo("registry.access.redhat.com/ubi8/ubi-minimal:8.9");
             assertThat(v.getJavaVersion()).isEqualTo(17);
+        });
+    }
+
+    @Test
+    void testImageWithJava21() {
+        Path path = getPath("ubi-java21");
+        var result = sut.determine(path);
+        assertThat(result).hasValueSatisfying(v -> {
+            assertThat(v.getBaseImage()).isEqualTo("registry.access.redhat.com/ubi8/ubi-minimal:8.9");
+            assertThat(v.getJavaVersion()).isEqualTo(21);
         });
     }
 

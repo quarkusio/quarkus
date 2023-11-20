@@ -559,6 +559,8 @@
                                                     <exclude>.idea/*</exclude>
                                                     <exclude>target/*</exclude>
                                                     <exclude>.cache/*</exclude>
+                                                    <exclude>.factorypath</exclude>
+                                                    <exclude>*.log</exclude>
                                                 </excludes>
                                                 <normalization>
                                                     <ignoreEmptyDirectories>true</ignoreEmptyDirectories>

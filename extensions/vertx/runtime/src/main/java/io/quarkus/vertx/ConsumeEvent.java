@@ -95,6 +95,10 @@ public @interface ConsumeEvent {
     /**
      * The address the consumer will be registered to. By default, the fully qualified name of the declaring bean class is
      * assumed.
+     * <p>
+     * The value can be a config property expression. In this case, the configured value is used instead:
+     * {@code @ConsumeEvent("${my.consumer.address}")}. Additionally, the property expression can specify a default value:
+     * {@code @ConsumeEvent("${my.consumer.address:defaultAddress}")}.
      *
      * @return the address
      */

@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.deployment.tracing;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -118,7 +119,21 @@ public class TracerProcessor {
         // Drop framework paths
         List<String> nonApplicationUris = new ArrayList<>();
         frameworkEndpoints.ifPresent(
-                frameworkEndpointsBuildItem -> nonApplicationUris.addAll(frameworkEndpointsBuildItem.getEndpoints()));
+                frameworkEndpointsBuildItem -> {
+                    for (String endpoint : frameworkEndpointsBuildItem.getEndpoints()) {
+                        // Management routes are using full urls -> Extract the path.
+                        if (endpoint.startsWith("http://") || endpoint.startsWith("https://")) {
+                            try {
+                                nonApplicationUris.add(new URL(endpoint).getPath());
+                            } catch (Exception ignored) { // Not an URL
+                                nonApplicationUris.add(endpoint);
+                            }
+                        } else {
+                            nonApplicationUris.add(endpoint);
+                        }
+                    }
+                });
+
         dropNonApplicationUris.produce(new DropNonApplicationUrisBuildItem(nonApplicationUris));
 
         // Drop Static Resources

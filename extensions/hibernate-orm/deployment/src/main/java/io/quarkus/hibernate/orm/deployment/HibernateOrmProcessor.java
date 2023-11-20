@@ -416,6 +416,7 @@ public final class HibernateOrmProcessor {
             JpaModelIndexBuildItem indexBuildItem,
             TransformedClassesBuildItem transformedClassesBuildItem,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
+            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             LiveReloadBuildItem liveReloadBuildItem) {
         Set<String> managedClassAndPackageNames = new HashSet<>(jpaModel.getEntityClassNames());
@@ -426,6 +427,11 @@ public final class HibernateOrmProcessor {
             // is used for packages too, and it relies (indirectly) on getManagedClassNames().
             managedClassAndPackageNames.addAll(pud.getManagedClassNames());
         }
+
+        for (AdditionalJpaModelBuildItem additionalJpaModelBuildItem : additionalJpaModelBuildItems) {
+            managedClassAndPackageNames.add(additionalJpaModelBuildItem.getClassName());
+        }
+
         PreGeneratedProxies proxyDefinitions = generatedProxies(managedClassAndPackageNames,
                 indexBuildItem.getIndex(), transformedClassesBuildItem,
                 generatedClassBuildItemBuildProducer, liveReloadBuildItem);

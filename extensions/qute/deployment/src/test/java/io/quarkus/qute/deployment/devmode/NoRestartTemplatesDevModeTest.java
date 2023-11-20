@@ -18,10 +18,13 @@ public class NoRestartTemplatesDevModeTest {
             .withApplicationRoot(root -> root
                     .addClass(NoRestartRoute.class)
                     .addAsResource(new StringAsset(
-                            "Hello {foo}!"),
-                            "templates/norestart.html")
+                            "Hello {id}!"),
+                            "templates/foo/norestart.html")
                     .addAsResource(new StringAsset(
-                            "quarkus.qute.dev-mode.no-restart-templates=templates/norestart.html"),
+                            "Hi {id}!"),
+                            "templates/bar.html")
+                    .addAsResource(new StringAsset(
+                            "quarkus.qute.dev-mode.no-restart-templates=templates/.+"),
                             "application.properties"));
 
     @Test
@@ -29,14 +32,25 @@ public class NoRestartTemplatesDevModeTest {
         Response resp = given().get("norestart");
         resp.then()
                 .statusCode(200);
-        String val = resp.getBody().asString();
-        assertTrue(val.startsWith("Hello "));
+        String val1 = resp.getBody().asString();
+        assertTrue(val1.startsWith("Hello "));
 
-        config.modifyResourceFile("templates/norestart.html", t -> t.concat("!!"));
+        resp = given().get("bar");
+        resp.then()
+                .statusCode(200);
+        String val2 = resp.getBody().asString();
+        assertTrue(val2.startsWith("Hi "));
+
+        config.modifyResourceFile("templates/foo/norestart.html", t -> t.concat("!!"));
+        config.modifyResourceFile("templates/bar.html", t -> t.concat("!!"));
 
         resp = given().get("norestart");
         resp.then().statusCode(200);
-        assertEquals(val + "!!", resp.getBody().asString());
+        assertEquals(val1 + "!!", resp.getBody().asString());
+
+        resp = given().get("bar");
+        resp.then().statusCode(200);
+        assertEquals(val2 + "!!", resp.getBody().asString());
     }
 
 }

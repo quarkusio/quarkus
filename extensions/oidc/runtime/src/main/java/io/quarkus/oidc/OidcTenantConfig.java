@@ -1478,6 +1478,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<String> header = Optional.empty();
 
         /**
+         * HTTP Authorization header scheme.
+         */
+        @ConfigItem(defaultValue = OidcConstants.BEARER_SCHEME)
+        public String authorizationScheme = OidcConstants.BEARER_SCHEME;
+
+        /**
          * Required signature algorithm.
          * OIDC providers support many signature algorithms but if necessary you can restrict
          * Quarkus application to accept tokens signed only using an algorithm configured with this property.
@@ -1696,6 +1702,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setSubjectRequired(boolean subjectRequired) {
             this.subjectRequired = subjectRequired;
+        }
+
+        public String getAuthorizationScheme() {
+            return authorizationScheme;
+        }
+
+        public void setAuthorizationScheme(String authorizationScheme) {
+            this.authorizationScheme = authorizationScheme;
         }
     }
 

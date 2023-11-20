@@ -23,8 +23,6 @@ import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
 public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism {
-    private static HttpCredentialTransport OIDC_SERVICE_TRANSPORT = new HttpCredentialTransport(
-            HttpCredentialTransport.Type.AUTHORIZATION, OidcConstants.BEARER_SCHEME);
     private static HttpCredentialTransport OIDC_WEB_APP_TRANSPORT = new HttpCredentialTransport(
             HttpCredentialTransport.Type.AUTHORIZATION_CODE, OidcConstants.CODE_FLOW_CODE);
 
@@ -105,7 +103,8 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
                     return null;
                 }
                 return isWebApp(context, oidcTenantConfig) ? OIDC_WEB_APP_TRANSPORT
-                        : OIDC_SERVICE_TRANSPORT;
+                        : new HttpCredentialTransport(
+                                HttpCredentialTransport.Type.AUTHORIZATION, oidcTenantConfig.token.authorizationScheme);
             }
         });
     }

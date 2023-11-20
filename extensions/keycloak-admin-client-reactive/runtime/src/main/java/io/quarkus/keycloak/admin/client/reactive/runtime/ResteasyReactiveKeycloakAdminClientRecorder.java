@@ -21,8 +21,8 @@ public class ResteasyReactiveKeycloakAdminClientRecorder {
         this.keycloakAdminClientConfigRuntimeValue = keycloakAdminClientConfigRuntimeValue;
     }
 
-    public void setClientProvider() {
-        Keycloak.setClientProvider(new ResteasyReactiveClientProvider());
+    public void setClientProvider(boolean tlsTrustAll) {
+        Keycloak.setClientProvider(new ResteasyReactiveClientProvider(tlsTrustAll));
     }
 
     public Supplier<Keycloak> createAdminClient() {

@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.client.impl;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -10,6 +11,7 @@ import jakarta.ws.rs.core.GenericType;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.client.SseEvent;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
@@ -151,10 +153,17 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                 RestMediaType.APPLICATION_NDJSON_TYPE.isCompatible(response.getMediaType());
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private <R> void registerForSse(MultiRequest<? super R> multiRequest,
             GenericType<R> responseType,
             Response response,
             HttpClientResponse vertxResponse, String defaultContentType) {
+
+        boolean returnSseEvent = SseEvent.class.equals(responseType.getRawType());
+        GenericType responseTypeFirstParam = responseType.getType() instanceof ParameterizedType
+                ? new GenericType(((ParameterizedType) responseType.getType()).getActualTypeArguments()[0])
+                : null;
+
         // honestly, isn't reconnect contradictory with completion?
         // FIXME: Reconnect settings?
         // For now we don't want multi to reconnect
@@ -165,10 +174,39 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         sseSource.register(event -> {
             // DO NOT pass the response mime type because it's SSE: let the event pick between the X-SSE-Content-Type header or
             // the content-type SSE field
-            R item = event.readData(responseType);
-            if (item != null) { // we don't emit null because it breaks Multi (by design)
-                multiRequest.emit(item);
+            if (returnSseEvent) {
+                multiRequest.emit((R) new SseEvent() {
+                    @Override
+                    public String id() {
+                        return event.getId();
+                    }
+
+                    @Override
+                    public String name() {
+                        return event.getName();
+                    }
+
+                    @Override
+                    public String comment() {
+                        return event.getComment();
+                    }
+
+                    @Override
+                    public Object data() {
+                        if (responseTypeFirstParam != null) {
+                            return event.readData(responseTypeFirstParam);
+                        } else {
+                            return event.readData(); // TODO: is this correct?
+                        }
+                    }
+                });
+            } else {
+                R item = event.readData(responseType);
+                if (item != null) { // we don't emit null because it breaks Multi (by design)
+                    multiRequest.emit(item);
+                }
             }
+
         }, multiRequest::fail, multiRequest::complete);
         // watch for user cancelling
         sseSource.registerAfterRequest(vertxResponse);

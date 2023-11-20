@@ -1,6 +1,7 @@
 package io.quarkus.cache.runtime;
 
 import java.time.Duration;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -16,6 +17,10 @@ import io.quarkus.cache.CacheResult;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.Context;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.impl.ContextInternal;
 
 @CacheResult(cacheName = "") // The `cacheName` attribute is @Nonbinding.
 @Interceptor
@@ -53,6 +58,7 @@ public class CacheResultInterceptor extends CacheInterceptor {
         try {
             ReturnType returnType = determineReturnType(invocationContext.getMethod().getReturnType());
             if (returnType != ReturnType.NonAsync) {
+                Context context = Vertx.currentContext();
                 Uni<Object> cacheValue = cache.get(key, new Function<Object, Object>() {
                     @Override
                     public Object apply(Object k) {
@@ -81,10 +87,19 @@ public class CacheResultInterceptor extends CacheInterceptor {
                             return Uni.createFrom().item(value);
                         }
                     }
+                }).emitOn(new Executor() {
+                    // We need make sure we go back to the original context when the cache value is computed.
+                    // Otherwise, we would always emit on the context having computed the value, which could
+                    // break the duplicated context isolation.
+                    @Override
+                    public void execute(Runnable command) {
+                        invokeOnContext(command, context);
+                    }
                 });
                 if (binding.lockTimeout() <= 0) {
                     return createAsyncResult(cacheValue, returnType);
                 }
+                // IMPORTANT: The item/failure are emitted on the captured context.
                 cacheValue = cacheValue.ifNoItem().after(Duration.ofMillis(binding.lockTimeout()))
                         .recoverWithUni(new Supplier<Uni<?>>() {
                             @Override
@@ -96,6 +111,15 @@ public class CacheResultInterceptor extends CacheInterceptor {
                                 } catch (Exception e) {
                                     throw new CacheException(e);
                                 }
+                            }
+                        })
+                        .emitOn(new Executor() {
+                            // We need make sure we go back to the original context when the cache value is computed.
+                            // Otherwise, we would always emit on the context having computed the value, which could
+                            // break the duplicated context isolation.
+                            @Override
+                            public void execute(Runnable command) {
+                                invokeOnContext(command, context);
                             }
                         });
                 return createAsyncResult(cacheValue, returnType);
@@ -138,6 +162,44 @@ public class CacheResultInterceptor extends CacheInterceptor {
                 throw e.getCause();
             } else {
                 throw e;
+            }
+        }
+    }
+
+    private static void invokeOnContext(Runnable command, Context context) {
+        Context ctx = Vertx.currentContext();
+        if (context == null) {
+            // We didn't capture a context
+            if (ctx == null) {
+                // We are not on a context => we can execute immediately.
+                command.run();
+            } else {
+                // We are on a context.
+                // We cannot continue on the current context as we may share a duplicated context.
+                // We need a new one. Note that duplicate() does not duplicate the duplicated context,
+                // but the root context.
+                ((ContextInternal) ctx).duplicate()
+                        .runOnContext(new Handler<Void>() {
+                            @Override
+                            public void handle(Void ignored) {
+                                command.run();
+                            }
+                        });
+            }
+        } else {
+            // We captured a context.
+            if (ctx == context) {
+                // We are on the same context => we can execute immediately
+                command.run();
+            } else {
+                // 1) We are not on a context (ctx == null) => we need to switch to the captured context.
+                // 2) We are on a different context (ctx != null) => we need to switch to the captured context.
+                context.runOnContext(new Handler<Void>() {
+                    @Override
+                    public void handle(Void ignored) {
+                        command.run();
+                    }
+                });
             }
         }
     }

@@ -11,10 +11,13 @@ import java.util.function.Supplier;
 
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.security.test.utils.TestIdentityController;
+import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -28,7 +31,10 @@ public class SimpleJsonTest {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(Person.class, SimpleJsonResource.class, User.class, Views.class, SuperClass.class,
                                     OtherPersonResource.class, AbstractPersonResource.class, DataItem.class, Item.class,
-                                    NoopReaderInterceptor.class);
+                                    NoopReaderInterceptor.class, TestIdentityProvider.class, TestIdentityController.class)
+                            .addAsResource(new StringAsset("admin-expression=admin\n" +
+                                    "user-expression=user\n" +
+                                    "birth-date-roles=alice,bob\n"), "application.properties");
                 }
             });
 
@@ -389,6 +395,52 @@ public class SimpleJsonTest {
         doTestSecurePerson("/simple", "/secure-rest-response-person");
     }
 
+    @Test
+    public void testSecureFieldRolesAllowedConfigExp() {
+        TestIdentityController.resetRoles().add("max", "max", "admin");
+        RestAssured.given()
+                .auth().preemptive().basic("max", "max")
+                .get("/simple/secure-person")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .header("transfer-encoding", nullValue())
+                .header("content-length", notNullValue())
+                .body(containsString("Bob"))
+                .body(containsString("0"))
+                .body(containsString("10 Downing St"))
+                .body(not(containsString("November 30, 1874")))
+                .body(containsString("Builder"));
+        TestIdentityController.resetRoles().add("max", "max", "user");
+        RestAssured.given()
+                .auth().preemptive().basic("max", "max")
+                .get("/simple/secure-person")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .header("transfer-encoding", nullValue())
+                .header("content-length", notNullValue())
+                .body(containsString("Bob"))
+                .body(containsString("0"))
+                .body(containsString("10 Downing St"))
+                .body(not(containsString("November 30, 1874")))
+                .body(not(containsString("Builder")));
+        TestIdentityController.resetRoles().add("max", "max", "alice");
+        RestAssured.given()
+                .auth().preemptive().basic("max", "max")
+                .get("/simple/secure-person")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .header("transfer-encoding", nullValue())
+                .header("content-length", notNullValue())
+                .body(containsString("Bob"))
+                .body(containsString("0"))
+                .body(not(containsString("10 Downing St")))
+                .body(containsString("November 30, 1874"))
+                .body(not(containsString("Builder")));
+    }
+
     private void doTestSecurePerson(String basePath, final String path) {
         RestAssured.get(basePath + path)
                 .then()
@@ -398,6 +450,8 @@ public class SimpleJsonTest {
                 .header("content-length", notNullValue())
                 .body(containsString("Bob"))
                 .body(containsString("0"))
+                .body(not(containsString("10 Downing St")))
+                .body(not(containsString("November 30, 1874")))
                 .body(not(containsString("Builder")));
     }
 
@@ -410,6 +464,8 @@ public class SimpleJsonTest {
                 .header("content-length", notNullValue())
                 .body(containsString("Bob"))
                 .body(not(containsString("0")))
+                .body(not(containsString("10 Downing St")))
+                .body(not(containsString("November 30, 1874")))
                 .body(not(containsString("Builder")));
     }
 

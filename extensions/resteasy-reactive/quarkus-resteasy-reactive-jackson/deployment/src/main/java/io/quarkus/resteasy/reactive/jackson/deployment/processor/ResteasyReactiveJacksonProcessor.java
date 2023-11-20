@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.processor;
 
+import static io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem.isSecurityConfigExpressionCandidate;
 import static org.jboss.resteasy.reactive.common.util.RestMediaType.APPLICATION_NDJSON;
 import static org.jboss.resteasy.reactive.common.util.RestMediaType.APPLICATION_STREAM_JSON;
 
@@ -10,7 +11,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
+import jakarta.inject.Singleton;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.core.Cookie;
@@ -34,13 +38,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.SynthesisFinishedBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.JaxRsResourceIndexBuildItem;
@@ -54,6 +65,7 @@ import io.quarkus.resteasy.reactive.jackson.SecureField;
 import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJacksonRecorder;
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.DefaultMismatchedInputException;
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.NativeInvalidDefinitionExceptionMapper;
+import io.quarkus.resteasy.reactive.jackson.runtime.security.RolesAllowedConfigExpStorage;
 import io.quarkus.resteasy.reactive.jackson.runtime.security.SecurityCustomSerialization;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.BasicServerJacksonMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.FullyFeaturedServerJacksonMessageBodyReader;
@@ -69,6 +81,7 @@ import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
+import io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem;
 import io.quarkus.vertx.deployment.ReinitializeVertxJsonBuildItem;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -310,6 +323,46 @@ public class ResteasyReactiveJacksonProcessor {
         }
     }
 
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    public void resolveRolesAllowedConfigExpressions(BuildProducer<RolesAllowedConfigExpResolverBuildItem> resolverProducer,
+            Capabilities capabilities, ResteasyReactiveServerJacksonRecorder recorder, CombinedIndexBuildItem indexBuildItem,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
+            BuildProducer<InitAndValidateRolesAllowedConfigExp> initAndValidateItemProducer) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            BiConsumer<String, Supplier<String[]>> configValRecorder = null;
+            for (AnnotationInstance instance : indexBuildItem.getIndex().getAnnotations(SECURE_FIELD)) {
+                for (String role : instance.value("rolesAllowed").asStringArray()) {
+                    if (isSecurityConfigExpressionCandidate(role)) {
+                        if (configValRecorder == null) {
+                            var storage = recorder.createConfigExpToAllowedRoles();
+                            configValRecorder = recorder.recordRolesAllowedConfigExpression(storage);
+                            syntheticBeanProducer.produce(SyntheticBeanBuildItem
+                                    .configure(RolesAllowedConfigExpStorage.class)
+                                    .scope(Singleton.class)
+                                    .supplier(recorder.createRolesAllowedConfigExpStorage(storage))
+                                    .unremovable()
+                                    .done());
+                            initAndValidateItemProducer.produce(new InitAndValidateRolesAllowedConfigExp());
+                        }
+                        resolverProducer.produce(new RolesAllowedConfigExpResolverBuildItem(role, configValRecorder));
+                    }
+                }
+            }
+        }
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
+    @Consume(SynthesisFinishedBuildItem.class)
+    public void initializeRolesAllowedConfigExp(ResteasyReactiveServerJacksonRecorder recorder,
+            Optional<InitAndValidateRolesAllowedConfigExp> initAndValidateItem) {
+        if (initAndValidateItem.isPresent()) {
+            recorder.initAndValidateRolesAllowedConfigExp();
+        }
+    }
+
     @BuildStep
     public void handleFieldSecurity(ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntries,
             JaxRsResourceIndexBuildItem index,
@@ -431,5 +484,14 @@ public class ResteasyReactiveJacksonProcessor {
         }
         return MethodId.get(methodInfo.name(), declaringClassInfo.name().toString(),
                 parameterClassNames.toArray(EMPTY_STRING_ARRAY));
+    }
+
+    /**
+     * Purely marker build item so that we know at least one allowed role with configuration
+     * expressions has been detected.
+     */
+    public static final class InitAndValidateRolesAllowedConfigExp extends SimpleBuildItem {
+        private InitAndValidateRolesAllowedConfigExp() {
+        }
     }
 }

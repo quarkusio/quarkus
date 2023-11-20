@@ -58,13 +58,13 @@ public class ResteasyKeycloakAdminClientRecorder {
         };
     }
 
-    public void setClientProvider() {
+    public void setClientProvider(boolean tlsTrustAll) {
         Keycloak.setClientProvider(new ResteasyClientClassicProvider() {
             @Override
             public Client newRestEasyClient(Object customJacksonProvider, SSLContext sslContext, boolean disableTrustManager) {
                 // point here is to use default Quarkus providers rather than org.keycloak.admin.client.JacksonProvider
                 // as it doesn't work properly in native mode
-                return ClientBuilderWrapper.create(sslContext, disableTrustManager).build();
+                return ClientBuilderWrapper.create(sslContext, tlsTrustAll || disableTrustManager).build();
             }
         });
     }

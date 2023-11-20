@@ -30,9 +30,15 @@ public class ResteasyReactiveClientProvider implements ResteasyClientProvider {
     private static final List<String> HANDLED_MEDIA_TYPES = List.of(MediaType.APPLICATION_JSON);
     private static final int PROVIDER_PRIORITY = Priorities.USER + 100; // ensures that it will be used first
 
+    private final boolean tlsTrustAll;
+
+    public ResteasyReactiveClientProvider(boolean tlsTrustAll) {
+        this.tlsTrustAll = tlsTrustAll;
+    }
+
     @Override
     public Client newRestEasyClient(Object messageHandler, SSLContext sslContext, boolean disableTrustManager) {
-        ClientBuilderImpl clientBuilder = new ClientBuilderImpl().trustAll(disableTrustManager);
+        ClientBuilderImpl clientBuilder = new ClientBuilderImpl().trustAll(tlsTrustAll || disableTrustManager);
         return registerJacksonProviders(clientBuilder).build();
     }
 

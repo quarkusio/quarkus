@@ -495,7 +495,8 @@ class ConfigDocItemFinder {
                 if (rawJavaDoc != null && !rawJavaDoc.isBlank()) {
                     // Show enum constant description as a Tooltip
                     String javaDoc = enumJavaDocParser.parseConfigDescription(rawJavaDoc);
-                    acceptedValues.add(String.format(Constants.TOOLTIP, enumValue, javaDoc));
+                    acceptedValues.add(String.format(Constants.TOOLTIP, enumValue,
+                            javaDoc.replace("<p>", Constants.EMPTY).replace("</p>", Constants.EMPTY)));
                 } else {
                     acceptedValues.add(Constants.CODE_DELIMITER
                             + enumValue + Constants.CODE_DELIMITER);

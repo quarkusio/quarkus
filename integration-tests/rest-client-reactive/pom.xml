@@ -156,6 +156,9 @@
                         <gradleEnterprise>
                             <normalization combine.children="append">
                                 <runtimeClassPath>
+                                    <ignoredFiles>
+                                        <ignoredFile>META-INF/ide-deps/**</ignoredFile>
+                                    </ignoredFiles>
                                     <propertiesNormalizations>
                                         <propertiesNormalization>
                                             <path>application.properties</path>

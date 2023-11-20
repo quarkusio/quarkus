@@ -2,18 +2,25 @@ package io.quarkus.vertx.runtime;
 
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setCurrentContextSafe;
+import static io.smallrye.common.expression.Expression.Flag.LENIENT_SYNTAX;
+import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.CurrentContextFactory;
@@ -25,6 +32,8 @@ import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.LocalEventBusCodec;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
+import io.smallrye.common.expression.Expression;
+import io.smallrye.common.expression.ResolveContext;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -92,7 +101,7 @@ public class VertxEventBusConsumerRecorder {
             final List<Throwable> registrationFailures = new ArrayList<>();
             for (Entry<String, ConsumeEvent> entry : messageConsumerConfigurations.entrySet()) {
                 EventConsumerInvoker invoker = createInvoker(entry.getKey());
-                String address = entry.getValue().value();
+                String address = lookUpPropertyValue(entry.getValue().value());
                 // Create a context attached to each consumer
                 // If we don't all consumers will use the same event loop and so published messages (dispatched to all
                 // consumers) delivery is serialized.
@@ -292,5 +301,56 @@ public class VertxEventBusConsumerRecorder {
 
     public RuntimeValue<Vertx> forceStart(Supplier<Vertx> vertx) {
         return new RuntimeValue<>(vertx.get());
+    }
+
+    /**
+     * Looks up the property value by checking whether the value is a configuration key and resolves it if so.
+     *
+     * @param propertyValue property value to look up.
+     * @return the resolved property value.
+     */
+    private static String lookUpPropertyValue(String propertyValue) {
+        String value = propertyValue.stripLeading();
+        if (!value.isEmpty() && isConfigExpression(value)) {
+            value = resolvePropertyExpression(value);
+        }
+        return value;
+    }
+
+    /**
+     * Adapted from {@link io.smallrye.config.ExpressionConfigSourceInterceptor}
+     */
+    private static String resolvePropertyExpression(String expr) {
+        // Force the runtime CL in order to make the DEV UI page work
+        final ClassLoader cl = VertxEventBusConsumerRecorder.class.getClassLoader();
+        final Config config = ConfigProviderResolver.instance().getConfig(cl);
+        final Expression expression = Expression.compile(expr, LENIENT_SYNTAX, NO_TRIM);
+        final String expanded = expression.evaluate(new BiConsumer<ResolveContext<RuntimeException>, StringBuilder>() {
+            @Override
+            public void accept(ResolveContext<RuntimeException> resolveContext, StringBuilder stringBuilder) {
+                final Optional<String> resolve = config.getOptionalValue(resolveContext.getKey(), String.class);
+                if (resolve.isPresent()) {
+                    stringBuilder.append(resolve.get());
+                } else if (resolveContext.hasDefault()) {
+                    resolveContext.expandDefault();
+                } else {
+                    throw new NoSuchElementException(String.format("Could not expand value %s in property %s",
+                            resolveContext.getKey(), expr));
+                }
+            }
+        });
+        return expanded;
+    }
+
+    private static boolean isConfigExpression(String val) {
+        if (val == null) {
+            return false;
+        }
+        int exprStart = val.indexOf("${");
+        int exprEnd = -1;
+        if (exprStart >= 0) {
+            exprEnd = val.indexOf('}', exprStart + 2);
+        }
+        return exprEnd > 0;
     }
 }

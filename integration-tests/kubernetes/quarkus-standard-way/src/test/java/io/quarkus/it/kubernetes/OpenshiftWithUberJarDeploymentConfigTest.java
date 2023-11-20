@@ -22,7 +22,7 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class OpenshiftWithUberJarTest {
+public class OpenshiftWithUberJarDeploymentConfigTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
@@ -32,6 +32,7 @@ public class OpenshiftWithUberJarTest {
             .setRun(true)
             .setLogFileName("k8s.log")
             .withConfigurationResource("openshift-with-uberjar.properties")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config")
             .setForcedDependencies(
                     List.of(
                             Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));
@@ -57,7 +58,7 @@ public class OpenshiftWithUberJarTest {
                 .isDirectoryContaining(p -> p.getFileName().endsWith("openshift.yml"));
         List<HasMetadata> openshiftList = DeserializationUtil.deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "Deployment".equals(h.getKind())).singleElement().satisfies(h -> {
+        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("openshift-uberjar");
             });

@@ -29,6 +29,7 @@ public class KubernetesWithSpecifiedContainerNameTest {
             .setApplicationName("kubernetes-with-specified-container-name")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("kubernetes-with-specified-container-name.properties")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-container-image-s2i", Version.getVersion())));

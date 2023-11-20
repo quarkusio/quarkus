@@ -3,8 +3,6 @@ package io.quarkus.it.kubernetes;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -14,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.PodSpec;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
@@ -22,7 +21,7 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class OpenshiftWithHealthTest {
+public class OpenshiftWithHealthUsingManagementInterfaceDeploymentConfigTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
@@ -31,7 +30,8 @@ public class OpenshiftWithHealthTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
-            .withConfigurationResource("openshift-with-health.properties")
+            .withConfigurationResource("openshift-with-health-and-management.properties")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config")
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-smallrye-health", Version.getVersion())));
 
     @ProdBuildResults
@@ -61,7 +61,7 @@ public class OpenshiftWithHealthTest {
         List<HasMetadata> openshiftList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "Deployment".equals(h.getKind())).singleElement().satisfies(h -> {
+        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("openshift-health");
             });
@@ -72,6 +72,7 @@ public class OpenshiftWithHealthTest {
                                 assertThat(p.getPeriodSeconds()).isEqualTo(15);
                                 assertThat(p.getHttpGet()).satisfies(h1 -> {
                                     assertThat(h1.getPath()).isEqualTo("/q/health/ready");
+                                    assertThat(h1.getPort()).isEqualTo(new IntOrString(9000));
                                 });
                             });
                             assertThat(container.getLivenessProbe()).isNotNull().satisfies(p -> {
@@ -80,11 +81,6 @@ public class OpenshiftWithHealthTest {
                                 assertThat(p.getExec()).satisfies(e -> {
                                     assertThat(e.getCommand()).containsOnly("kill");
                                 });
-                            });
-                            assertThat(container.getStartupProbe()).isNotNull().satisfies(p -> {
-                                assertThat(p.getInitialDelaySeconds()).isEqualTo(5);
-                                assertNotNull(p.getHttpGet());
-                                assertEquals(p.getHttpGet().getPath(), "/q/health/started");
                             });
                         });
                     });

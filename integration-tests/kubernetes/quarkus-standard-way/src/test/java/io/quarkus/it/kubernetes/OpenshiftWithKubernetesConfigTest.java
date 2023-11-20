@@ -44,7 +44,7 @@ public class OpenshiftWithKubernetesConfigTest {
         List<HasMetadata> openshiftList = DeserializationUtil.deserializeAsList(
                 kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
+        assertThat(openshiftList).filteredOn(h -> "Deployment".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo(NAME);
                 assertThat(m.getLabels().get("app.openshift.io/runtime")).isEqualTo("quarkus");

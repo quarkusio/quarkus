@@ -25,6 +25,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarn
 import io.quarkus.keycloak.admin.client.common.AutoCloseableDestroyer;
 import io.quarkus.keycloak.admin.client.common.KeycloakAdminClientInjectionEnabled;
 import io.quarkus.keycloak.adminclient.ResteasyKeycloakAdminClientRecorder;
+import io.quarkus.runtime.TlsConfig;
 
 public class KeycloakAdminClientProcessor {
 
@@ -48,8 +49,8 @@ public class KeycloakAdminClientProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
-    public void integrate(ResteasyKeycloakAdminClientRecorder recorder) {
-        recorder.setClientProvider();
+    public void integrate(ResteasyKeycloakAdminClientRecorder recorder, TlsConfig tlsConfig) {
+        recorder.setClientProvider(tlsConfig.trustAll);
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

@@ -349,10 +349,10 @@ To containerize your Quarkus application that use `@RunOnVirtualThread`, add the
 quarkus.container-image.build=true
 quarkus.container-image.group=<your-group-name>
 quarkus.container-image.name=<you-container-name>
-quarkus.jib.base-jvm-image=eclipse-temurin:21-ubi9-minimal <1>
+quarkus.jib.base-jvm-image=registry.access.redhat.com/ubi8/openjdk-21-runtime <1>
 quarkus.jib.platforms=linux/amd64,linux/arm64 <2>
 ----
-<1> Make sure you use a base image supporting virtual threads. Here we use an image providing Java 21.
+<1> Make sure you use a base image supporting virtual threads. Here we use an image providing Java 21. Quarkus picks an image providing Java 21+ automatically if you do not set one.
 <2> Select the target architecture. You can select more than one to build multi-archs images.
 
 Then, build your container as you would do usually.

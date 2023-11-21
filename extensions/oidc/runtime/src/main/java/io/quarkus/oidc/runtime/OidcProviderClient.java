@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +16,7 @@ import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
@@ -48,13 +50,13 @@ public class OidcProviderClient implements Closeable {
     private final String clientSecretBasicAuthScheme;
     private final String introspectionBasicAuthScheme;
     private final Key clientJwtKey;
-    private final List<OidcRequestFilter> filters;
+    private final Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters;
 
     public OidcProviderClient(WebClient client,
             Vertx vertx,
             OidcConfigurationMetadata metadata,
             OidcTenantConfig oidcConfig,
-            List<OidcRequestFilter> filters) {
+            Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters) {
         this.client = client;
         this.vertx = vertx;
         this.metadata = metadata;
@@ -80,13 +82,14 @@ public class OidcProviderClient implements Closeable {
     }
 
     public Uni<JsonWebKeySet> getJsonWebKeySet(OidcRequestContextProperties contextProperties) {
-        return filter(client.getAbs(metadata.getJsonWebKeySetUri()), null, contextProperties).send().onItem()
+        return filter(OidcEndpoint.Type.JWKS, client.getAbs(metadata.getJsonWebKeySetUri()), null, contextProperties).send()
+                .onItem()
                 .transform(resp -> getJsonWebKeySet(resp));
     }
 
     public Uni<UserInfo> getUserInfo(String token) {
         LOG.debugf("Get UserInfo on: %s auth: %s", metadata.getUserInfoUri(), OidcConstants.BEARER_SCHEME + " " + token);
-        return filter(client.getAbs(metadata.getUserInfoUri()), null, null)
+        return filter(OidcEndpoint.Type.USERINFO, client.getAbs(metadata.getUserInfoUri()), null, null)
                 .putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + token)
                 .send().onItem().transform(resp -> getUserInfo(resp));
     }
@@ -168,7 +171,9 @@ public class OidcProviderClient implements Closeable {
         LOG.debugf("Get token on: %s params: %s headers: %s", metadata.getTokenUri(), formBody, request.headers());
         // Retry up to three times with a one-second delay between the retries if the connection is closed.
         Buffer buffer = OidcCommonUtils.encodeForm(formBody);
-        Uni<HttpResponse<Buffer>> response = filter(request, buffer, null).sendBuffer(buffer)
+
+        OidcEndpoint.Type endpoint = introspect ? OidcEndpoint.Type.INTROSPECTION : OidcEndpoint.Type.TOKEN;
+        Uni<HttpResponse<Buffer>> response = filter(endpoint, request, buffer, null).sendBuffer(buffer)
                 .onFailure(ConnectException.class)
                 .retry()
                 .atMost(oidcConfig.connectionRetryCount).onFailure().transform(t -> t.getCause());
@@ -224,10 +229,16 @@ public class OidcProviderClient implements Closeable {
         return clientJwtKey;
     }
 
-    private HttpRequest<Buffer> filter(HttpRequest<Buffer> request, Buffer body,
+    private HttpRequest<Buffer> filter(OidcEndpoint.Type endpointType, HttpRequest<Buffer> request, Buffer body,
             OidcRequestContextProperties contextProperties) {
-        for (OidcRequestFilter filter : filters) {
-            filter.filter(request, body, contextProperties);
+        if (!filters.isEmpty()) {
+            Map<String, Object> newProperties = contextProperties == null ? new HashMap<>()
+                    : new HashMap<>(contextProperties.getAll());
+            newProperties.put(OidcConfigurationMetadata.class.getName(), metadata);
+            OidcRequestContextProperties newContextProperties = new OidcRequestContextProperties(newProperties);
+            for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(filters, endpointType)) {
+                filter.filter(request, body, newContextProperties);
+            }
         }
         return request;
     }

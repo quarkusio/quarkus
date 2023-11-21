@@ -12,23 +12,11 @@ import io.vertx.mutiny.ext.web.client.HttpRequest;
 
 @ApplicationScoped
 @Unremovable
-@OidcEndpoint(value = Type.TOKEN)
-public class OidcRequestCustomizer implements OidcRequestFilter {
+@OidcEndpoint(value = Type.DISCOVERY)
+public class OidcDiscoveryRequestCustomizer implements OidcRequestFilter {
 
     @Override
     public void filter(HttpRequest<Buffer> request, Buffer buffer, OidcRequestContextProperties contextProps) {
-        String uri = request.uri();
-        if (uri.endsWith("/non-standard-tokens")) {
-            request.putHeader("GrantType", getGrantType(buffer.toString()));
-        }
-    }
-
-    private String getGrantType(String formString) {
-        for (String formValue : formString.split("&")) {
-            if (formValue.startsWith("grant_type=")) {
-                return formValue.substring("grant_type=".length());
-            }
-        }
-        return "";
+        request.putHeader("Discovery", "OK");
     }
 }

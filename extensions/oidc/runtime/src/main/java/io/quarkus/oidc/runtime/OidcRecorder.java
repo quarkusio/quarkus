@@ -30,6 +30,7 @@ import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.OidcTenantConfig.TokenStateManager.Strategy;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.TenantIdentityProvider;
+import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
@@ -433,7 +434,7 @@ public class OidcRecorder {
 
         WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
 
-        List<OidcRequestFilter> clientRequestFilters = OidcCommonUtils.getClientRequestCustomizer();
+        Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcCommonUtils.getOidcRequestFilters();
 
         Uni<OidcConfigurationMetadata> metadataUni = null;
         if (!oidcConfig.discoveryEnabled.orElse(true)) {
@@ -441,12 +442,13 @@ public class OidcRecorder {
         } else {
             final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
             metadataUni = OidcCommonUtils
-                    .discoverMetadata(client, clientRequestFilters, authServerUriString, connectionDelayInMillisecs)
+                    .discoverMetadata(client, oidcRequestFilters, authServerUriString, connectionDelayInMillisecs)
                     .onItem()
                     .transform(new Function<JsonObject, OidcConfigurationMetadata>() {
                         @Override
                         public OidcConfigurationMetadata apply(JsonObject json) {
-                            return new OidcConfigurationMetadata(json, createLocalMetadata(oidcConfig, authServerUriString));
+                            return new OidcConfigurationMetadata(json, createLocalMetadata(oidcConfig, authServerUriString),
+                                    OidcCommonUtils.getDiscoveryUri(authServerUriString));
                         }
                     });
         }
@@ -478,7 +480,7 @@ public class OidcRecorder {
                                             + " Use 'quarkus.oidc.user-info-path' if the discovery is disabled."));
                         }
                         return Uni.createFrom()
-                                .item(new OidcProviderClient(client, vertx, metadata, oidcConfig, clientRequestFilters));
+                                .item(new OidcProviderClient(client, vertx, metadata, oidcConfig, oidcRequestFilters));
                     }
 
                 });

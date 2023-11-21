@@ -1,0 +1,52 @@
+package io.quarkus.oidc.common;
+
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+/**
+ * Annotation that can be used to restrict {@link OidcRequestFilter} to specific OIDC endpoints
+ */
+@Target({ TYPE })
+@Retention(RUNTIME)
+public @interface OidcEndpoint {
+
+    enum Type {
+        ALL,
+
+        /**
+         * Applies to OIDC discovery requests
+         */
+        DISCOVERY,
+
+        /**
+         * Applies to OIDC token endpoint requests
+         */
+        TOKEN,
+
+        /**
+         * Applies to OIDC token revocation endpoint requests
+         */
+        TOKEN_REVOCATION,
+
+        /**
+         * Applies to OIDC token introspection requests
+         */
+        INTROSPECTION,
+        /**
+         * Applies to OIDC JSON Web Key Set endpoint requests
+         */
+        JWKS,
+        /**
+         * Applies to OIDC UserInfo endpoint requests
+         */
+        USERINFO
+    }
+
+    /**
+     * Identifies an OIDC tenant to which a given feature applies.
+     */
+    Type value() default Type.ALL;
+}

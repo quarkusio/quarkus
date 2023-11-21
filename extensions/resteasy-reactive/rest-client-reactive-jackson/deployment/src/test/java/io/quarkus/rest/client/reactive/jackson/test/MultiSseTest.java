@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -23,6 +24,7 @@ import jakarta.ws.rs.sse.SseEventSink;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.jboss.resteasy.reactive.client.SseEvent;
+import org.jboss.resteasy.reactive.client.SseEventFilter;
 import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -136,6 +138,25 @@ public class MultiSseTest {
                                 new EventContainer("id1", "name1", new Dto("name1", "1"))));
     }
 
+    @Test
+    void shouldBeAbleReadEntireEventWhileAlsoBeingAbleToFilterEvents() {
+        var resultList = new CopyOnWriteArrayList<>();
+        createClient()
+                .eventWithFilter()
+                .subscribe().with(new Consumer<>() {
+                    @Override
+                    public void accept(SseEvent<Dto> event) {
+                        resultList.add(new EventContainer(event.id(), event.name(), event.data()));
+                    }
+                });
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> assertThat(resultList).containsExactly(
+                                new EventContainer("id", "n0", new Dto("name0", "0")),
+                                new EventContainer("id", "n1", new Dto("name1", "1")),
+                                new EventContainer("id", "n2", new Dto("name2", "2"))));
+    }
+
     static class EventContainer {
         final String id;
         final String name;
@@ -212,6 +233,26 @@ public class MultiSseTest {
         @Path("/event")
         @Produces(MediaType.SERVER_SENT_EVENTS)
         Multi<SseEvent<Dto>> event();
+
+        @GET
+        @Path("/event-with-filter")
+        @Produces(MediaType.SERVER_SENT_EVENTS)
+        @SseEventFilter(CustomFilter.class)
+        Multi<SseEvent<Dto>> eventWithFilter();
+    }
+
+    public static class CustomFilter implements Predicate<SseEvent<String>> {
+
+        @Override
+        public boolean test(SseEvent<String> event) {
+            if ("heartbeat".equals(event.id())) {
+                return false;
+            }
+            if ("END".equals(event.data())) {
+                return false;
+            }
+            return true;
+        }
     }
 
     @Path("/sse")
@@ -259,6 +300,50 @@ public class MultiSseTest {
 
                     sink.send(builder.build());
                 }
+            }
+        }
+
+        @GET
+        @Path("/event-with-filter")
+        @Produces(MediaType.SERVER_SENT_EVENTS)
+        public void eventWithFilter(@Context SseEventSink sink, @Context Sse sse) {
+            try (sink) {
+                sink.send(sse.newEventBuilder()
+                        .id("id")
+                        .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                        .data(Dto.class, new Dto("name0", "0"))
+                        .name("n0")
+                        .build());
+
+                sink.send(sse.newEventBuilder()
+                        .id("heartbeat")
+                        .comment("heartbeat")
+                        .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                        .build());
+
+                sink.send(sse.newEventBuilder()
+                        .id("id")
+                        .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                        .data(Dto.class, new Dto("name1", "1"))
+                        .name("n1")
+                        .build());
+
+                sink.send(sse.newEventBuilder()
+                        .id("heartbeat")
+                        .comment("heartbeat")
+                        .build());
+
+                sink.send(sse.newEventBuilder()
+                        .id("id")
+                        .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                        .data(Dto.class, new Dto("name2", "2"))
+                        .name("n2")
+                        .build());
+
+                sink.send(sse.newEventBuilder()
+                        .id("end")
+                        .data("END")
+                        .build());
             }
         }
     }

@@ -420,6 +420,11 @@
                                         <ignore>maven.settings</ignore>
                                     </ignoredKeys>
                                 </systemProperties>
+                                <runtimeClassPath>
+                                    <ignoredFiles>
+                                        <ignoredFile>META-INF/ide-deps/**</ignoredFile>
+                                    </ignoredFiles>
+                                </runtimeClassPath>
                             </normalization>
                             <plugins>
                                 <plugin>
@@ -554,6 +559,8 @@
                                                     <exclude>.idea/*</exclude>
                                                     <exclude>target/*</exclude>
                                                     <exclude>.cache/*</exclude>
+                                                    <exclude>.factorypath</exclude>
+                                                    <exclude>*.log</exclude>
                                                 </excludes>
                                                 <normalization>
                                                     <ignoreEmptyDirectories>true</ignoreEmptyDirectories>

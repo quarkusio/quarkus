@@ -73,10 +73,9 @@ For more information, see the xref:http-reference.adoc#same-site-cookie[SameSite
 
 [[secrets-engines]]
 === Secrets engines
-Secrets engines are components that store, generate, or encrypt data.
+You can use secrets engines with Quarkus to store, generate, or encrypt data.
 
-Quarkus provides comprehensive HashiCorp Vault support.
-For more information, see the link:{vault-guide}[Quarkus and HashiCorp Vault] documentation.
+Quarkus provides additional extensions in Quarkiverse for securely storing credentials, for example, link:{vault-guide}[Quarkus and HashiCorp Vault].
 
 == Secrets in environment properties
 

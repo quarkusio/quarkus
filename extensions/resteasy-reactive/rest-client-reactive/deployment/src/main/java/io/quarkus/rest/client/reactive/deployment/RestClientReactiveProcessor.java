@@ -64,6 +64,7 @@ import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationSto
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
@@ -369,6 +370,42 @@ class RestClientReactiveProcessor {
                     .serialization(false)
                     .build());
         }
+    }
+
+    @BuildStep
+    void handleSseEventFilter(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
+        var index = beanArchiveIndexBuildItem.getIndex();
+        Collection<AnnotationInstance> instances = index.getAnnotations(DotNames.SSE_EVENT_FILTER);
+        if (instances.isEmpty()) {
+            return;
+        }
+
+        List<String> filterClassNames = new ArrayList<>(instances.size());
+        for (AnnotationInstance instance : instances) {
+            if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
+                continue;
+            }
+            if (instance.value() == null) {
+                continue; // can't happen
+            }
+            Type filterType = instance.value().asClass();
+            DotName filterClassName = filterType.name();
+            ClassInfo filterClassInfo = index.getClassByName(filterClassName.toString());
+            if (filterClassInfo == null) {
+                log.warn("Unable to find class '" + filterType.name() + "' in index");
+            } else if (!filterClassInfo.hasNoArgsConstructor()) {
+                throw new RestClientDefinitionException(
+                        "Classes used in @SseEventFilter must have a no-args constructor. Offending class is '"
+                                + filterClassName + "'");
+            } else {
+                filterClassNames.add(filterClassName.toString());
+            }
+        }
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder(filterClassNames.toArray(new String[0]))
+                .constructors(true)
+                .build());
     }
 
     @BuildStep

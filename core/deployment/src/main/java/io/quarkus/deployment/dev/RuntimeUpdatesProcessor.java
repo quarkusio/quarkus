@@ -1128,7 +1128,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     // First find all matching paths from all roots
                     try (final Stream<Path> walk = Files.walk(root)) {
                         walk.forEach(path -> {
-                            if (path.equals(root)) {
+                            if (path.equals(root)
+                                    // Never watch directories
+                                    || Files.isDirectory(path)) {
                                 return;
                             }
                             // Use the relative path to match the watched file

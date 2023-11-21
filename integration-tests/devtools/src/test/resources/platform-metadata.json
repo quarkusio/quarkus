@@ -43,7 +43,9 @@
         "supported-maven-versions": "${supported-maven-versions}",
         "proposed-maven-version": "${proposed-maven-version}",
         "maven-wrapper-version": "${maven-wrapper.version}",
-        "gradle-wrapper-version": "${gradle-wrapper.version}"
+        "gradle-wrapper-version": "${gradle-wrapper.version}",
+        "minimum-java-version": "${minimum-java-version}",
+        "recommended-java-version": "${recommended-java-version}"
       }
     },
     "codestarts-artifacts": [

@@ -68,6 +68,8 @@ It is an exact path match because it does not end with `*`.
 <3> This permission set references the previously defined policy.
 `roles1` is an example name; you can call the permission sets whatever you want.
 
+WARNING: The `/forbidden` exact path in the example above will not secure the `/forbidden/` path. Don't forget to add new exact path for the `/forbidden/` path.
+
 === Custom HttpSecurityPolicy
 
 Sometimes it might be useful to register your own named policy. You can get it done by creating application scoped CDI
@@ -123,10 +125,12 @@ Otherwise, it queries for an exact match and only matches that specific path:
 
 [source,properties]
 ----
-quarkus.http.auth.permission.permit1.paths=/public/*,/css/*,/js/*,/robots.txt
+quarkus.http.auth.permission.permit1.paths=/public*,/css/*,/js/*,/robots.txt    <1>
 quarkus.http.auth.permission.permit1.policy=permit
 quarkus.http.auth.permission.permit1.methods=GET,HEAD
 ----
+<1> The `$$*$$` wildcard at the end of the path matches zero or more path segments, but never any word starting from the `/public` path.
+For that reason, a path like `/public-info` is not matched by this pattern.
 
 === Matching a path but not a method
 
@@ -168,6 +172,59 @@ quarkus.http.auth.permission.roles.policy=user-policy
 quarkus.http.auth.permission.public.paths=/api/noauth/*
 quarkus.http.auth.permission.public.policy=permit
 ----
+====
+
+=== Matching multiple sub-paths: longest path to the `*` wildcard wins
+
+Previous examples shown how you can match all sub-paths when a path ends with the `$$*$$` wildcard.
+The `$$*$$` wildcard can also be used in the middle of the path, in which case it represents exactly one path segment.
+You can't combine this wildcard with any other path segment character, therefore the `$$*$$` wildcard will always be
+enclosed with path separators as in the `/public/$$*$$/about-us` path.
+
+What happens if multiple path patterns matches same request path?
+Matching is always done on the "longest sub-path to the `$$*$$` wildcard wins" basis.
+Every path segment character is considered more specific than the `$$*$$` wildcard.
+
+Here is a simple example:
+
+[source,properties]
+----
+quarkus.http.auth.permission.secured.paths=/api/*/detail                    <1>
+quarkus.http.auth.permission.secured.policy=authenticated
+quarkus.http.auth.permission.public.paths=/api/public-product/detail        <2>
+quarkus.http.auth.permission.public.policy=permit
+----
+<1> Request paths like `/api/product/detail` can only be accessed by authenticated users.
+<2> The path `/api/public-product/detail` is more specific, therefore accessible by anyone.
+
+[IMPORTANT]
+====
+All paths secured with the authorization using configuration should be tested.
+Writing path patterns with multiple wildcards can be cumbersome.
+Please make sure paths are authorized as you intended.
+====
+
+In the following example, paths are ordered from the most specific to the least specific one:
+
+.Request path `/one/two/three/four/five` matches ordered from the most specific to the least specific path
+
+[source, text]
+----
+/one/two/three/four/five
+/one/two/three/four/*
+/one/two/three/*/five
+/one/two/three/*/*
+/one/two/*/four/five
+/one/*/three/four/five
+/*/two/three/four/five
+/*/two/three/*/five
+/*
+----
+
+[IMPORTANT]
+====
+The `$$*$$` wildcard at the end of the path matches zero or more path segments.
+The `$$*$$` wildcard placed anywhere else matches exactly one path segment.
 ====
 
 === Matching multiple paths: most specific method wins

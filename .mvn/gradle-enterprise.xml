@@ -27,7 +27,7 @@
         </local>
         <remote>
             <enabled>true</enabled>
-            <storeEnabled>#{env['CI'] != null}</storeEnabled>
+            <storeEnabled>#{env['CI'] != null and env['GRADLE_ENTERPRISE_ACCESS_KEY'] != null and env['GRADLE_ENTERPRISE_ACCESS_KEY'] != ''}</storeEnabled>
         </remote>
     </buildCache>
 </gradleEnterprise>

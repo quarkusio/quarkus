@@ -17,17 +17,8 @@ jobs:
       pull-requests: write
       checks: write
     steps:
-      - uses: actions/checkout@v4
-      - name: Extract preapproved developers list
-        id: extract-preapproved-developers
-        run: |
-          echo "preapproved-developpers<<EOF" >> $GITHUB_OUTPUT
-          cat .github/develocity-preapproved-developers.json >> $GITHUB_OUTPUT
-          echo >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
       - name: Publish Maven Build Scans
         uses: gradle/github-actions/maven-build-scan/publish@v1-beta
-        if: ${{ contains(fromJson(steps.extract-preapproved-developers.outputs.preapproved-developpers).preapproved-developers, github.event.workflow_run.actor.login) }}
         with:
           develocity-url: 'https://ge.quarkus.io'
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}

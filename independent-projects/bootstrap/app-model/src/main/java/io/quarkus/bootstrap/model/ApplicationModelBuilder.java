@@ -240,31 +240,28 @@ public class ApplicationModelBuilder {
     List<ResolvedDependency> buildDependencies() {
         for (ArtifactKey key : parentFirstArtifacts) {
             final ResolvedDependencyBuilder d = dependencies.get(key);
-            if (d != null && !d.isFlagSet(DependencyFlags.REMOVED)) {
+            if (d != null) {
                 d.setFlags(DependencyFlags.CLASSLOADER_PARENT_FIRST);
             }
         }
         for (ArtifactKey key : runnerParentFirstArtifacts) {
             final ResolvedDependencyBuilder d = dependencies.get(key);
-            if (d != null && !d.isFlagSet(DependencyFlags.REMOVED)) {
+            if (d != null) {
                 d.setFlags(DependencyFlags.CLASSLOADER_RUNNER_PARENT_FIRST);
             }
         }
         for (ArtifactKey key : lesserPriorityArtifacts) {
             final ResolvedDependencyBuilder d = dependencies.get(key);
-            if (d != null && !d.isFlagSet(DependencyFlags.REMOVED)) {
+            if (d != null) {
                 d.setFlags(DependencyFlags.CLASSLOADER_LESSER_PRIORITY);
             }
         }
 
         final List<ResolvedDependency> result = new ArrayList<>(dependencies.size());
         for (ResolvedDependencyBuilder db : this.dependencies.values()) {
-            if (isExcluded(db.getArtifactCoords())) {
-                db.setFlags(DependencyFlags.REMOVED);
-                db.clearFlag(DependencyFlags.DEPLOYMENT_CP);
-                db.clearFlag(DependencyFlags.RUNTIME_CP);
+            if (!isExcluded(db.getArtifactCoords())) {
+                result.add(db.build());
             }
-            result.add(db.build());
         }
         return result;
     }

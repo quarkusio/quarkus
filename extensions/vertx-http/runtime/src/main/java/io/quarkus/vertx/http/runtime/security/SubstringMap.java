@@ -1,9 +1,15 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import static io.quarkus.vertx.http.runtime.security.ImmutableSubstringMap.doEquals;
+import static io.quarkus.vertx.http.runtime.security.ImmutableSubstringMap.hash;
+import static io.quarkus.vertx.http.runtime.security.ImmutableSubstringMap.tablePos;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+
+import io.quarkus.vertx.http.runtime.security.ImmutableSubstringMap.SubstringMatch;
 
 /**
  * A string keyed map that can be accessed as a substring, eliminating the need to allocate a new string
@@ -17,19 +23,27 @@ import java.util.NoSuchElementException;
  * @author Stuart Douglas
  */
 public class SubstringMap<V> {
-    private static final int ALL_BUT_LAST_BIT = ~1;
 
     private volatile Object[] table = new Object[16];
     private int size;
 
+    /**
+     * @deprecated use {@link ImmutablePathMatcher}
+     */
+    @Deprecated
     public SubstringMatch<V> get(String key, int length) {
         return get(key, length, false);
     }
 
+    /**
+     * @deprecated use {@link ImmutablePathMatcher}
+     */
+    @Deprecated
     public SubstringMatch<V> get(String key) {
         return get(key, key.length(), false);
     }
 
+    @SuppressWarnings("unchecked")
     private SubstringMatch<V> get(String key, int length, boolean exact) {
         if (key.length() < length) {
             throw new IllegalArgumentException();
@@ -59,26 +73,19 @@ public class SubstringMap<V> {
         return null;
     }
 
-    private int tablePos(Object[] table, int hash) {
-        return (hash & (table.length - 1)) & ALL_BUT_LAST_BIT;
-    }
-
-    private boolean doEquals(String s1, String s2, int length) {
-        if (s1.length() != length || s2.length() < length) {
-            return false;
-        }
-        for (int i = 0; i < length; ++i) {
-            if (s1.charAt(i) != s2.charAt(i)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
+    /**
+     * @deprecated use {@link ImmutablePathMatcher}
+     */
+    @Deprecated
     public synchronized void put(String key, V value) {
+        put(key, value, null);
+    }
+
+    void put(String key, V value, ImmutablePathMatcher<SubstringMatch<V>> subPathMatcher) {
         if (key == null) {
             throw new NullPointerException();
         }
+
         Object[] newTable;
         if (table.length / (double) size < 4 && table.length != Integer.MAX_VALUE) {
             newTable = new Object[table.length << 1];
@@ -91,11 +98,15 @@ public class SubstringMap<V> {
             newTable = new Object[table.length];
             System.arraycopy(table, 0, newTable, 0, table.length);
         }
-        doPut(newTable, key, new SubstringMap.SubstringMatch<>(key, value));
+        doPut(newTable, key, new SubstringMatch<>(key, value, subPathMatcher));
         this.table = newTable;
         size++;
     }
 
+    /**
+     * @deprecated use {@link ImmutablePathMatcher}
+     */
+    @Deprecated
     public synchronized V remove(String key) {
         if (key == null) {
             throw new NullPointerException();
@@ -133,31 +144,28 @@ public class SubstringMap<V> {
         newTable[pos + 1] = value;
     }
 
+    /**
+     * @deprecated use {@link ImmutablePathMatcher}
+     */
+    @Deprecated
     public Map<String, V> toMap() {
         Map<String, V> map = new HashMap<>();
         Object[] t = this.table;
         for (int i = 0; i < t.length; i += 2) {
             if (t[i] != null) {
-                map.put((String) t[i], ((SubstringMatch<V>) t[i + 1]).value);
+                map.put((String) t[i], ((SubstringMatch<V>) t[i + 1]).getValue());
             }
         }
         return map;
     }
 
+    /**
+     * @deprecated use {@link ImmutablePathMatcher}
+     */
+    @Deprecated
     public synchronized void clear() {
         size = 0;
         table = new Object[16];
-    }
-
-    private static int hash(String value, int length) {
-        if (length == 0) {
-            return 0;
-        }
-        int h = 0;
-        for (int i = 0; i < length; i++) {
-            h = 31 * h + value.charAt(i);
-        }
-        return h;
     }
 
     public Iterable<String> keys() {
@@ -206,21 +214,8 @@ public class SubstringMap<V> {
 
     }
 
-    public static final class SubstringMatch<V> {
-        private final String key;
-        private final V value;
-
-        public SubstringMatch(String key, V value) {
-            this.key = key;
-            this.value = value;
-        }
-
-        public String getKey() {
-            return key;
-        }
-
-        public V getValue() {
-            return value;
-        }
+    ImmutableSubstringMap<V> asImmutableMap() {
+        return new ImmutableSubstringMap<>(table);
     }
+
 }

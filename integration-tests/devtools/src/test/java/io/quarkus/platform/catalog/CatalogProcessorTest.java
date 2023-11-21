@@ -1,7 +1,9 @@
 package io.quarkus.platform.catalog;
 
 import static io.quarkus.devtools.testing.FakeExtensionCatalog.newFakeExtensionCatalog;
+import static io.quarkus.platform.catalog.processor.CatalogProcessor.getMinimumJavaVersion;
 import static io.quarkus.platform.catalog.processor.CatalogProcessor.getProcessedCategoriesInOrder;
+import static io.quarkus.platform.catalog.processor.CatalogProcessor.getRecommendedJavaVersion;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Objects;
@@ -25,6 +27,13 @@ public class CatalogProcessorTest extends PlatformAwareTestBase {
                 .map(ProcessedCategory::getCategory)
                 .map(Category::getId)
                 .startsWith("web", "core", "reactive", "serialization", "compatibility", "alt-languages", "uncategorized");
+    }
+
+    @Test
+    void testJavaVersions() {
+        final ExtensionCatalog catalog = newFakeExtensionCatalog();
+        assertThat(getMinimumJavaVersion(catalog)).isEqualTo("11");
+        assertThat(getRecommendedJavaVersion(catalog)).isEqualTo("17");
     }
 
     @Test

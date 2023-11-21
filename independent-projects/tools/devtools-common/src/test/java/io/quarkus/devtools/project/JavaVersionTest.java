@@ -1,10 +1,13 @@
 package io.quarkus.devtools.project;
 
 import static io.quarkus.devtools.project.JavaVersion.DETECT_JAVA_RUNTIME_VERSION;
+import static io.quarkus.devtools.project.JavaVersion.JAVA_VERSIONS_LTS;
 import static io.quarkus.devtools.project.JavaVersion.computeJavaVersion;
 import static io.quarkus.devtools.project.JavaVersion.determineBestJavaLtsVersion;
+import static io.quarkus.devtools.project.JavaVersion.getCompatibleLTSVersions;
 import static io.quarkus.devtools.project.SourceType.JAVA;
 import static io.quarkus.devtools.project.SourceType.KOTLIN;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
@@ -29,6 +32,14 @@ class JavaVersionTest {
     @Test
     public void givenJavaVersion18ShouldReturn17() {
         assertEquals("17", computeJavaVersion(JAVA, "18"));
+    }
+
+    @Test
+    void shouldProperlyUseMinJavaVersion() {
+        assertThat(getCompatibleLTSVersions(new JavaVersion("11"))).isEqualTo(JAVA_VERSIONS_LTS);
+        assertThat(getCompatibleLTSVersions(new JavaVersion("17"))).containsExactly(17, 21);
+        assertThat(getCompatibleLTSVersions(new JavaVersion("100"))).isEmpty();
+        assertThat(getCompatibleLTSVersions(JavaVersion.NA)).isEqualTo(JAVA_VERSIONS_LTS);
     }
 
     @Test

@@ -92,6 +92,7 @@ import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.SecurityHandler;
 import io.quarkus.security.spi.AdditionalSecuredClassesBuildItem;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
+import io.quarkus.security.spi.DefaultSecurityCheckBuildItem;
 import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.DevModeDisabledAuthorizationController;
 import io.quarkus.security.spi.runtime.MethodDescription;
@@ -511,6 +512,7 @@ public class SecurityProcessor {
             BuildProducer<RunTimeConfigBuilderBuildItem> configBuilderProducer,
             List<AdditionalSecuredMethodsBuildItem> additionalSecuredMethods,
             SecurityCheckRecorder recorder,
+            Optional<DefaultSecurityCheckBuildItem> defaultSecurityCheckBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config) {
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorageAppPredicate()));
@@ -542,6 +544,15 @@ public class SecurityProcessor {
             }
             recorder.addMethod(builder, method.declaringClass().name().toString(), method.name(), params,
                     methodEntry.getValue());
+        }
+
+        if (defaultSecurityCheckBuildItem.isPresent()) {
+            var roles = defaultSecurityCheckBuildItem.get().getRolesAllowed();
+            if (roles == null) {
+                recorder.registerDefaultSecurityCheck(builder, recorder.denyAll());
+            } else {
+                recorder.registerDefaultSecurityCheck(builder, recorder.rolesAllowed(roles.toArray(new String[0])));
+            }
         }
         recorder.create(builder);
 

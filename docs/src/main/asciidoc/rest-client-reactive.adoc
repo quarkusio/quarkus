@@ -883,6 +883,107 @@ If you use a `CompletionStage`, you would need to call the service's method to r
 This difference comes from the laziness aspect of Mutiny and its subscription protocol.
 More details about this can be found in https://smallrye.io/smallrye-mutiny/latest/reference/uni-and-multi/[the Mutiny documentation].
 
+=== Server-Sent Event (SSE) support
+
+Consuming SSE events is possible simply by declaring the result type as a `io.smallrye.mutiny.Multi`.
+
+The simplest example is:
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import io.smallrye.mutiny.Multi;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("/sse")
+@RegisterRestClient(configKey = "some-api")
+public interface SseClient {
+     @GET
+     @Produces(MediaType.SERVER_SENT_EVENTS)
+     Multi<String> get();
+}
+----
+
+[NOTE]
+====
+All the IO involved in streaming the SSE results is done in a non-blocking manner.
+====
+
+Results are not limited to strings - for example when the server returns JSON payload for each event, Quarkus automatically deserializes it into the generic type used in the `Multi`.
+
+[TIP]
+====
+Users can also access the entire SSE event by using the `org.jboss.resteasy.reactive.client.SseEvent` type.
+
+A simple example where the event payloads are `Long` values is the following:
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import io.smallrye.mutiny.Uni;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.reactive.client.SseEvent;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+
+@Path("/sse")
+@RegisterRestClient(configKey = "some-api")
+public interface SseClient {
+     @GET
+     @Produces(MediaType.SERVER_SENT_EVENTS)
+     Multi<SseEvent<Long>> get();
+}
+----
+====
+
+==== Filtering out events
+
+On occasion, the stream of SSE events may contain some events that should not be returned by the client - an example of this is having the server send heartbeat events in order to keep the underlying TCP connection open.
+The REST Client supports filtering out such events by providing the `@org.jboss.resteasy.reactive.client.SseEventFilter`.
+
+Here is an example of filtering out heartbeat events:
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import io.smallrye.mutiny.Uni;
+import java.util.function.Predicate;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.reactive.client.SseEvent;
+import org.jboss.resteasy.reactive.client.SseEventFilter;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+
+@Path("/sse")
+@RegisterRestClient(configKey = "some-api")
+public interface SseClient {
+
+     @GET
+     @Produces(MediaType.SERVER_SENT_EVENTS)
+     @SseEventFilter(HeartbeatFilter.class)
+     Multi<SseEvent<Long>> get();
+
+
+     class HeartbeatFilter implements Predicate<SessionEvent<String>> {
+
+        @Override
+        public boolean test(SseEvent<String> event) {
+            return !"heartbeat".equals(event.id());
+        }
+     }
+}
+----
+
 == Custom headers support
 
 There are a few ways in which you can specify custom headers for your REST calls:

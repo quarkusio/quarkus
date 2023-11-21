@@ -96,3 +96,23 @@ if (System.env.GITHUB_ACTIONS) {
     }
 }
 
+// Check runtime Maven version and Maven Wrapper version are aligned
+def runtimeInfo = (org.apache.maven.rtinfo.RuntimeInformation) session.lookup("org.apache.maven.rtinfo.RuntimeInformation")
+def runtimeMavenVersion = runtimeInfo?.getMavenVersion()
+Properties mavenWrapperProperties = new Properties()
+File mavenWrapperPropertiesFile = new File(".mvn/wrapper/maven-wrapper.properties")
+if(mavenWrapperPropertiesFile.exists()) {
+    mavenWrapperPropertiesFile.withInputStream {
+        mavenWrapperProperties.load(it)
+    }
+    // assuming the wrapper properties contains:
+    // distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/VERSION/apache-maven-VERSION-bin.zip
+    if(regexp = mavenWrapperProperties."distributionUrl" =~ /.*\/apache-maven-(.*)-bin\.zip/) {
+        def wrapperMavenVersion = regexp.group(1)
+        if (runtimeMavenVersion && wrapperMavenVersion && wrapperMavenVersion != runtimeMavenVersion) {
+            log.warn("Maven Wrapper is configured with a different version (" + wrapperMavenVersion + ") than the runtime version (" + runtimeMavenVersion + "). This will negatively impact build consistency and build caching.")
+            buildScan.tag("misaligned-maven-version")
+            buildScan.value("wrapper-maven-version", wrapperMavenVersion)
+        }
+    }
+}

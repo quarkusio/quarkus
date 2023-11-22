@@ -23,8 +23,8 @@ import javax.net.ssl.HostnameVerifier;
 
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
+import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
 
-import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
@@ -77,7 +77,7 @@ public class RestClientCDIDelegateBuilder<T> {
     private void configureCustomProperties(QuarkusRestClientBuilder builder) {
         Optional<String> encoder = configRoot.multipartPostEncoderMode;
         if (encoder != null && encoder.isPresent()) {
-            HttpPostRequestEncoder.EncoderMode mode = HttpPostRequestEncoder.EncoderMode
+            PausableHttpPostRequestEncoder.EncoderMode mode = PausableHttpPostRequestEncoder.EncoderMode
                     .valueOf(encoder.get().toUpperCase(Locale.ROOT));
             builder.property(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE, mode);
         }

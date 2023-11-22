@@ -63,7 +63,7 @@ public class DataSourceJdbcRuntimeConfig {
     /**
      * The interval at which we check for connection leaks.
      */
-    @ConfigItem
+    @ConfigItem(defaultValueDocumentation = "This feature is disabled by default.")
     public Optional<Duration> leakDetectionInterval = Optional.empty();
 
     /**
@@ -75,7 +75,7 @@ public class DataSourceJdbcRuntimeConfig {
     /**
      * The max lifetime of a connection.
      */
-    @ConfigItem
+    @ConfigItem(defaultValueDocumentation = "By default, there is no restriction on the lifespan of a connection.")
     public Optional<Duration> maxLifetime = Optional.empty();
 
     /**
@@ -97,7 +97,7 @@ public class DataSourceJdbcRuntimeConfig {
     public boolean flushOnClose;
 
     /**
-     * When enabled Agroal will be able to produce a warning when a connection is returned
+     * When enabled, Agroal will be able to produce a warning when a connection is returned
      * to the pool without the application having closed all open statements.
      * This is unrelated with tracking of open connections.
      * Disable for peak performance, but only when there's high confidence that
@@ -119,7 +119,7 @@ public class DataSourceJdbcRuntimeConfig {
     public Optional<String> validationQuerySql = Optional.empty();
 
     /**
-     * Disable pooling to prevent reuse of Connections. Use this with when an external pool manages the life-cycle
+     * Disable pooling to prevent reuse of Connections. Use this when an external pool manages the life-cycle
      * of Connections.
      */
     @ConfigItem(defaultValue = "true")

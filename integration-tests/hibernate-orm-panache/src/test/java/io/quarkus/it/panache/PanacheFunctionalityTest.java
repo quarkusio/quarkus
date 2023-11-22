@@ -91,6 +91,11 @@ public class PanacheFunctionalityTest {
     }
 
     @Test
+    public void testSortByEmbedded() {
+        RestAssured.when().get("/test/testSortByEmbedded").then().body(is("OK"));
+    }
+
+    @Test
     public void testJaxbAnnotationTransfer() {
         RestAssured.when()
                 .get("/test/testJaxbAnnotationTransfer")

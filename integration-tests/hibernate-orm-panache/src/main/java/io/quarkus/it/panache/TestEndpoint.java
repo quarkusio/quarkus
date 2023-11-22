@@ -1742,6 +1742,34 @@ public class TestEndpoint {
     }
 
     @GET
+    @Path("testSortByEmbedded")
+    @Transactional
+    public String testSortByEmbedded() {
+        Person.deleteAll();
+
+        Person stefPerson = new Person();
+        stefPerson.name = "Stef";
+        stefPerson.description = new PersonDescription();
+        stefPerson.description.size = 0;
+        stefPerson.persist();
+
+        Person josePerson = new Person();
+        josePerson.name = "Jose";
+        josePerson.description = new PersonDescription();
+        josePerson.description.size = 100;
+        josePerson.persist();
+
+        List<Person> persons = Person.findAll(Sort.by("description.size", Sort.Direction.Descending)).list();
+        assertEquals(josePerson.id, persons.get(0).id);
+        persons = Person.findAll(Sort.by("description.size", Sort.Direction.Ascending)).list();
+        assertEquals(josePerson.id, persons.get(persons.size() - 1).id);
+
+        Person.deleteAll();
+
+        return "OK";
+    }
+
+    @GET
     @Path("testEnhancement27184DeleteDetached")
     // NOT @Transactional
     public String testEnhancement27184DeleteDetached() {

@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: reference
 :categories: data,getting-started,reactive
+:topics: data,database,datasource,sql,jdbc,reactive
+:extensions: io.quarkus:quarkus-agroal,io.quarkus:quarkus-reactive-mysql-client,io.quarkus:quarkus-reactive-oracle-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-db2-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-mssql-client,io.quarkus:quarkus-jdbc-db2,io.quarkus:quarkus-jdbc-derby,io.quarkus:quarkus-jdbc-h2,io.quarkus:quarkus-jdbc-mariadb,io.quarkus:quarkus-jdbc-mssql,io.quarkus:quarkus-jdbc-mysql,io.quarkus:quarkus-jdbc-oracle,io.quarkus:quarkus-jdbc-postgresql
 
 Use a unified configuration model to define data sources for Java Database Connectivity (JDBC) and Reactive drivers.
 
@@ -318,7 +320,6 @@ Be aware that setting the pool size too low might cause some requests to time ou
 
 For more information about pool size adjustment properties, see the <<reactive-configuration>> section.
 
-
 ==== JDBC and reactive datasources simultaneously
 
 When a JDBC extension - along with Agroal - and a reactive datasource extension handling the given database kind are included, they will both be created by default.
@@ -560,10 +561,11 @@ For more information, see the link:https://db.apache.org/derby/docs/10.8/devguid
 
 Example:: `jdbc:h2:tcp://localhost/~/test`, `jdbc:h2:mem:myDB`
 
-H2 is an embedded database that can run as a server, based on a file, or run completely in memory.
+H2 is a database that can run in embedded or server mode.
+It can use a file storage or run entirely in memory.
 All of these options are available as listed above.
 
-For more information, see the link:https://h2database.com/html/features.html?highlight=url&search=url#database_url[official documentation].
+For more information, see the link:https://h2database.com/html/features.html#database_url[official documentation].
 
 ==== MariaDB
 
@@ -591,7 +593,7 @@ hostDescription:: `<host>[:<portnumber>] or address=(host=<host>)[(port=<portnum
 
 Example:: `jdbc:mysql://localhost:3306/test`
 
-For more information, see the link:https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference.html[official documentation].
+For more information, see the link:https://dev.mysql.com/doc/connector-j/en/[official documentation].
 
 ===== MySQL limitations
 

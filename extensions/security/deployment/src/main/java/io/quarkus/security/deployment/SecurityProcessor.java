@@ -105,6 +105,7 @@ import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.SecurityHandler;
 import io.quarkus.security.spi.AdditionalSecuredClassesBuildItem;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
+import io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem;
 import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.DevModeDisabledAuthorizationController;
 import io.quarkus.security.spi.runtime.MethodDescription;
@@ -520,6 +521,7 @@ public class SecurityProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void gatherSecurityChecks(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ConfigExpRolesAllowedSecurityCheckBuildItem> configExpSecurityCheckProducer,
+            List<RolesAllowedConfigExpResolverBuildItem> rolesAllowedConfigExpResolverBuildItems,
             BeanArchiveIndexBuildItem beanArchiveBuildItem,
             BuildProducer<ApplicationClassPredicateBuildItem> classPredicate,
             BuildProducer<RunTimeConfigBuilderBuildItem> configBuilderProducer,
@@ -540,7 +542,7 @@ public class SecurityProcessor {
         IndexView index = beanArchiveBuildItem.getIndex();
         Map<MethodInfo, SecurityCheck> securityChecks = gatherSecurityAnnotations(index, configExpSecurityCheckProducer,
                 additionalSecured.values(), config.denyUnannotated, recorder, configBuilderProducer,
-                reflectiveClassBuildItemBuildProducer);
+                reflectiveClassBuildItemBuildProducer, rolesAllowedConfigExpResolverBuildItems);
         for (AdditionalSecurityCheckBuildItem additionalSecurityCheck : additionalSecurityChecks) {
             securityChecks.put(additionalSecurityCheck.getMethodInfo(),
                     additionalSecurityCheck.getSecurityCheck());
@@ -587,7 +589,8 @@ public class SecurityProcessor {
             BuildProducer<ConfigExpRolesAllowedSecurityCheckBuildItem> configExpSecurityCheckProducer,
             Collection<AdditionalSecured> additionalSecuredMethods, boolean denyUnannotated, SecurityCheckRecorder recorder,
             BuildProducer<RunTimeConfigBuilderBuildItem> configBuilderProducer,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
+            List<RolesAllowedConfigExpResolverBuildItem> rolesAllowedConfigExpResolverBuildItems) {
 
         Map<MethodInfo, AnnotationInstance> methodToInstanceCollector = new HashMap<>();
         Map<ClassInfo, AnnotationInstance> classAnnotations = new HashMap<>();
@@ -670,11 +673,24 @@ public class SecurityProcessor {
                     }));
         }
 
+        final boolean registerRolesAllowedConfigSource;
+        // way to resolve roles allowed configuration expressions specified via annotations to configuration values
+        if (!rolesAllowedConfigExpResolverBuildItems.isEmpty()) {
+            registerRolesAllowedConfigSource = true;
+            for (RolesAllowedConfigExpResolverBuildItem item : rolesAllowedConfigExpResolverBuildItems) {
+                recorder.recordRolesAllowedConfigExpression(item.getRoleConfigExpr(), keyIndex.getAndIncrement(),
+                        item.getConfigValueRecorder());
+            }
+        } else {
+            registerRolesAllowedConfigSource = hasRolesAllowedCheckWithConfigExp.get();
+        }
+
         if (hasRolesAllowedCheckWithConfigExp.get()) {
-            // make sure config expressions are resolved when app starts
+            // make sure config expressions are eagerly resolved inside security checks when app starts
             configExpSecurityCheckProducer
                     .produce(new ConfigExpRolesAllowedSecurityCheckBuildItem());
-
+        }
+        if (registerRolesAllowedConfigSource) {
             // register config source with the Config system
             configBuilderProducer
                     .produce(new RunTimeConfigBuilderBuildItem(QuarkusSecurityRolesAllowedConfigBuilder.class.getName()));

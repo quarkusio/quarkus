@@ -23,13 +23,6 @@ public interface DependencyFlags {
     // once the processing of the whole tree has completed.
     int VISITED                              = 0b00100000000000;
 
-    /**
-     * Dependencies that were removed from the application model
-     * following {@code removed-artifacts}
-     * configuration properties collected from extension metadata.
-     */
-    int REMOVED                              = 0b01000000000000;
-
     /* @formatter:on */
 
 }

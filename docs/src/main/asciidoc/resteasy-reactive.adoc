@@ -1301,6 +1301,8 @@ public class Person {
     private final Long id;
     private final String first;
     private final String last;
+    @SecureField(rolesAllowed = ${role:admin}")                 <1>
+    private String address;
 
     public Person(Long id, String first, String last) {
         this.id = id;
@@ -1319,8 +1321,20 @@ public class Person {
     public String getLast() {
         return last;
     }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
 }
 ----
+<1> The `io.quarkus.resteasy.reactive.jackson.SecureField.rolesAllowed` property supports xref:config-reference.adoc#property-expressions[property expressions]
+exactly in the same fashion the `jakarta.annotation.security.RolesAllowed` annotation does. For more information, please
+refer to the xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[Standard security annotations]
+section of the Authorization of web endpoints guide.
 
 A very simple Jakarta REST Resource that uses `Person` could be:
 
@@ -1337,7 +1351,7 @@ public class Person {
     @Path("{id}")
     @GET
     public Person getPerson(Long id) {
-        return new Person(id, "foo", "bar");
+        return new Person(id, "foo", "bar", "Brick Lane");
     }
 }
 ----
@@ -1350,7 +1364,8 @@ performs an HTTP GET on `/person/1` they will receive:
 {
   "id": 1,
   "first": "foo",
-  "last": "bar"
+  "last": "bar",
+  "address", "Brick Lane"
 }
 ----
 
@@ -1368,6 +1383,8 @@ Any user however that does not have the `admin` role will receive:
 
 NOTE: No additional configuration needs to be applied for this secure serialization to take place. However, users can use the `@io.quarkus.resteasy.reactive.jackson.EnableSecureSerialization` and `@io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization`
 annotation to opt in or out for specific Jakarta REST Resource classes or methods.
+
+WARNING: Configuration expressions set with the `SecureField.rolesAllowed` property are validated during application startup even when the `@io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization` annotation is used.
 
 ===== @JsonView support
 
@@ -2989,6 +3006,10 @@ public class RuntimeResource {
      }
 }
 ----
+[IMPORTANT]
+====
+This feature does not work when using native build.
+====
 
 
 == RESTEasy Reactive client

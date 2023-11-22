@@ -50,7 +50,11 @@
             <artifactId>quarkus-jaxrs-client-reactive-deployment</artifactId>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-security-test-utils</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

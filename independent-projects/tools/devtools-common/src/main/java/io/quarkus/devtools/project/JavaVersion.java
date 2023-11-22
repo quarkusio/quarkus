@@ -6,6 +6,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public final class JavaVersion {
 
@@ -69,6 +70,15 @@ public final class JavaVersion {
 
     public static int determineBestJavaLtsVersion() {
         return determineBestJavaLtsVersion(Runtime.version().feature());
+    }
+
+    public static SortedSet<Integer> getCompatibleLTSVersions(JavaVersion minimumJavaVersion) {
+        if (minimumJavaVersion.isEmpty()) {
+            return JAVA_VERSIONS_LTS;
+        }
+        return JAVA_VERSIONS_LTS.stream()
+                .filter(v -> v >= minimumJavaVersion.getAsInt())
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     public static int determineBestJavaLtsVersion(int runtimeVersion) {

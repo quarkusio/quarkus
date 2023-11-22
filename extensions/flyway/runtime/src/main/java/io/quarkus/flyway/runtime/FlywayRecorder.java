@@ -2,6 +2,7 @@ package io.quarkus.flyway.runtime;
 
 import java.lang.annotation.Annotation;
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -31,6 +32,7 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.flyway.FlywayDataSource.FlywayDataSourceLiteral;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 @Recorder
 public class FlywayRecorder {
@@ -64,15 +66,24 @@ public class FlywayRecorder {
         return new Function<>() {
             @Override
             public FlywayContainer apply(SyntheticCreationalContext<FlywayContainer> context) {
-                DataSource dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
-                if (dataSource instanceof UnconfiguredDataSource) {
-                    return new UnconfiguredDataSourceFlywayContainer(dataSourceName);
+                DataSource dataSource;
+                try {
+                    dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
+                    if (dataSource instanceof UnconfiguredDataSource) {
+                        throw DataSourceUtil.dataSourceNotConfigured(dataSourceName);
+                    }
+                } catch (ConfigurationException e) {
+                    // TODO do we really want to enable retrieval of a FlywayContainer for an unconfigured datasource?
+                    //   Assigning ApplicationScoped to the FlywayContainer
+                    //   and throwing UnsatisfiedResolutionException on bean creation (first access)
+                    //   would probably make more sense.
+                    return new UnconfiguredDataSourceFlywayContainer(dataSourceName, String.format(Locale.ROOT,
+                            "Unable to find datasource '%s' for Flyway: %s",
+                            dataSourceName, e.getMessage()), e);
                 }
 
                 FlywayContainerProducer flywayProducer = context.getInjectedReference(FlywayContainerProducer.class);
-                FlywayContainer flywayContainer = flywayProducer.createFlyway(dataSource, dataSourceName, hasMigrations,
-                        createPossible);
-                return flywayContainer;
+                return flywayProducer.createFlyway(dataSource, dataSourceName, hasMigrations, createPossible);
             }
         };
     }

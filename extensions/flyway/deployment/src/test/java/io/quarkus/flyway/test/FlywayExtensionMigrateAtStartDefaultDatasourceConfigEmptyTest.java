@@ -31,7 +31,11 @@ public class FlywayExtensionMigrateAtStartDefaultDatasourceConfigEmptyTest {
     public void testBootSucceedsButFlywayDeactivated() {
         assertThatThrownBy(flywayForDefaultDatasource::get)
                 .isInstanceOf(CreationException.class)
-                .hasMessageContaining("Cannot get a Flyway instance for unconfigured datasource <default>");
+                .cause()
+                .hasMessageContainingAll("Unable to find datasource '<default>' for Flyway",
+                        "Datasource '<default>' is not configured.",
+                        "To solve this, configure datasource '<default>'.",
+                        "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 
 }

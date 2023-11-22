@@ -27,6 +27,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.runtime.UnconfiguredDataSource;
 import io.quarkus.arc.Arc;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.RuntimePersistenceUnitDescriptor;
@@ -389,16 +390,11 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         DataSource dataSource;
         try {
             dataSource = Arc.container().instance(DataSources.class).get().getDataSource(dataSourceName);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalStateException(
-                    "No datasource " + dataSourceName + " has been defined for persistence unit " + persistenceUnitName);
-        }
-
-        if (dataSource instanceof UnconfiguredDataSource) {
-            throw new IllegalStateException(
-                    "Model classes are defined for persistence unit " + persistenceUnitName
-                            + " but configured datasource " + dataSourceName
-                            + " not found: the default EntityManagerFactory will not be created. To solve this, configure the default datasource. Refer to https://quarkus.io/guides/datasource for guidance.");
+            if (dataSource instanceof UnconfiguredDataSource) {
+                throw DataSourceUtil.dataSourceNotConfigured(dataSourceName);
+            }
+        } catch (RuntimeException e) {
+            throw PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, dataSourceName, e);
         }
         runtimeSettingsBuilder.put(AvailableSettings.DATASOURCE, dataSource);
     }

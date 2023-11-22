@@ -18,8 +18,11 @@ public class LiquibaseExtensionMigrateAtStartDefaultDatasourceConfigEmptyTest {
             .overrideConfigKey("quarkus.liquibase.migrate-at-start", "true")
             // The datasource won't be truly "unconfigured" if dev services are enabled
             .overrideConfigKey("quarkus.devservices.enabled", "false")
-            .assertException(t -> assertThat(t).rootCause()
-                    .hasMessageContaining("No datasource has been configured"));
+            .assertException(t -> assertThat(t).cause().cause()
+                    .hasMessageContainingAll("Unable to find datasource '<default>' for Liquibase",
+                            "Datasource '<default>' is not configured.",
+                            "To solve this, configure datasource '<default>'.",
+                            "Refer to https://quarkus.io/guides/datasource for guidance."));
 
     @Test
     @DisplayName("If there is no config for the default datasource, and if migrate-at-start is enabled, the application should fail to boot")

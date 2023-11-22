@@ -21,7 +21,8 @@ public class EntitiesInDefaultPUWithExplicitUnconfiguredDatasourceTest {
             .assertException(t -> assertThat(t)
                     .isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll(
-                            "The datasource 'ds-1' is not configured but the persistence unit '<default>' uses it.",
+                            "Unable to find datasource 'ds-1' for persistence unit '<default>'",
+                            "Datasource 'ds-1' is not configured.",
                             "To solve this, configure datasource 'ds-1'.",
                             "Refer to https://quarkus.io/guides/datasource for guidance."));
 

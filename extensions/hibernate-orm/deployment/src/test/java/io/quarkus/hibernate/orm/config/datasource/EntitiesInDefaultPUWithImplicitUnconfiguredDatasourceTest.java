@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.config.MyEntity;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class EntitiesInDefaultPUWithImplicitUnconfiguredDatasourceTest {
@@ -18,10 +19,11 @@ public class EntitiesInDefaultPUWithImplicitUnconfiguredDatasourceTest {
             // The datasource won't be truly "unconfigured" if dev services are enabled
             .overrideConfigKey("quarkus.devservices.enabled", "false")
             .assertException(t -> assertThat(t)
-                    .isInstanceOf(RuntimeException.class)
+                    .isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll(
-                            "Model classes are defined for persistence unit <default> but configured datasource <default> not found",
-                            "To solve this, configure the default datasource.",
+                            "Unable to find datasource '<default>' for persistence unit '<default>'",
+                            "Datasource '<default>' is not configured.",
+                            "To solve this, configure datasource '<default>'.",
                             "Refer to https://quarkus.io/guides/datasource for guidance."));
 
     @Test

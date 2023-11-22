@@ -7,6 +7,8 @@ import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_QUERY_PARAM;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_QUERY_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_REDIRECT_HANDLER;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_REQUEST_FILTER;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_RESPONSE_FILTER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
@@ -304,16 +306,8 @@ class RestClientReactiveProcessor {
                         }
                     }
 
-                    List<DotName> providerInterfaceNames = providerClass.interfaceNames();
-                    // don't register server specific types
-                    if (providerInterfaceNames.contains(ResteasyReactiveDotNames.CONTAINER_REQUEST_FILTER)
-                            || providerInterfaceNames.contains(ResteasyReactiveDotNames.CONTAINER_RESPONSE_FILTER)
-                            || providerInterfaceNames.contains(ResteasyReactiveDotNames.EXCEPTION_MAPPER)) {
+                    if (skipAutoDiscoveredProvider(providerClass.interfaceNames())) {
                         continue;
-                    }
-
-                    if (providerInterfaceNames.contains(ResteasyReactiveDotNames.FEATURE)) {
-                        continue; // features should not be automatically registered for the client, see javadoc for Feature
                     }
 
                     DotName providerDotName = providerClass.name();
@@ -541,6 +535,29 @@ class RestClientReactiveProcessor {
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             recorder.setConfigKeys(configKeys);
         }
+    }
+
+    /**
+     * Based on a list of interfaces implemented by @Provider class, determine if registration
+     * should be skipped or not. Server-specific types should be omitted unless implementation
+     * of a <code>ClientRequestFilter</code> exists on the same class explicitly.
+     * Features should always be omitted.
+     */
+    private boolean skipAutoDiscoveredProvider(List<DotName> providerInterfaceNames) {
+        if (providerInterfaceNames.contains(ResteasyReactiveDotNames.FEATURE)) {
+            return true;
+        }
+        if (providerInterfaceNames.contains(ResteasyReactiveDotNames.CONTAINER_REQUEST_FILTER)
+                || providerInterfaceNames.contains(ResteasyReactiveDotNames.CONTAINER_RESPONSE_FILTER)
+                || providerInterfaceNames.contains(ResteasyReactiveDotNames.EXCEPTION_MAPPER)) {
+            if (providerInterfaceNames.contains(CLIENT_REQUEST_FILTER)
+                    || providerInterfaceNames.contains(CLIENT_RESPONSE_FILTER)) {
+                return false;
+            } else {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void populateClientExceptionMapperFromAnnotations(BuildProducer<GeneratedClassBuildItem> generatedClasses,

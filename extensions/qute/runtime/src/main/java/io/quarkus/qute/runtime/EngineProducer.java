@@ -46,6 +46,7 @@ import io.quarkus.qute.Resolver;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.SectionHelperFactory;
 import io.quarkus.qute.Template;
+import io.quarkus.qute.TemplateGlobalProvider;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateInstance.Initializer;
 import io.quarkus.qute.TemplateLocator;
@@ -204,9 +205,11 @@ public class EngineProducer {
         // Add a special parser hook for Qute.fmt() methods
         builder.addParserHook(new Qute.IndexedArgumentsParserHook());
 
-        // Add template initializers
-        for (String initializerClass : context.getTemplateInstanceInitializerClasses()) {
-            builder.addTemplateInstanceInitializer(createInitializer(initializerClass));
+        // Add global providers
+        for (String globalProviderClass : context.getTemplateGlobalProviderClasses()) {
+            TemplateGlobalProvider provider = createGlobalProvider(globalProviderClass);
+            builder.addTemplateInstanceInitializer(provider);
+            builder.addNamespaceResolver(provider);
         }
 
         // Add a special initializer for templates that contain an inject/cdi namespace expressions
@@ -313,17 +316,17 @@ public class EngineProducer {
         }
     }
 
-    private TemplateInstance.Initializer createInitializer(String initializerClassName) {
+    private TemplateGlobalProvider createGlobalProvider(String initializerClassName) {
         try {
             Class<?> initializerClazz = Thread.currentThread()
                     .getContextClassLoader().loadClass(initializerClassName);
-            if (TemplateInstance.Initializer.class.isAssignableFrom(initializerClazz)) {
-                return (TemplateInstance.Initializer) initializerClazz.getDeclaredConstructor().newInstance();
+            if (TemplateGlobalProvider.class.isAssignableFrom(initializerClazz)) {
+                return (TemplateGlobalProvider) initializerClazz.getDeclaredConstructor().newInstance();
             }
-            throw new IllegalStateException("Not an initializer: " + initializerClazz);
+            throw new IllegalStateException("Not a global provider: " + initializerClazz);
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | IllegalArgumentException
                 | InvocationTargetException | NoSuchMethodException | SecurityException e) {
-            throw new IllegalStateException("Unable to create initializer: " + initializerClassName, e);
+            throw new IllegalStateException("Unable to create global provider: " + initializerClassName, e);
         }
     }
 

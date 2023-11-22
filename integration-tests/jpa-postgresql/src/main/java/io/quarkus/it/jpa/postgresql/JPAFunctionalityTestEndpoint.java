@@ -3,6 +3,7 @@ package io.quarkus.it.jpa.postgresql;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,6 +20,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import io.quarkus.hibernate.orm.PersistenceUnit;
+import io.quarkus.it.jpa.postgresql.otherpu.EntityWithJsonOtherPU;
+
 /**
  * Various tests covering JPA functionality. All tests should work in both standard JVM and in native mode.
  */
@@ -27,11 +31,14 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
 
     @Inject
     EntityManagerFactory entityManagerFactory;
+    @Inject
+    @PersistenceUnit("other")
+    EntityManagerFactory otherEntityManagerFactory;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
-            doStuffWithHibernate(entityManagerFactory);
+            doStuffWithHibernate(entityManagerFactory, otherEntityManagerFactory);
         } catch (Exception e) {
             reportException("An error occurred while performing Hibernate operations", e, resp);
         }
@@ -41,7 +48,8 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
     /**
      * Lists the various operations we want to test for:
      */
-    private static void doStuffWithHibernate(EntityManagerFactory entityManagerFactory) {
+    private static void doStuffWithHibernate(EntityManagerFactory entityManagerFactory,
+            EntityManagerFactory otherEntityManagerFactory) {
 
         //Cleanup any existing data:
         deleteAllPerson(entityManagerFactory);
@@ -59,6 +67,9 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
 
         // Try an entity using a UUID
         verifyUUIDEntity(entityManagerFactory);
+
+        doJsonStuff(entityManagerFactory, otherEntityManagerFactory);
+
     }
 
     private static void verifyJPANamedQuery(final EntityManagerFactory emf) {
@@ -165,6 +176,47 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
         }
         transaction.commit();
         em.close();
+    }
+
+    private static void doJsonStuff(EntityManagerFactory emf, EntityManagerFactory otherEmf) {
+        try (EntityManager em = emf.createEntityManager()) {
+            EntityTransaction transaction = em.getTransaction();
+            transaction.begin();
+
+            EntityWithJson entity = new EntityWithJson(
+                    new EntityWithJson.ToBeSerializedWithDateTime(LocalDate.of(2023, 7, 28)));
+            em.persist(entity);
+            transaction.commit();
+
+            transaction.begin();
+            List<EntityWithJson> entities = em
+                    .createQuery("select e from EntityWithJson e", EntityWithJson.class)
+                    .getResultList();
+            if (entities.isEmpty()) {
+                throw new AssertionError("No entities with json were found");
+            }
+            transaction.commit();
+
+            transaction.begin();
+            em.createQuery("delete from EntityWithJson").executeUpdate();
+            transaction.commit();
+        }
+
+        try (EntityManager em = otherEmf.createEntityManager()) {
+            EntityTransaction transaction = em.getTransaction();
+            transaction.begin();
+            EntityWithJsonOtherPU otherPU = new EntityWithJsonOtherPU(
+                    new EntityWithJsonOtherPU.ToBeSerializedWithDateTime(LocalDate.of(2023, 7, 28)));
+            em.persist(otherPU);
+            transaction.commit();
+            throw new AssertionError(
+                    "Default mapper cannot process date/time properties. So we were expecting commit to fail, but it did not!");
+        } catch (Exception e) {
+            if (!(e.getCause() instanceof IllegalArgumentException)
+                    && !e.getCause().getMessage().contains("I cannot convert anything to JSON")) {
+                throw new AssertionError("Transaction failed for a different reason than expected.", e);
+            }
+        }
     }
 
     private void reportException(String errorMessage, final Exception e, final HttpServletResponse resp) throws IOException {

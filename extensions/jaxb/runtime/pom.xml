@@ -53,6 +53,9 @@
                         <excludedArtifact>javax.xml.bind:jaxb-api</excludedArtifact>
                         <excludedArtifact>org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec</excludedArtifact>
                     </excludedArtifacts>
+                    <capabilities>
+                        <provides>io.quarkus.jaxb</provides>
+                    </capabilities>
                 </configuration>
             </plugin>
             <plugin>

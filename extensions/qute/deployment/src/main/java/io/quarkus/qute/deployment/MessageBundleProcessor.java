@@ -435,7 +435,8 @@ public class MessageBundleProcessor {
             List<CheckedTemplateBuildItem> checkedTemplates,
             BeanDiscoveryFinishedBuildItem beanDiscovery,
             List<TemplateDataBuildItem> templateData,
-            QuteConfig config) {
+            QuteConfig config,
+            List<TemplateGlobalBuildItem> globals) {
 
         IndexView index = beanArchiveIndex.getIndex();
         Function<String, String> templateIdToPathFun = new Function<String, String>() {
@@ -585,7 +586,7 @@ public class MessageBundleProcessor {
                                             implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches,
                                             extensionMethodExcludes, checkedTemplate, lookupConfig, namedBeans,
                                             namespaceTemplateData, regularExtensionMethods, namespaceExtensionMethods,
-                                            assignabilityCheck);
+                                            assignabilityCheck, globals);
                                     MatchResult match = results.get(param.toOriginalString());
                                     if (match != null && !match.isEmpty() && !assignabilityCheck.isAssignableFrom(match.type(),
                                             methodParams.get(idx))) {

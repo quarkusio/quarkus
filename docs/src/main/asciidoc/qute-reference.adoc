@@ -2425,7 +2425,11 @@ TIP: Quarkus detects possible namespace collisions and fails the build if a spec
 === Global Variables
 
 The `io.quarkus.qute.TemplateGlobal` annotation can be used to denote static fields and methods that supply _global variables_ which are accessible in any template.
-Internally, each global variable is added to the data map of any `TemplateInstance` via the `TemplateInstance#data(String, Object)` method.
+
+Global variables are:
+
+* added to the data map of any `TemplateInstance` during initialization,
+* accessible with the `global:` namespace.
 
 .Global Variables Definition
 [source,java]
@@ -2454,11 +2458,11 @@ public class Globals {
 [source,html]
 ----
 User: {currentUser} <1>
-Age:  {age} <2>
+Age:  {global:age} <2>
 Colors: {#each myColors}{it}{#if it_hasNext}, {/if}{/each} <3>
 ----
 <1> `currentUser` resolves to `Globals#user()`.
-<2> `age` resolves to `Globals#age`.
+<2> The `global:` namespace is used; `age` resolves to `Globals#age`.
 <3> `myColors` resolves to `Globals#myColors()`.
 
 NOTE: Note that global variables implicitly add <<typesafe_expressions,parameter declarations>> to all templates and so any expression that references a global variable is validated during build.
@@ -2473,7 +2477,7 @@ Colors: RED, BLUE
 
 ==== Resolving Conflicts
 
-Global variables may conflict with regular data objects.
+If not accessed via the `global:` namespace the global variables may conflict with regular data objects.
 <<typesafe_templates,Type-safe templates>> override the global variables automatically.
 For example, the following definition overrides the global variable supplied by the `Globals#user()` method:
 

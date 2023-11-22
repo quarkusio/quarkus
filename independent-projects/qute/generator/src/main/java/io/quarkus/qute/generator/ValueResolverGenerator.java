@@ -1,7 +1,6 @@
 package io.quarkus.qute.generator;
 
 import static java.util.function.Predicate.not;
-import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
 import java.lang.reflect.Modifier;
@@ -34,7 +33,6 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.PrimitiveType;
-import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
@@ -48,13 +46,11 @@ import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.Gizmo;
-import io.quarkus.gizmo.IfThenElse;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.Switch;
 import io.quarkus.gizmo.TryBlock;
-import io.quarkus.qute.CompletedStage;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.NamespaceResolver;
@@ -66,7 +62,7 @@ import io.quarkus.qute.ValueResolver;
  *
  * @see ValueResolver
  */
-public class ValueResolverGenerator {
+public class ValueResolverGenerator extends AbstractGenerator {
 
     public static Builder builder() {
         return new Builder();
@@ -92,9 +88,6 @@ public class ValueResolverGenerator {
 
     public static final int DEFAULT_PRIORITY = 10;
 
-    private final Set<String> generatedTypes;
-    private final IndexView index;
-    private final ClassOutput classOutput;
     private final Map<DotName, ClassInfo> nameToClass;
     private final Map<DotName, AnnotationInstance> nameToTemplateData;
 
@@ -103,16 +96,10 @@ public class ValueResolverGenerator {
     ValueResolverGenerator(IndexView index, ClassOutput classOutput, Map<DotName, ClassInfo> nameToClass,
             Map<DotName, AnnotationInstance> nameToTemplateData,
             Function<ClassInfo, Function<FieldInfo, String>> forceGettersFunction) {
-        this.generatedTypes = new HashSet<>();
-        this.classOutput = classOutput;
-        this.index = index;
+        super(index, classOutput);
         this.nameToClass = new HashMap<>(nameToClass);
         this.nameToTemplateData = new HashMap<>(nameToTemplateData);
         this.forceGettersFunction = forceGettersFunction;
-    }
-
-    public Set<String> getGeneratedTypes() {
-        return generatedTypes;
     }
 
     /**
@@ -377,33 +364,13 @@ public class ValueResolverGenerator {
                     @Override
                     public void accept(BytecodeCreator bc) {
                         Type returnType = method.returnType();
-                        boolean hasCompletionStage = !skipMemberType(returnType)
-                                && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
                         ResultHandle invokeRet;
                         if (Modifier.isInterface(clazz.flags())) {
                             invokeRet = bc.invokeInterfaceMethod(MethodDescriptor.of(method), base);
                         } else {
                             invokeRet = bc.invokeVirtualMethod(MethodDescriptor.of(method), base);
                         }
-                        if (hasCompletionStage) {
-                            bc.returnValue(invokeRet);
-                        } else {
-                            // Try to use some shared CompletedStage constants
-                            if (returnType.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE
-                                    && returnType.asPrimitiveType().primitive() == Primitive.BOOLEAN) {
-                                completeBoolean(bc, invokeRet);
-                            } else if (method.returnType().name().equals(DotNames.BOOLEAN)) {
-                                BytecodeCreator isNull = bc.ifNull(invokeRet).trueBranch();
-                                isNull.returnValue(isNull.readStaticField(Descriptors.RESULTS_NULL));
-                                completeBoolean(bc, bc.invokeVirtualMethod(Descriptors.BOOLEAN_VALUE, invokeRet));
-                            } else if (isEnum(returnType)) {
-                                BytecodeCreator isNull = bc.ifNull(invokeRet).trueBranch();
-                                isNull.returnValue(isNull.readStaticField(Descriptors.RESULTS_NULL));
-                                completeEnum(index.getClassByName(returnType.name()), valueResolver, invokeRet, bc);
-                            } else {
-                                bc.returnValue(bc.invokeStaticMethod(Descriptors.COMPLETED_STAGE_OF, invokeRet));
-                            }
-                        }
+                        processReturnVal(bc, returnType, invokeRet, valueResolver);
                     }
                 };
                 nameSwitch.caseOf(matchingNames, invokeMethod);
@@ -487,71 +454,6 @@ public class ValueResolverGenerator {
         return true;
     }
 
-    private void completeBoolean(BytecodeCreator bc, ResultHandle result) {
-        BranchResult isTrue = bc.ifTrue(result);
-        BytecodeCreator trueBranch = isTrue.trueBranch();
-        trueBranch.returnValue(trueBranch.readStaticField(Descriptors.RESULTS_TRUE));
-        BytecodeCreator falseBranch = isTrue.falseBranch();
-        falseBranch.returnValue(falseBranch.readStaticField(Descriptors.RESULTS_FALSE));
-    }
-
-    private boolean isEnum(Type returnType) {
-        if (returnType.kind() != org.jboss.jandex.Type.Kind.CLASS) {
-            return false;
-        }
-        ClassInfo maybeEnum = index.getClassByName(returnType.name());
-        return maybeEnum != null && maybeEnum.isEnum();
-    }
-
-    private boolean completeEnum(ClassInfo enumClass, ClassCreator valueResolver, ResultHandle result, BytecodeCreator bc) {
-        IfThenElse ifThenElse = null;
-        for (FieldInfo enumConstant : enumClass.enumConstants()) {
-            String name = enumClass.name().toString().replace(".", "_") + "$$"
-                    + enumConstant.name();
-            FieldDescriptor enumConstantField = FieldDescriptor.of(enumClass.name().toString(),
-                    enumConstant.name(), enumClass.name().toString());
-
-            // Additional methods and fields are generated for enums that are part of the index
-            // We don't care about visibility and atomicity here
-            // private CompletedStage org_acme_MyEnum$$CONSTANT;
-            FieldDescriptor csField = valueResolver
-                    .getFieldCreator(name, CompletedStage.class).setModifiers(ACC_PRIVATE)
-                    .getFieldDescriptor();
-            // private CompletedStage org_acme_MyEnum$$CONSTANT() {
-            //    if (org_acme_MyEnum$$CONSTANT == null) {
-            //        org_acme_MyEnum$$CONSTANT = CompletedStage.of(MyEnum.CONSTANT);
-            //    }
-            //    return org_acme_MyEnum$$CONSTANT;
-            // }
-            MethodCreator enumConstantMethod = valueResolver.getMethodCreator(name,
-                    CompletedStage.class).setModifiers(ACC_PRIVATE);
-            BytecodeCreator isNull = enumConstantMethod.ifNull(enumConstantMethod
-                    .readInstanceField(csField, enumConstantMethod.getThis()))
-                    .trueBranch();
-            ResultHandle val = isNull.readStaticField(enumConstantField);
-            isNull.writeInstanceField(csField, enumConstantMethod.getThis(),
-                    isNull.invokeStaticMethod(Descriptors.COMPLETED_STAGE_OF, val));
-            enumConstantMethod.returnValue(enumConstantMethod
-                    .readInstanceField(csField, enumConstantMethod.getThis()));
-
-            // Unfortunately, we can't use the BytecodeCreator#enumSwitch() here because the enum class is not loaded
-            // if(val.equals(MyEnum.CONSTANT))
-            //    return org_acme_MyEnum$$CONSTANT();
-            BytecodeCreator match;
-            if (ifThenElse == null) {
-                ifThenElse = bc.ifThenElse(
-                        Gizmo.equals(bc, bc.readStaticField(enumConstantField), result));
-                match = ifThenElse.then();
-            } else {
-                match = ifThenElse.elseIf(
-                        b -> Gizmo.equals(b, b.readStaticField(enumConstantField), result));
-            }
-            match.returnValue(match.invokeVirtualMethod(
-                    enumConstantMethod.getMethodDescriptor(), match.getThis()));
-        }
-        return true;
-    }
-
     private boolean implementNamespaceResolve(ClassCreator valueResolver, String clazzName, ClassInfo clazz,
             Predicate<AnnotationTarget> filter) {
         MethodCreator resolve = valueResolver.getMethodCreator("resolve", CompletionStage.class, EvalContext.class)
@@ -611,15 +513,13 @@ public class ValueResolverGenerator {
                     try (BytecodeCreator matchScope = createMatchScope(resolve, method.name(), 0, method.returnType(), name,
                             params, paramsCount)) {
                         ResultHandle ret;
-                        boolean hasCompletionStage = !skipMemberType(method.returnType())
-                                && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
                         ResultHandle invokeRet;
                         if (Modifier.isInterface(clazz.flags())) {
                             invokeRet = matchScope.invokeStaticInterfaceMethod(MethodDescriptor.of(method));
                         } else {
                             invokeRet = matchScope.invokeStaticMethod(MethodDescriptor.of(method));
                         }
-                        if (hasCompletionStage) {
+                        if (hasCompletionStage(method.returnType())) {
                             ret = invokeRet;
                         } else {
                             ret = matchScope.invokeStaticMethod(Descriptors.COMPLETED_STAGE_OF, invokeRet);
@@ -702,11 +602,8 @@ public class ValueResolverGenerator {
                 paramsCount);
 
         // Invoke the method
-        ResultHandle ret;
-        boolean hasCompletionStage = !skipMemberType(method.returnType())
-                && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
         // Evaluate the params first
-        ret = matchScope
+        ResultHandle ret = matchScope
                 .newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
 
         // The CompletionStage upon which we invoke whenComplete()
@@ -809,7 +706,7 @@ public class ValueResolverGenerator {
             }
         }
 
-        if (hasCompletionStage) {
+        if (hasCompletionStage(method.returnType())) {
             FunctionCreator invokeWhenCompleteFun = tryCatch.createFunction(BiConsumer.class);
             tryCatch.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, invokeRet,
                     invokeWhenCompleteFun.getInstance());
@@ -908,9 +805,6 @@ public class ValueResolverGenerator {
                                 whenEvaluatedParams, paramMatchScope.load(isVarArgs), paramTypesHandle))
                         .falseBranch().breakScope(paramMatchScope);
 
-                boolean hasCompletionStage = !skipMemberType(method.returnType())
-                        && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
-
                 AssignableResultHandle invokeRet = paramMatchScope.createVariable(Object.class);
                 // try
                 TryBlock tryCatch = paramMatchScope.tryBlock();
@@ -958,7 +852,7 @@ public class ValueResolverGenerator {
                     }
                 }
 
-                if (hasCompletionStage) {
+                if (hasCompletionStage(method.returnType())) {
                     FunctionCreator invokeWhenCompleteFun = tryCatch.createFunction(BiConsumer.class);
                     tryCatch.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, invokeRet,
                             invokeWhenCompleteFun.getInstance());
@@ -1119,21 +1013,6 @@ public class ValueResolverGenerator {
             return new ValueResolverGenerator(index, classOutput, nameToClass, nameToTemplateData, forceGettersFunction);
         }
 
-    }
-
-    private boolean skipMemberType(Type type) {
-        switch (type.kind()) {
-            case VOID:
-            case PRIMITIVE:
-            case ARRAY:
-            case TYPE_VARIABLE:
-            case UNRESOLVED_TYPE_VARIABLE:
-            case TYPE_VARIABLE_REFERENCE:
-            case WILDCARD_TYPE:
-                return true;
-            default:
-                return false;
-        }
     }
 
     private Predicate<AnnotationTarget> initFilters(AnnotationInstance templateData) {
@@ -1330,38 +1209,6 @@ public class ValueResolverGenerator {
             }
         }
         return true;
-    }
-
-    public static boolean hasCompletionStageInTypeClosure(ClassInfo classInfo,
-            IndexView index) {
-        return hasClassInTypeClosure(classInfo, DotNames.COMPLETION_STAGE, index);
-    }
-
-    public static boolean hasClassInTypeClosure(ClassInfo classInfo, DotName className,
-            IndexView index) {
-
-        if (classInfo == null) {
-            // TODO cannot perform analysis
-            return false;
-        }
-        if (classInfo.name().equals(className)) {
-            return true;
-        }
-        // Interfaces
-        for (Type interfaceType : classInfo.interfaceTypes()) {
-            ClassInfo interfaceClassInfo = index.getClassByName(interfaceType.name());
-            if (interfaceClassInfo != null && hasCompletionStageInTypeClosure(interfaceClassInfo, index)) {
-                return true;
-            }
-        }
-        // Superclass
-        if (classInfo.superClassType() != null) {
-            ClassInfo superClassInfo = index.getClassByName(classInfo.superName());
-            if (superClassInfo != null && hasClassInTypeClosure(superClassInfo, className, index)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public static boolean isVarArgs(MethodInfo method) {

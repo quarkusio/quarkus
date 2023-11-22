@@ -221,6 +221,24 @@ We recommend the latter, and if possible, using secrets or an environment variab
 
 The associated environment variable is `QUARKUS_REDIS_PASSWORD`, or `QUARKUS_REDIS_<NAME>_PASSWORD` for named clients.
 
+=== Connection pooling
+
+Connections to Redis are always pooled.
+By default, maximum number of connections in the pool is 6.
+This can be configured using `quarkus.redis.max-pool-size`.
+
+When the connection pool is depleted, attempts to obtain a connection are put into a queue.
+By default, maximum number of attempts waiting in the queue to obtain a Redis connection is 24.
+This can be configured using `quarkus.redis.max-pool-waiting`.
+
+Executing certain commands modifies the server-side state and the behavior of the connection.
+Such connections cannot be reused and when closed, they are not put back into the pool; instead, they are truly closed.
+The commands that cause this behavior are:
+
+* subscription commands (`SUBSCRIBE`, `UNSUBSCRIBE` etc.)
+* `SELECT`
+* `AUTH`
+
 == Use Redis data sources
 
 Quarkus exposes a high-level API on top of Redis.

@@ -58,6 +58,12 @@ public class MessageConsumerFailureTest {
 
     @Test
     public void testFailureNoReplyHandler() throws InterruptedException {
+        verifyFailureNoReply("foo", "Foo is dead", IllegalStateException.class);
+        verifyFailureNoReply("foo-blocking", "Red is dead", IllegalStateException.class);
+    }
+
+    void verifyFailureNoReply(String address, String expectedMessage, Class<? extends Exception> expectedException)
+            throws InterruptedException {
         Handler<Throwable> oldHandler = vertx.exceptionHandler();
         try {
             BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
@@ -71,10 +77,10 @@ public class MessageConsumerFailureTest {
                     }
                 }
             });
-            eventBus.send("foo", "bar");
+            eventBus.send(address, "hello");
             Object ret = synchronizer.poll(2, TimeUnit.SECONDS);
-            assertTrue(ret instanceof IllegalStateException);
-            assertEquals("Foo is dead", ((IllegalStateException) ret).getMessage());
+            assertTrue(expectedException.isAssignableFrom(ret.getClass()));
+            assertEquals(expectedMessage, ((Throwable) ret).getMessage());
         } finally {
             vertx.exceptionHandler(oldHandler);
         }

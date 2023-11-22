@@ -37,6 +37,7 @@ import io.smallrye.common.expression.ResolveContext;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
@@ -147,7 +148,7 @@ public class VertxEventBusConsumerRecorder {
                                             }
                                         });
                                     } else {
-                                        dup.executeBlocking(new Callable<Void>() {
+                                        Future<Void> future = dup.executeBlocking(new Callable<Void>() {
                                             @Override
                                             public Void call() {
                                                 try {
@@ -163,6 +164,7 @@ public class VertxEventBusConsumerRecorder {
                                                 return null;
                                             }
                                         }, invoker.isOrdered());
+                                        future.onFailure(context::reportException);
                                     }
                                 } else {
                                     // Will run on the context used for the consumer registration.

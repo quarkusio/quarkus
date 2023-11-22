@@ -211,3 +211,45 @@ quarkus:
 ----
 
 YAML `null` keys are not included in the assembly of the configuration property name, allowing them to be used at any level for disambiguating configuration keys.
+
+Although Quarkus primarily uses `.properties` file extension for configuration, the snakeyaml library, which is used for parsing YAML in Quarkus, can also parse JSON structures. This means you can use YAML files with JSON content inside.
+
+YAML and JSON structures can be read in an application.yaml file.
+
+Certainly, here's a step-by-step guide on how to use complex configuration structures with Quarkus:
+
+* Define Your Configuration Interface.
+
+[source,java]
+----
+@ConfigMapping(prefix = "server")
+public interface ServiceConfig {
+
+  List<Environment> environments();
+
+  interface Environment {
+    String name();
+    String services();
+  }
+}
+----
+
+* Create the appropriate JSON structure and store it in a YAML file.
+
+[source,yaml]
+----
+{
+  "server": {
+    "environments": [
+      {
+        "name": "dev",
+        "services": "bookstore"
+      },
+      {
+        "name": "batch",
+        "services": "warehouse"
+      }
+    ]
+  }
+}
+----

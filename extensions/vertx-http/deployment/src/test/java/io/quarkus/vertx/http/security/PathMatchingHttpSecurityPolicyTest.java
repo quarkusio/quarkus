@@ -41,6 +41,18 @@ public class PathMatchingHttpSecurityPolicyTest {
             "quarkus.http.auth.permission.public.policy=permit\n" +
             "quarkus.http.auth.permission.foo.paths=/api/foo/bar\n" +
             "quarkus.http.auth.permission.foo.policy=authenticated\n" +
+            "quarkus.http.auth.permission.inner-wildcard.paths=/api/*/bar\n" +
+            "quarkus.http.auth.permission.inner-wildcard.policy=authenticated\n" +
+            "quarkus.http.auth.permission.inner-wildcard2.paths=/api/next/*/prev\n" +
+            "quarkus.http.auth.permission.inner-wildcard2.policy=authenticated\n" +
+            "quarkus.http.auth.permission.inner-wildcard3.paths=/api/one/*/three/*\n" +
+            "quarkus.http.auth.permission.inner-wildcard3.policy=authenticated\n" +
+            "quarkus.http.auth.permission.inner-wildcard4.paths=/api/one/*/*/five\n" +
+            "quarkus.http.auth.permission.inner-wildcard4.policy=authenticated\n" +
+            "quarkus.http.auth.permission.inner-wildcard5.paths=/api/one/*/jamaica/*\n" +
+            "quarkus.http.auth.permission.inner-wildcard5.policy=permit\n" +
+            "quarkus.http.auth.permission.inner-wildcard6.paths=/api/*/sadly/*/dont-know\n" +
+            "quarkus.http.auth.permission.inner-wildcard6.policy=deny\n" +
             "quarkus.http.auth.permission.baz.paths=/api/baz\n" +
             "quarkus.http.auth.permission.baz.policy=authenticated\n" +
             "quarkus.http.auth.permission.static-resource.paths=/static-file.html\n" +
@@ -83,6 +95,25 @@ public class PathMatchingHttpSecurityPolicyTest {
             client = WebClient.create(vertx);
         }
         return client;
+    }
+
+    @Test
+    public void testInnerWildcardPath() {
+        assurePath("/api/any-value/bar", 401);
+        assurePath("/api/any-value/bar", 401);
+        assurePath("/api/next/any-value/prev", 401);
+        assurePath("/api/one/two/three/four", 401);
+        assurePath("/api////any-value//////bar", 401);
+        assurePath("/api/next///////any-value////prev", 401);
+        assurePath("////api//one/two//three////four?door=wood", 401);
+        assurePath("/api/one/three/four/five", 401);
+        assurePath("/api/one/3/4/five", 401);
+        assurePath("////api/one///3/4/five", 401);
+        assurePath("/api/now/sadly/i/dont-know", 401);
+        assurePath("/api/now/sadly///i/dont-know", 401);
+        assurePath("/api/one/three/jamaica/five", 200);
+        assurePath("/api/one/three/jamaica/football", 200);
+        assurePath("/api/now/sally/i/dont-know", 200);
     }
 
     @ParameterizedTest

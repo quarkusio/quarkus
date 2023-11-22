@@ -23,6 +23,7 @@ import io.quarkus.vertx.http.runtime.PolicyConfig;
 import io.quarkus.vertx.http.runtime.PolicyMappingConfig;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy.AuthorizationRequestContext;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy.CheckResult;
+import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher.PathMatch;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -33,15 +34,15 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class AbstractPathMatchingHttpSecurityPolicy {
 
-    private final PathMatcher<List<HttpMatcher>> pathMatcher = new PathMatcher<>();
+    private final ImmutablePathMatcher<List<HttpMatcher>> pathMatcher;
 
     AbstractPathMatchingHttpSecurityPolicy(Map<String, PolicyMappingConfig> permissions,
             Map<String, PolicyConfig> rolePolicy, String rootPath, Instance<HttpSecurityPolicy> installedPolicies) {
-        init(permissions, toNamedHttpSecPolicies(rolePolicy, installedPolicies), rootPath);
+        pathMatcher = init(permissions, toNamedHttpSecPolicies(rolePolicy, installedPolicies), rootPath);
     }
 
     public String getAuthMechanismName(RoutingContext routingContext) {
-        PathMatcher.PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(routingContext.normalizedPath());
+        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(routingContext.normalizedPath());
         if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
             return null;
         }
@@ -93,9 +94,9 @@ public class AbstractPathMatchingHttpSecurityPolicy {
                 });
     }
 
-    private void init(Map<String, PolicyMappingConfig> permissions,
+    private static ImmutablePathMatcher<List<HttpMatcher>> init(Map<String, PolicyMappingConfig> permissions,
             Map<String, HttpSecurityPolicy> permissionCheckers, String rootPath) {
-        Map<String, List<HttpMatcher>> tempMap = new HashMap<>();
+        final var builder = ImmutablePathMatcher.<List<HttpMatcher>> builder().handlerAccumulator(List::addAll);
         for (Map.Entry<String, PolicyMappingConfig> entry : permissions.entrySet()) {
             HttpSecurityPolicy checker = permissionCheckers.get(entry.getValue().policy);
             if (checker == null) {
@@ -108,34 +109,19 @@ public class AbstractPathMatchingHttpSecurityPolicy {
                     if (!path.startsWith("/")) {
                         path = rootPath + path;
                     }
-                    if (tempMap.containsKey(path)) {
-                        HttpMatcher m = new HttpMatcher(entry.getValue().authMechanism.orElse(null),
-                                new HashSet<>(entry.getValue().methods.orElse(Collections.emptyList())),
-                                checker);
-                        tempMap.get(path).add(m);
-                    } else {
-                        HttpMatcher m = new HttpMatcher(entry.getValue().authMechanism.orElse(null),
-                                new HashSet<>(entry.getValue().methods.orElse(Collections.emptyList())),
-                                checker);
-                        List<HttpMatcher> perms = new ArrayList<>();
-                        tempMap.put(path, perms);
-                        perms.add(m);
-                        if (path.endsWith("/*")) {
-                            String stripped = path.substring(0, path.length() - 2);
-                            pathMatcher.addPrefixPath(stripped.isEmpty() ? "/" : stripped, perms);
-                        } else if (path.endsWith("*")) {
-                            pathMatcher.addPrefixPath(path.substring(0, path.length() - 1), perms);
-                        } else {
-                            pathMatcher.addExactPath(path, perms);
-                        }
-                    }
+                    HttpMatcher m = new HttpMatcher(entry.getValue().authMechanism.orElse(null),
+                            new HashSet<>(entry.getValue().methods.orElse(Collections.emptyList())), checker);
+                    List<HttpMatcher> perms = new ArrayList<>();
+                    perms.add(m);
+                    builder.addPath(path, perms);
                 }
             }
         }
+        return builder.build();
     }
 
     public List<HttpSecurityPolicy> findPermissionCheckers(RoutingContext context) {
-        PathMatcher.PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(context.normalizedPath());
+        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(context.normalizedPath());
         if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
             return Collections.emptyList();
         }

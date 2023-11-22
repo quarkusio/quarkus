@@ -1,7 +1,18 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -13,8 +24,11 @@ import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
@@ -361,5 +375,52 @@ public class HttpSecurityRecorder {
         protected abstract void setPathMatchingPolicy(RoutingContext event);
 
         protected abstract boolean httpPermissionsEmpty();
+    }
+
+    public void setMtlsCertificateRoleProperties(HttpConfiguration config) {
+        InstanceHandle<MtlsAuthenticationMechanism> mtls = Arc.container().instance(MtlsAuthenticationMechanism.class);
+
+        if (mtls.isAvailable() && config.auth.certificateRoleProperties.isPresent()) {
+            Path rolesPath = config.auth.certificateRoleProperties.get();
+            URL rolesResource = null;
+            if (Files.exists(rolesPath)) {
+                try {
+                    rolesResource = rolesPath.toUri().toURL();
+                } catch (MalformedURLException e) {
+                    // The Files.exists(rolesPath) check has succeeded therefore this exception can't happen in this case
+                }
+            } else {
+                rolesResource = Thread.currentThread().getContextClassLoader().getResource(rolesPath.toString());
+            }
+            if (rolesResource == null) {
+                throw new ConfigurationException(
+                        "quarkus.http.auth.certificate-role-properties location can not be resolved",
+                        Set.of("quarkus.http.auth.certificate-role-properties"));
+            }
+
+            try (Reader reader = new BufferedReader(
+                    new InputStreamReader(rolesResource.openStream(), StandardCharsets.UTF_8))) {
+                Properties rolesProps = new Properties();
+                rolesProps.load(reader);
+
+                Map<String, Set<String>> roles = new HashMap<>();
+                for (Map.Entry<Object, Object> e : rolesProps.entrySet()) {
+                    log.debugf("Added role mapping for %s:%s", e.getKey(), e.getValue());
+                    roles.put((String) e.getKey(), parseRoles((String) e.getValue()));
+                }
+
+                mtls.get().setRoleMappings(roles);
+            } catch (Exception e) {
+                log.warnf("Unable to read roles mappings from %s:%s", rolesPath, e.getMessage());
+            }
+        }
+    }
+
+    private static Set<String> parseRoles(String value) {
+        Set<String> roles = new HashSet<>();
+        for (String s : value.split(",")) {
+            roles.add(s.trim());
+        }
+        return Set.copyOf(roles);
     }
 }

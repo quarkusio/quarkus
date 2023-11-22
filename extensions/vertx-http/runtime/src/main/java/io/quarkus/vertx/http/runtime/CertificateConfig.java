@@ -14,7 +14,6 @@ import io.quarkus.runtime.configuration.TrimmedStringConverter;
  * Provide either the certificate and key files or a keystore.
  */
 @ConfigGroup
-@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class CertificateConfig {
 
     /**

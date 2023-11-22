@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime;
 
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 
@@ -23,6 +24,16 @@ public class AuthRuntimeConfig {
      */
     @ConfigItem(name = "policy")
     public Map<String, PolicyConfig> rolePolicy;
+
+    /**
+     * Properties file containing the client certificate common name (CN) to role mappings.
+     * Use it only if the mTLS authentication mechanism is enabled with either
+     * `quarkus.http.ssl.client-auth=required` or `quarkus.http.ssl.client-auth=request`.
+     * <p/>
+     * Properties file is expected to have the `CN=role1,role,...,roleN` format and should be encoded using UTF-8.
+     */
+    @ConfigItem
+    public Optional<Path> certificateRoleProperties;
 
     /**
      * The authentication realm

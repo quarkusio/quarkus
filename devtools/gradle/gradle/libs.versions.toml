@@ -2,7 +2,7 @@
 plugin-publish = "1.2.1"
 
 # updating Kotlin here makes QuarkusPluginTest > shouldNotFailOnProjectDependenciesWithoutMain(Path) fail
-kotlin = "1.9.20"
+kotlin = "1.9.21"
 smallrye-config = "3.4.4"
 
 junit5 = "5.10.1"

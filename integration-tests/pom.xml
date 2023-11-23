@@ -285,7 +285,6 @@
                 <module>amazon-lambda-http-resteasy</module>
                 <module>amazon-lambda-http-resteasy-reactive</module>
                 <module>container-image</module>
-                <module>kubernetes-client-hack-extension</module>
                 <module>kubernetes</module>
                 <module>kubernetes-client</module>
                 <module>kubernetes-client-devservices</module>

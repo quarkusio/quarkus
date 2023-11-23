@@ -8,6 +8,7 @@
         <version>999-SNAPSHOT</version>
         <relativePath>../build-parent/pom.xml</relativePath>
     </parent>
+
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-integration-tests-parent</artifactId>
@@ -220,6 +221,7 @@
                 <module>kafka-oauth-keycloak</module>
                 <module>kafka-snappy</module>
                 <module>kafka-avro-apicurio2</module>
+                <module>kafka-json-schema-apicurio2</module>
                 <module>kafka-streams</module>
                 <module>kafka-devservices</module>
                 <module>jpa</module>

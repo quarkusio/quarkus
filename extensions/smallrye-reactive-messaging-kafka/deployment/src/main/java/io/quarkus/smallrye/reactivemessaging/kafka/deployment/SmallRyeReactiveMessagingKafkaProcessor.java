@@ -880,7 +880,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             int avroLibraries = 0;
             avroLibraries += discovery.hasConfluent() ? 1 : 0;
             avroLibraries += discovery.hasApicurio1() ? 1 : 0;
-            avroLibraries += discovery.hasApicurio2() ? 1 : 0;
+            avroLibraries += discovery.hasApicurio2Avro() ? 1 : 0;
             if (avroLibraries > 1) {
                 LOGGER.debugf("Skipping Avro serde autodetection for %s, because multiple Avro serde libraries are present",
                         typeName);
@@ -897,7 +897,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                         ? Result.of("io.apicurio.registry.utils.serde.AvroKafkaSerializer")
                         : Result.of("io.apicurio.registry.utils.serde.AvroKafkaDeserializer")
                                 .with(isAvroGenerated, "apicurio.registry.use-specific-avro-reader", "true");
-            } else if (discovery.hasApicurio2()) {
+            } else if (discovery.hasApicurio2Avro()) {
                 return serializer
                         ? Result.of("io.apicurio.registry.serde.avro.AvroKafkaSerializer")
                         : Result.of("io.apicurio.registry.serde.avro.AvroKafkaDeserializer")
@@ -907,6 +907,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 return Result.nonexistent();
             }
         }
+
+        //TODO autodiscovery of json serdes
 
         // Jackson-based serializer/deserializer
         // note that Jackson is always present with Kafka, so no need to check

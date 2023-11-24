@@ -152,9 +152,12 @@ public class DefaultTenantConfigResolver {
         if (tenantId == null && context.get(CURRENT_STATIC_TENANT_ID_NULL) == null) {
             if (tenantResolver.isResolvable()) {
                 tenantId = tenantResolver.get().resolve(context);
-            } else if (tenantConfigBean.getStaticTenantsConfig().size() > 0) {
+            }
+
+            if (tenantId == null && tenantConfigBean.getStaticTenantsConfig().size() > 0) {
                 tenantId = defaultStaticTenantResolver.resolve(context);
             }
+
             if (tenantId == null) {
                 tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
             }

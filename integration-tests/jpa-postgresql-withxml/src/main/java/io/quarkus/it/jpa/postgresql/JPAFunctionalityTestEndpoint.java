@@ -260,8 +260,8 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
             throw new AssertionError(
                     "Our custom XML format mapper throws exceptions. So we were expecting commit to fail, but it did not!");
         } catch (Exception e) {
-            if (!(e.getCause() instanceof IllegalArgumentException)
-                    && !e.getCause().getMessage().contains("I cannot convert anything to XML")) {
+            if (!(e.getCause() instanceof UnsupportedOperationException)
+                    || !e.getCause().getMessage().contains("I cannot convert anything to XML")) {
                 throw new AssertionError("Transaction failed for a different reason than expected.", e);
             }
         }

@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  * if the Quarkus build time property does not match the provided value.
  * <p>
  * By default, the bean is not enabled when the build time property is not defined at all, but this behavior is configurable
- * via the {#code enableIfMissing} property.
+ * via the {@code enableIfMissing} property.
  * <p>
  * This annotation is repeatable. A bean will only be enabled if all the conditions defined by the
  * {@link UnlessBuildProperty} annotations are satisfied.

@@ -601,6 +601,8 @@ public class TracerConfiguration {
 
 NOTE: The runtime profile has absolutely no effect on the bean resolution using `@IfBuildProfile` and `@UnlessBuildProfile`.
 
+TIP: It is also possible to use `@IfBuildProfile` and `@UnlessBuildProfile` on stereotypes.
+
 [[enable_build_properties]]
 === Enabling Beans for Quarkus Build Properties
 
@@ -653,6 +655,8 @@ public class TracerConfiguration {
 ----
 
 NOTE: Properties set at runtime have absolutely no effect on the bean resolution using `@IfBuildProperty`.
+
+TIP: It is also possible to use `@IfBuildProperty` and `@UnlessBuildProperty` on stereotypes.
 
 === Declaring Selected Alternatives
 

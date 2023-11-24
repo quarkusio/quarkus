@@ -1141,8 +1141,9 @@ public class BeanDeployment {
                             beanClasses.add(beanClass);
                         }
                     }
-                } else {
+                } else if (!annotationStore.hasAnnotation(field, DotNames.PRODUCES)) {
                     // Verify that non-producer fields are not annotated with stereotypes
+                    // (vetoed producers must _not_ be checked)
                     for (AnnotationInstance i : annotationStore.getAnnotations(field)) {
                         if (realStereotypes.contains(i.name())) {
                             throw new DefinitionException(

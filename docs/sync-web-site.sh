@@ -36,7 +36,11 @@ if [ -z $TARGET_DIR ]; then
   if [[ "$QUARKUS_WEB_SITE_PUSH" != "true" ]]; then
     GIT_OPTIONS="--depth=1"
   fi
-  git clone -b develop --single-branch $GIT_OPTIONS git@github.com:quarkusio/quarkusio.github.io.git ${TARGET_DIR}
+  if [ -n "${RELEASE_GITHUB_TOKEN}" ]; then
+    git clone -b develop --single-branch $GIT_OPTIONS https://${RELEASE_GITHUB_TOKEN}:@github.com/quarkusio/quarkusio.github.io.git ${TARGET_DIR}
+  else
+    git clone -b develop --single-branch $GIT_OPTIONS git@github.com:quarkusio/quarkusio.github.io.git ${TARGET_DIR}
+  fi
 fi
 
 if [ $BRANCH == "main" ] && [ "$QUARKUS_RELEASE" == "true" ]; then

@@ -229,7 +229,10 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
                     new EntityWithXml.ToBeSerializedWithDateTime(LocalDate.of(2023, 7, 28)));
             em.persist(entity);
             transaction.commit();
+        }
 
+        try (EntityManager em = emf.createEntityManager()) {
+            EntityTransaction transaction = em.getTransaction();
             transaction.begin();
             List<EntityWithXml> entities = em
                     .createQuery("select e from EntityWithXml e", EntityWithXml.class)
@@ -238,7 +241,10 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
                 throw new AssertionError("No entities with XML were found");
             }
             transaction.commit();
+        }
 
+        try (EntityManager em = emf.createEntityManager()) {
+            EntityTransaction transaction = em.getTransaction();
             transaction.begin();
             em.createQuery("delete from EntityWithXml").executeUpdate();
             transaction.commit();

@@ -24,6 +24,7 @@ class VertxClientInputStream extends InputStream {
     private boolean closed;
     private boolean finished;
     private ByteBuf pooled;
+    private final byte[] oneByte = new byte[1];
     private final RestClientRequestContext vertxResteasyReactiveRequestContext;
 
     public VertxClientInputStream(HttpClientResponse response, long timeout,
@@ -41,12 +42,11 @@ class VertxClientInputStream extends InputStream {
 
     @Override
     public int read() throws IOException {
-        byte[] b = new byte[1];
-        int read = read(b);
+        int read = read(oneByte);
         if (read == -1) {
             return -1;
         }
-        return b[0] & 0xff;
+        return oneByte[0] & 0xff;
     }
 
     @Override
@@ -58,6 +58,9 @@ class VertxClientInputStream extends InputStream {
     public int read(final byte[] b, final int off, final int len) throws IOException {
         if (closed) {
             throw new IOException("Stream is closed");
+        }
+        if (b == null || b.length < off + len) {
+            throw new IOException("Not able to read into buffer");
         }
         readIntoBuffer();
         if (finished) {
@@ -93,6 +96,9 @@ class VertxClientInputStream extends InputStream {
         }
         if (finished) {
             return 0;
+        }
+        if (pooled != null && pooled.isReadable()) {
+            return pooled.readableBytes();
         }
 
         return exchange.readBytesAvailable();
@@ -132,9 +138,11 @@ class VertxClientInputStream extends InputStream {
         protected boolean eof = false;
         protected Throwable readException;
         private final long timeout;
+        private final int headerLen;
 
         public VertxBlockingInput(HttpClientResponse response, long timeout) {
             this.request = response;
+            this.headerLen = getLengthFromHeader();
             this.timeout = timeout;
             response.pause();
             response.handler(this);
@@ -244,13 +252,14 @@ class VertxClientInputStream extends InputStream {
             if (input1 != null) {
                 return input1.getByteBuf().readableBytes();
             }
+            return headerLen;
+        }
 
+        private int getLengthFromHeader() {
             String length = request.getHeader(HttpHeaders.CONTENT_LENGTH);
-
             if (length == null) {
                 return 0;
             }
-
             try {
                 return Integer.parseInt(length);
             } catch (NumberFormatException e) {

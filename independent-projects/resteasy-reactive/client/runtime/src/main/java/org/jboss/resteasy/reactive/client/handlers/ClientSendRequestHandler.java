@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.client.handlers;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -62,6 +63,7 @@ import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.streams.Pipe;
 import io.vertx.core.streams.Pump;
+import io.vertx.core.streams.ReadStream;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
     private static final Logger log = Logger.getLogger(ClientSendRequestHandler.class);
@@ -165,6 +167,20 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                             attachSentHandlers(sent, httpClientRequest, requestContext);
                                         }
                                     });
+                } else if (requestContext.isInputStream()) {
+                    Future<HttpClientResponse> sent;
+                    ReadStream<Buffer> actualEntity;
+                    try {
+                        actualEntity = ClientSendRequestHandler.this.setRequestHeadersForSendingInputStream(
+                                httpClientRequest, requestContext);
+                        sent = httpClientRequest.send(actualEntity);
+                        if (loggingScope != LoggingScope.NONE) {
+                            clientLogger.logRequest(httpClientRequest, null, false);
+                        }
+                        attachSentHandlers(sent, httpClientRequest, requestContext);
+                    } catch (Throwable e) {
+                        requestContext.resume(e);
+                    }
                 } else {
                     Future<HttpClientResponse> sent;
                     Buffer actualEntity;
@@ -566,5 +582,20 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 headerMap.putSingle(HttpHeaders.CONTENT_ENCODING, v.getEncoding());
             }
         }
+    }
+
+    private ReadStream<Buffer> setRequestHeadersForSendingInputStream(HttpClientRequest httpClientRequest,
+            RestClientRequestContext state) {
+        MultivaluedMap<String, String> headerMap = state.getRequestHeaders().asMap();
+        updateRequestHeadersFromConfig(state, headerMap);
+        headerMap.putSingle(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM);
+        Entity<?> entity = state.getEntity();
+        InputStream inputStream = (InputStream) entity.getEntity();
+        httpClientRequest.setChunked(true);
+        Vertx vertx = Vertx.currentContext().owner();
+        ReadStream<Buffer> readStream = new AsyncInputStream(vertx, inputStream);
+        // set the Vertx headers after we've run the interceptors because they can modify them
+        setVertxHeaders(httpClientRequest, headerMap);
+        return readStream;
     }
 }

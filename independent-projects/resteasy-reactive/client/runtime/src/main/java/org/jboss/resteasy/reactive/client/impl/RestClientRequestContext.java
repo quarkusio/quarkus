@@ -496,6 +496,10 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         return File.class.equals(rawType) || Path.class.equals(rawType);
     }
 
+    public boolean isInputStream() {
+        return entity != null && entity.getEntity() instanceof InputStream;
+    }
+
     public boolean isInputStreamDownload() {
         if (responseType == null) {
             return false;

@@ -37,11 +37,11 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
-      - name: Set up JDK 11
+      - name: Set up JDK {java.version}
         uses: actions/setup-java@v3
         with:
           distribution: temurin
-          java-version: 11
+          java-version: {java.version}
           cache: 'maven'
           server-id: ossrh
           server-username: MAVEN_USERNAME
@@ -54,7 +54,7 @@ jobs:
 
       - name: Update latest release version in docs
         run: |
-          mvn -B -ntp -pl docs -am generate-resources -Denforcer.skip -Dformatter.skip -Dimpsort.skip
+          mvn -B -ntp -pl docs -am package -DskipTests -DskipITs -Denforcer.skip -Dformatter.skip -Dimpsort.skip
           if ! git diff --quiet docs/modules/ROOT/pages/includes/attributes.adoc; then
             git add docs/modules/ROOT/pages/includes/attributes.adoc
             git commit -m "Update the latest release version ${{steps.metadata.outputs.current-version}} in documentation"

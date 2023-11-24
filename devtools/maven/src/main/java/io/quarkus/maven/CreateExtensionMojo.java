@@ -180,6 +180,12 @@ public class CreateExtensionMojo extends AbstractMojo {
     String quarkusBomVersion;
 
     /**
+     * Version of Java used to build the project.
+     */
+    @Parameter(property = "javaVersion")
+    private String javaVersion;
+
+    /**
      * Indicates whether to generate an extension codestart
      */
     @Parameter(property = "withCodestart")
@@ -281,7 +287,8 @@ public class CreateExtensionMojo extends AbstractMojo {
                 .quarkusVersion(quarkusVersion)
                 .quarkusBomGroupId(quarkusBomGroupId)
                 .quarkusBomArtifactId(quarkusBomArtifactId)
-                .quarkusBomGroupId(quarkusBomVersion)
+                .quarkusBomVersion(quarkusBomVersion)
+                .javaVersion(javaVersion)
                 .withCodestart(withCodestart)
                 .withoutUnitTest(withoutTests || withoutUnitTest)
                 .withoutDevModeTest(withoutTests || withoutDevModeTest)

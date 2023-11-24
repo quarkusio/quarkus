@@ -218,8 +218,8 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
             throw new AssertionError(
                     "Default mapper cannot process date/time properties. So we were expecting commit to fail, but it did not!");
         } catch (Exception e) {
-            if (!(e.getCause() instanceof IllegalArgumentException)
-                    && !e.getCause().getMessage().contains("I cannot convert anything to JSON")) {
+            if (!(e.getCause() instanceof UnsupportedOperationException)
+                    || !e.getCause().getMessage().contains("I cannot convert anything to JSON")) {
                 throw new AssertionError("Transaction failed for a different reason than expected.", e);
             }
         }

@@ -1,7 +1,5 @@
 package io.quarkus.it.jpa.postgresql;
 
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.StringReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -30,10 +28,10 @@ import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.it.jpa.postgresql.otherpu.EntityWithXmlOtherPU;
@@ -43,8 +41,9 @@ import io.quarkus.it.jpa.postgresql.otherpu.EntityWithXmlOtherPU;
  * then we specifically focus on supporting the PgSQLXML mapping abilities for XML types:
  * both need to work.
  */
-@WebServlet(name = "JPATestBootstrapEndpoint", urlPatterns = "/jpa-withxml/testfunctionality")
-public class JPAFunctionalityTestEndpoint extends HttpServlet {
+@Path("/jpa-withxml/testfunctionality")
+@Produces(MediaType.TEXT_PLAIN)
+public class JPAFunctionalityTestEndpoint {
 
     @Inject
     EntityManagerFactory entityManagerFactory;
@@ -55,15 +54,11 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
     @Inject
     DataSource ds;
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            doStuffWithHibernate(entityManagerFactory, otherEntityManagerFactory);
-            doStuffWithDatasource();
-        } catch (Exception e) {
-            reportException("An error occurred while performing Hibernate operations", e, resp);
-        }
-        resp.getWriter().write("OK");
+    @GET
+    public String test() throws SQLException, TransformerException {
+        doStuffWithHibernate(entityManagerFactory, otherEntityManagerFactory);
+        doStuffWithDatasource();
+        return "OK";
     }
 
     private void doStuffWithDatasource() throws SQLException, TransformerException {
@@ -273,18 +268,6 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
                 throw new AssertionError("flush failed for a different reason than expected.", exception);
             }
         }
-    }
-
-    private void reportException(String errorMessage, final Exception e, final HttpServletResponse resp) throws IOException {
-        final PrintWriter writer = resp.getWriter();
-        if (errorMessage != null) {
-            writer.write(errorMessage);
-            writer.write(" ");
-        }
-        writer.write(e.toString());
-        writer.append("\n\t");
-        e.printStackTrace(writer);
-        writer.append("\n\t");
     }
 
 }

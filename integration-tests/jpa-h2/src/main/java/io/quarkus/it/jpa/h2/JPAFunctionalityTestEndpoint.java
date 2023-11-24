@@ -1,7 +1,6 @@
 package io.quarkus.it.jpa.h2;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -14,10 +13,10 @@ import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import org.wildfly.common.Assert;
 
@@ -25,27 +24,15 @@ import org.wildfly.common.Assert;
  * Basic test running JPA with the H2 database.
  * The application can work in either standard JVM or in native mode, while we run H2 as a separate JVM process.
  */
-@WebServlet(name = "JPATestBootstrapEndpoint", urlPatterns = "/jpa-h2/testfunctionality")
-public class JPAFunctionalityTestEndpoint extends HttpServlet {
+@Path("/jpa-h2/testfunctionality")
+@Produces(MediaType.TEXT_PLAIN)
+public class JPAFunctionalityTestEndpoint {
 
     @Inject
     EntityManagerFactory entityManagerFactory;
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            doStuffWithHibernate(entityManagerFactory);
-        } catch (Exception e) {
-            reportException("An error occurred while performing Hibernate operations", e, resp);
-        }
-        resp.getWriter().write("OK");
-    }
-
-    /**
-     * Lists the various operations we want to test for:
-     */
-    private static void doStuffWithHibernate(EntityManagerFactory entityManagerFactory) {
-
+    @GET
+    public String test() throws IOException {
         //Cleanup any existing data:
         deleteAllPerson(entityManagerFactory);
 
@@ -65,6 +52,7 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
         //Test capability to load enhanced proxies:
         verifyEnhancedProxies(entityManagerFactory);
 
+        return "OK";
     }
 
     private static void verifyEnhancedProxies(EntityManagerFactory emf) {
@@ -85,8 +73,7 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
     }
 
     private static void verifyHqlFetch(EntityManagerFactory emf) {
-        EntityManager em = emf.createEntityManager();
-        try {
+        try (EntityManager em = emf.createEntityManager()) {
             EntityTransaction transaction = em.getTransaction();
             try {
                 transaction.begin();
@@ -100,8 +87,6 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
                 }
                 throw e;
             }
-        } finally {
-            em.close();
         }
     }
 
@@ -184,21 +169,8 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
         return UUID.randomUUID().toString();
     }
 
-    private void reportException(String errorMessage, final Exception e, final HttpServletResponse resp) throws IOException {
-        final PrintWriter writer = resp.getWriter();
-        if (errorMessage != null) {
-            writer.write(errorMessage);
-            writer.write(" ");
-        }
-        writer.write(e.toString());
-        writer.append("\n\t");
-        e.printStackTrace(writer);
-        writer.append("\n\t");
-    }
-
     private static void doAsUnit(EntityManagerFactory emf, Consumer<EntityManager> f) {
-        final EntityManager em = emf.createEntityManager();
-        try {
+        try (EntityManager em = emf.createEntityManager()) {
             EntityTransaction transaction = em.getTransaction();
             try {
                 transaction.begin();
@@ -210,8 +182,6 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
                 }
                 throw e;
             }
-        } finally {
-            em.close();
         }
     }
 

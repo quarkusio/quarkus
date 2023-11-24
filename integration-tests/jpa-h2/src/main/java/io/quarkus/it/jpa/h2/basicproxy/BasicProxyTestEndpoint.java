@@ -7,17 +7,18 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.runtime.StartupEvent;
 
 @ApplicationScoped
-@WebServlet(urlPatterns = "/jpa-h2/testbasicproxy")
-public class BasicProxyTestEndpoint extends HttpServlet {
+@Path("/jpa-h2/testbasicproxy")
+@Produces(MediaType.TEXT_PLAIN)
+public class BasicProxyTestEndpoint {
 
     @Inject
     EntityManager entityManager;
@@ -30,12 +31,12 @@ public class BasicProxyTestEndpoint extends HttpServlet {
         entityManager.persist(entity);
     }
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    @GET
+    public String test() throws IOException {
         final List list = entityManager.createQuery("from ConcreteEntity").getResultList();
         if (list.size() != 1) {
             throw new RuntimeException("Expected 1 result, got " + list.size());
         }
-        resp.getWriter().write("OK");
+        return "OK";
     }
 }

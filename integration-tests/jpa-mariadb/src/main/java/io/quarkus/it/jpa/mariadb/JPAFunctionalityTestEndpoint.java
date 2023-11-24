@@ -1,7 +1,6 @@
 package io.quarkus.it.jpa.mariadb;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -18,17 +17,18 @@ import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 /**
  * Basic test running JPA with the MariaDB database.
  * The application can work in either standard JVM or in native mode.
  */
-@WebServlet(name = "JPATestBootstrapEndpoint", urlPatterns = "/jpa-mariadb/testfunctionality")
-public class JPAFunctionalityTestEndpoint extends HttpServlet {
+@Path("/jpa-mariadb/testfunctionality")
+@Produces(MediaType.TEXT_PLAIN)
+public class JPAFunctionalityTestEndpoint {
 
     @Inject
     EntityManagerFactory entityManagerFactory;
@@ -36,21 +36,8 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
     @Inject
     DataSource ds;
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            doStuffWithHibernate(entityManagerFactory, ds);
-        } catch (Exception e) {
-            reportException("An error occurred while performing Hibernate operations", e, resp);
-        }
-        resp.getWriter().write("OK");
-    }
-
-    /**
-     * Lists the various operations we want to test for:
-     */
-    private static void doStuffWithHibernate(EntityManagerFactory entityManagerFactory, DataSource ds) throws SQLException {
-
+    @GET
+    public String test() throws IOException, SQLException {
         //Cleanup any existing data:
         deleteAllPerson(entityManagerFactory);
 
@@ -68,6 +55,7 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
 
         deleteAllPerson(entityManagerFactory);
 
+        return "OK";
     }
 
     private static void verifyJPANamedQuery(final EntityManagerFactory emf) {
@@ -147,18 +135,6 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
 
     private static String randomName() {
         return UUID.randomUUID().toString();
-    }
-
-    private void reportException(String errorMessage, final Exception e, final HttpServletResponse resp) throws IOException {
-        final PrintWriter writer = resp.getWriter();
-        if (errorMessage != null) {
-            writer.write(errorMessage);
-            writer.write(" ");
-        }
-        writer.write(e.toString());
-        writer.append("\n\t");
-        e.printStackTrace(writer);
-        writer.append("\n\t");
     }
 
     private static void verifyGetPersonUsingSetObject(final DataSource ds) throws SQLException {

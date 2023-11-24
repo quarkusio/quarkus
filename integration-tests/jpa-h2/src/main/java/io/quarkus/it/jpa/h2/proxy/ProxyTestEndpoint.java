@@ -6,19 +6,19 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import io.quarkus.runtime.StartupEvent;
 
-@WebServlet(urlPatterns = "/jpa-h2/testproxy")
 @ApplicationScoped
-public class ProxyTestEndpoint extends HttpServlet {
+@Path("/jpa-h2/testproxy")
+@Produces(MediaType.TEXT_PLAIN)
+public class ProxyTestEndpoint {
 
     @Inject
     EntityManager entityManager;
@@ -67,9 +67,8 @@ public class ProxyTestEndpoint extends HttpServlet {
      *
      * We need to do our own proxy generation at build time, so this tests that the logic matches what hibernate expects
      */
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-
+    @GET
+    public String test() throws IOException {
         PetOwner owner = entityManager.find(PetOwner.class, 1);
         expectEquals("Stuart", owner.getName());
         expectEquals("Generic pet noises", owner.getPet().makeNoise());
@@ -97,8 +96,7 @@ public class ProxyTestEndpoint extends HttpServlet {
         expectFalse(owner.getPet() instanceof Pet);
         expectTrue(owner.getPet() instanceof DogProxy);
 
-        resp.getWriter().write("OK");
-
+        return "OK";
     }
 
     void expectEquals(Object expected, Object actual) {

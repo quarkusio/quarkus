@@ -1,7 +1,5 @@
 package io.quarkus.it.jpa.postgresql;
 
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
@@ -15,10 +13,10 @@ import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
-import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.it.jpa.postgresql.otherpu.EntityWithJsonOtherPU;
@@ -26,8 +24,9 @@ import io.quarkus.it.jpa.postgresql.otherpu.EntityWithJsonOtherPU;
 /**
  * Various tests covering JPA functionality. All tests should work in both standard JVM and in native mode.
  */
-@WebServlet(name = "JPATestBootstrapEndpoint", urlPatterns = "/jpa/testfunctionality")
-public class JPAFunctionalityTestEndpoint extends HttpServlet {
+@Path("/jpa/testfunctionality")
+@Produces(MediaType.TEXT_PLAIN)
+public class JPAFunctionalityTestEndpoint {
 
     @Inject
     EntityManagerFactory entityManagerFactory;
@@ -35,22 +34,9 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
     @PersistenceUnit("other")
     EntityManagerFactory otherEntityManagerFactory;
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            doStuffWithHibernate(entityManagerFactory, otherEntityManagerFactory);
-        } catch (Exception e) {
-            reportException("An error occurred while performing Hibernate operations", e, resp);
-        }
-        resp.getWriter().write("OK");
-    }
-
-    /**
-     * Lists the various operations we want to test for:
-     */
-    private static void doStuffWithHibernate(EntityManagerFactory entityManagerFactory,
-            EntityManagerFactory otherEntityManagerFactory) {
-
+    @GET
+    @Path("base")
+    public String base() {
         //Cleanup any existing data:
         deleteAllPerson(entityManagerFactory);
 
@@ -65,11 +51,7 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
 
         deleteAllPerson(entityManagerFactory);
 
-        // Try an entity using a UUID
-        verifyUUIDEntity(entityManagerFactory);
-
-        doJsonStuff(entityManagerFactory, otherEntityManagerFactory);
-
+        return "OK";
     }
 
     private static void verifyJPANamedQuery(final EntityManagerFactory emf) {
@@ -157,8 +139,10 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
         return UUID.randomUUID().toString();
     }
 
-    private static void verifyUUIDEntity(final EntityManagerFactory emf) {
-        EntityManager em = emf.createEntityManager();
+    @GET
+    @Path("uuid")
+    public String uuid() {
+        EntityManager em = entityManagerFactory.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
         transaction.begin();
         MyUUIDEntity myEntity = new MyUUIDEntity();
@@ -167,7 +151,7 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
         transaction.commit();
         em.close();
 
-        em = emf.createEntityManager();
+        em = entityManagerFactory.createEntityManager();
         transaction = em.getTransaction();
         transaction.begin();
         myEntity = em.find(MyUUIDEntity.class, myEntity.getId());
@@ -176,10 +160,13 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
         }
         transaction.commit();
         em.close();
+        return "OK";
     }
 
-    private static void doJsonStuff(EntityManagerFactory emf, EntityManagerFactory otherEmf) {
-        try (EntityManager em = emf.createEntityManager()) {
+    @GET
+    @Path("json")
+    public String json() {
+        try (EntityManager em = entityManagerFactory.createEntityManager()) {
             EntityTransaction transaction = em.getTransaction();
             transaction.begin();
 
@@ -189,7 +176,7 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
             transaction.commit();
         }
 
-        try (EntityManager em = emf.createEntityManager()) {
+        try (EntityManager em = entityManagerFactory.createEntityManager()) {
             EntityTransaction transaction = em.getTransaction();
             transaction.begin();
             List<EntityWithJson> entities = em
@@ -201,14 +188,14 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
             transaction.commit();
         }
 
-        try (EntityManager em = emf.createEntityManager()) {
+        try (EntityManager em = entityManagerFactory.createEntityManager()) {
             EntityTransaction transaction = em.getTransaction();
             transaction.begin();
             em.createQuery("delete from EntityWithJson").executeUpdate();
             transaction.commit();
         }
 
-        try (EntityManager em = otherEmf.createEntityManager()) {
+        try (EntityManager em = otherEntityManagerFactory.createEntityManager()) {
             EntityTransaction transaction = em.getTransaction();
             transaction.begin();
             EntityWithJsonOtherPU otherPU = new EntityWithJsonOtherPU(
@@ -231,18 +218,8 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
                 throw new AssertionError("flush failed for a different reason than expected.", exception);
             }
         }
-    }
 
-    private void reportException(String errorMessage, final Exception e, final HttpServletResponse resp) throws IOException {
-        final PrintWriter writer = resp.getWriter();
-        if (errorMessage != null) {
-            writer.write(errorMessage);
-            writer.write(" ");
-        }
-        writer.write(e.toString());
-        writer.append("\n\t");
-        e.printStackTrace(writer);
-        writer.append("\n\t");
+        return "OK";
     }
 
 }

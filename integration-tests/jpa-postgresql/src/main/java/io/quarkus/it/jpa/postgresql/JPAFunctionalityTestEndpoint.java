@@ -187,7 +187,10 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
                     new EntityWithJson.ToBeSerializedWithDateTime(LocalDate.of(2023, 7, 28)));
             em.persist(entity);
             transaction.commit();
+        }
 
+        try (EntityManager em = emf.createEntityManager()) {
+            EntityTransaction transaction = em.getTransaction();
             transaction.begin();
             List<EntityWithJson> entities = em
                     .createQuery("select e from EntityWithJson e", EntityWithJson.class)
@@ -196,7 +199,10 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
                 throw new AssertionError("No entities with json were found");
             }
             transaction.commit();
+        }
 
+        try (EntityManager em = emf.createEntityManager()) {
+            EntityTransaction transaction = em.getTransaction();
             transaction.begin();
             em.createQuery("delete from EntityWithJson").executeUpdate();
             transaction.commit();

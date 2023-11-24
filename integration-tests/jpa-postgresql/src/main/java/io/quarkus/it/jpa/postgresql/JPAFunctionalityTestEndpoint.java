@@ -213,14 +213,22 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
             transaction.begin();
             EntityWithJsonOtherPU otherPU = new EntityWithJsonOtherPU(
                     new EntityWithJsonOtherPU.ToBeSerializedWithDateTime(LocalDate.of(2023, 7, 28)));
-            em.persist(otherPU);
-            transaction.commit();
-            throw new AssertionError(
-                    "Default mapper cannot process date/time properties. So we were expecting commit to fail, but it did not!");
-        } catch (Exception e) {
-            if (!(e.getCause() instanceof UnsupportedOperationException)
-                    || !e.getCause().getMessage().contains("I cannot convert anything to JSON")) {
-                throw new AssertionError("Transaction failed for a different reason than expected.", e);
+            Exception exception = null;
+            try {
+                em.persist(otherPU);
+                em.flush();
+            } catch (Exception e) {
+                exception = e;
+            }
+            transaction.rollback();
+
+            if (exception == null) {
+                throw new AssertionError(
+                        "Default mapper cannot process date/time properties. So we were expecting flush to fail, but it did not!");
+            }
+            if (!(exception.getCause() instanceof UnsupportedOperationException)
+                    || !exception.getCause().getMessage().contains("I cannot convert anything to JSON")) {
+                throw new AssertionError("flush failed for a different reason than expected.", exception);
             }
         }
     }

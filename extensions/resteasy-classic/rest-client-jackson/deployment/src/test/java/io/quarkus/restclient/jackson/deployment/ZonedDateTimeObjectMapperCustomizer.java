@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.ser.ZonedDateTimeSerializer;
 
 import io.quarkus.jackson.ObjectMapperCustomizer;
@@ -22,8 +22,13 @@ import io.quarkus.jackson.ObjectMapperCustomizer;
 public class ZonedDateTimeObjectMapperCustomizer implements ObjectMapperCustomizer {
 
     @Override
+    public int priority() {
+        return MINIMUM_PRIORITY;
+    }
+
+    @Override
     public void customize(ObjectMapper objectMapper) {
-        JavaTimeModule customDateModule = new JavaTimeModule();
+        SimpleModule customDateModule = new SimpleModule();
         customDateModule.addSerializer(ZonedDateTime.class, new ZonedDateTimeSerializer(
                 new DateTimeFormatterBuilder().appendInstant(0).toFormatter().withZone(ZoneId.of("Z"))));
         customDateModule.addDeserializer(ZonedDateTime.class, new ZonedDateTimeEuropeLondonDeserializer());

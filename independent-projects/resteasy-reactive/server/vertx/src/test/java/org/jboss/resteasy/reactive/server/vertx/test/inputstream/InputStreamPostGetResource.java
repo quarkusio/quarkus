@@ -1,7 +1,12 @@
 package org.jboss.resteasy.reactive.server.vertx.test.inputstream;
 
 import io.smallrye.common.annotation.Blocking;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import org.jboss.logging.Logger;
 
@@ -32,8 +37,9 @@ public class InputStreamPostGetResource {
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     @Blocking
     public InputStream test(@PathParam("len") long len) throws IOException {
-        LOG.infof("To Write %d", len);
-        return new FakeInputStream(len);
+        long lenMb = len * 1024 * 1024L;
+        LOG.infof("To Write %d", lenMb);
+        return new FakeInputStream(lenMb);
     }
 
 }

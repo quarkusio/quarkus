@@ -593,7 +593,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         InputStream inputStream = (InputStream) entity.getEntity();
         httpClientRequest.setChunked(true);
         Vertx vertx = Vertx.currentContext().owner();
-        ReadStream<Buffer> readStream = new AsyncInputStream(vertx, inputStream);
+        ReadStream<Buffer> readStream = new AsyncInputStream(vertx, inputStream, maxChunkSize);
         // set the Vertx headers after we've run the interceptors because they can modify them
         setVertxHeaders(httpClientRequest, headerMap);
         return readStream;

@@ -1,6 +1,5 @@
 package org.jboss.resteasy.reactive.server.vertx.test.inputstream;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;

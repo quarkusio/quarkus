@@ -77,8 +77,8 @@ public class InputStreamPostGetResourceTest {
      */
     @ParameterizedTest
     @ValueSource(ints = {1, 100, 1024})
-    @DisplayName("Test Get InputStream")
-    public void testGetInputStream(int mb) throws Exception {
+    @DisplayName("Test Post InputStream")
+    public void testPostInputStream(int mb) throws Exception {
         WebTarget base = client.target(generateURL("/inputstreamtransfer/test"));
         long size = mb * 1024 * 1024L;
         InputStream is = new FakeInputStream(size);
@@ -101,10 +101,10 @@ public class InputStreamPostGetResourceTest {
      */
     @ParameterizedTest
     @ValueSource(ints = {1, 100, 1024})
-    @DisplayName("Test Post InputStream")
-    public void testPostInputStream(int mb) throws Exception {
-        int size = mb * 1024 * 1024;
-        WebTarget base = client.target(generateURL("/inputstreamtransfer/test/" + size));
+    @DisplayName("Test Get InputStream")
+    public void testGetInputStream(int mb) throws Exception {
+        long size = mb * 1024 * 1024L;
+        WebTarget base = client.target(generateURL("/inputstreamtransfer/test/" + mb));
         long before = getCurrentlyAllocatedMemory();
         long start = System.nanoTime();
         InputStream is = base.request().get(InputStream.class);

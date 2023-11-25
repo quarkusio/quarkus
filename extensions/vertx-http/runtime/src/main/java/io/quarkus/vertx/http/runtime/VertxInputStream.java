@@ -139,7 +139,7 @@ public class VertxInputStream extends InputStream {
             return 0;
         }
         if (pooled != null && pooled.isReadable()) {
-            return pooled.readableBytes();
+            return pooled.readableBytes() + exchange.readBytesAvailable();
         }
 
         return exchange.readBytesAvailable();
@@ -235,7 +235,6 @@ public class VertxInputStream extends InputStream {
 
         protected ByteBuf readBlocking() throws IOException {
             long expire = System.currentTimeMillis() + timeout;
-            Buffer ret = null;
             synchronized (request.connection()) {
                 while (input1 == null && !eof && readException == null) {
                     long rem = expire - System.currentTimeMillis();
@@ -263,16 +262,18 @@ public class VertxInputStream extends InputStream {
                 if (readException != null) {
                     throw new IOException(readException);
                 }
-                ret = input1;
+                Buffer ret = input1;
                 input1 = null;
                 if (inputOverflow != null) {
                     input1 = inputOverflow.poll();
+                    if (input1 == null) {
+                        request.fetch(1);
+                    }
+                } else if (!eof) {
+                    request.fetch(1);
                 }
+                return ret == null ? null : ret.getByteBuf();
             }
-            if (!eof) {
-                request.fetch(1);
-            }
-            return ret == null ? null : ret.getByteBuf();
         }
 
         @Override

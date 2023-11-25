@@ -1,35 +1,41 @@
 package org.jboss.resteasy.reactive.client.handlers;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import io.vertx.core.*;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.impl.InboundBuffer;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Adapt an InputStream to a ReadStream that can be used with a Pump in Vertx.
  */
 public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
     public static final String INPUTSTREAM_IS_CLOSED = "Inputstream is closed";
-    private static int BUF_SIZE = 8192;
     // Based on the inputStream with the real data
     private final InputStream in;
     private final Context context;
     private final InboundBuffer<Buffer> queue;
-    private final byte[] bytes = new byte[BUF_SIZE];
+    private final byte[] bytes;
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final AtomicBoolean readInProgress = new AtomicBoolean(false);
     private Handler<Buffer> dataHandler;
     private Handler<Void> endHandler;
     private Handler<Throwable> exceptionHandler;
+    private final int maxChunkSize;
 
     /**
      * Create a new Async InputStream that can we used with a Pump
      */
-    public AsyncInputStream(final Vertx vertx, final InputStream in) {
+    public AsyncInputStream(final Vertx vertx, final InputStream in, final int maxChunkSize) {
+        this.maxChunkSize = Math.max(maxChunkSize, 8192);
+        bytes = new byte[this.maxChunkSize];
         this.context = vertx.getOrCreateContext();
         this.in = in;
         queue = new InboundBuffer<>(context, 0);
@@ -128,7 +134,7 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
 
     private void doRead() {
         checkClose();
-        doRead(BUF_SIZE);
+        doRead(maxChunkSize);
     }
 
     private void doRead(final int len) {

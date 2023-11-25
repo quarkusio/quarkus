@@ -438,6 +438,7 @@ If the access token contains the roles and this access token is not meant to be 
 If UserInfo is the source of the roles then set `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
 
 Additionally, a custom `SecurityIdentityAugmentor` can also be used to add the roles. For more information, see xref:security-customization.adoc#security-identity-customization[SecurityIdentity customization].
+You can also map `SecurityIdentity` roles created from token claims to deployment specific roles with the xref:security-authorize-web-endpoints-reference.adoc#map-security-identity-roles[HTTP Security policy].
 
 === Ensuring validity of tokens and authentication data
 

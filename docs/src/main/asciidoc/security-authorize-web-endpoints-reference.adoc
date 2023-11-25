@@ -335,6 +335,19 @@ This configuration only impacts resources served from the fixed or static URL, `
 
 For more information, see link:https://quarkus.io/blog/path-resolution-in-quarkus/[Path Resolution in Quarkus].
 
+[[map-security-identity-roles]]
+=== Map `SecurityIdentity` roles
+
+Winning role-based policy can map the `SecurityIdentity` roles to the deployment specific roles.
+These roles can later be used for endpoint authorization with the `@RolesAllowed` annotation.
+
+[source,properties]
+----
+quarkus.http.auth.policy.admin-policy1.roles.admin=Admin1 <1>
+quarkus.http.auth.permission.roles1.paths=/*
+quarkus.http.auth.permission.roles1.policy=admin-policy1
+----
+<1> Map the `admin` role to `Admin1` role. The `SecurityIdentity` will have both `admin` and `Admin1` roles.
 
 [[standard-security-annotations]]
 == Authorization using annotations

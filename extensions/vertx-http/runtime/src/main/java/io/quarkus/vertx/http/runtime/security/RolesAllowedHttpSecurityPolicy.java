@@ -17,34 +17,30 @@ import io.vertx.ext.web.RoutingContext;
  * permission checker that handles role based permissions
  */
 public class RolesAllowedHttpSecurityPolicy implements HttpSecurityPolicy {
-    private List<String> rolesAllowed;
+    private static final String AUTHENTICATED = "**";
+    private final String[] rolesAllowed;
     private final boolean grantPermissions;
+    private final boolean grantRoles;
     private final Map<String, Set<Permission>> roleToPermissions;
+    private final Map<String, List<String>> roleToRoles;
 
-    public RolesAllowedHttpSecurityPolicy(List<String> rolesAllowed) {
-        this.rolesAllowed = rolesAllowed;
-        this.grantPermissions = false;
-        this.roleToPermissions = null;
-    }
-
-    public RolesAllowedHttpSecurityPolicy() {
-        this.grantPermissions = false;
-        this.roleToPermissions = null;
-    }
-
-    public RolesAllowedHttpSecurityPolicy(List<String> rolesAllowed, Map<String, Set<Permission>> roleToPermissions) {
-        this.rolesAllowed = rolesAllowed;
-        this.grantPermissions = true;
-        this.roleToPermissions = roleToPermissions;
-    }
-
-    public List<String> getRolesAllowed() {
-        return rolesAllowed;
-    }
-
-    public RolesAllowedHttpSecurityPolicy setRolesAllowed(List<String> rolesAllowed) {
-        this.rolesAllowed = rolesAllowed;
-        return this;
+    public RolesAllowedHttpSecurityPolicy(List<String> rolesAllowed, Map<String, Set<Permission>> roleToPermissions,
+            Map<String, List<String>> roleToRoles) {
+        if (roleToPermissions != null && !roleToPermissions.isEmpty()) {
+            this.grantPermissions = true;
+            this.roleToPermissions = Map.copyOf(roleToPermissions);
+        } else {
+            this.grantPermissions = false;
+            this.roleToPermissions = null;
+        }
+        if (roleToRoles != null && !roleToRoles.isEmpty()) {
+            this.grantRoles = true;
+            this.roleToRoles = Map.copyOf(roleToRoles);
+        } else {
+            this.grantRoles = false;
+            this.roleToRoles = null;
+        }
+        this.rolesAllowed = rolesAllowed.toArray(String[]::new);
     }
 
     @Override
@@ -53,12 +49,19 @@ public class RolesAllowedHttpSecurityPolicy implements HttpSecurityPolicy {
         return identity.map(new Function<SecurityIdentity, CheckResult>() {
             @Override
             public CheckResult apply(SecurityIdentity securityIdentity) {
-                for (String i : rolesAllowed) {
-                    if (securityIdentity.hasRole(i) || ("**".equals(i) && !securityIdentity.isAnonymous())) {
-                        if (grantPermissions) {
-                            // permit access and add augment security identity with additional permissions
-                            return grantPermissions(securityIdentity);
+                if (grantPermissions || grantRoles) {
+                    SecurityIdentity augmented = augmentIdentity(securityIdentity);
+                    if (augmented != null) {
+                        for (String i : rolesAllowed) {
+                            if (augmented.hasRole(i) || (AUTHENTICATED.equals(i) && !augmented.isAnonymous())) {
+                                return new CheckResult(true, augmented);
+                            }
                         }
+                        return CheckResult.DENY;
+                    }
+                }
+                for (String i : rolesAllowed) {
+                    if (securityIdentity.hasRole(i) || (AUTHENTICATED.equals(i) && !securityIdentity.isAnonymous())) {
                         return CheckResult.PERMIT;
                     }
                 }
@@ -67,23 +70,36 @@ public class RolesAllowedHttpSecurityPolicy implements HttpSecurityPolicy {
         });
     }
 
-    private CheckResult grantPermissions(SecurityIdentity securityIdentity) {
+    private SecurityIdentity augmentIdentity(SecurityIdentity securityIdentity) {
         Set<String> roles = securityIdentity.getRoles();
         if (roles != null && !roles.isEmpty()) {
-            Set<Permission> permissions = new HashSet<>();
+            Set<Permission> permissions = grantPermissions ? new HashSet<>() : null;
+            Set<String> newRoles = grantRoles ? new HashSet<>() : null;
             for (String role : roles) {
-                if (roleToPermissions.containsKey(role)) {
-                    permissions.addAll(roleToPermissions.get(role));
+                if (grantPermissions) {
+                    if (roleToPermissions.containsKey(role)) {
+                        permissions.addAll(roleToPermissions.get(role));
+                    }
+                }
+                if (grantRoles) {
+                    if (roleToRoles.containsKey(role)) {
+                        newRoles.addAll(roleToRoles.get(role));
+                    }
                 }
             }
-            if (!permissions.isEmpty()) {
-                return new CheckResult(true, augmentIdentity(securityIdentity, permissions));
+            boolean addPerms = grantPermissions && !permissions.isEmpty();
+            if (grantRoles && !newRoles.isEmpty()) {
+                newRoles.addAll(roles);
+                return augmentIdentity(securityIdentity, permissions, Set.copyOf(newRoles), addPerms);
+            } else if (addPerms) {
+                return augmentIdentity(securityIdentity, permissions, roles, true);
             }
         }
-        return CheckResult.PERMIT;
+        return null;
     }
 
-    private static SecurityIdentity augmentIdentity(SecurityIdentity securityIdentity, Set<Permission> permissions) {
+    private static SecurityIdentity augmentIdentity(SecurityIdentity securityIdentity, Set<Permission> permissions,
+            Set<String> roles, boolean addPerms) {
         return new SecurityIdentity() {
             @Override
             public Principal getPrincipal() {
@@ -97,12 +113,12 @@ public class RolesAllowedHttpSecurityPolicy implements HttpSecurityPolicy {
 
             @Override
             public Set<String> getRoles() {
-                return securityIdentity.getRoles();
+                return roles;
             }
 
             @Override
             public boolean hasRole(String s) {
-                return securityIdentity.hasRole(s);
+                return roles.contains(s);
             }
 
             @Override
@@ -127,9 +143,11 @@ public class RolesAllowedHttpSecurityPolicy implements HttpSecurityPolicy {
 
             @Override
             public Uni<Boolean> checkPermission(Permission requiredPermission) {
-                for (Permission possessedPermission : permissions) {
-                    if (possessedPermission.implies(requiredPermission)) {
-                        return Uni.createFrom().item(true);
+                if (addPerms) {
+                    for (Permission possessedPermission : permissions) {
+                        if (possessedPermission.implies(requiredPermission)) {
+                            return Uni.createFrom().item(true);
+                        }
                     }
                 }
 
@@ -138,9 +156,11 @@ public class RolesAllowedHttpSecurityPolicy implements HttpSecurityPolicy {
 
             @Override
             public boolean checkPermissionBlocking(Permission requiredPermission) {
-                for (Permission possessedPermission : permissions) {
-                    if (possessedPermission.implies(requiredPermission)) {
-                        return true;
+                if (addPerms) {
+                    for (Permission possessedPermission : permissions) {
+                        if (possessedPermission.implies(requiredPermission)) {
+                            return true;
+                        }
                     }
                 }
 

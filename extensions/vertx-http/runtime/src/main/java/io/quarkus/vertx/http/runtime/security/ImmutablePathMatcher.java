@@ -150,7 +150,11 @@ public class ImmutablePathMatcher<T> {
                 if (p.prefixPathHandler != null) {
                     handler = p.prefixPathHandler;
                     if (STRING_PATH_SEPARATOR.equals(p.path)) {
-                        defaultHandler = p.prefixPathHandler;
+                        if (defaultHandler == null) {
+                            defaultHandler = p.prefixPathHandler;
+                        } else {
+                            handlerAccumulator.accept(defaultHandler, p.prefixPathHandler);
+                        }
                     }
                 }
 

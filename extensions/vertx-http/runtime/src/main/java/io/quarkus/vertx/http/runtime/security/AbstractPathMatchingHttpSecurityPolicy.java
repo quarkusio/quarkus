@@ -162,11 +162,12 @@ public class AbstractPathMatchingHttpSecurityPolicy {
         }
 
         for (Map.Entry<String, PolicyConfig> e : rolePolicies.entrySet()) {
-            PolicyConfig policyConfig = e.getValue();
+            final PolicyConfig policyConfig = e.getValue();
+            final Map<String, Set<Permission>> roleToPermissions;
             if (policyConfig.permissions.isEmpty()) {
-                namedPolicies.put(e.getKey(), new RolesAllowedHttpSecurityPolicy(policyConfig.rolesAllowed));
+                roleToPermissions = null;
             } else {
-                final Map<String, Set<Permission>> roleToPermissions = new HashMap<>();
+                roleToPermissions = new HashMap<>();
                 for (Map.Entry<String, List<String>> roleToPermissionStr : policyConfig.permissions.entrySet()) {
 
                     // collect permission actions
@@ -190,9 +191,9 @@ public class AbstractPathMatchingHttpSecurityPolicy {
 
                     roleToPermissions.put(role, Set.copyOf(permissions));
                 }
-                namedPolicies.put(e.getKey(),
-                        new RolesAllowedHttpSecurityPolicy(policyConfig.rolesAllowed, Map.copyOf(roleToPermissions)));
             }
+            namedPolicies.put(e.getKey(),
+                    new RolesAllowedHttpSecurityPolicy(policyConfig.rolesAllowed, roleToPermissions, policyConfig.roles));
         }
         namedPolicies.put("deny", new DenySecurityPolicy());
         namedPolicies.put("permit", new PermitSecurityPolicy());

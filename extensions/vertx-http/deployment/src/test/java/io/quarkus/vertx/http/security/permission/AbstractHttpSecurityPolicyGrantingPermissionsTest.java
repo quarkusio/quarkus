@@ -305,6 +305,7 @@ public abstract class AbstractHttpSecurityPolicyGrantingPermissionsTest {
 
     enum AuthenticatedUserImpl implements AuthenticatedUser {
         ADMIN(AuthenticatedUserImpl::useAdminRole),
+        ROOT(AuthenticatedUserImpl::useRootRole),
         USER(AuthenticatedUserImpl::useUserRole),
         TEST(AuthenticatedUserImpl::useTestRole),
         TEST2(AuthenticatedUserImpl::useTest2Role);
@@ -329,6 +330,10 @@ public abstract class AbstractHttpSecurityPolicyGrantingPermissionsTest {
 
         private static void useTest2Role() {
             TestIdentityController.resetRoles().add("test2", "test2", "test2");
+        }
+
+        private static void useRootRole() {
+            TestIdentityController.resetRoles().add("root", "root", "root", "Admin1");
         }
 
         private static void useAdminRole() {

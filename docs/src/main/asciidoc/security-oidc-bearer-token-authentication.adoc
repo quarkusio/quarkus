@@ -114,6 +114,7 @@ If the token is opaque (binary) then a `scope` property from the remote token in
 If UserInfo is the source of the roles then set `quarkus.oidc.authentication.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
 
 Additionally, a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented in xref:security-customization.adoc#security-identity-customization[Security Identity Customization].
+You can also map `SecurityIdentity` roles created from token claims to deployment specific roles with the xref:security-authorize-web-endpoints-reference.adoc#map-security-identity-roles[HTTP Security policy].
 
 [[token-scopes-and-security-identity-permissions]]
 === Token scopes And SecurityIdentity permissions

@@ -22,6 +22,15 @@ public class PolicyConfig {
     public List<String> rolesAllowed;
 
     /**
+     * Add roles granted to the `SecurityIdentity` based on the roles that the `SecurityIdentity` already have.
+     * For example, the Quarkus OIDC extension can map roles from the verified JWT access token, and you may want
+     * to remap them to a deployment specific roles.
+     */
+    @ConfigDocMapKey("role1")
+    @ConfigItem
+    public Map<String, List<String>> roles;
+
+    /**
      * Permissions granted to the `SecurityIdentity` if this policy is applied successfully
      * (the policy allows request to proceed) and the authenticated request has required role.
      * For example, you can map permission `perm1` with actions `action1` and `action2` to role `admin` by setting

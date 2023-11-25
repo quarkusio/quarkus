@@ -341,6 +341,27 @@ public class PathMatcherTest {
     }
 
     @Test
+    public void testDefaultHandlerMerging() {
+        List<String> handler1 = new ArrayList<>();
+        handler1.add("Neo");
+        List<String> handler2 = new ArrayList<>();
+        handler2.add("Trinity");
+        List<String> handler3 = new ArrayList<>();
+        handler3.add("Morpheus");
+        var matcher = ImmutablePathMatcher.<List<String>> builder().handlerAccumulator(List::addAll)
+                .addPath("/*", handler1).addPath("/*", handler2)
+                .addPath("/", handler3).build();
+        var handler = matcher.match("/default-path-handler").getValue();
+        assertNotNull(handler);
+        assertTrue(handler.contains("Neo"));
+        assertTrue(handler.contains("Trinity"));
+        assertEquals(2, handler.size());
+        handler = matcher.match("/").getValue();
+        assertNotNull(handler);
+        assertEquals(1, handler.size());
+    }
+
+    @Test
     public void testPrefixPathHandlerMerging() {
         List<String> handler1 = new ArrayList<>();
         handler1.add("Neo");

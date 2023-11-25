@@ -9,7 +9,7 @@ if [ $# -eq 0 ]; then
 fi
 VERSION=$1
 
-./mvnw -Dscan=false -Dgradle.cache.local.enabled=false versions:set -Dtcks -DnewVersion="${VERSION}" -DgenerateBackupPoms=false -DprocessAllModules -Prelocations
+./mvnw -e -B -Dscan=false -Dgradle.cache.local.enabled=false versions:set -Dtcks -DnewVersion="${VERSION}" -DgenerateBackupPoms=false -DprocessAllModules -Prelocations
 
 if [ -f devtools/gradle/gradle.properties ]; then
     sed -i -r "s/^version( ?= ?).*$/version\1${VERSION}/" devtools/gradle/gradle.properties

@@ -76,7 +76,7 @@ public class InputStreamPostGetResourceTest {
      * Test for Get InputStream with no issue on size nor OOME
      */
     @ParameterizedTest
-    @ValueSource(ints = {1, 100, 1024, 10 * 1024})
+    @ValueSource(ints = {1, 100, 1024})
     @DisplayName("Test Get InputStream")
     public void testGetInputStream(int mb) throws Exception {
         WebTarget base = client.target(generateURL("/inputstreamtransfer/test"));

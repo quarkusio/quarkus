@@ -24,6 +24,7 @@ import io.vertx.ext.web.RoutingContext;
 public class VertxInputStream extends InputStream {
 
     public static final String CONTINUE = "100-continue";
+    public final byte[] oneByte = new byte[1];
     private final VertxBlockingInput exchange;
 
     private boolean closed;
@@ -59,12 +60,11 @@ public class VertxInputStream extends InputStream {
 
     @Override
     public int read() throws IOException {
-        byte[] b = new byte[1];
-        int read = read(b);
+        int read = read(oneByte);
         if (read == -1) {
             return -1;
         }
-        return b[0] & 0xff;
+        return oneByte[0] & 0xff;
     }
 
     @Override
@@ -76,6 +76,9 @@ public class VertxInputStream extends InputStream {
     public int read(final byte[] b, final int off, final int len) throws IOException {
         if (closed) {
             throw new IOException("Stream is closed");
+        }
+        if (b == null || b.length < off + len) {
+            throw new IOException("Incompatible Buffer size");
         }
         if (continueState == ContinueState.REQUIRED) {
             continueState = ContinueState.SENT;
@@ -135,6 +138,9 @@ public class VertxInputStream extends InputStream {
         if (finished) {
             return 0;
         }
+        if (pooled != null && pooled.isReadable()) {
+            return pooled.readableBytes();
+        }
 
         return exchange.readBytesAvailable();
     }
@@ -173,9 +179,11 @@ public class VertxInputStream extends InputStream {
         protected boolean eof = false;
         protected Throwable readException;
         private final long timeout;
+        private final int headerLen;
 
         public VertxBlockingInput(HttpServerRequest request, long timeout) {
             this.request = request;
+            this.headerLen = getLengthFromHeader();
             this.timeout = timeout;
             final ConnectionBase connection = (ConnectionBase) request.connection();
             synchronized (connection) {
@@ -227,6 +235,7 @@ public class VertxInputStream extends InputStream {
 
         protected ByteBuf readBlocking() throws IOException {
             long expire = System.currentTimeMillis() + timeout;
+            Buffer ret = null;
             synchronized (request.connection()) {
                 while (input1 == null && !eof && readException == null) {
                     long rem = expire - System.currentTimeMillis();
@@ -254,18 +263,16 @@ public class VertxInputStream extends InputStream {
                 if (readException != null) {
                     throw new IOException(readException);
                 }
-                Buffer ret = input1;
+                ret = input1;
                 input1 = null;
                 if (inputOverflow != null) {
                     input1 = inputOverflow.poll();
-                    if (input1 == null) {
-                        request.fetch(1);
-                    }
-                } else if (!eof) {
-                    request.fetch(1);
                 }
-                return ret == null ? null : ret.getByteBuf();
             }
+            if (!eof) {
+                request.fetch(1);
+            }
+            return ret == null ? null : ret.getByteBuf();
         }
 
         @Override
@@ -297,13 +304,14 @@ public class VertxInputStream extends InputStream {
             if (input1 != null) {
                 return input1.getByteBuf().readableBytes();
             }
+            return headerLen;
+        }
 
+        private int getLengthFromHeader() {
             String length = request.getHeader(HttpHeaders.CONTENT_LENGTH);
-
             if (length == null) {
                 return 0;
             }
-
             try {
                 return Integer.parseInt(length);
             } catch (NumberFormatException e) {

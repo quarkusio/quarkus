@@ -190,6 +190,7 @@ class VertxClientInputStream extends InputStream {
 
         protected ByteBuf readBlocking() throws IOException {
             long expire = System.currentTimeMillis() + timeout;
+            Buffer ret = null;
             synchronized (VertxBlockingInput.this) {
                 while (input1 == null && !eof && readException == null) {
                     long rem = expire - System.currentTimeMillis();
@@ -217,18 +218,16 @@ class VertxClientInputStream extends InputStream {
                 if (readException != null) {
                     throw new IOException(readException);
                 }
-                Buffer ret = input1;
+                ret = input1;
                 input1 = null;
                 if (inputOverflow != null) {
                     input1 = inputOverflow.poll();
-                    if (input1 == null) {
-                        request.fetch(1);
-                    }
-                } else if (!eof) {
-                    request.fetch(1);
                 }
-                return ret == null ? null : ret.getByteBuf();
             }
+            if (!eof) {
+                request.fetch(1);
+            }
+            return ret == null ? null : ret.getByteBuf();
         }
 
         @Override

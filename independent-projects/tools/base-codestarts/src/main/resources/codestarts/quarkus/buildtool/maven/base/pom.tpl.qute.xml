@@ -206,6 +206,33 @@
                 <skipITs>false</skipITs>
             </properties>
         </profile>
+        <profile>
+            <id>native-with-agent</id>
+            <activation>
+                <property>
+                    <name>native-with-agent</name>
+                </property>
+            </activation>
+            <properties>
+                <quarkus.package.type>native</quarkus.package.type>
+                <skipITs>false</skipITs>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>$\{surefire-plugin.version}</version>
+                        <configuration>
+                            <argLine>-agentlib:native-image-agent=config-output-dir=target/native-agent-base-config</argLine>
+                            <systemPropertyVariables>
+                                <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                                <maven.home>$\{maven.home}</maven.home>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
     {/if}
 </project>

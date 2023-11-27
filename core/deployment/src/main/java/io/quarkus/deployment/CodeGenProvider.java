@@ -3,6 +3,7 @@ package io.quarkus.deployment;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.microprofile.config.Config;
 import org.wildfly.common.annotation.NotNull;
@@ -91,5 +92,15 @@ public interface CodeGenProvider {
 
     default boolean shouldRun(Path sourceDir, Config config) {
         return Files.isDirectory(sourceDir);
+    }
+
+    /**
+     * Resolve path; e.g. symlinks, etc
+     *
+     * @param path the path to resolve
+     * @return resolved path
+     */
+    static Path resolve(Path path) {
+        return Objects.requireNonNull(path).resolve(".");
     }
 }

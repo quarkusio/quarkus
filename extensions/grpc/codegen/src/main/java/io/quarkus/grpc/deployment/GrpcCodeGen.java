@@ -101,12 +101,12 @@ public class GrpcCodeGen implements CodeGenProvider {
         }
         Path outDir = context.outDir();
         Path workDir = context.workDir();
+        Path inputDir = CodeGenProvider.resolve(context.inputDir());
         Set<String> protoDirs = new LinkedHashSet<>();
-
         try {
             List<String> protoFiles = new ArrayList<>();
-            if (Files.isDirectory(context.inputDir())) {
-                try (Stream<Path> protoFilesPaths = Files.walk(context.inputDir())) {
+            if (Files.isDirectory(inputDir)) {
+                try (Stream<Path> protoFilesPaths = Files.walk(inputDir)) {
                     protoFilesPaths
                             .filter(Files::isRegularFile)
                             .filter(s -> s.toString().endsWith(PROTO))
@@ -114,7 +114,7 @@ public class GrpcCodeGen implements CodeGenProvider {
                             .map(Path::toAbsolutePath)
                             .map(Path::toString)
                             .forEach(protoFiles::add);
-                    protoDirs.add(context.inputDir().normalize().toAbsolutePath().toString());
+                    protoDirs.add(inputDir.normalize().toAbsolutePath().toString());
                 }
             }
             Path dirWithProtosFromDependencies = workDir.resolve("protoc-protos-from-dependencies");
@@ -174,7 +174,7 @@ public class GrpcCodeGen implements CodeGenProvider {
             }
         } catch (IOException | InterruptedException e) {
             throw new CodeGenException(
-                    "Failed to generate java files from proto file in " + context.inputDir().toAbsolutePath(), e);
+                    "Failed to generate java files from proto file in " + inputDir.toAbsolutePath(), e);
         }
 
         return false;

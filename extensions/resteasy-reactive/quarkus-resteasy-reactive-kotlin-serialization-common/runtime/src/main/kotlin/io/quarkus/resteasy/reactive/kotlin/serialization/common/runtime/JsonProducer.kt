@@ -38,6 +38,7 @@ class JsonProducer {
         useAlternativeNames = configuration.json.useAlternativeNames
         useArrayPolymorphism = configuration.json.useArrayPolymorphism
         decodeEnumsCaseInsensitive = configuration.json.decodeEnumsCaseInsensitive
+        allowTrailingComma = configuration.json.allowTrailingComma
 
         configuration.json.namingStrategy.ifPresent { strategy ->
             loadStrategy(this, strategy, this@JsonProducer)

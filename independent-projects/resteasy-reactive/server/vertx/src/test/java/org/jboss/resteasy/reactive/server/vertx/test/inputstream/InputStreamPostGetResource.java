@@ -1,6 +1,8 @@
 package org.jboss.resteasy.reactive.server.vertx.test.inputstream;
 
-import io.smallrye.common.annotation.Blocking;
+import java.io.IOException;
+import java.io.InputStream;
+
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -8,10 +10,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+
 import org.jboss.logging.Logger;
 
-import java.io.IOException;
-import java.io.InputStream;
+import io.smallrye.common.annotation.Blocking;
 
 @Path("/inputstreamtransfer")
 public class InputStreamPostGetResource {

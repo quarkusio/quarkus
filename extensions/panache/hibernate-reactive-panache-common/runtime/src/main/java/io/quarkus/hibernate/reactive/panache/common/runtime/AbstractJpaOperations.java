@@ -318,7 +318,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     public Uni<Integer> executeUpdate(Class<?> entityClass, String panacheQuery, Object... params) {
 
         if (PanacheJpaUtil.isNamedQuery(panacheQuery))
-            return (Uni) getSession().chain(session -> {
+            return getSession().chain(session -> {
                 String namedQueryName = panacheQuery.substring(1);
                 NamedQueryUtil.checkNamedQuery(entityClass, namedQueryName);
                 return bindParameters(session.createNamedQuery(namedQueryName), params).executeUpdate();
@@ -333,7 +333,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     public Uni<Integer> executeUpdate(Class<?> entityClass, String panacheQuery, Map<String, Object> params) {
 
         if (PanacheJpaUtil.isNamedQuery(panacheQuery))
-            return (Uni) getSession().chain(session -> {
+            return getSession().chain(session -> {
                 String namedQueryName = panacheQuery.substring(1);
                 NamedQueryUtil.checkNamedQuery(entityClass, namedQueryName);
                 return bindParameters(session.createNamedQuery(namedQueryName), params).executeUpdate();

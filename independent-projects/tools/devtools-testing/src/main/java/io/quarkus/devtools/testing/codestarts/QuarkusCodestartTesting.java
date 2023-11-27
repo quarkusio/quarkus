@@ -34,7 +34,7 @@ public class QuarkusCodestartTesting {
         data.put(QUARKUS_MAVEN_PLUGIN_VERSION.key(), "999-MOCK");
         data.put(QUARKUS_GRADLE_PLUGIN_ID.key(), "io.quarkus");
         data.put(QUARKUS_GRADLE_PLUGIN_VERSION.key(), "999-MOCK");
-        data.put(JAVA_VERSION.key(), "11");
+        data.put(JAVA_VERSION.key(), "17");
         data.put(KOTLIN_VERSION.key(), "1.4.28-MOCK");
         data.put(SCALA_VERSION.key(), "2.12.8-MOCK");
         data.put(SCALA_MAVEN_PLUGIN_VERSION.key(), "4.1.1-MOCK");
@@ -68,7 +68,7 @@ public class QuarkusCodestartTesting {
         data.put(SCALA_MAVEN_PLUGIN_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_SCALA_PLUGIN_VERSION));
         data.put(MAVEN_COMPILER_PLUGIN_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_COMPILER_PLUGIN_VERSION));
         data.put(MAVEN_SUREFIRE_PLUGIN_VERSION.key(), quarkusProp.getProperty(ToolsConstants.PROP_SUREFIRE_PLUGIN_VERSION));
-        data.put(JAVA_VERSION.key(), "11");
+        data.put(JAVA_VERSION.key(), "17");
         if (override != null)
             data.putAll(override);
         return data;

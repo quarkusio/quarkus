@@ -37,9 +37,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.release>11</maven.compiler.release>
 
         <!-- specification versions -->
         <version.cdi>4.0.1</version.cdi>

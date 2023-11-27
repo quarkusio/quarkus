@@ -459,24 +459,6 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
     }
 
     @Test
-    public void testProjectGenerationFromScratchWithJava11() throws MavenInvocationException, IOException {
-        testDir = initEmptyProject("projects/project-generation-with-java11");
-        assertThat(testDir).isDirectory();
-        invoker = initInvoker(testDir);
-
-        Properties properties = new Properties();
-        properties.put("javaVersion", "11");
-
-        InvocationResult result = setup(properties);
-        assertThat(result.getExitCode()).isZero();
-
-        testDir = new File(testDir, "code-with-quarkus");
-        assertThat(new File(testDir, "pom.xml")).isFile();
-        assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .contains("maven.compiler.release>11<");
-    }
-
-    @Test
     public void testProjectGenerationFromScratchWithJava17() throws MavenInvocationException, IOException {
         testDir = initEmptyProject("projects/project-generation-with-java17");
         assertThat(testDir).isDirectory();
@@ -510,25 +492,6 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
                 .contains("maven.compiler.release>21<");
-    }
-
-    @Test
-    public void testProjectGenerationFromScratchWithGradleJava11() throws MavenInvocationException, IOException {
-        testDir = initEmptyProject("projects/project-generation-with-gradle-java11");
-        assertThat(testDir).isDirectory();
-        invoker = initInvoker(testDir);
-
-        Properties properties = new Properties();
-        properties.put("javaVersion", "11");
-        properties.put("buildTool", "gradle");
-
-        InvocationResult result = setup(properties);
-        assertThat(result.getExitCode()).isZero();
-
-        testDir = new File(testDir, "code-with-quarkus");
-        assertThat(new File(testDir, "build.gradle")).isFile();
-        assertThat(FileUtils.readFileToString(new File(testDir, "build.gradle"), "UTF-8"))
-                .contains("sourceCompatibility = JavaVersion.VERSION_11");
     }
 
     @Test

@@ -1,4 +1,3 @@
-# Use Java 17 base image
 FROM registry.access.redhat.com/ubi8/openjdk-17-runtime:1.18
 
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en'

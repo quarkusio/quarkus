@@ -34,8 +34,8 @@
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.inject.version>1</javax.inject.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Not sure exactly why but the Maven plugins need to be compiled with Java 11 -->
         <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.release>11</maven.compiler.release>
         <maven-core.version>3.9.5</maven-core.version>
         <version.compiler.plugin>3.11.0</version.compiler.plugin>

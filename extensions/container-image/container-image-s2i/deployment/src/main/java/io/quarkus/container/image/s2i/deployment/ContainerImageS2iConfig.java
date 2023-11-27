@@ -13,7 +13,6 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(name = "s2i", phase = ConfigPhase.BUILD_TIME)
 public class ContainerImageS2iConfig {
 
-    public static final String DEFAULT_BASE_JVM_JDK11_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11";
     public static final String DEFAULT_BASE_JVM_JDK17_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17";
     public static final String DEFAULT_BASE_JVM_JDK21_IMAGE = "registry.access.redhat.com/ubi8/openjdk-21";
     public static final String DEFAULT_BASE_NATIVE_IMAGE = "quay.io/quarkus/ubi-quarkus-native-binary-s2i:2.0";
@@ -22,10 +21,8 @@ public class ContainerImageS2iConfig {
     public static String getDefaultJvmImage(CompiledJavaVersionBuildItem.JavaVersion version) {
         if (version.isJava21OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
             return DEFAULT_BASE_JVM_JDK21_IMAGE;
-        } else if (version.isJava17OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
-            return DEFAULT_BASE_JVM_JDK17_IMAGE;
         } else {
-            return DEFAULT_BASE_JVM_JDK11_IMAGE;
+            return DEFAULT_BASE_JVM_JDK17_IMAGE;
         }
     }
 

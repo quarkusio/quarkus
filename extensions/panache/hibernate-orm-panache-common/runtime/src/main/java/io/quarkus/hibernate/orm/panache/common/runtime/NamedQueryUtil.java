@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.hibernate.query.SemanticException;
+import org.hibernate.query.SyntaxException;
+import org.hibernate.query.sqm.ParsingException;
 
 import io.quarkus.panache.common.exception.PanacheQueryException;
 
@@ -43,7 +45,8 @@ public final class NamedQueryUtil {
 
     public static RuntimeException checkForNamedQueryMistake(IllegalArgumentException x, String originalQuery) {
         if (originalQuery != null
-                && x.getCause() instanceof SemanticException
+                && (x.getCause() instanceof SemanticException || x.getCause() instanceof ParsingException
+                        || x.getCause() instanceof SyntaxException)
                 && isNamedQuery(originalQuery)) {
             return new PanacheQueryException("Invalid query '" + originalQuery
                     + "' but it matches a known @NamedQuery, perhaps you should prefix it with a '#' to use it as a named query: '#"

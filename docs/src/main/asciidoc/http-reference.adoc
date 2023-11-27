@@ -151,7 +151,7 @@ Refer to the xref:./management-interface-reference.adoc[management interface ref
 ====
 
 [[ssl]]
-== Supporting secure connections with SSL/TLS
+== Supporting secure connections with TLS/SSL
 
 To have Quarkus support secure connections, you must either provide a certificate and associated key file, or supply a keystore.
 

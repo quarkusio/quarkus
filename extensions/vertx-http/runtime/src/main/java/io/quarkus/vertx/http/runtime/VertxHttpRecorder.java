@@ -1,26 +1,17 @@
 package io.quarkus.vertx.http.runtime;
 
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
+import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.getInsecureRequestStrategy;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.regex.Pattern;
 
 import jakarta.enterprise.event.Event;
@@ -44,12 +35,7 @@ import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.netty.runtime.virtual.VirtualAddress;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
-import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.LiveReloadConfig;
-import io.quarkus.runtime.QuarkusBindException;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.ThreadPoolConfig;
+import io.quarkus.runtime.*;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -75,22 +61,8 @@ import io.quarkus.vertx.http.runtime.management.ManagementInterfaceConfiguration
 import io.quarkus.vertx.http.runtime.options.HttpServerCommonHandlers;
 import io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils;
 import io.smallrye.common.vertx.VertxContext;
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
-import io.vertx.core.Verticle;
-import io.vertx.core.Vertx;
-import io.vertx.core.http.Cookie;
-import io.vertx.core.http.CookieSameSite;
-import io.vertx.core.http.HttpConnection;
-import io.vertx.core.http.HttpHeaders;
-import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.HttpServer;
-import io.vertx.core.http.HttpServerOptions;
-import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.*;
+import io.vertx.core.http.*;
 import io.vertx.core.http.impl.Http1xServerConnection;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.EventLoopContext;
@@ -270,6 +242,7 @@ public class VertxHttpRecorder {
             }
             rootHandler = root;
 
+            var insecureRequestStrategy = getInsecureRequestStrategy(buildConfig, config.insecureRequests);
             //we can't really do
             doServerStart(vertx, buildConfig, managementBuildTimeConfig, null, config, managementConfig, LaunchMode.DEVELOPMENT,
                     new Supplier<Integer>() {
@@ -277,7 +250,7 @@ public class VertxHttpRecorder {
                         public Integer get() {
                             return ProcessorInfo.availableProcessors(); //this is dev mode, so the number of IO threads not always being 100% correct does not really matter in this case
                         }
-                    }, null, false);
+                    }, null, insecureRequestStrategy, false);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -324,8 +297,11 @@ public class VertxHttpRecorder {
                 || managementConfig.hostEnabled || managementConfig.domainSocketEnabled)) {
             // Start the server
             if (closeTask == null) {
+                var insecureRequestStrategy = getInsecureRequestStrategy(httpBuildTimeConfig,
+                        httpConfiguration.insecureRequests);
                 doServerStart(vertx.get(), httpBuildTimeConfig, managementBuildTimeConfig, managementRouter,
                         httpConfiguration, managementConfig, launchMode, ioThreads, websocketSubProtocols,
+                        insecureRequestStrategy,
                         auxiliaryApplication);
                 if (launchMode != LaunchMode.DEVELOPMENT) {
                     shutdown.addShutdownTask(closeTask);
@@ -652,7 +628,8 @@ public class VertxHttpRecorder {
     private static CompletableFuture<String> initializeMainHttpServer(Vertx vertx, HttpBuildTimeConfig httpBuildTimeConfig,
             HttpConfiguration httpConfiguration,
             LaunchMode launchMode,
-            Supplier<Integer> eventLoops, List<String> websocketSubProtocols) throws IOException {
+            Supplier<Integer> eventLoops, List<String> websocketSubProtocols, InsecureRequests insecureRequestStrategy)
+            throws IOException {
 
         if (!httpConfiguration.hostEnabled && !httpConfiguration.domainSocketEnabled) {
             return CompletableFuture.completedFuture(null);
@@ -691,9 +668,9 @@ public class VertxHttpRecorder {
         }
         httpMainSslServerOptions = tmpSslConfig;
 
-        if (httpConfiguration.insecureRequests != HttpConfiguration.InsecureRequests.ENABLED
+        if (insecureRequestStrategy != HttpConfiguration.InsecureRequests.ENABLED
                 && httpMainSslServerOptions == null) {
-            throw new IllegalStateException("Cannot set quarkus.http.redirect-insecure-requests without enabling SSL.");
+            throw new IllegalStateException("Cannot set quarkus.http.insecure-requests without enabling SSL.");
         }
 
         int eventLoopCount = eventLoops.get();
@@ -713,7 +690,7 @@ public class VertxHttpRecorder {
             public Verticle get() {
                 return new WebDeploymentVerticle(httpMainServerOptions, httpMainSslServerOptions, httpMainDomainSocketOptions,
                         launchMode,
-                        httpConfiguration.insecureRequests, httpConfiguration, connectionCount);
+                        insecureRequestStrategy, httpConfiguration, connectionCount);
             }
         }, new DeploymentOptions().setInstances(ioThreads), new Handler<AsyncResult<String>>() {
             @Override
@@ -725,11 +702,11 @@ public class VertxHttpRecorder {
 
                         if ((httpMainSslServerOptions == null) && (httpMainServerOptions != null)) {
                             portsUsed = List.of(httpMainServerOptions.getPort());
-                        } else if ((httpConfiguration.insecureRequests == InsecureRequests.DISABLED)
+                        } else if ((insecureRequestStrategy == InsecureRequests.DISABLED)
                                 && (httpMainSslServerOptions != null)) {
                             portsUsed = List.of(httpMainSslServerOptions.getPort());
                         } else if ((httpMainSslServerOptions != null)
-                                && (httpConfiguration.insecureRequests == InsecureRequests.ENABLED)
+                                && (insecureRequestStrategy == InsecureRequests.ENABLED)
                                 && (httpMainServerOptions != null)) {
                             portsUsed = List.of(httpMainServerOptions.getPort(), httpMainSslServerOptions.getPort());
                         }
@@ -750,10 +727,12 @@ public class VertxHttpRecorder {
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, Handler<HttpServerRequest> managementRouter,
             HttpConfiguration httpConfiguration, ManagementInterfaceConfiguration managementConfig,
             LaunchMode launchMode,
-            Supplier<Integer> eventLoops, List<String> websocketSubProtocols, boolean auxiliaryApplication) throws IOException {
+            Supplier<Integer> eventLoops, List<String> websocketSubProtocols,
+            InsecureRequests insecureRequestStrategy,
+            boolean auxiliaryApplication) throws IOException {
 
         var mainServerFuture = initializeMainHttpServer(vertx, httpBuildTimeConfig, httpConfiguration, launchMode, eventLoops,
-                websocketSubProtocols);
+                websocketSubProtocols, insecureRequestStrategy);
         var managementInterfaceFuture = initializeManagementInterface(vertx, managementBuildTimeConfig, managementRouter,
                 managementConfig, launchMode, websocketSubProtocols);
         var managementInterfaceDomainSocketFuture = initializeManagementInterfaceWithDomainSocket(vertx,
@@ -842,18 +821,19 @@ public class VertxHttpRecorder {
             throw new RuntimeException("Unable to start HTTP server", e);
         }
 
-        setHttpServerTiming(httpConfiguration.insecureRequests, httpMainServerOptions, httpMainSslServerOptions,
+        setHttpServerTiming(insecureRequestStrategy == InsecureRequests.DISABLED, httpMainServerOptions,
+                httpMainSslServerOptions,
                 httpMainDomainSocketOptions,
                 auxiliaryApplication, httpManagementServerOptions);
     }
 
-    private static void setHttpServerTiming(InsecureRequests insecureRequests, HttpServerOptions httpServerOptions,
+    private static void setHttpServerTiming(boolean httpDisabled, HttpServerOptions httpServerOptions,
             HttpServerOptions sslConfig,
             HttpServerOptions domainSocketOptions, boolean auxiliaryApplication, HttpServerOptions managementConfig) {
         StringBuilder serverListeningMessage = new StringBuilder("Listening on: ");
         int socketCount = 0;
 
-        if (httpServerOptions != null && !InsecureRequests.DISABLED.equals(insecureRequests)) {
+        if (!httpDisabled && httpServerOptions != null) {
             serverListeningMessage.append(String.format(
                     "http://%s:%s", httpServerOptions.getHost(), actualHttpPort));
             socketCount++;

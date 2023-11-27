@@ -1,5 +1,6 @@
 package io.quarkus.security.deployment;
 
+import static io.quarkus.arc.processor.DotNames.INTERCEPTOR;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.security.deployment.DotNames.DENY_ALL;
 import static io.quarkus.security.deployment.DotNames.PERMISSIONS_ALLOWED;
@@ -779,6 +780,9 @@ public class SecurityProcessor {
         for (AnnotationInstance instance : instances) {
             AnnotationTarget target = instance.target();
             if (target.kind() == AnnotationTarget.Kind.CLASS) {
+                if (target.asClass().hasDeclaredAnnotation(INTERCEPTOR)) {
+                    continue;
+                }
                 List<MethodInfo> methods = target.asClass().methods();
                 AnnotationInstance existingClassInstance = classLevelAnnotations.get(target.asClass());
                 if (existingClassInstance == null) {

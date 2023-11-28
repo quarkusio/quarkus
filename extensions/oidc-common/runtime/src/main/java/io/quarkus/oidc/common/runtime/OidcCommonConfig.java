@@ -180,7 +180,7 @@ public class OidcCommonConfig {
             }
 
             /**
-             * The client secret value - it will be ignored if 'secret.key' is set
+             * The client secret value - it will be ignored if 'credentials.secret' is set
              */
             @ConfigItem
             public Optional<String> value = Optional.empty();

@@ -575,7 +575,7 @@
             <dependency>
                 <groupId>org.mvnpm</groupId>
                 <artifactId>ansi-styles</artifactId>
-                <version>4.3.0</version>
+                <version>6.2.1</version>
                 <scope>runtime</scope>
             </dependency>
             <dependency>

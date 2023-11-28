@@ -28,14 +28,14 @@ public class NativeImageAgentConfigStep {
     private final Pattern serializationSkipPattern;
 
     public NativeImageAgentConfigStep() {
-        jniSkipPattern = discardPattern("apache.maven");
-        proxySkipPattern = discardPattern("apache.http");
+        jniSkipPattern = discardPattern("apache.maven", "gradle");
+        proxySkipPattern = discardPattern("apache.http", "gradle", "jakarta");
         reflectionSkipPattern = discardPattern("apache.http", "apache.commons", "apache.maven", "aether", "hamcrest", "jackson",
                 "jakarta", "jboss", "junit",
-                "groovy", "gson", "netty", "quarkus", "restassured", "smallrye", "Test", "vertx");
+                "gradle", "groovy", "gson", "microprofile", "netty", "quarkus", "restassured", "smallrye", "Test", "vertx");
         resourceSkipPattern = discardPattern("apache.maven", "application.properties", "groovy", "jboss", "junit",
                 "logging.properties", "microprofile", "quarkus", "slf4j", "smallrye", "surefire", "Test.class");
-        serializationSkipPattern = discardPattern("quarkus", "junit");
+        serializationSkipPattern = discardPattern("gradle", "junit", "quarkus");
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)

@@ -944,7 +944,7 @@ and relies on a background processor to consume these events and perform indexin
 
 To enable the `outbox-polling` coordination strategy, an additional extension is required:
 
-:add-extension-extensions: hibernate-search-orm-coordination-outbox-polling
+:add-extension-extensions: hibernate-search-orm-outbox-polling
 include::{includes}/devtools/extension-add.adoc[]
 
 Once the extension is there, you will need to explicitly select the `outbox-polling` strategy
@@ -965,16 +965,16 @@ link:{hibernate-search-docs-url}#coordination-outbox-polling-schema[manually alt
 The database schema Hibernate Search will expect for outbox-polling coordination
 may be customized through the following configuration properties:
 
-* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.agent.catalog[`quarkus.hibernate-search-orm.coordination.entity.mapping.agent.catalog`]
-* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.agent.schema[`quarkus.hibernate-search-orm.coordination.entity.mapping.agent.schema`]
-* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.agent.table[`quarkus.hibernate-search-orm.coordination.entity.mapping.agent.table`]
-* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.agent.uuid-gen-strategy[`quarkus.hibernate-search-orm.coordination.entity.mapping.agent.uuid-gen-strategy`]
-* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.agent.uuid-type[`quarkus.hibernate-search-orm.coordination.entity.mapping.agent.uuid-type`]
-* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.catalog[`quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.catalog`]
-* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.schema[`quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.schema`]
-* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.table[`quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.table`]
-* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.uuid-gen-strategy[`quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.uuid-gen-strategy`]
-* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.uuid-type[`quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.uuid-type`]
+* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.agent.catalog[`quarkus.hibernate-search-orm.coordination.entity-mapping.agent.catalog`]
+* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.agent.schema[`quarkus.hibernate-search-orm.coordination.entity-mapping.agent.schema`]
+* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.agent.table[`quarkus.hibernate-search-orm.coordination.entity-mapping.agent.table`]
+* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.agent.uuid-gen-strategy[`quarkus.hibernate-search-orm.coordination.entity-mapping.agent.uuid-gen-strategy`]
+* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.agent.uuid-type[`quarkus.hibernate-search-orm.coordination.entity-mapping.agent.uuid-type`]
+* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.catalog[`quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.catalog`]
+* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.schema[`quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.schema`]
+* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.table[`quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.table`]
+* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.uuid-gen-strategy[`quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.uuid-gen-strategy`]
+* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.uuid-type[`quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.uuid-type`]
 
 ====
 
@@ -1071,4 +1071,4 @@ for more information.
 
 NOTE: These configuration properties require an additional extension. See <<coordination>>.
 
-include::{generated-dir}/config/quarkus-hibernate-search-orm-coordination-outboxpolling.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-hibernate-search-orm-outboxpolling.adoc[leveloffset=+1, opts=optional]

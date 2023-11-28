@@ -187,7 +187,10 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
                     new EntityWithJson.ToBeSerializedWithDateTime(LocalDate.of(2023, 7, 28)));
             em.persist(entity);
             transaction.commit();
+        }
 
+        try (EntityManager em = emf.createEntityManager()) {
+            EntityTransaction transaction = em.getTransaction();
             transaction.begin();
             List<EntityWithJson> entities = em
                     .createQuery("select e from EntityWithJson e", EntityWithJson.class)
@@ -196,7 +199,10 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
                 throw new AssertionError("No entities with json were found");
             }
             transaction.commit();
+        }
 
+        try (EntityManager em = emf.createEntityManager()) {
+            EntityTransaction transaction = em.getTransaction();
             transaction.begin();
             em.createQuery("delete from EntityWithJson").executeUpdate();
             transaction.commit();
@@ -207,14 +213,22 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
             transaction.begin();
             EntityWithJsonOtherPU otherPU = new EntityWithJsonOtherPU(
                     new EntityWithJsonOtherPU.ToBeSerializedWithDateTime(LocalDate.of(2023, 7, 28)));
-            em.persist(otherPU);
-            transaction.commit();
-            throw new AssertionError(
-                    "Default mapper cannot process date/time properties. So we were expecting commit to fail, but it did not!");
-        } catch (Exception e) {
-            if (!(e.getCause() instanceof IllegalArgumentException)
-                    && !e.getCause().getMessage().contains("I cannot convert anything to JSON")) {
-                throw new AssertionError("Transaction failed for a different reason than expected.", e);
+            Exception exception = null;
+            try {
+                em.persist(otherPU);
+                em.flush();
+            } catch (Exception e) {
+                exception = e;
+            }
+            transaction.rollback();
+
+            if (exception == null) {
+                throw new AssertionError(
+                        "Default mapper cannot process date/time properties. So we were expecting flush to fail, but it did not!");
+            }
+            if (!(exception instanceof UnsupportedOperationException)
+                    || !exception.getMessage().contains("I cannot convert anything to JSON")) {
+                throw new AssertionError("flush failed for a different reason than expected.", exception);
             }
         }
     }

@@ -61,7 +61,7 @@ public interface MovieRepository extends CrudRepository<Movie, Long> {
     List<MovieCountByRating> countByRating();
 
     // issue 13044
-    @Query("SELECT DISTINCT m.rating FROM Movie m where m.rating != null")
+    @Query("SELECT DISTINCT m.rating FROM Movie m where m.rating is not null")
     List<String> findAllRatings();
 
     @Query("SELECT title, rating from Movie where title = ?1")

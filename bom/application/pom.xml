@@ -96,15 +96,17 @@
         <commons-lang3.version>3.13.0</commons-lang3.version>
         <commons-codec.version>1.16.0</commons-codec.version>
         <classmate.version>1.5.1</classmate.version>
-        <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below),
-             as well as hibernate-orm.version-for-documentation in docs/pom.xml -->
-        <hibernate-orm.version>6.2.13.Final</hibernate-orm.version>
+        <!-- WARNING: When updating, also align other properties on this version:
+             bytebuddy.version (just below), hibernate-orm.version-for-documentation (in docs/pom.xml)
+             and antlr.version.version in build-parent/pom.xml
+             WARNING again for diffs that don't provide enough context: when updating, see above -->
+        <hibernate-orm.version>6.4.0.Final</hibernate-orm.version>
         <bytebuddy.version>1.14.7</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-commons-annotations.version>6.0.6.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM -->
-        <hibernate-reactive.version>2.0.6.Final</hibernate-reactive.version>
+        <hibernate-reactive.version>2.2.0.Final</hibernate-reactive.version>
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
         <!-- When updating, align hibernate-search.version-for-documentation in docs/pom.xml -->
-        <hibernate-search.version>6.2.2.Final</hibernate-search.version>
+        <hibernate-search.version>7.0.0.CR2</hibernate-search.version>
         <narayana.version>7.0.0.Final</narayana.version>
         <agroal.version>2.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
@@ -179,7 +181,7 @@
         <javaparser.version>3.25.6</javaparser.version>
         <okhttp.version>3.14.9</okhttp.version><!-- keep in sync with okio -->
         <okio.version>1.17.6</okio.version><!-- keep in sync with okhttp -->
-        <hibernate-quarkus-local-cache.version>0.2.1</hibernate-quarkus-local-cache.version>
+        <hibernate-quarkus-local-cache.version>0.3.0</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.9.2</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP7</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
@@ -187,7 +189,7 @@
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
         <mockito.version>5.3.1</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
-        <antlr.version>4.10.1</antlr.version><!-- needs to align with same property in build-parent/pom.xml -->
+        <antlr.version>4.13.0</antlr.version><!-- needs to align with same property in build-parent/pom.xml -->
         <quarkus-security.version>2.0.2.Final</quarkus-security.version>
         <keycloak.version>23.0.0</keycloak.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
@@ -403,6 +405,15 @@
                 <groupId>com.oracle.database.jdbc</groupId>
                 <artifactId>ojdbc-bom</artifactId>
                 <version>${oracle-jdbc.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Hibernate Search -->
+            <dependency>
+                <groupId>org.hibernate.search</groupId>
+                <artifactId>hibernate-search-bom</artifactId>
+                <version>${hibernate-search.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -1195,12 +1206,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-hibernate-search-orm-coordination-outbox-polling</artifactId>
+                <artifactId>quarkus-hibernate-search-orm-outbox-polling</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-hibernate-search-orm-coordination-outbox-polling-deployment</artifactId>
+                <artifactId>quarkus-hibernate-search-orm-outbox-polling-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -5037,22 +5048,7 @@
             </dependency>
             <dependency>
                 <groupId>org.hibernate.search</groupId>
-                <artifactId>hibernate-search-backend-elasticsearch</artifactId>
-                <version>${hibernate-search.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.search</groupId>
-                <artifactId>hibernate-search-backend-elasticsearch-aws</artifactId>
-                <version>${hibernate-search.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.search</groupId>
-                <artifactId>hibernate-search-mapper-orm-coordination-outbox-polling-orm6</artifactId>
-                <version>${hibernate-search.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate.search</groupId>
-                <artifactId>hibernate-search-mapper-orm-orm6</artifactId>
+                <artifactId>hibernate-search-mapper-orm</artifactId>
                 <version>${hibernate-search.version}</version>
                 <exclusions>
                     <!-- the right version will come with Hibernate ORM -->

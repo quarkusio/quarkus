@@ -538,7 +538,7 @@
                 <datasource.username>hibernate_orm_test</datasource.username>
                 <datasource.password>hibernate_orm_test</datasource.password>
 
-                <hibernate-orm.dialect>org.hibernate.dialect.PostgreSQL10Dialect</hibernate-orm.dialect>
+                <hibernate-orm.dialect>org.hibernate.dialect.PostgreSQLDialect</hibernate-orm.dialect>
             </properties>
             <dependencies>
                 <dependency>

@@ -15,7 +15,8 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
  * @author Michael Schnell
  *
  */
-public final class HibernateCurrentTenantIdentifierResolver implements CurrentTenantIdentifierResolver {
+// TODO support other tenant ID types than String; see https://github.com/quarkusio/quarkus/issues/36831
+public final class HibernateCurrentTenantIdentifierResolver implements CurrentTenantIdentifierResolver<String> {
 
     private static final Logger LOG = Logger.getLogger(HibernateCurrentTenantIdentifierResolver.class);
 

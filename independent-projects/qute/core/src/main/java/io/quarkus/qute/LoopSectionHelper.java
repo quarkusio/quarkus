@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -314,6 +315,18 @@ public class LoopSectionHelper implements SectionHelper {
                     return count % 2 == 0 ? Results.TRUE : Results.FALSE;
                 default:
                     return Results.notFound(key);
+            }
+        }
+
+        @Override
+        public Set<String> mappedKeys() {
+            if (metadataPrefix != null) {
+                return Set.of(alias, metadataPrefix + "count", metadataPrefix + "index", metadataPrefix + "indexParity",
+                        metadataPrefix + "hasNext", metadataPrefix + "isLast", metadataPrefix + "isFirst",
+                        metadataPrefix + "isOdd", metadataPrefix + "odd", metadataPrefix + "isEven", metadataPrefix + "even");
+            } else {
+                return Set.of(alias, "count", "index", "indexParity", "hasNext", "isLast", "isFirst", "isOdd",
+                        "odd", "isEven", "even");
             }
         }
 

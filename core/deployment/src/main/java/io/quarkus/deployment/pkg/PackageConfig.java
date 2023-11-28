@@ -10,7 +10,10 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot
 public class PackageConfig {
-
+    /**
+     * Construct a new instance.
+     */
+    public PackageConfig() {}
     /**
      * @deprecated Use {@link BuiltInType#JAR} instead
      */
@@ -53,6 +56,10 @@ public class PackageConfig {
     // does everything 'native' but stops short of actually executing the 'native-image' command
     public static final String NATIVE_SOURCES = BuiltInType.NATIVE_SOURCES.value;
 
+    /**
+     * @deprecated Packaging types shall be represented by specific build item classes.
+     */
+    @Deprecated
     public enum BuiltInType {
         JAR("jar"),
         UBER_JAR("uber-jar"),
@@ -98,8 +105,11 @@ public class PackageConfig {
      * <p>
      * The default built in types are 'jar' (which will use 'fast-jar'), 'legacy-jar' for the pre-1.12 default jar
      * packaging, 'uber-jar', 'mutable-jar' (for remote development mode), 'native' and 'native-sources'.
+     *
+     * @deprecated In the future, it will be possible to request multiple output types.
      */
     @ConfigItem(defaultValue = "jar")
+    @Deprecated
     public String type;
 
     /**
@@ -268,6 +278,7 @@ public class PackageConfig {
     @ConfigItem
     public boolean writeTransformedBytecodeToBuildOutput;
 
+    @Deprecated
     public boolean isAnyJarType() {
         return (type.equalsIgnoreCase(PackageConfig.BuiltInType.JAR.getValue()) ||
                 type.equalsIgnoreCase(PackageConfig.BuiltInType.FAST_JAR.getValue()) ||
@@ -277,21 +288,25 @@ public class PackageConfig {
                 type.equalsIgnoreCase(PackageConfig.BuiltInType.MUTABLE_JAR.getValue());
     }
 
+    @Deprecated
     public boolean isFastJar() {
         return type.equalsIgnoreCase(PackageConfig.BuiltInType.JAR.getValue()) ||
                 type.equalsIgnoreCase(PackageConfig.BuiltInType.FAST_JAR.getValue()) ||
                 type.equalsIgnoreCase(PackageConfig.BuiltInType.MUTABLE_JAR.getValue());
     }
 
+    @Deprecated
     public boolean isLegacyJar() {
         return (type.equalsIgnoreCase(PackageConfig.BuiltInType.LEGACY_JAR.getValue()) ||
                 type.equalsIgnoreCase(PackageConfig.BuiltInType.LEGACY.getValue()));
     }
 
+    @Deprecated
     public boolean isUberJar() {
         return type.equalsIgnoreCase(PackageConfig.BuiltInType.UBER_JAR.getValue());
     }
 
+    @Deprecated
     public boolean isNativeOrNativeSources() {
         return type.equalsIgnoreCase(PackageConfig.BuiltInType.NATIVE.getValue())
                 || type.equalsIgnoreCase(PackageConfig.BuiltInType.NATIVE_SOURCES.getValue());

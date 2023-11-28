@@ -39,11 +39,12 @@ public class AbstractOidcClientRequestReactiveFilter extends AbstractTokensProdu
             @Override
             public void accept(Throwable t) {
                 if (t instanceof DisabledOidcClientException) {
-                    LOG.debug("Client is disabled, aborting the request");
+                    LOG.debug("Client is disabled, acquiring and propagating the token is not necessary");
+                    requestContext.resume();
                 } else {
                     LOG.debugf("Access token is not available, cause: %s, aborting the request", t.getMessage());
+                    requestContext.resume((t instanceof RuntimeException) ? t : new RuntimeException(t));
                 }
-                requestContext.resume((t instanceof RuntimeException) ? t : new RuntimeException(t));
             }
         });
     }

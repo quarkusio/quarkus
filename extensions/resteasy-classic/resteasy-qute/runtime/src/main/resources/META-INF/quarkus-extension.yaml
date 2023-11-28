@@ -2,6 +2,7 @@
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 name: "RESTEasy Classic Qute"
 metadata:
+  unlisted: true
   keywords:
   - "templating"
   - "templates"

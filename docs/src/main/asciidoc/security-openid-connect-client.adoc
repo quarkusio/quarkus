@@ -363,7 +363,7 @@ include::{includes}/devtools/dev.adoc[]
 
 xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
 
-Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev-v1[/q/dev-v1] and click on a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
+Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev-ui[/q/dev-ui] and click on a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
 
 You will be asked to log in into a `Single Page Application` provided by `OpenID Connect Dev UI`:
 

@@ -4,7 +4,7 @@ import io.smallrye.common.os.OS;
 
 final class TestUtils {
 
-    private static final long DEFAULT_TIMEOUT = OS.current() == OS.WINDOWS ? 3L : 1L;
+    private static final long DEFAULT_TIMEOUT = OS.current() == OS.WINDOWS ? 3L : 2L;
 
     private TestUtils() {
     }

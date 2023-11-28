@@ -175,7 +175,7 @@ public class PanacheJpaUtil {
             Sort.Column column = sort.getColumns().get(i);
             if (i > 0)
                 sb.append(" , ");
-            sb.append(column.getName());
+            sb.append('`').append(unquoteColumnName(column)).append('`');
             if (column.getDirection() != Sort.Direction.Ascending) {
                 sb.append(" DESC");
             }
@@ -190,5 +190,21 @@ public class PanacheJpaUtil {
 
         }
         return sb.toString();
+    }
+
+    private static String unquoteColumnName(Sort.Column column) {
+        String columnName = column.getName();
+        String unquotedColumnName;
+        //Note HQL uses backticks to escape/quote special words that are used as identifiers
+        if (columnName.charAt(0) == '`' && columnName.charAt(columnName.length() - 1) == '`') {
+            unquotedColumnName = columnName.substring(1, columnName.length() - 1);
+        } else {
+            unquotedColumnName = columnName;
+        }
+        // Note we're not dealing with columns but with entity attributes so no backticks expected in unquoted column name
+        if (unquotedColumnName.indexOf('`') >= 0) {
+            throw new PanacheQueryException("Sort column name cannot have backticks");
+        }
+        return unquotedColumnName;
     }
 }

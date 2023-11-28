@@ -19,12 +19,15 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.jboss.logging.Logger;
 
 import io.smallrye.common.os.OS;
 
 public class DevModeClient {
 
     private static final long DEFAULT_TIMEOUT = OS.current() == OS.WINDOWS ? 3L : 1L;
+
+    private static final Logger LOG = Logger.getLogger(DevModeClient.class);
 
     static long getDefaultTimeout() {
         return DEFAULT_TIMEOUT;
@@ -180,6 +183,10 @@ public class DevModeClient {
                         resp.set(content);
                         return true;
                     } catch (Exception e) {
+                        LOG.error(
+                                "An error occurred when DevModeClient accessed " + path
+                                        + ". It might be a normal testing behavior but logging the exception for information",
+                                e);
                         return false;
                     }
                 });
@@ -206,6 +213,10 @@ public class DevModeClient {
                         }
                         return false;
                     } catch (Exception e) {
+                        LOG.error(
+                                "An error occurred when DevModeClient accessed " + path
+                                        + ". It might be a normal testing behavior but logging the exception for information",
+                                e);
                         return false;
                     }
                 });
@@ -227,6 +238,10 @@ public class DevModeClient {
                         //complete no matter what the response code was
                         return true;
                     } catch (Exception e) {
+                        LOG.error(
+                                "An error occurred when DevModeClient accessed " + path
+                                        + ". It might be a normal testing behavior but logging the exception for information",
+                                e);
                         return false;
                     }
                 });

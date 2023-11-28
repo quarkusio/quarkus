@@ -419,7 +419,7 @@ Please follow the xref:dev-ui.adoc[Dev UI] tutorial as well as check the `extens
 
 == Non Application Root Path Considerations
 
-This document refers to the `http://localhost:8080/q/dev-v1` Dev UI URL in several places where `q` is a default non application root path. If you customize `quarkus.http.root-path` and/or `quarkus.http.non-application-root-path` properties then replace `q` accordingly, please see https://quarkus.io/blog/path-resolution-in-quarkus/[Path Resolution in Quarkus] for more information.
+This document refers to the `http://localhost:8080/q/dev-ui` Dev UI URL in several places where `q` is a default non application root path. If you customize `quarkus.http.root-path` and/or `quarkus.http.non-application-root-path` properties then replace `q` accordingly, please see https://quarkus.io/blog/path-resolution-in-quarkus/[Path Resolution in Quarkus] for more information.
 
 == References
 

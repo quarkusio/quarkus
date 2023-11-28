@@ -263,7 +263,7 @@ For more information, see the link:{url-quarkusio-guides}security-keycloak-admin
 include::{includes}/devtools/dev.adoc[]
 ====
 * link:{quarkusio-guides}/security-openid-connect-dev-services[Dev Services for Keycloak] will start a Keycloak container and import a `quarkus-realm.json`.
-. Open a link:{url-quarkusio-guides}dev-ui[Dev UI], which you can find at http://localhost:8080/q/dev-v1[/q/dev-v1], then click a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
+. Open a link:{url-quarkusio-guides}dev-ui[Dev UI], which you can find at http://localhost:8080/q/dev-ui[/q/dev-ui], then click a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
 . When prompted to log in to a `Single Page Application` provided by `OpenID Connect Dev UI`, do the following steps:
 
  * Log in as `alice` (password: `alice`), who has a `user` role.

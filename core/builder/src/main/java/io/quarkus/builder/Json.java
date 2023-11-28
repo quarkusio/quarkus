@@ -76,9 +76,11 @@ public final class Json {
         return new JsonObjectBuilder(ignoreEmptyBuilders);
     }
 
-    abstract static class JsonBuilder<T> {
+    public abstract static class JsonBuilder<T> {
 
         protected boolean ignoreEmptyBuilders = false;
+        protected JsonTransform transform;
+        protected boolean skipEscape;
 
         /**
          * @param ignoreEmptyBuilders If set to true all empty builders added to this builder will be ignored during
@@ -130,6 +132,17 @@ public final class Json {
 
         protected abstract T self();
 
+        abstract void with(JsonReader.JsonValue element);
+
+        public void setTransform(JsonTransform transform) {
+            this.transform = transform;
+        }
+
+        @SuppressWarnings("unchecked")
+        public T skipEscape(boolean skipEscape) {
+            this.skipEscape = skipEscape;
+            return (T) this;
+        }
     }
 
     /**
@@ -209,7 +222,7 @@ public final class Json {
                 if (++idx > 1) {
                     appendable.append(ENTRY_SEPARATOR);
                 }
-                appendValue(appendable, value);
+                appendValue(appendable, value, skipEscape);
             }
             appendable.append(ARRAY_END);
         }
@@ -219,6 +232,37 @@ public final class Json {
             return this;
         }
 
+        @Override
+        void with(JsonReader.JsonValue element) {
+            if (element instanceof JsonReader.JsonString) {
+                add(((JsonReader.JsonString) element).value());
+            } else if (element instanceof JsonReader.JsonInteger) {
+                final long longValue = ((JsonReader.JsonInteger) element).longValue();
+                final int intValue = (int) longValue;
+                if (longValue == intValue) {
+                    add(intValue);
+                } else {
+                    add(longValue);
+                }
+            } else if (element instanceof JsonReader.JsonBoolean) {
+                add(((JsonReader.JsonBoolean) element).value());
+            } else if (element instanceof JsonReader.JsonArray) {
+                final JsonArrayBuilder arrayBuilder = Json.array().skipEscape(skipEscape);
+                arrayBuilder.transform((JsonReader.JsonArray) element, transform);
+                add(arrayBuilder);
+            } else if (element instanceof JsonReader.JsonObject) {
+                final JsonObjectBuilder objectBuilder = Json.object().skipEscape(skipEscape);
+                objectBuilder.transform((JsonReader.JsonObject) element, transform);
+                if (!objectBuilder.isEmpty()) {
+                    add(objectBuilder);
+                }
+            }
+        }
+
+        public void transform(JsonReader.JsonArray value, JsonTransform transform) {
+            final ResolvedTransform resolved = new ResolvedTransform(this, transform);
+            value.forEach(resolved);
+        }
     }
 
     /**
@@ -299,9 +343,9 @@ public final class Json {
                 if (++idx > 1) {
                     appendable.append(ENTRY_SEPARATOR);
                 }
-                appendStringValue(appendable, entry.getKey());
+                appendStringValue(appendable, entry.getKey(), skipEscape);
                 appendable.append(NAME_VAL_SEPARATOR);
-                appendValue(appendable, entry.getValue());
+                appendValue(appendable, entry.getValue(), skipEscape);
             }
             appendable.append(OBJECT_END);
         }
@@ -311,15 +355,52 @@ public final class Json {
             return this;
         }
 
+        @Override
+        void with(JsonReader.JsonValue element) {
+            if (element instanceof JsonReader.JsonMember) {
+                final JsonReader.JsonMember member = (JsonReader.JsonMember) element;
+                final String attribute = member.attribute().value();
+                final JsonReader.JsonValue value = member.value();
+                if (value instanceof JsonReader.JsonString) {
+                    put(attribute, ((JsonReader.JsonString) value).value());
+                } else if (value instanceof JsonReader.JsonInteger) {
+                    final long longValue = ((JsonReader.JsonInteger) value).longValue();
+                    final int intValue = (int) longValue;
+                    if (longValue == intValue) {
+                        put(attribute, intValue);
+                    } else {
+                        put(attribute, longValue);
+                    }
+                } else if (value instanceof JsonReader.JsonBoolean) {
+                    final boolean booleanValue = ((JsonReader.JsonBoolean) value).value();
+                    put(attribute, booleanValue);
+                } else if (value instanceof JsonReader.JsonArray) {
+                    final JsonArrayBuilder arrayBuilder = Json.array().skipEscape(skipEscape);
+                    arrayBuilder.transform((JsonReader.JsonArray) value, transform);
+                    put(attribute, arrayBuilder);
+                } else if (value instanceof JsonReader.JsonObject) {
+                    final JsonObjectBuilder objectBuilder = Json.object().skipEscape(skipEscape);
+                    objectBuilder.transform((JsonReader.JsonObject) value, transform);
+                    if (!objectBuilder.isEmpty()) {
+                        put(attribute, objectBuilder);
+                    }
+                }
+            }
+        }
+
+        public void transform(JsonReader.JsonObject value, JsonTransform transform) {
+            final ResolvedTransform resolved = new ResolvedTransform(this, transform);
+            value.forEach(resolved);
+        }
     }
 
-    static void appendValue(Appendable appendable, Object value) throws IOException {
+    static void appendValue(Appendable appendable, Object value, boolean skipEscape) throws IOException {
         if (value instanceof JsonObjectBuilder) {
             appendable.append(((JsonObjectBuilder) value).build());
         } else if (value instanceof JsonArrayBuilder) {
             appendable.append(((JsonArrayBuilder) value).build());
         } else if (value instanceof String) {
-            appendStringValue(appendable, value.toString());
+            appendStringValue(appendable, value.toString(), skipEscape);
         } else if (value instanceof Boolean || value instanceof Integer || value instanceof Long) {
             appendable.append(value.toString());
         } else {
@@ -327,9 +408,13 @@ public final class Json {
         }
     }
 
-    static void appendStringValue(Appendable appendable, String value) throws IOException {
+    static void appendStringValue(Appendable appendable, String value, boolean skipEscape) throws IOException {
         appendable.append(CHAR_QUOTATION_MARK);
-        appendable.append(escape(value));
+        if (skipEscape) {
+            appendable.append(value);
+        } else {
+            appendable.append(escape(value));
+        }
         appendable.append(CHAR_QUOTATION_MARK);
     }
 
@@ -354,4 +439,21 @@ public final class Json {
         return builder.toString();
     }
 
+    private static final class ResolvedTransform implements JsonTransform {
+        private final Json.JsonBuilder<?> resolvedBuilder;
+        private final JsonTransform transform;
+
+        private ResolvedTransform(Json.JsonBuilder<?> resolvedBuilder, JsonTransform transform) {
+            this.resolvedBuilder = resolvedBuilder;
+            this.resolvedBuilder.setTransform(transform);
+            this.transform = transform;
+        }
+
+        @Override
+        public void accept(Json.JsonBuilder<?> builder, JsonReader.JsonValue element) {
+            if (builder == null) {
+                transform.accept(resolvedBuilder, element);
+            }
+        }
+    }
 }

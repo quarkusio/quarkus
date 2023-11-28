@@ -422,7 +422,7 @@ public final class IntegrationTestUtil {
         }
     }
 
-    static Properties readQuarkusArtifactProperties(ExtensionContext context) {
+    public static Properties readQuarkusArtifactProperties(ExtensionContext context) {
         Path buildOutputDirectory = determineBuildOutputDirectory(context);
         Path artifactProperties = buildOutputDirectory.resolve("quarkus-artifact.properties");
         if (!Files.exists(artifactProperties)) {

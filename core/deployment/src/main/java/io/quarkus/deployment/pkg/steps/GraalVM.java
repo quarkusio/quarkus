@@ -297,6 +297,13 @@ public final class GraalVM {
             return version;
         }
 
+        public String getMajorMinorAsString() {
+            if (versions.length >= 2) {
+                return versions[0] + "." + versions[1];
+            }
+            return versions[0] + ".0";
+        }
+
         @Override
         public String toString() {
             return "Version{" +

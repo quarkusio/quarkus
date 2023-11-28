@@ -1,15 +1,17 @@
 package io.quarkus.it.jpa.postgresql;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.quarkus.test.junit.nativeimage.BuildOutput;
+import io.quarkus.test.junit.nativeimage.BuildOutputExtension;
 
+@ExtendWith(BuildOutputExtension.class)
 @QuarkusIntegrationTest
 public class ImageMetricsITCase {
     @Test
     public void verifyImageMetrics() {
-        BuildOutput buildOutput = new BuildOutput();
+        BuildOutputExtension buildOutput = new BuildOutputExtension();
         buildOutput.verifyImageMetrics();
     }
 }

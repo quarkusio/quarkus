@@ -1,5 +1,7 @@
 package io.quarkus.test.junit.nativeimage;
 
+import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,6 +15,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+
+import io.quarkus.deployment.pkg.steps.GraalVM;
 
 /**
  * This is a general utility to assert via
@@ -22,17 +29,21 @@ import org.junit.jupiter.api.Assertions;
  * <a href="https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/BuildOutput.md">the upstream GraalVM
  * documentation</a>.
  */
-public class BuildOutput {
+public class BuildOutputExtension implements BeforeAllCallback {
 
-    private static final String IMAGE_METRICS_TEST_PROPERTIES = "image-metrics-test.properties";
+    private static final String IMAGE_METRICS_TEST_PROPERTIES = "image-metrics.properties";
+    private static final String IMAGE_METRICS_DIR = "image-metrics";
     private final JsonObject buildOutput;
+    private static GraalVM.Version mandrelVersion;
 
-    public BuildOutput() {
+    public BuildOutputExtension() {
         this.buildOutput = getBuildOutput();
     }
 
     public void verifyImageMetrics() {
-        verifyImageMetrics(IMAGE_METRICS_TEST_PROPERTIES);
+        String version = mandrelVersion.getMajorMinorAsString();
+        String propertiesFileName = IMAGE_METRICS_DIR + "/" + version + "/" + IMAGE_METRICS_TEST_PROPERTIES;
+        verifyImageMetrics(propertiesFileName);
     }
 
     public void verifyImageMetrics(String propertiesFileName) {
@@ -52,7 +63,10 @@ public class BuildOutput {
     private Properties getProperties(String propertiesFileName) {
         Properties properties = new Properties();
         try {
-            properties.load(getClass().getClassLoader().getResourceAsStream(propertiesFileName));
+            InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream(propertiesFileName);
+            Assumptions.assumeTrue(resourceAsStream != null,
+                    "Could not find properties file matching the Mandrel version being used: " + propertiesFileName);
+            properties.load(resourceAsStream);
         } catch (IOException e) {
             Assertions.fail("Could not load properties from " + propertiesFileName, e);
         }
@@ -102,5 +116,23 @@ public class BuildOutput {
         Assertions.assertNotNull(files, "Could not identify the native image build directory");
         Assertions.assertEquals(1, files.length, "Could not identify the native image build directory");
         return files[0].toPath();
+    }
+
+    @Override
+    public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        mandrelVersion = getMandrelVersion(extensionContext);
+    }
+
+    private GraalVM.Version getMandrelVersion(ExtensionContext context) {
+        Properties quarkusArtifactProperties = readQuarkusArtifactProperties(context);
+        String fullVersion = quarkusArtifactProperties.getProperty("metadata.graalvm.version.full");
+        try {
+            return GraalVM.Version.of(fullVersion.lines());
+        } catch (NumberFormatException e) {
+            System.out.println(
+                    "WARNING: Unable to determine the GraalVM version with which the native binary was built. metadata.graalvm.version.full = "
+                            + fullVersion);
+            return GraalVM.Version.CURRENT;
+        }
     }
 }

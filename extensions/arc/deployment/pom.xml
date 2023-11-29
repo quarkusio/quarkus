@@ -44,6 +44,10 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-test-supplement</artifactId>
+        </dependency>
         <!-- Used to test wrong @Singleton detection -->
         <dependency>
             <groupId>jakarta.ejb</groupId>

@@ -83,7 +83,8 @@ public class DecoratorGenerator extends BeanGenerator {
             return Collections.emptyList();
         }
 
-        boolean isApplicationClass = applicationClassPredicate.test(decorator.getBeanClass());
+        boolean isApplicationClass = applicationClassPredicate.test(decorator.getBeanClass())
+                || decorator.isForceApplicationClass();
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.DECORATOR_BEAN : null, generateSources);
 

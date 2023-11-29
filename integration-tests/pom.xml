@@ -469,6 +469,17 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>native-ci</id>
+            <activation>
+                <property>
+                    <name>env.CI</name>
+                </property>
+            </activation>
+            <properties>
+                <quarkus.native.builder-image.pull>missing</quarkus.native.builder-image.pull>
+            </properties>
+        </profile>
 
         <!-- "unbind" all default executions that make no sense for (most) integration-tests -->
         <profile>

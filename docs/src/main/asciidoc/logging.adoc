@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 :categories: core,getting-started,observability
 :diataxis-type: reference
 
-Read about the use of logging API in Quarkus, configuring logging output, and using logging adapters to unify the output from other logging APIs.
+Read about the use of logging APIs in Quarkus, configuring logging output, and using logging adapters for unified output.
 
 Quarkus uses the JBoss Log Manager logging backend for publishing application and framework logs.
 Quarkus supports the JBoss Logging API and multiple other logging APIs, seamlessly integrated with JBoss Log Manager.

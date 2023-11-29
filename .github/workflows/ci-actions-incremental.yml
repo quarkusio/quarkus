@@ -134,6 +134,10 @@ jobs:
           path: ~/.m2/repository
           # refresh cache every week to avoid unlimited growth
           key: ${{ steps.m2-cache-key.outputs.key }}
+      - name: Verify native-tests.json
+        run: ./.github/verify-tests-json.sh native-tests.json integration-tests/
+      - name: Verify virtual-threads-tests.json
+        run: ./.github/verify-tests-json.sh virtual-threads-tests.json integration-tests/virtual-threads/
       - name: Build
         run: |
           ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dno-format -Dtcks -Prelocations clean install

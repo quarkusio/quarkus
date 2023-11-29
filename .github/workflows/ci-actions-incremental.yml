@@ -402,12 +402,6 @@ jobs:
         uses: gradle/github-actions/maven-build-scan/save@v1-beta
         with:
           job-name: "JVM Tests - JDK ${{matrix.java.name}}"
-      - name: Upload quarkus-ide-launcher jar
-        uses: actions/upload-artifact@v3
-        with:
-          name: "quarkus-ide-launcher-999-SNAPSHOT.jar - JDK ${{matrix.java.name}}"
-          path: |
-            core/launcher/target/quarkus-ide-launcher-999-SNAPSHOT.jar
 
   maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}

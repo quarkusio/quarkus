@@ -162,9 +162,6 @@ class NettyProcessor {
             log.debug("Not registering Netty native kqueue classes as they were not found");
         }
 
-        builder.addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent");
-        builder.addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent0");
-
         return builder //TODO: make configurable
                 .build();
     }

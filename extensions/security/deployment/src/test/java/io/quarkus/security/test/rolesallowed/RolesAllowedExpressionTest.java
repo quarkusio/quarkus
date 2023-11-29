@@ -40,7 +40,8 @@ public class RolesAllowedExpressionTest {
             "%test.test-profile-admin=admin\n" +
             "missing-profile-profile-admin=superman\n" +
             "%missing-profile.missing-profile-profile-admin=admin\n" +
-            "all-roles=Administrator,Software,Tester,User\n";
+            "all-roles=Administrator,Software,Tester,User\n" +
+            "ldap-roles=cn=Administrator\\\\,ou=Software\\\\,dc=Tester\\\\,dc=User\n";
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -90,6 +91,10 @@ public class RolesAllowedExpressionTest {
         assertSuccess(() -> bean.list(), "list",
                 new AuthData(Set.of("Administrator", "Software", "Tester", "User"), false, "list"));
         assertFailureFor(() -> bean.list(), ForbiddenException.class, ADMIN);
+
+        // property expression with escaped collection separator should not be treated as list
+        assertSuccess(() -> bean.ldap(), "ldap",
+                new AuthData(Set.of("cn=Administrator,ou=Software,dc=Tester,dc=User"), false, "ldap"));
     }
 
     @Singleton
@@ -139,6 +144,11 @@ public class RolesAllowedExpressionTest {
         @RolesAllowed("${all-roles}")
         public final String list() {
             return "list";
+        }
+
+        @RolesAllowed("${ldap-roles}")
+        public final String ldap() {
+            return "ldap";
         }
 
     }

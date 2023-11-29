@@ -20,12 +20,12 @@ import jakarta.ws.rs.client.ClientResponseFilter;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
+import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
 import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientMultipartConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
@@ -99,7 +99,7 @@ public class RestClientCDIDelegateBuilderTest {
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.SHARED, true);
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.NAME, "my-client");
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE,
-                HttpPostRequestEncoder.EncoderMode.HTML5);
+                PausableHttpPostRequestEncoder.EncoderMode.HTML5);
 
         Mockito.verify(restClientBuilderMock).proxyAddress("host1", 123);
         Mockito.verify(restClientBuilderMock).proxyUser("proxyUser1");
@@ -141,7 +141,7 @@ public class RestClientCDIDelegateBuilderTest {
 
         Mockito.verify(restClientBuilderMock).baseUri(URI.create("http://localhost:8080"));
         Mockito.verify(restClientBuilderMock)
-                .property(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE, HttpPostRequestEncoder.EncoderMode.HTML5);
+                .property(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE, PausableHttpPostRequestEncoder.EncoderMode.HTML5);
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.DISABLE_CONTEXTUAL_ERROR_MESSAGES, true);
 
         Mockito.verify(restClientBuilderMock).proxyAddress("host2", 123);

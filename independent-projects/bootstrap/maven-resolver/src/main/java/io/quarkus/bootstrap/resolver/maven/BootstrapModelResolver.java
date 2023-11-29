@@ -38,7 +38,7 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 
 public class BootstrapModelResolver implements ModelResolver {
 
-    public static ModelResolver newInstance(BootstrapMavenContext ctx, WorkspaceReader workspace)
+    public static BootstrapModelResolver newInstance(BootstrapMavenContext ctx, WorkspaceReader workspace)
             throws BootstrapMavenException {
         final RepositorySystem repoSystem = ctx.getRepositorySystem();
         final RepositorySystemSession session = workspace == null
@@ -100,6 +100,10 @@ public class BootstrapModelResolver implements ModelResolver {
         this.repositories = new ArrayList<>(original.repositories);
         this.externalRepositories = original.externalRepositories;
         this.repositoryIds = new HashSet<>(original.repositoryIds);
+    }
+
+    public RepositorySystemSession getSession() {
+        return session;
     }
 
     @Override

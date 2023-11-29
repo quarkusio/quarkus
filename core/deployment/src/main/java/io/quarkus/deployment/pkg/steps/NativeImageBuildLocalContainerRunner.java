@@ -19,6 +19,9 @@ public class NativeImageBuildLocalContainerRunner extends NativeImageBuildContai
         super(nativeConfig);
         if (SystemUtils.IS_OS_LINUX || SystemUtils.IS_OS_MAC) {
             final ArrayList<String> containerRuntimeArgs = new ArrayList<>(Arrays.asList(baseContainerRuntimeArgs));
+            if (containerRuntime.isInWindowsWSL()) {
+                containerRuntimeArgs.add("--interactive");
+            }
             if (containerRuntime.isDocker() && containerRuntime.isRootless()) {
                 Collections.addAll(containerRuntimeArgs, "--user", String.valueOf(0));
             } else {

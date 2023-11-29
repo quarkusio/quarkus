@@ -1,6 +1,6 @@
 package io.quarkus.test.junit;
 
-import static io.quarkus.runtime.util.ContainerRuntimeUtil.detectContainerRuntime;
+import static io.quarkus.deployment.util.ContainerRuntimeUtil.detectContainerRuntime;
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 import static java.lang.ProcessBuilder.Redirect.DISCARD;
@@ -49,10 +49,10 @@ import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
-import io.quarkus.runtime.util.ContainerRuntimeUtil;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.LauncherUtil;
 import io.quarkus.test.common.PathTestHelper;

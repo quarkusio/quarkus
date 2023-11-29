@@ -4,7 +4,7 @@ package io.quarkus.container.image.docker.deployment;
 import static io.quarkus.container.image.deployment.util.EnablementUtil.buildContainerImageNeeded;
 import static io.quarkus.container.image.deployment.util.EnablementUtil.pushContainerImageNeeded;
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
-import static io.quarkus.runtime.util.ContainerRuntimeUtil.detectContainerRuntime;
+import static io.quarkus.deployment.util.ContainerRuntimeUtil.detectContainerRuntime;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

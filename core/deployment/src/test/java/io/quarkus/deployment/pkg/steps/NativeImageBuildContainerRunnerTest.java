@@ -9,7 +9,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.TestNativeConfig;
-import io.quarkus.runtime.util.ContainerRuntimeUtil;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 
 class NativeImageBuildContainerRunnerTest {
 

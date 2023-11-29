@@ -24,7 +24,7 @@ import java.util.function.Function;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.jboss.logging.Logger;
 
-import io.quarkus.runtime.util.ContainerRuntimeUtil;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.smallrye.config.common.utils.StringUtil;
 

@@ -14,8 +14,8 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ProcessUtil;
-import io.quarkus.runtime.util.ContainerRuntimeUtil;
 
 public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRunner {
 

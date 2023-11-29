@@ -268,8 +268,6 @@ public class MainClassBuildStep {
                 startupContext, mv.getMethodParam(0));
 
         mv.invokeStaticMethod(CONFIGURE_STEP_TIME_ENABLED);
-        ResultHandle profiles = mv
-                .invokeStaticMethod(ofMethod(ConfigUtils.class, "getProfiles", List.class));
 
         tryBlock = mv.tryBlock();
         tryBlock.invokeStaticMethod(CONFIGURE_STEP_TIME_START);
@@ -298,7 +296,7 @@ public class MainClassBuildStep {
                 tryBlock.load(applicationInfo.getVersion()),
                 tryBlock.load(Version.getVersion()),
                 featuresHandle,
-                profiles,
+                tryBlock.invokeStaticMethod(ofMethod(ConfigUtils.class, "getProfiles", List.class)),
                 tryBlock.load(LaunchMode.DEVELOPMENT.equals(launchMode.getLaunchMode())),
                 tryBlock.load(launchMode.isAuxiliaryApplication()));
 

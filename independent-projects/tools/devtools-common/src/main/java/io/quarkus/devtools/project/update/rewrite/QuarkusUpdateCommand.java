@@ -58,6 +58,16 @@ public class QuarkusUpdateCommand {
         }
     }
 
+    private static void runMavenUpdate(MessageWriter log, Path baseDir, String rewritePluginVersion, String recipesGAV,
+            Path recipe,
+            boolean dryRun) {
+        final String mvnBinary = findMvnBinary(baseDir);
+        executeCommand(baseDir, getMavenUpdateCommand(mvnBinary, rewritePluginVersion, recipesGAV, recipe, dryRun), log);
+
+        // format the sources
+        executeCommand(baseDir, getMavenProcessSourcesCommand(mvnBinary), log);
+    }
+
     private static void runGradleUpdate(MessageWriter log, Path baseDir, String rewritePluginVersion, String recipesGAV,
             Path recipe, boolean dryRun) {
         Path tempInit = null;
@@ -120,19 +130,10 @@ public class QuarkusUpdateCommand {
         }
     }
 
-    private static void runMavenUpdate(MessageWriter log, Path baseDir, String rewritePluginVersion, String recipesGAV,
-            Path recipe,
-            boolean dryRun) {
-        final String mvnBinary = findMvnBinary(baseDir);
-        executeCommand(baseDir, getMavenUpdateCommand(mvnBinary, rewritePluginVersion, recipesGAV, recipe, dryRun), log);
-
-        // format the sources
-        executeCommand(baseDir, getMavenProcessSourcesCommand(mvnBinary), log);
-    }
-
     private static List<String> getMavenProcessSourcesCommand(String mvnBinary) {
         List<String> command = new ArrayList<>();
         command.add(mvnBinary);
+        command.add("clean");
         command.add("process-sources");
         final String mavenSettings = getMavenSettingsArg();
         if (mavenSettings != null) {

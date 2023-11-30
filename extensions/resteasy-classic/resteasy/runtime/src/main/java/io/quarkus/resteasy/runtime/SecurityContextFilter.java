@@ -21,7 +21,9 @@ import io.quarkus.resteasy.runtime.standalone.QuarkusResteasySecurityContext;
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
 
 @PreMatching
 @Priority(Priorities.USER + 1)
@@ -33,6 +35,9 @@ public class SecurityContextFilter implements ContainerRequestFilter {
 
     @Inject
     CurrentIdentityAssociation currentIdentityAssociation;
+
+    @Inject
+    RoutingContext routingContext;
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
@@ -95,6 +100,7 @@ public class SecurityContextFilter implements ContainerRequestFilter {
                 return Uni.createFrom().nullItem();
             }
         };
+        routingContext.setUser(new QuarkusHttpUser(newIdentity));
         currentIdentityAssociation.setIdentity(newIdentity);
     }
 }

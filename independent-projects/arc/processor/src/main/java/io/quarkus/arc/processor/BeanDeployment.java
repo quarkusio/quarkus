@@ -64,6 +64,8 @@ public class BeanDeployment {
     private final IndexView beanArchiveImmutableIndex;
     private final IndexView applicationIndex;
 
+    private final Predicate<DotName> applicationClassPredicate;
+
     private final Map<DotName, ClassInfo> qualifiers;
     private final Map<DotName, ClassInfo> repeatingQualifierAnnotations;
     private final Map<DotName, Set<String>> qualifierNonbindingMembers;
@@ -142,6 +144,7 @@ public class BeanDeployment {
         this.beanArchiveComputingIndex = builder.beanArchiveComputingIndex;
         this.beanArchiveImmutableIndex = Objects.requireNonNull(builder.beanArchiveImmutableIndex);
         this.applicationIndex = builder.applicationIndex;
+        this.applicationClassPredicate = builder.applicationClassPredicate;
         this.annotationStore = new AnnotationStore(initAndSort(builder.annotationTransformers, buildContext), buildContext);
         buildContext.putInternal(Key.ANNOTATION_STORE, annotationStore);
 
@@ -1384,7 +1387,7 @@ public class BeanDeployment {
         }
         if (buildCompatibleExtensions != null) {
             buildCompatibleExtensions.runSynthesis(beanArchiveComputingIndex);
-            buildCompatibleExtensions.registerSyntheticBeans(context);
+            buildCompatibleExtensions.registerSyntheticBeans(context, applicationClassPredicate);
         }
         this.injectionPoints.addAll(context.syntheticInjectionPoints);
         return context;
@@ -1399,7 +1402,7 @@ public class BeanDeployment {
             context.extension = null;
         }
         if (buildCompatibleExtensions != null) {
-            buildCompatibleExtensions.registerSyntheticObservers(context);
+            buildCompatibleExtensions.registerSyntheticObservers(context, applicationClassPredicate);
             buildCompatibleExtensions.runRegistrationAgain(beanArchiveComputingIndex, beans, observers);
         }
         return context;
@@ -1433,7 +1436,7 @@ public class BeanDeployment {
                 configurator.observedQualifiers,
                 Reception.ALWAYS, configurator.transactionPhase, configurator.isAsync, configurator.priority,
                 observerTransformers, buildContext,
-                jtaCapabilities, configurator.notifyConsumer, configurator.params));
+                jtaCapabilities, configurator.notifyConsumer, configurator.params, configurator.forceApplicationClass));
     }
 
     static void processErrors(List<Throwable> errors) {

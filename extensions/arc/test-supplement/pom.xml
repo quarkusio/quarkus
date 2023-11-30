@@ -3,20 +3,14 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-extensions-parent</artifactId>
+        <artifactId>quarkus-arc-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-arc-parent</artifactId>
-    <name>Quarkus - ArC</name>
-    <packaging>pom</packaging>
-    <modules>
-        <module>deployment</module>
-        <module>runtime</module>
-        <module>test-supplement</module>
-    </modules>
+    <artifactId>quarkus-arc-test-supplement</artifactId>
+    <name>Quarkus - ArC - Test Supplement</name>
+    <description>Supplement archive for ArC tests</description>
 
 </project>

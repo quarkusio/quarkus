@@ -181,7 +181,8 @@ public class ObserverGenerator extends AbstractGenerator {
             return Collections.emptyList();
         }
 
-        boolean isApplicationClass = applicationClassPredicate.test(observer.getBeanClass());
+        boolean isApplicationClass = applicationClassPredicate.test(observer.getBeanClass())
+                || observer.isForceApplicationClass();
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.OBSERVER : null, generateSources);
 

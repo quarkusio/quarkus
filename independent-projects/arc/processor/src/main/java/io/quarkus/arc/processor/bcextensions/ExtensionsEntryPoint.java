@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.Dependent;
@@ -312,7 +313,7 @@ public class ExtensionsEntryPoint {
      * <p>
      * It is a no-op if no {@link BuildCompatibleExtension} was found.
      */
-    public void registerSyntheticBeans(BeanRegistrar.RegistrationContext context) {
+    public void registerSyntheticBeans(BeanRegistrar.RegistrationContext context, Predicate<DotName> isApplicationClass) {
         if (invoker.isEmpty()) {
             return;
         }
@@ -424,6 +425,16 @@ public class ExtensionsEntryPoint {
                     mc.returnValue(null);
                 });
             }
+            // the generated classes need to see the `creatorClass` and the `disposerClass`,
+            // so if they are application classes, the generated classes are forced to also
+            // be application classes, even if the `implementationClass` possibly isn't
+            if (isApplicationClass.test(DotName.createSimple(syntheticBean.creatorClass))) {
+                bean.forceApplicationClass();
+            }
+            if (syntheticBean.disposerClass != null
+                    && isApplicationClass.test(DotName.createSimple(syntheticBean.disposerClass))) {
+                bean.forceApplicationClass();
+            }
             bean.done();
         }
     }
@@ -433,7 +444,8 @@ public class ExtensionsEntryPoint {
      * <p>
      * It is a no-op if no {@link BuildCompatibleExtension} was found.
      */
-    public void registerSyntheticObservers(ObserverRegistrar.RegistrationContext context) {
+    public void registerSyntheticObservers(ObserverRegistrar.RegistrationContext context,
+            Predicate<DotName> isApplicationClass) {
         if (invoker.isEmpty()) {
             return;
         }
@@ -475,6 +487,12 @@ public class ExtensionsEntryPoint {
                 // return type is void
                 mc.returnValue(null);
             });
+            // the generated classes need to see the `implementationClass`, so if it is
+            // an application class, the generated classes are forced to also be application
+            // classes, even if the `declaringClass` possibly isn't
+            if (isApplicationClass.test(DotName.createSimple(syntheticObserver.implementationClass))) {
+                observer.forceApplicationClass();
+            }
             observer.done();
         }
     }

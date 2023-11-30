@@ -94,7 +94,6 @@ public class JibProcessor {
 
     private static final String JAVA_21_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-21-runtime:1.18";
     private static final String JAVA_17_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17-runtime:1.18";
-    private static final String JAVA_11_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11-runtime:1.18";
 
     private static final String DEFAULT_BASE_IMAGE_USER = "185";
 
@@ -139,10 +138,7 @@ public class JibProcessor {
         if (javaVersion.isJava21OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
             return JAVA_21_BASE_IMAGE;
         }
-        if (javaVersion.isJava17OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
-            return JAVA_17_BASE_IMAGE;
-        }
-        return JAVA_11_BASE_IMAGE;
+        return JAVA_17_BASE_IMAGE;
     }
 
     @BuildStep(onlyIf = { IsNormal.class, JibBuild.class }, onlyIfNot = NativeBuild.class)

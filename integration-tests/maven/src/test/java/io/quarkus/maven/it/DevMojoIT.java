@@ -337,7 +337,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
     @Test
     public void testThatNonExistentSrcDirCanBeAdded() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-java-change");
+        testDir = initProject("projects/classic", "projects/project-classic-non-existent-src-dir-can-be-added");
 
         File sourceDir = new File(testDir, "src/main/java");
         File sourceDirMoved = new File(testDir, "src/main/java-moved");

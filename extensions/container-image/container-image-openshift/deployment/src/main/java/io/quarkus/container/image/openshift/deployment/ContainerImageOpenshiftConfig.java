@@ -15,7 +15,6 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(name = "openshift", phase = ConfigPhase.BUILD_TIME)
 public class ContainerImageOpenshiftConfig {
 
-    public static final String DEFAULT_BASE_JVM_JDK11_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11:1.18";
     public static final String DEFAULT_BASE_JVM_JDK17_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17:1.18";
     public static final String DEFAULT_BASE_JVM_JDK21_IMAGE = "registry.access.redhat.com/ubi8/openjdk-21:1.18";
 
@@ -33,11 +32,8 @@ public class ContainerImageOpenshiftConfig {
     public static String getDefaultJvmImage(CompiledJavaVersionBuildItem.JavaVersion version) {
         if (version.isJava21OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
             return DEFAULT_BASE_JVM_JDK21_IMAGE;
-        } else if (version.isJava17OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
-            return DEFAULT_BASE_JVM_JDK17_IMAGE;
-        } else {
-            return DEFAULT_BASE_JVM_JDK11_IMAGE;
         }
+        return DEFAULT_BASE_JVM_JDK17_IMAGE;
     }
 
     /**
@@ -53,9 +49,7 @@ public class ContainerImageOpenshiftConfig {
      * instead.
      * When the application is built against Java 21 or higher, {@code registry.access.redhat.com/ubi8/openjdk-21:1.18}
      * is used as the default.
-     * When the application is built against Java [17, 20], {@code registry.access.redhat.com/ubi8/openjdk-17:1.18}
-     * is used as the default.
-     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-11:1.18} is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-17:1.18} is used as the default.
      */
     @ConfigItem
     public Optional<String> baseJvmImage;

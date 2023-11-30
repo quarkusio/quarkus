@@ -1,11 +1,4 @@
 [ {
-  "name": "11",
-  "java-version": 11,
-  "maven_args": "$JVM_TEST_MAVEN_ARGS",
-  "maven_opts": "-Xmx2g -XX:MaxMetaspaceSize=1g",
-  "os-name": "ubuntu-latest"
-}
-, {
   "name": "17",
   "java-version": 17,
   "maven_args": "$JVM_TEST_MAVEN_ARGS",

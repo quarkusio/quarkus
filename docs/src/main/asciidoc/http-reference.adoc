@@ -431,6 +431,14 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-confi
 Set `quarkus.http.record-request-start-time=true` to enable recording request start times when using any of the attributes related to logging request processing times.
 ====
 
+[NOTE]
+====
+Assuming security has been set up for the application (see our xref:security-overview.adoc[guide] for more details),
+logging attribute `Remote user that was authenticated` is set to the value of the `io.quarkus.security.identity.SecurityIdentity` principal.
+If your application use custom xref:security-customization.adoc#jaxrs-security-context[Jakarta REST SecurityContext], the context principal is used instead.
+Please refer to the xref:logging.adoc[Logging guide] for options how to add contextual log information yourself.
+====
+
 [TIP]
 ====
 Use `quarkus.http.access-log.exclude-pattern=/some/path/.*` to exclude all entries concerning the path `/some/path/...` (_including subsequent paths_) from the log.

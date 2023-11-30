@@ -311,14 +311,6 @@ public class QuarkusUpdateCommand {
         return OS.contains("win");
     }
 
-    static boolean hasGradle(Path dir) {
-        return Files.exists(dir.resolve("build.gradle"));
-    }
-
-    private static boolean hasMaven(Path dir) {
-        return Files.exists(dir.resolve("pom.xml"));
-    }
-
     private enum LogLevel {
 
         ERROR,

@@ -1011,7 +1011,6 @@ public class JarResultBuildStep {
             removedArtifacts.add("org.graalvm.sdk:nativeimage");
             removedArtifacts.add("org.graalvm.sdk:word");
             removedArtifacts.add("org.graalvm.sdk:collections");
-            removedArtifacts.add("org.graalvm.polyglot:polyglot");
 
             doLegacyThinJarGeneration(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem, applicationInfo, packageConfig, generatedResources, libDir, allClasses,

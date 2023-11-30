@@ -20,6 +20,8 @@ See also, xref:security-authentication-mechanisms.adoc#other-supported-authentic
 
 If you want to protect your service applications by using OIDC Bearer token authentication, see xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication].
 
+:sectnums!:
+
 == Prerequisites
 
 :prerequisites-docker:
@@ -42,9 +44,10 @@ Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {q
 
 The solution is located in the `security-openid-connect-web-authentication-quickstart` link:{quickstarts-tree-url}/security-openid-connect-web-authentication-quickstart[directory].
 
-== Procedure
+:sectnums:
+:sectnumlevels: 3
 
-=== Create the Maven project
+== Create the Maven project
 
 First, we need a new project.
 Create a new project with the following command:
@@ -75,7 +78,7 @@ This will add the following to your build file:
 implementation("io.quarkus:quarkus-oidc")
 ----
 
-=== Write the application
+== Write the application
 
 Let's write a simple Jakarta REST resource which has all the tokens returned in the authorization code grant response injected:
 
@@ -155,7 +158,7 @@ Note that you do not have to inject the tokens - it is only required if the endp
 
 // SJ: TO DO - update link to point to new reference guide. For more information, see <<access_id_and_access_tokens,Access ID and Access Tokens>> section.
 
-=== Configure the application
+== Configure the application
 
 The OIDC extension allows you to define the configuration using the `application.properties` file which should be located at the `src/main/resources` directory.
 
@@ -179,7 +182,7 @@ Finally, the `quarkus.http.auth.permission.authenticated` permission is set to t
 In this case, all paths are being protected by a policy that ensures that only `authenticated` users are allowed to access.
 For more information, see xref:security-authorize-web-endpoints-reference.adoc[Security Authorization Guide].
 
-=== Start and configure the Keycloak server
+== Start and configure the Keycloak server
 
 To start a Keycloak server, use Docker and run the following command:
 
@@ -198,7 +201,7 @@ Username should be `admin` and password `admin`.
 Import the link:{quickstarts-tree-url}/security-openid-connect-web-authentication-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm.
 For more information, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
 
-=== Run the application in dev and JVM modes
+== Run the application in dev and JVM modes
 
 To run the application in a dev mode, use:
 
@@ -217,7 +220,7 @@ Then, run it:
 java -jar target/quarkus-app/quarkus-run.jar
 ----
 
-=== Run the application in Native mode
+== Run the application in Native mode
 
 This same demo can be compiled into native code.
 No modifications are required.
@@ -237,7 +240,7 @@ After getting a cup of coffee, you can run this binary directly:
 ./target/security-openid-connect-web-authentication-quickstart-runner
 ----
 
-=== Test the application
+== Test the application
 
 To test the application, open your browser and access the following URL:
 
@@ -254,6 +257,8 @@ To authenticate to the application, type the following credentials when at the K
 After clicking the `Login` button, you are redirected back to the application.
 
 For more information about writing the integration tests that depend on `Dev Services for Keycloak`, see the <<security-oidc-code-flow-authentication.adoc#integration-testing-keycloak-devservices, Dev Services for Keycloak>> section.
+
+:sectnums!:
 
 == Summary
 

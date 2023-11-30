@@ -13,9 +13,12 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.maven.dependency.ArtifactCoords;
 
@@ -345,8 +348,11 @@ public class DevToolsConfigSerializationTest {
 
         String expectedContents = Files.readString(expectedFile);
         String actualContents = Files.readString(actualFile);
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> expectedContentsMap = objectMapper.readValue(expectedContents, Map.class);
+        Map<String, Object> actualContentsMap = objectMapper.readValue(actualContents, Map.class);
 
-        assertThat(actualContents).isEqualTo(expectedContents);
+        assertThat(actualContentsMap).isEqualTo(expectedContentsMap);
     }
 
     @Test

@@ -24,6 +24,7 @@ import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.qute.Qute;
+import io.smallrye.common.os.OS;
 
 public class QuarkusUpdateCommand {
 
@@ -305,10 +306,8 @@ public class QuarkusUpdateCommand {
         return false;
     }
 
-    private static String OS = System.getProperty("os.name").toLowerCase();
-
     public static boolean isWindows() {
-        return OS.contains("win");
+        return OS.WINDOWS.isCurrent();
     }
 
     private enum LogLevel {

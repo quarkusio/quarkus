@@ -351,13 +351,13 @@ public class QuarkusUpdateCommand {
                 return line;
             }
 
-            String pattern = "[" + name() + "]";
+            String pattern = "[" + name() + "] ";
 
-            if (line.length() < pattern.length()) {
+            if (!line.startsWith(pattern)) {
                 return line;
             }
 
-            return line.substring(pattern.length()).trim();
+            return line.substring(pattern.length());
         }
 
         private boolean matches(String line) {

@@ -133,6 +133,7 @@ public class QuarkusUpdateCommand {
     private static List<String> getMavenProcessSourcesCommand(String mvnBinary) {
         List<String> command = new ArrayList<>();
         command.add(mvnBinary);
+        command.add("-B");
         command.add("clean");
         command.add("process-sources");
         final String mavenSettings = getMavenSettingsArg();
@@ -148,6 +149,7 @@ public class QuarkusUpdateCommand {
             boolean dryRun) {
         final List<String> command = new ArrayList<>();
         command.add(mvnBinary);
+        command.add("-B");
         command.add("-e");
         command.add(
                 String.format("%s:%s:%s:%s", MAVEN_REWRITE_PLUGIN_GROUP, MAVEN_REWRITE_PLUGIN_ARTIFACT, rewritePluginVersion,

@@ -1,4 +1,4 @@
-package io.quarkus.scheduler.test;
+package io.quarkus.quartz.test;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;

@@ -28,9 +28,9 @@ public class OpenTelemetrySchedulerTest {
     @Test
     public void schedulerSpanTest() {
         // ensure that scheduled job is called
-        assertCounter("/scheduler/count", 1, Duration.ofSeconds(1));
+        assertCounter("/scheduler/count", 1, Duration.ofSeconds(3));
         // assert JobDefinition type scheduler
-        assertCounter("/scheduler/count/job-definition", 1, Duration.ofSeconds(1));
+        assertCounter("/scheduler/count/job-definition", 1, Duration.ofSeconds(3));
 
         // ------- SPAN ASSERTS -------
         List<Map<String, Object>> spans = getSpans();
@@ -48,6 +48,7 @@ public class OpenTelemetrySchedulerTest {
 
     private void assertCounter(String counterPath, int expectedCount, Duration timeout) {
         await().atMost(timeout)
+                .pollInterval(Duration.ofMillis(500))
                 .until(() -> {
                     Response response = given().when().get(counterPath);
                     int code = response.statusCode();

@@ -67,7 +67,7 @@ public class DependencyUtils {
     private static Artifact toArtifact(String str, int offset) {
         String groupId = null;
         String artifactId = null;
-        String classifier = "";
+        String classifier = ArtifactCoords.DEFAULT_CLASSIFIER;
         String type = ArtifactCoords.TYPE_JAR;
         String version = null;
 

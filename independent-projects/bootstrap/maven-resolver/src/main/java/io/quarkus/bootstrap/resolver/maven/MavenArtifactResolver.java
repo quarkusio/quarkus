@@ -305,7 +305,7 @@ public class MavenArtifactResolver {
             throws BootstrapMavenException {
         try {
             return repoSystem.collectDependencies(repoSession,
-                    newCollectManagedRequest(artifact, List.of(), managedDeps, mainRepos, exclusions, Set.of(excludedScopes)));
+                    newCollectManagedRequest(artifact, directDeps, managedDeps, mainRepos, exclusions, Set.of(excludedScopes)));
         } catch (DependencyCollectionException e) {
             throw new BootstrapMavenException("Failed to collect dependencies for " + artifact, e);
         }

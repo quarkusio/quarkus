@@ -27,11 +27,17 @@ public class DynamicVerificationKeyResolver {
 
     private final OidcProviderClient client;
     private final MemoryCache<Key> cache;
+    final CertChainPublicKeyResolver chainResolverFallback;
 
     public DynamicVerificationKeyResolver(OidcProviderClient client, OidcTenantConfig config) {
         this.client = client;
         this.cache = new MemoryCache<Key>(client.getVertx(), config.jwks.cleanUpTimerInterval,
                 config.jwks.cacheTimeToLive, config.jwks.cacheSize);
+        if (config.certificateChain.trustStoreFile.isPresent()) {
+            chainResolverFallback = new CertChainPublicKeyResolver(config.certificateChain);
+        } else {
+            chainResolverFallback = null;
+        }
     }
 
     public Uni<VerificationKeyResolver> resolve(TokenCredential tokenCred) {
@@ -98,11 +104,15 @@ public class DynamicVerificationKeyResolver {
                             newKey = jwks.getKeyWithoutKeyIdAndThumbprint("RSA");
                         }
 
+                        if (newKey == null && chainResolverFallback != null) {
+                            LOG.debug("JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set,"
+                                    + " falling back to the certificate chain resolver");
+                            return Uni.createFrom().item(chainResolverFallback);
+                        }
+
                         if (newKey == null) {
                             return Uni.createFrom().failure(new UnresolvableKeyException(
-                                    String.format(
-                                            "JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set",
-                                            kid)));
+                                    "JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set"));
                         } else {
                             return Uni.createFrom().item(new SingleKeyVerificationKeyResolver(newKey));
                         }

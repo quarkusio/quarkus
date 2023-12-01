@@ -181,8 +181,17 @@ public class OidcRecorder {
             return Uni.createFrom().item(new TenantConfigContext(new OidcProvider(null, null, null, null), oidcConfig));
         }
 
-        if (oidcConfig.getPublicKey().isPresent()) {
-            return Uni.createFrom().item(createTenantContextFromPublicKey(oidcConfig));
+        if (!oidcConfig.getAuthServerUrl().isPresent()) {
+            if (oidcConfig.getPublicKey().isPresent() && oidcConfig.certificateChain.trustStoreFile.isPresent()) {
+                throw new ConfigurationException("Both public key and certificate chain verification modes are enabled");
+            }
+            if (oidcConfig.getPublicKey().isPresent()) {
+                return Uni.createFrom().item(createTenantContextFromPublicKey(oidcConfig));
+            }
+
+            if (oidcConfig.certificateChain.trustStoreFile.isPresent()) {
+                return Uni.createFrom().item(createTenantContextToVerifyCertChain(oidcConfig));
+            }
         }
 
         try {
@@ -331,6 +340,16 @@ public class OidcRecorder {
 
         return new TenantConfigContext(
                 new OidcProvider(oidcConfig.publicKey.get(), oidcConfig, readTokenDecryptionKey(oidcConfig)), oidcConfig);
+    }
+
+    private static TenantConfigContext createTenantContextToVerifyCertChain(OidcTenantConfig oidcConfig) {
+        if (!OidcUtils.isServiceApp(oidcConfig)) {
+            throw new ConfigurationException(
+                    "Currently only 'service' applications can be used to verify tokens with inlined certificate chains");
+        }
+
+        return new TenantConfigContext(
+                new OidcProvider(null, oidcConfig, readTokenDecryptionKey(oidcConfig)), oidcConfig);
     }
 
     public void setSecurityEventObserved(boolean isSecurityEventObserved) {

@@ -141,7 +141,7 @@ public class OidcCommonUtils {
                         .setPassword(oidcConfig.tls.getTrustStorePassword().orElse("password"))
                         .setAlias(oidcConfig.tls.getTrustStoreCertAlias().orElse(null))
                         .setValue(io.vertx.core.buffer.Buffer.buffer(trustStoreData))
-                        .setType(getStoreType(oidcConfig.tls.trustStoreFileType, oidcConfig.tls.trustStoreFile.get()))
+                        .setType(getKeyStoreType(oidcConfig.tls.trustStoreFileType, oidcConfig.tls.trustStoreFile.get()))
                         .setProvider(oidcConfig.tls.trustStoreProvider.orElse(null));
                 options.setTrustOptions(trustStoreOptions);
                 if (Verification.CERTIFICATE_VALIDATION == oidcConfig.tls.verification.orElse(Verification.REQUIRED)) {
@@ -160,7 +160,7 @@ public class OidcCommonUtils {
                         .setAlias(oidcConfig.tls.keyStoreKeyAlias.orElse(null))
                         .setAliasPassword(oidcConfig.tls.keyStoreKeyPassword.orElse(null))
                         .setValue(io.vertx.core.buffer.Buffer.buffer(keyStoreData))
-                        .setType(getStoreType(oidcConfig.tls.keyStoreFileType, oidcConfig.tls.keyStoreFile.get()))
+                        .setType(getKeyStoreType(oidcConfig.tls.keyStoreFileType, oidcConfig.tls.keyStoreFile.get()))
                         .setProvider(oidcConfig.tls.keyStoreProvider.orElse(null));
 
                 if (oidcConfig.tls.keyStorePassword.isPresent()) {
@@ -188,7 +188,7 @@ public class OidcCommonUtils {
         options.setConnectTimeout((int) oidcConfig.getConnectionTimeout().toMillis());
     }
 
-    private static String getStoreType(Optional<String> fileType, Path storePath) {
+    public static String getKeyStoreType(Optional<String> fileType, Path storePath) {
         if (fileType.isPresent()) {
             return fileType.get().toUpperCase();
         }

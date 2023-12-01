@@ -102,6 +102,9 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         if (resolvedContext.oidcConfig.publicKey.isPresent()) {
             LOG.debug("Performing token verification with a configured public key");
             return validateTokenWithoutOidcServer(request, resolvedContext);
+        } else if (resolvedContext.oidcConfig.getCertificateChain().trustStoreFile.isPresent()) {
+            LOG.debug("Performing token verification with a public key inlined in the certificate chain");
+            return validateTokenWithoutOidcServer(request, resolvedContext);
         } else {
             return validateAllTokensWithOidcServer(requestData, request, resolvedContext);
         }
@@ -557,7 +560,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             TenantConfigContext resolvedContext) {
 
         try {
-            TokenVerificationResult result = resolvedContext.provider.verifyJwtToken(request.getToken().getToken(), false,
+            TokenVerificationResult result = resolvedContext.provider.verifyJwtToken(request.getToken().getToken(),
+                    resolvedContext.oidcConfig.token.subjectRequired,
                     false, null);
             return Uni.createFrom()
                     .item(validateAndCreateIdentity(Map.of(), request.getToken(), resolvedContext,

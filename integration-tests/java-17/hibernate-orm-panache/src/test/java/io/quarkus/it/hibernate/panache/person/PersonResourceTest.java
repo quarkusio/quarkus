@@ -6,8 +6,6 @@ import static org.hamcrest.CoreMatchers.is;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.it.mongodb.panache.person.Person;
-import io.quarkus.it.mongodb.panache.person.Status;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.h2.H2DatabaseTestResource;

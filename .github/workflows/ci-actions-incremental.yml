@@ -138,7 +138,14 @@ jobs:
         run: ./.github/verify-tests-json.sh native-tests.json integration-tests/
       - name: Verify virtual-threads-tests.json
         run: ./.github/verify-tests-json.sh virtual-threads-tests.json integration-tests/virtual-threads/
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        with:
+          build-scan-capture-strategy: ON_DEMAND
+          job-name: "Initial JDK 17 Build"
       - name: Build
+        env:
+          CAPTURE_BUILD_SCAN: true
         run: |
           ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dno-format -Dtcks -Prelocations clean install
       - name: Verify extension dependencies
@@ -203,11 +210,6 @@ jobs:
             target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
-      - name: Save Build Scan
-        if: always()
-        uses: gradle/github-actions/maven-build-scan/save@v1-beta
-        with:
-          job-name: "Initial JDK 17 Build"
 
   calculate-test-jobs:
     name: Calculate Test Jobs
@@ -354,7 +356,14 @@ jobs:
           path: .
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        with:
+          build-scan-capture-strategy: ON_DEMAND
+          job-name: "JVM Tests - JDK ${{matrix.java.name}}"
       - name: Build
+        env:
+          CAPTURE_BUILD_SCAN: true
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
         run: ./mvnw $COMMON_MAVEN_ARGS clean install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devmode -pl !integration-tests/devtools -Dno-test-kubernetes -pl !docs ${{ matrix.java.maven_args }} ${{ needs.build-jdk17.outputs.gib_args }}
       - name: Clean Gradle temp directory
@@ -397,11 +406,6 @@ jobs:
           path: |
             **/build.log
           retention-days: 2
-      - name: Save Build Scan
-        if: always()
-        uses: gradle/github-actions/maven-build-scan/save@v1-beta
-        with:
-          job-name: "JVM Tests - JDK ${{matrix.java.name}}"
 
   maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
@@ -458,7 +462,14 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        with:
+          build-scan-capture-strategy: ON_DEMAND
+          job-name: "Maven Tests - JDK ${{matrix.java.name}}"
       - name: Build
+        env:
+          CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.build-jdk17.outputs.gib_args }}
@@ -490,11 +501,6 @@ jobs:
             target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
-      - name: Save Build Scan
-        if: always()
-        uses: gradle/github-actions/maven-build-scan/save@v1-beta
-        with:
-          job-name: "Maven Tests - JDK ${{matrix.java.name}}"
 
   gradle-tests:
     name: Gradle Tests - JDK ${{matrix.java.name}}
@@ -552,7 +558,14 @@ jobs:
         # runs on Windows as well but would require newline conversion, not worth it
         if: "!startsWith(matrix.java.os-name, 'windows')"
         run: ./integration-tests/gradle/update-dependencies.sh $COMMON_MAVEN_ARGS -Dscan=false
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        with:
+          build-scan-capture-strategy: ON_DEMAND
+          job-name: "Gradle Tests - JDK ${{matrix.java.name}}"
       - name: Build
+        env:
+          CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl integration-tests/gradle
       - name: Upload build reports (if build failed)
@@ -567,11 +580,6 @@ jobs:
             target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
-      - name: Save Build Scan
-        if: always()
-        uses: gradle/github-actions/maven-build-scan/save@v1-beta
-        with:
-          job-name: "Gradle Tests - JDK ${{matrix.java.name}}"
 
   devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}
@@ -626,7 +634,14 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        with:
+          build-scan-capture-strategy: ON_DEMAND
+          job-name: "Devtools Tests - JDK ${{matrix.java.name}}"
       - name: Build
+        env:
+          CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/devtools'
       - name: Prepare failure archive (if maven failed)
@@ -650,11 +665,6 @@ jobs:
             target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
-      - name: Save Build Scan
-        if: always()
-        uses: gradle/github-actions/maven-build-scan/save@v1-beta
-        with:
-          job-name: "Devtools Tests - JDK ${{matrix.java.name}}"
 
   kubernetes-tests:
     name: Kubernetes Tests - JDK ${{matrix.java.name}}
@@ -709,7 +719,14 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        with:
+          build-scan-capture-strategy: ON_DEMAND
+          job-name: "Kubernetes Tests - JDK ${{matrix.java.name}}"
       - name: Build
+        env:
+          CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -f 'integration-tests/kubernetes'
       - name: Prepare failure archive (if maven failed)
@@ -733,11 +750,6 @@ jobs:
             **/target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
-      - name: Save Build Scan
-        if: always()
-        uses: gradle/github-actions/maven-build-scan/save@v1-beta
-        with:
-          job-name: "Kubernetes Tests - JDK ${{matrix.java.name}}"
 
   quickstarts-tests:
     name: Quickstarts Compilation - JDK ${{matrix.java.name}}
@@ -779,7 +791,14 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        with:
+          build-scan-capture-strategy: ON_DEMAND
+          job-name: "Quickstarts Compilation - JDK ${{matrix.java.name}}"
       - name: Compile Quickstarts
+        env:
+          CAPTURE_BUILD_SCAN: true
         run: |
           git clone https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
           git checkout development
@@ -794,11 +813,6 @@ jobs:
             quarkus-quickstarts/target/build-report.json
             quarkus-quickstarts/LICENSE
           retention-days: 2
-      - name: Save Build Scan
-        if: always()
-        uses: gradle/github-actions/maven-build-scan/save@v1-beta
-        with:
-          job-name: "Quickstarts Compilation - JDK ${{matrix.java.name}}"
 
   virtual-thread-native-tests:
     name: Native Tests - Virtual Thread - ${{matrix.category}}
@@ -840,10 +854,16 @@ jobs:
       - name: Update Docker Client User Agent
         run: |
           cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        with:
+          build-scan-capture-strategy: ON_DEMAND
+          job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
       - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}
           CONTAINER_BUILD: ${{startsWith(matrix.os-name, 'windows') && 'false' || 'true'}}
+          CAPTURE_BUILD_SCAN: true
         run: |
           export LANG=en_US && ./mvnw $COMMON_MAVEN_ARGS -f integration-tests/virtual-threads -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dextra-args=--enable-preview -Dquarkus.native.container-build=true
       - name: Upload build reports (if build failed)
@@ -856,11 +876,6 @@ jobs:
             integration-tests/virtual-threads/target/build-report.json
             integration-tests/virtual-threads/target/gradle-build-scan-url.txt
           retention-days: 2
-      - name: Save Build Scan
-        if: always()
-        uses: gradle/github-actions/maven-build-scan/save@v1-beta
-        with:
-          job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
 
   tcks-test:
     name: MicroProfile TCKs Tests
@@ -900,7 +915,14 @@ jobs:
           path: .
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        with:
+          build-scan-capture-strategy: ON_DEMAND
+          job-name: "MicroProfile TCKs Tests"
       - name: Verify
+        env:
+          CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
         # Despite the pre-calculated run_tcks flag, GIB has to be re-run here to figure out the exact tcks submodules to build.
         run: ./mvnw $COMMON_MAVEN_ARGS -Dtcks -pl tcks -amd clean install ${{ needs.build-jdk17.outputs.gib_args }}
@@ -928,11 +950,6 @@ jobs:
             **/target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
-      - name: Save Build Scan
-        if: always()
-        uses: gradle/github-actions/maven-build-scan/save@v1-beta
-        with:
-          job-name: "MicroProfile TCKs Tests"
 
   native-tests:
     name: Native Tests - ${{matrix.category}}
@@ -998,10 +1015,16 @@ jobs:
           path: .
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        with:
+          build-scan-capture-strategy: ON_DEMAND
+          job-name: "Native Tests - ${{matrix.category}}"
       - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}
           CONTAINER_BUILD: ${{startsWith(matrix.os-name, 'windows') && 'false' || 'true'}}
+          CAPTURE_BUILD_SCAN: true
         run: ./mvnw $COMMON_MAVEN_ARGS -f integration-tests -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dquarkus.native.container-build=$CONTAINER_BUILD
       - name: Prepare failure archive (if maven failed)
         if: failure()
@@ -1025,11 +1048,6 @@ jobs:
             **/target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
-      - name: Save Build Scan
-        if: always()
-        uses: gradle/github-actions/maven-build-scan/save@v1-beta
-        with:
-          job-name: "Native Tests - ${{matrix.category}}"
 
   build-report:
     runs-on: ubuntu-latest

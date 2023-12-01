@@ -1,4 +1,4 @@
-package io.quarkus.it.mongodb.panache.person;
+package io.quarkus.it.mongodb.panache.record;
 
 public enum Status {
     DEAD("I'm a Zombie"),

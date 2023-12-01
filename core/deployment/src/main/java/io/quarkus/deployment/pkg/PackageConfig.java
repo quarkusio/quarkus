@@ -317,6 +317,7 @@ public class PackageConfig {
          * An advanced option that will decompile generated and transformed bytecode into the 'decompiled' directory.
          * This is only taken into account when fast-jar is used.
          */
+        @ConfigItem
         @ConfigDocDefault("false")
         public Optional<Boolean> enabled;
 

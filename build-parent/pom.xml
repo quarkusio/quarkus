@@ -71,6 +71,9 @@
 
         <!-- MicroProfile TCK versions used to be defined here but have moved to the concrete tck modules -->
 
+        <!-- Panache needs to run the hibernate-jpamodelgen annotation processor,
+             and unfortunately annotation processors are not covered by dependency management -->
+        <hibernate-orm.version>6.4.0.Final</hibernate-orm.version>
         <!-- Antlr 4 is used by the PanacheQL parser but also needs to match the requirements of Hibernate ORM 6.x-->
         <antlr.version>4.13.0</antlr.version>
 

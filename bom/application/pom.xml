@@ -98,7 +98,7 @@
         <classmate.version>1.5.1</classmate.version>
         <!-- WARNING: When updating, also align other properties on this version:
              bytebuddy.version (just below), hibernate-orm.version-for-documentation (in docs/pom.xml)
-             and antlr.version.version in build-parent/pom.xml
+             and both hibernate-orm.version and antlr.version in build-parent/pom.xml
              WARNING again for diffs that don't provide enough context: when updating, see above -->
         <hibernate-orm.version>6.4.0.Final</hibernate-orm.version>
         <bytebuddy.version>1.14.7</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->

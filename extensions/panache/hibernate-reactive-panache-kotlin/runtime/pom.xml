@@ -70,17 +70,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.hibernate.orm</groupId>
-            <artifactId>hibernate-jpamodelgen</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <!-- Workaround for https://hibernate.atlassian.net/browse/HHH-17362 -->
-        <dependency>
-            <groupId>org.antlr</groupId>
-            <artifactId>antlr4-runtime</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-panache-common-deployment</artifactId>
             <scope>test</scope>
@@ -130,6 +119,13 @@
                             <goal>kapt</goal>
                         </goals>
                         <configuration>
+                            <annotationProcessorPaths>
+                                <annotationProcessorPath>
+                                    <groupId>org.hibernate.orm</groupId>
+                                    <artifactId>hibernate-jpamodelgen</artifactId>
+                                    <version>${hibernate-orm.version}</version>
+                                </annotationProcessorPath>
+                            </annotationProcessorPaths>
                             <annotationProcessors>
                                 <annotationProcessor>org.hibernate.jpamodelgen.JPAMetaModelEntityProcessor</annotationProcessor>
                             </annotationProcessors>

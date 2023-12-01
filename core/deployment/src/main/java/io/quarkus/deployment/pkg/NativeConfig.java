@@ -5,12 +5,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
-import io.quarkus.runtime.util.ContainerRuntimeUtil;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;

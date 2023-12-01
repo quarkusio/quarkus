@@ -1,7 +1,7 @@
 package io.quarkus.deployment.pkg.steps;
 
 import static io.quarkus.deployment.pkg.steps.LinuxIDUtil.getLinuxID;
-import static io.quarkus.runtime.util.ContainerRuntimeUtil.detectContainerRuntime;
+import static io.quarkus.deployment.util.ContainerRuntimeUtil.detectContainerRuntime;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,8 +28,8 @@ import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.steps.MainClassBuildStep;
+import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.utilities.JavaBinFinder;
 
 public class AppCDSBuildStep {

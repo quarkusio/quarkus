@@ -42,9 +42,9 @@ import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
 import io.quarkus.deployment.dev.devservices.ContainerInfo;
 import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
+import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.dev.spi.DevModeType;
-import io.quarkus.runtime.util.ContainerRuntimeUtil;
-import io.quarkus.runtime.util.ContainerRuntimeUtil.ContainerRuntime;
 
 public class DevServicesProcessor {
 

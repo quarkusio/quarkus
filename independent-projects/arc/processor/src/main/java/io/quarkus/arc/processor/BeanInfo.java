@@ -527,6 +527,10 @@ public class BeanInfo implements InjectionTargetInfo {
         return alternative;
     }
 
+    /**
+     * @deprecated use {@link #getPriority()}
+     */
+    @Deprecated(forRemoval = true)
     public Integer getAlternativePriority() {
         return alternative ? priority : null;
     }

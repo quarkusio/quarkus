@@ -23,6 +23,27 @@ public interface DependencyFlags {
     // once the processing of the whole tree has completed.
     int VISITED                              = 0b00100000000000;
 
+    /**
+     * Compile-only dependencies are those that are configured
+     * to be included only for the compile phase ({@code provided} dependency scope in Maven,
+     * {@code compileOnly} configuration in Gradle).
+     * <p>
+     * These dependencies will not be present on the Quarkus application runtime or
+     * augmentation (deployment) classpath when the application is bootstrapped in production mode
+     * ({@code io.quarkus.runtime.LaunchMode.NORMAL}).
+     * <p>
+     * In Maven projects, compile-only dependencies will be present on both the runtime and the augmentation classpath
+     * of a Quarkus application launched in dev and test modes, since {@code provided} dependencies are included
+     * in the test classpath by Maven.
+     * <p>
+     * In Gradle projects, compile-only dependencies will be present on both the runtime and the augmentation classpath
+     * of a Quarkus application launched in dev modes only.
+     * <p>
+     * In any case though, these dependencies will be available during augmentation for processing
+     * using {@link io.quarkus.bootstrap.model.ApplicationModel#getDependencies(int)} by passing
+     * this flag as an argument.
+     */
+    int COMPILE_ONLY                         = 0b01000000000000;
     /* @formatter:on */
 
 }

@@ -279,11 +279,70 @@ quarkus.oidc.introspection-credentials.name=introspection-user-name
 quarkus.oidc.introspection-credentials.secret=introspection-user-secret
 ----
 
-[[oidc-client-filters]]
-==== OIDC request customization
+[[oidc-request-filters]]
+==== OIDC request filters
 
-You can customize OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFiler` implementations, which can update or add new request headers.
-For more information, see xref:security-openid-connect-client-reference#oidc-client-filters[Client request customization].
+You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFiler` implementations, which can update or add new request headers, as well as log requests.
+
+For example:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcRequestContextProperties;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpRequest;
+
+@ApplicationScoped
+@Unremovable
+public class OidcTokenRequestCustomizer implements OidcRequestFilter {
+    @Override
+    public void filter(HttpRequest<Buffer> request, Buffer buffer, OidcRequestContextProperties contextProps) {
+        OidcConfigurationMetadata metadata = contextProps.get(OidcConfigurationMetadata.class.getName()); <1>
+        // Metadata URI is absolute, request URI value is relative
+        if (metadata.getTokenUri().endsWith(request.uri())) { <2>
+            request.putHeader("TokenGrantDigest", calculateDigest(buffer.toString()));
+        }
+    }
+    private String calculateDigest(String bodyString) {
+        // Apply the required digest algorithm to the body string
+    }
+}
+----
+<1> Get `OidcConfigurationMetadata` which contains all supported OIDC endpoint addresses.
+<2> Use `OidcConfigurationMetadata` to filter requests to the OIDC token endpoint only.
+
+Alternatively, you can use `OidcRequestFilter.Endpoint` enum to make sure this filter is applied to the token endpoint requests only:
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcEndpoint.Type;
+import io.quarkus.oidc.common.OidcRequestContextProperties;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpRequest;
+
+@ApplicationScoped
+@Unremovable
+@OidcEndpoint(value = Type.DISCOVERY) <1>
+public class OidcDiscoveryRequestCustomizer implements OidcRequestFilter {
+
+    @Override
+    public void filter(HttpRequest<Buffer> request, Buffer buffer, OidcRequestContextProperties contextProps) {
+        request.putHeader("Discovery", "OK");
+    }
+}
+----
+<1> Restrict this filter to requests targeting the OIDC discovery endpoint only.
 
 ==== Redirecting to and from the OIDC provider
 

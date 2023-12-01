@@ -872,10 +872,10 @@ quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".level=T
 quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".min-level=TRACE
 ----
 
-[[oidc-client-filters]]
-== OIDC request customization
+[[oidc-request-filters]]
+== OIDC request filters
 
-You can customize OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFiler` implementations which can update or add new request headers, for example, a filter can analyze the request body and add its digest as a new header value:
+You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFiler` implementations which can update or add new request headers, for example, a filter can analyze the request body and add its digest as a new header value:
 
 [source,java]
 ----

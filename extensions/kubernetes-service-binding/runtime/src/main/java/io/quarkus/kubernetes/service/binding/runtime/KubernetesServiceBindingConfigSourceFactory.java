@@ -19,6 +19,7 @@ import org.jboss.logging.Logger;
 
 import io.smallrye.config.ConfigSourceContext;
 import io.smallrye.config.ConfigSourceFactory;
+import io.smallrye.config.ExpressionConfigSourceInterceptor;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -30,6 +31,7 @@ public class KubernetesServiceBindingConfigSourceFactory implements ConfigSource
     public Iterable<ConfigSource> getConfigSources(final ConfigSourceContext context) {
         SmallRyeConfig config = new SmallRyeConfigBuilder()
                 .withSources(new ConfigSourceContext.ConfigSourceContextConfigSource(context))
+                .withInterceptors(new ExpressionConfigSourceInterceptor())
                 .withMapping(KubernetesServiceBindingConfig.class)
                 .withMappingIgnore("quarkus.**")
                 .build();

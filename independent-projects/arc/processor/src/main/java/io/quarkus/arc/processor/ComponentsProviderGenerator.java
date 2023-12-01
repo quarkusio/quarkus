@@ -100,9 +100,12 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
         // Custom contexts
         ResultHandle contextsHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
-        for (Entry<ScopeInfo, Function<MethodCreator, ResultHandle>> entry : beanDeployment.getCustomContexts().entrySet()) {
-            ResultHandle contextHandle = entry.getValue().apply(getComponents);
-            getComponents.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, contextsHandle, contextHandle);
+        for (Entry<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> entry : beanDeployment.getCustomContexts()
+                .entrySet()) {
+            for (Function<MethodCreator, ResultHandle> func : entry.getValue()) {
+                ResultHandle contextHandle = func.apply(getComponents);
+                getComponents.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, contextsHandle, contextHandle);
+            }
         }
 
         // All interceptor bindings

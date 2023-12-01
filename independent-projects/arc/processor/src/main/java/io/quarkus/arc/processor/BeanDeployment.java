@@ -112,7 +112,7 @@ public class BeanDeployment {
 
     private final Set<BeanInfo> beansWithRuntimeDeferredUnproxyableError;
 
-    private final Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts;
+    private final Map<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> customContexts;
 
     private final Map<DotName, BeanDefiningAnnotation> beanDefiningAnnotations;
 
@@ -255,7 +255,7 @@ public class BeanDeployment {
                             ScopeInfo scope = new ScopeInfo(c.scopeAnnotation, c.isNormal);
                             beanDefiningAnnotations.put(scope.getDotName(),
                                     new BeanDefiningAnnotation(scope.getDotName(), null));
-                            customContexts.put(scope, c.creator);
+                            customContexts.computeIfAbsent(scope, ignored -> new ArrayList<>()).add(c.creator);
                         });
             }
         };
@@ -711,7 +711,7 @@ public class BeanDeployment {
         return annotationStore.hasAnnotation(target, name);
     }
 
-    Map<ScopeInfo, Function<MethodCreator, ResultHandle>> getCustomContexts() {
+    Map<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> getCustomContexts() {
         return customContexts;
     }
 
@@ -856,7 +856,7 @@ public class BeanDeployment {
     }
 
     private Map<DotName, StereotypeInfo> findStereotypes(Map<DotName, ClassInfo> interceptorBindings,
-            Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts,
+            Map<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> customContexts,
             Set<DotName> additionalStereotypes, AnnotationStore annotationStore) {
 
         Map<DotName, StereotypeInfo> stereotypes = new HashMap<>();
@@ -916,7 +916,7 @@ public class BeanDeployment {
     }
 
     private ScopeInfo getScope(DotName scopeAnnotationName,
-            Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts) {
+            Map<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> customContexts) {
         BuiltinScope builtin = BuiltinScope.from(scopeAnnotationName);
         if (builtin != null) {
             return builtin.getInfo();

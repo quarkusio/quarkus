@@ -48,18 +48,6 @@
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <!-- Explicitly provide banned dependencies, in the correct version -->
-        <dependency>
-            <groupId>jakarta.xml.bind</groupId>
-            <artifactId>jakarta.xml.bind-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.angus</groupId>
-            <artifactId>angus-activation</artifactId>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
 
     <build>

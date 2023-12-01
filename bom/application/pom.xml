@@ -5010,8 +5010,9 @@
                 <artifactId>hibernate-core</artifactId>
                 <version>${hibernate-orm.version}</version>
                 <exclusions>
+                    <!-- We don't want Jandex at runtime -->
                     <exclusion>
-                        <groupId>org.jboss</groupId>
+                        <groupId>io.smallrye</groupId>
                         <artifactId>jandex</artifactId>
                     </exclusion>
                 </exclusions>
@@ -5075,10 +5076,6 @@
                 <exclusions>
                     <!-- We don't want Jandex at runtime -->
                     <exclusion>
-                        <groupId>org.jboss</groupId>
-                        <artifactId>jandex</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>io.smallrye</groupId>
                         <artifactId>jandex</artifactId>
                     </exclusion>
@@ -5091,10 +5088,6 @@
                 <exclusions>
                     <!-- We don't want Jandex at runtime -->
                     <exclusion>
-                        <groupId>org.jboss</groupId>
-                        <artifactId>jandex</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>io.smallrye</groupId>
                         <artifactId>jandex</artifactId>
                     </exclusion>
@@ -5106,10 +5099,6 @@
                 <version>${hibernate-search.version}</version>
                 <exclusions>
                     <!-- We don't want Jandex at runtime -->
-                    <exclusion>
-                        <groupId>org.jboss</groupId>
-                        <artifactId>jandex</artifactId>
-                    </exclusion>
                     <exclusion>
                         <groupId>io.smallrye</groupId>
                         <artifactId>jandex</artifactId>

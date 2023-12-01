@@ -273,6 +273,7 @@ public class ExtensionsEntryPoint {
      */
     public void runRegistration(org.jboss.jandex.IndexView beanArchiveIndex,
             Collection<io.quarkus.arc.processor.BeanInfo> allBeans,
+            Collection<io.quarkus.arc.processor.InterceptorInfo> allInterceptors,
             Collection<io.quarkus.arc.processor.ObserverInfo> allObservers) {
         if (invoker.isEmpty()) {
             return;
@@ -282,7 +283,7 @@ public class ExtensionsEntryPoint {
 
         try {
             new ExtensionPhaseRegistration(invoker, beanArchiveIndex, errors, annotationOverlays,
-                    allBeans, allObservers).run();
+                    allBeans, allInterceptors, allObservers).run();
         } finally {
             BuildServicesImpl.reset();
         }
@@ -581,7 +582,7 @@ public class ExtensionsEntryPoint {
 
         try {
             new ExtensionPhaseRegistration(invoker, beanArchiveIndex, errors, annotationOverlays,
-                    syntheticBeans, syntheticObservers).run();
+                    syntheticBeans, Collections.emptyList(), syntheticObservers).run();
         } finally {
             BuildServicesImpl.reset();
         }

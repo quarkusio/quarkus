@@ -6,23 +6,30 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.inject.build.compatible.spi.BeanInfo;
 import jakarta.enterprise.inject.build.compatible.spi.ObserverInfo;
 import jakarta.enterprise.inject.spi.DefinitionException;
 
+import org.jboss.jandex.IndexView;
+
+import io.quarkus.arc.processor.InterceptorInfo;
+
 class ExtensionPhaseRegistration extends ExtensionPhaseBase {
     private final AllAnnotationOverlays annotationOverlays;
     private final Collection<io.quarkus.arc.processor.BeanInfo> allBeans;
+    private final Collection<io.quarkus.arc.processor.InterceptorInfo> allInterceptors;
     private final Collection<io.quarkus.arc.processor.ObserverInfo> allObservers;
     private final io.quarkus.arc.processor.AssignabilityCheck assignability;
 
-    ExtensionPhaseRegistration(ExtensionInvoker invoker, org.jboss.jandex.IndexView beanArchiveIndex, SharedErrors errors,
+    ExtensionPhaseRegistration(ExtensionInvoker invoker, IndexView beanArchiveIndex, SharedErrors errors,
             AllAnnotationOverlays annotationOverlays, Collection<io.quarkus.arc.processor.BeanInfo> allBeans,
-            Collection<io.quarkus.arc.processor.ObserverInfo> allObservers) {
+            Collection<InterceptorInfo> allInterceptors, Collection<io.quarkus.arc.processor.ObserverInfo> allObservers) {
         super(ExtensionPhase.REGISTRATION, invoker, beanArchiveIndex, errors);
         this.annotationOverlays = annotationOverlays;
         this.allBeans = allBeans;
+        this.allInterceptors = allInterceptors;
         this.allObservers = allObservers;
         this.assignability = new io.quarkus.arc.processor.AssignabilityCheck(beanArchiveIndex, null);
     }
@@ -84,7 +91,7 @@ class ExtensionPhaseRegistration extends ExtensionPhaseBase {
 
     private List<BeanInfo> matchingBeans(org.jboss.jandex.MethodInfo jandexMethod, boolean onlyInterceptors) {
         Set<org.jboss.jandex.Type> expectedTypes = expectedTypes(jandexMethod);
-        return allBeans.stream()
+        return Stream.concat(allBeans.stream(), allInterceptors.stream())
                 .filter(bean -> {
                     if (onlyInterceptors && !bean.isInterceptor()) {
                         return false;

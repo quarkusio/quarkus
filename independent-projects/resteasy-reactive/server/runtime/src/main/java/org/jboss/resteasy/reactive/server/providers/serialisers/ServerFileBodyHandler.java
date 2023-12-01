@@ -42,16 +42,25 @@ public class ServerFileBodyHandler extends FileBodyHandler implements ServerMess
         ResteasyReactiveRequestContext ctx = ((ResteasyReactiveRequestContext) context);
         Object rangeObj = ctx.getHeader("Range", true);
         ByteRange byteRange = rangeObj == null ? null : ByteRange.parse(rangeObj.toString());
+        long fileLength = file.length();
         if ((byteRange != null) && (byteRange.ranges.size() == 1)) {
             ByteRange.Range range = byteRange.ranges.get(0);
-            long length = range.getEnd() == -1 ? Long.MAX_VALUE : range.getEnd() - range.getStart() + 1;
-            context.serverResponse()
-                    .setStatusCode(Response.Status.PARTIAL_CONTENT.getStatusCode())
-                    .sendFile(file.getAbsolutePath(), range.getStart(), length);
 
-        } else {
-            context.serverResponse().sendFile(file.getAbsolutePath(), 0, file.length());
+            ByteRange.Range fileRange = (range.getStart() == -1)
+                    ? new ByteRange.Range(fileLength - range.getEnd(), fileLength - 1)
+                    : new ByteRange.Range(range.getStart(), Math.min(fileLength - 1, range.getEnd()));
+
+            if ((fileRange.getStart() >= 0) && (fileRange.getStart() <= fileRange.getEnd())) {
+                String contentRange = "bytes " + fileRange.getStart() + "-" + fileRange.getEnd() + "/" + fileLength;
+                long length = fileRange.getEnd() - fileRange.getStart() + 1;
+                context.serverResponse()
+                        .setStatusCode(Response.Status.PARTIAL_CONTENT.getStatusCode())
+                        .setResponseHeader("Content-Range", contentRange)
+                        .sendFile(file.getAbsolutePath(), fileRange.getStart(), length);
+                return;
+            }
         }
+        context.serverResponse().sendFile(file.getAbsolutePath(), 0, fileLength);
     }
 
     /**
@@ -138,7 +147,7 @@ public class ServerFileBodyHandler extends FileBodyHandler implements ServerMess
                         if (index + 1 < part.length()) {
                             end = Long.parseLong(part.substring(index + 1));
                         } else {
-                            end = -1;
+                            end = Long.MAX_VALUE;
                         }
                         ranges.add(new Range(start, end));
                     }

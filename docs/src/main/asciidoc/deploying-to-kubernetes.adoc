@@ -506,7 +506,7 @@ This would generate the following in the `env` section of your container:
 - env:
   - name: FOO
     valueFrom:
-      configMapRefKey:
+      configMapKeyRef:
         key: keyName
         name: my-configmap
         optional: false

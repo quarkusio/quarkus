@@ -98,15 +98,17 @@ public class SecurityCheckRecorder {
                         // @RolesAllowed({"${my.roles}"}) => my.roles=one,two <=> @RolesAllowed({"one", "two"})
                         if (strVal != null && strVal.contains(",")) {
                             var strArr = StringUtil.split(strVal);
-                            if (strArr.length > 1) {
+                            if (strArr.length >= 1) {
                                 // role order is irrelevant as logical operator between them is OR
 
-                                // first role will go to the original place
+                                // first role will go to the original place, double escaped comma will be parsed correctly
                                 strVal = strArr[0];
 
-                                // the rest of the roles will be appended at the end
-                                for (int i1 = 1; i1 < strArr.length; i1++) {
-                                    roles.add(strArr[i1]);
+                                if (strArr.length > 1) {
+                                    // the rest of the roles will be appended at the end
+                                    for (int i1 = 1; i1 < strArr.length; i1++) {
+                                        roles.add(strArr[i1]);
+                                    }
                                 }
                             }
                         }

@@ -76,7 +76,7 @@ public final class CompiledJavaVersionBuildItem extends SimpleBuildItem {
             private static final int JAVA_11_MAJOR = 55;
             private static final int JAVA_17_MAJOR = 61;
             private static final int JAVA_19_MAJOR = 63;
-            private static final int JAVA_21_MAJOR = 66;
+            private static final int JAVA_21_MAJOR = 65;
 
             private final int determinedMajor;
 

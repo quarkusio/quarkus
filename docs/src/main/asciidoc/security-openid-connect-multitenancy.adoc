@@ -586,48 +586,12 @@ user `alice` exists in both tenants, for the application they are distinct users
 When you set multiple tenant configurations in the `application.properties` file, you only need to specify how the tenant identifier gets resolved.
 To configure the resolution of the tenant identifier, use one of the following options:
 
-* <<default-tenant-resolver>>
 * <<tenant-resolver>>
+* <<default-tenant-resolver>>
 * <<annotations-tenant-resolver>>
 
-[[default-tenant-resolver]]
-=== Default resolution
-
-The default resolution for a tenant identifier is convention based, whereby the authentication request must include the tenant identifier in the last segment of the request path.
-
-The following `application.properties` example shows how you can configure two tenants named `google` and `github`:
-
-[source,properties]
-----
-# Tenant 'google' configuration
-quarkus.oidc.google.provider=google
-quarkus.oidc.google.client-id=${google-client-id}
-quarkus.oidc.google.credentials.secret=${google-client-secret}
-quarkus.oidc.google.authentication.redirect-path=/signed-in
-
-# Tenant 'github' configuration
-quarkus.oidc.github.provider=google
-quarkus.oidc.github.client-id=${github-client-id}
-quarkus.oidc.github.credentials.secret=${github-client-secret}
-quarkus.oidc.github.authentication.redirect-path=/signed-in
-----
-
-In this example, both tenants configure OIDC `web-app` applications to use an authorization code flow to authenticate users and also require session cookies to get generated after the authentication has taken place.
-After either Google or GitHub authenticates the current user, the user gets returned to the `/signed-in` area for authenticated users, for example, a secured resource path on the JAX-RS endpoint.
-
-Finally, to complete the default tenant resolution, set the following configuration property:
-
-[source,properties]
-----
-quarkus.http.auth.permission.login.paths=/google,/github
-quarkus.http.auth.permission.login.policy=authenticated
-----
-
-If the endpoint is running on `http://localhost:8080`, you can also provide UI options for users to log in to either `http://localhost:8080/google` or `http://localhost:8080/github`, without having to add specific`/google` or `/github` JAX-RS resource paths.
-Tenant identifiers are also recorded in the session cookie names after the authentication is completed.
-Therefore, authenticated users can access the secured application area without requiring either the `google` or `github` path values to be included in the secured URL.
-
-Default resolution can also work for Bearer token authentication but it might be less practical in this case because a tenant identifier will always need to be set as the last path segment value.
+These tenant resolution options will be tried in turn, in the order they are listed, until the tenant id gets resolved.
+If the tenant id remains unresolved (`null`) in the end then the default (unnamed) tenant configuration will be selected.
 
 [[tenant-resolver]]
 === Resolve with `TenantResolver`
@@ -671,6 +635,45 @@ public class CustomTenantResolver implements TenantResolver {
 ----
 
 In this example, the value of the last request path segment is a tenant ID, but if required, you can implement a more complex tenant identifier resolution logic.
+
+[[default-tenant-resolver]]
+=== Default resolution
+
+The default resolution for a tenant identifier is convention based, whereby the authentication request must include the tenant identifier in the last segment of the request path.
+
+The following `application.properties` example shows how you can configure two tenants named `google` and `github`:
+
+[source,properties]
+----
+# Tenant 'google' configuration
+quarkus.oidc.google.provider=google
+quarkus.oidc.google.client-id=${google-client-id}
+quarkus.oidc.google.credentials.secret=${google-client-secret}
+quarkus.oidc.google.authentication.redirect-path=/signed-in
+
+# Tenant 'github' configuration
+quarkus.oidc.github.provider=google
+quarkus.oidc.github.client-id=${github-client-id}
+quarkus.oidc.github.credentials.secret=${github-client-secret}
+quarkus.oidc.github.authentication.redirect-path=/signed-in
+----
+
+In this example, both tenants configure OIDC `web-app` applications to use an authorization code flow to authenticate users and also require session cookies to get generated after the authentication has taken place.
+After either Google or GitHub authenticates the current user, the user gets returned to the `/signed-in` area for authenticated users, for example, a secured resource path on the JAX-RS endpoint.
+
+Finally, to complete the default tenant resolution, set the following configuration property:
+
+[source,properties]
+----
+quarkus.http.auth.permission.login.paths=/google,/github
+quarkus.http.auth.permission.login.policy=authenticated
+----
+
+If the endpoint is running on `http://localhost:8080`, you can also provide UI options for users to log in to either `http://localhost:8080/google` or `http://localhost:8080/github`, without having to add specific`/google` or `/github` JAX-RS resource paths.
+Tenant identifiers are also recorded in the session cookie names after the authentication is completed.
+Therefore, authenticated users can access the secured application area without requiring either the `google` or `github` path values to be included in the secured URL.
+
+Default resolution can also work for Bearer token authentication but it might be less practical in this case because a tenant identifier will always need to be set as the last path segment value.
 
 [[annotations-tenant-resolver]]
 === Resolve with annotations
@@ -774,6 +777,8 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 ----
 
 The `OidcTenantConfig` returned from this method is the same used to parse the `oidc` namespace configuration from the `application.properties`. You can populate it using any of the settings supported by the `quarkus-oidc` extension.
+
+If the dynamic tenant resolver returns `null` then a <<static-tenant-resolution>> will be attempted next.
 
 === Tenant resolution for OIDC `web-app` applications
 

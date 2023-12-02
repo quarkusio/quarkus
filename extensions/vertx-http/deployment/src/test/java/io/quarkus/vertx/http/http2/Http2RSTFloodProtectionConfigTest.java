@@ -14,6 +14,8 @@ import jakarta.enterprise.event.Observes;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
@@ -29,6 +31,7 @@ import io.vertx.ext.web.Router;
 /**
  * Configuration of the RST flood protection (CVE-2023-44487)
  */
+@DisabledOnOs(OS.WINDOWS)
 public class Http2RSTFloodProtectionConfigTest {
 
     @TestHTTPResource(value = "/ping", ssl = true)

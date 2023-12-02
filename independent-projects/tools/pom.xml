@@ -42,7 +42,7 @@
         <!-- These properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.5</proposed-maven-version>
         <maven-wrapper.version>3.2.0</maven-wrapper.version>
-        <gradle-wrapper.version>8.4</gradle-wrapper.version>
+        <gradle-wrapper.version>8.5</gradle-wrapper.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>3.11.0</compiler-plugin.version>
@@ -62,7 +62,7 @@
         <version.surefire.plugin>3.1.2</version.surefire.plugin>
         <quarkus.version>${project.version}</quarkus.version>
         <maven-model-helper.version>25</maven-model-helper.version>
-        <jandex.version>3.1.5</jandex.version>
+        <jandex.version>3.1.6</jandex.version>
         <system-stubs-jupiter.version>2.0.2</system-stubs-jupiter.version>
         <awaitility.version>4.2.0</awaitility.version>
     </properties>

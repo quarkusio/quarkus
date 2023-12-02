@@ -6,6 +6,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import io.quarkus.qute.Location;
 import io.quarkus.qute.Template;
 import io.quarkus.vertx.web.Route;
 import io.vertx.ext.web.RoutingContext;
@@ -15,12 +16,20 @@ public class NoRestartRoute {
 
     private String id;
 
-    @Inject
+    @Location("foo/norestart")
     Template norestart;
+
+    @Inject
+    Template bar;
 
     @Route(path = "norestart")
     public void test(RoutingContext ctx) {
-        ctx.end(norestart.data("foo", id).render());
+        ctx.end(norestart.data("id", id).render());
+    }
+
+    @Route(path = "bar")
+    public void testBar(RoutingContext ctx) {
+        ctx.end(bar.data("id", id).render());
     }
 
     @PostConstruct

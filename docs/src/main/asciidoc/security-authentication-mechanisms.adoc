@@ -173,6 +173,7 @@ public Response logout() {
 The following properties can be used to configure form-based authentication:
 
 include::{generated-dir}/config/quarkus-vertx-http-config-group-form-auth-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-vertx-http-config-group-auth-runtime-config.adoc[opts=optional, leveloffset=+1]
 
 [[mutual-tls]]
 === Mutual TLS authentication

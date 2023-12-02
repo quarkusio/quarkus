@@ -6,6 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using the event bus
 include::_attributes.adoc[]
 :categories: messaging
+:keywords: vertx vert.x
 :summary: This guide explains how different beans can interact using the event bus.
 :topics: messaging,event-bus,vert.x
 :extensions: io.quarkus:quarkus-vertx

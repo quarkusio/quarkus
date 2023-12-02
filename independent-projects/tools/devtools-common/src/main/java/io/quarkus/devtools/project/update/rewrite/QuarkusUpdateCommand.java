@@ -24,6 +24,7 @@ import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.qute.Qute;
+import io.smallrye.common.os.OS;
 
 public class QuarkusUpdateCommand {
 
@@ -55,6 +56,16 @@ public class QuarkusUpdateCommand {
             default:
                 throw new QuarkusUpdateException(buildTool.getKey() + " is not supported yet");
         }
+    }
+
+    private static void runMavenUpdate(MessageWriter log, Path baseDir, String rewritePluginVersion, String recipesGAV,
+            Path recipe,
+            boolean dryRun) {
+        final String mvnBinary = findMvnBinary(baseDir);
+        executeCommand(baseDir, getMavenUpdateCommand(mvnBinary, rewritePluginVersion, recipesGAV, recipe, dryRun), log);
+
+        // format the sources
+        executeCommand(baseDir, getMavenProcessSourcesCommand(mvnBinary), log);
     }
 
     private static void runGradleUpdate(MessageWriter log, Path baseDir, String rewritePluginVersion, String recipesGAV,
@@ -119,19 +130,11 @@ public class QuarkusUpdateCommand {
         }
     }
 
-    private static void runMavenUpdate(MessageWriter log, Path baseDir, String rewritePluginVersion, String recipesGAV,
-            Path recipe,
-            boolean dryRun) {
-        final String mvnBinary = findMvnBinary(baseDir);
-        executeCommand(baseDir, getMavenUpdateCommand(mvnBinary, rewritePluginVersion, recipesGAV, recipe, dryRun), log);
-
-        // format the sources
-        executeCommand(baseDir, getMavenProcessSourcesCommand(mvnBinary), log);
-    }
-
     private static List<String> getMavenProcessSourcesCommand(String mvnBinary) {
         List<String> command = new ArrayList<>();
         command.add(mvnBinary);
+        command.add("-B");
+        command.add("clean");
         command.add("process-sources");
         final String mavenSettings = getMavenSettingsArg();
         if (mavenSettings != null) {
@@ -146,6 +149,7 @@ public class QuarkusUpdateCommand {
             boolean dryRun) {
         final List<String> command = new ArrayList<>();
         command.add(mvnBinary);
+        command.add("-B");
         command.add("-e");
         command.add(
                 String.format("%s:%s:%s:%s", MAVEN_REWRITE_PLUGIN_GROUP, MAVEN_REWRITE_PLUGIN_ARTIFACT, rewritePluginVersion,
@@ -305,18 +309,8 @@ public class QuarkusUpdateCommand {
         return false;
     }
 
-    private static String OS = System.getProperty("os.name").toLowerCase();
-
     public static boolean isWindows() {
-        return OS.contains("win");
-    }
-
-    static boolean hasGradle(Path dir) {
-        return Files.exists(dir.resolve("build.gradle"));
-    }
-
-    private static boolean hasMaven(Path dir) {
-        return Files.exists(dir.resolve("pom.xml"));
+        return OS.WINDOWS.isCurrent();
     }
 
     private enum LogLevel {
@@ -351,13 +345,13 @@ public class QuarkusUpdateCommand {
                 return line;
             }
 
-            String pattern = "[" + name() + "]";
+            String pattern = "[" + name() + "] ";
 
-            if (line.length() < pattern.length()) {
+            if (!line.startsWith(pattern)) {
                 return line;
             }
 
-            return line.substring(pattern.length()).trim();
+            return line.substring(pattern.length());
         }
 
         private boolean matches(String line) {

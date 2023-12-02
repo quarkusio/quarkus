@@ -194,7 +194,8 @@ public final class ContainerRuntimeUtil {
                         // We also treat Docker Desktop as "rootless" since the way it binds mounts does not
                         // transparently map the host user ID and GID
                         // see https://docs.docker.com/desktop/faqs/linuxfaqs/#how-do-i-enable-file-sharing
-                        stringPredicate = line -> line.trim().equals("rootless") || line.contains("desktop-linux");
+                        stringPredicate = line -> line.trim().equals("rootless") || line.contains("Docker Desktop")
+                                || line.contains("desktop-linux");
                     } else {
                         stringPredicate = line -> line.trim().equals("rootless: true");
                     }

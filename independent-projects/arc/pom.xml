@@ -48,16 +48,16 @@
         <version.jta>2.0.1</version.jta>
         <!-- main versions -->
         <version.gizmo>1.7.0</version.gizmo>
-        <version.jandex>3.1.5</version.jandex>
+        <version.jandex>3.1.6</version.jandex>
         <version.jboss-logging>3.5.3.Final</version.jboss-logging>
         <version.mutiny>2.5.1</version.mutiny>
         <version.bridger>1.6.Final</version.bridger>
         <!-- test versions -->
         <version.assertj>3.24.2</version.assertj>
         <version.junit5>5.10.0</version.junit5>
-        <version.kotlin>1.9.10</version.kotlin>
-        <version.kotlin-coroutines>1.7.1</version.kotlin-coroutines>
-        <version.mockito>5.4.0</version.mockito>
+        <version.kotlin>1.9.21</version.kotlin>
+        <version.kotlin-coroutines>1.7.3</version.kotlin-coroutines>
+        <version.mockito>5.7.0</version.mockito>
         <!-- TCK versions -->
         <version.arquillian>1.7.0.Final</version.arquillian>
         <version.atinject-tck>2.0.1</version.atinject-tck>

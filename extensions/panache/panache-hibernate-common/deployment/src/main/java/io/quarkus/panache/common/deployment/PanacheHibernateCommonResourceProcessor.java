@@ -157,9 +157,12 @@ public final class PanacheHibernateCommonResourceProcessor {
         // so we need to be careful when we enhance private fields,
         // because the corresponding `$_hibernate_{read/write}_*()` methods
         // will only be generated for classes mapped through *annotations*.
-        boolean willBeEnhancedByHibernateOrm = classInfo.hasAnnotation(DOTNAME_ENTITY)
+        boolean isManaged = classInfo.hasAnnotation(DOTNAME_ENTITY)
                 || classInfo.hasAnnotation(DOTNAME_MAPPED_SUPERCLASS)
                 || classInfo.hasAnnotation(DOTNAME_EMBEDDABLE);
+        boolean willBeEnhancedByHibernateOrm = isManaged
+                // Records are immutable, thus never enhanced
+                && !classInfo.isRecord();
         for (FieldInfo fieldInfo : classInfo.fields()) {
             String name = fieldInfo.name();
             if (!Modifier.isStatic(fieldInfo.flags())

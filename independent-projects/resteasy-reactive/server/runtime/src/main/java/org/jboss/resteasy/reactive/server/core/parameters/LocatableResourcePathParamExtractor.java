@@ -12,7 +12,7 @@ public class LocatableResourcePathParamExtractor implements ParameterExtractor {
 
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
-        return context.getResourceLocatorPathParam(name);
+        return context.getResourceLocatorPathParam(name, false);
     }
 
 }

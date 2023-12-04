@@ -20,7 +20,7 @@ public class PolicyMappingConfig {
     /**
      * The HTTP policy that this permission set is linked to.
      *
-     * There are 3 built in policies: permit, deny and authenticated. Role based
+     * There are three built-in policies: permit, deny and authenticated. Role based
      * policies can be defined, and extensions can add their own policies.
      */
     @ConfigItem

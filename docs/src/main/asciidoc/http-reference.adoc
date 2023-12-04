@@ -151,9 +151,9 @@ Refer to the xref:./management-interface-reference.adoc[management interface ref
 ====
 
 [[ssl]]
-== Supporting secure connections with SSL
+== Supporting secure connections with SSL/TLS
 
-In order to have Quarkus support secure connections, you must either provide a certificate and associated key file, or supply a keystore.
+To have Quarkus support secure connections, you must either provide a certificate and associated key file, or supply a keystore.
 
 In both cases, a password must be provided. See the designated paragraph for a detailed description of how to provide it.
 
@@ -212,7 +212,7 @@ However, instead of providing the password as plain-text in the configuration fi
 as the environment variable `QUARKUS_HTTP_SSL_CERTIFICATE_KEY_STORE_PASSWORD`.
 This will also work in tandem with link:https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables[Kubernetes secrets].
 
-_Note: in order to remain compatible with earlier versions of Quarkus (before 0.16) the default password is set to "password". It is therefore not a mandatory parameter!_
+_Note: To remain compatible with earlier versions of Quarkus (before 0.16) the default password is set to "password". It is therefore not a mandatory parameter!_
 
 === Configure the HTTPS port
 
@@ -298,7 +298,7 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-filter-config.ad
 
 == Support 100-Continue in vert.x
 
-In order to support `100-continue`, the `quarkus.http.handle-100-continue-automatically` option needs to be enabled explicitly
+To support `100-continue`, the `quarkus.http.handle-100-continue-automatically` option needs to be enabled explicitly
 For additional information check https://datatracker.ietf.org/doc/html/rfc7231#section-5.1.1[100-continue] and the related
 https://vertx.io/docs/apidocs/io/vertx/core/http/HttpServerOptions.html#DEFAULT_HANDLE_100_CONTINE_AUTOMATICALLY[Vert.x documentation].
 

@@ -71,7 +71,7 @@ For more information, see the following documentation:
 [[form-auth]]
 === Form-based authentication
 
-Quarkus provides form-based authentication that works similarly to traditional Servlet form-based auth.
+Quarkus provides form-based authentication that works similarly to traditional Servlet form-based authentication.
 Unlike traditional form authentication, the authenticated user is not stored in an HTTP session because Quarkus does not support clustered HTTP sessions.
 Instead, the authentication information is stored in an encrypted cookie, which can be read by all cluster members who share the same encryption key.
 
@@ -92,12 +92,12 @@ quarkus.http.auth.form.landing-page=
 quarkus.http.auth.form.login-page=
 quarkus.http.auth.form.error-page=
 
-# HttpOnly must be false if you want to logout on the client, it can be true if logging out on from the server
+# HttpOnly must be false if you want to log out on the client; it can be true if logging out from the server
 quarkus.http.auth.form.http-only-cookie=false
 ----
 
-Now that you have disabled redirects for the SPA, you must login and logout programmatically from your client.
-Below are example JavaScript methods for logging into the `j_security_check` endpoint and logging out of the application by destroying the cookie.
+Now that you have disabled redirects for the SPA, you must log in and log out programmatically from your client.
+Below are examples of JavaScript methods for logging into the `j_security_check` endpoint and logging out of the application by destroying the cookie.
 
 [source,javascript]
 ----
@@ -130,21 +130,21 @@ const login = () => {
 };
 ----
 
-To logout of the SPA from the client the cookie must be set to `quarkus.http.auth.form.http-only-cookie=false` so you can destroy
+To log out of the SPA from the client, the cookie must be set to `quarkus.http.auth.form.http-only-cookie=false` so you can destroy
 the cookie and possibly redirect back to your main page.
 
 [source,javascript]
 ----
 const logout= () => {
-    // delete the credential cookie essentially killing the session
+    // delete the credential cookie, essentially killing the session
     const removeCookie = `quarkus-credential=; Max-Age=0;path=/`;
     document.cookie = removeCookie;
-    
-    // perform post logout actions here such as redirecting back to your login page
+
+    // perform post-logout actions here, such as redirecting back to your login page
 };
 ----
 
-To logout of the SPA from the server the cookie can be set to `quarkus.http.auth.form.http-only-cookie=true` and use this example
+To log out of the SPA from the server, the cookie can be set to `quarkus.http.auth.form.http-only-cookie=true` and use this example
 code to destroy the cookie.
 
 [source,java]
@@ -181,7 +181,7 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-auth-runtime-con
 Quarkus provides mutual TLS (mTLS) authentication so that you can authenticate users based on their X.509 certificates.
 
 To use this authentication method, you must first enable SSL/TLS for your application.
-For more information, see the xref:http-reference.adoc#ssl[Supporting secure connections with SSL]  section of the Quarkus "HTTP reference" guide.
+For more information, see the xref:http-reference.adoc#ssl[Supporting secure connections with SSL/TLS]  section of the Quarkus "HTTP reference" guide.
 
 After your application accepts secure connections, the next step is to configure the `quarkus.http.ssl.certificate.trust-store-file` property with the name of that file that holds all the certificates your application trusts. The specified file also includes information about how your application asks for certificates when a client, such as a browser or other service, tries to access one of its protected resources.
 
@@ -251,7 +251,7 @@ Quarkus Security also supports the following authentication mechanisms through e
 
 https://webauthn.guide/[WebAuthn] is an authentication mechanism that replaces passwords.
 When you write a service for registering new users, or logging them in, instead of asking for a password, you can use WebAuthn, which replaces the password.
-For more information, see the  xref:security-webauthn.adoc[Secure a Quarkus application by using the WebAuthn authentication mechanism] guide.
+For more information, see the xref:security-webauthn.adoc[Secure a Quarkus application by using the WebAuthn authentication mechanism] guide.
 
 [[openid-connect-authentication]]
 === OpenID Connect authentication
@@ -291,7 +291,7 @@ For more information about OIDC authentication and authorization methods that yo
 [NOTE]
 ====
 To enable the Quarkus OIDC extension at runtime, set `quarkus.oidc.tenant-enabled=false` at build time.
-Then re-enable it at runtime by using a system property.
+Then, re-enable it at runtime by using a system property.
 
 For more information about managing the individual tenant configurations in multitenant OIDC deployments, see the xref:security-openid-connect-multitenancy.adoc#disable-tenant[Disabling tenant configurations] section in the "Using OpenID Connect (OIDC) multi-tenancy" guide.
 ====
@@ -330,7 +330,7 @@ It represents them as `org.eclipse.microprofile.jwt.JsonWebToken`.
 `quarkus-smallrye-jwt` is an alternative to the `quarkus-oidc` Bearer token authentication mechanism and verifies only `JWT` tokens by using either Privacy Enhanced Mail (PEM) keys or the refreshable `JWK` key set.
 `quarkus-smallrye-jwt` also provides the JWT generation API, which you can use to easily create `signed`, `inner-signed`, and `encrypted` `JWT` tokens.
 
-For more information, see the  xref:security-jwt.adoc[Using JWT RBAC] guide.
+For more information, see the xref:security-jwt.adoc[Using JWT RBAC] guide.
 
 [[oauth2-authentication]]
 === OAuth2 authentication
@@ -344,7 +344,7 @@ For more information, see the Quarkus xref:security-oauth2.adoc[Using OAuth2] gu
 
 Use the following information to select the appropriate token authentication mechanism to secure your Quarkus applications.
 
-.List of authentication mechanism use-cases
+.List of authentication mechanism use cases
 
 * `quarkus-oidc` requires an OpenID Connect provider such as Keycloak, which can verify the bearer tokens or authenticate the end users with the Authorization Code flow.
 In both cases, `quarkus-oidc` requires a connection to the specified OpenID Connect provider.
@@ -356,7 +356,7 @@ In both cases, `quarkus-oidc` requires a connection to the specified OpenID Conn
 
 * If your bearer tokens are in a JSON web token (JWT) format, you can use any extensions in the preceding list.
 Both `quarkus-oidc` and `quarkus-smallrye-jwt` support refreshing the `JsonWebKey` (JWK) set when the OpenID Connect provider rotates the keys.
-Therefore, if remote token introspection must be avoided or is unsupported by the providers, use `quarkus-oidc` or `quarkus-smallrye-jwt` for verifying JWT tokens.
+Therefore, if remote token introspection must be avoided or is unsupported by the providers, use `quarkus-oidc` or `quarkus-smallrye-jwt` to verify JWT tokens.
 
 * To introspect the JWT tokens remotely, you can use either `quarkus-oidc` or `quarkus-elytron-security-oauth2` because they support verifying the opaque or binary tokens by using remote introspection.
 `quarkus-smallrye-jwt` does not support the remote introspection of both opaque or JWT tokens but instead relies on the locally available keys that are usually retrieved from the OpenID Connect provider.
@@ -393,7 +393,7 @@ Nonetheless, the providers effectively delegate most of the token-associated sta
 s|Bearer JWT verification ^|Local verification or introspection  ^|Local verification  ^|Introspection
 
 s|Bearer opaque token verification ^|Introspection   ^|No  ^|Introspection
-s|Refreshing `JsonWebKey` set for verifying JWT tokens  ^|Yes   ^|Yes  ^|No
+s|Refreshing `JsonWebKey` set to verify JWT tokens  ^|Yes   ^|Yes  ^|No
 s|Represent token as `Principal`  ^|Yes   ^|Yes  ^|Yes
 s|Inject JWT as MP JWT  ^|Yes   ^|Yes  ^|No
 

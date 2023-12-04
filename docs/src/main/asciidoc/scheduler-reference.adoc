@@ -164,7 +164,7 @@ So for example a Property Expression with the default value `"off"` can be used 
 void myMethod() { }
 ----
 
-
+[#identity]
 === Identity
 
 By default, a unique identifier is generated for each scheduled method.
@@ -417,7 +417,7 @@ If the xref:smallrye-metrics.adoc[SmallRye Metrics extension] is present, then a
 
 == OpenTelemetry Tracing
 
-If `quarkus.scheduler.tracing.enabled` is set to `true` and the xref:opentelemetry.adoc[OpenTelemetry extension] is present then the `@io.opentelemetry.instrumentation.annotations.WithSpan` annotation is added automatically to every `@Scheduled` method. As a result, each execution of this method has a new `io.opentelemetry.api.trace.Span` associated.
+If `quarkus.scheduler.tracing.enabled` is set to `true` and the xref:opentelemetry.adoc[OpenTelemetry extension] is present then every job execution, either defined with the `@Scheduled` annotation or scheduled programmatically, automatically creates a span named after the job's <<identity>>.
 
 [[virtual_threads]]
 == Run @Scheduled methods on virtual threads

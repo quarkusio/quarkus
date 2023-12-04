@@ -1,4 +1,4 @@
-package io.quarkus.it.hibernate.panache.person;
+package io.quarkus.hibernate.orm.panache.deployment.test.record;
 
 public enum Status {
     DEAD("I'm a Zombie"),

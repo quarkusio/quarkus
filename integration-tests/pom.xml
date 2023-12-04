@@ -404,20 +404,6 @@
             </modules>
         </profile>
 
-        <!-- Java 17 test profile that restricts running in 17+ JVM version -->
-        <profile>
-            <id>java-17</id>
-            <activation>
-                <property>
-                    <name>!no-test-modules</name>
-                </property>
-                <jdk>[17,)</jdk>
-            </activation>
-            <modules>
-                <module>java-17</module>
-            </modules>
-        </profile>
-
         <!-- Common native image test profile
              WARNING: In this parent profile, you cannot override properties in a submodule!
                       Plugin config can only be overridden (to a certain point) via pluginManagement!

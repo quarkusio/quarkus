@@ -319,7 +319,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
         ArcContainer arcContainer = Arc.container();
         if (arcContainer == null) {
-            throw new IllegalStateException("The Reactive REST Client is not meant to be used outside of Quarkus");
+            throw new IllegalStateException(
+                    "The Reactive REST Client needs to be built within the context of a Quarkus application with a valid ArC (CDI) context running.");
         }
 
         RestClientListeners.get().forEach(listener -> listener.onNewClient(aClass, this));

@@ -1,4 +1,4 @@
-package io.quarkus.it.jpa.h2.generics;
+package io.quarkus.it.jpa.generics;
 
 import jakarta.persistence.Basic;
 import jakarta.persistence.Lob;

@@ -1,4 +1,4 @@
-package io.quarkus.it.jpa.h2;
+package io.quarkus.it.jpa.proxy;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

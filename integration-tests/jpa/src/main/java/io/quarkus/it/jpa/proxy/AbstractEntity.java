@@ -1,4 +1,4 @@
-package io.quarkus.it.jpa.h2.basicproxy;
+package io.quarkus.it.jpa.proxy;
 
 import java.io.Serializable;
 import java.util.Objects;

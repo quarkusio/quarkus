@@ -28,9 +28,9 @@ import io.vertx.core.spi.observability.HttpResponse;
 /**
  * HttpServerMetrics<R, W, S>
  * <ul>
- * <li>R for Request metric -- RequestMetricContext</li>
+ * <li>R for Request metric -- HttpRequestMetric</li>
  * <li>W for Websocket metric -- LongTaskTimer sample</li>
- * <li>S for Socket metric -- Map<String, Object></li>
+ * <li>S for Socket metric -- LongTaskTimer sample</li>
  * </ul>
  */
 public class VertxHttpServerMetrics extends VertxTcpServerMetrics

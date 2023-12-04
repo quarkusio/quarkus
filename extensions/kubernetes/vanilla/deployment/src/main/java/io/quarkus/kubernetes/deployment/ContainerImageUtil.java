@@ -12,14 +12,13 @@ final class ContainerImageUtil {
     private ContainerImageUtil() {
     }
 
-    static boolean isRegistryMissingAndNotS2I(Capabilities capabilities, ContainerImageInfoBuildItem containerImageInfo) {
+    static boolean isRegistryMissing(Capabilities capabilities, ContainerImageInfoBuildItem containerImageInfo) {
         Optional<String> activeContainerImageCapability = ContainerImageCapabilitiesUtil
                 .getActiveContainerImageCapability(capabilities);
         if (!activeContainerImageCapability.isPresent()) { // shouldn't ever happen when this method is called
             return false;
         }
 
-        return !containerImageInfo.getRegistry().isPresent()
-                && !Capability.CONTAINER_IMAGE_S2I.equals(activeContainerImageCapability.get());
+        return !containerImageInfo.getRegistry().isPresent();
     }
 }

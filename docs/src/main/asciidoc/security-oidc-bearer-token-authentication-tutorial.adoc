@@ -52,11 +52,6 @@ You can clone the Git repository by running the command `git clone {quickstarts-
 
 The solution is located in the `security-openid-connect-quickstart` link:{quickstarts-tree-url}/security-openid-connect-quickstart[directory].
 
-== Procedure
-
-:sectnums:
-:sectnumlevels: 3
-
 === Create the Maven project
 
 You can either create a new Maven project with the `oidc` extension or you can add the extension to an existing Maven project.
@@ -234,7 +229,7 @@ For more information, see the <<keycloak-dev-mode>> section.
 docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 ====
-* Where the `keycloak.version` is set to version `17.0.0` or later.
+* Where the `keycloak.version` is set to version `23.0.0` or later.
 . You can access your Keycloak Server at http://localhost:8180[localhost:8180].
 . To access the Keycloak Administration Console, log in as the `admin` user by using the following login credentials:
 
@@ -243,13 +238,13 @@ docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=ad
 
 . Import the link:{quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] from the upstream community repository to create a new realm.
 
-For more information, see the Keycloak documentation about link:https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[creating a new realm].
+For more information, see the Keycloak documentation about link:https://www.keycloak.org/docs/latest/server_admin/index.html#configuring-realms[create and configure a new realm].
 
 
 [NOTE]
 ====
 If you want to use the Keycloak Admin Client to configure your server from your application, you need to include either the `quarkus-keycloak-admin-client` or the `quarkus-keycloak-admin-client-reactive` (if the application uses `quarkus-rest-client-reactive`) extension.
-For more information, see the link:{url-quarkusio-guides}security-keycloak-admin-client[Quarkus Keycloak Admin Client] guide.
+For more information, see the xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client] guide.
 
 ====
 
@@ -262,8 +257,8 @@ For more information, see the link:{url-quarkusio-guides}security-keycloak-admin
 ====
 include::{includes}/devtools/dev.adoc[]
 ====
-* link:{quarkusio-guides}/security-openid-connect-dev-services[Dev Services for Keycloak] will start a Keycloak container and import a `quarkus-realm.json`.
-. Open a link:{url-quarkusio-guides}dev-ui[Dev UI], which you can find at http://localhost:8080/q/dev-ui[/q/dev-ui], then click a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
+* xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will start a Keycloak container and import a `quarkus-realm.json`.
+. Open a xref:dev-ui.adoc[Dev UI], which you can find at http://localhost:8080/q/dev-ui[/q/dev-ui], then click a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
 . When prompted to log in to a `Single Page Application` provided by `OpenID Connect Dev UI`, do the following steps:
 
  * Log in as `alice` (password: `alice`), who has a `user` role.

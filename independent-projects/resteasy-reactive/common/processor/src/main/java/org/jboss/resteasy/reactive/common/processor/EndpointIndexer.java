@@ -19,6 +19,8 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ENCODED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FLOAT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.GET;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEAD;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEADER_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HTTP_HEADERS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.INSTANT;
@@ -37,6 +39,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_DATE_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONAL;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OPTIONS;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_SEGMENT;
@@ -626,6 +629,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                                 "Resource method " + currentMethodInfo + " can only have a single body parameter: "
                                         + currentMethodInfo.parameterName(i));
                     bodyParamType = paramType;
+                    if (GET.equals(httpMethod) || HEAD.equals(httpMethod) || OPTIONS.equals(httpMethod)) {
+                        log.warn("Using a body parameter with " + httpMethod + " is strongly discouraged. Offending method is '"
+                                + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
+                    }
                 }
                 String elementType = parameterResult.getElementType();
                 boolean single = parameterResult.isSingle();

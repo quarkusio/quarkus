@@ -41,6 +41,10 @@ public class RegexMatchTest {
                 .then()
                 .statusCode(200)
                 .body(equalTo("plain:abb/foo/alongpathtotriggerbug"));
+        RestAssured.get("/regex/first space/foo/second space")
+                .then()
+                .statusCode(200)
+                .body(equalTo("plain:first space/foo/second space"));
         RestAssured.get("/regex/abb/literal/ddc")
                 .then()
                 .statusCode(200)

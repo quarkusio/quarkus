@@ -381,16 +381,17 @@ class LambdaHandlerTest {
 
     @Test
     @Throws(Exception::class)
-    fun testSimpleLambdaSuccess() = given()
-        .contentType("application/json")
-        .accept("application/json")
-        .body(Person(name = "Stu"))
-        .`when`()
-        .post()
-        .then()
-        .statusCode(200)
-        .body(containsString("Hello Stu"))
-
+    fun testSimpleLambdaSuccess() = {
+        given()
+            .contentType("application/json")
+            .accept("application/json")
+            .body(Person(name = "Stu"))
+            .`when`()
+            .post()
+            .then()
+            .statusCode(200)
+            .body(containsString("Hello Stu"))
+    }
 }
 ----
 

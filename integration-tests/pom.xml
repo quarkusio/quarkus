@@ -115,6 +115,23 @@
                                         </fileSets>
                                     </inputs>
                                 </plugin>
+                                <plugin>
+                                    <artifactId>maven-failsafe-plugin</artifactId>
+                                    <inputs>
+                                        <fileSets combine.children="append">
+                                            <fileSet>
+                                                <name>native-runner</name>
+                                                <paths>
+                                                    <path>${project.build.directory}</path>
+                                                </paths>
+                                                <includes>
+                                                    <include>*-runner</include>
+                                                </includes>
+                                                <normalization>RELATIVE_PATH</normalization>
+                                            </fileSet>
+                                        </fileSets>
+                                    </inputs>
+                                </plugin>
                             </plugins>
                         </gradleEnterprise>
                     </configuration>

@@ -139,7 +139,7 @@
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>5.3.2</rest-assured.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
-        <junit.jupiter.version>5.10.0</junit.jupiter.version>
+        <junit.jupiter.version>5.10.1</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
         <infinispan.version>14.0.21.Final</infinispan.version>
         <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>

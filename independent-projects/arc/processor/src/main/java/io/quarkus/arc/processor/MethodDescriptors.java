@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -62,6 +63,9 @@ public final class MethodDescriptors {
             Map.class, String.class);
 
     public static final MethodDescriptor SUPPLIER_GET = MethodDescriptor.ofMethod(Supplier.class, "get", Object.class);
+
+    public static final MethodDescriptor CONSUMER_ACCEPT = MethodDescriptor.ofMethod(Consumer.class, "accept",
+            void.class, Object.class);
 
     public static final MethodDescriptor CREATIONAL_CTX_CHILD = MethodDescriptor.ofMethod(CreationalContextImpl.class, "child",
             CreationalContextImpl.class,

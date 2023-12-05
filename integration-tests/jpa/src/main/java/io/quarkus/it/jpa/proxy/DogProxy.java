@@ -1,4 +1,4 @@
-package io.quarkus.it.jpa.h2.proxy;
+package io.quarkus.it.jpa.proxy;
 
 public interface DogProxy {
 

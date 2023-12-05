@@ -1,4 +1,4 @@
-package io.quarkus.it.jpa.h2.proxy;
+package io.quarkus.it.jpa.proxy;
 
 import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.DiscriminatorValue;

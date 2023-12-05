@@ -1,4 +1,4 @@
-package io.quarkus.it.jpa.h2.basicproxy;
+package io.quarkus.it.jpa.proxy;
 
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;

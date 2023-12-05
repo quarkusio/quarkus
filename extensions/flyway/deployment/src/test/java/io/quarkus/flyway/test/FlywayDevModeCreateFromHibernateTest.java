@@ -45,7 +45,7 @@ public class FlywayDevModeCreateFromHibernateTest extends DevUIJsonRPCTest {
         RestAssured.get("fruit").then().statusCode(200)
                 .body("[0].name", CoreMatchers.is("Orange"));
 
-        Map<String, String> params = Map.of("ds", "<default>");
+        Map<String, Object> params = Map.of("ds", "<default>");
         JsonNode devuiresponse = super.executeJsonRPCMethod("create", params);
 
         Assertions.assertNotNull(devuiresponse);

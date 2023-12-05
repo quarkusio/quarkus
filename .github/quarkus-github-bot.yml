@@ -65,7 +65,7 @@ triage:
       title: "dev.?mode"
     - id: devui
       labels: [area/dev-ui]
-      title: "dev.?ui"
+      title: "(dev.?ui|mvnpm|org.mvnpm)"
       notify: [phillip-kruger, cescoffier]
       notifyInPullRequest: true
     - labels: [area/gradle]

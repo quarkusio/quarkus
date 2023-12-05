@@ -1,9 +1,6 @@
 package io.quarkus.arc.impl;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -87,7 +84,11 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
 
     @Override
     public synchronized void destroy() {
-        Set<ContextInstanceHandle<?>> values = instances.getAllPresent();
+        List<ContextInstanceHandle<?>> values = new LinkedList<>();
+        instances.forEach(values::add);
+        if (values.isEmpty()) {
+            return;
+        }
         // Destroy the producers first
         for (Iterator<ContextInstanceHandle<?>> iterator = values.iterator(); iterator.hasNext();) {
             ContextInstanceHandle<?> instanceHandle = iterator.next();

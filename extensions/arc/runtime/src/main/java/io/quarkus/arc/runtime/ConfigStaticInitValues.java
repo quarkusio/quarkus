@@ -3,6 +3,7 @@ package io.quarkus.arc.runtime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.event.Observes;
@@ -43,7 +44,9 @@ public class ConfigStaticInitValues {
         List<String> mismatches = new ArrayList<>();
         for (InjectedValue injectedValue : injectedValues) {
             ConfigValue currentValue = config.getConfigValue(injectedValue.name);
-            if (currentValue.getValue() != null && !injectedValue.value.equals(currentValue.getValue())) {
+            if (currentValue.getValue() != null
+                    && !Objects.equals(currentValue.getValue(), injectedValue.value)) {
+                // Config property is set at runtime and the value differs from the value injected during STATIC_INIT bootstrap phase
                 mismatches.add(
                         " - the runtime value of '" + injectedValue.name + "' is [" + currentValue.getValue()
                                 + "] but the value [" + injectedValue.value

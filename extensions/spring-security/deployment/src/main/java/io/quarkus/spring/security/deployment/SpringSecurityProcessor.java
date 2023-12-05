@@ -48,6 +48,7 @@ import io.quarkus.spring.di.deployment.SpringBeanNameToDotNameBuildItem;
 import io.quarkus.spring.security.runtime.interceptor.SpringPreauthorizeInterceptor;
 import io.quarkus.spring.security.runtime.interceptor.SpringSecuredInterceptor;
 import io.quarkus.spring.security.runtime.interceptor.SpringSecurityRecorder;
+import io.quarkus.spring.security.runtime.interceptor.check.PrincipalNameFromParameterObjectSecurityCheck;
 import io.quarkus.spring.security.runtime.interceptor.check.PrincipalNameFromParameterSecurityCheck;
 
 class SpringSecurityProcessor {
@@ -466,13 +467,18 @@ class SpringSecurityProcessor {
                                 propertyName, index.getIndex(),
                                 part);
 
+                        PrincipalNameFromParameterObjectSecurityCheck.CheckType checkType = part.contains("==")
+                                ? PrincipalNameFromParameterObjectSecurityCheck.CheckType.EQ
+                                : PrincipalNameFromParameterObjectSecurityCheck.CheckType.NEQ;
+
                         securityChecks.add(springSecurityRecorder.principalNameFromParameterObjectSecurityCheck(
                                 parameterNameAndIndex.getIndex(),
                                 stringPropertyAccessorData.getMatchingParameterClassInfo().name().toString(),
                                 StringPropertyAccessorGenerator
                                         .getAccessorClassName(
                                                 stringPropertyAccessorData.getMatchingParameterClassInfo().name()),
-                                stringPropertyAccessorData.getMatchingParameterFieldInfo().name()));
+                                stringPropertyAccessorData.getMatchingParameterFieldInfo().name(),
+                                checkType));
 
                     }
                 } else if (part.matches(SpringSecurityProcessorUtil.BASIC_BEAN_METHOD_INVOCATION_REGEX)) {

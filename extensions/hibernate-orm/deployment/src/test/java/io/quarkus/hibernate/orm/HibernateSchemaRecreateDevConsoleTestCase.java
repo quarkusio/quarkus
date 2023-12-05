@@ -32,7 +32,7 @@ public class HibernateSchemaRecreateDevConsoleTestCase extends DevUIJsonRPCTest 
         RestAssured.when().get("/my-entity/count").then().body(is("2"));
         RestAssured.when().get("/my-entity/add").then().body(is("MyEntity:added"));
         RestAssured.when().get("/my-entity/count").then().body(is("3"));
-        Map<String, String> params = Map.of("ds", "<default>");
+        Map<String, Object> params = Map.of("ds", "<default>");
         JsonNode success = super.executeJsonRPCMethod("reset", params);
         assertTrue(success.asBoolean());
         RestAssured.when().get("/my-entity/count").then().body(is("2"));

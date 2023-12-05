@@ -30,6 +30,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
@@ -90,6 +91,17 @@ public class HttpSecurityProcessor {
                     .setDefaultScope(SINGLETON).build();
         }
         return null;
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void setMtlsCertificateRoleProperties(
+            HttpSecurityRecorder recorder,
+            HttpConfiguration config,
+            HttpBuildTimeConfig buildTimeConfig) {
+        if (isMtlsClientAuthenticationEnabled(buildTimeConfig)) {
+            recorder.setMtlsCertificateRoleProperties(config);
+        }
     }
 
     @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)

@@ -416,6 +416,7 @@
                 <module>istio</module>
                 <module>management-interface</module>
                 <module>management-interface-auth</module>
+                <module>mtls-certificates</module>
                 <!-- Virtual threads test -->
                 <module>virtual-threads</module>
             </modules>

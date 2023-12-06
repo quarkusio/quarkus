@@ -32,6 +32,7 @@ fi
 
 if [ -z $TARGET_DIR ]; then
   TARGET_DIR=target/web-site
+  rm -rf ${TARGET_DIR}
   GIT_OPTIONS=""
   if [[ "$QUARKUS_WEB_SITE_PUSH" != "true" ]]; then
     GIT_OPTIONS="--depth=1"

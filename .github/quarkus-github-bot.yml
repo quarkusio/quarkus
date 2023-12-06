@@ -68,6 +68,11 @@ triage:
       title: "dev.?ui"
       notify: [phillip-kruger, cescoffier]
       notifyInPullRequest: true
+    - id: mvnpm
+      labels: [area/dev-ui]
+      title: "(mvnpm|mvnpm.org)"
+      notify: [phillip-kruger]
+      notifyInPullRequest: true  
     - labels: [area/gradle]
       title: "gradle"
       notify: [quarkusio/devtools, glefloch]

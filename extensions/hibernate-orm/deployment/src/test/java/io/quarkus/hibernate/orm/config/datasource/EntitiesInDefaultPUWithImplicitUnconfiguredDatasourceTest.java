@@ -20,7 +20,7 @@ public class EntitiesInDefaultPUWithImplicitUnconfiguredDatasourceTest {
             .assertException(t -> assertThat(t)
                     .isInstanceOf(RuntimeException.class)
                     .hasMessageContainingAll(
-                            "Model classes are defined for the default persistence unit <default> but configured datasource <default> not found",
+                            "Model classes are defined for persistence unit <default> but configured datasource <default> not found",
                             "To solve this, configure the default datasource.",
                             "Refer to https://quarkus.io/guides/datasource for guidance."));
 

@@ -13,6 +13,8 @@ import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.devmode.GrpcServices;
+import io.quarkus.vertx.http.runtime.CertificateConfig;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -31,6 +33,9 @@ public class GrpcJsonRPCService {
 
     @Inject
     HttpConfiguration httpConfiguration;
+
+    @Inject
+    HttpBuildTimeConfig httpBuildTimeConfig;
 
     @Inject
     GrpcConfiguration grpcConfiguration;
@@ -52,8 +57,14 @@ public class GrpcJsonRPCService {
         } else {
             this.host = httpConfiguration.host;
             this.port = httpConfiguration.port;
-            this.ssl = httpConfiguration.insecureRequests != HttpConfiguration.InsecureRequests.ENABLED;
+            this.ssl = isTLSConfigured(httpConfiguration.ssl.certificate);
         }
+    }
+
+    private boolean isTLSConfigured(CertificateConfig certificate) {
+        return certificate.files.isPresent()
+                || certificate.keyFiles.isPresent()
+                || certificate.keyStoreFile.isPresent();
     }
 
     public JsonArray getServices() {

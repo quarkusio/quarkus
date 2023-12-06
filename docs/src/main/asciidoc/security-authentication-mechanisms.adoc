@@ -194,6 +194,7 @@ quarkus.http.ssl.certificate.trust-store-password=the_trust_store_secret
 quarkus.http.ssl.client-auth=required                                      <3>
 quarkus.http.auth.permission.default.paths=/*                              <4>
 quarkus.http.auth.permission.default.policy=authenticated
+quarkus.http.insecure-requests=disabled                                    <5>
 ----
 <1> The keystore where the server's private key is located.
 <2> The truststore from which the trusted certificates are loaded.
@@ -201,6 +202,7 @@ quarkus.http.auth.permission.default.policy=authenticated
 To relax this requirement so that the server accepts requests without a certificate, set the value to `REQUEST`.
 This option is useful when you are also supporting authentication methods other than mTLS.
 <4> Defines a policy where only authenticated users should have access to resources from your application.
+<5> Optionally,explicitly disable the plain HTTP protocol, and consequently require all requests to be made over HTTPS. If `quarkus.http.ssl.client-auth` is set to `required`, the `quarkus.http.insecure-requests` property is automatically set to `disabled`.
 
 When the incoming request matches a valid certificate in the truststore, your application can obtain the subject by injecting a `SecurityIdentity` as follows:
 

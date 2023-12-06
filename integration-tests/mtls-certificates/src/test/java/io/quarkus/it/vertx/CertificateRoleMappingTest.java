@@ -2,7 +2,9 @@ package io.quarkus.it.vertx;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.net.ConnectException;
 import java.net.URL;
 
 import org.junit.jupiter.api.Test;
@@ -44,9 +46,15 @@ public class CertificateRoleMappingTest {
 
     @Test
     public void testNoClientCertificate() {
-        given().get("/protected/authenticated").then().statusCode(401);
-        given().get("/protected/authorized-user").then().statusCode(401);
-        given().get("/protected/authorized-admin").then().statusCode(401);
+        assertThrows(ConnectException.class,
+                () -> given().get("/protected/authenticated"),
+                "Insecure requests must fail at the transport level");
+        assertThrows(ConnectException.class,
+                () -> given().get("/protected/authorized-user"),
+                "Insecure requests must fail at the transport level");
+        assertThrows(ConnectException.class,
+                () -> given().get("/protected/authorized-admin"),
+                "Insecure requests must fail at the transport level");
     }
 
     private RequestSpecification getMtlsRequestSpec(String clientKeyStore) {

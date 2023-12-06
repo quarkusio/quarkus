@@ -20,8 +20,6 @@ See also, xref:security-authentication-mechanisms.adoc#other-supported-authentic
 
 If you want to protect your service applications by using OIDC Bearer token authentication, see xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication].
 
-:sectnums!:
-
 == Prerequisites
 
 :prerequisites-docker:
@@ -91,6 +89,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 
+import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.oidc.IdToken;
@@ -132,7 +131,7 @@ public class TokenResource {
                .append("<ul>");
 
 
-       Object userName = this.idToken.getClaim("preferred_username");
+       Object userName = this.idToken.getClaim(Claims.preferred_username);
 
        if (userName != null) {
            response.append("<li>username: ").append(userName.toString()).append("</li>");
@@ -191,7 +190,7 @@ To start a Keycloak server, use Docker and run the following command:
 docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 
-where `keycloak.version` should be set to `17.0.0` or higher.
+where `keycloak.version` should be set to `23.0.0` or higher.
 
 You should be able to access your Keycloak Server at http://localhost:8180[localhost:8180].
 
@@ -199,7 +198,7 @@ To access the Keycloak Administration Console, log in as the `admin` user.
 Username should be `admin` and password `admin`.
 
 Import the link:{quickstarts-tree-url}/security-openid-connect-web-authentication-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm.
-For more information, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
+For more information, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#configuring-realms[create and configure a new realm].
 
 == Run the application in dev and JVM modes
 
@@ -254,11 +253,13 @@ To authenticate to the application, type the following credentials when at the K
 * Username: *alice*
 * Password: *alice*
 
-After clicking the `Login` button, you are redirected back to the application.
+After clicking the `Login` button, you are redirected back to the application and a session cookie will be created.
 
-For more information about writing the integration tests that depend on `Dev Services for Keycloak`, see the <<security-oidc-code-flow-authentication.adoc#integration-testing-keycloak-devservices, Dev Services for Keycloak>> section.
+The session for this demo is short-lived and you will be asked to re-authenticate on every page refresh. Please follow the Keycloak https://www.keycloak.org/docs/latest/server_admin/#_timeouts[session timeout] documentation to learn how to increase the session timeouts. For example, you can access Keycloak Admin console directly from Dev UI by selecting a `Keycloak Admin` link if you use xref:security-oidc-code-flow-authentication.adoc#integration-testing-keycloak-devservices[Dev Services for Keycloak] in dev mode:
 
-:sectnums!:
+image::dev-ui-oidc-keycloak-card.png[alt=Dev UI OpenID Connect Card,role="center"]
+
+For more information about writing the integration tests that depend on `Dev Services for Keycloak`, see the xref:security-oidc-code-flow-authentication.adoc#integration-testing-keycloak-devservices[Dev Services for Keycloak] section.
 
 == Summary
 

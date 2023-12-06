@@ -244,6 +244,7 @@ public class SmallRyeOpenApiProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void registerAnnotatedUserDefinedRuntimeFilters(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
             OpenApiRecorder recorder) {
         Config config = ConfigProvider.getConfig();
@@ -256,6 +257,7 @@ public class SmallRyeOpenApiProcessor {
                 .supplier(recorder.createUserDefinedRuntimeFilters(userDefinedRuntimeFilters))
                 .done());
 
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(userDefinedRuntimeFilters.toArray(new String[] {})).build());
     }
 
     @BuildStep

@@ -87,9 +87,9 @@ import io.vertx.ext.web.RoutingContext;
 @ApplicationScoped
 public class CustomNamedHttpSecPolicy implements HttpSecurityPolicy {
     @Override
-    public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
+    public Uni<CheckResult> checkPermission(RoutingContext event, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
-        if (customRequestAuthorization(request)) {
+        if (customRequestAuthorization(event)) {
             return Uni.createFrom().item(CheckResult.PERMIT);
         }
         return Uni.createFrom().item(CheckResult.DENY);
@@ -98,6 +98,11 @@ public class CustomNamedHttpSecPolicy implements HttpSecurityPolicy {
     @Override
     public String name() {
         return "custom"; <1>
+    }
+
+    private static boolean customRequestAuthorization(RoutingContext event) {
+        // here comes your own security check
+        return !event.request().path().endsWith("denied");
     }
 }
 ----
@@ -376,8 +381,6 @@ The following <<subject-example>> demonstrates an endpoint that uses both Jakart
 ----
 import java.security.Principal;
 
-import jakarta.annotation.security.DenyAll;
-import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -617,7 +620,7 @@ quarkus.http.auth.permission.roles1.paths=/crud/modify/*,/crud/id/*             
 quarkus.http.auth.permission.roles1.policy=role-policy1
 
 quarkus.http.auth.policy.role-policy2.permissions.user=list
-quarkus.http.auth.policy.role-policy2.permission-class=org.acme.crud.CRUDResource.CustomPermission  <4>
+quarkus.http.auth.policy.role-policy2.permission-class=org.acme.crud.CRUDResource$CustomPermission  <4>
 quarkus.http.auth.permission.roles2.paths=/crud/list
 quarkus.http.auth.permission.roles2.policy=role-policy2
 ----
@@ -626,7 +629,7 @@ Similarly, for the `@PermissionsAllowed` annotation, `io.quarkus.security.String
 <2> Permissions `create`, `update`, and `read` are mapped to the role `admin`.
 <3> The role policy `role-policy1` allows only authenticated requests to access `/crud/modify` and `/crud/id` sub-paths.
 For more information about the path-matching algorithm, see <<matching-multiple-paths>> later in this guide.
-<4> You can also specify a custom implementation of the `java.security.Permission` class.
+<4> You can specify a custom implementation of the `java.security.Permission` class.
 Your custom class must define exactly one constructor that accepts the permission name and optionally some actions, for example, `String` array.
 In this scenario, the permission `list` is added to the `SecurityIdentity` instance as `new CustomPermission("list")`.
 
@@ -638,6 +641,8 @@ Later, Quarkus instantiates your custom permission with actual arguments, with w
 
 [source,java]
 ----
+package org.acme.library;
+
 import java.security.Permission;
 import java.util.Arrays;
 import java.util.Set;
@@ -665,7 +670,7 @@ public class LibraryPermission extends Permission {
         return false;
     }
 
-    ...
+    // here comes your own implementation of the `java.security.Permission` class methods
 
     public static abstract class Library {
 
@@ -684,7 +689,7 @@ public class LibraryPermission extends Permission {
     }
 
     public static class TvLibrary extends MediaLibrary {
-        ...
+        // TvLibrary specific implementation of the 'isParentLibraryOf' method
     }
 }
 ----
@@ -699,8 +704,11 @@ The following example shows how the `LibraryPermission` class can be used:
 
 [source,java]
 ----
+package org.acme.library;
+
 import io.quarkus.security.PermissionsAllowed;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.acme.library.LibraryPermission.Library;
 
 @ApplicationScoped
 public class LibraryService {
@@ -729,6 +737,15 @@ The permission constructor and the annotated method must have the parameter `lib
 
 [source,java]
 ----
+package org.acme.library;
+
+import io.quarkus.security.PermissionsAllowed;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import org.acme.library.LibraryPermission.Library;
+
 @Path("/library")
 public class LibraryResource {
 
@@ -759,9 +776,6 @@ Similarly to the `CRUDResource` example, the following example shows how you can
 package org.acme.library;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
-import java.security.Permission;
-import java.util.Arrays;
-import java.util.Set;
 
 @RegisterForReflection <1>
 public class MediaLibraryPermission extends LibraryPermission {
@@ -782,9 +796,11 @@ quarkus.http.auth.policy.role-policy3.permission-class=org.acme.library.MediaLib
 quarkus.http.auth.permission.roles3.paths=/library/*
 quarkus.http.auth.permission.roles3.policy=role-policy3
 ----
-
 <1> Grants the permission `media-library`, which permits `read`, `write`, and `list` actions.
 Because `MediaLibrary` is the `TvLibrary` class parent, a user with the `admin` role is also permitted to modify `TvLibrary`.
+
+TIP: The `/library/*` path can be tested from a Keycloak provider Dev UI page, because the user `alice` which is created
+automatically by the xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] has an `admin` role.
 
 The examples provided so far use role-to-permission mapping.
 You can also add permissions to the `SecurityIdentity` instance programmatically.

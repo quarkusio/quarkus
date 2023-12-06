@@ -33,7 +33,9 @@ The solution is located in the `spring-security-quickstart` link:{quickstarts-tr
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-security-quickstart
+:create-app-group-id: org.acme.spring.security
 :create-app-extensions: spring-web,spring-security,quarkus-elytron-security-properties-file,resteasy-reactive-jackson
+:create-app-code:
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a project which imports the `spring-web`, `spring-security` and `security-properties-file` extensions.
@@ -81,7 +83,7 @@ For more information about `security-properties-file`, you can check out the gui
 == GreetingController
 
 The Quarkus Maven plugin automatically generated a controller with the Spring Web annotations to define our REST endpoint (instead of the Jakarta REST ones used by default).
-First create a `src/main/java/org/acme/spring/web/GreetingController.java`, a controller with the Spring Web annotations to define our REST endpoint, as follows:
+First create a `src/main/java/org/acme/spring/security/GreetingController.java`, a controller with the Spring Web annotations to define our REST endpoint, as follows:
 
 [source,java]
 ----
@@ -97,7 +99,7 @@ public class GreetingController {
 
     @GetMapping
     public String hello() {
-        return "hello";
+        return "Hello Spring";
     }
 }
 ----
@@ -117,15 +119,14 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
 @QuarkusTest
-public class GreetingControllerTest {
-
+class GreetingControllerTest {
     @Test
-    public void testHelloEndpoint() {
+    void testHelloEndpoint() {
         given()
           .when().get("/greeting")
           .then()
              .statusCode(200)
-             .body(is("hello"));
+             .body(is("Hello Spring"));
     }
 
 }
@@ -141,6 +142,7 @@ Open your browser to http://localhost:8080/greeting.
 
 The result should be: `{"message": "hello"}`.
 
+[#secure]
 == Modify the controller to secure the `hello` method
 
 In order to restrict access to the `hello` method to users with certain roles, the `@Secured` annotation will be utilized.
@@ -220,6 +222,16 @@ public class GreetingControllerTest {
 
 == Test the changes
 
+=== Automatically
+
+Press `r`, while in DevMode, or run the application with:
+
+include::{includes}/devtools/test.adoc[]
+
+All tests should succeed.
+
+=== Manually
+
 Access allowed::
 
 Open your browser again to http://localhost:8080/greeting and introduce `scott` and `jb0ss` in the dialog displayed.
@@ -239,15 +251,14 @@ You don't have authorization to view this page.
 HTTP ERROR 403
 ----
 
-== Run the application as a native executable
+[TIP]
+====
+Some browsers save credentials for basic authentication. If the dialog is not displayed, try to clear saved logins or use the Private mode
+====
 
-You can generate the native executable with:
+== Supported Spring Security annotations
 
-include::{includes}/devtools/build-native.adoc[]
-
-== Supported Spring Security functionalities
-
-Quarkus currently only supports a subset of the functionalities that Spring Security provides with more features being planned. More specifically, Quarkus supports the security related features of role-based authorization semantics
+Quarkus currently only supports a subset of the functionality that Spring Security provides with more features being planned. More specifically, Quarkus supports the security related features of role-based authorization semantics
 (think of `@Secured` instead of `@RolesAllowed`).
 
 === Annotations
@@ -256,13 +267,15 @@ The table below summarizes the supported annotations:
 
 .Supported Spring Security annotations
 |===
-|Name|Comments
+|Name|Comments|Spring documentation
 
 |@Secured
-|
+| See <<secure, above>>
+| link:https://docs.spring.io/spring-security/reference/servlet/authorization/method-security.html#use-secured[Authorizing Method Invocation with @Secured]
 
 |@PreAuthorize
 |See next section for more details
+|link:https://docs.spring.io/spring-security/reference/servlet/authorization/method-security.html#use-preauthorize[Authorizing Method Invocation with @PreAuthorize]
 
 |===
 
@@ -320,6 +333,7 @@ public class Person {
         this.name = name;
     }
 
+    // this syntax requires getters for field access
     public String getName() {
         return name;
     }
@@ -373,7 +387,6 @@ An example of the `PersonChecker` could be:
 @Component
 public class PersonChecker {
 
-    @Override
     public boolean check(Person person, String username) {
         return person.getName().equals(username);
     }
@@ -407,8 +420,11 @@ Some examples of allowed expressions are:
 
     }
 ----
+[IMPORTANT]
+====
+Currently, expressions do not support parentheses for logical operators and are evaluated from left to right
+====
 
-Also to be noted that currently parentheses are not supported and expressions are evaluated from left to right when needed.
 
 == Important Technical Note
 
@@ -427,6 +443,10 @@ The following table shows how Spring Security annotations can be converted to Ja
 |@Secured("admin")
 |@RolesAllowed("admin")
 |
+
+|@PreAuthorize
+|No direct replacement
+|Quarkus handles complex authorisation differently, see link:https://quarkus.io/guides/security-authorize-web-endpoints-reference[this guide] for details
 
 |===
 

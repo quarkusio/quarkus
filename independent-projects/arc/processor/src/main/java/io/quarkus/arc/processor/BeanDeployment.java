@@ -953,8 +953,14 @@ public class BeanDeployment {
                 .map(StereotypeInfo::getName)
                 .collect(Collectors.toSet());
 
+        Set<DotName> seenClasses = new HashSet<>();
+
         // If needed use the specialized immutable index to discover beans
         for (ClassInfo beanClass : beanArchiveImmutableIndex.getKnownClasses()) {
+            if (!seenClasses.add(beanClass.name())) {
+                // avoid discovering the same bean twice
+                continue;
+            }
 
             if (Modifier.isInterface(beanClass.flags()) || Modifier.isAbstract(beanClass.flags())
                     || beanClass.isAnnotation() || beanClass.isEnum()) {
@@ -1578,6 +1584,29 @@ public class BeanDeployment {
                             "Bean name '" + name + "' is identical to a bean name prefix used elsewhere"));
                 }
             }
+        }
+
+        List<Map.Entry<String, List<BeanInfo>>> duplicateBeanIds = beans.stream()
+                .collect(Collectors.groupingBy(BeanInfo::getIdentifier))
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getValue().size() > 1)
+                .collect(Collectors.toList());
+        if (!duplicateBeanIds.isEmpty()) {
+            String separator = "====================";
+            StringBuilder error = new StringBuilder("\n")
+                    .append(separator).append(separator).append(separator).append(separator).append("\n")
+                    .append("Multiple beans with the same identifier found!\n")
+                    .append("----------------------------------------------\n")
+                    .append("This is an internal error. Please report a bug and attach the following listing.\n\n");
+            for (Map.Entry<String, List<BeanInfo>> entry : duplicateBeanIds) {
+                error.append(entry.getKey()).append(" -> ").append(entry.getValue().size()).append(" beans:\n");
+                for (BeanInfo bean : entry.getValue()) {
+                    error.append("- ").append(bean).append("\n");
+                }
+            }
+            error.append(separator).append(separator).append(separator).append(separator).append("\n");
+            errors.add(new DeploymentException(error.toString()));
         }
     }
 

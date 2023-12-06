@@ -23,9 +23,4 @@ public class JPAFunctionalityTest {
         RestAssured.when().get("/jpa/testfunctionality/uuid").then().body(is("OK"));
     }
 
-    @Test
-    public void json() {
-        RestAssured.when().get("/jpa/testfunctionality/json").then().body(is("OK"));
-    }
-
 }

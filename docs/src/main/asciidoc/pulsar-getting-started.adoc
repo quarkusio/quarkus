@@ -255,7 +255,7 @@ mp.messaging.incoming.requests.subscriptionInitialPosition=Earliest
 ----
 
 Note that in this case we have one incoming and one outgoing connector configuration, each one distinctly named.
-The configuration keys are structured as follows:
+The configuration properties are structured as follows:
 
 `mp.messaging.[outgoing|incoming].{channel-name}.property=value`
 

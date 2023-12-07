@@ -257,7 +257,7 @@ Open the `src/main/resources/application.properties` file and add:
 mp.messaging.incoming.requests.address=quote-requests
 ----
 
-The configuration keys are structured as follows:
+The configuration properties are structured as follows:
 
 `mp.messaging.[outgoing|incoming].{channel-name}.property=value`
 

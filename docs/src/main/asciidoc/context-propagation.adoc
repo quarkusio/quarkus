@@ -174,7 +174,7 @@ The following configuration properties allow you to specify the default sets of 
 
 [cols="1,1,1"]
 |===
-|Configuration Key|Description|Default Value
+|Configuration property|Description|Default Value
 
 |`mp.context.ThreadContext.propagated`
 |The comma-separated set of propagated contexts

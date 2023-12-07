@@ -258,11 +258,11 @@ public final class ContainerRuntimeUtil {
         }
 
         public boolean isDocker() {
-            return this == DOCKER || this == DOCKER_ROOTLESS;
+            return this.executableName.equals("docker");
         }
 
         public boolean isPodman() {
-            return this.executableName.equals("docker");
+            return this == PODMAN || this == PODMAN_ROOTLESS;
         }
 
         public boolean isInWindowsWSL() {

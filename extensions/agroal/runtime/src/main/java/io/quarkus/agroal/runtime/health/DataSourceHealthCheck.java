@@ -9,6 +9,8 @@ import javax.sql.DataSource;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
@@ -16,28 +18,37 @@ import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Readiness;
 
 import io.agroal.api.AgroalDataSource;
-import io.quarkus.agroal.DataSource.DataSourceLiteral;
+import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.arc.Arc;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.datasource.runtime.DataSourcesHealthSupport;
+import io.quarkus.datasource.runtime.DataSourceSupport;
 
 @Readiness
 @ApplicationScoped
 public class DataSourceHealthCheck implements HealthCheck {
-    private final Map<String, DataSource> dataSources = new HashMap<>();
+
+    @Inject
+    Instance<DataSources> dataSources;
+
+    private final Map<String, DataSource> checkedDataSources = new HashMap<>();
 
     @PostConstruct
     protected void init() {
-        DataSourcesHealthSupport support = Arc.container().instance(DataSourcesHealthSupport.class)
+        if (!dataSources.isResolvable()) {
+            // No configured Agroal datasource at build time.
+            return;
+        }
+        DataSourceSupport support = Arc.container().instance(DataSourceSupport.class)
                 .get();
         Set<String> names = support.getConfiguredNames();
-        Set<String> excludedNames = support.getExcludedNames();
+        Set<String> excludedNames = support.getInactiveOrHealthCheckExcludedNames();
         for (String name : names) {
-            DataSource ds = DataSourceUtil.isDefault(name)
-                    ? (DataSource) Arc.container().instance(DataSource.class).get()
-                    : (DataSource) Arc.container().instance(DataSource.class, new DataSourceLiteral(name)).get();
-            if (!excludedNames.contains(name) && ds != null) {
-                dataSources.put(name, ds);
+            if (excludedNames.contains(name)) {
+                continue;
+            }
+            DataSource ds = dataSources.get().getDataSource(name);
+            if (ds != null) {
+                checkedDataSources.put(name, ds);
             }
         }
     }
@@ -45,7 +56,7 @@ public class DataSourceHealthCheck implements HealthCheck {
     @Override
     public HealthCheckResponse call() {
         HealthCheckResponseBuilder builder = HealthCheckResponse.named("Database connections health check").up();
-        for (Map.Entry<String, DataSource> dataSource : dataSources.entrySet()) {
+        for (Map.Entry<String, DataSource> dataSource : checkedDataSources.entrySet()) {
             boolean isDefault = DataSourceUtil.isDefault(dataSource.getKey());
             AgroalDataSource ads = (AgroalDataSource) dataSource.getValue();
             String dsName = dataSource.getKey();

@@ -306,10 +306,13 @@ class LiquibaseProcessor {
             BuildProducer<InitTaskCompletedBuildItem> initializationCompleteBuildItem,
             BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
 
-        recorder.doStartActions();
+        Set<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);
+        for (String dataSourceName : dataSourceNames) {
+            recorder.doStartActions(dataSourceName);
+        }
         // once we are done running the migrations, we produce a build item indicating that the
         // schema is "ready"
-        schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(getDataSourceNames(jdbcDataSourceBuildItems)));
+        schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(dataSourceNames));
         initializationCompleteBuildItem.produce(new InitTaskCompletedBuildItem("liquibase"));
 
         return new ServiceStartBuildItem("liquibase");

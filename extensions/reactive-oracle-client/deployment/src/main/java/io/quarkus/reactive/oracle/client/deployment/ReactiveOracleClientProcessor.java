@@ -32,6 +32,7 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
+import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
@@ -209,6 +210,7 @@ class ReactiveOracleClientProcessor {
                 .addType(Pool.class)
                 .scope(ApplicationScoped.class)
                 .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
+                .addInjectionPoint(ClassType.create(DataSourceSupport.class))
                 .createWith(poolFunction)
                 .unremovable()
                 .setRuntimeInit();
@@ -223,6 +225,7 @@ class ReactiveOracleClientProcessor {
                 .addType(io.vertx.mutiny.sqlclient.Pool.class)
                 .scope(ApplicationScoped.class)
                 .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
+                .addInjectionPoint(ClassType.create(DataSourceSupport.class))
                 .createWith(recorder.mutinyOraclePool(poolFunction))
                 .unremovable()
                 .setRuntimeInit();

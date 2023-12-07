@@ -11,7 +11,7 @@ import org.eclipse.microprofile.health.Readiness;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.datasource.runtime.DataSourcesHealthSupport;
+import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.reactive.datasource.runtime.ReactiveDatasourceHealthCheck;
 import io.vertx.mssqlclient.MSSQLPool;
 
@@ -26,8 +26,8 @@ class ReactiveMSSQLDataSourcesHealthCheck extends ReactiveDatasourceHealthCheck 
     @PostConstruct
     protected void init() {
         ArcContainer container = Arc.container();
-        DataSourcesHealthSupport excluded = container.instance(DataSourcesHealthSupport.class).get();
-        Set<String> excludedNames = excluded.getExcludedNames();
+        DataSourceSupport support = container.instance(DataSourceSupport.class).get();
+        Set<String> excludedNames = support.getInactiveOrHealthCheckExcludedNames();
         for (InstanceHandle<MSSQLPool> handle : container.select(MSSQLPool.class, Any.Literal.INSTANCE).handles()) {
             String poolName = getPoolName(handle.getBean());
             if (!excludedNames.contains(poolName)) {

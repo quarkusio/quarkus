@@ -25,6 +25,7 @@ import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
+import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.runtime.ConnectOptionsSupplier;
@@ -61,6 +62,9 @@ public class MSSQLPoolRecorder {
         return new Function<>() {
             @Override
             public MSSQLPool apply(SyntheticCreationalContext<MSSQLPool> context) {
+                if (context.getInjectedReference(DataSourceSupport.class).getInactiveNames().contains(dataSourceName)) {
+                    throw DataSourceUtil.dataSourceInactive(dataSourceName);
+                }
                 MSSQLPool pool = initialize((VertxInternal) vertx.getValue(),
                         eventLoopCount.get(),
                         dataSourceName,

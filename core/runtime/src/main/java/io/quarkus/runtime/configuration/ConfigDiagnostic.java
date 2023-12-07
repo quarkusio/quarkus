@@ -184,7 +184,7 @@ public final class ConfigDiagnostic {
         Set<String> configFiles = new HashSet<>();
         try (DirectoryStream<Path> candidates = Files.newDirectoryStream(configFilesLocation, CONFIG_FILES_FILTER)) {
             for (Path candidate : candidates) {
-                configFiles.add(candidate.toUri().getPath());
+                configFiles.add(candidate.toUri().toURL().toString());
             }
         }
         return configFiles;

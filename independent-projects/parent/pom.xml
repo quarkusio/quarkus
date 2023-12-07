@@ -17,7 +17,7 @@
 
     <properties>
         <!-- Plugin versions (please keep in alphabetical order) -->
-        <version.buildhelper.plugin>3.4.0</version.buildhelper.plugin>
+        <version.buildhelper.plugin>3.5.0</version.buildhelper.plugin>
         <version.buildnumber.plugin>3.0.0</version.buildnumber.plugin>
         <version.clean.plugin>3.2.0</version.clean.plugin>
         <version.compiler.plugin>3.11.0</version.compiler.plugin>

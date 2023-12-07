@@ -33,8 +33,6 @@ public class RestClientConfigTest {
         assertThat(config.url.get()).isEqualTo("http://localhost:8080");
         assertThat(config.uri).isPresent();
         assertThat(config.uri.get()).isEqualTo("http://localhost:8081");
-        assertThat(config.scope).isPresent();
-        assertThat(config.scope.get()).isEqualTo("Singleton");
         assertThat(config.providers).isPresent();
         assertThat(config.providers.get()).isEqualTo("io.quarkus.restclient.configuration.MyResponseFilter");
         assertThat(config.connectTimeout).isPresent();

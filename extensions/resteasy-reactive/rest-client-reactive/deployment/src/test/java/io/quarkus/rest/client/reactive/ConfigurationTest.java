@@ -74,8 +74,6 @@ public class ConfigurationTest {
     private void verifyClientConfig(RestClientConfig clientConfig, boolean checkExtraProperties) {
         assertThat(clientConfig.url).isPresent();
         assertThat(clientConfig.url.get()).endsWith("/hello");
-        assertThat(clientConfig.scope).isPresent();
-        assertThat(clientConfig.scope.get()).isEqualTo("Singleton");
         assertThat(clientConfig.providers).isPresent();
         assertThat(clientConfig.providers.get())
                 .isEqualTo("io.quarkus.rest.client.reactive.HelloClientWithBaseUri$MyResponseFilter");

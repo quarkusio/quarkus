@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.SessionScoped;
 import jakarta.enterprise.inject.Typed;
@@ -103,6 +104,7 @@ import io.quarkus.rest.client.reactive.runtime.RestClientReactiveCDIWrapperBase;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
 import io.quarkus.rest.client.reactive.spi.RestClientAnnotationsTransformerBuildItem;
+import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.deployment.RestClientConfigUtils;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
@@ -410,10 +412,13 @@ class RestClientReactiveProcessor {
             List<RestClientAnnotationsTransformerBuildItem> restClientAnnotationsTransformerBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             RestClientReactiveConfig clientConfig,
+            RestClientsBuildTimeConfig clientsBuildConfig,
             RestClientRecorder recorder) {
 
         CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
-        Set<AnnotationInstance> registerRestClientAnnos = new HashSet<>(index.getAnnotations(REGISTER_REST_CLIENT));
+
+        Set<AnnotationInstance> registerRestClientAnnos = determineRegisterRestClientInstances(clientsBuildConfig, index);
+
         Map<String, String> configKeys = new HashMap<>();
         var annotationsStore = new AnnotationStore(restClientAnnotationsTransformerBuildItem.stream()
                 .map(RestClientAnnotationsTransformerBuildItem::getAnnotationsTransformer).collect(toList()));
@@ -572,6 +577,34 @@ class RestClientReactiveProcessor {
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             recorder.setConfigKeys(configKeys);
         }
+    }
+
+    private Set<AnnotationInstance> determineRegisterRestClientInstances(RestClientsBuildTimeConfig clientsConfig,
+            CompositeIndex index) {
+        // these are the actual instances
+        Set<AnnotationInstance> registerRestClientAnnos = new HashSet<>(index.getAnnotations(REGISTER_REST_CLIENT));
+        // a set of the original target class
+        Set<ClassInfo> registerRestClientTargets = registerRestClientAnnos.stream().map(ai -> ai.target().asClass()).collect(
+                Collectors.toSet());
+
+        // now we go through the keys and if any of them correspond to classes that don't have a @RegisterRestClient annotation, we fake that annotation
+        Set<String> configKeyNames = clientsConfig.configs.keySet();
+        for (String configKeyName : configKeyNames) {
+            ClassInfo classInfo = index.getClassByName(configKeyName);
+            if (classInfo == null) {
+                continue;
+            }
+            if (registerRestClientTargets.contains(classInfo)) {
+                continue;
+            }
+            Optional<String> cdiScope = clientsConfig.configs.get(configKeyName).scope;
+            if (cdiScope.isEmpty()) {
+                continue;
+            }
+            registerRestClientAnnos.add(AnnotationInstance.builder(REGISTER_REST_CLIENT).add("configKey", configKeyName)
+                    .buildWithTarget(classInfo));
+        }
+        return registerRestClientAnnos;
     }
 
     /**

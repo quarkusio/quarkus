@@ -21,7 +21,6 @@ public class RestClientConfig {
         EMPTY = new RestClientConfig();
         EMPTY.url = Optional.empty();
         EMPTY.uri = Optional.empty();
-        EMPTY.scope = Optional.empty();
         EMPTY.providers = Optional.empty();
         EMPTY.connectTimeout = Optional.empty();
         EMPTY.readTimeout = Optional.empty();
@@ -69,14 +68,6 @@ public class RestClientConfig {
      */
     @ConfigItem
     public Optional<String> uri;
-
-    /**
-     * The CDI scope to use for injection. This property can contain either a fully qualified class name of a CDI scope
-     * annotation (such as "jakarta.enterprise.context.ApplicationScoped") or its simple name (such as
-     * "ApplicationScoped").
-     */
-    @ConfigItem
-    public Optional<String> scope;
 
     /**
      * Map where keys are fully-qualified provider classnames to include in the client, and values are their integer
@@ -280,7 +271,6 @@ public class RestClientConfig {
 
         instance.url = getConfigValue(configKey, "url", String.class);
         instance.uri = getConfigValue(configKey, "uri", String.class);
-        instance.scope = getConfigValue(configKey, "scope", String.class);
         instance.providers = getConfigValue(configKey, "providers", String.class);
         instance.connectTimeout = getConfigValue(configKey, "connect-timeout", Long.class);
         instance.readTimeout = getConfigValue(configKey, "read-timeout", Long.class);
@@ -320,7 +310,6 @@ public class RestClientConfig {
 
         instance.url = getConfigValue(interfaceClass, "url", String.class);
         instance.uri = getConfigValue(interfaceClass, "uri", String.class);
-        instance.scope = getConfigValue(interfaceClass, "scope", String.class);
         instance.providers = getConfigValue(interfaceClass, "providers", String.class);
         instance.connectTimeout = getConfigValue(interfaceClass, "connect-timeout", Long.class);
         instance.readTimeout = getConfigValue(interfaceClass, "read-timeout", Long.class);

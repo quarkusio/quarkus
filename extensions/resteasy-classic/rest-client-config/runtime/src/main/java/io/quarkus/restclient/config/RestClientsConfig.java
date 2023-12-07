@@ -2,6 +2,7 @@ package io.quarkus.restclient.config;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.enterprise.inject.CreationException;
@@ -324,6 +325,10 @@ public class RestClientsConfig {
 
     public void putClientConfig(Class<?> clientInterface, RestClientConfig clientConfig) {
         configs.put(clientInterface.getName(), clientConfig);
+    }
+
+    public Set<String> getConfigKeys() {
+        return configs.keySet();
     }
 
     public static RestClientsConfig getInstance() {

@@ -846,8 +846,8 @@ we need the following cypher script which will import the data within the CSV fi
 
 [source,cypher]
 ----
-CREATE CONSTRAINT unique_vm_id ON (v:VM) ASSERT v.vmId IS UNIQUE;
-CREATE CONSTRAINT unique_method_id ON (m:Method) ASSERT m.methodId IS UNIQUE;
+CREATE CONSTRAINT unique_vm_id FOR (v:VM) REQUIRE v.vmId IS UNIQUE;
+CREATE CONSTRAINT unique_method_id FOR (m:Method) REQUIRE m.methodId IS UNIQUE;
 
 LOAD CSV WITH HEADERS FROM 'file:///reports/call_tree_vm.csv' AS row
 MERGE (v:VM {vmId: row.Id, name: row.Name})

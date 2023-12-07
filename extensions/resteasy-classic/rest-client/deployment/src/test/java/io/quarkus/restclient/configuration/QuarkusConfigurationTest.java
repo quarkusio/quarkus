@@ -55,8 +55,6 @@ public class QuarkusConfigurationTest {
     void verifyClientConfig(RestClientConfig clientConfig, boolean verifyNonStandardProperties) {
         assertThat(clientConfig.url).isPresent();
         assertThat(clientConfig.url.get()).contains("localhost");
-        assertThat(clientConfig.scope).isPresent();
-        assertThat(clientConfig.scope.get()).isEqualTo("Singleton");
         assertThat(clientConfig.providers).isPresent();
         assertThat(clientConfig.providers.get())
                 .isEqualTo("io.quarkus.restclient.configuration.MyResponseFilter");

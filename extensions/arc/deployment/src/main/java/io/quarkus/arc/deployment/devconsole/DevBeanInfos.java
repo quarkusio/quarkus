@@ -90,6 +90,9 @@ public class DevBeanInfos {
         if (maxLevel == null) {
             maxLevel = ArcDevConsoleProcessor.DEFAULT_MAX_DEPENDENCY_LEVEL;
         }
+        if (dependencyGraphs.isEmpty()) {
+            return DependencyGraph.EMPTY;
+        }
         DependencyGraph graph = dependencyGraphs.get(beanId);
         return graph.maxLevel <= maxLevel ? graph : graph.forLevel(maxLevel);
     }

@@ -11,11 +11,11 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class AgroalRecorder {
 
-    public Supplier<DataSourceSupport> dataSourceSupportSupplier(DataSourceSupport dataSourceSupport) {
-        return new Supplier<DataSourceSupport>() {
+    public Supplier<AgroalDataSourceSupport> dataSourceSupportSupplier(AgroalDataSourceSupport agroalDataSourceSupport) {
+        return new Supplier<AgroalDataSourceSupport>() {
             @Override
-            public DataSourceSupport get() {
-                return dataSourceSupport;
+            public AgroalDataSourceSupport get() {
+                return agroalDataSourceSupport;
             }
         };
     }

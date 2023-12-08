@@ -1,6 +1,6 @@
 package io.quarkus.scheduler.test;
 
-import jakarta.enterprise.inject.spi.DeploymentException;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -12,7 +12,10 @@ public class InvalidEveryExpressionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(DeploymentException.class)
+            .assertException(t -> {
+                assertThat(t).cause().isInstanceOf(IllegalStateException.class)
+                        .hasMessageContaining("Invalid every() expression");
+            })
             .withApplicationRoot((jar) -> jar
                     .addClasses(InvalidEveryExpressionTest.InvalidBean.class));
 

@@ -187,7 +187,8 @@ public class SchedulerProcessor {
 
     @BuildStep
     void validateScheduledBusinessMethods(SchedulerConfig config, List<ScheduledBusinessMethodItem> scheduledMethods,
-            ValidationPhaseBuildItem validationPhase, BuildProducer<ValidationErrorBuildItem> validationErrors) {
+            ValidationPhaseBuildItem validationPhase, BuildProducer<ValidationErrorBuildItem> validationErrors,
+            Capabilities capabilities) {
         List<Throwable> errors = new ArrayList<>();
         Map<String, AnnotationInstance> encounteredIdentities = new HashMap<>();
         Set<String> methodDescriptions = new HashSet<>();
@@ -240,9 +241,11 @@ public class SchedulerProcessor {
                 }
             }
             // Validate cron() and every() expressions
+            long checkPeriod = capabilities.isMissing(Capability.QUARTZ) ? SimpleScheduler.CHECK_PERIOD : 50;
             CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(config.cronType));
             for (AnnotationInstance scheduled : scheduledMethod.getSchedules()) {
-                Throwable error = validateScheduled(parser, scheduled, encounteredIdentities, validationPhase.getContext());
+                Throwable error = validateScheduled(parser, scheduled, encounteredIdentities, validationPhase.getContext(),
+                        checkPeriod);
                 if (error != null) {
                     errors.add(error);
                 }
@@ -509,7 +512,7 @@ public class SchedulerProcessor {
 
     private Throwable validateScheduled(CronParser parser, AnnotationInstance schedule,
             Map<String, AnnotationInstance> encounteredIdentities,
-            BeanDeploymentValidator.ValidationContext validationContext) {
+            BeanDeploymentValidator.ValidationContext validationContext, long checkPeriod) {
         MethodInfo method = schedule.target().asMethod();
         AnnotationValue cronValue = schedule.value("cron");
         AnnotationValue everyValue = schedule.value("every");
@@ -519,7 +522,7 @@ public class SchedulerProcessor {
                 try {
                     parser.parse(cron).validate();
                 } catch (IllegalArgumentException e) {
-                    return new IllegalStateException("Invalid cron() expression on: " + schedule, e);
+                    return new IllegalStateException(errorMessage("Invalid cron() expression", schedule, method), e);
                 }
                 if (everyValue != null && !everyValue.asString().trim().isEmpty()) {
                     LOGGER.warnf(
@@ -535,7 +538,7 @@ public class SchedulerProcessor {
                     try {
                         ZoneId.of(timeZone);
                     } catch (Exception e) {
-                        return new IllegalStateException("Invalid timeZone() on " + schedule, e);
+                        return new IllegalStateException(errorMessage("Invalid timeZone()", schedule, method), e);
                     }
                 }
             }
@@ -548,9 +551,14 @@ public class SchedulerProcessor {
                         every = "PT" + every;
                     }
                     try {
-                        Duration.parse(every);
+                        Duration period = Duration.parse(every);
+                        if (period.toMillis() < checkPeriod) {
+                            LOGGER.warnf(
+                                    "An every() value less than %s ms is not supported - the scheduled job will be executed with a delay: %s declared on %s#%s()",
+                                    checkPeriod, schedule, method.declaringClass().name(), method.name());
+                        }
                     } catch (Exception e) {
-                        return new IllegalStateException("Invalid every() expression on: " + schedule, e);
+                        return new IllegalStateException(errorMessage("Invalid every() expression", schedule, method), e);
                     }
                 }
             } else {
@@ -569,7 +577,7 @@ public class SchedulerProcessor {
                     try {
                         Duration.parse(delayed);
                     } catch (Exception e) {
-                        return new IllegalStateException("Invalid delayed() expression on: " + schedule, e);
+                        return new IllegalStateException(errorMessage("Invalid delayed() expression", schedule, method), e);
                     }
                 }
 
@@ -607,6 +615,10 @@ public class SchedulerProcessor {
         }
 
         return null;
+    }
+
+    private static String errorMessage(String base, AnnotationInstance scheduled, MethodInfo method) {
+        return String.format("%s: %s declared on %s#%s()", base, scheduled, method.declaringClass().name(), method.name());
     }
 
     @BuildStep

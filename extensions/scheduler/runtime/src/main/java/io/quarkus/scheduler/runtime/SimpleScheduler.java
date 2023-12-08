@@ -81,7 +81,7 @@ public class SimpleScheduler implements Scheduler {
     private static final Logger LOG = Logger.getLogger(SimpleScheduler.class);
 
     // milliseconds
-    private static final long CHECK_PERIOD = 1000L;
+    public static final long CHECK_PERIOD = 1000L;
 
     private final ScheduledExecutorService scheduledExecutor;
     private final Vertx vertx;
@@ -351,7 +351,7 @@ public class SimpleScheduler implements Scheduler {
                     SchedulerUtils.parseCronTimeZone(scheduled), methodDescription));
         } else if (!scheduled.every().isEmpty()) {
             final OptionalLong everyMillis = SchedulerUtils.parseEveryAsMillis(scheduled);
-            if (!everyMillis.isPresent()) {
+            if (everyMillis.isEmpty()) {
                 return Optional.empty();
             }
             return Optional.of(new IntervalTrigger(id, start, everyMillis.getAsLong(),
@@ -505,6 +505,11 @@ public class SimpleScheduler implements Scheduler {
             super(id, start, description);
             this.interval = interval;
             this.gracePeriod = gracePeriod;
+            if (interval < CHECK_PERIOD) {
+                LOG.warnf(
+                        "An every() value less than %s ms is not supported - the scheduled job will be executed with a delay: %s",
+                        CHECK_PERIOD, description);
+            }
         }
 
         @Override

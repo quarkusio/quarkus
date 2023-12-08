@@ -3,19 +3,20 @@ package io.quarkus.scheduler;
 import java.time.Instant;
 
 /**
- * Scheduled execution metadata.
+ * Execution metadata of a specific scheduled job.
  */
 public interface ScheduledExecution {
 
     /**
      *
-     * @return the trigger that fired the event
+     * @return the trigger that fired the execution
      */
     Trigger getTrigger();
 
     /**
+     * Unlike {@link Trigger#getPreviousFireTime()} this method always returns the same value.
      *
-     * @return the time the event was fired
+     * @return the time the associated trigger was fired
      */
     Instant getFireTime();
 

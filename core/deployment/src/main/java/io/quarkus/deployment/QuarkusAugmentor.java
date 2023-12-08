@@ -174,6 +174,11 @@ public class QuarkusAugmentor {
                     buildResult.getMetrics().dumpTo(targetDir.resolve("build-metrics.json"));
                 }
             }
+
+            long threshold = Long.parseLong(System.getProperty("quarkus.debug.build-step-execution-threshold",
+                    DebugConfig.DEFAULT_BUILD_STEP_EXECUTION_THRESHOLD));
+            buildResult.getMetrics().checkDurations(threshold);
+
             return buildResult;
         } finally {
             try {

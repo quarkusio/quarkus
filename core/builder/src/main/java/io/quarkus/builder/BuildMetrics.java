@@ -17,6 +17,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
@@ -128,6 +129,26 @@ public class BuildMetrics {
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file.toFile(), StandardCharsets.UTF_8))) {
             json.appendTo(writer);
+        }
+    }
+
+    public void checkDurations(long threshold) {
+        List<BuildStepRecord> exceeded = new ArrayList<>();
+        for (BuildStepRecord rec : records.values()) {
+            if (rec.duration >= threshold) {
+                exceeded.add(rec);
+            }
+        }
+        if (!exceeded.isEmpty()) {
+            exceeded.sort(new Comparator<BuildStepRecord>() {
+                @Override
+                public int compare(BuildStepRecord o1, BuildStepRecord o2) {
+                    return Long.compare(o2.duration, o1.duration);
+                }
+            });
+            LOG.warnf("Execution time of the following build steps exceeded the threshold [%s ms]\n%s", threshold,
+                    exceeded.stream().map(r -> "\t- [" + r.duration + " ms] " + r.stepInfo.getBuildStep().getId())
+                            .collect(Collectors.joining("\n")));
         }
     }
 

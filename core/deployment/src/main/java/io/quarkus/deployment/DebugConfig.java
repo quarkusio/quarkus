@@ -45,4 +45,13 @@ public class DebugConfig {
      */
     @ConfigItem(defaultValue = "false")
     boolean dumpBuildMetrics;
+
+    /**
+     * When a build step execution exceeds the threshold a warning is logged.
+     */
+    @ConfigItem(defaultValue = DEFAULT_BUILD_STEP_EXECUTION_THRESHOLD)
+    long buildStepExecutionThreshold;
+
+    // The default value must be synced with QuarkusAugmentor
+    static final String DEFAULT_BUILD_STEP_EXECUTION_THRESHOLD = "5000";
 }

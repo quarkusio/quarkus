@@ -70,6 +70,16 @@
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
                     <version>${project.version}</version>
+                    <executions>
+                      <execution>
+                        <!-- for now this execution will only dump Quarkus application dependency checksums that could indicate build time classpath changes -->
+                        <id>track-config-changes</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                          <goal>track-config-changes</goal>
+                        </goals>
+                      </execution>
+                    </executions>
                     <configuration>
                         <noDeps>true</noDeps>
                         <skip>${quarkus.build.skip}</skip>

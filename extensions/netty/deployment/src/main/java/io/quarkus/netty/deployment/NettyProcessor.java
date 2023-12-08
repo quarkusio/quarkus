@@ -94,6 +94,9 @@ class NettyProcessor {
                 .produce(ReflectiveClassBuildItem.builder("java.util.LinkedHashMap").build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("sun.nio.ch.SelectorImpl").methods().fields().build());
 
+        // Setup reflective accesses happening in PlatformDependent0 static initializer
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.nio.DirectByteBuffer").constructors().build());
+
         String maxOrder = calculateMaxOrder(config.allocatorMaxOrder, minMaxOrderBuildItems, false);
 
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()

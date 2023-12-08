@@ -974,7 +974,7 @@ public interface SseClient {
      Multi<SseEvent<Long>> get();
 
 
-     class HeartbeatFilter implements Predicate<SessionEvent<String>> {
+     class HeartbeatFilter implements Predicate<SseEvent<String>> {
 
         @Override
         public boolean test(SseEvent<String> event) {

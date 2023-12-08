@@ -1,24 +1,24 @@
 package io.quarkus.it.mongodb.panache.record;
 
-import java.net.URI;
 import java.util.List;
 
+import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.core.Response;
 
-@Path("/mongo/persons")
+@Path("/persons/record")
 public class PersonResource {
+    @Inject
+    PersonRecordRepository personRecordRepository;
+
     @GET
     public List<PersonName> getPersons() {
-        return PersonWithRecord.findAll().project(PersonName.class).list();
+        return personRecordRepository.findAll().project(PersonName.class).list();
     }
 
     @POST
-    public Response addPerson(PersonWithRecord person) {
-        person.persist();
-        String id = person.id.toString();
-        return Response.created(URI.create("/persons/entity/" + id)).build();
+    public void addPerson(PersonRecord person) {
+        personRecordRepository.persist(person);
     }
 }

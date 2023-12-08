@@ -811,6 +811,57 @@ public abstract class ResteasyReactiveRequestContext
         return producesChecked;
     }
 
+    public List<String> getAccept(boolean single) {
+        if (httpHeaders == null) {
+            if (single) {
+                var accept = serverRequest().getRequestAccept();
+                if (accept == null) {
+                    return null;
+                }
+                return List.of(accept);
+            }
+            // empty collections must not be turned to null
+            return serverRequest().getAllRequestAccepts();
+        } else {
+            if (single) {
+                return List.of(httpHeaders.getMutableHeaders().getFirst(HttpHeaders.ACCEPT));
+            }
+            // empty collections must not be turned to null
+            List<String> list = httpHeaders.getMutableHeaders().get(HttpHeaders.ACCEPT);
+            if (list == null) {
+                return Collections.emptyList();
+            } else {
+                return list;
+            }
+        }
+    }
+
+    // same as getAccept but for ContentType
+    public List<String> getContentType(boolean single) {
+        if (httpHeaders == null) {
+            if (single) {
+                var contentType = serverRequest().getRequestContentType();
+                if (contentType == null) {
+                    return null;
+                }
+                return List.of(contentType);
+            }
+            // empty collections must not be turned to null
+            return serverRequest().getAllRequestContentTypes();
+        } else {
+            if (single) {
+                return List.of(httpHeaders.getMutableHeaders().getFirst(HttpHeaders.CONTENT_TYPE));
+            }
+            // empty collections must not be turned to null
+            List<String> list = httpHeaders.getMutableHeaders().get(HttpHeaders.CONTENT_TYPE);
+            if (list == null) {
+                return Collections.emptyList();
+            } else {
+                return list;
+            }
+        }
+    }
+
     @Override
     public Object getHeader(String name, boolean single) {
         if (httpHeaders == null) {

@@ -45,6 +45,8 @@ import io.vertx.ext.web.RoutingContext;
 public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequestContext
         implements ServerHttpRequest, ServerHttpResponse, Handler<Void> {
 
+    private static final CharSequence CAPITAL_CONTENT_TYPE = io.vertx.core.http.HttpHeaders
+            .createOptimized(HttpHeaders.CONTENT_TYPE);
     public static final String CONTINUE = "100-continue";
     protected final RoutingContext context;
     protected final HttpServerRequest request;
@@ -142,6 +144,26 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     public boolean resumeExternalProcessing() {
         context.next();
         return true;
+    }
+
+    @Override
+    public String getRequestAccept() {
+        return request.headers().get(io.vertx.core.http.HttpHeaders.ACCEPT);
+    }
+
+    @Override
+    public List<String> getAllRequestAccepts() {
+        return request.headers().getAll(io.vertx.core.http.HttpHeaders.ACCEPT);
+    }
+
+    @Override
+    public String getRequestContentType() {
+        return request.headers().get(io.vertx.core.http.HttpHeaders.CONTENT_TYPE);
+    }
+
+    @Override
+    public List<String> getAllRequestContentTypes() {
+        return request.headers().getAll(io.vertx.core.http.HttpHeaders.CONTENT_TYPE);
     }
 
     @Override
@@ -386,6 +408,13 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     @Override
     public ServerHttpResponse setResponseHeader(CharSequence name, Iterable<CharSequence> values) {
         response.headers().set(name, values);
+        return this;
+    }
+
+    @Override
+    public ServerHttpResponse setResponseContentType(boolean capitalLettersHeaderName, CharSequence value) {
+        response.headers().set(capitalLettersHeaderName ? CAPITAL_CONTENT_TYPE : io.vertx.core.http.HttpHeaders.CONTENT_TYPE,
+                value);
         return this;
     }
 

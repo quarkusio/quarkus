@@ -1,6 +1,7 @@
 package io.quarkus.arc.impl;
 
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import io.quarkus.arc.ContextInstanceHandle;
@@ -36,6 +37,11 @@ class ComputingCacheContextInstances implements ContextInstances {
     @Override
     public void clear() {
         instances.clear();
+    }
+
+    @Override
+    public void forEach(Consumer<? super ContextInstanceHandle<?>> handleConsumer) {
+        instances.getPresentValues().forEach(handleConsumer);
     }
 
 }

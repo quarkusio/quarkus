@@ -5,6 +5,7 @@ import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_VOLATILE;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.jboss.jandex.DotName;
@@ -88,7 +90,7 @@ public class ContextInstancesGenerator extends AbstractGenerator {
         implementRemove(contextInstances, beans, idToField, lockField.getFieldDescriptor());
         implementClear(contextInstances, idToField, lockField.getFieldDescriptor());
         implementGetAllPresent(contextInstances, idToField, lockField.getFieldDescriptor());
-
+        implementForEach(contextInstances, idToField, lockField.getFieldDescriptor());
         contextInstances.close();
 
         return classOutput.getResources();
@@ -147,6 +149,31 @@ public class ContextInstancesGenerator extends AbstractGenerator {
         CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
         catchBlock.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
         catchBlock.throwException(catchBlock.getCaughtException());
+    }
+
+    private void implementForEach(ClassCreator contextInstances, Map<String, FieldDescriptor> idToField,
+            FieldDescriptor lockField) {
+        MethodCreator forEach = contextInstances.getMethodCreator("forEach", void.class, Consumer.class)
+                .setModifiers(ACC_PUBLIC);
+        // lock.lock();
+        // ContextInstanceHandle<?> copy = this.1;
+        // lock.unlock();
+        // if (copy != null) {
+        //    consumer.accept(copy);
+        // }
+        ResultHandle lock = forEach.readInstanceField(lockField, forEach.getThis());
+        forEach.invokeInterfaceMethod(MethodDescriptors.LOCK_LOCK, lock);
+        List<ResultHandle> results = new ArrayList<>(idToField.size());
+        for (FieldDescriptor field : idToField.values()) {
+            results.add(forEach.readInstanceField(field, forEach.getThis()));
+        }
+        forEach.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
+        for (int i = 0; i < results.size(); i++) {
+            ResultHandle copy = results.get(i);
+            BytecodeCreator isNotNull = forEach.ifNotNull(copy).trueBranch();
+            isNotNull.invokeInterfaceMethod(MethodDescriptors.CONSUMER_ACCEPT, forEach.getMethodParam(0), copy);
+        }
+        forEach.returnVoid();
     }
 
     private void implementRemove(ClassCreator contextInstances, List<BeanInfo> applicationScopedBeans,

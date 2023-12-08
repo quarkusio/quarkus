@@ -220,7 +220,7 @@ public class DevServicesElasticsearchProcessor {
                 container.withLabel(DEV_SERVICE_LABEL, config.serviceName);
             }
             if (config.port.isPresent()) {
-                container.setPortBindings(List.of(config.port.get() + ":" + config.port.get()));
+                container.setPortBindings(List.of(config.port.get() + ":" + ELASTICSEARCH_PORT));
             }
             timeout.ifPresent(container::withStartupTimeout);
 

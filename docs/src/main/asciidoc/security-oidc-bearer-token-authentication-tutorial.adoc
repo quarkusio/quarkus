@@ -34,8 +34,8 @@ This example shows how you can build a simple microservice that offers two endpo
 
 These endpoints are protected and can only be accessed if a client sends a bearer token along with the request, which must be valid (for example, signature, expiration, and audience) and trusted by the microservice.
 
-The bearer token is issued by a Keycloak server and represents the subject for which the token was issued.
-Because it is an OAuth 2.0 Authorization server, the token also references the client acting on the user's behalf.
+A Keycloak server issues the bearer token and represents the subject for which the token was issued.
+Because it is an OAuth 2.0 authorization server, the token also references the client acting on the user's behalf.
 
 Any user with a valid token can access the `/api/users/me` endpoint.
 As a response, it returns a JSON document with user details obtained from the information in the token.
@@ -51,6 +51,10 @@ You can also go straight to the completed example.
 You can clone the Git repository by running the command `git clone {quickstarts-clone-url}`, or you can download an {quickstarts-archive-url}[archive].
 
 The solution is located in the `security-openid-connect-quickstart` link:{quickstarts-tree-url}/security-openid-connect-quickstart[directory].
+
+//Removing sectnums. See PR#: 37616
+//:sectnums:
+//:sectnumlevels: 3
 
 == Create the Maven project
 
@@ -131,7 +135,7 @@ public class UsersResource {
 }
 ----
 ====
-. Implement the `/api/admin` endpoint as shown in the following simple example:
+. Implement the `/api/admin` endpoint as shown in the following example:
 +
 ====
 [source,java]
@@ -176,7 +180,7 @@ quarkus.oidc.client-id=backend-service
 quarkus.oidc.credentials.secret=secret
 
 # Tell Dev Services for Keycloak to import the realm file
-# This property is not effective when running the application in JVM or Native modes
+# This property is not effective when running the application in JVM or native modes
 
 quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 ----
@@ -188,7 +192,7 @@ Where:
 The `%prod.` profile prefix ensures that `Dev Services for Keycloak` launches a container when you run the application in development (dev) mode.
 For more information, see the <<keycloak-dev-mode>> section.
 
-* `quarkus.oidc.client-id` sets a client-ID that identifies the application.
+* `quarkus.oidc.client-id` sets a client id that identifies the application.
 * `quarkus.oidc.credentials.secret` sets the client secret, which is used by the `client_secret_basic` authentication method.
 
 For more information, see the Quarkus xref:security-oidc-configuration-properties-reference.adoc[OpenID Connect (OIDC) configuration properties] guide.
@@ -214,15 +218,15 @@ docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=ad
 ----
 ====
 * Where the `keycloak.version` is set to version `23.0.0` or later.
-. You can access your Keycloak Server at http://localhost:8180[localhost:8180].
-. To access the Keycloak Administration Console, log in as the `admin` user by using the following login credentials:
+. You can access your Keycloak server at http://localhost:8180[localhost:8180].
+. To access the Keycloak Administration console, log in as the `admin` user by using the following login credentials:
 
 * Username: `admin`
 * Password: `admin`
 
 . Import the link:{quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] from the upstream community repository to create a new realm.
 
-For more information, see the Keycloak documentation about link:https://www.keycloak.org/docs/latest/server_admin/index.html#configuring-realms[create and configure a new realm].
+For more information, see the Keycloak documentation about link:https://www.keycloak.org/docs/latest/server_admin/index.html#configuring-realms[creating and configuring a new realm].
 
 
 [NOTE]
@@ -242,15 +246,16 @@ For more information, see the xref:security-keycloak-admin-client.adoc[Quarkus K
 include::{includes}/devtools/dev.adoc[]
 ====
 * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will start a Keycloak container and import a `quarkus-realm.json`.
-. Open a xref:dev-ui.adoc[Dev UI], which you can find at http://localhost:8080/q/dev-ui[/q/dev-ui], then click a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
+. Open a xref:dev-ui.adoc[Dev UI], which you can find at http://localhost:8080/q/dev-ui[/q/dev-ui].
+Then, in an `OpenID Connect` card, click the `Keycloak provider` link .
 . When prompted to log in to a `Single Page Application` provided by `OpenID Connect Dev UI`, do the following steps:
 
  * Log in as `alice` (password: `alice`), who has a `user` role.
- ** Accessing `/api/admin` returns `403`.
- ** Accessing `/api/users/me` returns `200`.
- * Log out and log in as `admin` (password: `admin`), who has both `admin` and `user` roles.
- ** Accessing `/api/admin` returns `200`.
- ** Accessing `/api/users/me` returns `200`.
+ ** Accessing `/api/admin` returns a `403` status code.
+ ** Accessing `/api/users/me` returns a `200` status code.
+ * Log out and log in again as `admin` (password: `admin`), who has both `admin` and `user` roles.
+ ** Accessing `/api/admin` returns a `200` status code.
+ ** Accessing `/api/users/me` returns a `200` status code.
 
 == Run the Application in JVM mode
 
@@ -272,7 +277,7 @@ java -jar target/quarkus-app/quarkus-run.jar
 
 == Run the application in native mode
 
-You can compile this same demo as-is into native mode without needing any modifications.
+You can compile this same demo as-is into native mode without any modifications.
 This implies that you no longer need to install a JVM on your production environment.
 The runtime technology is included in the produced binary and optimized to run with minimal resources required.
 
@@ -297,9 +302,9 @@ include::{includes}/devtools/build-native.adoc[]
 
 For information about testing your application in dev mode, see the preceding <<keycloak-dev-mode>> section.
 
-You can test the application launched in JVM or Native modes with `curl`.
+You can test the application launched in JVM or native modes with `curl`.
 
-* Because the application uses Bearer token authentication, you first need to obtain an access token from the Keycloak server to access the application resources:
+* Because the application uses Bearer token authentication, you must first obtain an access token from the Keycloak server to access the application resources:
 ====
 
 [source,bash]
@@ -348,7 +353,7 @@ export access_token=$(\
 
 For information about writing integration tests that depend on `Dev Services for Keycloak`, see the xref:security-oidc-bearer-token-authentication.adoc#integration-testing-keycloak-devservices[Dev Services for Keycloak] section of the "OpenID Connect (OIDC) Bearer token authentication" guide.
 
-:sectnums!:
+//:sectnums!:
 
 == References
 

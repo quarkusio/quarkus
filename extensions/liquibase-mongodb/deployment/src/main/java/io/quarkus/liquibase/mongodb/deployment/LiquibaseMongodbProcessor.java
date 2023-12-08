@@ -153,6 +153,7 @@ class LiquibaseMongodbProcessor {
 
         Stream.of(liquibase.change.Change.class,
                 liquibase.changelog.ChangeLogHistoryService.class,
+                liquibase.changeset.ChangeSetService.class,
                 liquibase.database.Database.class,
                 liquibase.database.DatabaseConnection.class,
                 liquibase.datatype.LiquibaseDataType.class,
@@ -164,9 +165,11 @@ class LiquibaseMongodbProcessor {
                 liquibase.lockservice.LockService.class,
                 liquibase.logging.LogService.class,
                 liquibase.parser.ChangeLogParser.class,
+                liquibase.parser.LiquibaseSqlParser.class,
                 liquibase.parser.NamespaceDetails.class,
                 liquibase.parser.SnapshotParser.class,
                 liquibase.precondition.Precondition.class,
+                liquibase.report.ShowSummaryGenerator.class,
                 liquibase.serializer.ChangeLogSerializer.class,
                 liquibase.serializer.SnapshotSerializer.class,
                 liquibase.servicelocator.ServiceLocator.class,
@@ -202,6 +205,8 @@ class LiquibaseMongodbProcessor {
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.21.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.22.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.23.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.25.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd",
                 "liquibase.build.properties"));

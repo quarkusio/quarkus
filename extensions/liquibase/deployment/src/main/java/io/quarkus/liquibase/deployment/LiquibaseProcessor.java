@@ -53,7 +53,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.util.ServiceUtil;
@@ -106,7 +105,6 @@ class LiquibaseProcessor {
             BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<ServiceProviderBuildItem> services,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitialized,
-            BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReInitialized,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
 
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem(liquibase.diff.compare.CompareControl.class.getName()));
@@ -170,6 +168,7 @@ class LiquibaseProcessor {
 
         Stream.of(liquibase.change.Change.class,
                 liquibase.changelog.ChangeLogHistoryService.class,
+                liquibase.changeset.ChangeSetService.class,
                 liquibase.database.Database.class,
                 liquibase.database.DatabaseConnection.class,
                 liquibase.datatype.LiquibaseDataType.class,
@@ -181,9 +180,11 @@ class LiquibaseProcessor {
                 liquibase.lockservice.LockService.class,
                 liquibase.logging.LogService.class,
                 liquibase.parser.ChangeLogParser.class,
+                liquibase.parser.LiquibaseSqlParser.class,
                 liquibase.parser.NamespaceDetails.class,
                 liquibase.parser.SnapshotParser.class,
                 liquibase.precondition.Precondition.class,
+                liquibase.report.ShowSummaryGenerator.class,
                 liquibase.serializer.ChangeLogSerializer.class,
                 liquibase.serializer.SnapshotSerializer.class,
                 liquibase.servicelocator.ServiceLocator.class,
@@ -236,6 +237,8 @@ class LiquibaseProcessor {
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.21.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.22.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.23.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.25.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd",
                 "liquibase.build.properties"));

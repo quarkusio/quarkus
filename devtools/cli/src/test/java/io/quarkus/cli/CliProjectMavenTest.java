@@ -145,8 +145,10 @@ public class CliProjectMavenTest {
         CliDriver.invokeExtensionAddRedundantQute(project);
         CliDriver.invokeExtensionListInstallable(project);
         CliDriver.invokeExtensionAddMultiple(project, pom);
+        CliDriver.invokeExtensionAddMultipleCommas(project, pom);
         CliDriver.invokeExtensionRemoveQute(project, pom);
         CliDriver.invokeExtensionRemoveMultiple(project, pom);
+        CliDriver.invokeExtensionRemoveMultipleCommas(project, pom);
 
         CliDriver.invokeExtensionListInstallableSearch(project);
         CliDriver.invokeExtensionListFormatting(project);

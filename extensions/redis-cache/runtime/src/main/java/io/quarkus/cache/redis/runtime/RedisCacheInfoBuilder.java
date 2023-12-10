@@ -31,7 +31,7 @@ public class RedisCacheInfoBuilder {
 
                 if (namedRuntimeConfig != null && namedRuntimeConfig.expireAfterWrite.isPresent()) {
                     cacheInfo.expireAfterWrite = namedRuntimeConfig.expireAfterWrite;
-                } else if (defaultRuntimeConfig.expireAfterAccess.isPresent()) {
+                } else if (defaultRuntimeConfig.expireAfterWrite.isPresent()) {
                     cacheInfo.expireAfterWrite = defaultRuntimeConfig.expireAfterWrite;
                 }
 

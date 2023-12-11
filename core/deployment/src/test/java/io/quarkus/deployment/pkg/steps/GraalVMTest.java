@@ -141,6 +141,19 @@ public class GraalVMTest {
     }
 
     @Test
+    public void testGraalVMEE22DevVersionParser() {
+        Version graalVMEE22Dev = Version.of(Stream.of(("native-image 22 2024-03-19\n"
+                + "Java(TM) SE Runtime Environment Oracle GraalVM 22-dev+25.1 (build 22+25-jvmci-b01)\n"
+                + "Java HotSpot(TM) 64-Bit Server VM Oracle GraalVM 22-dev+25.1 (build 22+25-jvmci-b01, mixed mode, sharing)")
+                .split("\\n")));
+        assertThat(graalVMEE22Dev.distribution.name()).isEqualTo("GRAALVM");
+        assertThat(graalVMEE22Dev.getVersionAsString()).isEqualTo("24.0-dev");
+        assertThat(graalVMEE22Dev.javaVersion.toString()).isEqualTo("22+25-jvmci-b01");
+        assertThat(graalVMEE22Dev.javaVersion.feature()).isEqualTo(22);
+        assertThat(graalVMEE22Dev.javaVersion.update()).isEqualTo(0);
+    }
+
+    @Test
     public void testGraalVMVersionsOlderThan() {
         assertOlderThan("GraalVM Version 19.3.6 CE", "GraalVM Version 20.2.0 (Java Version 11.0.9)");
         assertOlderThan("GraalVM Version 20.0.0 (Java Version 11.0.7)", "GraalVM Version 20.1.0 (Java Version 11.0.8)");

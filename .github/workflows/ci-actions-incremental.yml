@@ -143,7 +143,6 @@ jobs:
         with:
           build-scan-capture-strategy: ON_DEMAND
           job-name: "Initial JDK 17 Build"
-          wrapper-init: true
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -362,7 +361,6 @@ jobs:
         with:
           build-scan-capture-strategy: ON_DEMAND
           job-name: "JVM Tests - JDK ${{matrix.java.name}}"
-          wrapper-init: true
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -469,7 +467,6 @@ jobs:
         with:
           build-scan-capture-strategy: ON_DEMAND
           job-name: "Maven Tests - JDK ${{matrix.java.name}}"
-          wrapper-init: true
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -566,7 +563,6 @@ jobs:
         with:
           build-scan-capture-strategy: ON_DEMAND
           job-name: "Gradle Tests - JDK ${{matrix.java.name}}"
-          wrapper-init: true
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -643,7 +639,6 @@ jobs:
         with:
           build-scan-capture-strategy: ON_DEMAND
           job-name: "Devtools Tests - JDK ${{matrix.java.name}}"
-          wrapper-init: true
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -729,7 +724,6 @@ jobs:
         with:
           build-scan-capture-strategy: ON_DEMAND
           job-name: "Kubernetes Tests - JDK ${{matrix.java.name}}"
-          wrapper-init: true
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
@@ -802,7 +796,6 @@ jobs:
         with:
           build-scan-capture-strategy: ON_DEMAND
           job-name: "Quickstarts Compilation - JDK ${{matrix.java.name}}"
-          wrapper-init: true
       - name: Compile Quickstarts
         env:
           CAPTURE_BUILD_SCAN: true
@@ -866,7 +859,6 @@ jobs:
         with:
           build-scan-capture-strategy: ON_DEMAND
           job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
-          wrapper-init: true
       - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}
@@ -928,7 +920,6 @@ jobs:
         with:
           build-scan-capture-strategy: ON_DEMAND
           job-name: "MicroProfile TCKs Tests"
-          wrapper-init: true
       - name: Verify
         env:
           CAPTURE_BUILD_SCAN: true
@@ -1029,7 +1020,6 @@ jobs:
         with:
           build-scan-capture-strategy: ON_DEMAND
           job-name: "Native Tests - ${{matrix.category}}"
-          wrapper-init: true
       - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}

@@ -91,7 +91,8 @@ public class ClientReaderInterceptorContextImpl extends AbstractClientIntercepto
                 }
             }
 
-            StringBuilder errorMessage = new StringBuilder("Response could not be mapped to type " + entityType);
+            StringBuilder errorMessage = new StringBuilder(
+                    "Response could not be mapped to type " + entityType + " for response with media type " + mediaType);
             if (!contextualizers.isEmpty()) {
                 var input = new MissingMessageBodyReaderErrorMessageContextualizer.Input() {
                     @Override

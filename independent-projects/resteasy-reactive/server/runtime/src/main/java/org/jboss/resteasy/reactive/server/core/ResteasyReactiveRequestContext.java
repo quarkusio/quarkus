@@ -135,6 +135,7 @@ public abstract class ResteasyReactiveRequestContext
     private OutputStream outputStream;
     private OutputStream underlyingOutputStream;
     private FormData formData;
+    private boolean producesChecked;
 
     public ResteasyReactiveRequestContext(Deployment deployment,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
@@ -794,6 +795,14 @@ public abstract class ResteasyReactiveRequestContext
                 this.remaining = newPath.substring(getPathWithoutPrefix().length() - this.remaining.length());
             }
         }
+    }
+
+    public void setProducesChecked(boolean checked) {
+        producesChecked = checked;
+    }
+
+    public boolean isProducesChecked() {
+        return producesChecked;
     }
 
     @Override

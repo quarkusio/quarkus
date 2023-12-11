@@ -351,7 +351,7 @@ The Hibernate ORM extension supports defining xref:hibernate-orm.adoc#multiple-p
 For each persistence unit, point to the datasource of your choice.
 ====
 
-Defining multiple datasources works like defining a single datasource, with one important change - you have to specify a name (configuration key) for each datasource.
+Defining multiple datasources works like defining a single datasource, with one important change - you have to specify a name (configuration property) for each datasource.
 
 The following example provides three different datasources:
 
@@ -379,7 +379,7 @@ quarkus.datasource.inventory.jdbc.url=jdbc:h2:mem:inventory
 quarkus.datasource.inventory.jdbc.max-size=12
 ----
 
-Notice there is an extra section in the configuration key.
+Notice there is an extra section in the configuration property.
 The syntax is as follows: `quarkus.datasource.[optional name.][datasource property]`.
 
 NOTE: Even when only one database extension is installed, named databases need to specify at least one build-time property so that Quarkus can detect them.

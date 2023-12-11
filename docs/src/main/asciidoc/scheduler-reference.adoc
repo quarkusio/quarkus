@@ -144,6 +144,8 @@ So for example, `15m` can be used instead of `PT15M` and is parsed as "15 minute
 void every15Mins() { }
 ----
 
+WARNING: A value less than one second may not be supported by the underlying scheduler implementation. In that case a warning message is logged during build and application start.
+
 The `every` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested
 Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
 

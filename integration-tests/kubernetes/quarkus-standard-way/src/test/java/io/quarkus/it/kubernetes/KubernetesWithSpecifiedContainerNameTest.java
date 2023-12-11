@@ -31,7 +31,7 @@ public class KubernetesWithSpecifiedContainerNameTest {
             .withConfigurationResource("kubernetes-with-specified-container-name.properties")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
-                    Dependency.of("io.quarkus", "quarkus-container-image-s2i", Version.getVersion())));
+                    Dependency.of("io.quarkus", "quarkus-container-image-openshift", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;

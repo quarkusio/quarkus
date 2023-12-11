@@ -662,7 +662,7 @@ The pattern of authenticating with a given provider, where the endpoint uses eit
 
 == HTTPS Redirect URL
 
-Some providers will only accept HTTPS-based redirect URLs. Tools such as https://ngrok.com/[ngrok] https://linuxhint.com/set-up-use-ngrok/[can be set up] to help testing such providers with Quarkus endpoints running on localhost in devmode.
+Some providers will only accept HTTPS-based redirect URLs. Tools such as https://ngrok.com/[ngrok] https://linuxhint.com/set-up-use-ngrok/[can be set up] to help testing such providers with Quarkus endpoints running on localhost in dev mode.
 
 == Rate Limiting
 

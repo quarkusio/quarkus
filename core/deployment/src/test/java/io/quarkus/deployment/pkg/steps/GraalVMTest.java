@@ -63,6 +63,16 @@ public class GraalVMTest {
                         + "GraalVM Runtime Environment GraalVM CE (build 20+34-jvmci-23.0-b10)\n"
                         + "Substrate VM GraalVM CE (build 20+34, serial gc)").split("\\n"))));
 
+        // Should also work for other unknown implementations of GraalVM
+        assertVersion(new Version("GraalVM 23.0", "23.0", GRAALVM), GRAALVM,
+                Version.of(Stream.of(("native-image 20 2023-07-30\n"
+                        + "Foo Runtime Environment whatever (build 20+34-jvmci-23.0-b7)\n"
+                        + "Foo VM whatever (build 20+34, serial gc)").split("\\n"))));
+        assertVersion(new Version("GraalVM 23.0", "23.0", GRAALVM), GRAALVM,
+                Version.of(Stream.of(("native-image 20 2023-07-30\n"
+                        + "Another Runtime Environment whatever (build 20+34-jvmci-23.0-b7)\n"
+                        + "Another VM whatever (build 20+34, serial gc)").split("\\n"))));
+
         // Older version parsing
         assertVersion(new Version("GraalVM 20.1", "20.1", GRAALVM), GRAALVM,
                 Version.of(Stream.of("GraalVM Version 20.1.0 (Java Version 11.0.7)")));

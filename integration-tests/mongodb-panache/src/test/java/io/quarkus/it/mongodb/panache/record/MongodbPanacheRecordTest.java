@@ -15,25 +15,19 @@ import io.restassured.http.ContentType;
 @QuarkusTestResource(MongoReplicaSetTestResource.class)
 class MongodbPanacheRecordTest {
 
-    private static final String ROOT_URL = "/mongo/persons";
+    private static final String ROOT_URL = "/persons/record";
 
     @Test
     void testRecordInPanache() {
-        var person1 = new PersonWithRecord();
-        person1.firstname = "Loïc";
-        person1.lastname = "Mathieu";
-        person1.status = Status.ALIVE;
-        var person2 = new PersonWithRecord();
-        person1.firstname = "Zombie";
-        person2.lastname = "Zombie";
-        person2.status = Status.DEAD;
+        var person1 = new PersonRecord("Loïc", "Mathieu", Status.ALIVE);
+        var person2 = new PersonRecord("Zombie", "Zombie", Status.DEAD);
 
         given().body(person1).contentType(ContentType.JSON)
                 .when().post(ROOT_URL)
-                .then().statusCode(201);
+                .then().statusCode(204);
         given().body(person2).contentType(ContentType.JSON)
                 .when().post(ROOT_URL)
-                .then().statusCode(201);
+                .then().statusCode(204);
 
         when().get(ROOT_URL)
                 .then()

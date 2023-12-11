@@ -3,7 +3,10 @@ package io.quarkus.scheduler;
 import java.time.Instant;
 
 /**
- * Trigger is bound to a scheduled task.
+ * Trigger is bound to a scheduled job.
+ * <p>
+ * It represents the logic that is used to test if a scheduled job should be executed
+ * at a specific time, i.e. the trigger is "fired".
  *
  * @see Scheduled
  */
@@ -11,8 +14,9 @@ public interface Trigger {
 
     /**
      *
-     * @return the identifier
+     * @return the identifier of the job
      * @see Scheduled#identity()
+     * @see Scheduler#newJob(String)
      */
     String getId();
 

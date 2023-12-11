@@ -88,11 +88,14 @@ public @interface Scheduled {
     String cron() default "";
 
     /**
-     * Defines a period between invocations.
+     * Defines the period between invocations.
      * <p>
      * The value is parsed with {@link Duration#parse(CharSequence)}. However, if an expression starts with a digit, "PT" prefix
      * is added automatically, so for example, {@code 15m} can be used instead of {@code PT15M} and is parsed as "15 minutes".
      * Note that the absolute value of the value is always used.
+     * <p>
+     * A value less than one second may not be supported by the underlying scheduler implementation. In that case a warning
+     * message is logged during build and application start.
      * <p>
      * The value can be a property expression. In this case, the scheduler attempts to use the configured value instead:
      * {@code @Scheduled(every = "${myJob.everyExpression}")}.

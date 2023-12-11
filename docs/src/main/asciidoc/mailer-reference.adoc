@@ -322,7 +322,7 @@ Three API flavors are exposed:
 
 Check the xref:vertx.adoc[Using Vert.x guide] for further details about these different APIs and how to select the most suitable for you.
 
-The retrieved `MailClient` is configured using the configuration key presented above.
+The retrieved `MailClient` is configured using the configuration property presented above.
 You can also create your own instance, and pass your own configuration.
 
 

@@ -1,11 +1,14 @@
 package io.quarkus.awt.deployment;
 
 import static io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem.Os.WINDOWS;
+import static io.quarkus.deployment.pkg.steps.GraalVM.Version.CURRENT;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.awt.runtime.graal.DarwinAwtFeature;
 import io.quarkus.deployment.Feature;
@@ -26,8 +29,11 @@ import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
 import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
+import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner;
 
 class AwtProcessor {
+
+    private static final Logger log = Logger.getLogger(AwtProcessor.class);
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -74,6 +80,7 @@ class AwtProcessor {
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     ReflectiveClassBuildItem setupReflectionClassesWithMethods() {
+        //@formatter:off
         return ReflectiveClassBuildItem.builder(
                 "javax.imageio.plugins.tiff.BaselineTIFFTagSet",
                 "javax.imageio.plugins.tiff.ExifGPSTagSet",
@@ -91,7 +98,9 @@ class AwtProcessor {
                 "sun.java2d.loops.SetDrawRectANY",
                 "sun.java2d.loops.SetFillPathANY",
                 "sun.java2d.loops.SetFillRectANY",
-                "sun.java2d.loops.SetFillSpansANY").methods().build();
+                "sun.java2d.loops.SetFillSpansANY"
+        ).methods().build();
+        //@formatter:on
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -103,7 +112,14 @@ class AwtProcessor {
             Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem) {
         nativeImageRunnerBuildItem.getBuildRunner()
                 .setup(processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
-        final GraalVM.Version v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
+        final GraalVM.Version v;
+        if (nativeImageRunnerBuildItem.getBuildRunner() instanceof NoopNativeImageBuildRunner) {
+            v = CURRENT;
+            log.warnf("native-image is not installed. " +
+                    "Using the default %s version as a reference to build native-sources step.", v.getVersionAsString());
+        } else {
+            v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
+        }
         // Dynamically loading shared objects instead
         // of baking in static libs: https://github.com/oracle/graal/issues/4921
         if (v.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
@@ -130,7 +146,12 @@ class AwtProcessor {
             Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem) {
         nativeImageRunnerBuildItem.getBuildRunner()
                 .setup(processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
-        final GraalVM.Version v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
+        final GraalVM.Version v;
+        if (nativeImageRunnerBuildItem.getBuildRunner() instanceof NoopNativeImageBuildRunner) {
+            v = CURRENT;
+        } else {
+            v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
+        }
         final List<String> classes = new ArrayList<>();
         classes.add("com.sun.imageio.plugins.jpeg.JPEGImageReader");
         classes.add("com.sun.imageio.plugins.jpeg.JPEGImageWriter");
@@ -283,6 +304,7 @@ class AwtProcessor {
          * Note that this initialization is not enough if user wants to deserialize actual images
          * (e.g. from XML). AWT Extension must be loaded for decoding JDK supported image formats.
          */
+        //@formatter:off
         Stream.of(
                 "com.sun.imageio",
                 "java.awt",
@@ -292,5 +314,6 @@ class AwtProcessor {
                 "sun.java2d")
                 .map(RuntimeInitializedPackageBuildItem::new)
                 .forEach(runtimeInitilizedPackages::produce);
+        //@formatter:on
     }
 }

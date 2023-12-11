@@ -192,9 +192,9 @@ The file must be present in the root of the working directory relative to the {p
 
 The values from this file override any values from the regular `application.yaml` file if it exists.
 
-== Configuration key conflicts
+== Configuration property conflicts
 
-The MicroProfile Config specification defines configuration keys as an arbitrary `.`-delimited string.
+The MicroProfile Config specification defines configuration properties as an arbitrary `.`-delimited string.
 However, structured formats such as YAML only support a subset of the possible configuration namespace.
 For example, consider the two configuration properties `quarkus.http.cors` and `quarkus.http.cors.methods`.
 One property is the prefix of another, so it might not be immediately evident how to specify both keys in your YAML configuration.
@@ -210,7 +210,7 @@ quarkus:
       methods: GET,PUT,POST
 ----
 
-YAML `null` keys are not included in the assembly of the configuration property name, allowing them to be used at any level for disambiguating configuration keys.
+YAML `null` keys are not included in the assembly of the configuration property name, allowing them to be used at any level for disambiguating configuration properties.
 
 Although Quarkus primarily uses `.properties` file extension for configuration, the snakeyaml library, which is used for parsing YAML in Quarkus, can also parse JSON structures. This means you can use YAML files with JSON content inside.
 

@@ -210,7 +210,7 @@ class RequestContext implements ManagedContext {
             if (reqState.invalidate()) {
                 // Fire an event with qualifier @BeforeDestroyed(RequestScoped.class) if there are any observers for it
                 fireIfNotEmpty(beforeDestroyedNotifier);
-                reqState.contextInstances.getAllPresent().forEach(this::destroyContextElement);
+                reqState.contextInstances.forEach(this::destroyContextElement);
                 reqState.contextInstances.clear();
                 // Fire an event with qualifier @Destroyed(RequestScoped.class) if there are any observers for it
                 fireIfNotEmpty(destroyedNotifier);

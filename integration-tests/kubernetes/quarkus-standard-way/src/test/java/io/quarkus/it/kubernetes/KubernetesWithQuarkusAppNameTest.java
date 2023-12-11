@@ -28,7 +28,7 @@ public class KubernetesWithQuarkusAppNameTest {
             .withConfigurationResource("kubernetes-with-quarkus-app-name.properties")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
-                    Dependency.of("io.quarkus", "quarkus-container-image-s2i", Version.getVersion())));
+                    Dependency.of("io.quarkus", "quarkus-container-image-openshift", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;

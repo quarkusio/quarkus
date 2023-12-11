@@ -10,6 +10,7 @@ import '@vaadin/checkbox';
 import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
+import './qwc-cache-keys.js';
 
 export class QwcCacheCaches extends LitElement {
 
@@ -28,7 +29,13 @@ export class QwcCacheCaches extends LitElement {
 
     // Component properties
     static properties = {
-        "_caches": {state: true}
+        "_caches": {state: true},
+        _selectedCache: {state: true}
+    }
+    
+    constructor() {
+        super();
+        this._selectedCache = null;
     }
 
     // Components callbacks
@@ -52,7 +59,11 @@ export class QwcCacheCaches extends LitElement {
      */
     render() {
         if (this._caches) {
-            return this._renderCacheTable();
+            if(this._selectedCache){
+                return this._renderCacheKeys();
+            }else{
+                return this._renderCacheTable();
+            }
         } else {
             return html`<span>Loading caches...</span>`;
         }
@@ -81,11 +92,21 @@ export class QwcCacheCaches extends LitElement {
                     </vaadin-grid-column>
                 </vaadin-grid>`;
     }
+    
+    _renderCacheKeys(){
+        return html`<qwc-cache-keys 
+                        cacheName="${this._selectedCache.name}"
+                        @cache-keys-back=${this._showCacheTable}></qwc-cache-keys>`;
+    }
 
     _actionRenderer(cache) {
         return html`
             <vaadin-button theme="small" @click=${() => this._clear(cache.name)} class="button">
                 <vaadin-icon class="clearIcon" icon="font-awesome-solid:broom"></vaadin-icon> Clear
+            </vaadin-button>
+            &nbsp;|&nbsp;
+            <vaadin-button theme="small" @click=${() => this._showCacheKeys(cache)} class="button">
+                <vaadin-icon class="keysIcon" icon="font-awesome-solid:key"></vaadin-icon> Keys
             </vaadin-button>`;
     }
 
@@ -114,6 +135,14 @@ export class QwcCacheCaches extends LitElement {
             this._caches.set(cache.name, cache);
             this.requestUpdate();
         }
+    }
+    
+    _showCacheKeys(cache){
+        this._selectedCache = cache;
+    }
+    
+    _showCacheTable(){
+        this._selectedCache = null;
     }
 
 }

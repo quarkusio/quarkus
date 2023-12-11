@@ -71,4 +71,18 @@ public class CacheJsonRPCService {
         }
     }
 
+    public JsonArray getKeys(String name) {
+        Optional<Cache> cache = manager.getCache(name);
+        if (cache.isPresent()) {
+            CaffeineCache caffeineCache = (CaffeineCache) cache.get();
+            JsonArray keys = new JsonArray();
+            for (Object key : caffeineCache.keySet()) {
+                keys.add(key.toString());
+            }
+            return keys;
+        } else {
+            return JsonArray.of();
+        }
+    }
+
 }

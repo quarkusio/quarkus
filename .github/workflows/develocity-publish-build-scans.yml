@@ -47,4 +47,4 @@ jobs:
       - name: Output JSON file
         if: ${{ contains(fromJson(steps.extract-preapproved-developers.outputs.preapproved-developpers).preapproved-developers, github.event.workflow_run.actor.login) }}
         run: |
-          if [ -f build-metadata.json ]; then jq '.' build-metadata.json >> $GITHUB_STEP_SUMMARY; fi
+          if [ -f $HOME/build-metadata.json ]; then jq '.' $HOME/build-metadata.json >> $GITHUB_STEP_SUMMARY; fi

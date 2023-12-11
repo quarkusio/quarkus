@@ -29,14 +29,14 @@ import io.quarkus.deployment.pkg.steps.GraalVM;
  * <a href="https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/BuildOutput.md">the upstream GraalVM
  * documentation</a>.
  */
-public class BuildOutputExtension implements BeforeAllCallback {
+public class NativeBuildOutputExtension implements BeforeAllCallback {
 
     private static final String IMAGE_METRICS_TEST_PROPERTIES = "image-metrics.properties";
     private static final String IMAGE_METRICS_DIR = "image-metrics";
     private final JsonObject buildOutput;
     private static GraalVM.Version mandrelVersion;
 
-    public BuildOutputExtension() {
+    public NativeBuildOutputExtension() {
         this.buildOutput = getBuildOutput();
     }
 

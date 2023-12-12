@@ -224,7 +224,7 @@ public class GreetingControllerTest {
 
 === Automatically
 
-Press `r`, while in DevMode, or run the application with:
+Press `r`, while in dev mode, or run the application with:
 
 include::{includes}/devtools/test.adoc[]
 

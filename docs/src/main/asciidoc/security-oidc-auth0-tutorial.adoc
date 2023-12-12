@@ -914,7 +914,7 @@ public class GreetingResourceTest {
 }
 ----
 
-If you recall, when the application was started in devmode, the following could be seen in the CLI window:
+If you recall, when the application was started in dev mode, the following could be seen in the CLI window:
 
 image::auth0-devmode-started.png[Auth0 DevMode started]
 
@@ -1075,7 +1075,7 @@ Open a browser, access http://localhost:8080/hello and get the name displayed in
 
 == Troubleshooting
 
-The steps described in this tutorial should work exactly as the tutorial describes. You might have to clear the browser cookies when accessing the updated Quarkus endpoint if you have already completed the authentication. You might need to restart the Quarkus application manually in devmode but it is not expected. If you need help completing this tutorial, you can get in touch with the Quarkus team.
+The steps described in this tutorial should work exactly as the tutorial describes. You might have to clear the browser cookies when accessing the updated Quarkus endpoint if you have already completed the authentication. You might need to restart the Quarkus application manually in dev mode but it is not expected. If you need help completing this tutorial, you can get in touch with the Quarkus team.
 
 == Summary
 

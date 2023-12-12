@@ -270,7 +270,7 @@ public class CustomTenantResolver implements TenantResolver {
 
 You can define multiple tenants in your configuration file, just make sure they have a unique alias so that you can map them properly when resolving a tenant from your `TenantResolver` implementation.
 
-However, using a static tenant resolution (configuring tenants in `application.properties` and resolving them with `TenantResolver`) prevents testing the endpoint with `Dev Services for Keycloak` since `Dev Services for Keycloak` has no knowledge of how the requests will be mapped to individual tenants and can not dynamically provide tenant-specific `quarkus.oidc.<tenant-id>.auth-server-url` values and therefore using `%prod` prefixes with the tenant-specific URLs in `application.properties` will not work in tests or devmode.
+However, using a static tenant resolution (configuring tenants in `application.properties` and resolving them with `TenantResolver`) prevents testing the endpoint with `Dev Services for Keycloak` since `Dev Services for Keycloak` has no knowledge of how the requests will be mapped to individual tenants and can not dynamically provide tenant-specific `quarkus.oidc.<tenant-id>.auth-server-url` values and therefore using `%prod` prefixes with the tenant-specific URLs in `application.properties` will not work in test or dev mode.
 
 [NOTE]
 ====

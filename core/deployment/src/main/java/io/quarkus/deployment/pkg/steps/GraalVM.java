@@ -31,9 +31,9 @@ public final class GraalVM {
 
         private static final String VENDOR_VERS = "(?<VENDOR>.*)";
         private static final String JDK_DEBUG = "[^\\)]*"; // zero or more of >anything not a ')'<
-        private static final String RUNTIME_NAME = "(?<RUNTIME>(?:OpenJDK|GraalVM) Runtime Environment) ";
+        private static final String RUNTIME_NAME = "(?<RUNTIME>(?:.*) Runtime Environment) ";
         private static final String BUILD_INFO = "(?<BUILDINFO>.*)";
-        private static final String VM_NAME = "(?<VM>(?:OpenJDK 64-Bit Server|Substrate) VM) ";
+        private static final String VM_NAME = "(?<VM>(?:.*) VM) ";
 
         private static final String FIRST_LINE_PATTERN = "native-image " + VSTR_FORMAT + " .*$";
         private static final String SECOND_LINE_PATTERN = RUNTIME_NAME

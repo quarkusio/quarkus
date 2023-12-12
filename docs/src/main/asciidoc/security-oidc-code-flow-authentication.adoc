@@ -374,10 +374,11 @@ quarkus.oidc.authentication.extra-params.response_mode=query
 
 ==== Customizing the authentication error response
 
-If the user authentication fails at the OIDC authorization endpoint, then the provider will redirect the user back to Quarkus with `error` and `error_description` parameters instead of `code`.
+When the user is redirected to the OIDC authorization endpoint to authenticate and, if necessary, authorize the Quarkus application, this redirect request may fail, for example, when an invalid scope is included in the redirect URI. In such cases, the provider will redirect the user back to Quarkus with `error` and `error_description` parameters instead of the expected `code` parameter.
+
 For example, this can happen when an invalid scope or other invalid parameters are included in the redirect to the provider.
 
-In such cases, an HTTP `401`error will be returned by default.
+In such cases, an HTTP `401` error will be returned by default.
 However, you can instead request that a custom public error endpoint is called to return a more user-friendly HTML error page.
 To do this, set the `quarkus.oidc.authentication.error-path` property, as shown in the following example:
 
@@ -452,7 +453,9 @@ public class ProtectedResource {
         //or
         //String rawAccessToken = accessTokenCredential.getToken();
 
-        // Use the raw access token to access a remote endpoint
+        // Use the raw access token to access a remote endpoint.
+        // For example, use RestClient to set this token as a `Bearer` scheme value of the HTTP `Authorization` header:
+        // `Authorization: Bearer rawAccessToken`.
         return getReservationfromRemoteEndpoint(rawAccesstoken);
     }
 }
@@ -486,7 +489,7 @@ The way the roles are mapped to the SecurityIdentity roles from the verified tok
 
 [NOTE]
 ====
-If you use Keycloak, set a `microprofile_jwt` client scope for ID token to contain a `groups` claim.
+If you use Keycloak, set a `microprofile-jwt` client scope for ID token to contain a `groups` claim.
 For more information, see the link:https://www.keycloak.org/docs/latest/server_admin/#protocol[Keycloak Server Administration Guide].
 ====
 
@@ -609,7 +612,7 @@ In such cases, use the `quarkus.oidc.token-state-manager.strategy` property to c
 |To... |Set the property to ...
 
 |Keep the ID and refresh tokens only
-|`quarkus.oidc.token-state-manager.strategy=id-refresh-token`
+|`quarkus.oidc.token-state-manager.strategy=id-refresh-tokens`
 
 |Keep the ID token only
 |`quarkus.oidc.token-state-manager.strategy=id-token`

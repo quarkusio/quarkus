@@ -72,7 +72,8 @@ public class KubernetesWithMicrometerTest {
                         assertThat(spec.getEndpoints()).hasSize(1);
                         assertThat(spec.getEndpoints().get(0)).isInstanceOfSatisfying(Endpoint.class, e -> {
                             assertThat(e.getScheme()).isEqualTo("http");
-                            assertThat(e.getTargetPort().getStrVal()).isEqualTo("8080");
+                            assertThat(e.getTargetPort().getStrVal()).isNull();
+                            assertThat(e.getTargetPort().getIntVal()).isEqualTo(8080);
                             assertThat(e.getPath()).isEqualTo("/q/metrics");
                         });
                     });

@@ -92,7 +92,8 @@ public class KubernetesWithMetricsCustomAbsoluteTest {
                             assertThat(spec.getEndpoints()).hasSize(1);
                             assertThat(spec.getEndpoints().get(0)).isInstanceOfSatisfying(Endpoint.class, e -> {
                                 assertThat(e.getScheme()).isEqualTo("http");
-                                assertThat(e.getTargetPort().getStrVal()).isEqualTo("9090");
+                                assertThat(e.getTargetPort().getStrVal()).isNull();
+                                assertThat(e.getTargetPort().getIntVal()).isEqualTo(9090);
                                 assertThat(e.getPath()).isEqualTo("/absolute-metrics");
                             });
                         });

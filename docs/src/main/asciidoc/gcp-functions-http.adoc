@@ -162,7 +162,7 @@ The result of the previous command is a single JAR file inside the `target/deplo
 
 Then you will be able to use `gcloud` to deploy your function to Google Cloud.
 
-NOTE: We will use the Java 17 runtime but you can switch to the Java 11 runtime by using `--runtime=java11` instead of `--runtime=java17` on the deploy commands.
+NOTE: We will use the Java 17 runtime but you can switch to the Java 21 runtime by using `--runtime=java21` instead of `--runtime=java17` on the deploy commands.
 
 [source,bash]
 ----

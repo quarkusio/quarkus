@@ -539,7 +539,7 @@ You can find instructions on how to quickly set up this application in this guid
 
 This debugging guide has the following requirements:
 
-* JDK 11 installed with `JAVA_HOME` configured appropriately
+* JDK 17 installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * A working container runtime (Docker, podman)
 
@@ -589,13 +589,6 @@ quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{
 quarkus.container-image.build=true
 quarkus.container-image.group=test
 ----
-
-[IMPORTANT]
-====
-Starting with 22.3, Mandrel does not provide a `-java11` version anymore.
-Note, however,  that this doesn't mean that you may no longer produce native executables with Mandrel for Java 11 projects.
-You can still compile your Java 11 projects using OpenJDK 11 and produce native executables from the resulting Java 11 bytecode using the `-java17` Mandrel builder images.
-====
 
 === First Debugging Steps
 

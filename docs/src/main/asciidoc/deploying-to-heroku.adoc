@@ -92,11 +92,11 @@ Two additional files are needed in your application's root directory:
 * `system.properties` to configure the Java version
 * `Procfile` to configure how Heroku starts your application
 
-Quarkus needs JDK 11, so we specify that first:
+Quarkus needs JDK 17, so we specify that first:
 
 [source,bash]
 ----
-echo "java.runtime.version=11" >> system.properties
+echo "java.runtime.version=17" >> system.properties
 git add system.properties
 git commit -am "Configure the Java version for Heroku."
 ----

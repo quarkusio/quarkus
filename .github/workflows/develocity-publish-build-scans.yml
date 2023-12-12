@@ -28,10 +28,10 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
       - name: Setup Build Scan link capture
         if: ${{ contains(fromJson(steps.extract-preapproved-developers.outputs.preapproved-developpers).preapproved-developers, github.event.workflow_run.actor.login) }}
-        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+        uses: gradle/github-actions/maven-build-scan-setup@v0.3
       - name: Publish Maven Build Scans
         if: ${{ contains(fromJson(steps.extract-preapproved-developers.outputs.preapproved-developpers).preapproved-developers, github.event.workflow_run.actor.login) }}
-        uses: gradle/github-actions/maven-build-scan-publish@v0.2
+        uses: gradle/github-actions/maven-build-scan-publish@v0.3
         with:
           develocity-url: 'https://ge.quarkus.io'
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}

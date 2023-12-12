@@ -822,10 +822,10 @@ public class CustomTenantResolver implements TenantResolver {
         List<String> tenantIdQuery = context.queryParam("tenantId");
         if (!tenantIdQuery.isEmpty()) {
             String tenantId = tenantIdQuery.get(0);
-            context.addCookie(Cookie.cookie("tenant", tenantId));
+            context.response().addCookie(Cookie.cookie("tenant", tenantId));
             return tenantId;
-        } else if (context.cookieMap().containsKey("tenant")) {
-            return context.getCookie("tenant").getValue();
+        } else if (!context.request().cookies("tenant").isEmpty()) {
+            return context.request().getCookie("tenant").getValue();
         }
 
         return null;

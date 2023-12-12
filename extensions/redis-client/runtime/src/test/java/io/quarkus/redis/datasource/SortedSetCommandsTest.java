@@ -388,7 +388,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     @Test
     @RequiresRedis6OrHigher
     void zrangestorebylex() {
-        setOfStrings.zadd(key, Map.of("a", 1.0, "b", 2.0, "c", 3.0, "d", 4.0));
+        setOfStrings.zadd(key, Map.of("a", 1.0, "b", 1.0, "c", 1.0, "d", 1.0));
         assertThat(setOfStrings.zrangestorebylex("key1", key, new Range<>("b", "d"), new ZRangeArgs().limit(0, 4)))
                 .isEqualTo(3);
         assertThat(setOfStrings.zrange("key1", 0, 1)).isEqualTo(List.of("b", "c"));
@@ -489,7 +489,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     @Test
     @RequiresRedis6OrHigher
     void zrevrangebylex() {
-        populateManyStringEntries();
+        populateManyStringEntriesForLex();
         assertThat(setOfStrings.zrangebylex(key, Range.unbounded(), new ZRangeArgs().rev())).hasSize(100);
         assertThat(setOfStrings.zrangebylex(key, new Range<>("value", "zzz"), new ZRangeArgs().rev())).hasSize(100);
         assertThat(setOfStrings.zrangebylex(key, new Range<>("value98", true, "value99", true),
@@ -748,7 +748,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
 
     @Test
     void zlexcount() {
-        populateManyStringEntries();
+        populateManyStringEntriesForLex();
         assertThat(setOfStrings.zlexcount(key, new Range<>("-", "+"))).isEqualTo(100);
         assertThat(setOfStrings.zlexcount(key, new Range<>("value", "zzz"))).isEqualTo(100);
 
@@ -854,7 +854,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     @Test
     @RequiresRedis6OrHigher
     void zrangebylex() {
-        populateManyStringEntries();
+        populateManyStringEntriesForLex();
 
         assertThat(setOfStrings.zrangebylex(key, new Range<>("-", "+"))).hasSize(100);
         assertThat(setOfStrings.zrangebylex(key, new Range<>("-", "+"), new ZRangeArgs().limit(10, 10))).hasSize(10);
@@ -870,10 +870,10 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     @Test
     @RequiresRedis6OrHigher
     void zremrangebylex() {
-        populateManyStringEntries();
+        populateManyStringEntriesForLex();
         assertThat(setOfStrings.zremrangebylex(key, new Range<>("aaa", false, "zzz", true))).isEqualTo(100);
 
-        populateManyStringEntries();
+        populateManyStringEntriesForLex();
         assertThat(setOfStrings.zremrangebylex(key, new Range<>("aaa", "zzz"))).isEqualTo(100);
     }
 
@@ -964,6 +964,13 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         for (int i = 0; i < 100; i++) {
             setOfStrings.zadd(key + 1, i, value + i);
             setOfStrings.zadd(key, i, value + i);
+        }
+    }
+
+    private void populateManyStringEntriesForLex() {
+        for (int i = 0; i < 100; i++) {
+            setOfStrings.zadd(key + 1, 1.0, value + i);
+            setOfStrings.zadd(key, 1.0, value + i);
         }
     }
 

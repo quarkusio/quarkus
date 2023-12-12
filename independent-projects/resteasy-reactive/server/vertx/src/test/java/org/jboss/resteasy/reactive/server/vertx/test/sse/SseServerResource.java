@@ -4,9 +4,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -20,76 +18,91 @@ import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseBroadcaster;
 import jakarta.ws.rs.sse.SseEventSink;
 
+import org.jboss.logging.Logger;
+
 @Path("sse")
-@ApplicationScoped
 public class SseServerResource {
-
-    public static final Logger logger = Logger.getLogger(SseServerResource.class.getName());
     private static SseBroadcaster sseBroadcaster;
-    private static OutboundSseEvent.Builder eventBuilder;
 
+    private static OutboundSseEvent.Builder eventBuilder;
     private static CountDownLatch closeLatch;
     private static CountDownLatch errorLatch;
 
+    private static final Logger logger = Logger.getLogger(SseServerResource.class);
+
     @Inject
     public SseServerResource(@Context Sse sse) {
+        logger.info("Initialized SseServerResource " + this.hashCode());
         if (Objects.isNull(eventBuilder)) {
             eventBuilder = sse.newEventBuilder();
         }
         if (Objects.isNull(sseBroadcaster)) {
             sseBroadcaster = sse.newBroadcaster();
-            sseBroadcaster.onClose(this::onClose);
-            sseBroadcaster.onError(this::onError);
+            logger.info("Initializing broadcaster " + sseBroadcaster.hashCode());
+            sseBroadcaster.onClose(sseEventSink -> {
+                CountDownLatch latch = SseServerResource.getCloseLatch();
+                logger.info(String.format("Called on close, counting down latch %s", latch.hashCode()));
+                latch.countDown();
+            });
+            sseBroadcaster.onError((sseEventSink, throwable) -> {
+                CountDownLatch latch = SseServerResource.getErrorLatch();
+                logger.info(String.format("There was an error, counting down latch %s", latch.hashCode()));
+                latch.countDown();
+            });
         }
-    }
-
-    private synchronized void onError(SseEventSink sseEventSink, Throwable throwable) {
-        logger.severe(String.format("There was an error for sseEventSink %s: %s",
-                sseEventSink.hashCode(), throwable.getMessage()));
-        errorLatch.countDown();
-    }
-
-    private synchronized void onClose(SseEventSink sseEventSink) {
-        logger.info(String.format("Called on close for %s", sseEventSink.hashCode()));
-        closeLatch.countDown();
     }
 
     @GET
     @Path("subscribe")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public void subscribe(@Context SseEventSink sseEventSink) {
-        sseBroadcaster.register(sseEventSink);
-        closeLatch = new CountDownLatch(1);
-        errorLatch = new CountDownLatch(1);
+        logger.info(this.hashCode() + " /subscribe");
+        setLatches();
+        getSseBroadcaster().register(sseEventSink);
         sseEventSink.send(eventBuilder.data(sseEventSink.hashCode()).build());
     }
 
     @POST
     @Path("broadcast")
     public Response broadcast() {
-        sseBroadcaster.broadcast(eventBuilder.data(Instant.now()).build());
+        logger.info(this.hashCode() + " /broadcast");
+        getSseBroadcaster().broadcast(eventBuilder.data(Instant.now()).build());
         return Response.ok().build();
     }
 
     @GET
     @Path("onclose-callback")
     public Response callback() throws InterruptedException {
-        boolean onCloseWasCalled = awaitClosedCallback();
+        logger.info(this.hashCode() + " /onclose-callback, waiting for latch " + closeLatch.hashCode());
+        boolean onCloseWasCalled = closeLatch.await(10, TimeUnit.SECONDS);
         return Response.ok(onCloseWasCalled).build();
     }
 
     @GET
     @Path("onerror-callback")
     public Response errorCallback() throws InterruptedException {
-        boolean onErrorWasCalled = awaitErrorCallback();
+        logger.info(this.hashCode() + " /onerror-callback, waiting for latch " + errorLatch.hashCode());
+        boolean onErrorWasCalled = errorLatch.await(2, TimeUnit.SECONDS);
         return Response.ok(onErrorWasCalled).build();
     }
 
-    private synchronized boolean awaitClosedCallback() throws InterruptedException {
-        return closeLatch.await(10, TimeUnit.SECONDS);
+    private static SseBroadcaster getSseBroadcaster() {
+        logger.info("using broadcaster " + sseBroadcaster.hashCode());
+        return sseBroadcaster;
     }
 
-    private synchronized boolean awaitErrorCallback() throws InterruptedException {
-        return errorLatch.await(2, TimeUnit.SECONDS);
+    public static void setLatches() {
+        closeLatch = new CountDownLatch(1);
+        errorLatch = new CountDownLatch(1);
+        logger.info(String.format("Setting latches: \n  closeLatch:  %s\n  errorLatch: %s",
+                closeLatch.hashCode(), errorLatch.hashCode()));
+    }
+
+    public static CountDownLatch getCloseLatch() {
+        return closeLatch;
+    }
+
+    public static CountDownLatch getErrorLatch() {
+        return errorLatch;
     }
 }

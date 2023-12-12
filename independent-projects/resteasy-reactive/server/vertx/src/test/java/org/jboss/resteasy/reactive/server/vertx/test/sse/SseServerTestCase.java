@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
@@ -23,8 +22,6 @@ import io.restassured.RestAssured;
 
 public class SseServerTestCase {
 
-    final private static Logger logger = Logger.getLogger(SseServerTestCase.class.getName());
-
     @RegisterExtension
     static final ResteasyReactiveUnitTest config = new ResteasyReactiveUnitTest()
             .withApplicationRoot((jar) -> jar
@@ -32,13 +29,14 @@ public class SseServerTestCase {
 
     @Test
     public void shouldCallOnCloseOnServer() throws InterruptedException {
+        System.out.println("####### shouldCallOnCloseOnServer");
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(PortProviderUtil.createURI("/sse/subscribe"));
         try (SseEventSource sse = SseEventSource.target(target).build()) {
             CountDownLatch openingLatch = new CountDownLatch(1);
             List<String> results = new CopyOnWriteArrayList<>();
             sse.register(event -> {
-                logger.info("received data: " + event.readData());
+                System.out.println("received data: " + event.readData());
                 results.add(event.readData());
                 openingLatch.countDown();
             });
@@ -46,6 +44,7 @@ public class SseServerTestCase {
             Assertions.assertTrue(openingLatch.await(3, TimeUnit.SECONDS));
             Assertions.assertEquals(1, results.size());
             sse.close();
+            System.out.println("called sse.close() from client");
             RestAssured.get("/sse/onclose-callback")
                     .then()
                     .statusCode(200)
@@ -55,13 +54,14 @@ public class SseServerTestCase {
 
     @Test
     public void shouldNotTryToSendToClosedSink() throws InterruptedException {
+        System.out.println("####### shouldNotTryToSendToClosedSink");
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(PortProviderUtil.createURI("/sse/subscribe"));
         try (SseEventSource sse = SseEventSource.target(target).build()) {
             CountDownLatch openingLatch = new CountDownLatch(1);
             List<String> results = new ArrayList<>();
             sse.register(event -> {
-                logger.info("received data: " + event.readData());
+                System.out.println("received data: " + event.readData());
                 results.add(event.readData());
                 openingLatch.countDown();
             });

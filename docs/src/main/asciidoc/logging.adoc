@@ -841,4 +841,5 @@ NOTE: If applicable, MDC data is stored in a _duplicated context_, which is an i
 [[loggingConfigurationReference]]
 == Logging configuration reference
 
+include::{generated-dir}/config/quarkus-log-logging-log-build-time-config.adoc[opts=optional, leveloffset=+1]
 include::{generated-dir}/config/quarkus-log-logging-log-config.adoc[opts=optional, leveloffset=+1]

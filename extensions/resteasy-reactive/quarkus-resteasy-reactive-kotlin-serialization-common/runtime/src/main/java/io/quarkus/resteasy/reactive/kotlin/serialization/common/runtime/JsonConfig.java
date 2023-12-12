@@ -129,6 +129,12 @@ public class JsonConfig {
     @ConfigItem(defaultValue = "false")
     public boolean decodeEnumsCaseInsensitive = false;
 
+    /**
+     * Specifies if trailing comma is allowed.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean allowTrailingComma = false;
+
     @Override
     public String toString() {
         return new StringJoiner(", ", JsonConfig.class.getSimpleName() + "[", "]")
@@ -144,6 +150,7 @@ public class JsonConfig {
                 .add("allowSpecialFloatingPointValues=" + allowSpecialFloatingPointValues)
                 .add("useAlternativeNames=" + useAlternativeNames)
                 .add("decodeEnumsCaseInsensitive=" + decodeEnumsCaseInsensitive)
+                .add("allowTrailingComma=" + allowTrailingComma)
                 .toString();
     }
 }

@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 
-import org.jboss.resteasy.reactive.common.util.URIDecoder;
-
 public class RequestMapper<T> {
 
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
@@ -111,7 +109,7 @@ public class RequestMapper<T> {
                     while (matchPos < pathLength && path.charAt(matchPos) != '/') {
                         matchPos++;
                     }
-                    params[paramCount++] = URIDecoder.decodeURIComponent(path.substring(start, matchPos), false);
+                    params[paramCount++] = path.substring(start, matchPos);
                 }
             }
             if (!matched) {

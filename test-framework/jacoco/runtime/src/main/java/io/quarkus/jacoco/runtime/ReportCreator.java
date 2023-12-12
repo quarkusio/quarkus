@@ -37,6 +37,16 @@ public class ReportCreator implements Runnable {
 
     @Override
     public void run() {
+        // Ugly workaround:
+        // Multiple ReportCreator shutdown hooks might run concurrently, possibly corrupting the report file(s) - e.g. when using @TestProfile.
+        // By locking on a class from the parent CL, all hooks are "serialized", one after another.
+        // In the long run there should only be as many hooks as there are different Jacoco configs...usually there will be only one config anyway!
+        synchronized (ExecFileLoader.class) {
+            doRun();
+        }
+    }
+
+    private void doRun() {
         File targetdir = new File(reportInfo.reportDir);
         targetdir.mkdirs();
         try {

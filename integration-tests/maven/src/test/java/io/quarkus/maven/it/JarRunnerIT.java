@@ -3,6 +3,7 @@ package io.quarkus.maven.it;
 import static io.quarkus.maven.it.ApplicationNameAndVersionTestUtil.assertApplicationPropertiesSetCorrectly;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.awaitility.Awaitility.await;
 
 import java.io.BufferedReader;
@@ -617,6 +618,8 @@ public class JarRunnerIT extends MojoTestBase {
 
         await().atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        // just skip if the JDK can't create appcds
+        assumeThat(running.log()).doesNotContainIgnoringCase("Unable to create AppCDS");
         assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
         running.stop();
 

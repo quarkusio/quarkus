@@ -1,15 +1,20 @@
 package io.quarkus.vertx.core.runtime.graal;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BooleanSupplier;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
 
 import com.oracle.svm.core.annotate.Alias;
+import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
@@ -194,6 +199,34 @@ final class Target_io_vertx_core_spi_tls_DefaultJDKCipherSuite {
     @Alias
     static List<String> get() {
         return null;
+    }
+}
+
+@TargetClass(className = "io.vertx.pgclient.impl.codec.DataTypeCodec", onlyWith = DataTypeCodecNeedsWorkaround.class)
+final class Target_io_vertx_pgclient_impl_codec_DataTypeCodec {
+
+    // Workaround for https://github.com/quarkusio/quarkus/issues/37208 till
+    // https://github.com/eclipse-vertx/vertx-sql-client/issues/1379 gets fixed and released
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FromAlias)
+    @Alias
+    public static LocalDateTime LDT_MINUS_INFINITY = LocalDateTime.parse("4714-11-24 00:00:00 BC",
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss G", Locale.US));
+}
+
+final class DataTypeCodecNeedsWorkaround implements BooleanSupplier {
+
+    @Override
+    public boolean getAsBoolean() {
+        try {
+            Class.forName("io.vertx.pgclient.impl.codec.DataTypeCodec");
+        } catch (java.lang.ExceptionInInitializerError e) {
+            if (e.getCause() instanceof java.time.format.DateTimeParseException) {
+                return true;
+            }
+        } catch (ClassNotFoundException ignored) {
+            // Ignore
+        }
+        return false;
     }
 }
 

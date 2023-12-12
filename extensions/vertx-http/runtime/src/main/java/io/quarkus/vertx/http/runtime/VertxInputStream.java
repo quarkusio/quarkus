@@ -226,7 +226,8 @@ public class VertxInputStream extends InputStream {
                         }
 
                     });
-                    request.fetch(1);
+                    // More than 1 speedup retrieve while limited in memory
+                    request.fetch(3);
                 } else {
                     eof = true;
                 }
@@ -266,10 +267,8 @@ public class VertxInputStream extends InputStream {
                 input1 = null;
                 if (inputOverflow != null) {
                     input1 = inputOverflow.poll();
-                    if (input1 == null) {
-                        request.fetch(1);
-                    }
-                } else if (!eof) {
+                }
+                if (!eof) {
                     request.fetch(1);
                 }
                 return ret == null ? null : ret.getByteBuf();

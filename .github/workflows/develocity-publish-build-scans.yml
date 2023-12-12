@@ -14,6 +14,7 @@ jobs:
     if: github.repository == 'quarkusio/quarkus' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled'
     runs-on: ubuntu-latest
     permissions:
+      actions: write
       pull-requests: write
       checks: write
     steps:
@@ -46,4 +47,4 @@ jobs:
       - name: Output JSON file
         if: ${{ contains(fromJson(steps.extract-preapproved-developers.outputs.preapproved-developpers).preapproved-developers, github.event.workflow_run.actor.login) }}
         run: |
-          if [ -f build-metadata.json ]; then jq '.' build-metadata.json >> $GITHUB_STEP_SUMMARY; fi
+          if [ -f $HOME/build-metadata.json ]; then jq '.' $HOME/build-metadata.json >> $GITHUB_STEP_SUMMARY; fi

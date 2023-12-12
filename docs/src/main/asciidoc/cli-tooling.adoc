@@ -147,7 +147,7 @@ You can use Homebrew to install (and update) the Quarkus CLI.
 Make sure you have a JDK installed before installing the Quarkus CLI.
 We haven't added an explicit dependency as we wanted to make sure you could use your preferred JDK version.
 
-You can install a JDK with `brew install openjdk` for the latest Java version, `brew install openjdk@17` for Java 17, or `brew install openjdk@11` for Java 11.
+You can install a JDK with `brew install openjdk` for the latest Java version, `brew install openjdk@17` for Java 17, or `brew install openjdk@21` for Java 21.
 ====
 
 To install the Quarkus CLI using Homebrew, run the following command:
@@ -190,7 +190,7 @@ You can use Chocolatey to install (and update) the Quarkus CLI.
 ====
 Make sure you have a JDK installed before installing the Quarkus CLI.
 
-You can install a JDK with `choco install ojdkbuild17` for Java 17 or `choco install ojdkbuild11` for Java 11.
+You can install a JDK with `choco install temurin17` for Java 17 or `choco install temurin21` for Java 21.
 ====
 
 To install the Quarkus CLI using Chocolatey, run the following command:
@@ -226,7 +226,7 @@ You can use Scoop to install (and update) the Quarkus CLI.
 [NOTE]
 ====
 Make sure you have a JDK installed before installing the Quarkus CLI.
-You can install a JDK with `scoop install openjdk17` for Java 17 or `scoop install openjdk11` for Java 11.
+You can install a JDK with `scoop install openjdk17` for Java 17 or `scoop install openjdk21` for Java 21.
 ====
 To install the Quarkus CLI using Scoop, run the following command:
 [source,shell]

@@ -147,7 +147,7 @@ You will have a single JAR inside the `target/deployment` repository that contai
 Then you will be able to use `gcloud` to deploy your function to Google Cloud.
 The `gcloud` command will be different depending on which event triggers your function.
 
-NOTE: We will use the Java 17 runtime but you can switch to the Java 11 runtime by using `--runtime=java11` instead of `--runtime=java17` on the deploy commands.
+NOTE: We will use the Java 17 runtime but you can switch to the Java 21 runtime by using `--runtime=java21` instead of `--runtime=java17` on the deploy commands.
 
 [WARNING]
 ====

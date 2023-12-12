@@ -167,7 +167,7 @@ By default, the Ansible collection for Quarkus will install and use the OpenJDK 
 [source,bash]
 ----
 $ ansible-playbook -i inventory ...
-    -e quarkus_java_package_version: java-11-openjdk
+    -e quarkus_java_package_version: java-17-openjdk
 ----
 ====
 

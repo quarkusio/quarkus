@@ -4,7 +4,6 @@ import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,7 +30,6 @@ public abstract class Serialisers {
     public static final Annotation[] NO_ANNOTATION = new Annotation[0];
     public static final ReaderInterceptor[] NO_READER_INTERCEPTOR = new ReaderInterceptor[0];
     public static final WriterInterceptor[] NO_WRITER_INTERCEPTOR = new WriterInterceptor[0];
-    protected static final Map<Class<?>, Class<?>> primitivesToWrappers = new HashMap<>();
     // FIXME: spec says we should use generic type, but not sure how to pass that type from Jandex to reflection
     protected final QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers = new QuarkusMultivaluedHashMap<>();
     protected final QuarkusMultivaluedMap<Class<?>, ResourceReader> readers = new QuarkusMultivaluedHashMap<>();
@@ -46,9 +44,7 @@ public abstract class Serialisers {
         List<MediaType> desired = MediaTypeHelper.getUngroupedMediaTypes(mediaType);
         List<MessageBodyReader<?>> ret = new ArrayList<>();
         Deque<Class<?>> toProcess = new LinkedList<>();
-        Class<?> klass = entityType;
-        if (primitivesToWrappers.containsKey(klass))
-            klass = primitivesToWrappers.get(klass);
+        Class<?> klass = lookupPrimitiveWrapper(entityType);
         QuarkusMultivaluedMap<Class<?>, ResourceReader> readers;
         if (configuration != null && !configuration.getResourceReaders().isEmpty()) {
             readers = new QuarkusMultivaluedHashMap<>();
@@ -124,9 +120,7 @@ public abstract class Serialisers {
         if (Response.class.isAssignableFrom(entityType)) {
             return Collections.emptyList();
         }
-        Class<?> klass = entityType;
-        if (primitivesToWrappers.containsKey(klass))
-            klass = primitivesToWrappers.get(klass);
+        Class<?> klass = primitiveWrapperOf(entityType);
         //first we check to make sure that the return type is build time selectable
         //this fails when there are eligible writers for a sub type of the entity type
         //e.g. if the entity type is Object and there are mappers for String then we
@@ -241,14 +235,17 @@ public abstract class Serialisers {
         return findWriters(configuration, entityType, resolvedMediaType, null);
     }
 
+    protected Class<?> lookupPrimitiveWrapper(Class<?> entityType) {
+        return entityType;
+    }
+
     public List<MessageBodyWriter<?>> findWriters(ConfigurationImpl configuration, Class<?> entityType,
             MediaType resolvedMediaType, RuntimeType runtimeType) {
         // FIXME: invocation is very different between client and server, where the server doesn't treat GenericEntity specially
         // it's probably missing from there, while the client handles it upstack
         List<MediaType> mt = Collections.singletonList(resolvedMediaType);
         Class<?> klass = entityType;
-        if (primitivesToWrappers.containsKey(klass))
-            klass = primitivesToWrappers.get(klass);
+        klass = primitiveWrapperOf(entityType);
         QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers;
         if (configuration != null && !configuration.getResourceWriters().isEmpty()) {
             writers = new QuarkusMultivaluedHashMap<>();
@@ -261,6 +258,10 @@ public abstract class Serialisers {
         }
 
         return toMessageBodyWriters(findResourceWriters(writers, klass, mt, runtimeType));
+    }
+
+    private Class<?> primitiveWrapperOf(Class<?> entityType) {
+        return entityType;
     }
 
     public static class Builtin {

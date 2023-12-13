@@ -36,7 +36,7 @@ public class AddServiceMonitorResourceDecorator extends ResourceProvidingDecorat
                 .endSelector()
                 .addNewEndpoint()
                 .withScheme(scheme)
-                .withNewTargetPort(targetPort)
+                .withNewTargetPort(Integer.parseInt(targetPort)) //This needs to be passed as int
                 .withPath(path)
                 .withInterval(interval + "s")
                 .withHonorLabels(honorLabels)

@@ -10,6 +10,7 @@ import io.vertx.core.VertxOptions;
 import io.vertx.core.datagram.DatagramSocketOptions;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.impl.NoStackTraceException;
 import io.vertx.core.metrics.MetricsOptions;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetServerOptions;
@@ -60,7 +61,7 @@ public class VertxMeterBinderAdapter extends MetricsOptions implements VertxMetr
     @Override
     public HttpServerMetrics<?, ?, ?> createHttpServerMetrics(HttpServerOptions options, SocketAddress localAddress) {
         if (httpBinderConfiguration == null) {
-            throw new IllegalStateException("HttpBinderConfiguration was not found");
+            throw new NoStackTraceException("HttpBinderConfiguration was not found");
         }
         if (httpBinderConfiguration.isServerEnabled()) {
             log.debugf("Create HttpServerMetrics with options %s and address %s", options, localAddress);

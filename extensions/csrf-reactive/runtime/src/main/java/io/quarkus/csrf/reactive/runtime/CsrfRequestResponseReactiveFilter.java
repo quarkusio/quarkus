@@ -66,8 +66,6 @@ public class CsrfRequestResponseReactiveFilter {
 
         String cookieToken = getCookieToken(routing, config);
         if (cookieToken != null) {
-            routing.put(CSRF_TOKEN_KEY, cookieToken);
-
             try {
                 int cookieTokenSize = Base64.getUrlDecoder().decode(cookieToken).length;
                 // HMAC SHA256 output is 32 bytes long
@@ -98,10 +96,10 @@ public class CsrfRequestResponseReactiveFilter {
             // unsafe HTTP method, token is required
 
             // Check the header first
-            String csrfTokenInHeader = requestContext.getHeaderString(config.tokenHeaderName);
-            if (csrfTokenInHeader != null) {
+            String csrfTokenHeaderParam = requestContext.getHeaderString(config.tokenHeaderName);
+            if (csrfTokenHeaderParam != null) {
                 LOG.debugf("CSRF token found in the token header");
-                verifyCsrfToken(requestContext, routing, config, cookieToken, csrfTokenInHeader);
+                verifyCsrfToken(requestContext, routing, config, cookieToken, csrfTokenHeaderParam);
                 return;
             }
 
@@ -128,9 +126,9 @@ public class CsrfRequestResponseReactiveFilter {
 
             ResteasyReactiveRequestContext rrContext = (ResteasyReactiveRequestContext) requestContext
                     .getServerRequestContext();
-            String csrfToken = (String) rrContext.getFormParameter(config.formFieldName, true, false);
+            String csrfTokenFormParam = (String) rrContext.getFormParameter(config.formFieldName, true, false);
             LOG.debugf("CSRF token found in the form parameter");
-            verifyCsrfToken(requestContext, routing, config, cookieToken, csrfToken);
+            verifyCsrfToken(requestContext, routing, config, cookieToken, csrfTokenFormParam);
             return;
 
         } else if (cookieToken == null) {
@@ -159,6 +157,7 @@ public class CsrfRequestResponseReactiveFilter {
                 requestContext.abortWith(badClientRequest());
                 return;
             } else {
+                routing.put(CSRF_TOKEN_KEY, csrfToken);
                 routing.put(CSRF_TOKEN_VERIFIED, true);
                 return;
             }

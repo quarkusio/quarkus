@@ -375,10 +375,13 @@ public class BeanGenerator extends AbstractGenerator {
 
         createProviderFields(beanCreator, bean, injectionPointToProviderSupplierField, interceptorToProviderSupplierField,
                 decoratorToProviderSupplierField);
+
+        // Constructor
         createConstructor(classOutput, beanCreator, bean, injectionPointToProviderSupplierField,
                 interceptorToProviderSupplierField, decoratorToProviderSupplierField,
                 annotationLiterals, reflectionRegistration);
 
+        // Methods
         implementGetIdentifier(bean, beanCreator);
         implementSupplierGet(beanCreator);
         if (bean.hasDestroyLogic()) {
@@ -815,6 +818,7 @@ public class BeanGenerator extends AbstractGenerator {
                     constructor.invokeStaticMethod(MethodDescriptors.SETS_OF,
                             stereotypesArray));
         }
+
         return constructor;
     }
 

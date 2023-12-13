@@ -274,7 +274,8 @@ public class ExtensionsEntryPoint {
     public void runRegistration(org.jboss.jandex.IndexView beanArchiveIndex,
             Collection<io.quarkus.arc.processor.BeanInfo> allBeans,
             Collection<io.quarkus.arc.processor.InterceptorInfo> allInterceptors,
-            Collection<io.quarkus.arc.processor.ObserverInfo> allObservers) {
+            Collection<io.quarkus.arc.processor.ObserverInfo> allObservers,
+            io.quarkus.arc.processor.InvokerFactory invokerFactory) {
         if (invoker.isEmpty()) {
             return;
         }
@@ -283,7 +284,7 @@ public class ExtensionsEntryPoint {
 
         try {
             new ExtensionPhaseRegistration(invoker, beanArchiveIndex, errors, annotationOverlays,
-                    allBeans, allInterceptors, allObservers).run();
+                    allBeans, allInterceptors, allObservers, invokerFactory).run();
         } finally {
             BuildServicesImpl.reset();
         }
@@ -552,6 +553,10 @@ public class ExtensionsEntryPoint {
                 configurator.param(entry.getKey(), (org.jboss.jandex.AnnotationInstance) entry.getValue());
             } else if (entry.getValue() instanceof org.jboss.jandex.AnnotationInstance[]) {
                 configurator.param(entry.getKey(), (org.jboss.jandex.AnnotationInstance[]) entry.getValue());
+            } else if (entry.getValue() instanceof io.quarkus.arc.processor.InvokerInfo) {
+                configurator.param(entry.getKey(), (io.quarkus.arc.processor.InvokerInfo) entry.getValue());
+            } else if (entry.getValue() instanceof io.quarkus.arc.processor.InvokerInfo[]) {
+                configurator.param(entry.getKey(), (io.quarkus.arc.processor.InvokerInfo[]) entry.getValue());
             } else {
                 throw new IllegalStateException("Unknown param: " + entry);
             }
@@ -566,7 +571,8 @@ public class ExtensionsEntryPoint {
      */
     public void runRegistrationAgain(org.jboss.jandex.IndexView beanArchiveIndex,
             Collection<io.quarkus.arc.processor.BeanInfo> allBeans,
-            Collection<io.quarkus.arc.processor.ObserverInfo> allObservers) {
+            Collection<io.quarkus.arc.processor.ObserverInfo> allObservers,
+            io.quarkus.arc.processor.InvokerFactory invokerFactory) {
         if (invoker.isEmpty()) {
             return;
         }
@@ -582,7 +588,7 @@ public class ExtensionsEntryPoint {
 
         try {
             new ExtensionPhaseRegistration(invoker, beanArchiveIndex, errors, annotationOverlays,
-                    syntheticBeans, Collections.emptyList(), syntheticObservers).run();
+                    syntheticBeans, Collections.emptyList(), syntheticObservers, invokerFactory).run();
         } finally {
             BuildServicesImpl.reset();
         }

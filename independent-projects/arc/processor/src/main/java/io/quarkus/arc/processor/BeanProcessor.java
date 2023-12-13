@@ -50,11 +50,15 @@ import io.quarkus.gizmo.ResultHandle;
  * <li>{@link #registerCustomContexts()}</li>
  * <li>{@link #registerScopes()}</li>
  * <li>{@link #registerBeans()}</li>
- * <li>{@link #initialize(Consumer)}</li>
+ * <li>{@link BeanDeployment#initBeanByTypeMap()}</li>
+ * <li>{@link #registerSyntheticObservers()}</li>
+ * <li>{@link #initialize(Consumer, List)}</li>
  * <li>{@link #validate(Consumer)}</li>
  * <li>{@link #processValidationErrors(io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext)}</li>
- * <li>{@link #generateResources(ReflectionRegistration, Set, Consumer)}</li>
+ * <li>{@link #generateResources(ReflectionRegistration, Set, Consumer, boolean, ExecutorService)}</li>
  * </ol>
+ *
+ * @see #process()
  */
 public class BeanProcessor {
 
@@ -220,7 +224,6 @@ public class BeanProcessor {
         for (InterceptorInfo interceptor : interceptors) {
             interceptorGenerator.precomputeGeneratedName(interceptor);
         }
-        interceptors.forEach(interceptorGenerator::precomputeGeneratedName);
 
         DecoratorGenerator decoratorGenerator = new DecoratorGenerator(annotationLiterals, applicationClassPredicate,
                 privateMembers, generateSources, refReg, existingClasses, beanToGeneratedName,
@@ -247,6 +250,11 @@ public class BeanProcessor {
             contextInstancesGenerator.precomputeGeneratedName(BuiltinScope.APPLICATION.getName());
             contextInstancesGenerator.precomputeGeneratedName(BuiltinScope.REQUEST.getName());
         }
+
+        InvokerGenerator invokerGenerator = new InvokerGenerator(generateSources,
+                applicationClassPredicate, beanDeployment, annotationLiterals, reflectionRegistration,
+                injectionPointAnnotationsPredicate);
+        Collection<InvokerInfo> invokers = beanDeployment.getInvokers();
 
         List<Resource> resources = new ArrayList<>();
 
@@ -357,6 +365,16 @@ public class BeanProcessor {
                 }));
             }
 
+            // Generate invokers
+            for (InvokerInfo invoker : invokers) {
+                primaryTasks.add(executor.submit(new Callable<Collection<Resource>>() {
+                    @Override
+                    public Collection<Resource> call() throws Exception {
+                        return invokerGenerator.generate(invoker);
+                    }
+                }));
+            }
+
             // Generate `_InjectableContext` subclasses for custom `AlterableContext`s
             for (CustomAlterableContextInfo info : alterableContexts) {
                 primaryTasks.add(executor.submit(new Callable<Collection<Resource>>() {
@@ -438,6 +456,10 @@ public class BeanProcessor {
             for (ObserverInfo observer : observers) {
                 resources.addAll(observerGenerator.generate(observer));
             }
+            // Generate invokers
+            for (InvokerInfo invoker : invokers) {
+                resources.addAll(invokerGenerator.generate(invoker));
+            }
 
             // Generate `_InjectableContext` subclasses for custom `AlterableContext`s
             for (CustomAlterableContextInfo info : alterableContexts) {
@@ -507,7 +529,8 @@ public class BeanProcessor {
         initialize(unsupportedBytecodeTransformer, Collections.emptyList());
         ValidationContext validationContext = validate(unsupportedBytecodeTransformer);
         processValidationErrors(validationContext);
-        generateResources(null, new HashSet<>(), unsupportedBytecodeTransformer, beanDeployment.removeUnusedBeans, null);
+        generateResources(ReflectionRegistration.NOOP, new HashSet<>(), unsupportedBytecodeTransformer,
+                beanDeployment.removeUnusedBeans, null);
         return beanDeployment;
     }
 
@@ -755,7 +778,8 @@ public class BeanProcessor {
          * <li>does not have a name,</li>
          * <li>does not declare an observer,</li>
          * <li>does not declare any producer which is eligible for injection to any injection point,</li>
-         * <li>is not directly eligible for injection into any {@link jakarta.enterprise.inject.Instance} injection point</li>
+         * <li>is not directly eligible for injection into any {@link jakarta.enterprise.inject.Instance} injection point,</li>
+         * <li>is not a result of resolving an invoker lookup</li>
          * </ul>
          *
          * @param removeUnusedBeans

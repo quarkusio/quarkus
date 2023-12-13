@@ -67,6 +67,7 @@ public interface BuildExtension {
         static Key<Map<DotName, ClassInfo>> QUALIFIERS = simpleBuiltIn("qualifiers");
         static Key<Map<DotName, ClassInfo>> INTERCEPTOR_BINDINGS = simpleBuiltIn("interceptorBindings");
         static Key<Map<DotName, StereotypeInfo>> STEREOTYPES = simpleBuiltIn("stereotypes");
+        static Key<InvokerFactory> INVOKER_FACTORY = simpleBuiltIn("invokerFactory");
         static Key<BeanDeployment> DEPLOYMENT = simpleBuiltIn("deployment");
 
         String asString();

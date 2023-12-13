@@ -1198,7 +1198,8 @@ public class BeanInfo implements InjectionTargetInfo {
         BeanInfo build() {
             return new BeanInfo(implClazz, providerType, target, beanDeployment, scope, types, qualifiers, injections,
                     declaringBean, disposer, alternative, stereotypes, name, isDefaultBean, creatorConsumer,
-                    destroyerConsumer, params, removable, forceApplicationClass, targetPackageName, priority, identifier, null);
+                    destroyerConsumer, params, removable, forceApplicationClass, targetPackageName, priority,
+                    identifier, null);
         }
 
         public Builder forceApplicationClass(boolean forceApplicationClass) {

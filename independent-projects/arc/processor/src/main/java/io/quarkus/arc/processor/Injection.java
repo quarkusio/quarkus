@@ -34,7 +34,8 @@ import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
  * <li>an initializer method,</li>
  * <li>a producer method,</li>
  * <li>a disposer method,</li>
- * <li>an observer method.</li>
+ * <li>an observer method,</li>
+ * <li>a managed bean method for which an invoker with argument lookups is created.</li>
  * </ul>
  *
  * @author Martin Kouba
@@ -383,7 +384,8 @@ public class Injection {
 
         Injection injection = new Injection(disposerMethod,
                 InjectionPointInfo.fromMethod(disposerMethod, beanClass, beanDeployment,
-                        annotations -> annotations.stream().anyMatch(a -> a.name().equals(DotNames.DISPOSES)), transformer));
+                        (annotations, position) -> annotations.stream().anyMatch(a -> a.name().equals(DotNames.DISPOSES)),
+                        transformer));
         injection.injectionPoints.forEach(ipi -> validateInjections(ipi, BeanType.MANAGED_BEAN));
         return injection;
     }
@@ -391,9 +393,15 @@ public class Injection {
     static Injection forObserver(MethodInfo observerMethod, ClassInfo beanClass, BeanDeployment beanDeployment,
             InjectionPointModifier transformer) {
         return new Injection(observerMethod, InjectionPointInfo.fromMethod(observerMethod, beanClass, beanDeployment,
-                annotations -> annotations.stream()
+                (annotations, position) -> annotations.stream()
                         .anyMatch(a -> a.name().equals(DotNames.OBSERVES) || a.name().equals(DotNames.OBSERVES_ASYNC)),
                 transformer));
+    }
+
+    static Injection forInvokerArgumentLookups(ClassInfo targetBeanClass, MethodInfo targetMethod,
+            boolean[] argumentLookups, BeanDeployment beanDeployment, InjectionPointModifier transformer) {
+        return new Injection(targetMethod, InjectionPointInfo.fromMethod(targetMethod, targetBeanClass, beanDeployment,
+                (annotations, position) -> !argumentLookups[position], transformer));
     }
 
     final AnnotationTarget target;

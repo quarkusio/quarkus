@@ -31,6 +31,7 @@ import io.quarkus.arc.impl.ListProvider;
 import io.quarkus.arc.impl.ResourceProvider;
 import io.quarkus.arc.processor.InjectionPointInfo.InjectionPointKind;
 import io.quarkus.arc.processor.InjectionTargetInfo.TargetKind;
+import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -208,6 +209,9 @@ public enum BuiltinBean {
             case BEAN:
                 beanHandle = ctx.constructor.getThis();
                 break;
+            case INVOKER:
+                beanHandle = loadInvokerTargetBean(ctx.targetInfo.asInvoker(), ctx.constructor);
+                break;
             default:
                 throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
         }
@@ -259,6 +263,9 @@ public enum BuiltinBean {
                 break;
             case BEAN:
                 bean = ctx.constructor.getThis();
+                break;
+            case INVOKER:
+                bean = loadInvokerTargetBean(ctx.targetInfo.asInvoker(), ctx.constructor);
                 break;
             default:
                 throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
@@ -402,6 +409,9 @@ public enum BuiltinBean {
             case BEAN:
                 beanHandle = ctx.constructor.getThis();
                 break;
+            case INVOKER:
+                beanHandle = loadInvokerTargetBean(ctx.targetInfo.asInvoker(), ctx.constructor);
+                break;
             default:
                 throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
         }
@@ -418,6 +428,12 @@ public enum BuiltinBean {
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
                         Supplier.class.getName()),
                 ctx.constructor.getThis(), listProviderSupplier);
+    }
+
+    private static ResultHandle loadInvokerTargetBean(InvokerInfo invoker, BytecodeCreator bytecode) {
+        ResultHandle arc = bytecode.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
+        return bytecode.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_BEAN, arc,
+                bytecode.load(invoker.targetBean.getIdentifier()));
     }
 
     private static void validateInstance(InjectionTargetInfo injectionTarget, InjectionPointInfo injectionPoint,

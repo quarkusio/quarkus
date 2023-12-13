@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.concurrent.CompletionStage;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -67,6 +68,8 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.VetoedProducer;
 import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.arc.impl.Identified;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 public final class DotNames {
 
@@ -154,6 +157,10 @@ public final class DotNames {
     public static final DotName LONG = create(Long.class);
     public static final DotName SHORT = create(Short.class);
     public static final DotName STRING = create(String.class);
+
+    public static final DotName COMPLETION_STAGE = create(CompletionStage.class);
+    public static final DotName UNI = create(Uni.class);
+    public static final DotName MULTI = create(Multi.class);
 
     private DotNames() {
     }

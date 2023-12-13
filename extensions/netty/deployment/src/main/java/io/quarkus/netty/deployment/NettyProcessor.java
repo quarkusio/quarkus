@@ -163,8 +163,7 @@ class NettyProcessor {
         }
 
         builder.addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent")
-                .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent0")
-                .addRuntimeReinitializedClass("io.netty.buffer.PooledByteBufAllocator");
+                .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent0");
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.buffer.UnpooledByteBufAllocator")) {
             builder.addRuntimeReinitializedClass("io.netty.buffer.UnpooledByteBufAllocator")

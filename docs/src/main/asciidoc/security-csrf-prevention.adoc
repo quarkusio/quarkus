@@ -11,7 +11,7 @@ include::_attributes.adoc[]
 
 https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery (CSRF)] is an attack that forces an end user to execute unwanted actions on a web application in which they are currently authenticated.
 
-Quarkus Security provides a CSRF prevention feature which implements https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#double-submit-cookie[Double Submit Cookie] and [CSRF Request Header] techniques.
+Quarkus Security provides a CSRF prevention feature which implements https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#double-submit-cookie[Double Submit Cookie] and <<csrf-request-header>> techniques.
 
 `Double Submit Cookie` technique requires that the CSRF token sent as `HTTPOnly`, optionally signed, cookie to the client, and
 directly embedded in a hidden form input of server-side rendered HTML forms, or submitted as a request header value.
@@ -139,6 +139,7 @@ You can get `HMAC` signatures created for the generated CSRF tokens and have the
 quarkus.csrf-reactive.token-signature-key=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow
 ----
 
+[[csrf-request-header]]
 == CSRF Request Header
 
 If HTML `form` tags are not used and you need to pass CSRF token as a header, then inject the header name and token, for example, into HTMX:

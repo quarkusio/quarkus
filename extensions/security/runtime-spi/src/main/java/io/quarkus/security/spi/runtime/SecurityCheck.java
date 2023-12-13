@@ -10,14 +10,22 @@ public interface SecurityCheck {
     void apply(SecurityIdentity identity, Method method, Object[] parameters);
 
     default Uni<?> nonBlockingApply(SecurityIdentity identity, Method method, Object[] parameters) {
-        apply(identity, method, parameters);
+        try {
+            apply(identity, method, parameters);
+        } catch (Exception e) {
+            return Uni.createFrom().failure(e);
+        }
         return Uni.createFrom().nullItem();
     }
 
     void apply(SecurityIdentity identity, MethodDescription methodDescription, Object[] parameters);
 
     default Uni<?> nonBlockingApply(SecurityIdentity identity, MethodDescription methodDescription, Object[] parameters) {
-        apply(identity, methodDescription, parameters);
+        try {
+            apply(identity, methodDescription, parameters);
+        } catch (Exception e) {
+            return Uni.createFrom().failure(e);
+        }
         return Uni.createFrom().nullItem();
     }
 

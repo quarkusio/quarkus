@@ -352,11 +352,6 @@ public class OidcRecorder {
                 new OidcProvider(null, oidcConfig, readTokenDecryptionKey(oidcConfig)), oidcConfig);
     }
 
-    public void setSecurityEventObserved(boolean isSecurityEventObserved) {
-        DefaultTenantConfigResolver bean = Arc.container().instance(DefaultTenantConfigResolver.class).get();
-        bean.setSecurityEventObserved(isSecurityEventObserved);
-    }
-
     public static Optional<ProxyOptions> toProxyOptions(OidcCommonConfig.Proxy proxyConfig) {
         return OidcCommonUtils.toProxyOptions(proxyConfig);
     }

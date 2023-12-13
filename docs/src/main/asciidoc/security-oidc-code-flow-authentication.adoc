@@ -1214,7 +1214,7 @@ Possibly a simpler alternative is to inject both `@IdToken JsonWebToken` and `Us
 You must ensure that the callback path you enter in the GitHub OAuth application configuration matches the endpoint path where you want the user to be redirected after a successful GitHub authentication and application authorization.
 In this case, it has to be set to `http:localhost:8080/github/userinfo`.
 
-
+[[listen-to-authentication-events]]
 === Listening to important authentication events
 
 You can register the `@ApplicationScoped` bean which will observe important OIDC authentication events.
@@ -1242,6 +1242,8 @@ public class SecurityEventListener {
     }
 }
 ----
+
+TIP: You can listen to other security events as described in the xref:security-customization.adoc#observe-security-events[Observe security events] section of the Security Tips and Tricks guide.
 
 === Propagating tokens to downstream services
 

@@ -14,6 +14,7 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.SecurityEvent.Type;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpHeaders;
@@ -97,7 +98,7 @@ public class BackChannelLogoutHandler {
                                             tokens.addTokenVerification(key, result);
 
                                             if (resolver.isSecurityEventObserved()) {
-                                                resolver.getSecurityEvent().fire(
+                                                SecurityEventHelper.fire(resolver.getSecurityEvent(),
                                                         new SecurityEvent(Type.OIDC_BACKCHANNEL_LOGOUT_INITIATED,
                                                                 Map.of(OidcConstants.BACK_CHANNEL_LOGOUT_TOKEN, result)));
                                             }

@@ -15,7 +15,7 @@ jobs:
         with:
           repository: quarkusio/quarkusio.github.io
       - name: Download PR Artifact
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v3
         with:
           workflow: ${{ github.event.workflow_run.workflow_id }}
           workflow_conclusion: success

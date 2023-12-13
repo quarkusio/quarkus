@@ -62,6 +62,36 @@ public class CsrfReactiveTest {
     }
 
     @Test
+    public void testCsrfTokenTwoForms() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.addRequestHeader("Authorization", basicAuth("alice", "alice"));
+            HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenFirstForm");
+
+            assertEquals("CSRF Token First Form Test", htmlPage.getTitleText());
+
+            HtmlForm loginForm = htmlPage.getForms().get(0);
+
+            loginForm.getInputByName("name").setValueAttribute("alice");
+
+            assertNotNull(webClient.getCookieManager().getCookie("csrftoken"));
+
+            htmlPage = loginForm.getInputByName("submit").click();
+
+            assertEquals("CSRF Token Second Form Test", htmlPage.getTitleText());
+
+            loginForm = htmlPage.getForms().get(0);
+
+            loginForm.getInputByName("name").setValueAttribute("alice");
+
+            TextPage textPage = loginForm.getInputByName("submit").click();
+            assertNotNull(webClient.getCookieManager().getCookie("csrftoken"));
+            assertEquals("alice:true:tokenHeaderIsSet=false", textPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testCsrfTokenWithFormRead() throws Exception {
         try (final WebClient webClient = createWebClient()) {
 

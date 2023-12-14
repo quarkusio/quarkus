@@ -43,6 +43,7 @@ import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
+import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.build.Jwt;
@@ -987,13 +988,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private void fireEvent(SecurityEvent.Type eventType, SecurityIdentity securityIdentity) {
         if (resolver.isSecurityEventObserved()) {
-            resolver.getSecurityEvent().fire(new SecurityEvent(eventType, securityIdentity));
+            SecurityEventHelper.fire(resolver.getSecurityEvent(), new SecurityEvent(eventType, securityIdentity));
         }
     }
 
     private void fireEvent(SecurityEvent.Type eventType, Map<String, Object> properties) {
         if (resolver.isSecurityEventObserved()) {
-            resolver.getSecurityEvent().fire(new SecurityEvent(eventType, properties));
+            SecurityEventHelper.fire(resolver.getSecurityEvent(), new SecurityEvent(eventType, properties));
         }
     }
 

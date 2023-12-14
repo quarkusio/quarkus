@@ -27,7 +27,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.QualifierRegistrarBuildItem;
-import io.quarkus.arc.deployment.SynthesisFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.QualifierRegistrar;
@@ -37,14 +36,11 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
-import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.Tenant;
 import io.quarkus.oidc.TenantFeature;
 import io.quarkus.oidc.TenantIdentityProvider;
@@ -77,7 +73,6 @@ import io.vertx.ext.web.RoutingContext;
 
 @BuildSteps(onlyIf = OidcBuildStep.IsEnabled.class)
 public class OidcBuildStep {
-    public static final DotName DOTNAME_SECURITY_EVENT = DotName.createSimple(SecurityEvent.class.getName());
     private static final DotName TENANT_NAME = DotName.createSimple(Tenant.class);
     private static final DotName TENANT_FEATURE_NAME = DotName.createSimple(TenantFeature.class);
     private static final DotName TENANT_IDENTITY_PROVIDER_NAME = DotName.createSimple(TenantIdentityProvider.class);
@@ -222,18 +217,6 @@ public class OidcBuildStep {
                 .scope(Singleton.class) // this should have been @ApplicationScoped but fails for some reason
                 .setRuntimeInit()
                 .done();
-    }
-
-    // Note that DefaultTenantConfigResolver injects quarkus.http.proxy.enable-forwarded-prefix
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void findSecurityEventObservers(
-            OidcRecorder recorder,
-            SynthesisFinishedBuildItem synthesisFinished) {
-        boolean isSecurityEventObserved = synthesisFinished.getObservers().stream()
-                .anyMatch(observer -> observer.asObserver().getObservedType().name().equals(DOTNAME_SECURITY_EVENT));
-        recorder.setSecurityEventObserved(isSecurityEventObserved);
     }
 
     @BuildStep

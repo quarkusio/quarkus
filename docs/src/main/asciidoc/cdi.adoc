@@ -473,6 +473,7 @@ public class LargeTxAccount implements Account { <3>
 
 NOTE: Instances of decorators are dependent objects of the bean instance they intercept, i.e. a new decorator instance is created for each intercepted bean.
 
+[[events-and-observers]]
 === Events and Observers
 
 Beans may also produce and consume events to interact in a completely decoupled fashion.

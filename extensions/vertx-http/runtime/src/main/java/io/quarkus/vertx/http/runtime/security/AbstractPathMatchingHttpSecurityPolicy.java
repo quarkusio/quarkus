@@ -34,6 +34,8 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class AbstractPathMatchingHttpSecurityPolicy {
 
+    private static final String PATH_MATCHING_POLICY_FOUND = AbstractPathMatchingHttpSecurityPolicy.class.getName()
+            + ".POLICY_FOUND";
     private final ImmutablePathMatcher<List<HttpMatcher>> pathMatcher;
 
     AbstractPathMatchingHttpSecurityPolicy(Map<String, PolicyMappingConfig> permissions,
@@ -64,6 +66,9 @@ public class AbstractPathMatchingHttpSecurityPolicy {
             Uni<SecurityIdentity> identity, int index, SecurityIdentity augmentedIdentity,
             List<HttpSecurityPolicy> permissionCheckers, AuthorizationRequestContext requestContext) {
         if (index == permissionCheckers.size()) {
+            if (index > 0) {
+                routingContext.put(PATH_MATCHING_POLICY_FOUND, true);
+            }
             return Uni.createFrom().item(new CheckResult(true, augmentedIdentity));
         }
         //get the current checker
@@ -143,6 +148,10 @@ public class AbstractPathMatchingHttpSecurityPolicy {
             return Collections.singletonList(DenySecurityPolicy.INSTANCE);
         }
 
+    }
+
+    static boolean policyApplied(RoutingContext routingContext) {
+        return routingContext.get(PATH_MATCHING_POLICY_FOUND) != null;
     }
 
     private static Map<String, HttpSecurityPolicy> toNamedHttpSecPolicies(Map<String, PolicyConfig> rolePolicies,

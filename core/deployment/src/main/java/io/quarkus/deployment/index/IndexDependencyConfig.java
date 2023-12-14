@@ -15,13 +15,13 @@ public class IndexDependencyConfig {
     public String groupId;
 
     /**
-     * The maven artifactId of the artifact.
+     * The maven artifactId of the artifact (optional).
      */
     @ConfigItem
-    public String artifactId;
+    public Optional<String> artifactId;
 
     /**
-     * The maven classifier of the artifact.
+     * The maven classifier of the artifact (optional).
      */
     @ConfigItem
     public Optional<String> classifier;

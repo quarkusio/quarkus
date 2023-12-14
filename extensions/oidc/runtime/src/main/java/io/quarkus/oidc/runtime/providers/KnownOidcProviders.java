@@ -10,31 +10,29 @@ import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 public class KnownOidcProviders {
 
     public static OidcTenantConfig provider(OidcTenantConfig.Provider provider) {
-        switch (provider) {
-            case APPLE:
-                return apple();
-            case DISCORD:
-                return discord();
-            case FACEBOOK:
-                return facebook();
-            case GITHUB:
-                return github();
-            case GOOGLE:
-                return google();
-            case MASTODON:
-                return mastodon();
-            case MICROSOFT:
-                return microsoft();
-            case SPOTIFY:
-                return spotify();
-            case TWITCH:
-                return twitch();
-            case TWITTER:
-            case X:
-                return twitter();
-            default:
-                return null;
-        }
+        return switch (provider) {
+            case APPLE -> apple();
+            case DISCORD -> discord();
+            case FACEBOOK -> facebook();
+            case GITHUB -> github();
+            case GOOGLE -> google();
+            case LINKEDIN -> linkedIn();
+            case MASTODON -> mastodon();
+            case MICROSOFT -> microsoft();
+            case SPOTIFY -> spotify();
+            case TWITCH -> twitch();
+            case TWITTER, X -> twitter();
+        };
+    }
+
+    private static OidcTenantConfig linkedIn() {
+        OidcTenantConfig ret = new OidcTenantConfig();
+        ret.setAuthServerUrl("https://www.linkedin.com/oauth");
+        ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
+        ret.getAuthentication().setScopes(List.of("email", "profile"));
+        ret.getCredentials().getClientSecret().setMethod(Method.POST);
+        ret.getToken().setPrincipalClaim("name");
+        return ret;
     }
 
     private static OidcTenantConfig github() {

@@ -520,6 +520,36 @@ public class OidcUtilsTest {
     }
 
     @Test
+    public void testAcceptLinkedInProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.LINKEDIN));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals("https://www.linkedin.com/oauth", config.getAuthServerUrl().get());
+        assertEquals(List.of("email", "profile"), config.authentication.scopes.get());
+    }
+
+    @Test
+    public void testOverrideLinkedInProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+
+        tenant.setApplicationType(ApplicationType.HYBRID);
+        tenant.setAuthServerUrl("http://localhost/wiremock");
+        tenant.credentials.clientSecret.setMethod(Method.BASIC);
+        tenant.authentication.setForceRedirectHttpsScheme(false);
+
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.LINKEDIN));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
+        assertFalse(config.getAuthentication().isForceRedirectHttpsScheme().get());
+        assertEquals(Method.BASIC, config.credentials.clientSecret.method.get());
+    }
+
+    @Test
     public void testCorrectTokenType() throws Exception {
         OidcTenantConfig.Token tokenClaims = new OidcTenantConfig.Token();
         tokenClaims.setTokenType("access_token");

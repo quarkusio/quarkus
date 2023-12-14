@@ -1808,6 +1808,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
         FACEBOOK,
         GITHUB,
         GOOGLE,
+        LINKEDIN,
         MASTODON,
         MICROSOFT,
         SPOTIFY,

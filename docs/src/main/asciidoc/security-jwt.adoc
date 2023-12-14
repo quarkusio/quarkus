@@ -134,9 +134,9 @@ public class TokenSecuredResource {
     }
 }
 ----
-<1> Here we inject the JsonWebToken interface, an extension of the java.security.
-Principal interface that provides access to the claims associated with the current authenticated token.
-<2> @PermitAll is a JSR 250 common security annotation that indicates that the given endpoint is accessible by any caller, authenticated or not.
+<1> Here we inject the JsonWebToken interface, an extension of the java.security.Principal
+interface that provides access to the claims associated with the current authenticated token.
+<2> @PermitAll is a Jakarta common security annotation that indicates that the given endpoint is accessible by any caller, authenticated or not.
 <3> Here we inject the Jakarta REST SecurityContext to inspect the security state of the call and use a `getResponseString()` function to populate a response string.
 <4> Here we check if the call is insecure by checking the request user/caller `Principal` against null.
 <5> Here we check that the Principal and JsonWebToken have the same name since JsonWebToken does represent the current Principal.
@@ -252,7 +252,7 @@ public class TokenSecuredResource {
 ----
 <1> Here we inject `JsonWebToken`
 <2> This new endpoint will be located at /secured/roles-allowed
-<3> @RolesAllowed is a JSR 250 common security annotation that indicates that the given endpoint is accessible by a caller if
+<3> @RolesAllowed is a Jakarta common security annotation that indicates that the given endpoint is accessible by a caller if
 they have either a "User" or "Admin" role assigned.
 <4> Here we build the reply the same way as in the `hello` method but also add a value of the JWT `birthdate` claim by directly calling the injected `JsonWebToken`.
 
@@ -279,7 +279,6 @@ $ curl -v http://127.0.0.1:8080/secured/roles-allowed; echo
 < Date: Sun, 03 Mar 2019 16:32:34 GMT
 <
 * Connection #0 to host 127.0.0.1 left intact
-Not authorized
 ----
 
 Excellent, we have not provided any JWT in the request, so we should not be able to access the endpoint, and we were not. Instead, we received an HTTP 401 Unauthorized error.
@@ -297,7 +296,7 @@ mp.jwt.verify.issuer=https://example.com/issuer #<2>
 
 quarkus.native.resources.includes=publicKey.pem #<3>
 ----
-<1> We are setting public key location to point to a classpath publicKey.pem location. We will add this key in part B, <<add-public-key>>.
+<1> We are setting public key location to point to a classpath `publicKey.pem` location. We will add this key in part B, <<add-public-key>>.
 <2> We are setting the issuer to the URL string `https://example.com/issuer`.
 <3> We are including the public key as a resource in the native executable.
 
@@ -711,8 +710,14 @@ You can also use it to customize the way the token is verified or decrypted. For
 
 [source,java]
 ----
-import javax.crypto.SecretKey;
+package org.acme.security.jwt;
+
+import io.smallrye.jwt.auth.principal.ParseException;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -721,26 +726,27 @@ import io.smallrye.jwt.build.Jwt;
 
 @Path("/secured")
 public class SecuredResource {
-  @Inject JWTParser parser;
-  private String secret = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
+    private static final String SECRET = "AyM1SysPpbyDfgZld3umj1qzKObwVMko";
 
-  @GET
-  @Produces("text/plain")
-  public Response getUserName(@CookieParam("jwt") String jwtCookie) {
-    Response response = null;
-    if (jwtCookie == null) {
-        // Create a JWT token signed using the 'HS256' algorithm
-        String newJwtCookie = Jwt.upn("Alice").signWithSecret(secret);
-        // or create a JWT token encrypted using the 'A256KW' algorithm
-        // Jwt.upn("alice").encryptWithSecret(secret);
-        return Response.ok("Alice").cookie(new NewCookie("jwt", newJwtCookie)).build();
-    } else {
-        // All mp.jwt and smallrye.jwt properties are still effective, only the verification key is customized.
-        JsonWebToken jwt = parser.verify(jwtCookie, secret);
-        // or jwt = parser.decrypt(jwtCookie, secret);
-        return Response.ok(jwt.getName()).build();
+    @Inject
+    JWTParser parser;
+
+    @GET
+    @Produces("text/plain")
+    public Response getUserName(@CookieParam("jwt") String jwtCookie) throws ParseException {
+        if (jwtCookie == null) {
+            // Create a JWT token signed using the 'HS256' algorithm
+            String newJwtCookie = Jwt.upn("Alice").signWithSecret(SECRET);
+            // or create a JWT token encrypted using the 'A256KW' algorithm
+            // Jwt.upn("alice").encryptWithSecret(secret);
+            return Response.ok("Alice").cookie(new NewCookie("jwt", newJwtCookie)).build();
+        } else {
+            // All mp.jwt and smallrye.jwt properties are still effective, only the verification key is customized.
+            JsonWebToken jwt = parser.verify(jwtCookie, SECRET);
+            // or jwt = parser.decrypt(jwtCookie, secret);
+            return Response.ok(jwt.getName()).build();
+        }
     }
-  }
 }
 ----
 

@@ -28,6 +28,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.builder.Version;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -221,10 +222,12 @@ public class InfoProcessor {
         buildData.put("version", version);
         String time = ISO_OFFSET_DATE_TIME.format(OffsetDateTime.now());
         buildData.put("time", time); // TODO: what is the proper notion of build time?
+        String quarkusVersion = Version.getVersion();
+        buildData.put("quarkusVersion", quarkusVersion);
         Map<String, Object> data = finalBuildData(buildData, config.build());
         valuesProducer.produce(new InfoBuildTimeValuesBuildItem("build", data));
         beanProducer.produce(SyntheticBeanBuildItem.configure(BuildInfo.class)
-                .supplier(recorder.buildInfoSupplier(group, artifact, version, time))
+                .supplier(recorder.buildInfoSupplier(group, artifact, version, time, quarkusVersion))
                 .scope(Singleton.class)
                 .setRuntimeInit()
                 .done());

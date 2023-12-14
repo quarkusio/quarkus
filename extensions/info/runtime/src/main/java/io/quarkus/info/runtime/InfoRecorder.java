@@ -52,7 +52,8 @@ public class InfoRecorder {
         };
     }
 
-    public Supplier<BuildInfo> buildInfoSupplier(String group, String artifact, String version, String time) {
+    public Supplier<BuildInfo> buildInfoSupplier(String group, String artifact, String version, String time,
+            String quarkusVersion) {
         return new Supplier<BuildInfo>() {
             @Override
             public BuildInfo get() {
@@ -75,6 +76,11 @@ public class InfoRecorder {
                     @Override
                     public OffsetDateTime time() {
                         return OffsetDateTime.parse(time, ISO_OFFSET_DATE_TIME);
+                    }
+
+                    @Override
+                    public String quarkusVersion() {
+                        return quarkusVersion;
                     }
                 };
             }

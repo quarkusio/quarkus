@@ -70,7 +70,7 @@ jobs:
         run: |
           echo -n ${{ github.event.number }} > pull-request-number
       - name: Upload pull request number
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pull-request-number-${{ github.event.number }}
           path: pull-request-number
@@ -194,7 +194,7 @@ jobs:
       - name: Tar .m2/repository/io/quarkus
         run: tar -czf m2-io-quarkus.tgz -C ~ .m2/repository/io/quarkus
       - name: Upload .m2/repository/io/quarkus
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: m2-io-quarkus
           path: m2-io-quarkus.tgz
@@ -202,7 +202,7 @@ jobs:
       - name: Delete snapshots artifacts from cache
         run: find ~/.m2 -name \*-SNAPSHOT -type d -exec rm -rf {} +
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Initial JDK 17 Build"
@@ -375,14 +375,14 @@ jobs:
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 5
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-JVM Tests - JDK ${{matrix.java.name}}"
@@ -393,7 +393,7 @@ jobs:
             LICENSE.txt
           retention-days: 2
       - name: Upload gc.log
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: "GC log - JDK ${{matrix.java.name}}"
           path: |
@@ -401,7 +401,7 @@ jobs:
             !**/build/tmp/**
           retention-days: 5
       - name: Upload build.log (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-logs-JVM Tests - JDK ${{matrix.java.name}}"
@@ -480,7 +480,7 @@ jobs:
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-maven-java${{matrix.java.name}}
@@ -494,7 +494,7 @@ jobs:
           if [ -d 'integration-tests/maven/target/test-classes/projects/qit?legacy?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?legacy?jar' 'integration-tests/maven/target/test-classes/projects/qit--legacy--jar'; fi
           if [ -d 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' 'integration-tests/maven/target/test-classes/projects/qit--uber--jar'; fi
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Maven Tests - JDK ${{matrix.java.name}}"
@@ -573,7 +573,7 @@ jobs:
         # Important: keep -pl ... in sync with "Calculate run flags"!
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl integration-tests/gradle
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Gradle Tests - JDK ${{matrix.java.name}}"
@@ -653,14 +653,14 @@ jobs:
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-devtools-java${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 5
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Devtools Tests - JDK ${{matrix.java.name}}"
@@ -739,14 +739,14 @@ jobs:
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-kubernetes-java${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 5
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Kubernetes Tests - JDK ${{matrix.java.name}}"
@@ -811,7 +811,7 @@ jobs:
           git checkout development
           export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Quickstarts Compilation - JDK ${{matrix.java.name}}"
@@ -875,7 +875,7 @@ jobs:
         run: |
           export LANG=en_US && ./mvnw $COMMON_MAVEN_ARGS -f integration-tests/virtual-threads -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dextra-args=--enable-preview -Dquarkus.native.container-build=true
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Virtual Thread Support Tests Native - ${{matrix.category}}"
@@ -942,14 +942,14 @@ jobs:
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-tcks
           path: 'test-reports.tgz'
           retention-days: 5
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-MicroProfile TCKs Tests"
@@ -1040,14 +1040,14 @@ jobs:
         if: failure()
         run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: test-reports-native-${{matrix.category}}
           path: 'test-reports.tgz'
           retention-days: 5
       - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() || cancelled() }}
         with:
           name: "build-reports-Native Tests - ${{matrix.category}}"

@@ -20,7 +20,7 @@ To learn more about the Keycloak Admin Client, please refer to its https://www.k
 
 :prerequisites-docker:
 include::{includes}/prerequisites.adoc[]
-* https://www.keycloak.org/docs/latest/server_installation/index.html[Keycloak]
+* https://www.keycloak.org[Keycloak]
 
 == Creating the Project
 
@@ -124,8 +124,8 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.representations.idm.RoleRepresentation;
 
-import jakarta.annotations.PostConstruct;
-import jakarta.annotations.PreConstruct;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import java.util.List;

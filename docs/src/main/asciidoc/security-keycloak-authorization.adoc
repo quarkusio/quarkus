@@ -32,7 +32,7 @@ Please see https://www.keycloak.org/docs/latest/authorization_services/index.htm
 :prerequisites-docker:
 include::{includes}/prerequisites.adoc[]
 * https://stedolan.github.io/jq/[jq tool]
-* https://www.keycloak.org/docs/latest/server_installation/index.html[Keycloak]
+* https://www.keycloak.org[Keycloak]
 
 == Architecture
 
@@ -115,7 +115,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
-import org.jboss.resteasy.annotations.cache.NoCache;
+import org.jboss.resteasy.reactive.NoCache;
 
 import io.quarkus.security.identity.SecurityIdentity;
 
@@ -210,7 +210,7 @@ To start a Keycloak Server you can use Docker and just run the following command
 docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8543:8443 -v "$(pwd)"/config/keycloak-keystore.jks:/etc/keycloak-keystore.jks quay.io/keycloak/keycloak:{keycloak.version} start  --hostname-strict=false --https-key-store-file=/etc/keycloak-keystore.jks
 ----
 
-where `keycloak.version` should be set to `17.0.0` or higher.
+where `keycloak.version` should be set to `23.0.0` or higher and the `keycloak-keystore.jks` can be found in https://github.com/quarkusio/quarkus-quickstarts/blob/main/security-keycloak-authorization-quickstart/config/keycloak-keystore.jks[quarkus-quickstarts/security-keycloak-authorization-quickstart/config]
 
 You should be able to access your Keycloak Server at https://localhost:8543[localhost:8543].
 

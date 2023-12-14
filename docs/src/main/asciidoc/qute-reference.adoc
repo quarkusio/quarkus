@@ -2553,7 +2553,9 @@ If instead you are using RESTEasy Reactive via the `quarkus-resteasy-reactive` e
 </dependency>
 ----
 
-Both of these extensions register a special `ContainerResponseFilter` implementation which enables resource methods to return a `TemplateInstance`, thus freeing users of having to take care of all necessary internal steps.
+Both of these extensions register a special response filter which enables resource methods to return a `TemplateInstance`, thus freeing users of having to take care of all necessary internal steps.
+
+NOTE: If using RESTEasy Reactive, a resource method that returns `TemplateInstance` is considered non-blocking. You need to annotate the method with `io.smallrye.common.annotation.Blocking` in order to mark the method as blocking. For example if it's also annotated with `@RunOnVirtualThread`.
 
 The end result is that a using Qute within a Jakarta REST resource may look as simple as:
 

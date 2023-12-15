@@ -19,6 +19,8 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.processor.Types.TypeClosure;
+
 final class Decorators {
 
     static final Logger LOGGER = Logger.getLogger(Decorators.class);
@@ -69,7 +71,8 @@ final class Decorators {
         }
 
         //  The set includes all bean types which are Java interfaces, except for java.io.Serializable
-        Set<Type> types = Types.getClassBeanTypeClosure(decoratorClass, beanDeployment);
+        TypeClosure typeClosure = Types.getClassBeanTypeClosure(decoratorClass, beanDeployment);
+        Set<Type> types = typeClosure.types();
         Set<Type> decoratedTypes = new HashSet<>();
         for (Type type : types) {
             if (type.name().equals(DotNames.SERIALIZABLE)) {

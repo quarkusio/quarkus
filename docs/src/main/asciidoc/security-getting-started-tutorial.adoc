@@ -228,7 +228,7 @@ public class UserResource {
 }
 ----
 ====
-
+[[define-the-user-entity]]
 === Define the user entity
 
 * You can now describe how you want security information to be stored in the model by adding annotations to the `user` entity, as outlined in the following code snippet:

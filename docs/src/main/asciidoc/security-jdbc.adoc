@@ -184,7 +184,7 @@ INSERT INTO test_user (id, username, password, role) VALUES (2, 'user','user', '
 [NOTE]
 ====
 It is probably useless, but we kindly remind you that you must not store clear-text passwords in production environment ;-).
-The `elytron-security-jdbc` offers a built-in bcrypt password mapper.
+The `elytron-security-jdbc` offers a built-in bcrypt password mapper. You can see the section `Define the user entity` for more details at xref:security-getting-started-tutorial.adoc#define-the-user-entity.
 ====
 
 We can now configure the Elytron JDBC Realm.

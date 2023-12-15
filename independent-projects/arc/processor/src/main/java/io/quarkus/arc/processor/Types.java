@@ -4,7 +4,6 @@ import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -78,13 +77,9 @@ public final class Types {
             DotNames.DOUBLE,
             DotNames.CHARACTER);
 
-    // we ban these interfaces because they are new to Java 12 and are used by java.lang.String which
-    // means that they cannot be included in bytecode if we want to have application built with Java 12+ but targeting Java 8 - 11
-    // actually run on those older versions
+    // we ban these interfaces because of mismatch between building JDK version and target JDK version
     // TODO:  add a extensible banning mechanism based on predicates if we find that this set needs to grow...
-    private static final Set<DotName> BANNED_INTERFACE_TYPES = new HashSet<>(
-            Arrays.asList(DotName.createSimple("java.lang.constant.ConstantDesc"),
-                    DotName.createSimple("java.lang.constant.Constable")));
+    private static final Set<DotName> BANNED_INTERFACE_TYPES = Collections.emptySet();
 
     private Types() {
     }

@@ -84,7 +84,8 @@ public final class Types {
     // TODO:  add a extensible banning mechanism based on predicates if we find that this set needs to grow...
     private static final Set<DotName> BANNED_INTERFACE_TYPES = new HashSet<>(
             Arrays.asList(DotName.createSimple("java.lang.constant.ConstantDesc"),
-                    DotName.createSimple("java.lang.constant.Constable")));
+                    DotName.createSimple("java.lang.constant.Constable"),
+                    DotName.createSimple("java.util.SequencedCollection")));
 
     private Types() {
     }

@@ -10,9 +10,11 @@ include::_attributes.adoc[]
 :topics: security,authorization,http,rest
 :extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-resteasy-reactive,io.quarkus:quarkus-resteasy
 
-Quarkus has an integrated pluggable web security layer.
-If security is enabled, all HTTP requests have a permission check performed to verify that they are allowed to continue.
-Therefore, you cannot use `@PermitAll` to open a path if the path is blocked by the `quarkus.http.auth.` configuration.
+Quarkus incorporates a pluggable web security layer.
+When security is active, the system performs a permission check on all HTTP requests to determine if they should proceed.
+
+Using `@PermitAll` will not open a path if the path is restricted by the `quarkus.http.auth.` configuration.
+To ensure specific paths are accessible, appropriate configurations must be made within the Quarkus security settings.
 
 [NOTE]
 ====
@@ -26,7 +28,7 @@ xref:security-customization.adoc#security-identity-customization[Security Identi
 [[authorization-using-configuration]]
 == Authorization using configuration
 
-Permissions are defined in the Quarkus configuration using permission sets, each specifying a policy for access control.
+Permissions are defined in the Quarkus configuration by permission sets, each specifying a policy for access control.
 
 .{project-name} policies summary
 [options="header"]
@@ -68,7 +70,11 @@ It is an exact path match because it does not end with `*`.
 <3> This permission set references the previously defined policy.
 `roles1` is an example name; you can call the permission sets whatever you want.
 
-WARNING: The `/forbidden` exact path in the example above will not secure the `/forbidden/` path. Don't forget to add new exact path for the `/forbidden/` path.
+[WARNING]
+====
+The exact path `/forbidden` in the example will not secure the `/forbidden/` path.
+It is necessary to add a new exact path for the `/forbidden/` path to ensure proper security coverage.
+====
 
 === Custom HttpSecurityPolicy
 
@@ -141,8 +147,11 @@ For that reason, a path like `/public-info` is not matched by this pattern.
 
 The request is rejected if it matches one or more permission sets based on the path but none of the required methods.
 
-TIP: Given the preceding permission set, `GET /public/foo` would match both the path and method and therefore be allowed.
+[TIP]
+====
+Given the preceding permission set, `GET /public/foo` would match both the path and method and therefore be allowed.
 In contrast, `POST /public/foo` would match the path but not the method, and, therefore, be rejected.
+====
 
 [[matching-multiple-paths]]
 === Matching multiple paths: longest path wins
@@ -160,13 +169,17 @@ quarkus.http.auth.permission.deny1.paths=/public/forbidden-folder/*
 quarkus.http.auth.permission.deny1.policy=deny
 ----
 
-TIP: Given the preceding permission set, `GET /public/forbidden-folder/foo` would match both permission sets' paths.
+[TIP]
+====
+Given the preceding permission set, `GET /public/forbidden-folder/foo` would match both permission sets' paths.
 However, because the longer path matches the path of the `deny1` permission set, `deny1` is chosen, and the request is rejected.
+====
 
 [NOTE]
 ====
-Subpath permissions always win against the root path permissions, as explained in the preceding `deny1` versus `permit1` permission example.
-Here is another example showing subpath permission allowing a public resource access with the root path permission requiring the authorization:
+Subpath permissions precede root path permissions, as the `deny1` versus `permit1` permission example previously illustrated.
+
+This rule is further exemplified by a scenario where subpath permission allows access to a public resource while the root path permission necessitates authorization.
 
 [source,properties]
 ----
@@ -181,14 +194,15 @@ quarkus.http.auth.permission.public.policy=permit
 
 === Matching multiple sub-paths: longest path to the `*` wildcard wins
 
-Previous examples shown how you can match all sub-paths when a path ends with the `$$*$$` wildcard.
-The `$$*$$` wildcard can also be used in the middle of the path, in which case it represents exactly one path segment.
-You can't combine this wildcard with any other path segment character, therefore the `$$*$$` wildcard will always be
-enclosed with path separators as in the `/public/$$*$$/about-us` path.
+Previous examples demonstrated matching all sub-paths when a path concludes with the `$$*$$`
+wildcard.
 
-What happens if multiple path patterns matches same request path?
-Matching is always done on the "longest sub-path to the `$$*$$` wildcard wins" basis.
-Every path segment character is considered more specific than the `$$*$$` wildcard.
+This wildcard also applies in the middle of a path, representing a single path segment.
+It cannot be mixed with other path segment characters; thus, path separators always enclose the `$$*$$` wildcard, as seen in the `/public/`$$*$$`/about-us` path.
+
+When several path patterns correspond to the same request path, the system selects the longest sub-path leading to the `$$*$$` wildcard.
+In this context, every path segment character is more specific than the `$$*$$`
+wildcard.
 
 Here is a simple example:
 
@@ -249,9 +263,11 @@ quarkus.http.auth.permission.deny1.policy=deny
 
 [NOTE]
 ====
-Given the preceding permission set, `GET /public/foo` would match the paths of both permission sets, but because it fits the explicit method of the `permit1` permission set, `permit1` is chosen, and the request is accepted.
+The preceding permission set shows that `GET /public/foo` matches the paths of both permission sets.However, it specifically aligns with the explicit method of the `permit1` permission set.Therefore, `permit1` is selected, and the request is accepted.
 
-Conversely, `PUT /public/foo` would not match the method permissions of `permit1`, so `deny1` would be activated and reject the request.
+
+
+In contrast, `PUT /public/foo` does not match the method permissions of `permit1`. As a result, `deny1` is activated, leading to the rejection of the request.
 ====
 
 === Matching multiple paths and methods: both win
@@ -329,8 +345,8 @@ quarkus.http.auth.permission.permit1.paths=${quarkus.http.root-path}/public/*,${
 
 A leading slash changes how the configured permission path is interpreted.
 The configured URL is used as-is, and paths are not adjusted if the value of `quarkus.http.root-path` changes.
-For example:
 
+.Example:
 [source,properties]
 ----
 quarkus.http.auth.permission.permit1.paths=/public/*,css/*,js/*,robots.txt
@@ -343,8 +359,8 @@ For more information, see link:https://quarkus.io/blog/path-resolution-in-quarku
 [[map-security-identity-roles]]
 === Map `SecurityIdentity` roles
 
-Winning role-based policy can map the `SecurityIdentity` roles to the deployment specific roles.
-These roles can later be used for endpoint authorization with the `@RolesAllowed` annotation.
+Winning role-based policy can map the `SecurityIdentity` roles to the deployment-specific roles.
+These roles are then applicable for endpoint authorization by using the @RolesAllowed annotation.
 
 [source,properties]
 ----
@@ -368,7 +384,7 @@ s| @DenyAll | Specifies that no security roles are allowed to invoke the specifi
 s| @PermitAll | Specifies that all security roles are allowed to invoke the specified methods.
 
 `@PermitAll` lets everybody in, even without authentication.
-s| @RolesAllowed | Specifies the list of security roles permitted to access methods in an application.
+s| @RolesAllowed | Specifies the list of security roles authorized to access methods in an application.
 
 As an equivalent to `@RolesAllowed("**")`, {project-name} also provides the `io.quarkus.security.Authenticated` annotation that permits any authenticated user to access the resource.
 |===
@@ -518,7 +534,7 @@ It is possible to use multiple expressions in the role definition.
 <3> This `/subject/user` endpoint requires an authenticated user that has been granted the role "User" through the use of the `@RolesAllowed("${customer:User}")` annotation because we did not set the configuration property `customer`.
 <4> In production, this `/subject/secured` endpoint requires an authenticated user with the `User` role.
 In development mode, it allows any authenticated user.
-<5> Property expression `all-roles` will be treated as a collection type `List`, therefore the endpoint will be accessible for roles `Administrator`, `Software`, `Tester` and `User`.
+<5> Property expression `all-roles` will be treated as a collection type `List`, therefore, the endpoint will be accessible for roles `Administrator`, `Software`, `Tester` and `User`.
 
 [[permission-annotation]]
 === Permission annotation
@@ -802,8 +818,8 @@ Because `MediaLibrary` is the `TvLibrary` class parent, a user with the `admin` 
 TIP: The `/library/*` path can be tested from a Keycloak provider Dev UI page, because the user `alice` which is created
 automatically by the xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] has an `admin` role.
 
-The examples provided so far use role-to-permission mapping.
-You can also add permissions to the `SecurityIdentity` instance programmatically.
+The examples provided so far demonstrate role-to-permission mapping.
+It is also possible to programmatically add permissions to the `SecurityIdentity` instance.
 In the following example, xref:security-customization.adoc#security-identity-customization[`SecurityIdentity` is customized] to add the same permission that was previously granted with the HTTP role-based policy.
 
 .Example of adding the `LibraryPermission` programmatically to `SecurityIdentity`

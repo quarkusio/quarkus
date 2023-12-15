@@ -181,7 +181,7 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-auth-runtime-con
 Quarkus provides mutual TLS (mTLS) authentication so that you can authenticate users based on their X.509 certificates.
 
 To use this authentication method, you must first enable SSL/TLS for your application.
-For more information, see the xref:http-reference.adoc#ssl[Supporting secure connections with SSL/TLS]  section of the Quarkus "HTTP reference" guide.
+For more information, see the xref:http-reference.adoc#ssl[Supporting secure connections with SSL/TLS] section of the Quarkus "HTTP reference" guide.
 
 After your application accepts secure connections, the next step is to configure the `quarkus.http.ssl.certificate.trust-store-file` property with the name of that file that holds all the certificates your application trusts. The specified file also includes information about how your application asks for certificates when a client, such as a browser or other service, tries to access one of its protected resources.
 
@@ -198,11 +198,12 @@ quarkus.http.insecure-requests=disabled                                    <5>
 ----
 <1> The keystore where the server's private key is located.
 <2> The truststore from which the trusted certificates are loaded.
-<3> With this value set to `required`, the server requires certificates from clients.
-To relax this requirement so that the server accepts requests without a certificate, set the value to `REQUEST`.
-This option is useful when you are also supporting authentication methods other than mTLS.
+<3> With the value set to `required`, the server demands client certificates.
+Set the value to `REQUEST` to allow the server to accept requests without a certificate.
+This setting is beneficial when supporting authentication methods besides mTLS.
 <4> Defines a policy where only authenticated users should have access to resources from your application.
-<5> Optionally,explicitly disable the plain HTTP protocol, and consequently require all requests to be made over HTTPS. If `quarkus.http.ssl.client-auth` is set to `required`, the `quarkus.http.insecure-requests` property is automatically set to `disabled`.
+<5> You can explicitly disable the plain HTTP protocol, thus requiring all requests to use HTTPS.
+When you set `quarkus.http.ssl.client-auth` to `required`, the system automatically sets `quarkus.http.insecure-requests` to `disabled`.
 
 When the incoming request matches a valid certificate in the truststore, your application can obtain the subject by injecting a `SecurityIdentity` as follows:
 
@@ -263,6 +264,7 @@ OIDC enables client applications to verify the identity of a user based on the a
 
 The Quarkus `quarkus-oidc` extension provides a reactive, interoperable, multitenant-enabled OIDC adapter that supports Bearer token and Authorization Code Flow authentication mechanisms.
 The Bearer token authentication mechanism extracts the token from the HTTP Authorization header.
+
 The Authorization Code Flow mechanism redirects the user to an OIDC provider to authenticate the user's identity.
 After the user is redirected back to Quarkus, the mechanism completes the authentication process by exchanging the provided code that was granted for the ID, access, and refresh tokens.
 
@@ -285,7 +287,7 @@ For more information about OIDC authentication and authorization methods that yo
 |Authorization Code Flow authentication mechanism|xref:security-oidc-code-flow-authentication.adoc[OpenID Connect (OIDC) Authorization Code Flow mechanism]
 |OIDC and SAML Identity broker|xref:security-oidc-code-flow-authentication.adoc#oidc-saml-broker[OpenID Connect (OIDC) Authorization Code Flow and SAML Identity broker]
 |Multiple tenants that can support the Bearer token authentication or Authorization Code Flow mechanisms|xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect (OIDC) multi-tenancy]
-|Securing Quarkus with commonly-used OpenID Connect providers|xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect providers]
+|Securing Quarkus with commonly used OpenID Connect providers|xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect providers]
 |Using Keycloak to centralize authorization |xref:security-keycloak-authorization.adoc[Using OpenID Connect (OIDC) and Keycloak to centralize authorization]
 |Configuring Keycloak programmatically |xref:security-keycloak-admin-client.adoc[Using the Keycloak admin client]
 |====
@@ -339,6 +341,7 @@ For more information, see the xref:security-jwt.adoc[Using JWT RBAC] guide.
 
 `quarkus-elytron-security-oauth2` provides an alternative to the Quarkus `quarkus-oidc` Bearer token authentication mechanism extension.
 `quarkus-elytron-security-oauth2` is based on `Elytron` and is primarily intended for introspecting opaque tokens remotely.
+
 For more information, see the Quarkus xref:security-oauth2.adoc[Using OAuth2] guide.
 
 [[oidc-jwt-oauth2-comparison]]

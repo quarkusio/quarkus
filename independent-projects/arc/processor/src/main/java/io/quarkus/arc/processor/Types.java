@@ -79,7 +79,7 @@ public final class Types {
 
     // we ban these interfaces because of mismatch between building JDK version and target JDK version
     // TODO:  add a extensible banning mechanism based on predicates if we find that this set needs to grow...
-    private static final Set<DotName> BANNED_INTERFACE_TYPES = Collections.emptySet();
+    private static final Set<DotName> BANNED_INTERFACE_TYPES = Set.of(DotName.createSimple("java.util.SequencedCollection"));
 
     private Types() {
     }

@@ -714,7 +714,7 @@ Type: _boolean_ | false | `false`
 
 Type: _string_ | false | `#`
 
-| [.no-hyphens]#*content-type-override*# | Override the content_type attribute of the incoming message, should be a valid MINE type
+| [.no-hyphens]#*content-type-override*# | Override the content_type attribute of the incoming message, should be a valid MIME type
 
 Type: _string_ | false |
 

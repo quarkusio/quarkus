@@ -27,7 +27,7 @@ public class EnumBeanTypesTest {
         InjectableBean<ExtendedBoolean> bean = Arc.container().instance(ExtendedBoolean.class).getBean();
         Set<Type> types = bean.getTypes();
 
-        assertEquals(5, types.size());
+        assertEquals(6, types.size());
         assertTrue(types.contains(Object.class));
         assertTrue(types.contains(Serializable.class));
         assertTrue(types.contains(ExtendedBoolean.class));

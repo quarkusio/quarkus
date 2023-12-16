@@ -61,8 +61,8 @@ For information about other methods that you can use to configure the required u
 +
 [IMPORTANT]
 ====
-Configuring user names, secrets, and roles in the `application.properties` file is only suitable for testing scenarios.
-If you are securing a production application, always use a database to store this information.
+Configuring user names, secrets, and roles in the `application.properties` file is appropriate only for testing scenarios.
+For securing a production application, it is crucial to use a database to store this information.
 ====
 
 == Next steps

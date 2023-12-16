@@ -669,7 +669,7 @@ public class SecurityEventObserver {
     void observeAuthorizationSuccess(@ObservesAsync AuthorizationSuccessEvent event) {
         String principalName = getPrincipalName(event);
         if (principalName != null) {
-            LOG.debugf("User '%s' has been authorized successfully", event.getSecurityIdentity().getPrincipal().getName());
+            LOG.debugf("User '%s' has been authorized successfully", principalName);
         }
     }
 

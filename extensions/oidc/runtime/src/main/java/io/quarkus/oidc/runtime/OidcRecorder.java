@@ -495,12 +495,11 @@ public class OidcRecorder {
 
                     @Override
                     public Uni<OidcProviderClient> apply(OidcConfigurationMetadata metadata, Throwable t) {
+                        String tenantId = oidcConfig.tenantId.orElse(DEFAULT_TENANT_ID);
                         if (t != null) {
                             client.close();
-                            return Uni.createFrom().failure(
-                                    toOidcException(t, authServerUriString, oidcConfig.tenantId.orElse(DEFAULT_TENANT_ID)));
+                            return Uni.createFrom().failure(toOidcException(t, authServerUriString, tenantId));
                         }
-                        String tenantId = oidcConfig.tenantId.orElse(DEFAULT_TENANT_ID);
                         if (shouldFireOidcServerAvailableEvent(tenantId)) {
                             fireOidcServerAvailableEvent(authServerUriString, tenantId);
                         }

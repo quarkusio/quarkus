@@ -11,8 +11,17 @@ import io.quarkus.security.spi.runtime.AbstractSecurityEvent;
  */
 public class SecurityEvent extends AbstractSecurityEvent {
     public static final String SESSION_TOKENS_PROPERTY = "session-tokens";
+    public static final String AUTH_SERVER_URL = "auth-server-url";
 
     public enum Type {
+        /**
+         * OIDC connection event which is reported when an attempt to connect to the OIDC server has failed.
+         */
+        OIDC_SERVER_NOT_AVAILABLE,
+        /**
+         * OIDC connection event which is reported when a connection to the OIDC server has been recovered.
+         */
+        OIDC_SERVER_AVAILABLE,
         /**
          * OIDC Login event which is reported after the first user authentication but also when the user's session
          * has expired and the user has re-authenticated at the OIDC provider site.

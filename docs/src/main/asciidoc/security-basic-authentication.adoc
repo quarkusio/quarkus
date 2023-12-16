@@ -11,11 +11,11 @@ include::_attributes.adoc[]
 :topics: security,authentication,basic-authentication,http
 :extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-elytron-security-jdbc,io.quarkus:quarkus-elytron-security-ldap,io.quarkus:quarkus-security-jpa-reactive
 
-HTTP Basic authentication is a low-resource method for enforcing access controls to web resources.
+HTTP Basic authentication is one of the least resource-demanding techniques that enforce access controls to web resources.
 You can secure your Quarkus application endpoints by using HTTP Basic authentication.
 Quarkus includes a built-in authentication mechanism for Basic authentication.
 
-Basic authentication operates through fields in the HTTP header and does not rely on HTTP cookies, session identifiers, or login pages.
+Basic authentication uses fields in the HTTP header and does not rely on HTTP cookies, session identifiers, or login pages.
 
 == Authorization header
 

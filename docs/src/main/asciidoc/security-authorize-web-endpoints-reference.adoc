@@ -384,7 +384,7 @@ s| @DenyAll | Specifies that no security roles are allowed to invoke the specifi
 s| @PermitAll | Specifies that all security roles are allowed to invoke the specified methods.
 
 `@PermitAll` lets everybody in, even without authentication.
-s| @RolesAllowed | Specifies the list of security roles authorized to access methods in an application.
+s| @RolesAllowed | Specifies the list of security roles allowed to access methods in an application.
 
 As an equivalent to `@RolesAllowed("**")`, {project-name} also provides the `io.quarkus.security.Authenticated` annotation that permits any authenticated user to access the resource.
 |===

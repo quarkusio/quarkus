@@ -76,6 +76,7 @@ The exact path `/forbidden` in the example will not secure the `/forbidden/` pat
 It is necessary to add a new exact path for the `/forbidden/` path to ensure proper security coverage.
 ====
 
+[[custom-http-security-policy]]
 === Custom HttpSecurityPolicy
 
 Sometimes it might be useful to register your own named policy. You can get it done by creating application scoped CDI
@@ -369,6 +370,49 @@ quarkus.http.auth.permission.roles1.paths=/*
 quarkus.http.auth.permission.roles1.policy=admin-policy1
 ----
 <1> Map the `admin` role to `Admin1` role. The `SecurityIdentity` will have both `admin` and `Admin1` roles.
+
+=== Shared permission checks
+
+One important rule for unshared permission checks is that only one path match is applied, the most specific one.
+Naturally you can specify as many permissions with the same winning path as you want and they will all be applied.
+However, there can be permission checks you want to apply to many paths without repeating them over and over again.
+That's where shared permission checks come in, they are always applied when the permission path is matched.
+
+.Example of custom named HttpSecurityPolicy applied on every HTTP request
+[source,properties]
+----
+quarkus.http.auth.permission.custom1.paths=/*
+quarkus.http.auth.permission.custom1.shared=true    <1>
+quarkus.http.auth.permission.custom1.policy=custom
+
+quarkus.http.auth.policy.admin-policy1.roles-allowed=admin
+quarkus.http.auth.permission.roles1.paths=/admin/*
+quarkus.http.auth.permission.roles1.policy=admin-policy1
+----
+<1> <<custom-http-security-policy>> will be also applied on the `/admin/1` path together with the `admin-policy1` policy.
+
+TIP: Configuring many shared permission checks is less effective than configuring unshared ones.
+Use shared permissions to complement unshared permission checks like in the example below.
+
+.Map `SecurityIdentity` roles with shared permission
+[source,properties]
+----
+quarkus.http.auth.policy.role-policy1.roles.root=admin,user <1>
+quarkus.http.auth.permission.roles1.paths=/secured/*        <2>
+quarkus.http.auth.permission.roles1.policy=role-policy1
+quarkus.http.auth.permission.roles1.shared=true
+
+quarkus.http.auth.policy.role-policy2.roles-allowed=user    <3>
+quarkus.http.auth.permission.roles2.paths=/secured/user/*
+quarkus.http.auth.permission.roles2.policy=role-policy2
+
+quarkus.http.auth.policy.role-policy3.roles-allowed=admin
+quarkus.http.auth.permission.roles3.paths=/secured/admin/*
+quarkus.http.auth.permission.roles3.policy=role-policy3
+----
+<1> Role `root` will be able to access `/secured/user/*` and `/secured/admin/*` paths.
+<2> The `/secured/*` path can only be accessed by authenticated users. This way, you have secured the `/secured/all` path and so on.
+<3> Shared permissions are always applied before unshared ones, therefore a `SecurityIdentity` with the `root` role will have the `user` role as well.
 
 [[standard-security-annotations]]
 == Authorization using annotations

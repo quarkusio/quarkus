@@ -37,28 +37,56 @@ public class AbstractPathMatchingHttpSecurityPolicy {
     private static final String PATH_MATCHING_POLICY_FOUND = AbstractPathMatchingHttpSecurityPolicy.class.getName()
             + ".POLICY_FOUND";
     private final ImmutablePathMatcher<List<HttpMatcher>> pathMatcher;
+    private final List<ImmutablePathMatcher<List<HttpMatcher>>> sharedPermissionsPathMatchers;
+    private final boolean hasNoPermissions;
 
     AbstractPathMatchingHttpSecurityPolicy(Map<String, PolicyMappingConfig> permissions,
             Map<String, PolicyConfig> rolePolicy, String rootPath, Instance<HttpSecurityPolicy> installedPolicies) {
-        pathMatcher = init(permissions, toNamedHttpSecPolicies(rolePolicy, installedPolicies), rootPath);
+        this.hasNoPermissions = permissions.isEmpty();
+        var namedHttpSecurityPolicies = toNamedHttpSecPolicies(rolePolicy, installedPolicies);
+        List<ImmutablePathMatcher<List<HttpMatcher>>> sharedPermsMatchers = new ArrayList<>();
+        final var builder = ImmutablePathMatcher.<List<HttpMatcher>> builder().handlerAccumulator(List::addAll);
+        for (Map.Entry<String, PolicyMappingConfig> entry : permissions.entrySet()) {
+            if (entry.getValue().shared) {
+                final var builder1 = ImmutablePathMatcher.<List<HttpMatcher>> builder().handlerAccumulator(List::addAll);
+                addPermissionToPathMatcher(namedHttpSecurityPolicies, rootPath, entry, builder1);
+                sharedPermsMatchers.add(builder1.build());
+            } else {
+                addPermissionToPathMatcher(namedHttpSecurityPolicies, rootPath, entry, builder);
+            }
+        }
+        this.sharedPermissionsPathMatchers = sharedPermsMatchers.isEmpty() ? null : List.copyOf(sharedPermsMatchers);
+        this.pathMatcher = builder.build();
     }
 
     public String getAuthMechanismName(RoutingContext routingContext) {
-        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(routingContext.normalizedPath());
-        if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
-            return null;
-        }
-        for (HttpMatcher i : toCheck.getValue()) {
-            if (i.authMechanism != null) {
-                return i.authMechanism;
+        if (sharedPermissionsPathMatchers != null) {
+            for (ImmutablePathMatcher<List<HttpMatcher>> matcher : sharedPermissionsPathMatchers) {
+                String authMechanismName = getAuthMechanismName(routingContext, matcher);
+                if (authMechanismName != null) {
+                    return authMechanismName;
+                }
             }
         }
-        return null;
+        return getAuthMechanismName(routingContext, pathMatcher);
+    }
+
+    boolean hasNoPermissions() {
+        return hasNoPermissions;
     }
 
     public Uni<CheckResult> checkPermission(RoutingContext routingContext, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
-        List<HttpSecurityPolicy> permissionCheckers = findPermissionCheckers(routingContext);
+        final List<HttpSecurityPolicy> permissionCheckers;
+        if (sharedPermissionsPathMatchers == null) {
+            permissionCheckers = findPermissionCheckers(routingContext, pathMatcher);
+        } else {
+            permissionCheckers = new ArrayList<>();
+            for (ImmutablePathMatcher<List<HttpMatcher>> matcher : sharedPermissionsPathMatchers) {
+                permissionCheckers.addAll(findPermissionCheckers(routingContext, matcher));
+            }
+            permissionCheckers.addAll(findPermissionCheckers(routingContext, pathMatcher));
+        }
         return doPermissionCheck(routingContext, identity, 0, null, permissionCheckers, requestContext);
     }
 
@@ -99,33 +127,45 @@ public class AbstractPathMatchingHttpSecurityPolicy {
                 });
     }
 
-    private static ImmutablePathMatcher<List<HttpMatcher>> init(Map<String, PolicyMappingConfig> permissions,
-            Map<String, HttpSecurityPolicy> permissionCheckers, String rootPath) {
-        final var builder = ImmutablePathMatcher.<List<HttpMatcher>> builder().handlerAccumulator(List::addAll);
-        for (Map.Entry<String, PolicyMappingConfig> entry : permissions.entrySet()) {
-            HttpSecurityPolicy checker = permissionCheckers.get(entry.getValue().policy);
-            if (checker == null) {
-                throw new RuntimeException("Unable to find HTTP security policy " + entry.getValue().policy);
-            }
-
-            if (entry.getValue().enabled.orElse(Boolean.TRUE)) {
-                for (String path : entry.getValue().paths.orElse(Collections.emptyList())) {
-                    path = path.trim();
-                    if (!path.startsWith("/")) {
-                        path = rootPath + path;
-                    }
-                    HttpMatcher m = new HttpMatcher(entry.getValue().authMechanism.orElse(null),
-                            new HashSet<>(entry.getValue().methods.orElse(Collections.emptyList())), checker);
-                    List<HttpMatcher> perms = new ArrayList<>();
-                    perms.add(m);
-                    builder.addPath(path, perms);
-                }
+    private static String getAuthMechanismName(RoutingContext routingContext,
+            ImmutablePathMatcher<List<HttpMatcher>> pathMatcher) {
+        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(routingContext.normalizedPath());
+        if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
+            return null;
+        }
+        for (HttpMatcher i : toCheck.getValue()) {
+            if (i.authMechanism != null) {
+                return i.authMechanism;
             }
         }
-        return builder.build();
+        return null;
     }
 
-    public List<HttpSecurityPolicy> findPermissionCheckers(RoutingContext context) {
+    private static void addPermissionToPathMatcher(Map<String, HttpSecurityPolicy> permissionCheckers, String rootPath,
+            Map.Entry<String, PolicyMappingConfig> entry,
+            ImmutablePathMatcher.ImmutablePathMatcherBuilder<List<HttpMatcher>> builder) {
+        HttpSecurityPolicy checker = permissionCheckers.get(entry.getValue().policy);
+        if (checker == null) {
+            throw new RuntimeException("Unable to find HTTP security policy " + entry.getValue().policy);
+        }
+
+        if (entry.getValue().enabled.orElse(Boolean.TRUE)) {
+            for (String path : entry.getValue().paths.orElse(Collections.emptyList())) {
+                path = path.trim();
+                if (!path.startsWith("/")) {
+                    path = rootPath + path;
+                }
+                HttpMatcher m = new HttpMatcher(entry.getValue().authMechanism.orElse(null),
+                        new HashSet<>(entry.getValue().methods.orElse(Collections.emptyList())), checker);
+                List<HttpMatcher> perms = new ArrayList<>();
+                perms.add(m);
+                builder.addPath(path, perms);
+            }
+        }
+    }
+
+    private static List<HttpSecurityPolicy> findPermissionCheckers(RoutingContext context,
+            ImmutablePathMatcher<List<HttpMatcher>> pathMatcher) {
         PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(context.normalizedPath());
         if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
             return Collections.emptyList();

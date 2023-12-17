@@ -60,4 +60,11 @@ public class PolicyMappingConfig {
      */
     @ConfigItem
     public Optional<String> authMechanism;
+
+    /**
+     * Indicates that this policy always applies to the matched paths in addition to the policy with a winning path.
+     * Avoid creating more than one shared policy to minimize the performance impact.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean shared;
 }

@@ -1,5 +1,8 @@
 package io.quarkus.oidc.runtime;
 
+import static io.quarkus.oidc.SecurityEvent.AUTH_SERVER_URL;
+import static io.quarkus.oidc.SecurityEvent.Type.OIDC_SERVER_AVAILABLE;
+import static io.quarkus.oidc.SecurityEvent.Type.OIDC_SERVER_NOT_AVAILABLE;
 import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
 
@@ -28,6 +31,7 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.OidcTenantConfig.TokenStateManager.Strategy;
+import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.TenantIdentityProvider;
 import io.quarkus.oidc.common.OidcEndpoint;
@@ -42,8 +46,10 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
+import io.quarkus.security.runtime.SecurityConfig;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.MethodDescription;
+import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
@@ -60,6 +66,7 @@ public class OidcRecorder {
     private static final Logger LOG = Logger.getLogger(OidcRecorder.class);
 
     private static final Map<String, TenantConfigContext> dynamicTenantsConfig = new ConcurrentHashMap<>();
+    private static final Set<String> tenantsExpectingServerAvailableEvents = ConcurrentHashMap.newKeySet();
 
     public Supplier<DefaultTokenIntrospectionUserInfoCache> setupTokenCache(OidcConfig config, Supplier<Vertx> vertx) {
         return new Supplier<DefaultTokenIntrospectionUserInfoCache>() {
@@ -356,9 +363,10 @@ public class OidcRecorder {
         return OidcCommonUtils.toProxyOptions(proxyConfig);
     }
 
-    protected static OIDCException toOidcException(Throwable cause, String authServerUrl) {
+    protected static OIDCException toOidcException(Throwable cause, String authServerUrl, String tenantId) {
         final String message = OidcCommonUtils.formatConnectionErrorMessage(authServerUrl);
         LOG.warn(message);
+        fireOidcServerNotAvailableEvent(authServerUrl, tenantId);
         return new OIDCException("OIDC Server is not available", cause);
     }
 
@@ -418,23 +426,39 @@ public class OidcRecorder {
 
     protected static Uni<JsonWebKeySet> getJsonWebSetUni(OidcProviderClient client, OidcTenantConfig oidcConfig) {
         if (!oidcConfig.isDiscoveryEnabled().orElse(true)) {
-            final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
-            return client.getJsonWebKeySet(null).onFailure(OidcCommonUtils.oidcEndpointNotAvailable())
-                    .retry()
-                    .withBackOff(OidcCommonUtils.CONNECTION_BACKOFF_DURATION, OidcCommonUtils.CONNECTION_BACKOFF_DURATION)
-                    .expireIn(connectionDelayInMillisecs)
-                    .onFailure()
-                    .transform(new Function<Throwable, Throwable>() {
-                        @Override
-                        public Throwable apply(Throwable t) {
-                            return toOidcException(t, oidcConfig.authServerUrl.get());
-                        }
-                    })
-                    .onFailure()
-                    .invoke(client::close);
+            String tenantId = oidcConfig.tenantId.orElse(DEFAULT_TENANT_ID);
+            if (shouldFireOidcServerAvailableEvent(tenantId)) {
+                return getJsonWebSetUniWhenDiscoveryDisabled(client, oidcConfig)
+                        .invoke(new Runnable() {
+                            @Override
+                            public void run() {
+                                fireOidcServerAvailableEvent(oidcConfig.authServerUrl.get(), tenantId);
+                            }
+                        });
+            }
+            return getJsonWebSetUniWhenDiscoveryDisabled(client, oidcConfig);
         } else {
             return client.getJsonWebKeySet(null);
         }
+    }
+
+    private static Uni<JsonWebKeySet> getJsonWebSetUniWhenDiscoveryDisabled(OidcProviderClient client,
+            OidcTenantConfig oidcConfig) {
+        final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
+        return client.getJsonWebKeySet(null).onFailure(OidcCommonUtils.oidcEndpointNotAvailable())
+                .retry()
+                .withBackOff(OidcCommonUtils.CONNECTION_BACKOFF_DURATION, OidcCommonUtils.CONNECTION_BACKOFF_DURATION)
+                .expireIn(connectionDelayInMillisecs)
+                .onFailure()
+                .transform(new Function<Throwable, Throwable>() {
+                    @Override
+                    public Throwable apply(Throwable t) {
+                        return toOidcException(t, oidcConfig.authServerUrl.get(),
+                                oidcConfig.tenantId.orElse(DEFAULT_TENANT_ID));
+                    }
+                })
+                .onFailure()
+                .invoke(client::close);
     }
 
     protected static Uni<OidcProviderClient> createOidcClientUni(OidcTenantConfig oidcConfig,
@@ -471,9 +495,13 @@ public class OidcRecorder {
 
                     @Override
                     public Uni<OidcProviderClient> apply(OidcConfigurationMetadata metadata, Throwable t) {
+                        String tenantId = oidcConfig.tenantId.orElse(DEFAULT_TENANT_ID);
                         if (t != null) {
                             client.close();
-                            return Uni.createFrom().failure(toOidcException(t, authServerUriString));
+                            return Uni.createFrom().failure(toOidcException(t, authServerUriString, tenantId));
+                        }
+                        if (shouldFireOidcServerAvailableEvent(tenantId)) {
+                            fireOidcServerAvailableEvent(authServerUriString, tenantId);
                         }
                         if (metadata == null) {
                             client.close();
@@ -512,6 +540,32 @@ public class OidcRecorder {
         return new OidcConfigurationMetadata(tokenUri,
                 introspectionUri, authorizationUri, jwksUri, userInfoUri, endSessionUri,
                 oidcConfig.token.issuer.orElse(null));
+    }
+
+    private static void fireOidcServerNotAvailableEvent(String authServerUrl, String tenantId) {
+        if (fireOidcServerEvent(authServerUrl, OIDC_SERVER_NOT_AVAILABLE)) {
+            tenantsExpectingServerAvailableEvents.add(tenantId);
+        }
+    }
+
+    private static void fireOidcServerAvailableEvent(String authServerUrl, String tenantId) {
+        if (fireOidcServerEvent(authServerUrl, OIDC_SERVER_AVAILABLE)) {
+            tenantsExpectingServerAvailableEvents.remove(tenantId);
+        }
+    }
+
+    private static boolean shouldFireOidcServerAvailableEvent(String tenantId) {
+        return tenantsExpectingServerAvailableEvents.contains(tenantId);
+    }
+
+    private static boolean fireOidcServerEvent(String authServerUrl, SecurityEvent.Type eventType) {
+        if (Arc.container().instance(SecurityConfig.class).get().events().enabled()) {
+            SecurityEventHelper.fire(
+                    Arc.container().beanManager().getEvent().select(SecurityEvent.class),
+                    new SecurityEvent(eventType, Map.of(AUTH_SERVER_URL, authServerUrl)));
+            return true;
+        }
+        return false;
     }
 
     public Consumer<RoutingContext> createTenantResolverInterceptor(String tenantId) {

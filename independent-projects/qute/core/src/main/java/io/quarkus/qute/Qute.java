@@ -159,7 +159,7 @@ public final class Qute {
         }
 
         /**
-         * Use the template cache, i.e. first attempt to find the parsed template in the cahce and if not found then parse the
+         * Use the template cache, i.e. first attempt to find the parsed template in the cache and if not found then parse the
          * template and store the instance in the cache.
          * <p>
          * Note that caching greatly improves the performance of formatting, albeit increases the memory usage.

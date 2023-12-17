@@ -34,7 +34,7 @@ public class HttpAuthorizer extends AbstractHttpAuthorizer {
     private static List<HttpSecurityPolicy> toList(Instance<HttpSecurityPolicy> installedPolicies) {
         List<HttpSecurityPolicy> globalPolicies = new ArrayList<>();
         for (HttpSecurityPolicy i : installedPolicies) {
-            if (i.name() == null) {
+            if (i.name() == null && !(i instanceof AbstractPathMatchingHttpSecurityPolicy i1 && i1.hasNoPermissions())) {
                 globalPolicies.add(i);
             }
         }

@@ -36,7 +36,9 @@ import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
 
+import io.quarkus.arc.processor.BeanDeployment.SkippedClass;
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
+import io.quarkus.arc.processor.Types.TypeClosure;
 import io.quarkus.gizmo.ClassTransformer;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
@@ -78,7 +80,7 @@ public final class Beans {
         return null;
     }
 
-    static BeanInfo createProducerMethod(Set<Type> beanTypes, MethodInfo producerMethod, BeanInfo declaringBean,
+    static BeanInfo createProducerMethod(TypeClosure typeClosure, MethodInfo producerMethod, BeanInfo declaringBean,
             BeanDeployment beanDeployment,
             DisposerInfo disposer, InjectionPointModifier transformer) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
@@ -190,8 +192,9 @@ public final class Beans {
 
         List<Injection> injections = Injection.forBean(producerMethod, declaringBean, beanDeployment, transformer,
                 Injection.BeanType.PRODUCER_METHOD);
-        BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, beanTypes, qualifiers, injections, declaringBean,
-                disposer, isAlternative, stereotypes, name, isDefaultBean, null, priority);
+        BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, typeClosure.types(), qualifiers, injections,
+                declaringBean,
+                disposer, isAlternative, stereotypes, name, isDefaultBean, null, priority, typeClosure.unrestrictedTypes());
         for (Injection injection : injections) {
             injection.init(bean);
         }
@@ -202,7 +205,7 @@ public final class Beans {
             DisposerInfo disposer) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
         List<ScopeInfo> scopes = new ArrayList<>();
-        Set<Type> types = Types.getProducerFieldTypeClosure(producerField, beanDeployment);
+        TypeClosure typeClosure = Types.getProducerFieldTypeClosure(producerField, beanDeployment);
         Integer priority = null;
         boolean isAlternative = false;
         boolean isDefaultBean = false;
@@ -302,8 +305,10 @@ public final class Beans {
                     + "its scope must be @Dependent: " + producerField);
         }
 
-        BeanInfo bean = new BeanInfo(producerField, beanDeployment, scope, types, qualifiers, Collections.emptyList(),
-                declaringBean, disposer, isAlternative, stereotypes, name, isDefaultBean, null, priority);
+        BeanInfo bean = new BeanInfo(producerField, beanDeployment, scope, typeClosure.types(), qualifiers,
+                Collections.emptyList(),
+                declaringBean, disposer, isAlternative, stereotypes, name, isDefaultBean, null, priority,
+                typeClosure.unrestrictedTypes());
         return bean;
     }
 
@@ -460,21 +465,56 @@ public final class Beans {
         List<BeanInfo> resolved = deployment.beanResolver.resolve(injectionPoint.getTypeAndQualifiers());
         BeanInfo selected = null;
         if (resolved.isEmpty()) {
-            List<BeanInfo> typeMatching = deployment.beanResolver.findTypeMatching(injectionPoint.getRequiredType());
 
             StringBuilder message = new StringBuilder("Unsatisfied dependency for type ");
             addStandardErroneousDependencyMessage(target, injectionPoint, message);
+
+            List<BeanInfo> typeMatching = deployment.beanResolver.findTypeMatching(injectionPoint.getRequiredType());
             if (!typeMatching.isEmpty()) {
-                message.append("\n\tThe following beans match by type, but none have matching qualifiers:");
-                for (BeanInfo beanInfo : typeMatching) {
-                    message.append("\n\t\t- ");
-                    message.append("Bean [class=");
-                    message.append(beanInfo.getImplClazz());
-                    message.append(", qualifiers=");
-                    message.append(beanInfo.getQualifiers());
-                    message.append("]");
+                message.append("\n\tThe following beans match by type, but none has matching qualifiers:");
+                for (BeanInfo bean : typeMatching) {
+                    message.append("\n\t- ");
+                    message.append(bean);
                 }
+                message.append("\n\n");
             }
+
+            List<BeanInfo> unrestrictedTypeMatching = deployment.beanResolver
+                    .findUnrestrictedTypeMatching(injectionPoint.getTypeAndQualifiers());
+            if (!unrestrictedTypeMatching.isEmpty()) {
+                message.append("\n\tThe following beans match by type excluded by the @Typed annotation:");
+                for (BeanInfo bean : unrestrictedTypeMatching) {
+                    message.append("\n\t- ");
+                    message.append(bean);
+                }
+                message.append("\n\n");
+            }
+
+            List<SkippedClass> skippedClasses = deployment.findSkippedClassesMatching(injectionPoint.getRequiredType());
+            if (!skippedClasses.isEmpty()) {
+                message.append("\n\tThe following classes match by type, but have been skipped during discovery:");
+                for (SkippedClass skippedClass : skippedClasses) {
+                    message.append("\n\t- ");
+                    message.append(skippedClass.clazz().name());
+                    switch (skippedClass.reason()) {
+                        case EXCLUDED_TYPE:
+                            message.append(" was excluded in config");
+                            break;
+                        case VETOED:
+                            message.append(" was annotated with @Vetoed");
+                            break;
+                        case NO_BEAN_DEF_ANNOTATION:
+                            message.append(" has no bean defining annotation (scope, stereotype, etc.)");
+                            break;
+                        case NO_BEAN_CONSTRUCTOR:
+                            message.append(" does not declare a valid bean constructor");
+                        default:
+                            break;
+                    }
+                }
+                message.append("\n\n");
+            }
+
             errors.add(new UnsatisfiedResolutionException(message.toString()));
         } else if (resolved.size() > 1) {
             // Try to resolve the ambiguity
@@ -502,7 +542,7 @@ public final class Beans {
         if (injectionPoint.isSynthetic()) {
             message.append("\n\t- synthetic injection point");
         } else {
-            message.append("\n\t- java member: ");
+            message.append("\n\t- injection target: ");
             message.append(injectionPoint.getTargetInfo());
         }
         message.append("\n\t- declared on ");
@@ -1250,7 +1290,7 @@ public final class Beans {
         BeanInfo create() {
             Set<AnnotationInstance> qualifiers = new HashSet<>();
             List<ScopeInfo> scopes = new ArrayList<>();
-            Set<Type> types = Types.getClassBeanTypeClosure(beanClass, beanDeployment);
+            TypeClosure typeClosure = Types.getClassBeanTypeClosure(beanClass, beanDeployment);
 
             List<StereotypeInfo> stereotypes = new ArrayList<>();
             Collection<AnnotationInstance> annotations = beanDeployment.getAnnotations(beanClass);
@@ -1307,8 +1347,9 @@ public final class Beans {
 
             List<Injection> injections = Injection.forBean(beanClass, null, beanDeployment, transformer,
                     Injection.BeanType.MANAGED_BEAN);
-            BeanInfo bean = new BeanInfo(beanClass, beanDeployment, scope, types, qualifiers,
-                    injections, null, null, isAlternative, stereotypes, name, isDefaultBean, null, priority);
+            BeanInfo bean = new BeanInfo(beanClass, beanDeployment, scope, typeClosure.types(), qualifiers,
+                    injections, null, null, isAlternative, stereotypes, name, isDefaultBean, null, priority,
+                    typeClosure.unrestrictedTypes());
             for (Injection injection : injections) {
                 injection.init(bean);
             }

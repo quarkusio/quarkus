@@ -1,5 +1,6 @@
 package io.quarkus.deployment.builditem;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import io.quarkus.builder.item.MultiBuildItem;
@@ -18,9 +19,9 @@ public final class ExcludeDependencyBuildItem extends MultiBuildItem {
     }
 
     public ExcludeDependencyBuildItem(String groupId, String artifactId, Optional<String> classifier) {
-        this.groupId = groupId;
+        this.groupId = Objects.requireNonNull(groupId);
         this.artifactId = artifactId;
-        this.classifier = classifier;
+        this.classifier = Objects.requireNonNull(classifier);
     }
 
     public String getGroupId() {

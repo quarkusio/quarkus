@@ -364,6 +364,26 @@ public class PackageIT extends MojoTestBase {
         assertZipEntriesCanBeOpenedAndClosed(runnerJar);
     }
 
+    /**
+     * Tests that quarkus.index-dependency.* can be used for modules in a multimodule project. artifact-id is optional.
+     */
+    @Test
+    public void testQuarkusIndexDependencyGroupIdOnLocalModule() throws Exception {
+        testDir = initProject("projects/quarkus-index-dependencies-groupid");
+
+        running = new RunningInvoker(testDir, false);
+        final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
+                Collections.emptyMap());
+
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        final File targetDir = new File(testDir.getAbsoluteFile(), "runner" + File.separator + "target");
+
+        final Path runnerJar = targetDir.toPath().resolve("quarkus-app").resolve("quarkus-run.jar");
+        Assertions.assertTrue(Files.exists(runnerJar), "Runner jar " + runnerJar + " is missing");
+        assertZipEntriesCanBeOpenedAndClosed(runnerJar);
+    }
+
     @Test
     public void testNativeSourcesPackage() throws Exception {
         testDir = initProject("projects/uberjar-check", "projects/project-native-sources");

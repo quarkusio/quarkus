@@ -256,7 +256,8 @@ public class BeanArchiveProcessor {
             }
 
             for (ExcludeDependencyBuildItem excludeDependencyBuildItem : excludeDependencyBuildItems) {
-                if (archiveMatches(key, excludeDependencyBuildItem.getGroupId(), excludeDependencyBuildItem.getArtifactId(),
+                if (archiveMatches(key, excludeDependencyBuildItem.getGroupId(),
+                        Optional.ofNullable(excludeDependencyBuildItem.getArtifactId()),
                         excludeDependencyBuildItem.getClassifier())) {
                     return true;
                 }
@@ -266,17 +267,16 @@ public class BeanArchiveProcessor {
         return false;
     }
 
-    public static boolean archiveMatches(ArtifactKey key, String groupId, String artifactId, Optional<String> classifier) {
-
-        if (Objects.equals(key.getArtifactId(), artifactId)
-                && Objects.equals(key.getGroupId(), groupId)) {
+    public static boolean archiveMatches(ArtifactKey key, String groupId, Optional<String> artifactId,
+            Optional<String> classifier) {
+        if (Objects.equals(key.getGroupId(), groupId)
+                && artifactId.isEmpty() || Objects.equals(key.getArtifactId(), artifactId.get())) {
             if (classifier.isPresent() && Objects.equals(key.getClassifier(), classifier.get())) {
                 return true;
             } else if (!classifier.isPresent() && ArtifactCoords.DEFAULT_CLASSIFIER.equals(key.getClassifier())) {
                 return true;
             }
         }
-
         return false;
     }
 

@@ -207,6 +207,7 @@
 
         <!-- JMS -->
         <module>jms-spi</module>
+        <module>jfr</module>
 
     </modules>
 

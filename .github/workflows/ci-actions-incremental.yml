@@ -597,7 +597,7 @@ jobs:
       matrix:
         java:
           - {
-            name: "7",
+            name: "17",
             java-version: 17,
             os-name: "ubuntu-latest"
           }

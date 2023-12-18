@@ -17,7 +17,7 @@ Quarkus supports the JBoss Logging API and multiple other logging APIs, seamless
 You can use any of the <<logging-apis,following APIs>>:
 
 * link:https://github.com/jboss-logging/jboss-logging[JBoss Logging]
-* link:https://docs.oracle.com/en/java/javase/11/docs/api/java.logging/java/util/logging/package-summary.html[JDK `java.util.logging` (JUL)]
+* link:https://docs.oracle.com/en/java/javase/17/docs/api/java.logging/java/util/logging/package-summary.html[JDK `java.util.logging` (JUL)]
 * link:https://www.slf4j.org/[SLF4J]
 * link:https://commons.apache.org/proper/commons-logging/[Apache Commons Logging]
 * link:https://logging.apache.org/log4j/2.x/[Apache Log4j 2]
@@ -505,7 +505,7 @@ For details about its configuration, see the xref:#quarkus-log-logging-log-confi
 
 == Add a logging filter to your log handler
 
-Log handlers, such as the console log handler, can be linked with a link:https://docs.oracle.com/en/java/javase/11/docs/api/java.logging/java/util/logging/Filter.html[filter] that determines whether a log record should be logged.
+Log handlers, such as the console log handler, can be linked with a link:https://docs.oracle.com/en/java/javase/17/docs/api/java.logging/java/util/logging/Filter.html[filter] that determines whether a log record should be logged.
 
 To register a logging filter:
 

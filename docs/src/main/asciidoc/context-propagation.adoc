@@ -9,7 +9,7 @@ include::_attributes.adoc[]
 :summary: Learn more about how you can pass contextual information with SmallRye Context Propagation.
 :topics: context-propagation
 
-Traditional blocking code uses link:https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/ThreadLocal.html[`ThreadLocal`]
+Traditional blocking code uses link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/ThreadLocal.html[`ThreadLocal`]
  variables to store contextual objects in order to avoid
 passing them as parameters everywhere. Many Quarkus extensions require those contextual objects to operate
 properly: xref:rest-json.adoc[RESTEasy Reactive], xref:cdi-reference.adoc[ArC] and xref:transaction.adoc[Transaction]
@@ -115,7 +115,7 @@ The 3 items are persisted using the same transaction and this transaction is com
 
 == Usage example for `CompletionStage`
 
-If you are using link:https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/concurrent/CompletionStage.html[`CompletionStage`]
+If you are using link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CompletionStage.html[`CompletionStage`]
 you need manual context propagation. You can do that by injecting a `ThreadContext`
 or `ManagedExecutor` that will propagate every context. For example, here we use the xref:vertx.adoc[Vert.x Web Client]
 to get the list of Star Wars people, then store them in the database using

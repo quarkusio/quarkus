@@ -302,6 +302,43 @@ class SecurityIdentitySupplier implements Supplier<SecurityIdentity> {
 }
 ----
 
+The CDI request context activation shown in the example above wouldn't help you to access the `RoutingContext` when proactive authentication is enabled.
+The following example illustrates how you can access the `RoutingContext` from the `SecurityIdentityAugmentor`:
+
+[source,java]
+----
+package org.acme.security;
+
+import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.SecurityIdentityAugmentor;
+import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
+
+public class CustomSecurityIdentityAugmentor implements SecurityIdentityAugmentor {
+    @Override
+    public Uni<SecurityIdentity> augment(SecurityIdentity securityIdentity, AuthenticationRequestContext authenticationRequestContext) {
+        var builder = QuarkusSecurityIdentity.builder(securityIdentity);
+
+        final RoutingContext routingContext;
+        if (!securityIdentity.isAnonymous()) {
+            routingContext = HttpSecurityUtils.getRoutingContextAttribute();                <1>
+        } else {
+            routingContext = securityIdentity.getAttribute(RoutingContext.class.getName()); <2>
+        }
+
+        if (routingContext != null) {
+            // here you augment SecurityIdentity based on RoutingContext
+        }
+        return Uni.createFrom().item(builder.build());
+    }
+}
+----
+<1> Quarkus puts the `RoutingContext` to Vert.x duplicated context local data so that it is available during authentication and authorization.
+<2> Some authentication mechanisms like the OIDC authentication mechanism add `RoutingContext` to the `SecurityIdentity` attributes.
+
 [[jaxrs-security-context]]
 == Custom Jakarta REST SecurityContext
 

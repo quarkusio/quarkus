@@ -37,4 +37,11 @@ public class RolesAllowedResource {
     public String getSecurityIdentity() {
         return currentIdentityAssociation.getIdentity().getPrincipal().getName();
     }
+
+    @Path("/admin/security-identity/routing-context")
+    @RolesAllowed("root")
+    @GET
+    public String getSecurityIdentityPrincipal() {
+        return currentIdentityAssociation.getIdentity().getPrincipal().getName();
+    }
 }

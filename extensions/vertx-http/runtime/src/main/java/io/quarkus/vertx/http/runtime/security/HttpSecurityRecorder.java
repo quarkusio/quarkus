@@ -233,6 +233,11 @@ public class HttpSecurityRecorder {
             if (authenticator == null) {
                 authenticator = CDI.current().select(HttpAuthenticator.class).get();
             }
+
+            // we put RoutingContext to duplicated context local data so that users don't have to activate CDI request
+            // context during authentication and authorization when proactive auth is enabled
+            HttpSecurityUtils.setRoutingContextAttribute(event);
+
             //we put the authenticator into the routing context so it can be used by other systems
             event.put(HttpAuthenticator.class.getName(), authenticator);
             if (patchMatchingPolicyEnabled == null) {

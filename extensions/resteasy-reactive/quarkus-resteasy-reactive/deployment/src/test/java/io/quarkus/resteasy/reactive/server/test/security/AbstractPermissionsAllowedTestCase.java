@@ -75,6 +75,13 @@ public abstract class AbstractPermissionsAllowedTestCase {
     }
 
     @Test
+    public void testConditionalPermissionBasedOnRoutingContext() {
+        RestAssured.given().auth().basic("viewer", "viewer").put("permissions/edit").then().statusCode(403);
+        RestAssured.given().auth().basic("viewer", "viewer").header("sudo", "edit").put("permissions/edit").then()
+                .statusCode(200).body(Matchers.is("edit"));
+    }
+
+    @Test
     public void testBlockingAccessToIdentityOnIOThread() {
         // invokes GET /permissions/security-identity endpoint that requires one permission: get-identity
 

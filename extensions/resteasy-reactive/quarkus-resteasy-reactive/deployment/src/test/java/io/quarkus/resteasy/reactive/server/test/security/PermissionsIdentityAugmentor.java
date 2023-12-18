@@ -12,7 +12,9 @@ import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
 public class PermissionsIdentityAugmentor implements SecurityIdentityAugmentor {
@@ -41,6 +43,14 @@ public class PermissionsIdentityAugmentor implements SecurityIdentityAugmentor {
             case "viewer":
                 builder.addPermissionChecker(new PermissionCheckBuilder().addPermission("read", "resource-viewer").build());
                 break;
+        }
+        RoutingContext event = HttpSecurityUtils.getRoutingContextAttribute();
+        if (event == null) {
+            throw new IllegalStateException(
+                    "RoutingContext is expected to be present in Vert.x duplicated context local data");
+        }
+        if ("edit".equals(event.request().getHeader("sudo"))) {
+            builder.addPermissionChecker(new PermissionCheckBuilder().addPermission("edit").build());
         }
         return builder.build();
     }

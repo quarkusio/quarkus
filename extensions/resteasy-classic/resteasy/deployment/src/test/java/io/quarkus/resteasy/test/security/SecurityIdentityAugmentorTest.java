@@ -21,8 +21,10 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.restassured.RestAssured;
 import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
 
 public class SecurityIdentityAugmentorTest {
 
@@ -44,6 +46,20 @@ public class SecurityIdentityAugmentorTest {
                 .body(Matchers.is("admin"));
     }
 
+    @Test
+    public void testAccessToRoutingContext() {
+        RestAssured.given()
+                .auth().basic("admin", "admin")
+                .get("/roles/admin/security-identity/routing-context")
+                .then().statusCode(403);
+        RestAssured.given()
+                .auth().basic("admin", "admin")
+                .header("extra-role", "root")
+                .get("/roles/admin/security-identity/routing-context")
+                .then().statusCode(200)
+                .body(Matchers.is("admin"));
+    }
+
     @ApplicationScoped
     public static class CustomAugmentor implements SecurityIdentityAugmentor {
 
@@ -59,6 +75,14 @@ public class SecurityIdentityAugmentorTest {
         Supplier<SecurityIdentity> build(SecurityIdentity identity) {
             QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
             builder.addRole("admin");
+            RoutingContext event = HttpSecurityUtils.getRoutingContextAttribute();
+            if (event == null) {
+                throw new IllegalStateException(
+                        "RoutingContext is expected to be present in Vert.x duplicated context local data");
+            }
+            if ("root".equals(event.request().getHeader("extra-role"))) {
+                builder.addRole("root");
+            }
             return builder::build;
         }
 

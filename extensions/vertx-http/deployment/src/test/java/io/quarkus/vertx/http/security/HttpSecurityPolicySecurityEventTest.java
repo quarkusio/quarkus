@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.security;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -95,9 +96,7 @@ public class HttpSecurityPolicySecurityEventTest {
         assertEquals(0, observer.authZFailureStorage.size());
         Awaitility.await().atMost(Duration.ofSeconds(2))
                 .untilAsserted(() -> assertEquals(1, observer.asyncAuthNFailureEventStorage.size()));
-        Awaitility.await().atMost(Duration.ofSeconds(2))
-                .untilAsserted(() -> assertEquals(1, observer.asyncAllEventsStorage.size()));
-        assertEquals(1, observer.allEventsStorage.size());
+        assertAllEvents(1);
         AuthenticationFailureEvent event = observer.asyncAuthNFailureEventStorage.get(0);
         assertNull(event.getSecurityIdentity());
         assertNotNull(event.getEventProperties().get(RoutingContext.class.getName()));
@@ -128,9 +127,7 @@ public class HttpSecurityPolicySecurityEventTest {
         assertNotNull(event.getEventProperties().get(RoutingContext.class.getName()));
         assertEquals(PathMatchingHttpSecurityPolicy.class.getName(), event.getAuthorizationContext());
         assertTrue(identity.isAnonymous());
-        assertEquals(3, observer.allEventsStorage.size());
-        Awaitility.await().atMost(Duration.ofSeconds(2))
-                .untilAsserted(() -> assertEquals(3, observer.asyncAllEventsStorage.size()));
+        assertAllEvents(3);
         AuthenticationSuccessEvent authNSuccessEvent = (AuthenticationSuccessEvent) observer.allEventsStorage.get(0);
         identity = authNSuccessEvent.getSecurityIdentity();
         assertNotNull(identity);
@@ -143,14 +140,12 @@ public class HttpSecurityPolicySecurityEventTest {
         RestAssured.get("/permit").then().statusCode(200);
         assertEquals(0, observer.authZFailureStorage.size());
         assertEquals(0, observer.authNSuccessStorage.size());
-        assertEquals(1, observer.allEventsStorage.size());
         assertEquals(1, observer.authZSuccessStorage.size());
         AuthorizationSuccessEvent event = observer.authZSuccessStorage.get(0);
         assertNotNull(event.getSecurityIdentity());
         assertTrue(event.getSecurityIdentity().isAnonymous());
         assertNotNull(event.getEventProperties().get(RoutingContext.class.getName()));
-        Awaitility.await().atMost(Duration.ofSeconds(2))
-                .untilAsserted(() -> assertEquals(1, observer.asyncAllEventsStorage.size()));
+        assertAllEvents(1);
     }
 
     @Test
@@ -177,17 +172,15 @@ public class HttpSecurityPolicySecurityEventTest {
         identity = event.getSecurityIdentity();
         assertNotNull(identity);
         assertEquals("test", identity.getPrincipal().getName());
-        assertTrue(event.getAuthorizationFailure() instanceof ForbiddenException);
+        assertInstanceOf(ForbiddenException.class, event.getAuthorizationFailure());
         assertNotNull(event.getEventProperties().get(RoutingContext.class.getName()));
-        Awaitility.await().atMost(Duration.ofSeconds(2))
-                .untilAsserted(() -> assertEquals(4, observer.asyncAllEventsStorage.size()));
+        assertAllEvents(4);
     }
 
     @Test
     public void testRolesPolicyAugmentation() {
         RestAssured.given().auth().preemptive().basic("test", "test").get("/map-roles").then().statusCode(200);
         assertEquals(0, observer.authZFailureStorage.size());
-        assertEquals(2, observer.allEventsStorage.size());
         assertEquals(1, observer.authNSuccessStorage.size());
         assertEquals(1, observer.authZSuccessStorage.size());
         SecurityIdentity originalIdentity = observer.authNSuccessStorage.get(0).getSecurityIdentity();
@@ -195,6 +188,7 @@ public class HttpSecurityPolicySecurityEventTest {
         assertNotEquals(originalIdentity, augmentedIdentity);
         assertTrue(augmentedIdentity.hasRole("admin"));
         assertFalse(originalIdentity.hasRole("admin"));
+        assertAllEvents(2);
     }
 
     @Test
@@ -220,11 +214,9 @@ public class HttpSecurityPolicySecurityEventTest {
         assertNull(first.getAuthorizationFailure());
         assertEquals(PathMatchingHttpSecurityPolicy.class.getName(), first.getAuthorizationContext());
         assertNotNull(first.getEventProperties().get(RoutingContext.class.getName()));
-        assertTrue(second.getAuthorizationFailure() instanceof ForbiddenException);
+        assertInstanceOf(ForbiddenException.class, second.getAuthorizationFailure());
         assertEquals(PathMatchingHttpSecurityPolicy.class.getName(), first.getAuthorizationContext());
-        Awaitility.await().atMost(Duration.ofSeconds(2))
-                .untilAsserted(() -> assertEquals(3, observer.asyncAllEventsStorage.size()));
-        assertEquals(3, observer.allEventsStorage.size());
+        assertAllEvents(3);
         Awaitility.await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertEquals(1,
                 observer.asyncAllEventsStorage.stream().filter(se -> se instanceof AuthenticationSuccessEvent).count()));
         AuthenticationSuccessEvent event = (AuthenticationSuccessEvent) observer.asyncAllEventsStorage.stream()
@@ -252,11 +244,9 @@ public class HttpSecurityPolicySecurityEventTest {
         assertNotNull(identity);
         assertTrue(identity.isAnonymous());
         assertNotNull(event.getEventProperties().get(RoutingContext.class.getName()));
-        assertEquals(2, observer.allEventsStorage.size());
+        assertAllEvents(2);
         assertEquals(event, observer.allEventsStorage.get(1));
         assertEquals(PathMatchingHttpSecurityPolicy.class.getName(), event.getAuthorizationContext());
-        Awaitility.await().atMost(Duration.ofSeconds(2))
-                .untilAsserted(() -> assertEquals(2, observer.asyncAllEventsStorage.size()));
     }
 
     @Test
@@ -279,9 +269,13 @@ public class HttpSecurityPolicySecurityEventTest {
         assertTrue(identity.isAnonymous());
         assertNotNull(event.getEventProperties().get(RoutingContext.class.getName()));
         assertTrue(event.getAuthorizationContext().contains("GlobalCustomHttpSecurityPolicy"));
+        assertAllEvents(2);
+    }
+
+    private void assertAllEvents(int expectedCount) {
+        assertEquals(expectedCount, observer.allEventsStorage.size());
         Awaitility.await().atMost(Duration.ofSeconds(2))
-                .untilAsserted(() -> assertEquals(2, observer.asyncAllEventsStorage.size()));
-        assertEquals(2, observer.allEventsStorage.size());
+                .untilAsserted(() -> assertEquals(expectedCount, observer.asyncAllEventsStorage.size()));
     }
 
     @Singleton

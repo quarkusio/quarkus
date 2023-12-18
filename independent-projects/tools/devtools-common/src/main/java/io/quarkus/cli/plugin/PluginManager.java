@@ -17,7 +17,7 @@ public class PluginManager {
     private static PluginManager INSTANCE;
 
     private final MessageWriter output;
-    private final PluginMangerState state;
+    private final PluginManagerState state;
     private final PluginManagerSettings settings;
     private final PluginManagerUtil util;
 
@@ -41,7 +41,7 @@ public class PluginManager {
         this.settings = settings;
         this.output = output;
         this.util = PluginManagerUtil.getUtil(settings);
-        this.state = new PluginMangerState(settings, output, userHome, currentDir, quarkusProject);
+        this.state = new PluginManagerState(settings, output, userHome, currentDir, quarkusProject);
     }
 
     /**
@@ -159,7 +159,7 @@ public class PluginManager {
      */
     public Optional<Plugin> removePlugin(String name, boolean userCatalog) {
         PluginCatalogService pluginCatalogService = state.getPluginCatalogService();
-        Plugin plugin = state.getInstalledPluigns().get(name);
+        Plugin plugin = state.getInstalledPlugins().get(name);
         if (plugin == null) {
             return Optional.empty();
         } else if (userCatalog) {
@@ -333,7 +333,7 @@ public class PluginManager {
     }
 
     public Map<String, Plugin> getInstalledPlugins(boolean userCatalog) {
-        return userCatalog ? state.userPlugins() : state.getInstalledPluigns();
+        return userCatalog ? state.userPlugins() : state.getInstalledPlugins();
     }
 
     public Map<String, Plugin> getInstalledPlugins() {

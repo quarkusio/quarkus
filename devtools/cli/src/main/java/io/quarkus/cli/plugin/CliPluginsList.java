@@ -89,7 +89,7 @@ public class CliPluginsList extends CliPluginsBase implements Callable<Integer> 
                 .collect(Collectors.toMap(p -> p.getName(), p -> p)));
 
         if (items.isEmpty()) {
-            output.info("No plugins " + (installable ? "installable" : "installed") + "!");
+            output.info("No plugins " + (installable ? "installable" : "installed") + ".");
         } else {
             PluginListTable table = new PluginListTable(
                     items.values().stream().filter(this::filter).collect(Collectors.toList()), showCommand);

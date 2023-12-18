@@ -55,12 +55,12 @@ public class CliPluginsAdd extends CliPluginsBase implements Callable<Integer> {
             output.info(table.getContent());
             if (plugin.isInProjectCatalog() && existingPlugin.filter(p -> p.isInUserCatalog()).isPresent()) {
                 output.warn(
-                        "Plugin was added in the project scope, but another with the same name exists in the user scope!\nThe project scoped one will take precedence when invoked from within the project!");
+                        "Plugin was added in the project scope, but another with the same name exists in the user scope.\nThe project scoped one will take precedence when invoked from within the project.");
             }
 
             if (plugin.isInUserCatalog() && existingPlugin.filter(p -> p.isInProjectCatalog()).isPresent()) {
                 output.warn(
-                        "Plugin was added in the user scope, but another with the same name exists in the project scope!\nThe project scoped one will take precedence when invoked from within the project!");
+                        "Plugin was added in the user scope, but another with the same name exists in the project scope.\nThe project scoped one will take precedence when invoked from within the project.");
             }
 
             return CommandLine.ExitCode.OK;

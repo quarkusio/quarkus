@@ -14,7 +14,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -22,11 +21,11 @@ import io.quarkus.devtools.exec.Executable;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.utils.Prompt;
 import io.quarkus.fs.util.ZipUtils;
+import io.smallrye.common.os.OS;
 
 public class JBangSupport {
 
-    private static final boolean IS_OS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
-    private static final String JBANG_EXECUTABLE = IS_OS_WINDOWS ? "jbang.cmd" : "jbang";
+    private static final String JBANG_EXECUTABLE = OS.WINDOWS.isCurrent() ? "jbang.cmd" : "jbang";
 
     private static final Predicate<Path> EXISTS_AND_WRITABLE = p -> p != null && p.toFile().exists() && p.toFile().canWrite();
 
@@ -92,7 +91,7 @@ public class JBangSupport {
     }
 
     public File getExecutable() {
-        return getOptionalExecutable().orElseThrow(() -> new IllegalStateException("Unable to find and install jbang!"));
+        return getOptionalExecutable().orElseThrow(() -> new IllegalStateException("Unable to find or install JBang"));
     }
 
     public Path getWorkingDirectory() {
@@ -158,7 +157,7 @@ public class JBangSupport {
     public boolean promptForInstallation() {
         // We don't want to prompt users for input when running tests.
         if (interactiveMode
-                && Prompt.yesOrNo(true, "JBang is needed to list / run jbang plugins, would you like to install it now ?")) {
+                && Prompt.yesOrNo(true, "JBang is needed to list/run JBang plugins, would you like to install it now?")) {
             return true;
         }
         return false;
@@ -180,7 +179,7 @@ public class JBangSupport {
             return true;
         }
         if (!isInstallable()) {
-            output.warn("JBang is not installable!");
+            // this only happens for tests, do not output anything specific
             return false;
         }
         if (promptForInstallation()) {
@@ -188,7 +187,7 @@ public class JBangSupport {
                 installJBang();
                 return true;
             } catch (Exception e) {
-                output.warn("Failed to install jbang!");
+                output.warn("Failed to install JBang", e);
                 return false;
             }
         } else {

@@ -278,7 +278,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
     private PluginManager pluginManager(OutputOptionMixin output, Optional<String> testDir, boolean interactiveMode) {
         PluginManagerSettings settings = PluginManagerSettings.defaultSettings()
-                .withInteractivetMode(interactiveMode); // Why not just getting it from output.isClieTest ? Cause args have not been parsed yet.
+                .withInteractiveMode(interactiveMode); // Why not just getting it from output.isCliTest ? Cause args have not been parsed yet.
         return PluginManager.create(settings, output, Optional.ofNullable(Paths.get(System.getProperty("user.home"))),
                 getProjectRoot(testDir), quarkusProject(testDir));
     }

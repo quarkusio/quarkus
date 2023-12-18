@@ -622,8 +622,12 @@ public final class OidcUtils {
     }
 
     public static String encryptString(String jweString, SecretKey key) throws Exception {
+        return encryptString(jweString, key, KeyEncryptionAlgorithm.A256GCMKW);
+    }
+
+    public static String encryptString(String jweString, SecretKey key, KeyEncryptionAlgorithm algorithm) throws Exception {
         JsonWebEncryption jwe = new JsonWebEncryption();
-        jwe.setAlgorithmHeaderValue(KeyEncryptionAlgorithm.A256GCMKW.getAlgorithm());
+        jwe.setAlgorithmHeaderValue(algorithm.getAlgorithm());
         jwe.setEncryptionMethodHeaderParameter(ContentEncryptionAlgorithm.A256GCM.getAlgorithm());
         jwe.setKey(key);
         jwe.setPlaintext(jweString);

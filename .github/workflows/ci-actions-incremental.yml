@@ -210,7 +210,7 @@ jobs:
             target/build-report.json
             target/gradle-build-scan-url.txt
             LICENSE.txt
-          retention-days: 2
+          retention-days: 7
 
   calculate-test-jobs:
     name: Calculate Test Jobs
@@ -380,7 +380,7 @@ jobs:
         with:
           name: test-reports-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
-          retention-days: 5
+          retention-days: 7
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
@@ -391,15 +391,7 @@ jobs:
             target/build-report.json
             target/gradle-build-scan-url.txt
             LICENSE.txt
-          retention-days: 2
-      - name: Upload gc.log
-        uses: actions/upload-artifact@v3
-        with:
-          name: "GC log - JDK ${{matrix.java.name}}"
-          path: |
-            **/windows-java-17.txt
-            !**/build/tmp/**
-          retention-days: 5
+          retention-days: 7
       - name: Upload build.log (if build failed)
         uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
@@ -407,7 +399,7 @@ jobs:
           name: "build-logs-JVM Tests - JDK ${{matrix.java.name}}"
           path: |
             **/build.log
-          retention-days: 2
+          retention-days: 7
 
   maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
@@ -485,7 +477,7 @@ jobs:
         with:
           name: test-reports-maven-java${{matrix.java.name}}
           path: 'test-reports.tgz'
-          retention-days: 5
+          retention-days: 7
       # see https://github.com/actions/toolkit/blob/master/packages/artifact/docs/additional-information.md#non-supported-characters
       - name: Rename invalid path
         if: ${{ failure() || cancelled() }}
@@ -503,7 +495,7 @@ jobs:
             target/build-report.json
             target/gradle-build-scan-url.txt
             LICENSE.txt
-          retention-days: 2
+          retention-days: 7
 
   gradle-tests:
     name: Gradle Tests - JDK ${{matrix.java.name}}
@@ -583,7 +575,7 @@ jobs:
             target/build-report.json
             target/gradle-build-scan-url.txt
             LICENSE.txt
-          retention-days: 2
+          retention-days: 7
 
   devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}
@@ -658,7 +650,7 @@ jobs:
         with:
           name: test-reports-devtools-java${{matrix.java.name}}
           path: 'test-reports.tgz'
-          retention-days: 5
+          retention-days: 7
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
@@ -669,7 +661,7 @@ jobs:
             target/build-report.json
             target/gradle-build-scan-url.txt
             LICENSE.txt
-          retention-days: 2
+          retention-days: 7
 
   kubernetes-tests:
     name: Kubernetes Tests - JDK ${{matrix.java.name}}
@@ -744,7 +736,7 @@ jobs:
         with:
           name: test-reports-kubernetes-java${{matrix.java.name}}
           path: 'test-reports.tgz'
-          retention-days: 5
+          retention-days: 7
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
@@ -755,7 +747,7 @@ jobs:
             target/build-report.json
             **/target/gradle-build-scan-url.txt
             LICENSE.txt
-          retention-days: 2
+          retention-days: 7
 
   quickstarts-tests:
     name: Quickstarts Compilation - JDK ${{matrix.java.name}}
@@ -819,7 +811,7 @@ jobs:
             quarkus-quickstarts/**/target/*-reports/TEST-*.xml
             quarkus-quickstarts/target/build-report.json
             quarkus-quickstarts/LICENSE
-          retention-days: 2
+          retention-days: 7
 
   virtual-thread-native-tests:
     name: Native Tests - Virtual Thread - ${{matrix.category}}
@@ -885,7 +877,7 @@ jobs:
             integration-tests/virtual-threads/**/target/*-reports/TEST-*.xml
             integration-tests/virtual-threads/target/build-report.json
             integration-tests/virtual-threads/target/gradle-build-scan-url.txt
-          retention-days: 2
+          retention-days: 7
 
   tcks-test:
     name: MicroProfile TCKs Tests
@@ -949,7 +941,7 @@ jobs:
         with:
           name: test-reports-tcks
           path: 'test-reports.tgz'
-          retention-days: 5
+          retention-days: 7
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
@@ -960,7 +952,7 @@ jobs:
             target/build-report.json
             **/target/gradle-build-scan-url.txt
             LICENSE.txt
-          retention-days: 2
+          retention-days: 7
 
   native-tests:
     name: Native Tests - ${{matrix.category}}
@@ -1047,7 +1039,7 @@ jobs:
         with:
           name: test-reports-native-${{matrix.category}}
           path: 'test-reports.tgz'
-          retention-days: 5
+          retention-days: 7
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
@@ -1059,7 +1051,7 @@ jobs:
             target/build-report.json
             **/target/gradle-build-scan-url.txt
             LICENSE.txt
-          retention-days: 2
+          retention-days: 7
 
   build-report:
     runs-on: ubuntu-latest

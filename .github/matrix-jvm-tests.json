@@ -17,6 +17,6 @@
   "name": "17 Windows",
   "java-version": 17,
   "maven_args": "-DskipDocs -Dformat.skip",
-  "maven_opts": "-Xmx2g -XX:MaxMetaspaceSize=1g -Xlog:gc*=debug:file=windows-java-17.txt",
+  "maven_opts": "-Xmx2g -XX:MaxMetaspaceSize=1g",
   "os-name": "windows-latest"
 }]

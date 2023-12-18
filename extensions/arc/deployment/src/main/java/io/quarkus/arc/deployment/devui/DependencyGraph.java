@@ -6,6 +6,8 @@ import java.util.function.Predicate;
 
 public class DependencyGraph {
 
+    static final DependencyGraph EMPTY = new DependencyGraph(Set.of(), Set.of());
+
     public final Set<DevBeanInfo> nodes;
     public final Set<Link> links;
     public final int maxLevel;

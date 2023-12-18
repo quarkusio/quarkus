@@ -860,7 +860,9 @@ jobs:
       # We do this so we can get better analytics for the downloaded version of the build images
       - name: Update Docker Client User Agent
         run: |
-          cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
+          if [ -f ~/.docker/config.json ]; then
+            cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
+          fi
       - name: Setup Develocity Build Scan capture
         uses: gradle/github-actions/maven-build-scan-setup@v0.2
         with:

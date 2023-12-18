@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import jakarta.enterprise.inject.Typed;
 import jakarta.enterprise.inject.spi.DefinitionException;
 import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.enterprise.inject.spi.InterceptionType;
@@ -55,6 +56,7 @@ public class BeanInfo implements InjectionTargetInfo {
     protected final ScopeInfo scope;
 
     protected final Set<Type> types;
+    protected final Set<Type> unrestrictedTypes;
 
     protected final Set<AnnotationInstance> qualifiers;
 
@@ -97,10 +99,10 @@ public class BeanInfo implements InjectionTargetInfo {
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types,
             Set<AnnotationInstance> qualifiers, List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer,
             boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean, String targetPackageName,
-            Integer priority) {
+            Integer priority, Set<Type> unrestrictedTypes) {
         this(null, null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer,
                 alternative, stereotypes, name, isDefaultBean, null, null, Collections.emptyMap(), true, false,
-                targetPackageName, priority, null);
+                targetPackageName, priority, null, unrestrictedTypes);
     }
 
     BeanInfo(ClassInfo implClazz, Type providerType, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope,
@@ -108,7 +110,8 @@ public class BeanInfo implements InjectionTargetInfo {
             DisposerInfo disposer, boolean alternative,
             List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean, Consumer<MethodCreator> creatorConsumer,
             Consumer<MethodCreator> destroyerConsumer, Map<String, Object> params, boolean isRemovable,
-            boolean forceApplicationClass, String targetPackageName, Integer priority, String identifier) {
+            boolean forceApplicationClass, String targetPackageName, Integer priority, String identifier,
+            Set<Type> unrestrictedTypes) {
 
         this.target = Optional.ofNullable(target);
         if (implClazz == null && target != null) {
@@ -126,6 +129,7 @@ public class BeanInfo implements InjectionTargetInfo {
         for (Type type : types) {
             Beans.analyzeType(type, beanDeployment);
         }
+        this.unrestrictedTypes = unrestrictedTypes != null ? unrestrictedTypes : types;
         Beans.addImplicitQualifiers(qualifiers);
         this.qualifiers = qualifiers;
         this.injections = injections;
@@ -247,6 +251,15 @@ public class BeanInfo implements InjectionTargetInfo {
 
     public Set<Type> getTypes() {
         return types;
+    }
+
+    /**
+     *
+     * @return the unrestricted set of bean types
+     * @see Typed
+     */
+    public Set<Type> getUnrestrictedTypes() {
+        return unrestrictedTypes;
     }
 
     public boolean hasType(DotName typeName) {
@@ -1173,7 +1186,7 @@ public class BeanInfo implements InjectionTargetInfo {
         BeanInfo build() {
             return new BeanInfo(implClazz, providerType, target, beanDeployment, scope, types, qualifiers, injections,
                     declaringBean, disposer, alternative, stereotypes, name, isDefaultBean, creatorConsumer,
-                    destroyerConsumer, params, removable, forceApplicationClass, targetPackageName, priority, identifier);
+                    destroyerConsumer, params, removable, forceApplicationClass, targetPackageName, priority, identifier, null);
         }
 
         public Builder forceApplicationClass(boolean forceApplicationClass) {

@@ -19,7 +19,7 @@
         <!-- Maven plugin versions -->
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
-        <compiler-plugin.version>3.11.0</compiler-plugin.version>
+        <compiler-plugin.version>3.12.0</compiler-plugin.version>
         <kotlin.version>1.9.21</kotlin.version>
         <dokka.version>1.9.10</dokka.version>
         <scala.version>2.13.12</scala.version>

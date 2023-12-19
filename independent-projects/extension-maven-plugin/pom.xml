@@ -38,7 +38,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.release>11</maven.compiler.release>
         <maven-core.version>3.9.6</maven-core.version>
-        <version.compiler.plugin>3.11.0</version.compiler.plugin>
+        <version.compiler.plugin>3.12.1</version.compiler.plugin>
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.2.3</version.surefire.plugin>
         <maven-plugin-plugin.version>3.10.2</maven-plugin-plugin.version>

@@ -255,7 +255,11 @@ NOTE: Note that only executions within the same application instance are conside
 === Conditional Execution
 
 You can define the logic to skip any execution of a scheduled method via `@Scheduled#skipExecutionIf()`.
-The specified bean class must implement `io.quarkus.scheduler.Scheduled.SkipPredicate` and the execution is skipped if the result of the `test()` method is `true`.
+The specified class must implement `io.quarkus.scheduler.Scheduled.SkipPredicate` and the execution is skipped if the result of the `test()` method is `true`.
+The class must either represent a CDI bean or declare a public no-args constructor. 
+In case of CDI, there must be exactly one bean that has the specified class in its set of bean types, otherwise the build fails. 
+Furthermore, the scope of the bean must be active during execution of the job. 
+If the scope is `@Dependent` then the bean instance belongs exclusively to the specific scheduled method and is destroyed when the application is shut down.
 
 [source,java]
 ----

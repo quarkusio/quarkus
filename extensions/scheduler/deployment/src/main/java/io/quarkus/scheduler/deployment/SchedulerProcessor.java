@@ -188,7 +188,7 @@ public class SchedulerProcessor {
     @BuildStep
     void validateScheduledBusinessMethods(SchedulerConfig config, List<ScheduledBusinessMethodItem> scheduledMethods,
             ValidationPhaseBuildItem validationPhase, BuildProducer<ValidationErrorBuildItem> validationErrors,
-            Capabilities capabilities) {
+            Capabilities capabilities, BeanArchiveIndexBuildItem beanArchiveIndex) {
         List<Throwable> errors = new ArrayList<>();
         Map<String, AnnotationInstance> encounteredIdentities = new HashMap<>();
         Set<String> methodDescriptions = new HashSet<>();
@@ -245,7 +245,7 @@ public class SchedulerProcessor {
             CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(config.cronType));
             for (AnnotationInstance scheduled : scheduledMethod.getSchedules()) {
                 Throwable error = validateScheduled(parser, scheduled, encounteredIdentities, validationPhase.getContext(),
-                        checkPeriod);
+                        checkPeriod, beanArchiveIndex.getIndex());
                 if (error != null) {
                     errors.add(error);
                 }
@@ -512,7 +512,7 @@ public class SchedulerProcessor {
 
     private Throwable validateScheduled(CronParser parser, AnnotationInstance schedule,
             Map<String, AnnotationInstance> encounteredIdentities,
-            BeanDeploymentValidator.ValidationContext validationContext, long checkPeriod) {
+            BeanDeploymentValidator.ValidationContext validationContext, long checkPeriod, IndexView index) {
         MethodInfo method = schedule.target().asMethod();
         AnnotationValue cronValue = schedule.value("cron");
         AnnotationValue everyValue = schedule.value("every");
@@ -606,14 +606,26 @@ public class SchedulerProcessor {
         AnnotationValue skipExecutionIfValue = schedule.value("skipExecutionIf");
         if (skipExecutionIfValue != null) {
             DotName skipPredicate = skipExecutionIfValue.asClass().name();
-            if (!SchedulerDotNames.SKIP_NEVER_NAME.equals(skipPredicate)
-                    && validationContext.beans().withBeanType(skipPredicate).collect().size() != 1) {
-                String message = String.format("There must be exactly one bean that matches the skip predicate: \"%s\" on: %s",
-                        skipPredicate, schedule);
+            if (SchedulerDotNames.SKIP_NEVER_NAME.equals(skipPredicate)) {
+                return null;
+            }
+            List<BeanInfo> beans = validationContext.beans().withBeanType(skipPredicate).collect();
+            if (beans.size() > 1) {
+                String message = String.format(
+                        "There must be exactly one bean that matches the skip predicate: \"%s\" on: %s; beans: %s",
+                        skipPredicate, schedule, beans);
                 return new IllegalStateException(message);
+            } else if (beans.isEmpty()) {
+                ClassInfo skipPredicateClass = index.getClassByName(skipPredicate);
+                if (skipPredicateClass != null) {
+                    MethodInfo noArgsConstructor = skipPredicateClass.method("<init>");
+                    if (noArgsConstructor == null || !Modifier.isPublic(noArgsConstructor.flags())) {
+                        return new IllegalStateException(
+                                "The skip predicate class must declare a public no-args constructor: " + skipPredicateClass);
+                    }
+                }
             }
         }
-
         return null;
     }
 

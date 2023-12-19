@@ -152,11 +152,12 @@ public @interface Scheduled {
     ConcurrentExecution concurrentExecution() default PROCEED;
 
     /**
-     * Specify the bean class that can be used to skip any execution of a scheduled method.
+     * Specify the predicate that can be used to skip an execution of a scheduled method.
      * <p>
-     * There must be exactly one bean that has the specified class in its set of bean types, otherwise the build
-     * fails. Furthermore, the scope of the bean must be active during execution. If the scope is {@link Dependent} then the
-     * bean instance belongs exclusively to the specific scheduled method and is destroyed when the application is shut down.
+     * The class must either represent a CDI bean or declare a public no-args constructor. In case of CDI, there must be exactly
+     * one bean that has the specified class in its set of bean types, otherwise the build fails. Furthermore, the scope of the
+     * bean must be active during execution of the job. If the scope is {@link Dependent} then the bean instance belongs
+     * exclusively to the specific scheduled method and is destroyed when the application is shut down.
      *
      * @return the bean class
      */

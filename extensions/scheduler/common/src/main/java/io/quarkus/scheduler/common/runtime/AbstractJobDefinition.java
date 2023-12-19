@@ -8,6 +8,7 @@ import io.quarkus.scheduler.Scheduled.ConcurrentExecution;
 import io.quarkus.scheduler.Scheduled.SkipPredicate;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Scheduler.JobDefinition;
+import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
 import io.smallrye.mutiny.Uni;
 
 public abstract class AbstractJobDefinition implements JobDefinition {
@@ -62,6 +63,11 @@ public abstract class AbstractJobDefinition implements JobDefinition {
         checkScheduled();
         this.skipPredicate = skipPredicate;
         return this;
+    }
+
+    @Override
+    public JobDefinition setSkipPredicate(Class<? extends SkipPredicate> skipPredicateClass) {
+        return setSkipPredicate(SchedulerUtils.instantiateBeanOrClass(skipPredicateClass));
     }
 
     @Override

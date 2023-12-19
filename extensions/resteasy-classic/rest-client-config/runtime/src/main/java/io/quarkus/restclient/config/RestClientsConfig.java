@@ -11,6 +11,7 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -291,6 +292,15 @@ public class RestClientsConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean http2;
+
+    /**
+     * The max HTTP chunk size (8096 bytes by default).
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    @ConfigDocDefault("8096")
+    public Optional<Integer> maxChunkSize;
 
     /**
      * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the

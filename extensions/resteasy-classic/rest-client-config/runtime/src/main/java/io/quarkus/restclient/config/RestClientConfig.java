@@ -8,6 +8,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.smallrye.config.SmallRyeConfig;
@@ -49,6 +50,7 @@ public class RestClientConfig {
         EMPTY.name = Optional.empty();
         EMPTY.userAgent = Optional.empty();
         EMPTY.http2 = Optional.empty();
+        EMPTY.maxChunkSize = Optional.empty();
         EMPTY.alpn = Optional.empty();
         EMPTY.captureStacktrace = Optional.empty();
     }
@@ -251,6 +253,15 @@ public class RestClientConfig {
     public Optional<Boolean> http2;
 
     /**
+     * The max HTTP chunk size (8096 bytes by default).
+     * <p>
+     * This property is applicable to reactive REST clients only.
+     */
+    @ConfigItem
+    @ConfigDocDefault("8096")
+    public Optional<Integer> maxChunkSize;
+
+    /**
      * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the
      * protocols exposed by the server. By default, it will try to use HTTP/2 first and if it's not enabled, it will
      * use HTTP/1.1.
@@ -297,6 +308,7 @@ public class RestClientConfig {
         instance.name = getConfigValue(configKey, "name", String.class);
         instance.userAgent = getConfigValue(configKey, "user-agent", String.class);
         instance.http2 = getConfigValue(configKey, "http2", Boolean.class);
+        instance.maxChunkSize = getConfigValue(configKey, "max-chunk-size", Integer.class);
         instance.captureStacktrace = getConfigValue(configKey, "capture-stacktrace", Boolean.class);
 
         instance.multipart = new RestClientMultipartConfig();
@@ -336,6 +348,7 @@ public class RestClientConfig {
         instance.name = getConfigValue(interfaceClass, "name", String.class);
         instance.userAgent = getConfigValue(interfaceClass, "user-agent", String.class);
         instance.http2 = getConfigValue(interfaceClass, "http2", Boolean.class);
+        instance.maxChunkSize = getConfigValue(interfaceClass, "max-chunk-size", Integer.class);
         instance.alpn = getConfigValue(interfaceClass, "alpn", Boolean.class);
         instance.captureStacktrace = getConfigValue(interfaceClass, "capture-stacktrace", Boolean.class);
 

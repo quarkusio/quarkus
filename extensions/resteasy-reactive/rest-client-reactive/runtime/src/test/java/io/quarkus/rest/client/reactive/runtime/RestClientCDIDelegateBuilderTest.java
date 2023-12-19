@@ -227,7 +227,7 @@ public class RestClientCDIDelegateBuilderTest {
         clientConfig.maxRedirects = Optional.of(104);
         clientConfig.followRedirects = Optional.of(true);
         clientConfig.multipart = new RestClientMultipartConfig();
-        clientConfig.multipart.maxChunkSize = Optional.of(1024);
+        clientConfig.maxChunkSize = Optional.of(1024);
         clientConfig.providers = Optional
                 .of("io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilderTest$MyResponseFilter1");
         clientConfig.queryParamStyle = Optional.of(QueryParamStyle.COMMA_SEPARATED);

@@ -122,8 +122,13 @@ public class RestClientCDIDelegateBuilder<T> {
             builder.property(QuarkusRestClientProperties.USER_AGENT, userAgent.get());
         }
 
-        Optional<Integer> maxChunkSize = oneOf(clientConfigByClassName().multipart.maxChunkSize,
-                clientConfigByConfigKey().multipart.maxChunkSize, configRoot.multipart.maxChunkSize);
+        Optional<Integer> maxChunkSize = oneOf(
+                clientConfigByClassName().maxChunkSize,
+                clientConfigByClassName().multipart.maxChunkSize,
+                clientConfigByConfigKey().maxChunkSize,
+                clientConfigByConfigKey().multipart.maxChunkSize,
+                configRoot.maxChunkSize,
+                configRoot.multipart.maxChunkSize);
         builder.property(QuarkusRestClientProperties.MAX_CHUNK_SIZE, maxChunkSize.orElse(DEFAULT_MAX_CHUNK_SIZE));
 
         Boolean http2 = oneOf(clientConfigByClassName().http2,

@@ -40,7 +40,7 @@ public class QuarkusEntryPoint {
             InvocationTargetException, NoSuchMethodException {
         String path = QuarkusEntryPoint.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         String decodedPath = URLDecoder.decode(path, "UTF-8");
-        Path appRoot = new File(decodedPath).toPath().getParent().getParent().getParent();
+        Path appRoot = new File(decodedPath).toPath().getParent();
 
         if (Boolean.parseBoolean(System.getenv("QUARKUS_LAUNCH_DEVMODE"))) {
             DevModeMediator.doDevMode(appRoot);

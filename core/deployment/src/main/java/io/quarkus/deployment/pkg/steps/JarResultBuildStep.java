@@ -154,6 +154,7 @@ public class JarResultBuildStep {
     public static final String DEFAULT_FAST_JAR_DIRECTORY_NAME = "quarkus-app";
 
     public static final String MP_CONFIG_FILE = "META-INF/microprofile-config.properties";
+    private static final String MERGED_BOOT_LIB = "quarkus-boot-lib";
 
     @BuildStep
     OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst, PackageConfig packageConfig) {
@@ -571,8 +572,8 @@ public class JarResultBuildStep {
         Path libDir = buildDir.resolve(LIB);
         Path mainLib = libDir.resolve(MAIN);
         //parent first entries
-        Path baseLib = libDir.resolve(BOOT_LIB);
-        Files.createDirectories(baseLib);
+        Path bootLib = libDir.resolve(BOOT_LIB);
+        Files.createDirectories(bootLib);
 
         Path appDir = buildDir.resolve(APP);
         Path quarkus = buildDir.resolve(QUARKUS);
@@ -583,7 +584,7 @@ public class JarResultBuildStep {
         if (!rebuild) {
             IoUtils.createOrEmptyDir(buildDir);
             Files.createDirectories(mainLib);
-            Files.createDirectories(baseLib);
+            Files.createDirectories(bootLib);
             Files.createDirectories(appDir);
             Files.createDirectories(quarkus);
             if (userProviders != null) {
@@ -620,6 +621,7 @@ public class JarResultBuildStep {
 
         FastJarJars.FastJarJarsBuilder fastJarJarsBuilder = new FastJarJars.FastJarJarsBuilder();
         List<Path> parentFirst = new ArrayList<>();
+        Map<Path, Dependency> parentFirstTargetPathToArtifact = new HashMap<>();
         //we process in order of priority
         //transformed classes first
         if (!transformedClasses.getTransformedClassesByJar().isEmpty()) {
@@ -684,14 +686,20 @@ public class JarResultBuildStep {
             }
         }
         final Set<ArtifactKey> parentFirstKeys = getParentFirstKeys(curateOutcomeBuildItem, classLoadingConfig);
-        final StringBuilder classPath = new StringBuilder();
         final Set<ArtifactKey> removed = getRemovedKeys(classLoadingConfig);
         final Map<ArtifactKey, List<Path>> copiedArtifacts = new HashMap<>();
         for (ResolvedDependency appDep : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
             if (!rebuild) {
-                copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, mainLib, baseLib,
-                        fastJarJarsBuilder::addDep, true,
-                        classPath, appDep, transformedClasses, removed);
+                copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, mainLib, bootLib,
+                        (p) -> {
+                            if (parentFirstKeys.contains(appDep.getKey())) {
+                                parentFirstTargetPathToArtifact.put(p, appDep);
+                            } else {
+                                fastJarJarsBuilder.addDep(p);
+                            }
+                        },
+                        true,
+                        appDep, transformedClasses, removed);
             } else if (includeAppDep(appDep, outputTargetBuildItem.getIncludedOptionalDependencies(), removed)) {
                 appDep.getResolvedPaths().forEach(fastJarJarsBuilder::addDep);
             }
@@ -727,6 +735,28 @@ public class JarResultBuildStep {
         }
 
         Path appInfo = buildDir.resolve(QuarkusEntryPoint.QUARKUS_APPLICATION_DAT);
+
+        List<Path> copiedBootJars = Files.list(bootLib)
+                .filter(p -> p.getFileName().toString().endsWith(".jar"))
+                .collect(Collectors.toList());
+        Path initJar = buildDir.resolve(QUARKUS_RUN_JAR);
+        if (!rebuild) {
+            try (FileSystem runnerZipFs = ZipUtils.newZip(initJar)) {
+                ResolvedDependency appArtifact = curateOutcomeBuildItem.getApplicationModel().getAppArtifact();
+                generateManifest(runnerZipFs,
+                        "",
+                        packageConfig, appArtifact,
+                        QuarkusEntryPoint.class.getName(),
+                        applicationInfo);
+            }
+        }
+
+        // merge all the jars in boot into a single one
+        // the idea is to cut down on the memory needed to load them
+
+        mergeBootJars(packageConfig, initJar, copiedBootJars,
+                parentFirstTargetPathToArtifact);
+
         try (OutputStream out = Files.newOutputStream(appInfo)) {
             FastJarJars fastJarJars = fastJarJarsBuilder.build();
             List<Path> allJars = new ArrayList<>();
@@ -746,8 +776,18 @@ public class JarResultBuildStep {
                     sortedNonExistentResources);
         }
 
+        // remove the boot jars since they are no longer needed
+        copiedBootJars.forEach(p -> {
+            try {
+                Files.delete(p);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+        Files.delete(bootLib);
+
         runnerJar.toFile().setReadable(true, false);
-        Path initJar = buildDir.resolve(QUARKUS_RUN_JAR);
+
         boolean mutableJar = packageConfig.type.equalsIgnoreCase(PackageConfig.BuiltInType.MUTABLE_JAR.getValue());
         if (mutableJar) {
             //we output the properties in a reproducible manner, so we remove the date comment
@@ -764,21 +804,15 @@ public class JarResultBuildStep {
             }
         }
         if (!rebuild) {
-            try (FileSystem runnerZipFs = ZipUtils.newZip(initJar)) {
-                ResolvedDependency appArtifact = curateOutcomeBuildItem.getApplicationModel().getAppArtifact();
-                generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact,
-                        QuarkusEntryPoint.class.getName(),
-                        applicationInfo);
-            }
 
             //now copy the deployment artifacts, if required
             if (mutableJar) {
                 Path deploymentLib = libDir.resolve(DEPLOYMENT_LIB);
                 Files.createDirectories(deploymentLib);
                 for (ResolvedDependency appDep : curateOutcomeBuildItem.getApplicationModel().getDependencies()) {
-                    copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, deploymentLib, baseLib, (p) -> {
+                    copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, deploymentLib, bootLib, (p) -> {
                     },
-                            false, classPath,
+                            false,
                             appDep, new TransformedClassesBuildItem(Map.of()), removed); //we don't care about transformation here, so just pass in an empty item
                 }
                 Map<ArtifactKey, List<String>> relativePaths = new HashMap<>();
@@ -843,6 +877,53 @@ public class JarResultBuildStep {
         return new JarBuildItem(initJar, null, libDir, packageConfig.type, null);
     }
 
+    private void mergeBootJars(PackageConfig packageConfig,
+            Path initJar, List<Path> copiedBootJars,
+            Map<Path, Dependency> parentFirstTargetPathToArtifact) throws IOException {
+        final Map<String, String> seen = new HashMap<>();
+        final Map<String, Set<Dependency>> duplicateCatcher = new HashMap<>();
+        final Map<String, List<byte[]>> concatenatedEntries = new HashMap<>();
+        Set<String> ignoredEntries = new HashSet<>();
+        packageConfig.userConfiguredIgnoredEntries.ifPresent(ignoredEntries::addAll);
+        Predicate<String> allIgnoredEntriesPredicate = new Predicate<>() {
+            @Override
+            public boolean test(String path) {
+                return UBER_JAR_IGNORED_ENTRIES_PREDICATE.test(path)
+                        || ignoredEntries.contains(path);
+            }
+        };
+
+        try (FileSystem runnerZipFs = ZipUtils.newFileSystem(initJar)) {
+            Path manifestPath = runnerZipFs.getPath("META-INF", "MANIFEST.MF");
+            Manifest manifest = new Manifest();
+            Files.createDirectories(manifestPath.getParent());
+            Attributes attributes = manifest.getMainAttributes();
+            attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
+
+            for (Path bootJar : copiedBootJars) {
+                Dependency dependency = parentFirstTargetPathToArtifact.get(bootJar);
+                try (FileSystem artifactFs = ZipUtils.newZip(bootJar)) {
+                    for (Path root : artifactFs.getRootDirectories()) {
+                        walkFileDependencyForDependency(root, runnerZipFs, seen, duplicateCatcher, concatenatedEntries,
+                                allIgnoredEntriesPredicate, dependency, new HashSet<>(), new HashSet<>());
+                    }
+                }
+            }
+
+            for (Map.Entry<String, List<byte[]>> entry : concatenatedEntries.entrySet()) {
+                try (final OutputStream os = wrapForJDK8232879(
+                        Files.newOutputStream(runnerZipFs.getPath(entry.getKey())))) {
+                    // TODO: Handle merging of XMLs
+                    for (byte[] i : entry.getValue()) {
+                        os.write(i);
+                        os.write('\n');
+                    }
+                }
+            }
+        }
+
+    }
+
     /**
      * @return a {@code Set} containing the key of the artifacts to load from the parent ClassLoader first.
      */
@@ -877,9 +958,10 @@ public class JarResultBuildStep {
         return removed;
     }
 
-    private void copyDependency(Set<ArtifactKey> parentFirstArtifacts, OutputTargetBuildItem outputTargetBuildItem,
+    private void copyDependency(Set<ArtifactKey> parentFirstArtifacts,
+            OutputTargetBuildItem outputTargetBuildItem,
             Map<ArtifactKey, List<Path>> runtimeArtifacts, Path libDir, Path baseLib, Consumer<Path> targetPathConsumer,
-            boolean allowParentFirst, StringBuilder classPath, ResolvedDependency appDep,
+            boolean allowParentFirst, ResolvedDependency appDep,
             TransformedClassesBuildItem transformedClasses, Set<ArtifactKey> removedDeps)
             throws IOException {
 
@@ -897,11 +979,10 @@ public class JarResultBuildStep {
 
             if (allowParentFirst && parentFirstArtifacts.contains(appDep.getKey())) {
                 targetPath = baseLib.resolve(fileName);
-                classPath.append(" ").append(LIB).append("/").append(BOOT_LIB).append("/").append(fileName);
             } else {
                 targetPath = libDir.resolve(fileName);
-                targetPathConsumer.accept(targetPath);
             }
+            targetPathConsumer.accept(targetPath);
             runtimeArtifacts.computeIfAbsent(appDep.getKey(), (s) -> new ArrayList<>(1)).add(targetPath);
 
             if (Files.isDirectory(resolvedDep)) {
@@ -1288,7 +1369,9 @@ public class JarResultBuildStep {
             log.warn(
                     "A CLASS_PATH entry was already defined in your MANIFEST.MF or using the property quarkus.package.manifest.attributes.\"Class-Path\". Quarkus has overwritten this existing entry.");
         }
-        attributes.put(Attributes.Name.CLASS_PATH, classPath);
+        if (!((classPath == null) || classPath.isEmpty())) {
+            attributes.put(Attributes.Name.CLASS_PATH, classPath);
+        }
         if (attributes.containsKey(Attributes.Name.MAIN_CLASS)) {
             String existingMainClass = attributes.getValue(Attributes.Name.MAIN_CLASS);
             if (!mainClassName.equals(existingMainClass)) {

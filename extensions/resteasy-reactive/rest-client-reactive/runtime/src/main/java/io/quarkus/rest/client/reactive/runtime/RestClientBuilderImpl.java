@@ -386,6 +386,10 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         Integer maxChunkSize = (Integer) getConfiguration().getProperty(QuarkusRestClientProperties.MAX_CHUNK_SIZE);
         if (maxChunkSize != null) {
             clientBuilder.maxChunkSize(maxChunkSize);
+        } else if (restClientsConfig.maxChunkSize.isPresent()) {
+            clientBuilder.maxChunkSize(restClientsConfig.maxChunkSize.get());
+        } else if (restClientsConfig.multipart.maxChunkSize.isPresent()) {
+            clientBuilder.maxChunkSize(restClientsConfig.multipart.maxChunkSize.get());
         } else {
             clientBuilder.maxChunkSize(DEFAULT_MAX_CHUNK_SIZE);
         }

@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Quarkus Security with Jakarta Persistence
 include::_attributes.adoc[]
 :categories: security
+:summary: This guide explains how your application can use Jakarta Persistence to store users identities.
 :topics: security,identity-providers,sql,database,jpa,jdbc
 :extensions: io.quarkus:quarkus-security-jpa-reactive
 
@@ -14,7 +15,7 @@ Quarkus provides a Jakarta Persistence (formerly known as JPA) identity provider
 
 The Jakarta Persistence `IdentityProvider` creates a `SecurityIdentity` instance, which is used during user authentication to verify and authorize access requests making your Quarkus application secure.
 
-For an example of practical use of Basic authentication and Jakarta Persistence, see the xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence] tutorial.
+For an example of practical use of Basic authentication and Jakarta Persistence, see the xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence] tutorial.
 
 
 == Jakarta Persistence entity specification
@@ -111,19 +112,24 @@ public class User extends PanacheEntity {
 public class Role extends PanacheEntity {
 
     @ManyToMany(mappedBy = "roles")
-    public List<ExternalRolesUserEntity> users;
+    public List<User> users;
 
     @RolesValue
     public String role;
 }
 ----
 
+[NOTE]
+====
+The example shows how to store and access the roles, but if there's a need to update the existing user or create a new user. There will be a need to annotate `public List<Role> roles` with `@Cascade(CascadeType.ALL)` or select the specific type of `CascadeType`.
+====
+
 == Password storage and hashing
 
 When developing applications with Quarkus, you can decide how to manage password storage and hashing. You can choose to keep the default password and hashing settings of Quarkus, or you can hash passwords manually.
 
 With the default option, passwords are stored and hashed with https://en.wikipedia.org/wiki/Bcrypt[bcrypt] under the
-https://en.wikipedia.org/wiki/Crypt_(C)[Modular Crypt Format] (MCF).
+https://en.wikipedia.org/wiki/Crypt_\(C)[Modular Crypt Format] (MCF).
 While using MCF, the hashing algorithm, iteration count, and salt are stored as a part of the hashed value.
 As such, we do not need dedicated columns to keep them.
 
@@ -132,14 +138,23 @@ As such, we do not need dedicated columns to keep them.
 In cryptography, a salt is a name for random data used as an additional input to a one-way function that hashes data, a password, or a passphrase.
 ====
 
-To represent passwords stored in the database which were hashed using different hashing algorithms, create a class that implements `org.wildfly.security.password.PasswordProvider` as shown in the example below.
+To represent passwords stored in the database which were hashed using different hashing algorithms, create a class that implements `io.quarkus.security.jpa.PasswordProvider` as shown in the example below.
 
 The following snippet shows how to set a custom password provider that represents a password which was hashed with the SHA256 hashing algorithm.
 
 [source,java]
 ----
-import org.wildfly.security.password.Password;
-import org.wildfly.security.password.PasswordProvider;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+import io.quarkus.security.jpa.Password;
+import io.quarkus.security.jpa.PasswordType;
+import io.quarkus.security.jpa.Roles;
+import io.quarkus.security.jpa.UserDefinition;
+import io.quarkus.security.jpa.Username;
 
 @UserDefinition
 @Table(name = "test_user")
@@ -160,6 +175,16 @@ public class CustomPasswordUserEntity {
     @Roles
     public String role;
 }
+----
+
+[source,java]
+----
+import jakarta.xml.bind.DatatypeConverter;
+
+import org.wildfly.security.password.Password;
+import org.wildfly.security.password.interfaces.SimpleDigestPassword;
+
+import io.quarkus.security.jpa.PasswordProvider;
 
 public class CustomPasswordProvider implements PasswordProvider {
     @Override

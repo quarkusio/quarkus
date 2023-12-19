@@ -462,9 +462,9 @@ As you can see in this code sample, you do not need to start the test container 
 
 [NOTE]
 ====
-When you start your application in dev mode, `Dev Services for PostgreSQL` launches a `PostgreSQL` `devmode` container so that you can start developing your application.
+When you start your application in dev mode, Dev Services for PostgreSQL launches a PostgreSQL dev mode container so that you can start developing your application.
 While developing your application, you can add tests one by one and run them using the xref:continuous-testing.adoc[Continuous Testing] feature.
-`Dev Services for PostgreSQL` supports testing while you develop by providing a separate `PostgreSQL` test container that does not conflict with the `devmode` container.
+Dev Services for PostgreSQL supports testing while you develop by providing a separate PostgreSQL test container that does not conflict with the dev mode container.
 ====
 
 === Use Curl or a browser to test your application

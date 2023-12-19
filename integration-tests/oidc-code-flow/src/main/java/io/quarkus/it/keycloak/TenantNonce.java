@@ -22,4 +22,11 @@ public class TenantNonce {
         session.logout().await().indefinitely();
         return session.getTenantId() + (routingContext.get("reauthenticated") != null ? ":reauthenticated" : "");
     }
+
+    @GET
+    @Authenticated
+    @Path("/callback")
+    public String getTenantCallback() {
+        throw new RuntimeException("/tenant-nonce is a configured callback method");
+    }
 }

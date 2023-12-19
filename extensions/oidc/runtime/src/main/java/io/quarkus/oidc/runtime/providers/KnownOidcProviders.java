@@ -20,6 +20,7 @@ public class KnownOidcProviders {
             case MASTODON -> mastodon();
             case MICROSOFT -> microsoft();
             case SPOTIFY -> spotify();
+            case STRAVA -> strava();
             case TWITCH -> twitch();
             case TWITTER, X -> twitter();
         };
@@ -149,6 +150,28 @@ public class KnownOidcProviders {
 
         ret.getToken().setVerifyAccessTokenWithUserInfo(true);
         ret.getToken().setPrincipalClaim("display_name");
+
+        return ret;
+    }
+
+    private static OidcTenantConfig strava() {
+        OidcTenantConfig ret = new OidcTenantConfig();
+        ret.setDiscoveryEnabled(false);
+        ret.setAuthServerUrl("https://www.strava.com/oauth");
+        ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
+        ret.setAuthorizationPath("authorize");
+
+        ret.setTokenPath("token");
+        ret.setUserInfoPath("https://www.strava.com/api/v3/athlete");
+
+        OidcTenantConfig.Authentication authentication = ret.getAuthentication();
+        authentication.setAddOpenidScope(false);
+        authentication.setScopes(List.of("activity:read"));
+        authentication.setIdTokenRequired(false);
+        authentication.setRedirectPath("/strava");
+
+        ret.getToken().setVerifyAccessTokenWithUserInfo(true);
+        ret.getCredentials().getClientSecret().setMethod(Method.QUERY);
 
         return ret;
     }

@@ -266,6 +266,18 @@ quarkus.oidc.tls.trust-store-password=${trust-store-password}
 #quarkus.oidc.tls.trust-store-alias=certAlias
 ----
 
+===== POST query
+
+Some providers such as the xref:security-openid-connect-providers#strava[Strava OAuth2 provider] require client credentials be posted as HTTP POST query parameters:
+
+[source,properties]
+----
+quarkus.oidc.provider=strava
+quarkus.oidc.client-id=quarkus-app
+quarkus.oidc.credentials.client-secret.value=mysecret
+quarkus.oidc.credentials.client-secret.method=query
+----
+
 ==== Introspection endpoint authentication
 
 Some OIDC providers require authenticating to its introspection endpoint by using Basic authentication and with credentials that are different from the `client_id` and `client_secret`.

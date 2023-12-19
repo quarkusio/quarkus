@@ -176,7 +176,13 @@ public class OidcCommonConfig {
                  * form
                  * parameters.
                  */
-                POST_JWT
+                POST_JWT,
+
+                /**
+                 * client id and secret are submitted as HTTP query parameters. This option is only supported for the OIDC
+                 * extension.
+                 */
+                QUERY
             }
 
             /**

@@ -53,14 +53,23 @@ public class NativeImageAgentConfigStep {
             }
             nativeImageAgentConfigDirectoryProducer.produce(new NativeImageAgentConfigDirectoryBuildItem(targetDirName));
 
+            //            transformJsonArray(basePath, "jni-config.json", targetPath,
+            //                    JsonTransform.dropping(v -> discardNamed(v, jniSkipPattern)));
+            //            transformJsonArray(basePath, "proxy-config.json", targetPath, JsonTransform.dropping(this::discardProxyInterface));
+            //            transformJsonArray(basePath, "reflect-config.json", targetPath,
+            //                    JsonTransform.dropping(v -> discardNamed(v, reflectionSkipPattern)));
+            //            transformJsonObject(basePath, "resource-config.json", targetPath, JsonTransform.dropping(this::discardPattern));
+            //            transformJsonObject(basePath, "serialization-config.json", targetPath,
+            //                    JsonTransform.dropping(v -> discardNamed(v, serializationSkipPattern)));
+
             transformJsonArray(basePath, "jni-config.json", targetPath,
-                    JsonTransform.dropping(v -> discardNamed(v, jniSkipPattern)));
-            transformJsonArray(basePath, "proxy-config.json", targetPath, JsonTransform.dropping(this::discardProxyInterface));
+                    JsonTransform.dropping(v -> false));
+            transformJsonArray(basePath, "proxy-config.json", targetPath, JsonTransform.dropping(v -> false));
             transformJsonArray(basePath, "reflect-config.json", targetPath,
-                    JsonTransform.dropping(v -> discardNamed(v, reflectionSkipPattern)));
-            transformJsonObject(basePath, "resource-config.json", targetPath, JsonTransform.dropping(this::discardPattern));
+                    JsonTransform.dropping(v -> false));
+            transformJsonObject(basePath, "resource-config.json", targetPath, JsonTransform.dropping(v -> false));
             transformJsonObject(basePath, "serialization-config.json", targetPath,
-                    JsonTransform.dropping(v -> discardNamed(v, serializationSkipPattern)));
+                    JsonTransform.dropping(v -> false));
         }
     }
 

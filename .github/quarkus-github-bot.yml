@@ -112,7 +112,7 @@ triage:
         matches("hibernate", title) && matches("reactive", title)
         && !matches("hibernate.validator", title)
         && !matches("hibernate.search", titleBody)
-      notify: [DavideD, gavinking, Sanne]
+      notify: [DavideD, gavinking]
       directories:
         - extensions/hibernate-reactive
     - id: hibernate-orm
@@ -122,7 +122,7 @@ triage:
         && !matches("hibernate.validator", title)
         && !matches("hibernate.search", titleBody)
         && !matches("hibernate.reactive", titleBody)
-      notify: [gsmet, Sanne, yrodiere]
+      notify: [gsmet, yrodiere]
       notifyInPullRequest: true
       directories:
         # No trailing slashes: we also match sibling directories starting with these names
@@ -709,7 +709,7 @@ triage:
     - id: agroal
       labels: [area/agroal]
       title: "agroal"
-      notify: [barreiro, Sanne, yrodiere]
+      notify: [barreiro, yrodiere]
       directories:
         - extensions/agroal/
     - id: continuous-testing

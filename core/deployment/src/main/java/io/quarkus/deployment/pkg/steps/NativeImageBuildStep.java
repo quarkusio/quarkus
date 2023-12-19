@@ -894,14 +894,16 @@ public class NativeImageBuildStep {
                     addExperimentalVMOption(nativeImageArgs, "-H:+AllowVMInspection");
                 }
 
-                List<NativeConfig.MonitoringOption> monitoringOptions = new ArrayList<>();
-                monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);
-                if (nativeConfig.monitoring().isPresent()) {
-                    monitoringOptions.addAll(nativeConfig.monitoring().get());
+                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_22_3_0) >= 0) {
+                    List<NativeConfig.MonitoringOption> monitoringOptions = new ArrayList<>();
+                    monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);
+                    if (nativeConfig.monitoring().isPresent()) {
+                        monitoringOptions.addAll(nativeConfig.monitoring().get());
+                    }
+                    nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
+                            .distinct()
+                            .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));
                 }
-                nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
-                        .distinct()
-                        .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));
 
                 if (nativeConfig.autoServiceLoaderRegistration()) {
                     addExperimentalVMOption(nativeImageArgs, "-H:+UseServiceLoaderFeature");

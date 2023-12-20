@@ -3,6 +3,7 @@ package io.quarkus.restclient.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.URL;
 import java.util.Optional;
 
@@ -51,7 +52,7 @@ public class RestClientConfigTest {
         assertThat(config.connectionTTL.get()).isEqualTo(30000);
         assertThat(config.connectionPoolSize).isPresent();
         assertThat(config.connectionPoolSize.get()).isEqualTo(10);
-        assertThat(config.multipart.maxChunkSize.get()).isEqualTo(1024);
+        assertThat(config.maxChunkSize.get().asBigInteger()).isEqualTo(BigInteger.valueOf(1024));
     }
 
     private static SmallRyeConfig createMPConfig() throws IOException {

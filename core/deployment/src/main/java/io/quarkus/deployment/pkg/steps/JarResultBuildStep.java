@@ -154,6 +154,7 @@ public class JarResultBuildStep {
     public static final String DEFAULT_FAST_JAR_DIRECTORY_NAME = "quarkus-app";
 
     public static final String MP_CONFIG_FILE = "META-INF/microprofile-config.properties";
+    private static final String VINEFLOWER_VERSION = "1.9.3";
 
     @BuildStep
     OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst, PackageConfig packageConfig) {
@@ -603,19 +604,22 @@ public class JarResultBuildStep {
         Path decompiledOutputDir = null;
         boolean wasDecompiledSuccessfully = true;
         Decompiler decompiler = null;
-        if (packageConfig.vineflower.enabled) {
+        if (packageConfig.vineflower.enabled.orElse(false) || packageConfig.decompiler.enabled.orElse(false)) {
+            Optional<String> jarDirectoryStrOpt = packageConfig.vineflower.enabled.orElse(false)
+                    ? packageConfig.vineflower.jarDirectory
+                    : packageConfig.decompiler.jarDirectory;
+            String jarDirectoryStr = jarDirectoryStrOpt.orElse(System.getProperty("user.home") + "/.quarkus");
+
             decompiledOutputDir = buildDir.getParent().resolve("decompiled");
             FileUtil.deleteDirectory(decompiledOutputDir);
             Files.createDirectory(decompiledOutputDir);
-            if (packageConfig.vineflower.enabled) {
-                decompiler = new Decompiler.VineflowerDecompiler();
-                Path jarDirectory = Paths.get(packageConfig.vineflower.jarDirectory);
-                if (!Files.exists(jarDirectory)) {
-                    Files.createDirectory(jarDirectory);
-                }
-                decompiler.init(new Decompiler.Context(packageConfig.vineflower.version, jarDirectory, decompiledOutputDir));
-                decompiler.downloadIfNecessary();
+            decompiler = new Decompiler.VineflowerDecompiler();
+            Path jarDirectory = Paths.get(jarDirectoryStr);
+            if (!Files.exists(jarDirectory)) {
+                Files.createDirectory(jarDirectory);
             }
+            decompiler.init(new Decompiler.Context(VINEFLOWER_VERSION, jarDirectory, decompiledOutputDir));
+            decompiler.downloadIfNecessary();
         }
 
         FastJarJars.FastJarJarsBuilder fastJarJarsBuilder = new FastJarJars.FastJarJarsBuilder();

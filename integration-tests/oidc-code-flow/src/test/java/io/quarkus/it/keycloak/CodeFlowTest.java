@@ -13,7 +13,11 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -24,6 +28,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import com.gargoylesoftware.htmlunit.CookieManager;
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
 import com.gargoylesoftware.htmlunit.WebClient;
@@ -221,9 +226,11 @@ public class CodeFlowTest {
 
             page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
             assertEquals("tenant-https:reauthenticated", page.getBody().asNormalizedText());
-            Cookie sessionCookie = getSessionCookie(webClient, "tenant-https_test");
-            assertNotNull(sessionCookie);
-            assertEquals("strict", sessionCookie.getSameSite());
+
+            List<Cookie> sessionCookies = verifyTenantHttpTestCookies(webClient);
+
+            assertEquals("strict", sessionCookies.get(0).getSameSite());
+            assertEquals("strict", sessionCookies.get(1).getSameSite());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -333,15 +340,19 @@ public class CodeFlowTest {
             URI endpointLocationWithoutQueryUri = URI.create(endpointLocationWithoutQuery);
             assertEquals("code=b", endpointLocationWithoutQueryUri.getRawQuery());
 
-            Cookie sessionCookie = getSessionCookie(webClient, "tenant-https_test");
-            assertNotNull(sessionCookie);
+            List<Cookie> sessionCookies = verifyTenantHttpTestCookies(webClient);
+
+            StringBuilder sessionCookieValue = new StringBuilder();
+            for (Cookie c : sessionCookies) {
+                sessionCookieValue.append(c.getValue());
+            }
 
             SecretKey key = new SecretKeySpec(OidcUtils
                     .getSha256Digest("secret".getBytes(StandardCharsets.UTF_8)),
                     "AES");
-            String sessionCookieValue = OidcUtils.decryptString(sessionCookie.getValue(), key);
+            String decryptedSessionCookieValue = OidcUtils.decryptString(sessionCookieValue.toString(), key);
 
-            String encodedIdToken = sessionCookieValue.split("\\|")[0];
+            String encodedIdToken = decryptedSessionCookieValue.split("\\|")[0];
 
             JsonObject idToken = OidcUtils.decodeJwtContent(encodedIdToken);
             String expiresAt = idToken.getInteger("exp").toString();
@@ -351,10 +362,20 @@ public class CodeFlowTest {
                     response.startsWith("tenant-https:reauthenticated?code=b&expiresAt=" + expiresAt + "&expiresInDuration="));
             Integer duration = Integer.valueOf(response.substring(response.length() - 1));
             assertTrue(duration > 1 && duration < 5);
-            sessionCookie = getSessionCookie(webClient, "tenant-https_test");
-            assertNotNull(sessionCookie);
+
+            verifyTenantHttpTestCookies(webClient);
+
             webClient.getCookieManager().clearCookies();
         }
+    }
+
+    private List<Cookie> verifyTenantHttpTestCookies(WebClient webClient) {
+        List<Cookie> sessionCookies = getSessionCookies(webClient, "tenant-https_test");
+        assertNotNull(sessionCookies);
+        assertEquals(2, sessionCookies.size());
+        assertEquals("q_session_tenant-https_test_chunk_1", sessionCookies.get(0).getName());
+        assertEquals("q_session_tenant-https_test_chunk_2", sessionCookies.get(1).getName());
+        return sessionCookies;
     }
 
     @Test
@@ -391,13 +412,23 @@ public class CodeFlowTest {
             assertEquals(302, webResponse.getStatusCode());
             assertNull(getStateCookie(webClient, "tenant-nonce"));
 
+            // At this point the session cookie is already available, this 2nd redirect only drops
+            // OIDC code flow parameters such as `code` and `state`
+            List<Cookie> sessionCookies = getSessionCookies(webClient, "tenant-nonce");
+            assertNotNull(sessionCookies);
+            assertEquals(2, sessionCookies.size());
+            assertEquals("q_session_tenant-nonce_chunk_1", sessionCookies.get(0).getName());
+            assertEquals("q_session_tenant-nonce_chunk_2", sessionCookies.get(1).getName());
+
             String endpointLocationWithoutQuery = webResponse.getResponseHeaderValue("location");
             URI endpointLocationWithoutQueryUri = URI.create(endpointLocationWithoutQuery);
 
+            // This request will reach the `TenantNonce` endpoint which will also clear the session.
             page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
             assertEquals("tenant-nonce:reauthenticated", page.getBody().asNormalizedText());
-            Cookie sessionCookie = getSessionCookie(webClient, "tenant-nonce");
-            assertNotNull(sessionCookie);
+
+            // both cookies should be gone now.
+            assertNull(getSessionCookies(webClient, "tenant-nonce"));
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -1471,6 +1502,19 @@ public class CodeFlowTest {
 
     private Cookie getSessionCookie(WebClient webClient, String tenantId) {
         return webClient.getCookieManager().getCookie("q_session" + (tenantId == null ? "_Default_test" : "_" + tenantId));
+    }
+
+    private List<Cookie> getSessionCookies(WebClient webClient, String tenantId) {
+        String sessionCookieNameChunk = "q_session" + (tenantId == null ? "_Default_test" : "_" + tenantId) + "_chunk_";
+        CookieManager cookieManager = webClient.getCookieManager();
+        SortedMap<String, Cookie> sessionCookies = new TreeMap<>();
+        for (Cookie cookie : cookieManager.getCookies()) {
+            if (cookie.getName().startsWith(sessionCookieNameChunk)) {
+                sessionCookies.put(cookie.getName(), cookie);
+            }
+        }
+
+        return sessionCookies.isEmpty() ? null : new ArrayList<Cookie>(sessionCookies.values());
     }
 
     private Cookie getSessionAtCookie(WebClient webClient, String tenantId) {

@@ -108,6 +108,22 @@ public class SseParserTest {
         testParser(Arrays.asList("data:f", "oo\n\n"),
                 Collections.singletonList(new InboundSseEventImpl(null, null)
                         .setData("foo")));
+        testParser(Arrays.asList("dat", "a:foo\n\n"),
+                Collections.singletonList(new InboundSseEventImpl(null, null)
+                        .setData("foo")));
+        testParser(Arrays.asList("data", ":foo\n\n"),
+                Collections.singletonList(new InboundSseEventImpl(null, null)
+                        .setData("foo")));
+        testParser(Arrays.asList("data:", "foo\n\n"),
+                Collections.singletonList(new InboundSseEventImpl(null, null)
+                        .setData("foo")));
+        // chunk at the worst possible place, make sure we don't drop events
+        testParser(Arrays.asList("data:foo\n", "\n"),
+                Collections.singletonList(new InboundSseEventImpl(null, null)
+                        .setData("foo")));
+        testParser(Arrays.asList("data:foo\n", "data:bar\n", "\n"),
+                Collections.singletonList(new InboundSseEventImpl(null, null)
+                        .setData("foo\nbar")));
         // one event in two buffers within a UTF-8 char
         testParserWithBytes(
                 Arrays.asList(new byte[] { 'd', 'a', 't', 'a', ':', (byte) 0b11000010 },

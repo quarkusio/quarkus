@@ -6,17 +6,18 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="security-jpa"]
 = Quarkus Security with Jakarta Persistence
 include::_attributes.adoc[]
+:diataxis-type: howto
 :categories: security
-:summary: This guide explains how your application can use Jakarta Persistence to store users identities.
 :topics: security,identity-providers,sql,database,jpa,jdbc
 :extensions: io.quarkus:quarkus-security-jpa-reactive
 
-Quarkus provides a Jakarta Persistence identity provider, similar to the xref:security-jdbc.adoc[JDBC identity provider]. Jakarta Persistence is suitable for use with the xref:security-basic-authentication.adoc[Basic] and xref:security-authentication-mechanisms.adoc#form-auth[Form-based] Quarkus Security mechanisms, which require a combination of username and password credentials.
+You can configure your application to use Jakarta Persistence to store users' identities.
 
-The Jakarta Persistence `IdentityProvider` creates a `SecurityIdentity` instance, which is used during user authentication to verify and authorize access requests, making your Quarkus application secure.
+Quarkus provides a Jakarta Persistence identity provider, similar to the xref:security-jdbc.adoc[JDBC identity provider]. Jakarta Persistence is suitable for use with the xref:security-basic-authentication.adoc[Basic] and xref:security-authentication-mechanisms.adoc#form-auth[Form-based] Quarkus Security mechanisms, which require username and password credentials.
 
-For an example of practical use of Basic authentication and Jakarta Persistence, see the xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence] tutorial.
+The Jakarta Persistence `IdentityProvider` creates a `SecurityIdentity` instance. During user authentication, this instance is used to verify and authorize access requests.
 
+For a practical example, see the xref:security-getting-started-tutorial.adoc[Getting started with Security using Basic authentication and Jakarta Persistence] tutorial.
 
 == Jakarta Persistence entity specification
 

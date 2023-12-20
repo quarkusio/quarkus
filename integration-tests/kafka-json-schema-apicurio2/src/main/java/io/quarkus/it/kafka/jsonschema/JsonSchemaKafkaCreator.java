@@ -17,6 +17,10 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import io.apicurio.registry.serde.SerdeConfig;
 import io.apicurio.registry.serde.jsonschema.JsonSchemaKafkaDeserializer;
 import io.apicurio.registry.serde.jsonschema.JsonSchemaKafkaSerializer;
+import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
+import io.confluent.kafka.serializers.KafkaJsonDeserializerConfig;
+import io.confluent.kafka.serializers.json.KafkaJsonSchemaDeserializer;
+import io.confluent.kafka.serializers.json.KafkaJsonSchemaSerializer;
 
 /**
  * Create Json Schema Kafka Consumers and Producers
@@ -30,16 +34,32 @@ public class JsonSchemaKafkaCreator {
     @ConfigProperty(name = "mp.messaging.connector.smallrye-kafka.apicurio.registry.url")
     String apicurioRegistryUrl;
 
+    @ConfigProperty(name = "mp.messaging.connector.smallrye-kafka.schema.registry.url")
+    String confluentRegistryUrl;
+
     public JsonSchemaKafkaCreator() {
     }
 
-    public JsonSchemaKafkaCreator(String bootstrap, String apicurioRegistryUrl) {
+    public JsonSchemaKafkaCreator(String bootstrap, String apicurioRegistryUrl, String confluentRegistryUrl) {
         this.bootstrap = bootstrap;
         this.apicurioRegistryUrl = apicurioRegistryUrl;
+        this.confluentRegistryUrl = confluentRegistryUrl;
     }
 
     public String getApicurioRegistryUrl() {
         return apicurioRegistryUrl;
+    }
+
+    public String getConfluentRegistryUrl() {
+        return confluentRegistryUrl;
+    }
+
+    public KafkaConsumer<Integer, Pet> createConfluentConsumer(String groupdIdConfig, String subscribtionName) {
+        return createConfluentConsumer(bootstrap, getConfluentRegistryUrl(), groupdIdConfig, subscribtionName);
+    }
+
+    public KafkaProducer<Integer, Pet> createConfluentProducer(String clientId) {
+        return createConfluentProducer(bootstrap, getConfluentRegistryUrl(), clientId);
     }
 
     public KafkaConsumer<Integer, Pet> createApicurioConsumer(String groupdIdConfig, String subscribtionName) {
@@ -48,6 +68,12 @@ public class JsonSchemaKafkaCreator {
 
     public KafkaProducer<Integer, Pet> createApicurioProducer(String clientId) {
         return createApicurioProducer(bootstrap, getApicurioRegistryUrl(), clientId);
+    }
+
+    public static KafkaConsumer<Integer, Pet> createConfluentConsumer(String bootstrap, String confluent,
+            String groupdIdConfig, String subscribtionName) {
+        Properties p = getConfluentConsumerProperties(bootstrap, confluent, groupdIdConfig);
+        return createConsumer(p, subscribtionName);
     }
 
     public static KafkaConsumer<Integer, Pet> createApicurioConsumer(String bootstrap, String apicurio,
@@ -59,6 +85,12 @@ public class JsonSchemaKafkaCreator {
     public static KafkaProducer<Integer, Pet> createApicurioProducer(String bootstrap, String apicurio,
             String clientId) {
         Properties p = getApicurioProducerProperties(bootstrap, apicurio, clientId);
+        return createProducer(p);
+    }
+
+    public static KafkaProducer<Integer, Pet> createConfluentProducer(String bootstrap, String confluent,
+            String clientId) {
+        Properties p = getConfluentProducerProperties(bootstrap, confluent, clientId);
         return createProducer(p);
     }
 
@@ -76,6 +108,15 @@ public class JsonSchemaKafkaCreator {
             props.put(ProducerConfig.CLIENT_ID_CONFIG, UUID.randomUUID().toString());
         }
         return new KafkaProducer<>(props);
+    }
+
+    private static Properties getConfluentConsumerProperties(String bootstrap, String confluent,
+            String groupdIdConfig) {
+        Properties props = getGenericConsumerProperties(bootstrap, groupdIdConfig);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaJsonSchemaDeserializer.class.getName());
+        props.put(AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, confluent);
+        props.put(KafkaJsonDeserializerConfig.JSON_VALUE_TYPE, Pet.class.getName());
+        return props;
     }
 
     public static Properties getApicurioConsumerProperties(String bootstrap, String apicurio, String groupdIdConfig) {
@@ -104,6 +145,13 @@ public class JsonSchemaKafkaCreator {
         props.put(SerdeConfig.SCHEMA_LOCATION, "json-schema.json");
         props.put(SerdeConfig.VALIDATION_ENABLED, "true");
         props.put(SerdeConfig.REGISTRY_URL, apicurio);
+        return props;
+    }
+
+    private static Properties getConfluentProducerProperties(String bootstrap, String confluent, String clientId) {
+        Properties props = getGenericProducerProperties(bootstrap, clientId);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaJsonSchemaSerializer.class.getName());
+        props.put(AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, confluent);
         return props;
     }
 

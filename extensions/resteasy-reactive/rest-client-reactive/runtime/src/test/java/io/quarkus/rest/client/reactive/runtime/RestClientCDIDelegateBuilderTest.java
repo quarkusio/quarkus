@@ -2,6 +2,7 @@ package io.quarkus.rest.client.reactive.runtime;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,6 +30,7 @@ import org.mockito.Mockito;
 import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientMultipartConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
+import io.quarkus.runtime.configuration.MemorySize;
 
 @SuppressWarnings({ "SameParameterValue" })
 public class RestClientCDIDelegateBuilderTest {
@@ -189,6 +191,7 @@ public class RestClientCDIDelegateBuilderTest {
         configRoot.multipart = new RestClientMultipartConfig();
         configRoot.multipart.maxChunkSize = Optional.of(1024);
         configRoot.followRedirects = Optional.of(true);
+        configRoot.maxChunkSize = Optional.of(new MemorySize(BigInteger.valueOf(1024)));
         configRoot.providers = Optional
                 .of("io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilderTest$MyResponseFilter2");
         configRoot.queryParamStyle = Optional.of(QueryParamStyle.MULTI_PAIRS);
@@ -227,7 +230,7 @@ public class RestClientCDIDelegateBuilderTest {
         clientConfig.maxRedirects = Optional.of(104);
         clientConfig.followRedirects = Optional.of(true);
         clientConfig.multipart = new RestClientMultipartConfig();
-        clientConfig.maxChunkSize = Optional.of(1024);
+        clientConfig.maxChunkSize = Optional.of(new MemorySize(BigInteger.valueOf(1024)));
         clientConfig.providers = Optional
                 .of("io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilderTest$MyResponseFilter1");
         clientConfig.queryParamStyle = Optional.of(QueryParamStyle.COMMA_SEPARATED);

@@ -11,6 +11,7 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.configuration.MemorySize;
 import io.smallrye.config.SmallRyeConfig;
 
 @ConfigGroup
@@ -258,8 +259,8 @@ public class RestClientConfig {
      * This property is applicable to reactive REST clients only.
      */
     @ConfigItem
-    @ConfigDocDefault("8096")
-    public Optional<Integer> maxChunkSize;
+    @ConfigDocDefault("8K")
+    public Optional<MemorySize> maxChunkSize;
 
     /**
      * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the
@@ -308,7 +309,7 @@ public class RestClientConfig {
         instance.name = getConfigValue(configKey, "name", String.class);
         instance.userAgent = getConfigValue(configKey, "user-agent", String.class);
         instance.http2 = getConfigValue(configKey, "http2", Boolean.class);
-        instance.maxChunkSize = getConfigValue(configKey, "max-chunk-size", Integer.class);
+        instance.maxChunkSize = getConfigValue(configKey, "max-chunk-size", MemorySize.class);
         instance.captureStacktrace = getConfigValue(configKey, "capture-stacktrace", Boolean.class);
 
         instance.multipart = new RestClientMultipartConfig();
@@ -348,7 +349,7 @@ public class RestClientConfig {
         instance.name = getConfigValue(interfaceClass, "name", String.class);
         instance.userAgent = getConfigValue(interfaceClass, "user-agent", String.class);
         instance.http2 = getConfigValue(interfaceClass, "http2", Boolean.class);
-        instance.maxChunkSize = getConfigValue(interfaceClass, "max-chunk-size", Integer.class);
+        instance.maxChunkSize = getConfigValue(interfaceClass, "max-chunk-size", MemorySize.class);
         instance.alpn = getConfigValue(interfaceClass, "alpn", Boolean.class);
         instance.captureStacktrace = getConfigValue(interfaceClass, "capture-stacktrace", Boolean.class);
 

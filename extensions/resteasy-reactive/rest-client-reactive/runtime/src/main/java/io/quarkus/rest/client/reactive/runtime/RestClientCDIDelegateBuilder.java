@@ -18,6 +18,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import javax.net.ssl.HostnameVerifier;
 
@@ -28,6 +29,7 @@ import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequest
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
+import io.quarkus.runtime.configuration.MemorySize;
 
 public class RestClientCDIDelegateBuilder<T> {
 
@@ -123,11 +125,11 @@ public class RestClientCDIDelegateBuilder<T> {
         }
 
         Optional<Integer> maxChunkSize = oneOf(
-                clientConfigByClassName().maxChunkSize,
+                clientConfigByClassName().maxChunkSize.map(intChunkSize()),
                 clientConfigByClassName().multipart.maxChunkSize,
-                clientConfigByConfigKey().maxChunkSize,
+                clientConfigByConfigKey().maxChunkSize.map(intChunkSize()),
                 clientConfigByConfigKey().multipart.maxChunkSize,
-                configRoot.maxChunkSize,
+                configRoot.maxChunkSize.map(intChunkSize()),
                 configRoot.multipart.maxChunkSize);
         builder.property(QuarkusRestClientProperties.MAX_CHUNK_SIZE, maxChunkSize.orElse(DEFAULT_MAX_CHUNK_SIZE));
 
@@ -144,6 +146,10 @@ public class RestClientCDIDelegateBuilder<T> {
         Boolean captureStacktrace = oneOf(clientConfigByClassName().captureStacktrace,
                 clientConfigByConfigKey().captureStacktrace).orElse(configRoot.captureStacktrace);
         builder.property(QuarkusRestClientProperties.CAPTURE_STACKTRACE, captureStacktrace);
+    }
+
+    private static Function<MemorySize, Integer> intChunkSize() {
+        return m -> (int) m.asLongValue();
     }
 
     private void configureProxy(QuarkusRestClientBuilder builder) {

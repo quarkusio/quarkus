@@ -15,6 +15,7 @@ import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.configuration.MemorySize;
 
 @ConfigRoot(name = "rest-client", phase = ConfigPhase.RUN_TIME)
 public class RestClientsConfig {
@@ -299,8 +300,8 @@ public class RestClientsConfig {
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem
-    @ConfigDocDefault("8096")
-    public Optional<Integer> maxChunkSize;
+    @ConfigDocDefault("8k")
+    public Optional<MemorySize> maxChunkSize;
 
     /**
      * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the

@@ -175,14 +175,14 @@ triage:
     - id: kotlin
       labels: [area/kotlin]
       titleBody: "kotlin"
-      notify: [evanchooly, geoand]
+      notify: [geoand]
       directories:
         - extensions/kotlin/
         - integration-tests/kotlin/
     - id: mongodb
       labels: [area/mongodb]
       title: "mongo"
-      notify: [loicmathieu, evanchooly]
+      notify: [loicmathieu]
       directories:
         - extensions/mongodb-client/
         - integration-tests/mongodb-client/

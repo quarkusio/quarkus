@@ -65,7 +65,6 @@ import io.vertx.core.*;
 import io.vertx.core.http.*;
 import io.vertx.core.http.impl.Http1xServerConnection;
 import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.Utils;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.SocketAddress;
@@ -1273,7 +1272,7 @@ public class VertxHttpRecorder {
                 .childHandler(new ChannelInitializer<VirtualChannel>() {
                     @Override
                     public void initChannel(VirtualChannel ch) throws Exception {
-                        EventLoopContext context = vertx.createEventLoopContext();
+                        ContextInternal context = vertx.createEventLoopContext();
                         VertxHandler<Http1xServerConnection> handler = VertxHandler.create(chctx -> {
 
                             Http1xServerConnection conn = new Http1xServerConnection(

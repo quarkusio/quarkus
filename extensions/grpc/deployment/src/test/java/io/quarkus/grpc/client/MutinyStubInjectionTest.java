@@ -23,8 +23,6 @@ import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.impl.EventLoopContext;
-import io.vertx.core.impl.WorkerContext;
 import io.vertx.mutiny.core.Context;
 import io.vertx.mutiny.core.Vertx;
 
@@ -79,7 +77,7 @@ public class MutinyStubInjectionTest {
                     service.sayHello(HelloRequest.newBuilder().setName(s).build())
                             .map(HelloReply::getMessage)
                             .invoke(() -> assertThat(Vertx.currentContext()).isNotNull().isEqualTo(context))
-                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate()).isInstanceOf(EventLoopContext.class))
+                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate().isEventLoopContext()).isTrue())
                             .map(r -> r + " " + Thread.currentThread().getName())
                             .subscribe().with(e::complete, e::fail);
                 });
@@ -93,9 +91,9 @@ public class MutinyStubInjectionTest {
                 duplicate.runOnContext(x -> {
                     service.sayHello(HelloRequest.newBuilder().setName(s).build())
                             .map(HelloReply::getMessage)
-                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate())
-                                    .isNotInstanceOf(EventLoopContext.class).isNotInstanceOf(WorkerContext.class)
-                                    .isEqualTo(duplicate))
+                            .invoke(() -> assertThat(Vertx.currentContext()).isNotNull().isEqualTo(duplicate))
+                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate().isEventLoopContext()).isFalse())
+                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate().isWorkerContext()).isFalse())
                             .map(r -> r + " " + Thread.currentThread().getName())
                             .subscribe().with(e::complete, e::fail);
                 });

@@ -474,7 +474,8 @@ public class SmallRyeOpenApiProcessor {
 
     private List<String> getUserDefinedFilters(OpenApiConfig openApiConfig, IndexView index, OpenApiFilter.RunStage stage) {
         List<String> userDefinedFilters = new ArrayList<>();
-        Collection<AnnotationInstance> annotations = index.getAnnotations(DotName.createSimple(OpenApiFilter.class.getName()));
+        List<AnnotationInstance> annotations = index.getAnnotations(DotName.createSimple(OpenApiFilter.class.getName()))
+                .stream().distinct().collect(Collectors.toList());
         for (AnnotationInstance ai : annotations) {
             AnnotationTarget annotationTarget = ai.target();
             ClassInfo classInfo = annotationTarget.asClass();

@@ -12,9 +12,12 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class ElasticsearchDevServicesBuildTimeConfig {
 
     /**
-     * If Dev Services for Elasticsearch has been explicitly enabled or disabled. Dev Services are generally enabled
-     * by default, unless there is an existing configuration present. For Elasticsearch, Dev Services starts a server unless
-     * {@code quarkus.elasticsearch.hosts} is set.
+     * Whether this Dev Service should start with the application in dev mode or tests.
+     *
+     * Dev Services are enabled by default
+     * unless connection configuration (e.g. `quarkus.elasticsearch.hosts`) is set explicitly.
+     *
+     * @asciidoclet
      */
     @ConfigItem
     public Optional<Boolean> enabled = Optional.empty();
@@ -28,6 +31,8 @@ public class ElasticsearchDevServicesBuildTimeConfig {
     public Optional<Integer> port;
 
     /**
+     * The Elasticsearch distribution to use.
+     *
      * Defaults to a distribution inferred from the explicitly configured `image-name` (if any),
      * or by default to the distribution configured in depending extensions (e.g. Hibernate Search),
      * or by default to `elastic`.
@@ -39,6 +44,7 @@ public class ElasticsearchDevServicesBuildTimeConfig {
 
     /**
      * The Elasticsearch container image to use.
+     *
      * Defaults depend on the configured `distribution`:
      *
      * * For the `elastic` distribution: {elasticsearch-image}
@@ -51,13 +57,15 @@ public class ElasticsearchDevServicesBuildTimeConfig {
 
     /**
      * The value for the ES_JAVA_OPTS env variable.
-     * Defaults to setting the heap to 512MB min - 1GB max.
+     *
+     * @asciidoclet
      */
     @ConfigItem(defaultValue = "-Xms512m -Xmx1g")
     public String javaOpts;
 
     /**
-     * Indicates if the Elasticsearch server managed by Quarkus Dev Services is shared.
+     * Whether the Elasticsearch server managed by Quarkus Dev Services is shared.
+     * <p>
      * When shared, Quarkus looks for running containers using label-based service discovery.
      * If a matching container is found, it is used, and so a second one is not started.
      * Otherwise, Dev Services for Elasticsearch starts a new container.
@@ -72,6 +80,7 @@ public class ElasticsearchDevServicesBuildTimeConfig {
 
     /**
      * The value of the {@code quarkus-dev-service-elasticsearch} label attached to the started container.
+     * <p>
      * This property is used when {@code shared} is set to {@code true}.
      * In this case, before starting a container, Dev Services for Elasticsearch looks for a container with the
      * {@code quarkus-dev-service-elasticsearch} label

@@ -1794,6 +1794,10 @@ that will deserialize to a `io.vertx.core.json.JsonObject`. The corresponding se
 
 This is described in a dedicated guide: xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
 
+== JSON Schema Serialization
+
+This is described in a dedicated guide: xref:kafka-schema-registry-json-schema.adoc[Using Apache Kafka with Schema Registry and JSON Schema].
+
 [[serialization-autodetection]]
 == Serializer/deserializer autodetection
 
@@ -1886,7 +1890,9 @@ Refer to <<jackson-serialization>> to write your own serializer/deserializer for
 
 == Using Schema Registry
 
-This is described in a dedicated guide: xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
+This is described in a dedicated guide for Avro: xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
+And a different one for JSON Schema: xref:kafka-schema-registry-json-schema.adoc[Using Apache Kafka with Schema Registry and JSON Schema].
+
 
 [[kafka-health-check]]
 == Health Checks

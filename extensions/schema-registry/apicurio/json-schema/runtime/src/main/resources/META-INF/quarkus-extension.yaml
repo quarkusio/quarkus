@@ -5,6 +5,7 @@ metadata:
   keywords:
   - "apicurio"
   - "json-schema"
+  - "kafka"
   guide: ""
   categories:
   - "serialization"

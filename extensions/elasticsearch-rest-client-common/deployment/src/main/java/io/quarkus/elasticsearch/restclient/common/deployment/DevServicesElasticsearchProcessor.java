@@ -34,6 +34,7 @@ import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchDevServicesBuildTimeConfig.Distribution;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -226,10 +227,12 @@ public class DevServicesElasticsearchProcessor {
 
             container.withEnv(config.containerEnv);
 
+            container.withReuse(config.reuse);
+
             container.start();
             return new DevServicesResultBuildItem.RunningDevService(Feature.ELASTICSEARCH_REST_CLIENT_COMMON.getName(),
                     container.getContainerId(),
-                    container::close,
+                    new ContainerShutdownCloseable(container, "Elasticsearch"),
                     buildPropertiesMap(buildItemConfig,
                             container.getHost() + ":" + container.getMappedPort(ELASTICSEARCH_PORT)));
         };

@@ -604,12 +604,8 @@ public class JarResultBuildStep {
         Path decompiledOutputDir = null;
         boolean wasDecompiledSuccessfully = true;
         Decompiler decompiler = null;
-        if (packageConfig.vineflower.enabled.orElse(false) || packageConfig.decompiler.enabled.orElse(false)) {
-            Optional<String> jarDirectoryStrOpt = packageConfig.vineflower.enabled.orElse(false)
-                    ? packageConfig.vineflower.jarDirectory
-                    : packageConfig.decompiler.jarDirectory;
-            String jarDirectoryStr = jarDirectoryStrOpt.orElse(System.getProperty("user.home") + "/.quarkus");
-
+        if (packageConfig.decompiler.enabled) {
+            String jarDirectoryStr = packageConfig.decompiler.jarDirectory;
             decompiledOutputDir = buildDir.getParent().resolve("decompiled");
             FileUtil.deleteDirectory(decompiledOutputDir);
             Files.createDirectory(decompiledOutputDir);

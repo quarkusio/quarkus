@@ -62,6 +62,11 @@ updates:
       - dependency-name: io.smallrye.reactive:*
       # RX Java 2
       - dependency-name: io.reactivex.rxjava2:rxjava
+      # Hibernate
+      - dependency-name: org.hibernate.orm:*
+      - dependency-name: org.hibernate.reactive:*
+      - dependency-name: org.hibernate.validator:*
+      - dependency-name: org.hibernate.search:*
       # Test dependencies
       - dependency-name: net.sourceforge.htmlunit:htmlunit
       - dependency-name: io.rest-assured:*
@@ -201,6 +206,10 @@ updates:
       - dependency-name: org.eclipse.microprofile.opentracing:microprofile-opentracing-tck*
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # Major/minor upgrades require more work and synchronization, we do them manually.
+      # Only use dependabot for micros (patch versions).
+      - dependency-name: org.hibernate.*:*
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
     rebase-strategy: disabled
   - package-ecosystem: gradle

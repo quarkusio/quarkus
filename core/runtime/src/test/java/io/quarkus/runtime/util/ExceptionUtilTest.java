@@ -13,6 +13,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.runtime.configuration.ConfigurationException;
+
 /**
  *
  */
@@ -59,6 +61,11 @@ public class ExceptionUtilTest {
         assertEquals(NullPointerException.class, ExceptionUtil.getRootCause(new NullPointerException()).getClass());
     }
 
+    @Test
+    public void testIsAnyCauseInstanceOf() {
+        assertTrue(ExceptionUtil.isAnyCauseInstanceOf(generateConfigurationException(), ConfigurationException.class));
+    }
+
     private Throwable generateException() {
         try {
             try {
@@ -79,4 +86,26 @@ public class ExceptionUtilTest {
         }
         throw new RuntimeException("Should not reach here");
     }
+
+    private Throwable generateConfigurationException() {
+        try {
+            try {
+                Integer.parseInt("23.23232");
+            } catch (NumberFormatException nfe) {
+                throw new ConfigurationException("Incorrect param", nfe);
+            }
+        } catch (ConfigurationException ce) {
+            try {
+                throw new IOException("Request processing failed", ce);
+            } catch (IOException e) {
+                try {
+                    throw new IOError(e);
+                } catch (IOError ie) {
+                    return new RuntimeException("Unexpected exception", ie);
+                }
+            }
+        }
+        throw new RuntimeException("Should not reach here");
+    }
+
 }

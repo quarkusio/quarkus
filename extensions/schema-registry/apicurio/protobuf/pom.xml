@@ -19,7 +19,7 @@
          <dependency>
             <artifactId>kotlinx-serialization-core-jvm</artifactId>
             <groupId>org.jetbrains.kotlinx</groupId>
-            <version>1.6.0</version>
+            <version>1.6.1</version>
          </dependency>
       </dependencies>
    </dependencyManagement>

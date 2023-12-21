@@ -233,6 +233,7 @@
                 <module>kafka-snappy</module>
                 <module>kafka-avro-apicurio2</module>
                 <module>kafka-json-schema-apicurio2</module>
+                <module>kafka-protobuf-apicurio2</module>
                 <module>kafka-streams</module>
                 <module>kafka-devservices</module>
                 <module>jpa</module>

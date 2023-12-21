@@ -53,7 +53,8 @@ Note that the Elasticsearch hosts property is automatically configured with the 
 
 Dev Services for Elasticsearch support distributions based on both Elasticsearch and OpenSearch images.
 
-When using Hibernate Search, Dev Services will default to Elasticsearch or OpenSearch based on Hibernate Search configuration.
+When using xref:hibernate-search-orm-elasticsearch.adoc[Hibernate Search],
+Dev Services will default to Elasticsearch or OpenSearch based on Hibernate Search configuration.
 
 Otherwise, Dev Services will default to Elasticsearch. To use OpenSearch, configure the distribution explicitly:
 [source,properties,subs="attributes"]

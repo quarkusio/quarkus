@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.WithDefault;
 
 @ConfigGroup
 public interface DevServicesBuildTimeConfig {
@@ -93,4 +94,30 @@ public interface DevServicesBuildTimeConfig {
      * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
     Map<String, String> volumes();
+
+    /**
+     * Whether to keep Dev Service containers running *after a dev mode session or test suite execution*
+     * to reuse them in the next dev mode session or test suite execution.
+     *
+     * Within a dev mode session or test suite execution,
+     * Quarkus will always reuse Dev Services as long as their configuration
+     * (username, password, environment, port bindings, ...) did not change.
+     * This feature is specifically about keeping containers running
+     * **when Quarkus is not running** to reuse them across runs.
+     *
+     * WARNING: This feature needs to be enabled explicitly in `testcontainers.properties`,
+     * may require changes to how you configure data initialization in dev mode and tests,
+     * and may leave containers running indefinitely, forcing you to stop and remove them manually.
+     * See xref:databases-dev-services.adoc#reuse[this section of the documentation] for more information.
+     *
+     * This configuration property is set to `true` by default,
+     * so it is mostly useful to *disable* reuse,
+     * if you enabled it in `testcontainers.properties`
+     * but only want to use it for some of your Quarkus applications or datasources.
+     *
+     * @asciidoclet
+     */
+    @WithDefault("true")
+    boolean reuse();
+
 }

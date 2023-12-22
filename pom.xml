@@ -60,7 +60,7 @@
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
 
-        <owasp-dependency-check-plugin.version>9.0.1</owasp-dependency-check-plugin.version>
+        <owasp-dependency-check-plugin.version>9.0.7</owasp-dependency-check-plugin.version>
 
         <!-- Dependency versions -->
         <jacoco.version>0.8.11</jacoco.version>

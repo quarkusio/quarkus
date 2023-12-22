@@ -17,6 +17,7 @@ public class DevServicesDatasourceContainerConfig {
     private final Optional<String> password;
     private final Optional<String> initScriptPath;
     private final Map<String, String> volumes;
+    private final boolean reuse;
 
     public DevServicesDatasourceContainerConfig(Optional<String> imageName,
             Map<String, String> containerEnv,
@@ -28,7 +29,8 @@ public class DevServicesDatasourceContainerConfig {
             Optional<String> username,
             Optional<String> password,
             Optional<String> initScriptPath,
-            Map<String, String> volumes) {
+            Map<String, String> volumes,
+            boolean reuse) {
         this.imageName = imageName;
         this.containerEnv = containerEnv;
         this.containerProperties = containerProperties;
@@ -40,6 +42,7 @@ public class DevServicesDatasourceContainerConfig {
         this.password = password;
         this.initScriptPath = initScriptPath;
         this.volumes = volumes;
+        this.reuse = reuse;
     }
 
     public Optional<String> getImageName() {
@@ -84,5 +87,9 @@ public class DevServicesDatasourceContainerConfig {
 
     public Map<String, String> getVolumes() {
         return volumes;
+    }
+
+    public boolean isReuse() {
+        return reuse;
     }
 }

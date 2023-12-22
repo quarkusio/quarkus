@@ -746,7 +746,7 @@ This can be achieved by setting to DEBUG the following log category inside your 
 
 [source,properties]
 ----
-quarkus.log.category."io.quarkus.mongodb.panache.runtime".level=DEBUG
+quarkus.log.category."io.quarkus.mongodb.panache.common.runtime".level=DEBUG
 ----
 
 == The PojoCodecProvider: easy object to BSON document conversion.

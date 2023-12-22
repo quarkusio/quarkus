@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
 
@@ -96,7 +97,9 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
         boolean pluginCommand = args.length >= 1 && (args[0].equals("plug") || args[0].equals("plugin"));
 
         try {
-            boolean existingCommand = checkMissingCommand(cmd, args).isEmpty();
+            Optional<String> missingCommand = checkMissingCommand(cmd, args);
+
+            boolean existingCommand = missingCommand.isEmpty();
             // If the command already exists and is not a help command (that lists subcommands) or plugin command, then just execute
             // without dealing with plugins.
             // The reason that we check if its a plugin command is that plugin commands need PluginManager initialization.
@@ -108,8 +111,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
             pluginManager.syncIfNeeded();
             Map<String, Plugin> plugins = new HashMap<>(pluginManager.getInstalledPlugins());
             pluginCommandFactory.populateCommands(cmd, plugins);
-            Optional<String> missing = checkMissingCommand(cmd, args);
-            missing.ifPresent(m -> {
+            missingCommand.ifPresent(m -> {
                 try {
                     Map<String, Plugin> installable = pluginManager.getInstallablePlugins();
                     if (installable.containsKey(m)) {
@@ -119,11 +121,13 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
                         output.info("Command %s not installed but the following plugin is available:\n%s", m,
                                 table.getContent());
                         if (interactiveMode && Prompt.yesOrNo(true,
-                                "Would you like to install it now ?",
+                                "Would you like to install it now?",
                                 args)) {
                             pluginManager.addPlugin(m).ifPresent(added -> plugins.put(added.getName(), added));
                             pluginCommandFactory.populateCommands(cmd, plugins);
                         }
+                    } else {
+                        output.error("Command %s is missing and can't be installed.", m);
                     }
                 } catch (Exception e) {
                     output.error("Command %s is missing and can't be installed.", m);
@@ -136,7 +140,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
     }
 
     /**
-     * Recursivelly processes the arguments passed to the command and checks wether a subcommand is missing.
+     * Process the arguments passed and return an identifier of the potentially missing subcommand if any.
      *
      * @param root the root command
      * @param args the arguments passed to the root command
@@ -148,17 +152,26 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
         }
 
         try {
-            ParseResult result = root.parseArgs(args);
-            if (args.length == 1) {
-                return Optional.empty();
-            }
-            CommandLine next = root.getSubcommands().get(args[0]);
-            if (next == null) {
-                return Optional.of(args[0]);
-            }
-            String[] remaining = new String[args.length - 1];
-            System.arraycopy(args, 1, remaining, 0, remaining.length);
-            return checkMissingCommand(next, remaining).map(nextMissing -> root.getCommandName() + "-" + nextMissing);
+            ParseResult currentParseResult = root.parseArgs(args);
+            StringBuilder missingCommand = new StringBuilder();
+
+            do {
+                if (!missingCommand.isEmpty()) {
+                    missingCommand.append("-");
+                }
+                missingCommand.append(currentParseResult.commandSpec().name());
+
+                List<String> unmatchedSubcommands = currentParseResult.unmatched().stream()
+                        .filter(u -> !u.startsWith("-")).collect(Collectors.toList());
+                if (!unmatchedSubcommands.isEmpty()) {
+                    missingCommand.append("-").append(unmatchedSubcommands.get(0));
+                    return Optional.of(missingCommand.toString());
+                }
+
+                currentParseResult = currentParseResult.subcommand();
+            } while (currentParseResult != null);
+
+            return Optional.empty();
         } catch (UnmatchedArgumentException e) {
             return Optional.of(args[0]);
         }

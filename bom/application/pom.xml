@@ -171,7 +171,7 @@
         <flyway.version>9.22.3</flyway.version>
         <yasson.version>3.0.3</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
-        <liquibase.version>4.25.0</liquibase.version>
+        <liquibase.version>4.25.1</liquibase.version>
         <liquibase-mongodb.version>4.24.0</liquibase-mongodb.version>
         <snakeyaml.version>2.2</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
@@ -182,7 +182,7 @@
         <okhttp.version>3.14.9</okhttp.version><!-- keep in sync with okio -->
         <okio.version>1.17.6</okio.version><!-- keep in sync with okhttp -->
         <hibernate-quarkus-local-cache.version>0.3.0</hibernate-quarkus-local-cache.version>
-        <flapdoodle.mongo.version>4.11.1</flapdoodle.mongo.version>
+        <flapdoodle.mongo.version>4.12.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP7</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.4.Final</quarkus-spring-security-api.version>
@@ -193,7 +193,7 @@
         <quarkus-security.version>2.0.2.Final</quarkus-security.version>
         <keycloak.version>23.0.1</keycloak.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
-        <checker-qual.version>3.41.0</checker-qual.version>
+        <checker-qual.version>3.42.0</checker-qual.version>
         <error-prone-annotations.version>2.23.0</error-prone-annotations.version>
         <jib-core.version>0.25.0</jib-core.version>
         <google-http-client.version>1.43.3</google-http-client.version>

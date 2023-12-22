@@ -354,6 +354,10 @@ public class MessageBundleProcessor {
             List<TemplateGlobalBuildItem> templateGlobals,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions) {
 
+        if (messageBundleMethods.isEmpty()) {
+            return;
+        }
+
         Map<String, MessageBundleMethodBuildItem> bundleMethods = messageBundleMethods.stream()
                 .filter(MessageBundleMethodBuildItem::isValidatable)
                 .collect(Collectors.toMap(MessageBundleMethodBuildItem::getTemplateId, Function.identity()));
@@ -437,6 +441,10 @@ public class MessageBundleProcessor {
             List<TemplateDataBuildItem> templateData,
             QuteConfig config,
             List<TemplateGlobalBuildItem> globals) {
+
+        if (messageBundles.isEmpty()) {
+            return;
+        }
 
         IndexView index = beanArchiveIndex.getIndex();
         Function<String, String> templateIdToPathFun = new Function<String, String>() {
@@ -630,6 +638,9 @@ public class MessageBundleProcessor {
     @BuildStep(onlyIf = IsNormal.class)
     void generateExamplePropertiesFiles(List<MessageBundleMethodBuildItem> messageBundleMethods,
             BuildSystemTargetBuildItem target, BuildProducer<GeneratedResourceBuildItem> dummy) throws IOException {
+        if (messageBundleMethods.isEmpty()) {
+            return;
+        }
         Map<String, List<MessageBundleMethodBuildItem>> bundles = new HashMap<>();
         for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
             if (messageBundleMethod.isDefaultBundle()) {

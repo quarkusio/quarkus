@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -249,9 +250,18 @@ public class PackageConfig {
 
     /**
      * Vineflower Decompiler configuration
+     *
+     * @Deprecated use {@code quarkus.package.decompiler} instead
      */
     @ConfigItem
-    public VineFlowerConfig vineflower;
+    @Deprecated(forRemoval = true)
+    public DecompilerConfig vineflower;
+
+    /**
+     * Decompiler configuration
+     */
+    @ConfigItem
+    public DecompilerConfig decompiler;
 
     /**
      * If set to {@code true}, it will result in the Quarkus writing the transformed application bytecode
@@ -302,24 +312,20 @@ public class PackageConfig {
     }
 
     @ConfigGroup
-    public static class VineFlowerConfig {
+    public static class DecompilerConfig {
         /**
          * An advanced option that will decompile generated and transformed bytecode into the 'decompiled' directory.
          * This is only taken into account when fast-jar is used.
          */
-        @ConfigItem(defaultValue = "false")
-        public boolean enabled;
-
-        /**
-         * The version of Vineflower to use
-         */
-        @ConfigItem(defaultValue = "1.9.3")
-        public String version;
+        @ConfigItem
+        @ConfigDocDefault("false")
+        public Optional<Boolean> enabled;
 
         /**
          * The directory into which to save the Vineflower tool if it doesn't exist
          */
-        @ConfigItem(defaultValue = "${user.home}/.quarkus")
-        public String jarDirectory;
+        @ConfigItem
+        @ConfigDocDefault("${user.home}/.quarkus")
+        public Optional<String> jarDirectory;
     }
 }

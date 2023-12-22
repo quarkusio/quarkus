@@ -187,8 +187,9 @@ public class ApplicationLifecycleManager {
                         }
                         applicationLogger.warn("You can try to kill it with 'kill -9 <pid>'.");
                     }
-                } else if (rootCause instanceof ConfigurationException) {
+                } else if (ExceptionUtil.isAnyCauseInstanceOf(e, ConfigurationException.class)) {
                     System.err.println(rootCause.getMessage());
+                    e.printStackTrace();
                 } else if (rootCause instanceof PreventFurtherStepsException
                         && !StringUtil.isNullOrEmpty(rootCause.getMessage())) {
                     System.err.println(rootCause.getMessage());

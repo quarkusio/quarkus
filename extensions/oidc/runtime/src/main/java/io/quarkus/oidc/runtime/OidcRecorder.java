@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.PublicJsonWebKey;
@@ -46,7 +47,6 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
-import io.quarkus.security.runtime.SecurityConfig;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
@@ -64,6 +64,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 public class OidcRecorder {
 
     private static final Logger LOG = Logger.getLogger(OidcRecorder.class);
+    private static final String SECURITY_EVENTS_ENABLED_CONFIG_KEY = "quarkus.security.events.enabled";
 
     private static final Map<String, TenantConfigContext> dynamicTenantsConfig = new ConcurrentHashMap<>();
     private static final Set<String> tenantsExpectingServerAvailableEvents = ConcurrentHashMap.newKeySet();
@@ -559,7 +560,7 @@ public class OidcRecorder {
     }
 
     private static boolean fireOidcServerEvent(String authServerUrl, SecurityEvent.Type eventType) {
-        if (Arc.container().instance(SecurityConfig.class).get().events().enabled()) {
+        if (ConfigProvider.getConfig().getOptionalValue(SECURITY_EVENTS_ENABLED_CONFIG_KEY, boolean.class).orElse(true)) {
             SecurityEventHelper.fire(
                     Arc.container().beanManager().getEvent().select(SecurityEvent.class),
                     new SecurityEvent(eventType, Map.of(AUTH_SERVER_URL, authServerUrl)));

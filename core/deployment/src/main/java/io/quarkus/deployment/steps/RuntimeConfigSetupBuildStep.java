@@ -10,11 +10,14 @@ import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
+import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 public class RuntimeConfigSetupBuildStep {
     private static final String RUNTIME_CONFIG_STARTUP_TASK_CLASS_NAME = "io.quarkus.deployment.steps.RuntimeConfigSetup";
@@ -37,11 +40,17 @@ public class RuntimeConfigSetupBuildStep {
                 .interfaces(StartupTask.class).build()) {
 
             try (MethodCreator method = clazz.getMethodCreator("deploy", void.class, StartupContext.class)) {
-                method.invokeVirtualMethod(ofMethod(StartupContext.class, "setCurrentBuildStepName", void.class, String.class),
+                TryBlock tryBlock = method.tryBlock();
+                tryBlock.invokeVirtualMethod(
+                        ofMethod(StartupContext.class, "setCurrentBuildStepName", void.class, String.class),
                         method.getMethodParam(0), method.load("RuntimeConfigSetupBuildStep.setupRuntimeConfig"));
 
-                method.invokeStaticMethod(C_CREATE_RUN_TIME_CONFIG);
-                method.returnValue(null);
+                tryBlock.invokeStaticMethod(C_CREATE_RUN_TIME_CONFIG);
+                tryBlock.returnValue(null);
+
+                CatchBlockCreator cb = tryBlock.addCatch(RuntimeException.class);
+                cb.throwException(ConfigurationException.class, "Failed to read configuration properties",
+                        cb.getCaughtException());
             }
         }
 

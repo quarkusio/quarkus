@@ -47,6 +47,13 @@ public class NativeBuildOutputExtension implements BeforeAllCallback {
     }
 
     public void verifyImageMetrics(String propertiesFileName) {
+        /*
+         * Allow users to skip this kind of tests by setting env variable QUARKUS_NATIVE_IT_SKIP_VERIFY_IMAGE_METRICS to true
+         */
+        boolean skipVerifyImageMetrics = Boolean.parseBoolean(System.getenv("QUARKUS_NATIVE_IT_SKIP_VERIFY_IMAGE_METRICS"));
+        Assumptions.assumeFalse(skipVerifyImageMetrics,
+                "Environment variable QUARKUS_NATIVE_IT_SKIP_VERIFY_IMAGE_METRICS is set. Skipping image metrics verification.");
+
         Properties properties = getProperties(propertiesFileName);
 
         properties.forEach((key, value) -> {

@@ -108,7 +108,7 @@ final public class Constants {
             ".About the Duration format\n" +
             "====\n" +
             "To write duration values, use the standard `java.time.Duration` format.\n" +
-            "See the link:https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/Duration.html#parse(java.lang.CharSequence)[Duration#parse() Java API documentation] for more information.\n"
+            "See the link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html#parse(java.lang.CharSequence)[Duration#parse() Java API documentation] for more information.\n"
             +
             "\n" +
             "You can also use a simplified format, starting with a number:\n" +

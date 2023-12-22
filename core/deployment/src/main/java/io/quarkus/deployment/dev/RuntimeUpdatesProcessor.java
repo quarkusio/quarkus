@@ -1309,12 +1309,14 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 }
             }
             // Then try to match a new file that was added to a resource root
-            Boolean ret = watchedFilePaths.get(changedFile);
+            Boolean ret = watchedFilePaths != null ? watchedFilePaths.get(changedFile) : null;
             if (ret == null) {
-                ret = false;
-                for (Entry<Predicate<String>, Boolean> e : watchedFilePredicates) {
-                    if (e.getKey().test(changedFile)) {
-                        ret = ret || e.getValue();
+                ret = Boolean.FALSE;
+                if (watchedFilePredicates != null) {
+                    for (Entry<Predicate<String>, Boolean> e : watchedFilePredicates) {
+                        if (e.getKey().test(changedFile)) {
+                            ret = ret || e.getValue();
+                        }
                     }
                 }
             }

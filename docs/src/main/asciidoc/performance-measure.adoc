@@ -14,6 +14,7 @@ This guide covers:
 * how we measure memory usage
 * how we measure startup time
 * which additional flags will Quarkus apply to native-image by default
+* Coordinated omission Problem in Tools
 
 All of our tests are run on the same hardware for a given batch.
 It goes without saying, but it's better when you say it.
@@ -236,4 +237,25 @@ circumstances one could observe non-negligible impact from the other flags too.
 
 If you're to investigate some differences in detail make sure to check what Quarkus is invoking exactly: when the build
 plugin is producing a native image, the full command lines are logged.
+
+
+== Coordinated Omission Problem in Tools
+
+When measuring performance of a framework like Quarkus the latency experience by users are especially interesting and for that there are many different tools. Unfortunately, many fail to measure the latency correctly and instead fall short and create the Coordinate Omission problem. Meaning tools fails to acoomodate for delays to submit new requests when system is under load and aggregate these numbers making the latency and throughput numbers very misleading.
+
+A good walkthrough of the issue is https://www.youtube.com/watch?v=lJ8ydIuPFeU[this video] where Gil Tene the author of wrk2 explains the issue and https://www.youtube.com/watch?v=xdG8b9iDYbE[Quarkus Insights #22] have John O'Hara from Quarkus performance team show how it can show up.
+
+Although that video and related papers and articles date all back to 2015 then even today you will find tools that fall short with the coordinated oission problem
+
+Tools that at current time of writing is known to excert the problem and should NOT be used for measuring latency/throughput (it may be used for other things):
+
+ * JMeter
+ * wrk
+
+Tools that are known to not be affected are:
+
+ * https://github.com/giltene/wrk2[wrk2]
+ * https://hyperfoil.io[HyperFoil]
+
+Mind you, the tools are not better than your own understanding of what they measure thus even when using `wrk2` or `hyperfoil` make sure you understand what the numbers mean.
 

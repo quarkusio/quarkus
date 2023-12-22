@@ -26,9 +26,9 @@ public class RestClientLoggingConfig {
 
     /**
      * How many characters of the body should be logged. Message body can be large and can easily pollute the logs.
-     *
+     * <p>
      * By default, set to 100.
-     *
+     * <p>
      * This property is applicable to reactive REST clients only.
      */
     @ConfigItem(defaultValue = "100")

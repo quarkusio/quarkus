@@ -47,7 +47,9 @@ public interface DataSourceBuildTimeConfig {
     Optional<String> dbVersion();
 
     /**
-     * Configuration for DevServices. DevServices allows Quarkus to automatically start a database in dev and test mode.
+     * Configuration for Dev Services.
+     * <p>
+     * Dev Services allow Quarkus to automatically start a database in dev and test mode.
      */
     DevServicesBuildTimeConfig devservices();
 

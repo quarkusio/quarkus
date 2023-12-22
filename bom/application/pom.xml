@@ -6238,7 +6238,6 @@
                 <artifactId>quarkus-jfr-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
-        </dependencies>
         <!-- End of Relocations, please put new extensions above this list -->
 
         </dependencies>

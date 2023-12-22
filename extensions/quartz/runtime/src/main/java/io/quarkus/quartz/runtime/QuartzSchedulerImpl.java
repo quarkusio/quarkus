@@ -127,6 +127,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
     private final QuartzRuntimeConfig runtimeConfig;
     private final SchedulerConfig schedulerConfig;
     private final Instance<JobInstrumenter> jobInstrumenter;
+    private final StoreType storeType;
 
     public QuartzSchedulerImpl(SchedulerContext context, QuartzSupport quartzSupport,
             SchedulerRuntimeConfig schedulerRuntimeConfig,
@@ -150,6 +151,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         this.defaultOverdueGracePeriod = schedulerRuntimeConfig.overdueGracePeriod;
         this.schedulerConfig = schedulerConfig;
         this.jobInstrumenter = jobInstrumenter;
+        this.storeType = quartzSupport.getBuildTimeConfig().storeType;
 
         StartMode startMode = initStartMode(schedulerRuntimeConfig, runtimeConfig);
 
@@ -437,6 +439,9 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
 
     @Override
     public JobDefinition newJob(String identity) {
+        if (storeType.isDbStore()) {
+            throw new IllegalStateException("The current store type does not support programmatic scheduling: " + storeType);
+        }
         Objects.requireNonNull(identity);
         if (scheduledTasks.containsKey(identity)) {
             throw new IllegalStateException("A job with this identity is already scheduled: " + identity);

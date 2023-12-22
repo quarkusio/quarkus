@@ -3,8 +3,8 @@ package org.jboss.resteasy.reactive.client.handlers;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
-import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
@@ -17,10 +17,8 @@ import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpHeaders;
 
 class VertxClientInputStream extends InputStream {
-
     public static final String MAX_REQUEST_SIZE_KEY = "io.quarkus.max-request-size";
     private final VertxBlockingInput exchange;
-
     private boolean closed;
     private boolean finished;
     private ByteBuf pooled;
@@ -28,13 +26,13 @@ class VertxClientInputStream extends InputStream {
     private final RestClientRequestContext vertxResteasyReactiveRequestContext;
 
     public VertxClientInputStream(HttpClientResponse response, long timeout,
-            RestClientRequestContext vertxResteasyReactiveRequestContext) {
+                                  RestClientRequestContext vertxResteasyReactiveRequestContext) {
         this.vertxResteasyReactiveRequestContext = vertxResteasyReactiveRequestContext;
         this.exchange = new VertxBlockingInput(response, timeout);
     }
 
     public VertxClientInputStream(HttpClientResponse request, long timeout, ByteBuf existing,
-            RestClientRequestContext vertxResteasyReactiveRequestContext) {
+                                  RestClientRequestContext vertxResteasyReactiveRequestContext) {
         this.vertxResteasyReactiveRequestContext = vertxResteasyReactiveRequestContext;
         this.exchange = new VertxBlockingInput(request, timeout);
         this.pooled = existing;
@@ -84,7 +82,6 @@ class VertxClientInputStream extends InputStream {
             pooled = exchange.readBlocking();
             if (pooled == null) {
                 finished = true;
-                pooled = null;
             }
         }
     }
@@ -132,11 +129,10 @@ class VertxClientInputStream extends InputStream {
 
     public static class VertxBlockingInput implements Handler<Buffer> {
         protected final HttpClientResponse request;
-        protected Buffer input1;
-        protected Deque<Buffer> inputOverflow;
-        protected boolean waiting = false;
-        protected boolean eof = false;
-        protected Throwable readException;
+        protected final Deque<Buffer> inputOverflow = new ConcurrentLinkedDeque<>();
+        private static final int INTERNAL_READ_WAIT_MS = 50;
+        protected boolean endOfWrite = false;
+        protected IOException readException;
         private final long timeout;
         private final int headerLen;
 
@@ -150,106 +146,109 @@ class VertxClientInputStream extends InputStream {
                 response.endHandler(new Handler<Void>() {
                     @Override
                     public void handle(Void event) {
-                        synchronized (VertxBlockingInput.this) {
-                            eof = true;
-                            if (waiting) {
-                                VertxBlockingInput.this.notify();
-                            }
-                        }
+                        endOfWrite = true;
+                        wakeupReader();
                     }
                 });
                 response.exceptionHandler(new Handler<Throwable>() {
                     @Override
                     public void handle(Throwable event) {
-                        synchronized (VertxBlockingInput.this) {
-                            readException = new IOException(event);
-                            if (input1 != null) {
-                                input1.getByteBuf().release();
-                                input1 = null;
-                            }
-                            if (inputOverflow != null) {
-                                Buffer d = inputOverflow.poll();
-                                while (d != null) {
-                                    d.getByteBuf().release();
-                                    d = inputOverflow.poll();
-                                }
-                            }
-                            if (waiting) {
-                                VertxBlockingInput.this.notify();
-                            }
+                        readException = new IOException(event);
+                        Buffer d = inputOverflow.poll();
+                        while (d != null) {
+                            d.getByteBuf().release();
+                            d = inputOverflow.poll();
                         }
+                        wakeupReader();
                     }
-
                 });
-                // More than 1 speedup retrieve while limited in memory
-                response.fetch(3);
+                response.fetch(10);
             } catch (IllegalStateException e) {
                 //already ended
-                eof = true;
+                endOfWrite = true;
             }
+        }
+
+        private void wakeupReader() {
+            synchronized (VertxBlockingInput.this) {
+                VertxBlockingInput.this.notifyAll();
+            }
+        }
+
+        private Buffer removeHead() throws IOException {
+            if (inputOverflow.isEmpty()) {
+                synchronized (VertxBlockingInput.this) {
+                    try {
+                        VertxBlockingInput.this.wait(INTERNAL_READ_WAIT_MS);
+                    } catch (InterruptedException e) {
+                        throw new InterruptedIOException(e.getMessage());
+                    }
+                }
+            }
+            return inputOverflow.poll();
         }
 
         protected ByteBuf readBlocking() throws IOException {
             long expire = System.currentTimeMillis() + timeout;
-            synchronized (VertxBlockingInput.this) {
-                while (input1 == null && !eof && readException == null) {
-                    long rem = expire - System.currentTimeMillis();
-                    if (rem <= 0) {
-                        //everything is broken, if read has timed out we can assume that the underling connection
-                        //is wrecked, so just close it
-                        request.netSocket().close();
-                        IOException throwable = new IOException("Read timed out");
-                        readException = throwable;
-                        throw throwable;
-                    }
-
-                    try {
-                        if (Context.isOnEventLoopThread()) {
-                            throw new BlockingNotAllowedException("Attempting a blocking read on io thread");
-                        }
-                        waiting = true;
-                        VertxBlockingInput.this.wait(rem);
-                    } catch (InterruptedException e) {
-                        throw new InterruptedIOException(e.getMessage());
-                    } finally {
-                        waiting = false;
-                    }
-                }
-                if (readException != null) {
-                    throw new IOException(readException);
-                }
-                Buffer ret = input1;
-                input1 = null;
-                if (inputOverflow != null) {
-                    input1 = inputOverflow.poll();
-                }
-                if (!eof) {
-                    request.fetch(1);
-                }
-                return ret == null ? null : ret.getByteBuf();
+            Buffer ret;
+            boolean status;
+            if (readException != null) {
+                throw readException;
             }
+            // Preemptive fetch
+            if (inputOverflow.isEmpty()) {
+                request.fetch(1);
+            }
+            // First read before testing endOfWrite
+            ret = removeHead();
+            status = ret == null && !endOfWrite && readException == null;
+            while (status) {
+                long rem = expire - System.currentTimeMillis();
+                if (rem <= 0) {
+                    //everything is broken, if read has timed out we can assume that the underling connection
+                    //is wrecked, so just close it
+                    request.netSocket().close();
+                    readException = new IOException("Read timed out");
+                    throw readException;
+                }
+
+                if (Context.isOnEventLoopThread()) {
+                    throw new BlockingNotAllowedException("Attempting a blocking read on io thread");
+                }
+                ret = removeHead();
+                status = ret == null && !endOfWrite && readException == null;
+                Thread.yield();
+            }
+            if (readException != null) {
+                throw readException;
+            }
+            if (!endOfWrite && (inputOverflow.isEmpty())) {
+                request.fetch(1);
+            }
+            if (ret == null && !inputOverflow.isEmpty()) {
+                // Might not be the end yet if queue is not empty
+                ret = inputOverflow.poll();
+            }
+            return ret == null ? null : ret.getByteBuf();
         }
 
         @Override
         public void handle(Buffer event) {
-            synchronized (VertxBlockingInput.this) {
-                if (input1 == null) {
-                    input1 = event;
-                } else {
-                    if (inputOverflow == null) {
-                        inputOverflow = new ArrayDeque<>();
-                    }
-                    inputOverflow.add(event);
-                }
-                if (waiting) {
-                    VertxBlockingInput.this.notifyAll();
-                }
+            if (readException == null) {
+                inputOverflow.addLast(event);
+            } else {
+                event.getByteBuf().release();
             }
+            wakeupReader();
         }
 
         public int readBytesAvailable() {
-            if (input1 != null) {
-                return input1.getByteBuf().readableBytes();
+            Buffer buf = inputOverflow.peek();
+            if (buf != null) {
+                int len = buf.getByteBuf().readableBytes();
+                if (len > 0) {
+                    return len;
+                }
             }
             return headerLen;
         }
@@ -257,7 +256,7 @@ class VertxClientInputStream extends InputStream {
         private int getLengthFromHeader() {
             String length = request.getHeader(HttpHeaders.CONTENT_LENGTH);
             if (length == null) {
-                return 0;
+                return 8192;
             }
             try {
                 return Integer.parseInt(length);

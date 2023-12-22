@@ -1,5 +1,7 @@
 package io.quarkus.extest.runtime.config;
 
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -16,6 +18,9 @@ public interface TestMappingRunTime {
      * A nested Group.
      */
     Group group();
+
+    /** Record values from env test **/
+    Optional<String> record();
 
     interface Group {
         /**

@@ -13,15 +13,11 @@ import org.jboss.shrinkwrap.api.Node;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 
-import io.smallrye.config.ConfigSourceInterceptor;
-
 public class DeploymentProcessor implements ApplicationArchiveProcessor {
     @Override
     public void process(Archive<?> archive, TestClass testClass) {
         if (archive instanceof WebArchive) {
             WebArchive war = (WebArchive) archive;
-            war.addClass(TelemetryRelocateInterceptor.class);
-            war.addAsServiceProvider(ConfigSourceInterceptor.class, TelemetryRelocateInterceptor.class);
 
             boolean otelSdkDisabled = true;
             Node microprofileConfig = war.get("/WEB-INF/classes/META-INF/microprofile-config.properties");

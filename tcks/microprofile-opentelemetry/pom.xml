@@ -24,6 +24,7 @@
                 <configuration>
                     <!-- TODO - Because of PropagatorSpiTest, which contains multiple Application classes - needs to be fixed in the TCK -->
                     <systemPropertyVariables>
+                        <quarkus.otel.mp.compatibility>true</quarkus.otel.mp.compatibility>
                         <quarkus.resteasy.ignore-application-classes>true</quarkus.resteasy.ignore-application-classes>
                     </systemPropertyVariables>
                     <dependenciesToScan>

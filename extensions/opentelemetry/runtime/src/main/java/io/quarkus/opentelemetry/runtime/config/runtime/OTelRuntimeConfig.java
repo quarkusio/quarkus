@@ -91,4 +91,14 @@ public interface OTelRuntimeConfig {
      */
     @WithName("otel.semconv-stability.opt-in")
     Optional<String> otelSemconvStabilityOptIn();
+
+    /**
+     * Prioritize OpenTelemetry configuration <code>otel.</code> on top of Quarkus OpenTelemetry configuration
+     * <code>quarkus.otel</code>.
+     * <p>
+     * By default, Quarkus configuration has priority over OpenTelemetry configuration.
+     */
+    @WithName("mp.compatibility")
+    @WithDefault("false")
+    boolean mpCompatibility();
 }

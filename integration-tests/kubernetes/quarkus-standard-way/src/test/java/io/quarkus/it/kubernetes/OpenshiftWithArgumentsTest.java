@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.openshift.api.model.DeploymentConfig;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -33,7 +33,7 @@ public class OpenshiftWithArgumentsTest {
         List<HasMetadata> openshiftList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList.get(0)).isInstanceOfSatisfying(DeploymentConfig.class, dc -> {
+        assertThat(openshiftList.get(0)).isInstanceOfSatisfying(Deployment.class, dc -> {
             assertThat(dc.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("openshift-with-arguments");
             });

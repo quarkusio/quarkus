@@ -10,21 +10,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.openshift.api.model.DeploymentConfig;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class OpenshiftWithJvmAdditionalArgumentsTest {
+public class OpenshiftWithJvmArgumentsDeploymentConfigTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("openshift-with-jvm-additional-arguments")
+            .setApplicationName("openshift-with-jvm-arguments")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("openshift-with-jvm-additional-arguments.properties")
+            .withConfigurationResource("openshift-with-jvm-arguments.properties")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config")
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));;
 
     @ProdBuildResults
@@ -36,11 +37,11 @@ public class OpenshiftWithJvmAdditionalArgumentsTest {
         List<HasMetadata> openshiftList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList.get(1)).isInstanceOfSatisfying(Deployment.class, d -> {
-            assertThat(d.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo("openshift-with-jvm-additional-arguments");
+        assertThat(openshiftList.get(1)).isInstanceOfSatisfying(DeploymentConfig.class, dc -> {
+            assertThat(dc.getMetadata()).satisfies(m -> {
+                assertThat(m.getName()).isEqualTo("openshift-with-jvm-arguments");
             });
-            assertThat(d.getSpec()).satisfies(deploymentSpec -> {
+            assertThat(dc.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {

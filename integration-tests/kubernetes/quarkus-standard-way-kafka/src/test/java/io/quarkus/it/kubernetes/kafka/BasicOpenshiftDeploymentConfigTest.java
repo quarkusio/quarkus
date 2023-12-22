@@ -1,7 +1,6 @@
 package io.quarkus.it.kubernetes.kafka;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Assertions.*;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -18,14 +17,15 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class BasicOpenshiftTest {
+public class BasicOpenshiftDeploymentConfigTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(DummyProcessor.class))
             .setApplicationName("basic-openshift")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("basic-openshift.properties");
+            .withConfigurationResource("basic-openshift.properties")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config");
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -41,7 +41,7 @@ public class BasicOpenshiftTest {
         List<HasMetadata> openshiftList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "Deployment".equals(h.getKind())).singleElement().satisfies(h -> {
+        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("basic-openshift");
                 assertThat(m.getLabels().get("app.openshift.io/runtime")).isEqualTo("quarkus");
@@ -49,7 +49,7 @@ public class BasicOpenshiftTest {
             });
             AbstractObjectAssert<?, ?> specAssert = assertThat(h).extracting("spec");
             specAssert.extracting("replicas").isEqualTo(1);
-            specAssert.extracting("selector.matchLabels").isInstanceOfSatisfying(Map.class, selectorsMap -> {
+            specAssert.extracting("selector").isInstanceOfSatisfying(Map.class, selectorsMap -> {
                 assertThat(selectorsMap).containsOnly(entry("app.kubernetes.io/name", "basic-openshift"),
                         entry("app.kubernetes.io/version", "0.1-SNAPSHOT"));
             });

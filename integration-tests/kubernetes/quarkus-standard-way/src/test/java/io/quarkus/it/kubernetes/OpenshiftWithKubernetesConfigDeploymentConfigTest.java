@@ -13,23 +13,24 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.PodSpec;
-import io.fabric8.kubernetes.api.model.Volume;
-import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class OpenshiftWithAppConfigMapTest {
+public class OpenshiftWithKubernetesConfigDeploymentConfigTest {
+
+    private static final String NAME = "openshift-with-kubernetes-config";
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
-            .setApplicationName("openshift-with-app-config-map")
+            .setApplicationName(NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("openshift-with-app-config-map.properties")
-            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config")
+            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-kubernetes-config", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -44,9 +45,9 @@ public class OpenshiftWithAppConfigMapTest {
         List<HasMetadata> openshiftList = DeserializationUtil.deserializeAsList(
                 kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "Deployment".equals(h.getKind())).singleElement().satisfies(h -> {
+        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo("openshift-with-app-config-map");
+                assertThat(m.getName()).isEqualTo(NAME);
                 assertThat(m.getLabels().get("app.openshift.io/runtime")).isEqualTo("quarkus");
             });
 
@@ -56,20 +57,9 @@ public class OpenshiftWithAppConfigMapTest {
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             List<EnvVar> envVars = container.getEnv();
                             assertThat(envVars).anySatisfy(envVar -> {
-                                assertThat(envVar.getName()).isEqualTo("SMALLRYE_CONFIG_LOCATIONS");
-                                assertThat(envVar.getValue()).isEqualTo("/mnt/app-config-map");
+                                assertThat(envVar.getName()).isEqualTo("JAVA_APP_JAR");
+                                assertThat(envVar.getValue()).isEqualTo("/deployments/quarkus-run.jar");
                             });
-
-                            List<VolumeMount> mounts = container.getVolumeMounts();
-                            assertThat(mounts).anySatisfy(mount -> {
-                                assertThat(mount.getName()).isEqualTo("app-config-map");
-                                assertThat(mount.getMountPath()).isEqualTo("/mnt/app-config-map");
-                            });
-                        });
-                        List<Volume> volumes = podSpec.getVolumes();
-                        assertThat(volumes).anySatisfy(volume -> {
-                            assertThat(volume.getName()).isEqualTo("app-config-map");
-                            assertThat(volume.getConfigMap().getName()).isEqualTo("my-config-map");
                         });
                     });
         });

@@ -1,7 +1,6 @@
 package io.quarkus.it.kubernetes;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Assertions.*;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -12,19 +11,20 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.openshift.api.model.DeploymentConfig;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class BasicOpenshiftTest {
+public class BasicOpenshiftDeploymentConfigTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("basic-openshift")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource("openshift.properties");
+            .withConfigurationResource("openshift.properties")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config");
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -39,8 +39,8 @@ public class BasicOpenshiftTest {
         List<HasMetadata> openshiftList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "Deployment".equals(h.getKind())).singleElement().satisfies(h -> {
-            Deployment deployment = (Deployment) h;
+        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
+            DeploymentConfig deployment = (DeploymentConfig) h;
 
             // metadata assertions
             assertThat(deployment.getMetadata().getName()).isEqualTo("basic-openshift");
@@ -50,8 +50,7 @@ public class BasicOpenshiftTest {
 
             // spec assertions
             assertThat(deployment.getSpec().getReplicas()).isEqualTo(1);
-            assertThat(deployment.getSpec().getSelector().getMatchLabels()).containsOnly(
-                    entry("app.kubernetes.io/name", "basic-openshift"),
+            assertThat(deployment.getSpec().getSelector()).containsOnly(entry("app.kubernetes.io/name", "basic-openshift"),
                     entry("app.kubernetes.io/version", "0.1-SNAPSHOT"));
 
             // containers assertions

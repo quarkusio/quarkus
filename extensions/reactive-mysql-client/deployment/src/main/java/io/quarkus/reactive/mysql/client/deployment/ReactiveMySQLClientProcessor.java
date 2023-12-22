@@ -219,6 +219,7 @@ class ReactiveMySQLClientProcessor {
         ExtendedBeanConfigurator mutinyMySQLPoolConfigurator = SyntheticBeanBuildItem
                 .configure(io.vertx.mutiny.mysqlclient.MySQLPool.class)
                 .defaultBean()
+                .addType(io.vertx.mutiny.sqlclient.Pool.class)
                 .scope(ApplicationScoped.class)
                 .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
                 .createWith(recorder.mutinyMySQLPool(poolFunction))

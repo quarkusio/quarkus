@@ -224,6 +224,7 @@ class ReactivePgClientProcessor {
         ExtendedBeanConfigurator mutinyPgPoolConfigurator = SyntheticBeanBuildItem
                 .configure(io.vertx.mutiny.pgclient.PgPool.class)
                 .defaultBean()
+                .addType(io.vertx.mutiny.sqlclient.Pool.class)
                 .scope(ApplicationScoped.class)
                 .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
                 .createWith(recorder.mutinyPgPool(poolFunction))

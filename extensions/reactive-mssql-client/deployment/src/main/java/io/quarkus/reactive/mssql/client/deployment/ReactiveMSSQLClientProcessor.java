@@ -218,6 +218,7 @@ class ReactiveMSSQLClientProcessor {
         ExtendedBeanConfigurator mutinyMSSQLPoolConfigurator = SyntheticBeanBuildItem
                 .configure(io.vertx.mutiny.mssqlclient.MSSQLPool.class)
                 .defaultBean()
+                .addType(io.vertx.mutiny.sqlclient.Pool.class)
                 .scope(ApplicationScoped.class)
                 .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
                 .createWith(recorder.mutinyMSSQLPool(poolFunction))

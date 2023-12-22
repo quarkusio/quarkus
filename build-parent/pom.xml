@@ -174,7 +174,7 @@
         <quarkus.analytics.disabled>true</quarkus.analytics.disabled>
 
         <!-- Dev UI -->
-        <vaadin.version>24.3.0</vaadin.version>
+        <vaadin.version>24.3.1</vaadin.version>
         <lit.version>3.1.0</lit.version>
         <lit-element.version>4.0.2</lit-element.version>
         <lit-html.version>3.1.0</lit-html.version>

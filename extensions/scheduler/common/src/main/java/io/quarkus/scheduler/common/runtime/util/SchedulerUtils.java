@@ -10,9 +10,13 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiConsumer;
 
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
+
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.expression.Expression;
 import io.smallrye.common.expression.ResolveContext;
@@ -96,6 +100,21 @@ public class SchedulerUtils {
     public static ZoneId parseCronTimeZone(Scheduled scheduled) {
         String timeZone = lookUpPropertyValue(scheduled.timeZone());
         return timeZone.equals(Scheduled.DEFAULT_TIMEZONE) ? null : ZoneId.of(timeZone);
+    }
+
+    public static <T> T instantiateBeanOrClass(Class<T> type) {
+        Instance<T> instance = Arc.container().select(type, Any.Literal.INSTANCE);
+        if (instance.isAmbiguous()) {
+            throw new IllegalArgumentException("Multiple beans match the type: " + type);
+        } else if (instance.isUnsatisfied()) {
+            try {
+                return type.getConstructor().newInstance();
+            } catch (Exception e) {
+                throw new IllegalStateException("Unable to instantiate the class: " + type);
+            }
+        } else {
+            return instance.get();
+        }
     }
 
     private static boolean isSimpleConfigValue(String val) {

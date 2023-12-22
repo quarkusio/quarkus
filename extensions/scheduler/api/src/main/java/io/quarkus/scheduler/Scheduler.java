@@ -150,6 +150,15 @@ public interface Scheduler {
         JobDefinition setSkipPredicate(SkipPredicate skipPredicate);
 
         /**
+         * {@link Scheduled#skipExecutionIf()}
+         *
+         * @param skipPredicateClass
+         * @return self
+         * @see Scheduled#skipExecutionIf()
+         */
+        JobDefinition setSkipPredicate(Class<? extends SkipPredicate> skipPredicateClass);
+
+        /**
          * {@link Scheduled#overdueGracePeriod()}
          *
          * @param period

@@ -42,7 +42,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 @BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { GlobalDevServicesConfig.Enabled.class })
 public class DevServicesRedisProcessor {
     private static final Logger log = Logger.getLogger(DevServicesRedisProcessor.class);
-    private static final String REDIS_IMAGE = "docker.io/redis:7";
+    private static final String REDIS_IMAGE = "redis:7";
     private static final int REDIS_EXPOSED_PORT = 6379;
     private static final String REDIS_SCHEME = "redis://";
 

@@ -31,8 +31,13 @@ public class RuntimeDefaultsTest {
     void doNotRecordEnvRuntimeDefaults() {
         Optional<ConfigSource> defaultValues = config.getConfigSource("DefaultValuesConfigSource");
         assertTrue(defaultValues.isPresent());
-        assertEquals("rtStringOptValue", defaultValues.get().getValue("quarkus.rt.rt-string-opt"));
-        assertEquals("properties", defaultValues.get().getValue("bt.do.not.record"));
+        // It's ok to record env properties for a Quarkus root
+        assertEquals("changed", defaultValues.get().getValue("quarkus.rt.rt-string-opt"));
+        // It's ok to record env properties for a property available in another source
+        assertEquals("env-source", defaultValues.get().getValue("bt.ok.to.record"));
+        // Do not record any of the other properties
+        assertNull(defaultValues.get().getValue(("do.not.record")));
+        assertNull(defaultValues.get().getValue(("DO_NOT_RECORD")));
     }
 
     @Test

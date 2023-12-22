@@ -113,14 +113,14 @@ public class FakeInputStream extends InputStream {
 
     @Override
     public long skip(final long n) throws IOException {
-        final var read = Math.min(toSend, n);
+        final var read = Math.max(Math.min(toSend, n), 0);
         toSend -= read;
         return read;
     }
 
     @Override
     public int available() throws IOException {
-        return (int) Math.min(Math.min(MAX_AVAILABLE, toSend), DEFAULT_BUFFER_SIZE);
+        return (int) Math.max(Math.min(Math.min(MAX_AVAILABLE, toSend), DEFAULT_BUFFER_SIZE), 0);
     }
 
     @Override

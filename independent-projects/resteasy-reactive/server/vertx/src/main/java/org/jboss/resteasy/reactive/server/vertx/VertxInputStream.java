@@ -127,7 +127,6 @@ public class VertxInputStream extends InputStream {
             pooled = exchange.readBlocking();
             if (pooled == null) {
                 finished = true;
-                pooled = null;
             }
         }
     }
@@ -270,7 +269,7 @@ public class VertxInputStream extends InputStream {
             if (readException != null) {
                 throw readException;
             }
-            if (!endOfWrite && (inputOverflow.isEmpty())) {
+            if (!endOfWrite && inputOverflow.isEmpty()) {
                 request.fetch(1);
             }
             if (ret == null && !inputOverflow.isEmpty()) {

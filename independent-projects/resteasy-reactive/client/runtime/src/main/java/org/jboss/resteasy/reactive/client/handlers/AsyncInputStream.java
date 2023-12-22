@@ -3,7 +3,7 @@ package org.jboss.resteasy.reactive.client.handlers;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Deque;
-import java.util.LinkedList;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.vertx.core.AsyncResult;
@@ -84,6 +84,9 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
     public synchronized AsyncInputStream exceptionHandler(final Handler<Throwable> exceptionHandler) {
         checkClose();
         this.exceptionHandler = exceptionHandler;
+        if (exceptionHandler != null) {
+            queue.exceptionHandler(exceptionHandler);
+        }
         return this;
     }
 
@@ -200,23 +203,19 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
         }
     }
 
-    /**
-     * To be not dependent from InboundBuffer Vertx implementation
-     */
     public static class InboundBuffer {
         private final ContextInternal context;
-        private final Deque<Buffer> pending = new LinkedList<>();
+        private final Deque<Buffer> pending = new ConcurrentLinkedDeque<>();
         private final long highWaterMark;
-        private long demand;
+        private boolean demand;
         private Handler<Buffer> handler;
         private boolean overflow;
         private Handler<Void> drainHandler;
-        private Handler<Void> emptyHandler;
         private Handler<Throwable> exceptionHandler;
         private boolean emitting;
 
         public InboundBuffer(Context context) {
-            this(context, 16L);
+            this(context, 10L);
         }
 
         public InboundBuffer(Context context, long highWaterMark) {
@@ -228,7 +227,7 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
             }
             this.context = (ContextInternal) context;
             this.highWaterMark = highWaterMark;
-            this.demand = Long.MAX_VALUE;
+            this.demand = true;
         }
 
         private void checkThread() {
@@ -246,53 +245,18 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
          */
         public boolean write(Buffer element) {
             checkThread();
-            Handler<Buffer> handlerTmp;
+            Handler<Buffer> handlerTmp = null;
             synchronized (this) {
-                if (demand == 0L || emitting) {
-                    pending.add(element);
-                    return checkWritable();
-                } else {
-                    if (demand != Long.MAX_VALUE) {
-                        --demand;
-                    }
+                if (demand && !emitting) {
                     emitting = true;
                     handlerTmp = this.handler;
                 }
             }
-            handleEvent(handlerTmp, element);
-            return emitPending();
-        }
-
-        private boolean checkWritable() {
-            if (demand == Long.MAX_VALUE) {
+            if (handlerTmp == null) {
+                pending.add(element);
                 return true;
-            } else {
-                long actual = size() - demand;
-                boolean writable = actual < highWaterMark;
-                overflow |= !writable;
-                return writable;
             }
-        }
-
-        /**
-         * Write an {@code iterable} of {@code elements}.
-         *
-         * @param elements the elements to add
-         * @return {@code false} when the producer should stop writing
-         * @see #write(Buffer)
-         */
-        public boolean write(Iterable<Buffer> elements) {
-            checkThread();
-            synchronized (this) {
-                for (Buffer element : elements) {
-                    pending.add(element);
-                }
-                if (demand == 0L || emitting) {
-                    return checkWritable();
-                } else {
-                    emitting = true;
-                }
-            }
+            handleEvent(handlerTmp, element);
             return emitPending();
         }
 
@@ -300,9 +264,9 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
             Buffer element;
             Handler<Buffer> h;
             while (true) {
+                int size = size();
                 synchronized (this) {
-                    int size = size();
-                    if (demand == 0L) {
+                    if (!demand) {
                         emitting = false;
                         boolean writable = size < highWaterMark;
                         overflow |= !writable;
@@ -311,12 +275,10 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
                         emitting = false;
                         return true;
                     }
-                    if (demand != Long.MAX_VALUE) {
-                        demand--;
-                    }
-                    element = pending.poll();
                     h = this.handler;
                 }
+                Thread.yield();
+                element = pending.poll();
                 handleEvent(h, element);
             }
         }
@@ -327,42 +289,28 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
          * Calling this assumes {@code (demand > 0L && !pending.isEmpty()) == true}
          */
         private void drain() {
-            int emitted = 0;
             Handler<Void> drainHandlerTmp;
-            Handler<Void> emptyHandlerTmp;
             while (true) {
                 Buffer element;
                 Handler<Buffer> handlerTmp;
+                int size = size();
                 synchronized (this) {
-                    int size = size();
+                    drainHandlerTmp = this.drainHandler;
                     if (size == 0) {
                         emitting = false;
-                        if (overflow) {
-                            overflow = false;
-                            drainHandlerTmp = this.drainHandler;
-                        } else {
-                            drainHandlerTmp = null;
-                        }
-                        emptyHandlerTmp = emitted > 0 ? this.emptyHandler : null;
+                        overflow = false;
                         break;
-                    } else if (demand == 0L) {
+                    } else if (!demand) {
                         emitting = false;
                         return;
                     }
-                    emitted++;
-                    if (demand != Long.MAX_VALUE) {
-                        demand--;
-                    }
-                    element = pending.poll();
                     handlerTmp = this.handler;
                 }
+                element = pending.poll();
                 handleEvent(handlerTmp, element);
             }
             if (drainHandlerTmp != null) {
                 handleEvent(drainHandlerTmp, null);
-            }
-            if (emptyHandlerTmp != null) {
-                handleEvent(emptyHandlerTmp, null);
             }
         }
 
@@ -400,10 +348,7 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
                 throw new IllegalArgumentException();
             }
             synchronized (this) {
-                demand += amount;
-                if (demand < 0L) {
-                    demand = Long.MAX_VALUE;
-                }
+                demand = true;
                 if (emitting || (isEmpty() && !overflow)) {
                     return false;
                 }
@@ -411,22 +356,6 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
             }
             context.runOnContext(v -> drain());
             return true;
-        }
-
-        /**
-         * Read the most recent element synchronously.
-         * <p/>
-         * No handler will be called.
-         *
-         * @return the most recent element or {@code null} if no element was in the buffer
-         */
-        public Buffer read() {
-            synchronized (this) {
-                if (isEmpty()) {
-                    return null;
-                }
-                return pending.poll();
-            }
         }
 
         /**
@@ -446,12 +375,9 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
 
         /**
          * Pause the buffer, it sets the buffer in {@code fetch} mode and clears the actual demand.
-         *
-         * @return a reference to this, so the API can be used fluently
          */
-        public synchronized InboundBuffer pause() {
-            demand = 0L;
-            return this;
+        public synchronized void pause() {
+            demand = false;
         }
 
         /**
@@ -460,11 +386,9 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
          * Pending elements in the buffer will be delivered asynchronously on the context to the handler.
          * <p/>
          * This method can be called from any thread.
-         *
-         * @return {@code true} when the buffer will be drained
          */
-        public boolean resume() {
-            return fetch(Long.MAX_VALUE);
+        public void resume() {
+            fetch(Long.MAX_VALUE);
         }
 
         /**
@@ -479,24 +403,14 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
         }
 
         /**
-         * Set an {@code handler} to be called when the buffer is drained and the producer can resume writing to the buffer.
+         * Set an {@code handler} to be called when the buffer is drained and the producer can resume writing to the
+         * buffer.
          *
          * @param handler the handler to be called
          * @return a reference to this, so the API can be used fluently
          */
         public synchronized InboundBuffer drainHandler(Handler<Void> handler) {
             drainHandler = handler;
-            return this;
-        }
-
-        /**
-         * Set an {@code handler} to be called when the buffer becomes empty.
-         *
-         * @param handler the handler to be called
-         * @return a reference to this, so the API can be used fluently
-         */
-        public synchronized InboundBuffer emptyHandler(Handler<Void> handler) {
-            emptyHandler = handler;
             return this;
         }
 
@@ -514,28 +428,14 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
         /**
          * @return whether the buffer is empty
          */
-        public synchronized boolean isEmpty() {
+        public boolean isEmpty() {
             return pending.isEmpty();
-        }
-
-        /**
-         * @return whether the buffer is writable
-         */
-        public synchronized boolean isWritable() {
-            return size() < highWaterMark;
-        }
-
-        /**
-         * @return whether the buffer is paused, i.e it is in {@code fetch} mode and the demand is {@code 0}.
-         */
-        public synchronized boolean isPaused() {
-            return demand == 0L;
         }
 
         /**
          * @return the actual number of elements in the buffer
          */
-        public synchronized int size() {
+        public int size() {
             return pending.size();
         }
     }

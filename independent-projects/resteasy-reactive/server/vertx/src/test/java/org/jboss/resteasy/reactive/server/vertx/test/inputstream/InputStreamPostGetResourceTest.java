@@ -1,6 +1,9 @@
 package org.jboss.resteasy.reactive.server.vertx.test.inputstream;
 
 import java.io.InputStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
@@ -21,6 +24,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -123,5 +127,45 @@ public class InputStreamPostGetResourceTest {
         float time = (float) ((stop - start) / 1000000000.0);
         long usedMemory = after - before;
         LOG.infof("POST %d MB in %f s, %f MB/s using %d MB", mb, time, size / time / (1024 * 1024), usedMemory);
+    }
+
+    @Test
+    @DisplayName("Test Post Concurrent InputStream")
+    public void testPostInputStreamConcurrent() throws Exception {
+        int mb = 1024;
+        ExecutorService executorService = Executors.newFixedThreadPool(4);
+        for (int i = 0; i < 4; i++) {
+            executorService.execute(() -> {
+                try {
+                    testPostInputStream(mb);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            Thread.yield();
+        }
+        Thread.sleep(1000);
+        executorService.shutdown();
+        executorService.awaitTermination(10, TimeUnit.SECONDS);
+    }
+
+    @Test
+    @DisplayName("Test Get Concurrent InputStream")
+    public void testGetInputStreamConcurrent() throws Exception {
+        int mb = 1024;
+        ExecutorService executorService = Executors.newFixedThreadPool(4);
+        for (int i = 0; i < 4; i++) {
+            executorService.execute(() -> {
+                try {
+                    testGetInputStream(mb);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            Thread.yield();
+        }
+        Thread.sleep(1000);
+        executorService.shutdown();
+        executorService.awaitTermination(10, TimeUnit.SECONDS);
     }
 }

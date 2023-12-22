@@ -52,6 +52,7 @@
         <module>micrometer-registry-prometheus</module>
         <module>opentelemetry</module>
         <module>info</module>
+        <module>jfr</module>
 
         <!-- REST services -->
         <module>resteasy-classic</module>
@@ -207,7 +208,6 @@
 
         <!-- JMS -->
         <module>jms-spi</module>
-        <module>jfr</module>
 
     </modules>
 

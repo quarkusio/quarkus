@@ -8,11 +8,11 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.jfr.runtime.RequestIdProducerImpl;
-import io.quarkus.jfr.runtime.TracingRequestIdProducerImpl;
-import io.quarkus.jfr.runtime.rest.HttpEventFactoryImpl;
-import io.quarkus.jfr.runtime.rest.HttpReactiveRecorder;
-import io.quarkus.jfr.runtime.rest.JfrHttpReactiveFilter;
-import io.quarkus.jfr.runtime.rest.tracing.TracingHttpEventFactory;
+import io.quarkus.jfr.runtime.TracingRequestIdProducer;
+import io.quarkus.jfr.runtime.http.rest.JfrRestReactiveFilter;
+import io.quarkus.jfr.runtime.http.rest.RestEventFactory;
+import io.quarkus.jfr.runtime.http.rest.RestReactiveRecorder;
+import io.quarkus.jfr.runtime.http.rest.tracing.TracingRestEventFactory;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 
 @BuildSteps
@@ -32,13 +32,13 @@ class JfrProcessor {
         if (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
 
             additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                    .addBeanClasses(TracingRequestIdProducerImpl.class, TracingHttpEventFactory.class)
+                    .addBeanClasses(TracingRequestIdProducer.class, TracingRestEventFactory.class)
                     .build());
 
         } else {
 
             additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                    .addBeanClasses(RequestIdProducerImpl.class, HttpEventFactoryImpl.class)
+                    .addBeanClasses(RequestIdProducerImpl.class, RestEventFactory.class)
                     .build());
         }
     }
@@ -51,11 +51,11 @@ class JfrProcessor {
         if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
 
             additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                    .addBeanClasses(HttpReactiveRecorder.class)
+                    .addBeanClasses(RestReactiveRecorder.class)
                     .build());
 
             filterBeans
-                    .produce(new CustomContainerRequestFilterBuildItem(JfrHttpReactiveFilter.class.getName()));
+                    .produce(new CustomContainerRequestFilterBuildItem(JfrRestReactiveFilter.class.getName()));
         }
     }
 }

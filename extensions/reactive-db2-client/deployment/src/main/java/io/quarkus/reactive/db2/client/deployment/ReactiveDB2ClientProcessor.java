@@ -222,6 +222,7 @@ class ReactiveDB2ClientProcessor {
                 .scope(ApplicationScoped.class)
                 .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
                 .createWith(recorder.mutinyDB2Pool(poolFunction))
+                .unremovable()
                 .setRuntimeInit();
 
         addQualifiers(mutinyDB2PoolConfigurator, dataSourceName);

@@ -223,6 +223,7 @@ class ReactiveOracleClientProcessor {
                 .scope(ApplicationScoped.class)
                 .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
                 .createWith(recorder.mutinyOraclePool(poolFunction))
+                .unremovable()
                 .setRuntimeInit();
 
         addQualifiers(mutinyOraclePoolConfigurator, dataSourceName);

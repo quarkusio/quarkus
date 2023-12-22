@@ -222,6 +222,7 @@ class ReactiveMySQLClientProcessor {
                 .scope(ApplicationScoped.class)
                 .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
                 .createWith(recorder.mutinyMySQLPool(poolFunction))
+                .unremovable()
                 .setRuntimeInit();
 
         addQualifiers(mutinyMySQLPoolConfigurator, dataSourceName);

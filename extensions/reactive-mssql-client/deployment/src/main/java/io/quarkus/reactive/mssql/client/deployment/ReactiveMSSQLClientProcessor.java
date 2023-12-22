@@ -221,6 +221,7 @@ class ReactiveMSSQLClientProcessor {
                 .scope(ApplicationScoped.class)
                 .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
                 .createWith(recorder.mutinyMSSQLPool(poolFunction))
+                .unremovable()
                 .setRuntimeInit();
 
         addQualifiers(mutinyMSSQLPoolConfigurator, dataSourceName);

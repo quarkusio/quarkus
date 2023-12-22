@@ -51,6 +51,7 @@
         <maven.version>3.9.6</maven.version>
         <assertj.version>3.24.2</assertj.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
+        <jboss-logmanager.version>3.0.4.Final</jboss-logmanager.version>
         <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
         <gizmo.version>1.7.0</gizmo.version>
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
@@ -290,6 +291,18 @@
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging</artifactId>
                 <version>${jboss-logging.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jboss.logmanager</groupId>
+                <artifactId>jboss-logmanager</artifactId>
+                <version>${jboss-logmanager.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>

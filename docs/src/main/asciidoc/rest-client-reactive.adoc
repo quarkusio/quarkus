@@ -325,6 +325,97 @@ public interface ExtensionsService {
 }
 ----
 
+=== Using QuarkusMultipartForm
+
+MultipartForm can be built using the Class `QuarkusMultipartForm` which supports customizing the form details like boundary:
+
+`QuarkusMultipartForm` can be programatically created with custom inputs and/or from `MultipartFormDataInput` and/or from custom Resteasy Reactive Input annotated with `@RestForm` if received.
+
+[source, java]
+----
+public interface MultipartService {
+
+  @POST
+  @Path("/multipart")
+  @Consumes(MediaType.MULTIPART_FORM_DATA)
+  @Produces(MediaType.APPLICATION_JSON)
+  Map<String, String> multipart(QuarkusMultipartForm dataParts); // <1>
+}
+----
+
+<1> input to the method is a custom Generic `QuarkusMultipartForm` which matches external application api contract.
+
+
+More information about this Class and supported methods can be found on the javadoc of link:https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-client/latest/org/jboss/resteasy/reactive/client/impl/multipart/QuarkusMultipartForm.html[`QuarkusMultipartForm`].
+
+
+Build `QuarkusMultipartForm` from `MultipartFormDataInput` programatically
+
+[source, java]
+----
+public QuarkusMultipartForm buildQuarkusMultipartForm(MultipartFormDataInput inputForm) // <1>
+    throws IOException {
+  QuarkusMultipartForm multiPartForm = new QuarkusMultipartForm(); // <2>
+  for (Entry<String, Collection<FormValue>> attribute : inputForm.getValues().entrySet()) {
+    for (FormValue fv : attribute.getValue()) {
+      if (fv.isFileItem()) {
+        final FileItem fi = fv.getFileItem();
+        String mediaType = Objects.toString(fv.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE),
+            MediaType.APPLICATION_OCTET_STREAM);
+        if (fi.isInMemory()) {
+          multiPartForm.binaryFileUpload(attribute.getKey(), fv.getFileName(),
+              Buffer.buffer(IOUtils.toByteArray(fi.getInputStream())), mediaType); // <3>
+        } else {
+          multiPartForm.binaryFileUpload(attribute.getKey(), fv.getFileName(),
+              fi.getFile().toString(), mediaType); // <4>
+        }
+      } else {
+        multiPartForm.attribute(attribute.getKey(), fv.getValue(), fv.getFileName()); // <5>
+      }
+    }
+  }
+  return multiPartForm;
+}
+----
+
+<1> `MultipartFormDataInput` inputForm supported by RestEasy Reactive (Server).
+<2> Creating a `QuarkusMultipartForm` object to populate with various dataparts.
+<3> Adding InMemory `FileItem` to `QuarkusMultipartForm`
+<4> Adding physical `FileItem` to `QuarkusMultipartForm`
+<5> Adding any attribute directly to `QuarkusMultipartForm` if not `FileItem`.
+
+Build `QuarkusMultipartForm` from custom Attributes annotated with `@RestForm`
+
+[source, java]
+----
+public class MultiPartPayloadFormData { // <1>
+
+  @RestForm("files")
+  @PartType(MediaType.APPLICATION_OCTET_STREAM)
+  List<FileUpload> files;
+
+  @RestForm("jsonPayload")
+  @PartType(MediaType.TEXT_PLAIN)
+  String jsonPayload;
+}
+
+/*
+ * Generate QuarkusMultipartForm from custom attributes annotated with @RestForm
+ */
+public QuarkusMultipartForm buildQuarkusMultipartForm(MultiPartPayloadFormData inputForm) { // <1>
+  QuarkusMultipartForm multiPartForm = new QuarkusMultipartForm();
+  multiPartForm.attribute("jsonPayload", inputForm.getJsonPayload(), "jsonPayload"); // <2>
+  inputForm.getFiles().forEach(fu -> {
+    multiPartForm.binaryFileUpload("file", fu.name(), fu.filePath().toString(), fu.contentType()); // <3>
+  });
+  return multiPartForm;
+}
+----
+
+<1> `MultiPartPayloadFormData` custom Object created to match the API contract for calling service which needs to be converted to `QuarkusMultipartForm`
+<2> Adding attribute `jsonPayload` directly to `QuarkusMultipartForm`
+<3> Adding `FileUpload` objects to `QuarkusMultipartForm` as binaryFileUpload with contentType.
+
 
 == Create the configuration
 

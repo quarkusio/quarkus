@@ -17,5 +17,6 @@
    <modules>
       <module>common</module>
       <module>avro</module>
+      <module>json-schema</module>
    </modules>
 </project>

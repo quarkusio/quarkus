@@ -8,7 +8,7 @@
     <version>999-SNAPSHOT</version>
   </parent>
   <artifactId>jf-opentelemetry-integration-tests</artifactId>
-  <name>Jfr Opentelemetry - Integration Tests</name>
+  <name>Quarkus - Integration Tests - Jfr OpenTelemetry</name>
   <properties>
     <skipITs>true</skipITs>
   </properties>

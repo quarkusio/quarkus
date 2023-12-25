@@ -125,8 +125,13 @@ public class JacksonProcessor {
                         "com.fasterxml.jackson.databind.deser.std.DateDeserializers$SqlDateDeserializer",
                         "com.fasterxml.jackson.databind.deser.std.DateDeserializers$TimestampDeserializer",
                         "com.fasterxml.jackson.annotation.SimpleObjectIdResolver").methods().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("com.fasterxml.jackson.databind.ser.std.ClassSerializer")
-                .constructors().build());
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(
+                        "com.fasterxml.jackson.databind.ser.std.ClassSerializer",
+                        "com.fasterxml.jackson.databind.ext.CoreXMLSerializers",
+                        "com.fasterxml.jackson.databind.ext.CoreXMLDeserializers")
+                        .constructors()
+                        .build());
 
         if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream().anyMatch(
                 x -> x.getGroupId().equals("com.fasterxml.jackson.module")

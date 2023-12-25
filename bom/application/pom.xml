@@ -100,7 +100,7 @@
              bytebuddy.version (just below), hibernate-orm.version-for-documentation (in docs/pom.xml)
              and both hibernate-orm.version and antlr.version in build-parent/pom.xml
              WARNING again for diffs that don't provide enough context: when updating, see above -->
-        <hibernate-orm.version>6.4.0.Final</hibernate-orm.version>
+        <hibernate-orm.version>6.4.1.Final</hibernate-orm.version>
         <bytebuddy.version>1.14.7</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-commons-annotations.version>6.0.6.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM -->
         <hibernate-reactive.version>2.2.0.Final</hibernate-reactive.version>

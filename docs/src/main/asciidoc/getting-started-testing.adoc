@@ -1088,7 +1088,7 @@ or starting a mock HTTP server using https://wiremock.org/[Wiremock] (an example
 
 
 === Altering the test class
-When creating a custom `QuarkusTestResourceLifecycleManager` that needs to inject the something into the test class, the `inject` methods can be used.
+When creating a custom `QuarkusTestResourceLifecycleManager` that needs to inject something into the test class, the `inject` methods can be used.
 If for example you have a test like the following:
 
 [source,java]

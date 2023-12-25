@@ -4,10 +4,14 @@ import jakarta.inject.Inject;
 
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 import org.jboss.resteasy.reactive.server.ServerResponseFilter;
+import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 import io.quarkus.logging.Log;
 
 public class JfrRestReactiveFilter {
+
+    @Inject
+    ServerRequestContext serverRequestContext;
 
     @Inject
     RestRecorder httpRecorder;
@@ -17,7 +21,11 @@ public class JfrRestReactiveFilter {
         if (Log.isDebugEnabled()) {
             Log.debug("Enter Jfr Request Filter");
         }
-        httpRecorder.recordRequest();
+        if (serverRequestContext.getResteasyReactiveResourceInfo().isNonBlocking) {
+            httpRecorder.recordReactiveRequest();
+        } else {
+            httpRecorder.recordBlockingRequest();
+        }
     }
 
     @ServerResponseFilter
@@ -25,6 +33,16 @@ public class JfrRestReactiveFilter {
         if (Log.isDebugEnabled()) {
             Log.debug("Enter Jfr Response Filter");
         }
-        httpRecorder.recordResponse();
+        if (serverRequestContext.getResteasyReactiveResourceInfo() == null) {
+            if (Log.isDebugEnabled()) {
+                Log.debug("Skipped recording because ResteasyReactiveResourceInfo is null");
+            }
+            return;
+        }
+        if (serverRequestContext.getResteasyReactiveResourceInfo().isNonBlocking) {
+            httpRecorder.recordReactiveResponse();
+        } else {
+            httpRecorder.recordBlockingResponse();
+        }
     }
 }

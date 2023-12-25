@@ -11,7 +11,7 @@ import io.quarkus.jfr.runtime.RequestIdProducerImpl;
 import io.quarkus.jfr.runtime.TracingRequestIdProducer;
 import io.quarkus.jfr.runtime.http.rest.JfrRestReactiveFilter;
 import io.quarkus.jfr.runtime.http.rest.RestEventFactory;
-import io.quarkus.jfr.runtime.http.rest.RestReactiveRecorder;
+import io.quarkus.jfr.runtime.http.rest.RestRecorderProducer;
 import io.quarkus.jfr.runtime.http.rest.tracing.TracingRestEventFactory;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 
@@ -51,7 +51,7 @@ class JfrProcessor {
         if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
 
             additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                    .addBeanClasses(RestReactiveRecorder.class)
+                    .addBeanClasses(RestRecorderProducer.class)
                     .build());
 
             filterBeans

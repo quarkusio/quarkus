@@ -2,7 +2,11 @@ package io.quarkus.jfr.runtime.http.rest;
 
 public interface RestRecorder {
 
-    void recordRequest();
+    void recordReactiveRequest();
 
-    void recordResponse();
+    void recordBlockingRequest();
+
+    void recordReactiveResponse();
+
+    void recordBlockingResponse();
 }

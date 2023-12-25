@@ -3,95 +3,53 @@ package io.quarkus.jfr.runtime.http.rest;
 import java.time.Duration;
 import java.time.Instant;
 
-import jakarta.enterprise.context.RequestScoped;
-import jakarta.inject.Inject;
-import jakarta.ws.rs.container.ResourceInfo;
-import jakarta.ws.rs.core.Context;
-
-import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
-
 import io.quarkus.jfr.runtime.RequestIdProducer;
 import io.quarkus.jfr.runtime.http.AbstractHttpBlockingEvent;
 import io.quarkus.jfr.runtime.http.AbstractHttpReactiveEndEvent;
 import io.quarkus.jfr.runtime.http.AbstractHttpReactiveStartEvent;
 import io.quarkus.jfr.runtime.http.HttpEventFactory;
 import io.quarkus.logging.Log;
-import io.vertx.core.http.HttpServerRequest;
 
-@RequestScoped
 public class RestReactiveRecorder implements RestRecorder {
 
-    @Inject
-    RequestIdProducer requestIdProducer;
-
-    @Context
-    HttpServerRequest vertxRequest;
-
-    @Context
-    ResourceInfo resourceInfo;
-
-    @Inject
-    ServerRequestContext serverRequestContext;
-
-    @Inject
-    HttpEventFactory httpEventFactory;
-
+    private final String httpMethod;
+    private final String uri;
+    private final String resourceClass;
+    private final String resourceMethod;
+    private final String client;
+    private final RequestIdProducer requestIdProducer;
+    private final HttpEventFactory httpEventFactory;
     private AbstractHttpReactiveStartEvent startEvent;
     private AbstractHttpReactiveEndEvent endEvent;
     private AbstractHttpBlockingEvent durationEvent;
     private Instant startTime;
 
-    @Override
-    public void recordRequest() {
-        if (serverRequestContext.getResteasyReactiveResourceInfo().isNonBlocking) {
-            if (Log.isDebugEnabled()) {
-                Log.debug("Starting recording reactive request");
-            }
-            recordReactiveRequest();
-        } else {
-            if (Log.isDebugEnabled()) {
-                Log.debug("Starting recording blocking request");
-            }
-            recordBlockingRequest();
-        }
+    public RestReactiveRecorder(String httpMethod, String uri, String resourceClass, String resourceMethod, String client,
+            RequestIdProducer requestIdProducer, HttpEventFactory httpEventFactory) {
+        this.httpMethod = httpMethod;
+        this.uri = uri;
+        this.resourceClass = resourceClass;
+        this.resourceMethod = resourceMethod;
+        this.client = client;
+        this.requestIdProducer = requestIdProducer;
+        this.httpEventFactory = httpEventFactory;
     }
 
-    private void recordReactiveRequest() {
+    @Override
+    public void recordReactiveRequest() {
         startEvent = httpEventFactory.createReactiveStartEvent();
         startEvent.end();
         startTime = Instant.now();
     }
 
-    private void recordBlockingRequest() {
+    @Override
+    public void recordBlockingRequest() {
         durationEvent = httpEventFactory.createBlockingEvent();
         durationEvent.begin();
     }
 
     @Override
-    public void recordResponse() {
-        if (serverRequestContext.getResteasyReactiveResourceInfo() == null) {
-            if (Log.isDebugEnabled()) {
-                Log.debug("Skipped recording because ResteasyReactiveResourceInfo is null");
-            }
-            return;
-        }
-
-        if (serverRequestContext.getResteasyReactiveResourceInfo().isNonBlocking) {
-            if (Log.isDebugEnabled()) {
-                Log.debug("Finishing recording reactive request");
-            }
-
-            recordReactiveResponse();
-        } else {
-            if (Log.isDebugEnabled()) {
-                Log.debug("Finishing recording blocking request");
-            }
-
-            recordBlockingResponse();
-        }
-    }
-
-    private void recordReactiveResponse() {
+    public void recordReactiveResponse() {
         if (startEvent == null) {
             if (Log.isDebugEnabled()) {
                 Log.debug("Jfr Response filter was called without recording the reactive request");
@@ -105,11 +63,11 @@ public class RestReactiveRecorder implements RestRecorder {
 
         if (startEvent.shouldCommit()) {
             startEvent.setRequestId(requestIdProducer.create());
-            startEvent.setHttpMethod(vertxRequest.method().name());
-            startEvent.setUri(vertxRequest.path());
-            startEvent.setResourceClass(resourceInfo.getResourceClass().getName());
-            startEvent.setResourceMethod(resourceInfo.getResourceMethod().toGenericString());
-            startEvent.setClient(vertxRequest.remoteAddress().toString());
+            startEvent.setHttpMethod(httpMethod);
+            startEvent.setUri(uri);
+            startEvent.setResourceClass(resourceClass);
+            startEvent.setResourceMethod(resourceMethod);
+            startEvent.setClient(client);
             startEvent.commit();
         }
         if (endEvent.shouldCommit()) {
@@ -119,7 +77,8 @@ public class RestReactiveRecorder implements RestRecorder {
         }
     }
 
-    private void recordBlockingResponse() {
+    @Override
+    public void recordBlockingResponse() {
         if (durationEvent == null) {
             if (Log.isDebugEnabled()) {
                 Log.debug("Jfr Response filter was called without recording the blocking request");
@@ -129,11 +88,11 @@ public class RestReactiveRecorder implements RestRecorder {
 
         if (durationEvent.shouldCommit()) {
             durationEvent.setRequestId(requestIdProducer.create());
-            durationEvent.setHttpMethod(vertxRequest.method().name());
-            durationEvent.setUri(vertxRequest.path());
-            durationEvent.setResourceClass(resourceInfo.getResourceClass().getName());
-            durationEvent.setResourceMethod(resourceInfo.getResourceMethod().toGenericString());
-            durationEvent.setClient(vertxRequest.remoteAddress().toString());
+            durationEvent.setHttpMethod(httpMethod);
+            durationEvent.setUri(uri);
+            durationEvent.setResourceClass(resourceClass);
+            durationEvent.setResourceMethod(resourceMethod);
+            durationEvent.setClient(client);
             durationEvent.commit();
         }
     }

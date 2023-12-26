@@ -34,7 +34,7 @@ public class CsrfReactiveConfig {
     /**
      * CSRF cookie max age.
      */
-    @ConfigItem(defaultValue = "10M")
+    @ConfigItem(defaultValue = "2H")
     public Duration cookieMaxAge;
 
     /**

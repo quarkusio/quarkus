@@ -41,6 +41,8 @@ public class CsrfReactiveTest {
         try (final WebClient webClient = createWebClient()) {
             webClient.addRequestHeader("Authorization", basicAuth("alice", "alice"));
             HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenForm");
+            htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenForm");
+            assertNotNull(htmlPage.getWebResponse().getResponseHeaderValue("Set-Cookie"));
 
             assertEquals("CSRF Token Form Test", htmlPage.getTitleText());
 
@@ -51,11 +53,19 @@ public class CsrfReactiveTest {
             assertNotNull(webClient.getCookieManager().getCookie("csrftoken"));
 
             TextPage textPage = loginForm.getInputByName("submit").click();
-
+            assertNotNull(htmlPage.getWebResponse().getResponseHeaderValue("Set-Cookie"));
             assertEquals("alice:true:tokenHeaderIsSet=false", textPage.getContent());
 
+            // This request which returns String is not CSRF protected
             textPage = webClient.getPage("http://localhost:8081/service/hello");
             assertEquals("hello", textPage.getContent());
+            // therefore no Set-Cookie header is expected
+            assertNull(textPage.getWebResponse().getResponseHeaderValue("Set-Cookie"));
+
+            // Repeat a form submission
+            textPage = loginForm.getInputByName("submit").click();
+            assertNotNull(htmlPage.getWebResponse().getResponseHeaderValue("Set-Cookie"));
+            assertEquals("alice:true:tokenHeaderIsSet=false", textPage.getContent());
 
             webClient.getCookieManager().clearCookies();
         }

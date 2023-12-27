@@ -39,6 +39,9 @@ public class GelfLogHandlerRecorder {
         handler.setFilterStackTrace(config.filterStackTrace);
         handler.setTimestampPattern(config.timestampPattern);
         handler.setIncludeFullMdc(config.includeFullMdc);
+        handler.setDynamicMdcFields(config.dynamicMdcFields.orElse(null));
+        handler.setMdcFields(config.mdcFields.orElse(null));
+        handler.setDynamicMdcFieldTypes(config.dynamicMdcFieldTypes.orElse(null));
         handler.setHost(config.host);
         handler.setPort(config.port);
         handler.setLevel(config.level);

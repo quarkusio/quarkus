@@ -100,6 +100,7 @@ public class ConsoleStateManager {
     }
 
     void installBuiltins(DevModeType devModeType) {
+        ConsoleContext context = createContext("System");
         List<ConsoleCommand> commands = new ArrayList<>();
         if (devModeType != DevModeType.TEST_ONLY) {
             commands.add(new ConsoleCommand('s', "Force restart", null, () -> {
@@ -121,6 +122,12 @@ public class ConsoleStateManager {
                                 Logger.getLogger(ConsoleStateManager.class).errorf(e, "Failed to parse command line %s", args);
                                 return;
                             }
+                            // Reload command
+                            context.reset(ConsoleCommand.duplicateCommandWithNewPromptString(context.getCommandByKey('e'),
+                                    "to edit command line args (currently '" + MessageFormat.GREEN
+                                            + String.join(" ", RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs())
+                                            + MessageFormat.RESET
+                                            + "')"));
                             RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
                         }
                     }));
@@ -144,8 +151,6 @@ public class ConsoleStateManager {
                         }
                     }));
         }
-
-        ConsoleContext context = createContext("System");
 
         commands.add(new ConsoleCommand('j', "Toggle log levels",
                 new ConsoleCommand.HelpState(() -> currentLevel == null ? BLUE : RED,
@@ -280,8 +285,9 @@ public class ConsoleStateManager {
     void redraw() {
 
         List<ConsoleCommand> sorted = commands.values().stream().map(s -> s.consoleCommand)
-                .filter(s -> s.getPromptString() != null).sorted(Comparator.comparingInt(ConsoleCommand::getPromptPriority))
-                .collect(Collectors.toList());
+                .filter(s -> s.getPromptString() != null)
+                .sorted(Comparator.comparingInt(ConsoleCommand::getPromptPriority))
+                .toList();
         if (sorted.isEmpty()) {
             QuarkusConsole.INSTANCE.setPromptMessage(null);
             oldPrompt = null;
@@ -335,6 +341,12 @@ public class ConsoleStateManager {
                 }
                 commands.put(consoleCommand.getKey(), new Holder(consoleCommand, this));
                 internal.add(consoleCommand);
+            }
+        }
+
+        public ConsoleCommand getCommandByKey(Character key) {
+            synchronized (commands) {
+                return commands.get(key).consoleCommand;
             }
         }
 

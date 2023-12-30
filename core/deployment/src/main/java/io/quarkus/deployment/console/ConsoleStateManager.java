@@ -100,6 +100,11 @@ public class ConsoleStateManager {
     }
 
     void installBuiltins(DevModeType devModeType) {
+        final String editPromptFormat = "to edit command line args (currently '"
+                + MessageFormat.GREEN
+                + "%s"
+                + MessageFormat.RESET
+                + "')";
         ConsoleContext context = createContext("System");
         List<ConsoleCommand> commands = new ArrayList<>();
         if (devModeType != DevModeType.TEST_ONLY) {
@@ -107,9 +112,8 @@ public class ConsoleStateManager {
                 forceRestart();
             }));
             commands.add(new ConsoleCommand('e', "Edits the command line parameters and restarts",
-                    "to edit command line args (currently '" + MessageFormat.GREEN
-                            + String.join(" ", RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs()) + MessageFormat.RESET
-                            + "')",
+                    editPromptFormat.formatted(String.join(" ",
+                            RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs())),
                     100, new ConsoleCommand.HelpState(() -> BLUE,
                             () -> String.join(" ", RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs())),
                     new Consumer<String>() {
@@ -122,12 +126,10 @@ public class ConsoleStateManager {
                                 Logger.getLogger(ConsoleStateManager.class).errorf(e, "Failed to parse command line %s", args);
                                 return;
                             }
-                            // Reload command
+                            // Reload command prompt string
                             context.reset(ConsoleCommand.duplicateCommandWithNewPromptString(context.getCommandByKey('e'),
-                                    "to edit command line args (currently '" + MessageFormat.GREEN
-                                            + String.join(" ", RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs())
-                                            + MessageFormat.RESET
-                                            + "')"));
+                                    editPromptFormat.formatted(String.join(" ",
+                                            RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs()))));
                             RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
                         }
                     }));

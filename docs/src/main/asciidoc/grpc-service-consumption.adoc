@@ -261,6 +261,7 @@ quarkus.grpc.clients.hello.deadline=2s <1>
 IMPORTANT: Do not use this feature to implement an RPC timeout.
 To implement an RPC timeout, either use Mutiny `call.ifNoItem().after(...)` or Fault Tolerance `@Timeout`.
 
+[[grpc-headers]]
 == gRPC Headers
 Similarly to HTTP, alongside the message, gRPC calls can carry headers.
 Headers can be useful e.g. for authentication.

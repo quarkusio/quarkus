@@ -687,7 +687,7 @@ public class GrpcServerProcessor {
             List<RecorderBeanInitializedBuildItem> orderEnforcer,
             LaunchModeBuildItem launchModeBuildItem,
             VertxWebRouterBuildItem routerBuildItem,
-            VertxBuildItem vertx) {
+            VertxBuildItem vertx, Capabilities capabilities) {
 
         // Build the list of blocking methods per service implementation
         Map<String, List<String>> blocking = new HashMap<>();
@@ -708,7 +708,8 @@ public class GrpcServerProcessor {
             //Uses mainrouter when the 'quarkus.http.root-path' is not '/'
             recorder.initializeGrpcServer(vertx.getVertx(),
                     routerBuildItem.getMainRouter() != null ? routerBuildItem.getMainRouter() : routerBuildItem.getHttpRouter(),
-                    config, shutdown, blocking, virtuals, launchModeBuildItem.getLaunchMode());
+                    config, shutdown, blocking, virtuals, launchModeBuildItem.getLaunchMode(),
+                    capabilities.isPresent(Capability.SECURITY));
             return new ServiceStartBuildItem(GRPC_SERVER);
         }
         return null;

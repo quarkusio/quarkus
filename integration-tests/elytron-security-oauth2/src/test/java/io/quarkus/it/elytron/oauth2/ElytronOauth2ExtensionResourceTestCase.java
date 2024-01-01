@@ -2,6 +2,7 @@ package io.quarkus.it.elytron.oauth2;
 
 import static org.hamcrest.Matchers.containsString;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
@@ -91,5 +92,23 @@ public class ElytronOauth2ExtensionResourceTestCase {
                 .get("/api/forbidden")
                 .then()
                 .statusCode(401);
+    }
+
+    @Test
+    public void testGrpcAuthorization() {
+        ensureStarted();
+        RestAssured.given()
+                .when()
+                .header("Authorization", "Bearer: " + BEARER_TOKEN)
+                .get("/api/grpc-writer")
+                .then()
+                .statusCode(500);
+        RestAssured.given()
+                .when()
+                .header("Authorization", "Bearer: " + BEARER_TOKEN)
+                .get("/api/grpc-reader")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("Hello Ron from null"));
     }
 }

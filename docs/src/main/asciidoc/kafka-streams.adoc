@@ -499,7 +499,7 @@ version: '3.5'
 
 services:
   zookeeper:
-    image: strimzi/kafka:0.19.0-kafka-2.5.0
+    image: quay.io/strimzi/kafka:0.39.0-kafka-3.6.1
     command: [
       "sh", "-c",
       "bin/zookeeper-server-start.sh config/zookeeper.properties"
@@ -511,7 +511,7 @@ services:
     networks:
       - kafkastreams-network
   kafka:
-    image: strimzi/kafka:0.19.0-kafka-2.5.0
+    image: quay.io/strimzi/kafka:0.39.0-kafka-3.6.1
     command: [
       "sh", "-c",
       "bin/kafka-server-start.sh config/server.properties --override listeners=$${KAFKA_LISTENERS} --override advertised.listeners=$${KAFKA_ADVERTISED_LISTENERS} --override zookeeper.connect=$${KAFKA_ZOOKEEPER_CONNECT} --override num.partitions=$${KAFKA_NUM_PARTITIONS}"

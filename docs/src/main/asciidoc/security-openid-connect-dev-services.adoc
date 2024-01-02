@@ -272,6 +272,16 @@ image::dev-ui-keycloak-admin.png[alt=Dev UI OpenID Connect Keycloak Page - Keycl
 
 Sign in to Keycloak as `admin:admin` in order to further customize the realm properties, create or import a new realm, export the realm.
 
+You can also copy classpath and file system resources to the container. For example, if your application configures Keycloak authorization with link:https://www.keycloak.org/docs/latest/authorization_services/index.html#_policy_js[JavaScript policies] that are deployed to Keycloak in a jar file then you can configure `Dev Services for Keycloak` to copy this jar to the Keycloak container as follows:
+
+[source,properties]
+----
+quarkus.keycloak.devservices.resource-aliases.policies=/policies.jar <1>
+quarkus.keycloak.devservices.resource-mappings.policies=/opt/keycloak/providers/policies.jar <2>
+----
+<1> `policies` alias is created for the classpath `/policies.jar` resource. Policy jars can also be located in the file system.
+<2> The policies jar is mapped to the `/opt/keycloak/providers/policies.jar` container location.
+
 == Disable Dev Services for Keycloak
 
 `Dev Services For Keycloak` will not be activated if either `quarkus.oidc.auth-server-url` is already initialized or the default OIDC tenant is disabled with `quarkus.oidc.tenant.enabled=false`, irrespectively of whether you work with Keycloak or not.

@@ -410,6 +410,12 @@ Please see xref:security-openid-connect-client-reference.adoc#token-propagation[
 [[integration-testing]]
 === Testing
 
+[NOTE]
+====
+If you have to test Quarkus OIDC service endpoints that require xref:security-keycloak-authorization.adoc[Keycloak Authorization] then you must follow the xref:security-keycloak-authorization.adoc#testing[Test Keycloak Authorization] section.
+====
+
+
 Start by adding the following dependencies to your test project:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]

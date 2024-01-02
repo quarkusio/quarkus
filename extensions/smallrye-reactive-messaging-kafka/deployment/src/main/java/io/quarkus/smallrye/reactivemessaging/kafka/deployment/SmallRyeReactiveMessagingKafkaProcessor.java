@@ -271,21 +271,44 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
             processKafkaTransactions(discovery, config, channelName, injectionPointType);
 
-            Type outgoingType = getOutgoingTypeFromChannelInjectionPoint(injectionPointType);
-            processOutgoingType(discovery, outgoingType, (keySerializer, valueSerializer) -> {
-                produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        getChannelPropertyKey(channelName, "key.serializer", false), keySerializer);
-                produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        getChannelPropertyKey(channelName, "value.serializer", false), valueSerializer);
+            if (isKafkaRequestReplyEmitter(injectionPointType)) {
+                Type requestType = injectionPointType.asParameterizedType().arguments().get(0);
+                Type replyType = injectionPointType.asParameterizedType().arguments().get(1);
+                processOutgoingType(discovery, requestType, (keySerializer, valueSerializer) -> {
+                    produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                            getChannelPropertyKey(channelName, "key.serializer", false), keySerializer);
+                    produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                            getChannelPropertyKey(channelName, "value.serializer", false), valueSerializer);
+                }, generatedClass, reflection, alreadyGeneratedSerializers);
+                extractKeyValueType(replyType, (key, value, isBatchType) -> {
+                    Result keyDeserializer = deserializerFor(discovery, key, true, channelName, generatedClass, reflection,
+                            alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
+                    Result valueDeserializer = deserializerFor(discovery, value, false, channelName, generatedClass, reflection,
+                            alreadyGeneratedDeserializers, alreadyGeneratedSerializers);
 
-                handleAdditionalProperties(channelName, false, discovery, config, keySerializer, valueSerializer);
-            }, generatedClass, reflection, alreadyGeneratedSerializers);
+                    produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                            getChannelPropertyKey(channelName, "reply.key.deserializer", false), keyDeserializer);
+                    produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                            getChannelPropertyKey(channelName, "reply.value.deserializer", false), valueDeserializer);
+                    handleAdditionalProperties(channelName, false, discovery, config, keyDeserializer, valueDeserializer);
+                });
+            } else {
+                Type outgoingType = getOutgoingTypeFromChannelInjectionPoint(injectionPointType);
+                processOutgoingType(discovery, outgoingType, (keySerializer, valueSerializer) -> {
+                    produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                            getChannelPropertyKey(channelName, "key.serializer", false), keySerializer);
+                    produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                            getChannelPropertyKey(channelName, "value.serializer", false), valueSerializer);
+
+                    handleAdditionalProperties(channelName, false, discovery, config, keySerializer, valueSerializer);
+                }, generatedClass, reflection, alreadyGeneratedSerializers);
+            }
         }
     }
 
     private void processKafkaTransactions(DefaultSerdeDiscoveryState discovery,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config, String channelName, Type injectionPointType) {
-        if (injectionPointType != null && isKafkaEmitter(injectionPointType)) {
+        if (injectionPointType != null && isKafkaTransactionsEmitter(injectionPointType)) {
             String transactionalIdKey = getChannelPropertyKey(channelName, "transactional.id", false);
             String enableIdempotenceKey = getChannelPropertyKey(channelName, "enable.idempotence", false);
             String acksKey = getChannelPropertyKey(channelName, "acks", false);
@@ -496,7 +519,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             return null;
         }
 
-        if (isEmitter(injectionPointType) || isMutinyEmitter(injectionPointType) || isKafkaEmitter(injectionPointType)) {
+        if (isEmitter(injectionPointType) || isMutinyEmitter(injectionPointType)
+                || isKafkaTransactionsEmitter(injectionPointType)) {
             return injectionPointType.asParameterizedType().arguments().get(0);
         } else {
             return null;
@@ -640,11 +664,18 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 && type.asParameterizedType().arguments().size() == 1;
     }
 
-    private static boolean isKafkaEmitter(Type type) {
+    private static boolean isKafkaTransactionsEmitter(Type type) {
         // raw type KafkaTransactions is wrong, must be KafkaTransactions<Something>
-        return DotNames.KAFKA_EMITTER.equals(type.name())
+        return DotNames.KAFKA_TRANSACTIONS_EMITTER.equals(type.name())
                 && type.kind() == Type.Kind.PARAMETERIZED_TYPE
                 && type.asParameterizedType().arguments().size() == 1;
+    }
+
+    private static boolean isKafkaRequestReplyEmitter(Type type) {
+        // raw type KafkaRequestReply is wrong, must be KafkaRequestReply<Request, Reply>
+        return DotNames.KAFKA_REQUEST_REPLY_EMITTER.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 2;
     }
 
     // ---

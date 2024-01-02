@@ -210,8 +210,7 @@ class RequestContext implements ManagedContext {
             if (reqState.invalidate()) {
                 // Fire an event with qualifier @BeforeDestroyed(RequestScoped.class) if there are any observers for it
                 fireIfNotEmpty(beforeDestroyedNotifier);
-                reqState.contextInstances.forEach(this::destroyContextElement);
-                reqState.contextInstances.clear();
+                reqState.contextInstances.removeEach(ContextInstanceHandle::destroy);
                 // Fire an event with qualifier @Destroyed(RequestScoped.class) if there are any observers for it
                 fireIfNotEmpty(destroyedNotifier);
             }
@@ -227,14 +226,6 @@ class RequestContext implements ManagedContext {
                 .map(se -> "\n\t" + se.toString())
                 .collect(Collectors.joining());
         LOG.tracef("Destroy %s%s\n\t...", state != null ? Integer.toHexString(state.hashCode()) : "", stack);
-    }
-
-    private void destroyContextElement(ContextInstanceHandle<?> contextInstanceHandle) {
-        try {
-            contextInstanceHandle.destroy();
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to destroy instance" + contextInstanceHandle.get(), e);
-        }
     }
 
     private void fireIfNotEmpty(Notifier<Object> notifier) {

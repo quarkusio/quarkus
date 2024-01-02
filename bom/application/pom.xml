@@ -121,7 +121,7 @@
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>2.2.2.Final</wildfly-elytron.version>
         <jboss-threads.version>3.5.1.Final</jboss-threads.version>
-        <vertx.version>4.4.6</vertx.version>
+        <vertx.version>4.5.1</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -144,7 +144,7 @@
         <infinispan.version>14.0.21.Final</infinispan.version>
         <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
-        <netty.version>4.1.100.Final</netty.version>
+        <netty.version>4.1.103.Final</netty.version>
         <brotli4j.version>1.12.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>

@@ -1291,10 +1291,10 @@ public class VertxHttpRecorder {
 
                             Http1xServerConnection conn = new Http1xServerConnection(
                                     () -> {
-                                        ContextInternal internal = (ContextInternal) VertxContext
+                                        ContextInternal duplicated = (ContextInternal) VertxContext
                                                 .getOrCreateDuplicatedContext(rootContext);
-                                        setContextSafe(internal, true);
-                                        return internal;
+                                        setContextSafe(duplicated, true);
+                                        return duplicated;
                                     },
                                     null,
                                     new HttpServerOptions(),

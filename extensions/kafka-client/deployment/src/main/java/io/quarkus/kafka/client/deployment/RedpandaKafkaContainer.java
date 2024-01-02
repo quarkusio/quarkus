@@ -15,20 +15,22 @@ import io.quarkus.devservices.common.ConfigureUtil;
 
 /**
  * Container configuring and starting the Redpanda broker.
- * See https://vectorized.io/docs/quick-start-docker/
+ * See <a href=
+ * "https://docs.redpanda.com/current/get-started/quick-start/">https://docs.redpanda.com/current/get-started/quick-start/</a>
  */
-final class RedPandaKafkaContainer extends GenericContainer<RedPandaKafkaContainer> {
+final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContainer> {
 
     private final Integer fixedExposedPort;
     private final boolean useSharedNetwork;
-    private final RedPandaBuildTimeConfig redpandaConfig;
+    private final RedpandaBuildTimeConfig redpandaConfig;
 
     private String hostName = null;
 
     private static final String STARTER_SCRIPT = "/var/lib/redpanda/redpanda.sh";
+    private static final int PANDAPROXY_PORT = 8082;
 
-    RedPandaKafkaContainer(DockerImageName dockerImageName, int fixedExposedPort, String serviceName,
-            boolean useSharedNetwork, RedPandaBuildTimeConfig redpandaConfig) {
+    RedpandaKafkaContainer(DockerImageName dockerImageName, int fixedExposedPort, String serviceName,
+            boolean useSharedNetwork, RedpandaBuildTimeConfig redpandaConfig) {
         super(dockerImageName);
         this.fixedExposedPort = fixedExposedPort;
         this.useSharedNetwork = useSharedNetwork;
@@ -100,6 +102,12 @@ final class RedPandaKafkaContainer extends GenericContainer<RedPandaKafkaContain
 
         if (fixedExposedPort != null) {
             addFixedExposedPort(fixedExposedPort, DevServicesKafkaProcessor.KAFKA_PORT);
+        }
+
+        if (redpandaConfig.proxyPort.isPresent()) {
+            addFixedExposedPort(redpandaConfig.proxyPort.get(), PANDAPROXY_PORT);
+        } else {
+            addExposedPort(PANDAPROXY_PORT);
         }
     }
 

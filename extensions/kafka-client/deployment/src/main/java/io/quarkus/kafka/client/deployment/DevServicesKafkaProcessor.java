@@ -227,7 +227,7 @@ public class DevServicesKafkaProcessor {
         final Supplier<RunningDevService> defaultKafkaBrokerSupplier = () -> {
             switch (config.provider) {
                 case REDPANDA:
-                    RedPandaKafkaContainer redpanda = new RedPandaKafkaContainer(
+                    RedpandaKafkaContainer redpanda = new RedpandaKafkaContainer(
                             DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("vectorized/redpanda"),
                             config.fixedExposedPort,
                             launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
@@ -321,7 +321,7 @@ public class DevServicesKafkaProcessor {
 
         private final KafkaDevServicesBuildTimeConfig.Provider provider;
 
-        private final RedPandaBuildTimeConfig redpanda;
+        private final RedpandaBuildTimeConfig redpanda;
 
         public KafkaDevServiceCfg(KafkaDevServicesBuildTimeConfig config) {
             this.devServicesEnabled = config.enabled.orElse(true);

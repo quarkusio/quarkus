@@ -82,7 +82,7 @@ echo "quarkus.http.port=\${PORT:8080}" >> src/main/resources/application.propert
 git commit -am "Configure the HTTP Port."
 ----
 
-== Push the repository to Heroku
+== Deploy the repository and build on Heroku
 
 The first variant uses the Quarkus Maven build to create the _quarkus-app_ application structure containing the runnable "fast-jar" as well as all libraries needed
 inside Heroku's build infrastructure and then deploying that result, the other one uses a local build process to create an optimized container.
@@ -128,7 +128,7 @@ To access the REST endpoint via curl, run:
 [source,bash]
 ----
 APP_NAME=`heroku info | grep  "=== .*" |sed "s/=== //"`
-curl $APP_NAME.herokuapp.com/hello?name=World
+curl $APP_NAME.herokuapp.com/hello
 ----
 
 Of course, you can use the Heroku CLI to connect this repo to your GitHub account, too, but this is out of scope for this guide.
@@ -154,7 +154,7 @@ git commit -am "Add container-image-docker extension."
 ----
 
 The image we are going to build needs to be named accordingly to work with Heroku's registry and deployment.
-We get the generated name via `heroku info` and pass it on to the (local) build.
+We get the generated name via `heroku info` and pass it on to the (local) build:
 
 [source,bash]
 ----
@@ -178,7 +178,7 @@ The following pushes will be smaller.
 
 === Pushing through Docker
 
-With Docker installed, you can now push the image and release it:
+With Docker installed, these steps are simple:
 
 [source,bash]
 ----
@@ -188,7 +188,7 @@ heroku container:release web --app $APP_NAME
 
 === Pushing through Podman
 
-When you want to use Podman as a drop-in-replacement for Docker, you will have some problems because the Heroku CLI depends on Docker. But there are possible solutions for these problems.
+When you want to use Podman as a drop-in-replacement for Docker, you will have some problems because the Heroku CLI depends on Docker and doesn't support the OCI format. But there are possible solutions for these problems.
 
 [IMPORTANT]
 .Cannot find docker, please ensure docker is installed.
@@ -203,7 +203,7 @@ sudo ln -s $(which podman) /usr/local/bin/docker
 [IMPORTANT]
 .Error writing manifest: Error uploading manifest latest to registry.heroku.com/$APP_NAME/web: unsupported
 ====
-Instead of doing a normal podman push (OCI format) we must use a workaround in order to push and release our app through Podman and the Heroku CLI in the desired format (v2s2 - Docker Image Manifest Version 2, Schema 2).
+Instead of doing a normal podman push (OCI format) we must use a workaround in order to push and release our app through Podman and the Heroku CLI in the desired format (v2s2 - Docker Image Manifest Version 2, Schema 2). Also https://github.com/containers/skopeo[skopeo] is needed.
 [source,bash]
 ----
 CONTAINER_DIR="target/container-dir"
@@ -247,4 +247,4 @@ mvn clean package\
   -Dquarkus.native.container-build=true
 ----
 
-After that, push and release again (see above).
+After that, push and release again using Docker or Podman (see above) and check the logs.

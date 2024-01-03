@@ -155,6 +155,7 @@
                             <goal>generate-truststore</goal>
                         </goals>
                         <configuration>
+                            <skip>${skipTests}</skip>
                             <truststoreFormat>PKCS12</truststoreFormat>
                             <truststoreFile>${self-signed.trust-store}</truststoreFile>
                             <truststorePassword>${self-signed.trust-store-password}</truststorePassword>
@@ -172,6 +173,7 @@
                             <goal>generate-truststore</goal>
                         </goals>
                         <configuration>
+                            <skip>${skipTests}</skip>
                             <truststoreFormat>PKCS12</truststoreFormat>
                             <truststoreFile>${wrong-host.trust-store}</truststoreFile>
                             <truststorePassword>${wrong-host.trust-store-password}</truststorePassword>

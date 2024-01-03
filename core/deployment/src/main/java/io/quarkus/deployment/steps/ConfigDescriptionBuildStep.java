@@ -123,7 +123,8 @@ public class ConfigDescriptionBuildStep {
     private void processMappings(List<ConfigClassWithPrefix> mappings, List<ConfigDescriptionBuildItem> descriptionBuildItems,
             Properties javaDocProperties, ConfigPhase configPhase) {
         for (ConfigClassWithPrefix mapping : mappings) {
-            Map<String, Property> properties = ConfigMappings.getProperties(mapping);
+            Map<String, Property> properties = ConfigMappings.getProperties(mapping).get(mapping.getKlass())
+                    .get(mapping.getPrefix());
             for (Map.Entry<String, Property> entry : properties.entrySet()) {
                 String propertyName = entry.getKey();
                 Property property = entry.getValue();

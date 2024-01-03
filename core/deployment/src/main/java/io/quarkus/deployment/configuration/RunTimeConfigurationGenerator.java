@@ -683,111 +683,6 @@ public final class RunTimeConfigurationGenerator {
             return methodDescriptor;
         }
 
-        private static MethodDescriptor generateDefaultValueParse(final ClassCreator dvcc,
-                final ConfigPatternMap<Container> keyMap, final StringBuilder methodName) {
-
-            final Container matched = keyMap.getMatched();
-            final boolean hasDefault;
-            if (matched != null) {
-                final ClassDefinition.ClassMember member = matched.getClassMember();
-                // matched members *must* be item members
-                assert member instanceof ClassDefinition.ItemMember;
-                ClassDefinition.ItemMember itemMember = (ClassDefinition.ItemMember) member;
-                hasDefault = itemMember.getDefaultValue() != null;
-            } else {
-                hasDefault = false;
-            }
-
-            final Iterable<String> names = keyMap.childNames();
-            final Map<String, MethodDescriptor> children = new HashMap<>();
-            MethodDescriptor wildCard = null;
-            for (String name : names) {
-                final int length = methodName.length();
-                if (name.equals(ConfigPatternMap.WILD_CARD)) {
-                    methodName.append(":*");
-                    wildCard = generateDefaultValueParse(dvcc, keyMap.getChild(ConfigPatternMap.WILD_CARD), methodName);
-                } else {
-                    methodName.append(':').append(name);
-                    final MethodDescriptor value = generateDefaultValueParse(dvcc, keyMap.getChild(name), methodName);
-                    if (value != null) {
-                        children.put(name, value);
-                    }
-                }
-                methodName.setLength(length);
-            }
-            if (children.isEmpty() && wildCard == null && !hasDefault) {
-                // skip parse trees with no default values in them
-                return null;
-            }
-
-            try (MethodCreator body = dvcc.getMethodCreator(methodName.toString(), String.class, NameIterator.class)) {
-                body.setModifiers(Opcodes.ACC_PRIVATE);
-
-                final ResultHandle keyIter = body.getMethodParam(0);
-                // if we've matched the whole thing...
-                // if (! keyIter.hasNext()) {
-                try (BytecodeCreator matchedBody = body.ifNonZero(body.invokeVirtualMethod(NI_HAS_NEXT, keyIter))
-                        .falseBranch()) {
-                    if (matched != null) {
-                        final ClassDefinition.ClassMember member = matched.getClassMember();
-                        // matched members *must* be item members
-                        assert member instanceof ClassDefinition.ItemMember;
-                        ClassDefinition.ItemMember itemMember = (ClassDefinition.ItemMember) member;
-                        // match?
-                        final String defaultValue = itemMember.getDefaultValue();
-                        if (defaultValue != null) {
-                            // matched with default value
-                            // return "defaultValue";
-                            matchedBody.returnValue(matchedBody.load(defaultValue));
-                        } else {
-                            // matched but no default value
-                            // return null;
-                            matchedBody.returnValue(matchedBody.loadNull());
-                        }
-                    } else {
-                        // no match
-                        // return null;
-                        matchedBody.returnValue(matchedBody.loadNull());
-                    }
-                }
-                // }
-                // branches for each next-string
-                for (String name : children.keySet()) {
-                    // TODO: string switch
-                    // if (keyIter.nextSegmentEquals(name)) {
-                    try (BytecodeCreator nameMatched = body
-                            .ifNonZero(body.invokeVirtualMethod(NI_NEXT_EQUALS, keyIter, body.load(name))).trueBranch()) {
-                        // keyIter.next();
-                        nameMatched.invokeVirtualMethod(NI_NEXT, keyIter);
-                        // (generated recursive)
-                        // result = getDefault$..$name(keyIter);
-                        ResultHandle result = nameMatched.invokeVirtualMethod(children.get(name), body.getThis(), keyIter);
-                        // return result;
-                        nameMatched.returnValue(result);
-                    }
-                    // }
-                }
-                if (wildCard != null) {
-                    // consume and parse
-                    try (BytecodeCreator matchedBody = body.ifNonZero(body.invokeVirtualMethod(NI_HAS_NEXT, keyIter))
-                            .trueBranch()) {
-                        // keyIter.next();
-                        matchedBody.invokeVirtualMethod(NI_NEXT, keyIter);
-                        // (generated recursive)
-                        // result = getDefault$..$*(keyIter);
-                        final ResultHandle result = matchedBody.invokeVirtualMethod(wildCard, body.getThis(), keyIter);
-                        // return result;
-                        matchedBody.returnValue(result);
-                    }
-                }
-                // unknown
-                // return null;
-                body.returnValue(body.loadNull());
-
-                return body.getMethodDescriptor();
-            }
-        }
-
         private void generateEmptyParsers() {
             MethodCreator body = cc.getMethodCreator(RT_EMPTY_PARSER);
             body.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC);
@@ -1295,37 +1190,6 @@ public final class RunTimeConfigurationGenerator {
             return fd;
         }
 
-        private void reportUnknown(final MethodCreator mc) {
-            mc.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC);
-
-            ResultHandle unknownProperty = mc.getMethodParam(0);
-            ResultHandle unknown = mc.getMethodParam(1);
-
-            // Ignore all build property names. This is to ignore any properties mapped with @ConfigMapping, because
-            // these do not fall into the ignored ConfigPattern.
-            for (String buildTimeProperty : allBuildTimeValues.keySet()) {
-                ResultHandle equalsResult = mc.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(Object.class, "equals", boolean.class, Object.class), unknownProperty,
-                        mc.load(buildTimeProperty));
-                mc.ifTrue(equalsResult).trueBranch().returnValue(null);
-            }
-
-            // Ignore recorded runtime property names. This is to ignore any properties mapped with @ConfigMapping, because
-            // these do not fall into the ignored ConfigPattern.
-            for (String buildTimeProperty : runTimeDefaultValues.keySet()) {
-                ResultHandle equalsResult = mc.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(Object.class, "equals", boolean.class, Object.class), unknownProperty,
-                        mc.load(buildTimeProperty));
-                mc.ifTrue(equalsResult).trueBranch().returnValue(null);
-            }
-
-            // Add the property as unknown only if all checks fail
-            mc.invokeVirtualMethod(HS_ADD, unknown, unknownProperty);
-
-            mc.returnValue(null);
-            mc.close();
-        }
-
         static final MethodDescriptor KM_NEW = MethodDescriptor.ofConstructor(KeyMap.class);
         static final MethodDescriptor KM_FIND_OR_ADD = MethodDescriptor.ofMethod(KeyMap.class, "findOrAdd", KeyMap.class,
                 String.class);
@@ -1335,13 +1199,13 @@ public final class RunTimeConfigurationGenerator {
         private void generateUnknownFilter() {
             Set<String> mappedProperties = new HashSet<>();
             for (ConfigClassWithPrefix buildTimeMapping : buildTimeConfigResult.getBuildTimeMappings()) {
-                mappedProperties.addAll(ConfigMappings.getProperties(buildTimeMapping).keySet());
+                mappedProperties.addAll(ConfigMappings.getKeys(buildTimeMapping));
             }
             for (ConfigClassWithPrefix staticConfigMapping : buildTimeConfigResult.getBuildTimeRunTimeMappings()) {
-                mappedProperties.addAll(ConfigMappings.getProperties(staticConfigMapping).keySet());
+                mappedProperties.addAll(ConfigMappings.getKeys(staticConfigMapping));
             }
             for (ConfigClassWithPrefix runtimeConfigMapping : buildTimeConfigResult.getRunTimeMappings()) {
-                mappedProperties.addAll(ConfigMappings.getProperties(runtimeConfigMapping).keySet());
+                mappedProperties.addAll(ConfigMappings.getKeys(runtimeConfigMapping));
             }
 
             // Add a method that generates a KeyMap that can check if a property is mapped by a @ConfigMapping

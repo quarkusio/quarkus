@@ -1,5 +1,0 @@
-quarkus:
-  prop:
-    yml: 'yml'
-  package:
-    type: legacy

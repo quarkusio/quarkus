@@ -6,8 +6,8 @@ import static java.nio.file.Files.newBufferedWriter;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -48,7 +48,8 @@ public abstract class QuarkusShowEffectiveConfig extends QuarkusBuildTask {
             EffectiveConfig effective = extension()
                     .buildEffectiveConfiguration(extension().getApplicationModel().getAppArtifact());
             Map<String, String> configMap = effective.configMap();
-            List<URL> applicationPropsSources = effective.applicationPropsSources();
+            List<String> sourceNames = new ArrayList<>();
+            effective.config().getConfigSources().forEach(configSource -> sourceNames.add(configSource.getName()));
 
             String config = configMap.entrySet().stream()
                     .filter(e -> e.getKey().startsWith("quarkus."))
@@ -74,8 +75,7 @@ public abstract class QuarkusShowEffectiveConfig extends QuarkusBuildTask {
                     fastJar,
                     runnerJar(),
                     nativeRunner(),
-                    applicationPropsSources.stream().map(Object::toString)
-                            .collect(Collectors.joining("\n        ", "\n        ", "\n")));
+                    sourceNames.stream().collect(Collectors.joining("\n        ", "\n        ", "\n")));
 
             if (getSaveConfigProperties().get()) {
                 Properties props = new Properties();

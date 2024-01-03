@@ -19,6 +19,7 @@ public class TenantNonce {
     @GET
     @Authenticated
     public String getTenant() {
+        session.logout().await().indefinitely();
         return session.getTenantId() + (routingContext.get("reauthenticated") != null ? ":reauthenticated" : "");
     }
 }

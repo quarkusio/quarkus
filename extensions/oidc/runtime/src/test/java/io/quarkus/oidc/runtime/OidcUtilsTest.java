@@ -12,8 +12,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.security.Permission;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
@@ -30,9 +33,61 @@ import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret.Method
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
+import io.vertx.core.http.Cookie;
+import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.core.json.JsonObject;
 
 public class OidcUtilsTest {
+
+    @Test
+    public void testGetSingleSessionCookie() throws Exception {
+
+        OidcTenantConfig oidcConfig = new OidcTenantConfig();
+        oidcConfig.setTenantId("test");
+        Map<String, Object> context = new HashMap<>();
+        String sessionCookieValue = OidcUtils.getSessionCookie(context,
+                Map.of("q_session_test", new CookieImpl("q_session_test", "tokens")), oidcConfig);
+        assertEquals("tokens", sessionCookieValue);
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        List<String> names = (List) context.get(OidcUtils.SESSION_COOKIE_NAME);
+        assertEquals(1, names.size());
+        assertEquals("q_session_test", names.get(0));
+    }
+
+    @Test
+    public void testGetMultipleSessionCookies() throws Exception {
+
+        OidcTenantConfig oidcConfig = new OidcTenantConfig();
+        oidcConfig.setTenantId("test");
+
+        char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toCharArray();
+
+        StringBuilder expectedCookieValue = new StringBuilder();
+        Map<String, Cookie> cookies = new HashMap<>();
+        for (int i = 0; i < alphabet.length; i++) {
+            char[] data = new char[OidcUtils.MAX_COOKIE_VALUE_LENGTH];
+            Arrays.fill(data, alphabet[i]);
+            String cookieName = "q_session_test_chunk_" + (i + 1);
+            String nextChunk = new String(data);
+            expectedCookieValue.append(nextChunk);
+            cookies.put(cookieName, new CookieImpl(cookieName, nextChunk));
+        }
+        String lastChunk = String.valueOf("tokens");
+        expectedCookieValue.append(lastChunk);
+        String lastCookieName = "q_session_test_chunk_" + (alphabet.length + 1);
+        cookies.put(lastCookieName, new CookieImpl(lastCookieName, lastChunk));
+
+        Map<String, Object> context = new HashMap<>();
+        String sessionCookieValue = OidcUtils.getSessionCookie(context, cookies, oidcConfig);
+        assertEquals(expectedCookieValue.toString(), sessionCookieValue);
+
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        List<String> names = (List) context.get(OidcUtils.SESSION_COOKIE_NAME);
+        assertEquals(alphabet.length + 1, names.size());
+        for (int i = 0; i < names.size(); i++) {
+            assertEquals("q_session_test_chunk_" + (i + 1), names.get(i));
+        }
+    }
 
     @Test
     public void testAcceptGitHubProperties() throws Exception {

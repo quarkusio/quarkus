@@ -1,8 +1,6 @@
 package io.quarkus.resteasy.reactive.links.deployment;
 
-public abstract class AbstractEntity {
-
-    private int id;
+public abstract class AbstractEntity extends AbstractId {
 
     private String slug;
 
@@ -10,16 +8,8 @@ public abstract class AbstractEntity {
     }
 
     protected AbstractEntity(int id, String slug) {
-        this.id = id;
+        super(id);
         this.slug = slug;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public String getSlug() {

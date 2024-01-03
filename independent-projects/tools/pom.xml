@@ -43,7 +43,7 @@
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>3.11.0</compiler-plugin.version>
-        <kotlin.version>1.6.0</kotlin.version>
+        <kotlin.version>1.9.22</kotlin.version>
         <scala.version>2.13.12</scala.version>
         <scala-plugin.version>4.4.0</scala-plugin.version>
 

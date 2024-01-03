@@ -314,7 +314,8 @@ For more options on message serialization, see xref:kafka.adoc#kafka-serializati
 
 We strongly suggest adopting a contract-first approach using a schema registry.
 To learn more about how to use Apache Kafka with the schema registry and Avro, follow the
-xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro] guide.
+xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro] guide for Avro
+or you can follow the xref:kafka-schema-registry-json-schema.adoc[Using Apache Kafka with Schema Registry and JSON Schema] guide..
 ====
 
 == The HTML page
@@ -407,7 +408,7 @@ version: '3.5'
 services:
 
   zookeeper:
-    image: quay.io/strimzi/kafka:0.23.0-kafka-2.8.0
+    image: quay.io/strimzi/kafka:0.39.0-kafka-3.6.1
     command: [
       "sh", "-c",
       "bin/zookeeper-server-start.sh config/zookeeper.properties"
@@ -420,7 +421,7 @@ services:
       - kafka-quickstart-network
 
   kafka:
-    image: quay.io/strimzi/kafka:0.23.0-kafka-2.8.0
+    image: quay.io/strimzi/kafka:0.39.0-kafka-3.6.1
     command: [
       "sh", "-c",
       "bin/kafka-server-start.sh config/server.properties --override listeners=$${KAFKA_LISTENERS} --override advertised.listeners=$${KAFKA_ADVERTISED_LISTENERS} --override zookeeper.connect=$${KAFKA_ZOOKEEPER_CONNECT}"

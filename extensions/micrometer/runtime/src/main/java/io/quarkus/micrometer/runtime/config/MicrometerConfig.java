@@ -105,6 +105,8 @@ public final class MicrometerConfig {
 
         public GrpcClientConfigGroup grpcClient;
 
+        public ReactiveMessagingConfigGroup messaging;
+
         public MPMetricsConfigGroup mpMetrics;
 
         /**

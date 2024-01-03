@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
-public class HyphenateEnumConverterTest {
+class HyphenateEnumConverterTest {
     enum MyEnum {
         DISCARD,
         READ_UNCOMMITTED,
@@ -20,53 +20,71 @@ public class HyphenateEnumConverterTest {
         READ__UNCOMMITTED
     }
 
-    HyphenateEnumConverter hyphenateEnumConverter;
-
     @Test
-    public void convertMyEnum() {
-        hyphenateEnumConverter = new HyphenateEnumConverter(MyEnum.class);
-        MyEnum myEnum = (MyEnum) hyphenateEnumConverter.convert("DISCARD");
+    void convertMyEnum() {
+        HyphenateEnumConverter<MyEnum> converter = new HyphenateEnumConverter<>(MyEnum.class);
+        MyEnum myEnum = converter.convert("DISCARD");
         assertEquals(myEnum, MyEnum.DISCARD);
-        myEnum = (MyEnum) hyphenateEnumConverter.convert("discard");
+        myEnum = converter.convert("discard");
         assertEquals(myEnum, MyEnum.DISCARD);
-        myEnum = (MyEnum) hyphenateEnumConverter.convert("READ_UNCOMMITTED");
+        myEnum = converter.convert("READ_UNCOMMITTED");
         assertEquals(myEnum, MyEnum.READ_UNCOMMITTED);
-        myEnum = (MyEnum) hyphenateEnumConverter.convert("read-uncommitted");
+        myEnum = converter.convert("read-uncommitted");
         assertEquals(myEnum, MyEnum.READ_UNCOMMITTED);
-        myEnum = (MyEnum) hyphenateEnumConverter.convert("SIGUSR1");
+        myEnum = converter.convert("SIGUSR1");
         assertEquals(myEnum, MyEnum.SIGUSR1);
-        myEnum = (MyEnum) hyphenateEnumConverter.convert("sigusr1");
+        myEnum = converter.convert("sigusr1");
         assertEquals(myEnum, MyEnum.SIGUSR1);
-        myEnum = (MyEnum) hyphenateEnumConverter.convert("TrendBreaker");
+        myEnum = converter.convert("TrendBreaker");
         assertEquals(myEnum, MyEnum.TrendBreaker);
-        myEnum = (MyEnum) hyphenateEnumConverter.convert("trend-breaker");
+        myEnum = converter.convert("trend-breaker");
         assertEquals(myEnum, MyEnum.TrendBreaker);
-        myEnum = (MyEnum) hyphenateEnumConverter.convert("MAKING_LifeDifficult");
+        myEnum = converter.convert("MAKING_LifeDifficult");
         assertEquals(myEnum, MyEnum.MAKING_LifeDifficult);
-        myEnum = (MyEnum) hyphenateEnumConverter.convert("making-life-difficult");
+        myEnum = converter.convert("making-life-difficult");
         assertEquals(myEnum, MyEnum.MAKING_LifeDifficult);
-        myEnum = (MyEnum) hyphenateEnumConverter.convert("YeOldeJBoss");
+        myEnum = converter.convert("YeOldeJBoss");
         assertEquals(myEnum, MyEnum.YeOldeJBoss);
-        myEnum = (MyEnum) hyphenateEnumConverter.convert("ye-olde-jboss");
+        myEnum = converter.convert("ye-olde-jboss");
         assertEquals(myEnum, MyEnum.YeOldeJBoss);
     }
 
     @Test
-    public void convertMyOtherEnum() {
-        hyphenateEnumConverter = new HyphenateEnumConverter(MyOtherEnum.class);
-        MyOtherEnum myOtherEnum = (MyOtherEnum) hyphenateEnumConverter.convert("makingLifeDifficult");
+    void convertMyOtherEnum() {
+        HyphenateEnumConverter<MyOtherEnum> converter = new HyphenateEnumConverter<>(MyOtherEnum.class);
+        MyOtherEnum myOtherEnum = converter.convert("makingLifeDifficult");
         assertEquals(myOtherEnum, MyOtherEnum.makingLifeDifficult);
-        myOtherEnum = (MyOtherEnum) hyphenateEnumConverter.convert("making-life-difficult");
+        myOtherEnum = converter.convert("making-life-difficult");
         assertEquals(myOtherEnum, MyOtherEnum.makingLifeDifficult);
-        myOtherEnum = (MyOtherEnum) hyphenateEnumConverter.convert("READ__UNCOMMITTED");
+        myOtherEnum = converter.convert("READ__UNCOMMITTED");
         assertEquals(myOtherEnum, MyOtherEnum.READ__UNCOMMITTED);
-        myOtherEnum = (MyOtherEnum) hyphenateEnumConverter.convert("read-uncommitted");
+        myOtherEnum = converter.convert("read-uncommitted");
         assertEquals(myOtherEnum, MyOtherEnum.READ__UNCOMMITTED);
     }
 
     @Test
-    public void testIllegalEnumConfigUtilConversion() {
-        hyphenateEnumConverter = new HyphenateEnumConverter(MyEnum.class);
+    void illegalEnumConfigUtilConversion() {
+        HyphenateEnumConverter<MyEnum> hyphenateEnumConverter = new HyphenateEnumConverter<>(MyEnum.class);
         assertThrows(IllegalArgumentException.class, () -> hyphenateEnumConverter.convert("READUNCOMMITTED"));
+    }
+
+    enum HTTPConduit {
+        QuarkusCXFDefault,
+        CXFDefault,
+        HttpClientHTTPConduitFactory,
+        URLConnectionHTTPConduitFactory
+    }
+
+    @Test
+    void convertHttpConduit() {
+        HyphenateEnumConverter<HTTPConduit> converter = new HyphenateEnumConverter<>(HTTPConduit.class);
+        assertEquals(HTTPConduit.QuarkusCXFDefault, converter.convert("QuarkusCXFDefault"));
+        assertEquals(HTTPConduit.QuarkusCXFDefault, converter.convert("quarkus-cxf-default"));
+        assertEquals(HTTPConduit.CXFDefault, converter.convert("CXFDefault"));
+        assertEquals(HTTPConduit.CXFDefault, converter.convert("cxf-default"));
+        assertEquals(HTTPConduit.HttpClientHTTPConduitFactory, converter.convert("HttpClientHTTPConduitFactory"));
+        assertEquals(HTTPConduit.HttpClientHTTPConduitFactory, converter.convert("http-client-http-conduit-factory"));
+        assertEquals(HTTPConduit.URLConnectionHTTPConduitFactory, converter.convert("URLConnectionHTTPConduitFactory"));
+        assertEquals(HTTPConduit.URLConnectionHTTPConduitFactory, converter.convert("url-connection-http-conduit-factory"));
     }
 }

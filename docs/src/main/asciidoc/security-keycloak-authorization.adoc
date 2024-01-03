@@ -233,7 +233,7 @@ To run the application in dev mode, use:
 
 include::{includes}/devtools/dev.adoc[]
 
-xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
+xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will launch a Keycloak container and import the link:{quickstarts-tree-url}/security-keycloak-authorization-quickstart/config/quarkus-realm.json[realm configuration file].
 
 Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev-ui[/q/dev-ui] and click on a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
 
@@ -245,6 +245,24 @@ You will be asked to log in into a `Single Page Application` provided by `OpenID
  * Logout and login as `admin` (password: `admin`) who has both `Admin Permission` to access the `/api/admin` resource and `User Permission` to access the `/api/users/me` resource
  ** accessing `/api/admin` will return `200`
  ** accessing `/api/users/me` will return `200`
+
+If you have started xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] without importing a realm file such as link:{quickstarts-tree-url}/security-keycloak-authorization-quickstart/config/quarkus-realm.json[quarkus-realm.json] which is already configured to support Keycloak Authorization then a default `quarkus` realm without Keycloak authorization policies will be created. In this case you must select the `Keycloak Admin` link in the `OpenId Connect` Dev UI card and configure link:https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization] in the default `quarkus` realm.
+
+The `Keycloak Admin` link is easy to find in Dev UI:
+
+image::dev-ui-oidc-keycloak-card.png[alt=Dev UI OpenID Connect Card,role="center"]
+
+When logging in the Keycloak admin console, the username is `admin` and the password is `admin`.
+
+If your application configures Keycloak authorization with link:https://www.keycloak.org/docs/latest/authorization_services/index.html#_policy_js[JavaScript policies] that are deployed to Keycloak in a jar file then you can configure `Dev Services for Keycloak` to copy this jar to the Keycloak container, for example:
+
+[source,properties]
+----
+quarkus.keycloak.devservices.resource-aliases.policies=/policies.jar <1>
+quarkus.keycloak.devservices.resource-mappings.policies=/opt/keycloak/providers/policies.jar <2>
+----
+<1> `policies` alias is created for the `/policies.jar` classpath resource. Policy jars can also be located in the file system.
+<2> The policies jar is mapped to the `/opt/keycloak/providers/policies.jar` container location.
 
 == Running the Application in JVM mode
 
@@ -278,6 +296,7 @@ After getting a cup of coffee, you'll be able to run this binary directly:
 ./target/security-keycloak-authorization-quickstart-runner
 ----
 
+[[testing]]
 == Testing the Application
 
 See <<keycloak-dev-mode,Running the Application in Dev mode>> section above about testing your application in a dev mode.

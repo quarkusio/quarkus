@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: Deploy your Quarkus applications on Heroku.
-:topics: devops,heroku,cloud,deployment
+:topics: devops,heroku,cloud,deployment,docker,podman
 
 In this guide you will learn how to deploy a Quarkus based web application as a web-dyno to Heroku.
 
@@ -16,8 +16,10 @@ This guide covers:
 * Update Quarkus HTTP Port
 * Install the Heroku CLI
 * Deploy the application to Heroku
-* Deploy the application as Docker image to Heroku
-* Deploy the native application as Docker image to Heroku
+* Deploy the application as container image to Heroku
+  * Using Docker
+  * Using Podman
+* Deploy the native application as container image to Heroku
 
 == Prerequisites
 
@@ -41,8 +43,6 @@ Heroku can be used in different ways to run a Quarkus application:
 
 All three approaches need to be aware of the port that Heroku assigns to it to handle traffic.
 Luckily, there's a dynamic configuration property for it.
-
-The guide assumes that you have the https://devcenter.heroku.com/articles/heroku-cli[Heroku CLI] installed.
 
 == Common project setup
 
@@ -87,7 +87,7 @@ git commit -am "Configure the HTTP Port."
 The first variant uses the Quarkus Maven build to create the _quarkus-app_ application structure containing the runnable "fast-jar" as well as all libraries needed
 inside Heroku's build infrastructure and then deploying that result, the other one uses a local build process to create an optimized container.
 
-Two additional files are needed in your application's root directory:
+For the first variant, two additional files are needed in your application's root directory:
 
 * `system.properties` to configure the Java version
 * `Procfile` to configure how Heroku starts your application
@@ -166,13 +166,58 @@ mvn clean package\
   -Dquarkus.container-image.tag=latest
 ----
 
-With Docker installed, you can now push the image and release it:
+== Push and release the image
+
+You can now push the image and release it.
+
+[NOTE]
+====
+The initial push is rather big, as all layers of the image need to be transferred.
+The following pushes will be smaller.
+====
+
+=== Pushing through Docker
+
+With Docker installed, these steps are simple:
 
 [source,bash]
 ----
 docker push registry.heroku.com/$APP_NAME/web
 heroku container:release web --app $APP_NAME
 ----
+
+=== Pushing through Podman
+
+When you want to use Podman as a drop-in-replacement for Docker, you will have some problems because the Heroku CLI depends on Docker and doesn't support the OCI format. But there are possible solutions for these problems.
+
+[IMPORTANT]
+.Cannot find docker, please ensure docker is installed.
+====
+The problem is obviously that the heroku-cli can’t find docker. This is quite easy to resolve, because the podman cli is docker-compatible. We just need to create a symlink from podman to docker:
+[source,bash]
+----
+sudo ln -s $(which podman) /usr/local/bin/docker
+----
+====
+
+[IMPORTANT]
+.Error writing manifest: Error uploading manifest latest to registry.heroku.com/$APP_NAME/web: unsupported
+====
+Instead of doing a normal podman push (OCI format) we must use a workaround in order to push and release our app through Podman and the Heroku CLI in the desired format (v2s2 - Docker Image Manifest Version 2, Schema 2). Also https://github.com/containers/skopeo[skopeo] is needed.
+[source,bash]
+----
+CONTAINER_DIR="target/container-dir"
+mkdir $CONTAINER_DIR
+podman push --format=v2s2 "registry.heroku.com/$APP_NAME/web" dir:$CONTAINER_DIR
+skopeo --debug copy dir:$CONTAINER_DIR "docker://registry.heroku.com/$APP_NAME/web:latest"
+heroku container:release web --app "$APP_NAME"
+rm -rf $CONTAINER_DIR
+----
+====
+
+* https://urhengulas.github.io/blog/podman_heroku.html[Source of solutions and workarounds]
+
+== Check the logs
 
 You can and should check the logs to see if your application is now indeed running from the container:
 
@@ -181,8 +226,7 @@ You can and should check the logs to see if your application is now indeed runni
 heroku logs --app $APP_NAME --tail
 ----
 
-The initial push is rather big, as all layers of the image need to be transferred.
-The following pushes will be smaller.
+== Deploy as native application inside a container
 
 The biggest advantage we take when deploying our app as a container is to deploy a container with the natively compiled application.
 Why? Because Heroku will stop or sleep the application when there's no incoming traffic.
@@ -203,10 +247,4 @@ mvn clean package\
   -Dquarkus.native.container-build=true
 ----
 
-After that, push and release again:
-
-[source,bash]
-----
-docker push registry.heroku.com/$APP_NAME/web
-heroku container:release web --app $APP_NAME
-----
+After that, push and release again using Docker or Podman (see above) and check the logs.

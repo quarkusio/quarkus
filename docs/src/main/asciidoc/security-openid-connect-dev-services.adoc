@@ -225,7 +225,7 @@ For more information, see xref:security-oidc-bearer-token-authentication.adoc#in
 [[keycloak-initialization]]
 === Keycloak Initialization
 
-The `quay.io/keycloak/keycloak:23.0.1` image which contains a Keycloak distribution powered by Quarkus is used to start a container by default.
+The `quay.io/keycloak/keycloak:23.0.3` image which contains a Keycloak distribution powered by Quarkus is used to start a container by default.
 `quarkus.keycloak.devservices.image-name` can be used to change the Keycloak image name. For example, set it to `quay.io/keycloak/keycloak:19.0.3-legacy` to use a Keycloak distribution powered by WildFly.
 Note that only a Quarkus based Keycloak distribution is available starting from Keycloak `20.0.0`.
 
@@ -271,6 +271,16 @@ Also, the Keycloak page offers an option to `Sign In To Keycloak To Configure Re
 image::dev-ui-keycloak-admin.png[alt=Dev UI OpenID Connect Keycloak Page - Keycloak Admin,role="center"]
 
 Sign in to Keycloak as `admin:admin` in order to further customize the realm properties, create or import a new realm, export the realm.
+
+You can also copy classpath and file system resources to the container. For example, if your application configures Keycloak authorization with link:https://www.keycloak.org/docs/latest/authorization_services/index.html#_policy_js[JavaScript policies] that are deployed to Keycloak in a jar file then you can configure `Dev Services for Keycloak` to copy this jar to the Keycloak container as follows:
+
+[source,properties]
+----
+quarkus.keycloak.devservices.resource-aliases.policies=/policies.jar <1>
+quarkus.keycloak.devservices.resource-mappings.policies=/opt/keycloak/providers/policies.jar <2>
+----
+<1> `policies` alias is created for the classpath `/policies.jar` resource. Policy jars can also be located in the file system.
+<2> The policies jar is mapped to the `/opt/keycloak/providers/policies.jar` container location.
 
 == Disable Dev Services for Keycloak
 

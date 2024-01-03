@@ -130,6 +130,7 @@ public interface Capability {
 
     String APICURIO_REGISTRY = QUARKUS_PREFIX + ".apicurio.registry";
     String APICURIO_REGISTRY_AVRO = APICURIO_REGISTRY + ".avro";
+    String APICURIO_REGISTRY_JSON_SCHEMA = APICURIO_REGISTRY + ".json";
 
     String CONFLUENT_REGISTRY = QUARKUS_PREFIX + ".confluent.registry";
     String CONFLUENT_REGISTRY_AVRO = CONFLUENT_REGISTRY + ".avro";

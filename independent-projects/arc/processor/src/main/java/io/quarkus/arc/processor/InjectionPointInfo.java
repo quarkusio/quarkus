@@ -292,11 +292,11 @@ public class InjectionPointInfo {
                 }
                 String method = target.asMethod().name();
                 if (method.equals(Methods.INIT)) {
-                    method = "";
+                    method = " constructor";
                 } else {
-                    method = "#" + method;
+                    method = "#" + method + "()";
                 }
-                return target.asMethod().declaringClass().name() + method + "()" + ":" + param;
+                return "parameter '" + param + "' of " + target.asMethod().declaringClass().name() + method;
             default:
                 return target.toString();
         }

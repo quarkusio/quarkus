@@ -380,6 +380,16 @@ public class CodeFlowTest {
 
     @Test
     public void testCodeFlowNonce() throws Exception {
+        doTestCodeFlowNonce(false);
+        try {
+            doTestCodeFlowNonce(true);
+            fail("Wrong redirect exception is expected");
+        } catch (Exception ex) {
+            assertEquals("Unexpected 401", ex.getMessage());
+        }
+    }
+
+    private void doTestCodeFlowNonce(boolean wrongRedirect) throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(false);
 
@@ -407,8 +417,23 @@ public class CodeFlowTest {
             verifyNonce(stateCookie, keycloakUrl);
 
             URI endpointLocationUri = URI.create(endpointLocation);
+            if (wrongRedirect) {
+                endpointLocationUri = URI.create(
+                        "http://localhost:8081"
+                                + endpointLocationUri.getRawPath()
+                                + "/callback"
+                                + "?"
+                                + endpointLocationUri.getRawQuery());
+            }
 
             webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
+
+            if (wrongRedirect) {
+                assertNull(getStateCookie(webClient, "tenant-nonce"));
+                assertEquals(401, webResponse.getStatusCode());
+                throw new RuntimeException("Unexpected 401");
+            }
+
             assertEquals(302, webResponse.getStatusCode());
             assertNull(getStateCookie(webClient, "tenant-nonce"));
 

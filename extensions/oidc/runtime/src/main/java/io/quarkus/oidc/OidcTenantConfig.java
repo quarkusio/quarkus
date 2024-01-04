@@ -1812,6 +1812,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
         MASTODON,
         MICROSOFT,
         SPOTIFY,
+        STRAVA,
         TWITCH,
         TWITTER,
         // New name for Twitter

@@ -1258,8 +1258,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     private Uni<AuthorizationCodeTokens> getCodeFlowTokensUni(RoutingContext context, TenantConfigContext configContext,
             String code, String codeVerifier) {
 
-        // 'redirect_uri': typically it must match the 'redirect_uri' query parameter which was used during the code request.
+        // 'redirect_uri': it must match the 'redirect_uri' query parameter which was used during the code request.
         String redirectPath = getRedirectPath(configContext.oidcConfig, context);
+        if (configContext.oidcConfig.authentication.redirectPath.isPresent()
+                && !configContext.oidcConfig.authentication.redirectPath.get().equals(context.request().path())) {
+            LOG.warnf("Token redirect path %s does not match the current request path", context.request().path());
+            return Uni.createFrom().failure(new AuthenticationFailedException("Wrong redirect path"));
+        }
         String redirectUriParam = buildUri(context, isForceHttps(configContext.oidcConfig), redirectPath);
         LOG.debugf("Token request redirect_uri parameter: %s", redirectUriParam);
 

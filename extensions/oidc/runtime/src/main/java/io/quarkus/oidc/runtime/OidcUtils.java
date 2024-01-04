@@ -553,6 +553,9 @@ public final class OidcUtils {
         if (tenant.authentication.responseMode.isEmpty()) {
             tenant.authentication.responseMode = provider.authentication.responseMode;
         }
+        if (tenant.authentication.redirectPath.isEmpty()) {
+            tenant.authentication.redirectPath = provider.authentication.redirectPath;
+        }
 
         // credentials
         if (tenant.credentials.clientSecret.method.isEmpty()) {

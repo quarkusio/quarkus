@@ -8,9 +8,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: concept
 :categories: security,web
-:keywords: oidc github twitter google facebook mastodon microsoft apple spotify twitch linkedin
+:keywords: oidc github twitter google facebook mastodon microsoft apple spotify twitch linkedin strava
 :toclevels: 3
-:topics: security,oidc,github,twitter,google,facebook,mastodon,microsoft,apple,spotify,twitch
+:topics: security,oidc,github,twitter,google,facebook,mastodon,microsoft,apple,spotify,twitch,linkedin,strava
 :extensions: io.quarkus:quarkus-oidc
 
 This document explains how to configure well-known social OIDC and OAuth2 providers.
@@ -525,7 +525,27 @@ quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.client-secret=<Client Secret>
 ----
 
+[[strava]]
+=== Strava
 
+Create a https://www.strava.com/settings/api[Strava application]:
+
+image::oidc-strava-1.png[role="thumb"]
+
+For example, set `Category` to `SocialMotivation`, and set `ApplicationCallbackDomain` to either `localhost` or the domain name provided by Ngrok, see the <<redirect_url>> for more information.
+
+You can now configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=strava
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.client-secret=<Client Secret>
+# default value is '/strava'
+quarkus.oidc.authentication.redirect-path=/fitness/welcome <1>
+----
+<1> Strava does not enforce that the redirect (callback) URI which is provided as an authorization code flow parameter is equal to the URI registered in the Strava application because it only requires configuring `ApplicationCallbackDomain`. For example, if `ApplicationCallbackDomain` is set to `www.my-strava-example.com`, Strava will accept redirect URIs such as `www.my-strava-example.com/a`, `www.my-strava-example.com/path/a`, which is not recommended by OAuth2 best security practices, see link:https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics#name-insufficient-redirect-uri-v[Insufficent redirect_uri validation] for more information.
+Therefore you must configure a redirect path when working with the Strava provider and Quarkus will enforce that the current request path matches the configured `quarkus.oidc.authentication.redirect-path` value before completing the authotization code flow. See the <<exact_redirect_uri_match>> for more information.
 
 [[provider-scope]]
 == Provider scopes
@@ -685,9 +705,33 @@ Follow the same approach if the endpoint must access other Google services.
 
 The pattern of authenticating with a given provider, where the endpoint uses either an ID token or UserInfo (especially if an OAuth2-only provider such as `GitHub` is used) to get some information about the currently authenticated user and using an access token to access some downstream services (provider or application specific ones) on behalf of this user can be universally applied, irrespectively of which provider is used to secure the application.
 
-== HTTPS Redirect URL
+[[exact_redirect_uri_match]]
+== Exact redirect URI match
 
-Some providers will only accept HTTPS-based redirect URLs. Tools such as https://ngrok.com/[ngrok] https://linuxhint.com/set-up-use-ngrok/[can be set up] to help testing such providers with Quarkus endpoints running on localhost in dev mode.
+Most OIDC and OAuth2 providers with the exception of <<strava>> will enforce that the authorization code flow can be completed only if the redirect URI matches precisely the redirect URI configured in a given provider's dashboard.
+
+From the practical point of view, your Quarkus endpoint will most likely need to have the `quarkus.oidc.authentication.redirect-path` relative path property set to an initial entry path for all the authenticated users, for example, `quarkus.oidc.authentication.redirect-path=/authenticated`, which means that newly authenticated users will land on the `/authenticated` page, irrespectively of how many secured entry points your application has and which secured resource they initially accessed.
+
+It is a typical flow for many OIDC `web-app` applications. Once the user lands on the initial secured page, your application can return an HTML page which uses links to guide users to other parts of the application or users can be immediately redirected to other application resources with the help of JAX-RS API.
+
+If necessary, you can configure Quarkus to restore the original request URI after the authentication has been completed. For example:
+
+[source,properties]
+----
+quarkus.oidc.provider=strava <1>
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Secret>
+quarkus.oidc.authentication.restore-path-after-redirect=true <2>
+----
+<1> `strava` provider configuration is the only supported configuration which enforces the `quarkus.oidc.authentication.redirect-path` property with the `/strava` path which you can override with another path such as `/fitness`.
+<2> If the users access the `/run` endpoint before the authentication, then, once they have authenticated and been redirected to the configured redirect path such as `/strava`, they will land on the original request `/run` path.
+
+You do not have to set `quarkus.oidc.authentication.redirect-path` immediately because Quarkus assumes the current request URL is an authorization code flow redirect URL if no `quarkus.oidc.authentication.redirect-path` is configured. For example, to test that a <<google>> authentication is working, you can have a Quarkus endpoint listening on `/google` and update the Google dashboard that `http://localhost:8080/google` redirect URI is supported. Setting `quarkus.oidc.authentication.redirect-path` property will be required once your secured application URL space grows.
+
+[[redirect_url]]
+== HTTPS Redirect URI
+
+Some providers will only accept HTTPS-based redirect URIs. Tools such as https://ngrok.com/[ngrok] https://linuxhint.com/set-up-use-ngrok/[can be set up] to help testing such providers with Quarkus endpoints running on localhost in dev mode.
 
 == Rate Limiting
 

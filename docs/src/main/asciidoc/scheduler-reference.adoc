@@ -308,6 +308,8 @@ The main idea is to keep the logic to skip the execution outside the scheduled b
 
 TIP: A CDI event of type `io.quarkus.scheduler.SkippedExecution` is fired when an execution of a scheduled method is skipped.
 
+TIP: To skip the scheduled executions while the application is starting up/shutting down, you can make use of the `io.quarkus.scheduler.Scheduled.ApplicationNotRunning` skip predicate.
+
 [[non-blocking-methods]]
 === Non-blocking Methods
 

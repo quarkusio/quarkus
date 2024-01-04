@@ -48,7 +48,7 @@ To examine the completed example, download the {quickstarts-archive-url}[archive
 git clone {quickstarts-clone-url}
 ----
 
-You can find the solution in the `security-jpa-quickstart` link:{quickstarts-tree-url}/security-jpa-quickstart[directory] in the upstream {ProductName} community.
+You can find the solution in the `security-jpa-quickstart` link:{quickstarts-tree-url}/security-jpa-quickstart[directory].
 ====
 
 :sectnums:
@@ -74,19 +74,10 @@ You can either create a new Maven project with the Security Jakarta Persistence 
 
 * To create a new Maven project with the Jakarta Persistence extension, complete one of the following steps:
 ** To create the Maven project with Hibernate ORM, use the following command:
-+
-====
+
 :create-app-artifact-id: security-jpa-quickstart
 :create-app-extensions: security-jpa,jdbc-postgresql,resteasy-reactive,hibernate-orm-panache
 include::{includes}/devtools/create-app.adoc[]
-====
-** To create the Maven project with Hibernate Reactive, use the following command:
-+
-====
-:create-app-artifact-id: security-jpa-reactive-quickstart
-:create-app-extensions: security-jpa-reactive,reactive-pg-client,resteasy-reactive,hibernate-reactive-panache
-include::{includes}/devtools/create-app.adoc[]
-====
 
 * To add the Jakarta Persistence extension to an existing Maven project, complete one of the following steps:
 
@@ -174,7 +165,7 @@ public class PublicResource {
 }
 ----
 ====
-** Implement the `/api/public` endpoint to allow all users to access the application.
+** Implement an /api/admin endpoint that can only be accessed by users who have the admin role.
 The source code for the `/api/admin` endpoint is similar, but instead, you use a `@RolesAllowed` annotation to ensure that only users granted the `admin` role can access the endpoint.
 Add a Jakarta REST resource with the following `@RolesAllowed` annotation:
 +
@@ -228,8 +219,9 @@ public class UserResource {
 }
 ----
 ====
+
 [[define-the-user-entity]]
-=== Define the user entity
+== Define the user entity
 
 * You can now describe how you want security information to be stored in the model by adding annotations to the `user` entity, as outlined in the following code snippet:
 
@@ -285,14 +277,22 @@ You can configure it to use plain text or custom passwords.
 <4> Indicates the comma-separated list of roles added to the target principal representation attributes.
 <5> Allows us to add users while hashing passwords with the proper bcrypt hash.
 
-NOTE: Hibernate Reactive Panache uses `io.quarkus.hibernate.reactive.panache.PanacheEntity` instead of `io.quarkus.hibernate.orm.panache.PanacheEntity`.
-For more information, see  link:{quickstarts-tree-url}/security-jpa-reactive-quickstart/src/main/java/org/acme/elytron/security/jpa/reactive/User.java[User file].
+[NOTE]
+====
+Don’t forget to set up the Panache and PostgreSQL JDBC driver, please see xref:hibernate-orm-panache.adoc#setting-up-and-configuring-hibernate-orm-with-panache[Setting up and configuring Hibernate ORM with Panache] for more information.
+====
 
-=== Configure the application
+[NOTE]
+====
+Hibernate Reactive Panache uses `io.quarkus.hibernate.reactive.panache.PanacheEntity` instead of `io.quarkus.hibernate.orm.panache.PanacheEntity`.
+For more information, see  link:{quickstarts-tree-url}/security-jpa-reactive-quickstart/src/main/java/org/acme/elytron/security/jpa/reactive/User.java[User file].
+====
+
+== Configure the application
 
 . Enable the built-in Quarkus xref:security-basic-authentication.adoc[Basic authentication] mechanism by setting the `quarkus.http.auth.basic` property to `true`:
 +
-`quarkus.http.auth.basic`=true`
+`quarkus.http.auth.basic=true`
 +
 [NOTE]
 ====
@@ -370,6 +370,24 @@ As a result, the `security-jpa` defaults to using bcrypt-hashed passwords.
 
 Complete the integration testing of your application in JVM and native modes by using xref:dev-services.adoc#databases[Dev Services for PostgreSQL] before you run your application in production mode.
 
+Start by adding the following dependencies to your test project:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.rest-assured</groupId>
+    <artifactId>rest-assured</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.rest-assured:rest-assured")
+----
+
 * To run your application in dev mode:
 
 include::{includes}/devtools/dev.adoc[]
@@ -394,7 +412,7 @@ quarkus.hibernate-orm.database.generation=drop-and-create
 
 [source,java]
 ----
-package org.acme.elytron.security.jpa;
+package org.acme.security.jpa;
 
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
@@ -506,7 +524,7 @@ include::{includes}/devtools/build-native.adoc[]
 ====
 [source,bash]
 ----
-./target/security-jpa-quickstart-runner
+./target/security-jpa-quickstart-1.0.0-SNAPSHOT-runner
 ----
 ====
 
@@ -520,6 +538,7 @@ When your application is running, you can access its endpoints by using one of t
 [source,shell]
 ----
 $ curl -i -X GET http://localhost:8080/api/public
+
 HTTP/1.1 200 OK
 Content-Length: 6
 Content-Type: text/plain;charset=UTF-8
@@ -533,6 +552,7 @@ public
 [source,shell]
 ----
 $ curl -i -X GET http://localhost:8080/api/admin
+
 HTTP/1.1 401 Unauthorized
 Content-Length: 14
 Content-Type: text/html;charset=UTF-8
@@ -547,6 +567,7 @@ Not authorized
 [source,shell]
 ----
 $ curl -i -X GET -u admin:admin http://localhost:8080/api/admin
+
 HTTP/1.1 200 OK
 Content-Length: 5
 Content-Type: text/plain;charset=UTF-8
@@ -568,11 +589,12 @@ If you use a browser to anonymously connect to a protected resource, a Basic aut
 When you provide the credentials of an authorized user, for example, `admin:admin`, the Jakarta Persistence security extension authenticates and loads the roles of the user.
 The `admin` user is authorized to access the protected resources.
 
-If a resource is protected with `@RolesAllowed("user")`, the user `admin` is not authorized to access the resource because it is not assigned to the "user" role, as shown in the following shell example:
+If a resource is protected with `@RolesAllowed("user")`, the user `admin` is not authorized to access the resource because it is not assigned to the "user" role, as shown in the following example:
 
 [source,shell]
 ----
 $ curl -i -X GET -u admin:admin http://localhost:8080/api/users/me
+
 HTTP/1.1 403 Forbidden
 Content-Length: 34
 Content-Type: text/html;charset=UTF-8
@@ -585,6 +607,7 @@ Finally, the user named `user` is authorized and the security context contains t
 [source,shell]
 ----
 $ curl -i -X GET -u user:user http://localhost:8080/api/users/me
+
 HTTP/1.1 200 OK
 Content-Length: 4
 Content-Type: text/plain;charset=UTF-8

@@ -1636,7 +1636,34 @@ To enable Web Links support, add the `quarkus-resteasy-reactive-links` extension
 
 |===
 
-Importing this module will allow injecting web links into the response HTTP headers by just annotating your endpoint resources with the `@InjectRestLinks` annotation. To declare the web links that will be returned, you need to use the `@RestLink` annotation in the linked methods. An example of this could look like:
+Importing this module will allow injecting web links into the response HTTP headers by just annotating your endpoint resources with the `@InjectRestLinks` annotation. To declare the web links that will be returned, you must use the `@RestLink` annotation in the linked methods.
+Assuming a `Record` looks like:
+
+[source,java]
+----
+public class Record {
+
+    // the class must contain/inherit either and `id` field or an `@Id` annotated field
+    private int id;
+
+    public Record() {
+    }
+
+    protected Record(int id) {
+        this.id = id;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+}
+----
+
+An example of enabling Web Links support would look like:
 
 [source,java]
 ----
@@ -1654,7 +1681,7 @@ public class RecordsResource {
     @Path("/{id}")
     @RestLink(rel = "self")
     @InjectRestLinks(RestLinkType.INSTANCE)
-    public TestRecord get(@PathParam("id") int id) {
+    public Record get(@PathParam("id") int id) {
         // ...
     }
 
@@ -1662,14 +1689,14 @@ public class RecordsResource {
     @Path("/{id}")
     @RestLink
     @InjectRestLinks(RestLinkType.INSTANCE)
-    public TestRecord update(@PathParam("id") int id) {
+    public Record update(@PathParam("id") int id) {
         // ...
     }
 
     @DELETE
     @Path("/{id}")
     @RestLink
-    public TestRecord delete(@PathParam("id") int id) {
+    public Record delete(@PathParam("id") int id) {
         // ...
     }
 }
@@ -1771,7 +1798,7 @@ public class RecordsResource {
     @Path("/{id}")
     @RestLink(rel = "self")
     @InjectRestLinks(RestLinkType.INSTANCE)
-    public TestRecord get(@PathParam("id") int id) {
+    public Record get(@PathParam("id") int id) {
         // ...
     }
 }

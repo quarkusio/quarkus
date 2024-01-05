@@ -15,10 +15,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.opentelemetry.proto.collector.logs.v1.ExportLogsServiceRequest;
 import io.opentelemetry.proto.collector.metrics.v1.ExportMetricsServiceRequest;
 import io.opentelemetry.proto.collector.trace.v1.ExportTraceServiceRequest;
 import io.opentelemetry.proto.common.v1.AnyValue;
 import io.opentelemetry.proto.common.v1.KeyValue;
+import io.opentelemetry.proto.logs.v1.LogRecord;
+import io.opentelemetry.proto.logs.v1.ResourceLogs;
+import io.opentelemetry.proto.logs.v1.SeverityNumber;
 import io.opentelemetry.proto.metrics.v1.AggregationTemporality;
 import io.opentelemetry.proto.metrics.v1.Metric;
 import io.opentelemetry.proto.metrics.v1.NumberDataPoint;
@@ -33,12 +37,14 @@ public abstract class AbstractExporterTest {
 
     Traces traces;
     Metrics metrics;
+    Logs logs;
 
     @BeforeEach
     @AfterEach
     void setUp() {
         traces.reset();
         metrics.reset();
+        logs.reset();
     }
 
     @Test
@@ -46,6 +52,7 @@ public abstract class AbstractExporterTest {
         verifyHttpResponse();
         verifyTraces();
         verifyMetrics();
+        verifyLogs();
     }
 
     private void verifyHttpResponse() {
@@ -106,7 +113,7 @@ public abstract class AbstractExporterTest {
                                 .setKey(SERVICE_NAME.getKey())
                                 .setValue(AnyValue.newBuilder().setStringValue("integration test").build())
                                 .build());
-        assertThat(resourceMetrics.getScopeMetricsCount()).isEqualTo(2);
+        assertThat(resourceMetrics.getScopeMetricsCount()).isEqualTo(3);
 
         Optional<Metric> helloMetric = resourceMetrics.getScopeMetricsList().stream()
                 .map(scopeMetrics -> scopeMetrics.getMetricsList())
@@ -131,5 +138,35 @@ public abstract class AbstractExporterTest {
                                         .setKey("key")
                                         .setValue(AnyValue.newBuilder().setStringValue("value").build())
                                         .build()));
+    }
+
+    private void verifyLogs() {
+        List<ExportLogsServiceRequest> logsRequests = logs.getLogsRequests();
+        await()
+                .atMost(Duration.ofSeconds(30))
+                .untilAsserted(() -> assertThat(logsRequests).hasSizeGreaterThan(2));
+        ExportLogsServiceRequest request = logsRequests.get(logsRequests.size() - 2);
+        assertEquals(1, request.getResourceLogsCount());
+
+        ResourceLogs resourceLogs = request.getResourceLogs(0);
+        assertThat(resourceLogs.getResource().getAttributesList())
+                .contains(
+                        KeyValue.newBuilder()
+                                .setKey(SERVICE_NAME.getKey())
+                                .setValue(AnyValue.newBuilder().setStringValue("integration test").build())
+                                .build());
+        assertThat(resourceLogs.getScopeLogsCount()).isEqualTo(1);
+
+        List<LogRecord> list = logsRequests.stream()
+                .flatMap(req -> req.getResourceLogsList().stream().flatMap(res -> res.getScopeLogsList().stream()))
+                .flatMap(scopeLogs -> scopeLogs.getLogRecordsList().stream())
+                .toList();
+
+        Optional<LogRecord> helloLog = list.stream()
+                .filter(logRecord -> logRecord.getBody().getStringValue().contains("Hello World"))
+                .findFirst();
+        assertThat(helloLog).isPresent();
+        assertThat(helloLog.get().getBody().getStringValue()).isEqualTo("Hello World");
+        assertThat(helloLog.get().getSeverityNumber()).isEqualTo(SeverityNumber.SEVERITY_NUMBER_INFO);
     }
 }

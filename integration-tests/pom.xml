@@ -413,6 +413,7 @@
                 <!-- Virtual threads test -->
                 <module>virtual-threads</module>
                 <module>mutiny-native-jctools</module>
+                <module>opentelemetry-logging</module>
             </modules>
         </profile>
 

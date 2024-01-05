@@ -18,6 +18,7 @@ import org.testcontainers.utility.MountableFile;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import io.opentelemetry.proto.collector.logs.v1.ExportLogsServiceRequest;
 import io.opentelemetry.proto.collector.metrics.v1.ExportMetricsServiceRequest;
 import io.opentelemetry.proto.collector.trace.v1.ExportTraceServiceRequest;
 import io.opentelemetry.proto.collector.trace.v1.ExportTraceServiceResponse;
@@ -45,6 +46,8 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
             .create("opentelemetry.proto.collector.trace.v1.TraceService");
     private static final ServiceName METRIC_SERVICE_NAME = ServiceName
             .create("opentelemetry.proto.collector.metrics.v1.MetricsService");
+    private static final ServiceName LOG_SERVICE_NAME = ServiceName
+            .create("opentelemetry.proto.collector.logs.v1.LogsService");
     private static final String EXPORT_METHOD_NAME = "Export";
 
     private SelfSignedCertificate serverTls;
@@ -62,6 +65,7 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
     private GenericContainer<?> collector;
     private Traces collectedTraces;
     private Metrics collectedMetrics;
+    private Logs collectedLogs;
 
     @Override
     public void init(Map<String, String> initArgs) {
@@ -133,6 +137,7 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
         Map<String, String> result = new HashMap<>();
         result.put("quarkus.otel.exporter.otlp.traces.protocol", protocol);
         result.put("quarkus.otel.exporter.otlp.metrics.protocol", protocol);
+        result.put("quarkus.otel.exporter.otlp.logs.protocol", protocol);
 
         boolean isGrpc = GRPC.equals(protocol);
         int secureEndpointPort = isGrpc ? COLLECTOR_OTLP_GRPC_MTLS_PORT : COLLECTOR_OTLP_HTTP_MTLS_PORT;
@@ -143,9 +148,12 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
                     "https://" + collector.getHost() + ":" + collector.getMappedPort(secureEndpointPort));
             result.put("quarkus.otel.exporter.otlp.metrics.endpoint",
                     "https://" + collector.getHost() + ":" + collector.getMappedPort(secureEndpointPort));
+            result.put("quarkus.otel.exporter.otlp.logs.endpoint",
+                    "https://" + collector.getHost() + ":" + collector.getMappedPort(secureEndpointPort));
             if (tlsRegistryName != null) {
                 result.put("quarkus.otel.exporter.otlp.traces.tls-configuration-name", tlsRegistryName);
                 result.put("quarkus.otel.exporter.otlp.metrics.tls-configuration-name", tlsRegistryName);
+                result.put("quarkus.otel.exporter.otlp.logs.tls-configuration-name", tlsRegistryName);
                 if (!preventTrustCert) {
                     result.put(String.format("quarkus.tls.%s.trust-store.pem.certs", tlsRegistryName),
                             serverTls.certificatePath());
@@ -156,22 +164,28 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
                 if (!preventTrustCert) {
                     result.put("quarkus.otel.exporter.otlp.traces.trust-cert.certs", serverTls.certificatePath());
                     result.put("quarkus.otel.exporter.otlp.metrics.trust-cert.certs", serverTls.certificatePath());
+                    result.put("quarkus.otel.exporter.otlp.logs.trust-cert.certs", serverTls.certificatePath());
                 }
                 result.put("quarkus.otel.exporter.otlp.traces.key-cert.certs", clientTlS.certificatePath());
                 result.put("quarkus.otel.exporter.otlp.traces.key-cert.keys", clientTlS.privateKeyPath());
                 result.put("quarkus.otel.exporter.otlp.metrics.key-cert.certs", clientTlS.certificatePath());
                 result.put("quarkus.otel.exporter.otlp.metrics.key-cert.keys", clientTlS.privateKeyPath());
+                result.put("quarkus.otel.exporter.otlp.logs.key-cert.certs", clientTlS.certificatePath());
+                result.put("quarkus.otel.exporter.otlp.logs.key-cert.keys", clientTlS.privateKeyPath());
             }
         } else {
             result.put("quarkus.otel.exporter.otlp.traces.endpoint",
                     "http://" + collector.getHost() + ":" + collector.getMappedPort(inSecureEndpointPort));
             result.put("quarkus.otel.exporter.otlp.metrics.endpoint",
                     "http://" + collector.getHost() + ":" + collector.getMappedPort(inSecureEndpointPort));
+            result.put("quarkus.otel.exporter.otlp.logs.endpoint",
+                    "http://" + collector.getHost() + ":" + collector.getMappedPort(inSecureEndpointPort));
         }
 
         if (enableCompression) {
             result.put("quarkus.otel.exporter.otlp.traces.compression", "gzip");
             result.put("quarkus.otel.exporter.otlp.metrics.compression", "gzip");
+            result.put("quarkus.otel.exporter.otlp.logs.compression", "gzip");
         }
 
         return result;
@@ -181,6 +195,7 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
     public void inject(TestInjector testInjector) {
         testInjector.injectIntoFields(collectedTraces, f -> f.getType().equals(Traces.class));
         testInjector.injectIntoFields(collectedMetrics, f -> f.getType().equals(Metrics.class));
+        testInjector.injectIntoFields(collectedLogs, f -> f.getType().equals(Logs.class));
     }
 
     private void setupVertxGrpcServer() {
@@ -188,6 +203,7 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
         GrpcServer grpcServer = GrpcServer.server(vertx);
         collectedTraces = new Traces();
         collectedMetrics = new Metrics();
+        collectedLogs = new Logs();
         grpcServer.callHandler(request -> {
 
             if (request.serviceName().equals(TRACE_SERVICE_NAME) && request.methodName().equals(EXPORT_METHOD_NAME)) {
@@ -208,6 +224,18 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
                     try {
                         collectedMetrics.getMetricRequests().add(ExportMetricsServiceRequest.parseFrom(message.getBytes()));
                         request.response().end(Buffer.buffer(ExportMetricsServiceRequest.getDefaultInstance().toByteArray()));
+                    } catch (InvalidProtocolBufferException e) {
+                        request.response()
+                                .status(GrpcStatus.INVALID_ARGUMENT)
+                                .end();
+                    }
+                });
+            } else if (request.serviceName().equals(LOG_SERVICE_NAME) && request.methodName().equals(EXPORT_METHOD_NAME)) {
+
+                request.handler(message -> {
+                    try {
+                        collectedLogs.getLogsRequests().add(ExportLogsServiceRequest.parseFrom(message.getBytes()));
+                        request.response().end(Buffer.buffer(ExportLogsServiceRequest.getDefaultInstance().toByteArray()));
                     } catch (InvalidProtocolBufferException e) {
                         request.response()
                                 .status(GrpcStatus.INVALID_ARGUMENT)

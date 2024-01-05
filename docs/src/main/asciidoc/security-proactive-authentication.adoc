@@ -1,3 +1,4 @@
+
 ////
 This document is maintained in the main Quarkus repository
 and pull requests should be submitted there:
@@ -11,30 +12,30 @@ include::_attributes.adoc[]
 :topics: security,authentication
 :extensions: io.quarkus:quarkus-vertx-http
 
-Proactive authentication is enabled in Quarkus by default. This means that if an incoming request has a credential then that request will always be authenticated, even if the target page does not require authentication.
+Learn how to manage proactive authentication in Quarkus, including customizing settings and handling exceptions.
+Gain practical insights and strategies for various application scenarios.
 
-[[proactive-authentication]]
+Proactive authentication is enabled in Quarkus by default.
+It ensures that all incoming requests with credentials are authenticated, even if the target page does not require authentication.
+As a result, requests with invalid credentials are rejected, even if the target page is public.
 
-Requests with an invalid credential will always be rejected, even when the page is public.
-
-If you only want to authenticate when the target page requires authentication, you can change the default behavior.
-
-To disable proactive authentication in Quarkus, set the following attribute in the `application.properties` configuration file:
+You can turn off this default behavior if you want to authenticate only when the target page requires it.
+To turn off proactive authentication so that authentication occurs only when the target page requires it, modify the `application.properties` configuration file as follows:
 
 [source,xml,options="nowrap",role="white-space-pre"]
 ----
 quarkus.http.auth.proactive=false
 ----
 
-If you disable proactive authentication, the authentication process runs only when an identity is requested.
+If you turn off proactive authentication, the authentication process runs only when an identity is requested.
 An identity can be requested because of security rules that require the user to authenticate or because programmatic access to the current identity is required.
 
-If proactive authentication is in use, accessing `SecurityIdentity` is a blocking operation.
-This is because authentication might have yet to happen and accessing `SecurityIdentity` might require calls to external systems, such as databases, that might block the operation.
+If proactive authentication is used, accessing `SecurityIdentity` is a blocking operation.
+This is because authentication might have yet to happen, and accessing `SecurityIdentity` might require calls to external systems, such as databases, that might block the operation.
 For blocking applications, this is not an issue.
-However, if you have disabled authentication in a reactive application, this will fail because you cannot do blocking operations on the I/O thread.
+However, if you have disabled authentication in a reactive application, this fails because you cannot do blocking operations on the I/O thread.
 To work around this, you need to `@Inject` an instance of `io.quarkus.security.identity.CurrentIdentityAssociation` and call the `Uni<SecurityIdentity> getDeferredIdentity();` method.
-Then, you can subscribe to the resulting `Uni` and will be notified when authentication is complete and the identity is available.
+Then, you can subscribe to the resulting `Uni` to be notified when authentication is complete and the identity is available.
 
 [NOTE]
 ====
@@ -42,16 +43,17 @@ You can still access `SecurityIdentity` synchronously with `public SecurityIdent
 The same is also valid for xref:reactive-routes.adoc[Reactive routes] if a route response is synchronous.
 ====
 
-xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[Standard security annotations] on CDI beans are not supported on an I/O thread if a non-void secured method returns a value synchronously and proactive authentication is disabled because they need to access `SecurityIdentity`.
+When proactive authentication is disabled, xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[standard security annotations] used on CDI beans do not function on an I/O thread if a secured method that is not void synchronously returns a value.
+This limitation arises from the necessity for these methods to access `SecurityIdentity`.
 
-In the following example, `HelloResource` and `HelloService` are defined.
-Any GET request to `/hello` will run on the I/O thread and throw a `BlockingOperationNotAllowedException` exception.
+The following example defines `HelloResource` and `HelloService`.
+Any GET request to `/hello` runs on the I/O thread and throws a `BlockingOperationNotAllowedException` exception.
 
 There is more than one way to fix the example:
 
 * Switch to a worker thread by annotating the `hello` endpoint with `@Blocking`.
 * Change the `sayHello` method return type by using a reactive or asynchronous data type.
-* Move `@RolesAllowed` annotation to the endpoint.
+* Move the `@RolesAllowed` annotation to the endpoint.
 This could be one of the safest ways because accessing `SecurityIdentity` from endpoint methods is never the blocking operation.
 
 [source,java]
@@ -97,7 +99,8 @@ public class HelloService {
 [[customize-auth-exception-responses]]
 == Customize authentication exception responses
 
-You can use Jakarta REST `ExceptionMapper` to capture Quarkus Security authentication exceptions such as `io.quarkus.security.AuthenticationFailedException`, for example:
+You can use Jakarta REST `ExceptionMapper` to capture Quarkus Security authentication exceptions such as `io.quarkus.security.AuthenticationFailedException`.
+For example:
 
 [source,java]
 ----
@@ -125,12 +128,12 @@ public class AuthenticationFailedExceptionMapper implements ExceptionMapper<Auth
 }
 ----
 
-CAUTION: Some HTTP authentication mechanisms need to handle authentication exceptions themselves to create a correct authentication challenge.
-For example, `io.quarkus.oidc.runtime.CodeAuthenticationMechanism`, which manages OpenID Connect (OIDC) authorization code flow authentication, needs to build a correct redirect URL, cookies, and so on.
-For that reason, avoid using custom exception mappers to customize authentication exceptions thrown by such mechanisms.
+CAUTION: Some HTTP authentication mechanisms must handle authentication exceptions themselves to create a correct authentication challenge.
+For example, `io.quarkus.oidc.runtime.CodeAuthenticationMechanism`, which manages OpenID Connect (OIDC) authorization code flow authentication, must build a correct redirect URL and set a state cookie.
+Therefore, avoid using custom exception mappers to customize authentication exceptions thrown by such mechanisms.
 Instead, a safer approach is to ensure that proactive authentication is enabled and to use Vert.x HTTP route failure handlers.
 This is because events come to the handler with the correct response status and headers.
-You then only need to customize the response, as shown in the following example:
+Then, you must only customize the response; for example:
 
 [source,java]
 ----

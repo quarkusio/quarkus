@@ -4,39 +4,37 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="security-getting-started-tutorial"]
-= Getting Started with Security using Basic authentication and Jakarta Persistence
+= Getting started with Security by using Basic authentication and Jakarta Persistence
 include::_attributes.adoc[]
 :diataxis-type: tutorial
 :categories: security,getting-started
 :topics: security,authentication,basic-authentication,http
 :extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-elytron-security-jdbc,io.quarkus:quarkus-elytron-security-ldap,io.quarkus:quarkus-security-jpa-reactive
 
-Get started with Quarkus Security by securing your Quarkus application endpoints with the built-in Quarkus xref:security-basic-authentication.adoc[Basic authentication] and the Jakarta Persistence identity provider and enabling role-based access control.
+Get started with Quarkus Security by securing your Quarkus application endpoints with the built-in Quarkus xref:security-basic-authentication.adoc[Basic authentication] and the Jakarta Persistence identity provider, enabling role-based access control.
 
-The Jakarta Persistence `IdentityProvider` verifies and converts a xref:security-basic-authentication.adoc[Basic authentication] user name and password pair to a `SecurityIdentity` instance which is used to authorize access requests, making your Quarkus application secure.
+The Jakarta Persistence `IdentityProvider` verifies and converts a xref:security-basic-authentication.adoc[Basic authentication] user name and password pair to a `SecurityIdentity` instance, which is used to authorize access requests, making your Quarkus application secure.
 
 For more information about Jakarta Persistence, see the xref:security-jpa.adoc[Quarkus Security with Jakarta Persistence] guide.
 
-This tutorial prepares you for implementing more advanced security mechanisms in Quarkus, for example, how to use the OpenID Connect (OIDC) authentication mechanism.
+This tutorial prepares you to implement more advanced security mechanisms in Quarkus, for example, how to use the OpenID Connect (OIDC) authentication mechanism.
 
 == Prerequisites
 
 include::{includes}/prerequisites.adoc[]
 
-== What you will build
+== Building your application
 
-To demonstrate different authorization policies, the steps in this tutorial guide you through building an application that provides the following endpoints:
+This tutorial gives detailed steps for creating an application with endpoints that illustrate various authorization policies:
 
 [cols="20%,40% ",options="header"]
 |===
 |Endpoint | Description
-|`/api/public`| The `/api/public` endpoint can be accessed anonymously.
-|`/api/admin`| The `/api/admin` endpoint is protected with role-based access control (RBAC).
-Only users granted with the `admin` role can access it.
-At this endpoint, the `@RolesAllowed` annotation enforces the access constraint declaratively.
-|`/api/users/me`| The `/api/users/me` endpoint is protected by RBAC.
-Only users that have the `user` role can access the endpoint.
-This endpoint returns the caller's username as a string.
+|`/api/public`| Accessible without authentication, this endpoint allows anonymous access.
+a| `/api/admin`| Secured with role-based access control (RBAC), this endpoint is accessible only to users with the `admin` role.
+Access is controlled declaratively by using the `@RolesAllowed` annotation.
+a| `/api/users/me`| Also secured by RBAC, this endpoint is accessible only to users with the `user` role.
+It returns the caller's username as a string.
 |===
 
 [TIP]
@@ -56,11 +54,11 @@ You can find the solution in the `security-jpa-quickstart` link:{quickstarts-tre
 
 == Create and verify the Maven project
 
-For Quarkus Security to be able to map your security source to Jakarta Persistence entities, ensure that the Maven project that is used in this tutorial includes the `security-jpa` or the `security-jpa-reactive` extension.
+For Quarkus Security to be able to map your security source to Jakarta Persistence entities, ensure that the Maven project in this tutorial includes the `security-jpa` or `security-jpa-reactive` extension.
 
 [NOTE]
 ====
-xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] is used to store your user identities but you can also use xref:hibernate-orm.adoc[Hibernate ORM] with the `security-jpa` extension.
+xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] is used to store your user identities, but you can also use xref:hibernate-orm.adoc[Hibernate ORM] with the `security-jpa` extension.
 Both xref:hibernate-reactive.adoc[Hibernate Reactive] and xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache] can be used with the `security-jpa-reactive` extension.
 
 You must also add your preferred database connector library.
@@ -70,7 +68,8 @@ The instructions in this example tutorial use a PostgreSQL database for the iden
 
 === Create the Maven project
 
-You can either create a new Maven project with the Security Jakarta Persistence extension or you can add the extension to an existing Maven project. You can use either Hibernate ORM or Hibernate Reactive.
+You can create a new Maven project with the Security Jakarta Persistence extension or add the extension to an existing Maven project.
+You can use either Hibernate ORM or Hibernate Reactive.
 
 * To create a new Maven project with the Jakarta Persistence extension, complete one of the following steps:
 ** To create the Maven project with Hibernate ORM, use the following command:
@@ -253,7 +252,7 @@ public class User extends PanacheEntity {
     /**
      * Adds a new user to the database
      * @param username the username
-     * @param password the unencrypted password (it will be encrypted with bcrypt)
+     * @param password the unencrypted password (it is encrypted with bcrypt)
      * @param role the comma-separated roles
      */
     public static void add(String username, String password, String role) { <5>
@@ -267,9 +266,9 @@ public class User extends PanacheEntity {
 
 ----
 
-The `security-jpa` extension initializes only if a single entity is annotated with `@UserDefinition`.
+The `security-jpa` extension only initializes if a single entity is annotated with `@UserDefinition`.
 
-<1> The `@UserDefinition` annotation must be present on a single entity and can be either a regular Hibernate ORM entity or a Hibernate ORM with Panache entity.
+<1> The `@UserDefinition` annotation must be present on a single entity, either a regular Hibernate ORM entity or a Hibernate ORM with Panache entity.
 <2> Indicates the field used for the username.
 <3> Indicates the field used for the password.
 By default, it uses bcrypt-hashed passwords.
@@ -296,7 +295,7 @@ For more information, see  link:{quickstarts-tree-url}/security-jpa-reactive-qui
 +
 [NOTE]
 ====
-When secure access is required and no other authentication mechanisms are enabled, the built-in xref:security-basic-authentication.adoc[Basic authentication] of Quarkus is the fallback authentication mechanism.
+When secure access is required, and no other authentication mechanisms are enabled, the built-in xref:security-basic-authentication.adoc[Basic authentication] of Quarkus is the fallback authentication mechanism.
 Therefore, in this tutorial, you do not need to set the property `quarkus.http.auth.basic` to `true`.
 ====
 +
@@ -322,7 +321,7 @@ quarkus.hibernate-orm.database.generation=drop-and-create
 [NOTE]
 ====
 * The URLs of Reactive datasources that are used by the `security-jpa-reactive` extension are set with the `quarkus.datasource.reactive.url`
-configuration property and not the `quarkus.datasource.jdbc.url` configuration property that is typically used by JDBC datasources.
+configuration property and not the `quarkus.datasource.jdbc.url` configuration property typically used by JDBC datasources.
 +
 [source,properties]
 ----
@@ -332,7 +331,7 @@ configuration property and not the `quarkus.datasource.jdbc.url` configuration p
 * In this tutorial, a PostgreSQL database is used for the identity store.
 link:https://hibernate.org/orm/[Hibernate ORM] automatically creates the database schema on startup.
 This approach is suitable for development but is not recommended for production.
-Therefore adjustments are needed in a production environment.
+Therefore, adjustments are needed in a production environment.
 ====
 
 [source,java]
@@ -393,7 +392,7 @@ testImplementation("io.rest-assured:rest-assured")
 include::{includes}/devtools/dev.adoc[]
 
 
-* The following properties configuration demonstrates how you can enable PostgreSQL testing to run in production (`prod`) mode only.
+* The following properties configuration demonstrates how to enable PostgreSQL testing to run only in production (`prod`) mode.
 In this scenario, `Dev Services for PostgreSQL` launches and configures a `PostgreSQL` test container.
 
 [source,properties]
@@ -481,11 +480,11 @@ As you can see in this code sample, you do not need to start the test container 
 [NOTE]
 ====
 When you start your application in dev mode, Dev Services for PostgreSQL launches a PostgreSQL dev mode container so that you can start developing your application.
-While developing your application, you can add tests one by one and run them using the xref:continuous-testing.adoc[Continuous Testing] feature.
+While developing your application, you can add and run tests individually by using the xref:continuous-testing.adoc[Continuous Testing] feature.
 Dev Services for PostgreSQL supports testing while you develop by providing a separate PostgreSQL test container that does not conflict with the dev mode container.
 ====
 
-=== Use Curl or a browser to test your application
+=== Use curl or a browser to test your application
 
 * Use the following example to start the PostgreSQL server:
 [source,bash]
@@ -580,13 +579,13 @@ You can also access the same endpoint URLs by using a browser.
 
 [NOTE]
 ====
-If you use a browser to anonymously connect to a protected resource, a Basic authentication form displays, prompting you to enter credentials.
+If you use a browser to connect to a protected resource anonymously, a Basic authentication form displays, prompting you to enter credentials.
 ====
 
 
 === Results
 
-When you provide the credentials of an authorized user, for example, `admin:admin`, the Jakarta Persistence security extension authenticates and loads the roles of the user.
+When you provide the credentials of an authorized user, for example, `admin:admin`, the Jakarta Persistence security extension authenticates and loads the user's roles.
 The `admin` user is authorized to access the protected resources.
 
 If a resource is protected with `@RolesAllowed("user")`, the user `admin` is not authorized to access the resource because it is not assigned to the "user" role, as shown in the following example:
@@ -602,7 +601,7 @@ Content-Type: text/html;charset=UTF-8
 Forbidden
 ----
 
-Finally, the user named `user` is authorized and the security context contains the principal details, for example, the username.
+Finally, the user named `user` is authorized, and the security context contains the principal details, for example, the username.
 
 [source,shell]
 ----
@@ -619,8 +618,8 @@ user
 
 == What's next
 
-Congratulations!
-You have learned how to create and test a secure Quarkus application by combining the built-in xref:security-basic-authentication.adoc[Basic authentication] in Quarkus with the Jakarta Persistence identity provider.
+You have successfully learned how to create and test a secure Quarkus application.
+This was achieved by integrating the built-in xref:security-basic-authentication.adoc[Basic authentication] in Quarkus with the Jakarta Persistence identity provider.
 
 After completing this tutorial, you can explore more advanced security mechanisms in Quarkus.
 The following information shows you how to use `OpenID Connect` for secure single sign-on access to your Quarkus endpoints:

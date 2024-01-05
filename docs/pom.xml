@@ -2956,6 +2956,8 @@
                         </goals>
                         <configuration>
                             <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <mainClass>io.quarkus.docs.generation.AllConfigGenerator</mainClass>
                             <arguments>
                                 <argument>${project.basedir}/../devtools/bom-descriptor-json/target/quarkus-bom-quarkus-platform-descriptor-${project.version}-${project.version}.json</argument>
@@ -2973,6 +2975,8 @@
                         </goals>
                         <configuration>
                             <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <mainClass>io.quarkus.docs.generation.QuarkusMavenPluginDocsGenerator</mainClass>
                             <arguments>
                                 <argument>${project.basedir}/../devtools/maven/target/classes/META-INF/maven/plugin.xml</argument>
@@ -2990,6 +2994,8 @@
                         </goals>
                         <configuration>
                             <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <mainClass>io.quarkus.docs.generation.QuarkusBuildItemDoc</mainClass>
                             <arguments>
                                 <argument>${generated-dir}/config/quarkus-all-build-items.adoc</argument>
@@ -3009,6 +3015,8 @@
                         </goals>
                         <configuration>
                             <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <mainClass>io.quarkus.docs.generation.CopyExampleSource</mainClass>
                             <arguments>
                                 <argument>${code-examples-dir}</argument>
@@ -3028,6 +3036,8 @@
                         </goals>
                         <configuration>
                             <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <mainClass>io.quarkus.docs.generation.YamlMetadataGenerator</mainClass>
                             <arguments>
                                 <argument>${project.basedir}/target/asciidoc/sources</argument>
@@ -3046,6 +3056,8 @@
                         </goals>
                         <configuration>
                             <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <mainClass>io.quarkus.docs.generation.ReferenceIndexGenerator</mainClass>
                             <arguments>
                                 <argument>${project.basedir}/target/asciidoc/sources</argument>

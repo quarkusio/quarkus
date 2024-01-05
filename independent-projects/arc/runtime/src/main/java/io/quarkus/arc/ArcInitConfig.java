@@ -39,6 +39,12 @@ public final class ArcInitConfig {
         return currentContextFactory;
     }
 
+    /**
+     *
+     * @return {@code true} if optimized contexts should be used, {@code false} otherwise
+     * @deprecated This method was never used and will be removed at some point after Quarkus 3.10
+     */
+    @Deprecated(since = "3.7", forRemoval = true)
     public boolean isOptimizeContexts() {
         return optimizeContexts;
     }
@@ -65,6 +71,14 @@ public final class ArcInitConfig {
             return this;
         }
 
+        /**
+         * The value was actually never used.
+         *
+         * @param value
+         * @return this
+         * @deprecated This value was never used; this method will be removed at some point after Quarkus 3.10
+         */
+        @Deprecated(since = "3.7", forRemoval = true)
         public Builder setOptimizeContexts(boolean value) {
             optimizeContexts = value;
             return this;

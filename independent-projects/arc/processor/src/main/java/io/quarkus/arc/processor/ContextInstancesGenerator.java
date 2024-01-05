@@ -35,7 +35,7 @@ import io.quarkus.gizmo.TryBlock;
 
 public class ContextInstancesGenerator extends AbstractGenerator {
 
-    static final String APP_CONTEXT_INSTANCES_SUFFIX = "_ContextInstances";
+    static final String CONTEXT_INSTANCES_SUFFIX = "_ContextInstances";
 
     private final BeanDeployment beanDeployment;
     private final Map<DotName, String> scopeToGeneratedName;
@@ -50,7 +50,7 @@ public class ContextInstancesGenerator extends AbstractGenerator {
     void precomputeGeneratedName(DotName scope) {
         String generatedName = DEFAULT_PACKAGE + "." + beanDeployment.name + UNDERSCORE
                 + scope.toString().replace(".", UNDERSCORE)
-                + APP_CONTEXT_INSTANCES_SUFFIX;
+                + CONTEXT_INSTANCES_SUFFIX;
         scopeToGeneratedName.put(scope, generatedName);
     }
 
@@ -63,121 +63,127 @@ public class ContextInstancesGenerator extends AbstractGenerator {
         ClassCreator contextInstances = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .interfaces(ContextInstances.class).build();
 
-        // Add fields for all beans
+        // Add ContextInstanceHandle and Lock fields for every bean
         // The name of the field is a generated index
         // For example:
         // private volatile ContextInstanceHandle 1;
-        Map<String, FieldDescriptor> idToField = new HashMap<>();
+        // private final Lock 1l = new ReentrantLock();
+        Map<String, InstanceAndLock> idToFields = new HashMap<>();
         int fieldIndex = 0;
         for (BeanInfo bean : beans) {
-            FieldCreator fc = contextInstances.getFieldCreator("" + fieldIndex++, ContextInstanceHandle.class)
+            String beanIdx = "" + fieldIndex++;
+            FieldCreator handleField = contextInstances.getFieldCreator(beanIdx, ContextInstanceHandle.class)
                     .setModifiers(ACC_PRIVATE | ACC_VOLATILE);
-            idToField.put(bean.getIdentifier(), fc.getFieldDescriptor());
+            FieldCreator lockField = contextInstances.getFieldCreator(beanIdx + "l", Lock.class)
+                    .setModifiers(ACC_PRIVATE | ACC_FINAL);
+            idToFields.put(bean.getIdentifier(),
+                    new InstanceAndLock(handleField.getFieldDescriptor(), lockField.getFieldDescriptor()));
         }
-
-        FieldCreator lockField = contextInstances.getFieldCreator("lock", Lock.class)
-                .setModifiers(ACC_PRIVATE | ACC_FINAL);
 
         MethodCreator constructor = contextInstances.getMethodCreator(MethodDescriptor.INIT, "V");
         constructor.invokeSpecialMethod(MethodDescriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
-        constructor.writeInstanceField(lockField.getFieldDescriptor(), constructor.getThis(),
-                constructor.newInstance(MethodDescriptor.ofConstructor(ReentrantLock.class)));
+        for (InstanceAndLock fields : idToFields.values()) {
+            constructor.writeInstanceField(fields.lock, constructor.getThis(),
+                    constructor.newInstance(MethodDescriptor.ofConstructor(ReentrantLock.class)));
+        }
         constructor.returnVoid();
 
-        implementComputeIfAbsent(contextInstances, beans, idToField,
-                lockField.getFieldDescriptor());
-        implementGetIfPresent(contextInstances, beans, idToField);
-        implementRemove(contextInstances, beans, idToField, lockField.getFieldDescriptor());
-        implementClear(contextInstances, idToField, lockField.getFieldDescriptor());
-        implementGetAllPresent(contextInstances, idToField, lockField.getFieldDescriptor());
-        implementForEach(contextInstances, idToField, lockField.getFieldDescriptor());
+        implementComputeIfAbsent(contextInstances, beans, idToFields);
+        implementGetIfPresent(contextInstances, beans, idToFields);
+        implementRemove(contextInstances, beans, idToFields);
+        implementGetAllPresent(contextInstances, idToFields);
+        implementRemoveEach(contextInstances, idToFields);
+
+        // These methods are needed to significantly reduce the size of the stack map table for getAllPresent() and removeEach()
+        implementLockAll(contextInstances, idToFields);
+        implementUnlockAll(contextInstances, idToFields);
+
         contextInstances.close();
 
         return classOutput.getResources();
     }
 
-    private void implementGetAllPresent(ClassCreator contextInstances, Map<String, FieldDescriptor> idToField,
-            FieldDescriptor lockField) {
+    private void implementGetAllPresent(ClassCreator contextInstances, Map<String, InstanceAndLock> idToFields) {
         MethodCreator getAllPresent = contextInstances.getMethodCreator("getAllPresent", Set.class)
                 .setModifiers(ACC_PUBLIC);
-        // lock.lock();
-        // try {
-        //    Set<ContextInstanceHandle<?>> ret = new HashSet<>();
-        //    ContextInstanceHandle<?> copy = this.1;
-        //    if (copy != null) {
-        //       ret.add(copy);
-        //    }
-        //    return ret;
-        // } catch(Throwable t) {
-        //    lock.unlock();
-        //    throw t;
+        // this.lockAll();
+        // ContextInstanceHandle<?> copy1 = this.1;
+        // this.unlockAll();
+        // Set<ContextInstanceHandle<?>> ret = new HashSet<>();
+        // if (copy1 != null) {
+        //    ret.add(copy1);
         // }
-        ResultHandle lock = getAllPresent.readInstanceField(lockField, getAllPresent.getThis());
-        getAllPresent.invokeInterfaceMethod(MethodDescriptors.LOCK_LOCK, lock);
-        TryBlock tryBlock = getAllPresent.tryBlock();
-        ResultHandle ret = tryBlock.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-        for (FieldDescriptor field : idToField.values()) {
-            ResultHandle copy = tryBlock.readInstanceField(field, tryBlock.getThis());
-            tryBlock.ifNotNull(copy).trueBranch().invokeInterfaceMethod(MethodDescriptors.SET_ADD, ret, copy);
+        // return ret;
+        getAllPresent.invokeVirtualMethod(MethodDescriptor.ofMethod(contextInstances.getClassName(), "lockAll", void.class),
+                getAllPresent.getThis());
+        List<ResultHandle> results = new ArrayList<>(idToFields.size());
+        for (InstanceAndLock fields : idToFields.values()) {
+            results.add(getAllPresent.readInstanceField(fields.instance, getAllPresent.getThis()));
         }
-        tryBlock.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
-        tryBlock.returnValue(ret);
-        CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
-        catchBlock.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
-        catchBlock.throwException(catchBlock.getCaughtException());
+        getAllPresent.invokeVirtualMethod(MethodDescriptor.ofMethod(contextInstances.getClassName(), "unlockAll", void.class),
+                getAllPresent.getThis());
+        ResultHandle ret = getAllPresent.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+        for (ResultHandle result : results) {
+            getAllPresent.ifNotNull(result).trueBranch().invokeInterfaceMethod(MethodDescriptors.SET_ADD, ret, result);
+        }
+        getAllPresent.returnValue(ret);
     }
 
-    private void implementClear(ClassCreator applicationContextInstances, Map<String, FieldDescriptor> idToField,
-            FieldDescriptor lockField) {
-        MethodCreator clear = applicationContextInstances.getMethodCreator("clear", void.class).setModifiers(ACC_PUBLIC);
-        // lock.lock();
-        // try {
-        //    this.1 = null;
-        //    lock.unlock();
-        // } catch(Throwable t) {
-        //    lock.unlock();
-        //    throw t;
-        // }
-        ResultHandle lock = clear.readInstanceField(lockField, clear.getThis());
-        clear.invokeInterfaceMethod(MethodDescriptors.LOCK_LOCK, lock);
-        TryBlock tryBlock = clear.tryBlock();
-        for (FieldDescriptor field : idToField.values()) {
-            tryBlock.writeInstanceField(field, tryBlock.getThis(), tryBlock.loadNull());
+    private void implementLockAll(ClassCreator contextInstances, Map<String, InstanceAndLock> idToFields) {
+        MethodCreator lockAll = contextInstances.getMethodCreator("lockAll", void.class)
+                .setModifiers(ACC_PRIVATE);
+        for (InstanceAndLock fields : idToFields.values()) {
+            ResultHandle lock = lockAll.readInstanceField(fields.lock, lockAll.getThis());
+            lockAll.invokeInterfaceMethod(MethodDescriptors.LOCK_LOCK, lock);
         }
-        tryBlock.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
-        tryBlock.returnVoid();
-        CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
-        catchBlock.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
-        catchBlock.throwException(catchBlock.getCaughtException());
+        lockAll.returnVoid();
     }
 
-    private void implementForEach(ClassCreator contextInstances, Map<String, FieldDescriptor> idToField,
-            FieldDescriptor lockField) {
-        MethodCreator forEach = contextInstances.getMethodCreator("forEach", void.class, Consumer.class)
+    private void implementUnlockAll(ClassCreator contextInstances, Map<String, InstanceAndLock> idToFields) {
+        MethodCreator unlockAll = contextInstances.getMethodCreator("unlockAll", void.class)
+                .setModifiers(ACC_PRIVATE);
+        for (InstanceAndLock fields : idToFields.values()) {
+            ResultHandle lock = unlockAll.readInstanceField(fields.lock, unlockAll.getThis());
+            unlockAll.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
+        }
+        unlockAll.returnVoid();
+    }
+
+    private void implementRemoveEach(ClassCreator contextInstances, Map<String, InstanceAndLock> idToFields) {
+        MethodCreator removeEach = contextInstances.getMethodCreator("removeEach", void.class, Consumer.class)
                 .setModifiers(ACC_PUBLIC);
-        // lock.lock();
-        // ContextInstanceHandle<?> copy = this.1;
-        // lock.unlock();
-        // if (copy != null) {
-        //    consumer.accept(copy);
+        // this.lockAll();
+        // ContextInstanceHandle<?> copy1 = this.1;
+        // if (copy1 != null) {
+        //    this.1 = null;
         // }
-        ResultHandle lock = forEach.readInstanceField(lockField, forEach.getThis());
-        forEach.invokeInterfaceMethod(MethodDescriptors.LOCK_LOCK, lock);
-        List<ResultHandle> results = new ArrayList<>(idToField.size());
-        for (FieldDescriptor field : idToField.values()) {
-            results.add(forEach.readInstanceField(field, forEach.getThis()));
+        // this.unlockAll();
+        // if (action != null)
+        //    if (copy1 != null) {
+        //       consumer.accept(copy1);
+        //    }
+        // }
+        removeEach.invokeVirtualMethod(MethodDescriptor.ofMethod(contextInstances.getClassName(), "lockAll", void.class),
+                removeEach.getThis());
+        List<ResultHandle> results = new ArrayList<>(idToFields.size());
+        for (InstanceAndLock fields : idToFields.values()) {
+            ResultHandle copy = removeEach.readInstanceField(fields.instance, removeEach.getThis());
+            results.add(copy);
+            BytecodeCreator isNotNull = removeEach.ifNotNull(copy).trueBranch();
+            isNotNull.writeInstanceField(fields.instance, isNotNull.getThis(), isNotNull.loadNull());
         }
-        forEach.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
-        for (int i = 0; i < results.size(); i++) {
-            ResultHandle copy = results.get(i);
-            BytecodeCreator isNotNull = forEach.ifNotNull(copy).trueBranch();
-            isNotNull.invokeInterfaceMethod(MethodDescriptors.CONSUMER_ACCEPT, forEach.getMethodParam(0), copy);
+        removeEach.invokeVirtualMethod(MethodDescriptor.ofMethod(contextInstances.getClassName(), "unlockAll", void.class),
+                removeEach.getThis());
+        BytecodeCreator actionIsNotNull = removeEach.ifNotNull(removeEach.getMethodParam(0)).trueBranch();
+        for (ResultHandle result : results) {
+            BytecodeCreator isNotNull = actionIsNotNull.ifNotNull(result).trueBranch();
+            isNotNull.invokeInterfaceMethod(MethodDescriptors.CONSUMER_ACCEPT, removeEach.getMethodParam(0), result);
         }
-        forEach.returnVoid();
+        removeEach.returnVoid();
     }
 
-    private void implementRemove(ClassCreator contextInstances, List<BeanInfo> applicationScopedBeans,
-            Map<String, FieldDescriptor> idToField, FieldDescriptor lockField) {
+    private void implementRemove(ClassCreator contextInstances, List<BeanInfo> beans,
+            Map<String, InstanceAndLock> idToFields) {
         MethodCreator remove = contextInstances
                 .getMethodCreator("remove", ContextInstanceHandle.class, String.class)
                 .setModifiers(ACC_PUBLIC);
@@ -185,45 +191,37 @@ public class ContextInstancesGenerator extends AbstractGenerator {
         StringSwitch strSwitch = remove.stringSwitch(remove.getMethodParam(0));
         // https://github.com/quarkusio/gizmo/issues/164
         strSwitch.fallThrough();
-        for (BeanInfo bean : applicationScopedBeans) {
-            FieldDescriptor instanceField = idToField.get(bean.getIdentifier());
-            // There is a separate remove method for every bean instance field
-            MethodCreator removeBean = contextInstances.getMethodCreator("r" + instanceField.getName(),
+        for (BeanInfo bean : beans) {
+            InstanceAndLock fields = idToFields.get(bean.getIdentifier());
+            FieldDescriptor instanceField = fields.instance;
+            // There is a separate remove method for every instance handle field
+            // To eliminate large stack map table in the bytecode
+            MethodCreator removeHandle = contextInstances.getMethodCreator("r" + instanceField.getName(),
                     ContextInstanceHandle.class).setModifiers(ACC_PRIVATE);
-            // lock.lock();
-            // try {
-            //    ContextInstanceHandle<?> copy = this.1;
-            //    if (copy != null) {
-            //       this.1 = null;
-            //    }
-            //    lock.unlock();
-            //    return copy;
-            // } catch(Throwable t) {
-            //    lock.unlock();
-            //    throw t;
+            // this.1l.lock();
+            // ContextInstanceHandle<?> copy = this.1;
+            // if (copy != null) {
+            //    this.1 = null;
             // }
-
-            ResultHandle lock = removeBean.readInstanceField(lockField, removeBean.getThis());
-            removeBean.invokeInterfaceMethod(MethodDescriptors.LOCK_LOCK, lock);
-            TryBlock tryBlock = removeBean.tryBlock();
-            ResultHandle copy = tryBlock.readInstanceField(instanceField, tryBlock.getThis());
-            BytecodeCreator isNotNull = tryBlock.ifNotNull(copy).trueBranch();
+            // this.1l.unlock();
+            // return copy;
+            ResultHandle lock = removeHandle.readInstanceField(fields.lock, removeHandle.getThis());
+            removeHandle.invokeInterfaceMethod(MethodDescriptors.LOCK_LOCK, lock);
+            ResultHandle copy = removeHandle.readInstanceField(instanceField, removeHandle.getThis());
+            BytecodeCreator isNotNull = removeHandle.ifNotNull(copy).trueBranch();
             isNotNull.writeInstanceField(instanceField, isNotNull.getThis(), isNotNull.loadNull());
-            tryBlock.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
-            tryBlock.returnValue(copy);
-            CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
-            catchBlock.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
-            catchBlock.throwException(catchBlock.getCaughtException());
+            removeHandle.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
+            removeHandle.returnValue(copy);
 
             strSwitch.caseOf(bean.getIdentifier(), bc -> {
-                bc.returnValue(bc.invokeVirtualMethod(removeBean.getMethodDescriptor(), bc.getThis()));
+                bc.returnValue(bc.invokeVirtualMethod(removeHandle.getMethodDescriptor(), bc.getThis()));
             });
         }
         strSwitch.defaultCase(bc -> bc.throwException(IllegalArgumentException.class, "Unknown bean identifier"));
     }
 
-    private void implementGetIfPresent(ClassCreator contextInstances, List<BeanInfo> applicationScopedBeans,
-            Map<String, FieldDescriptor> idToField) {
+    private void implementGetIfPresent(ClassCreator contextInstances, List<BeanInfo> beans,
+            Map<String, InstanceAndLock> idToFields) {
         MethodCreator getIfPresent = contextInstances
                 .getMethodCreator("getIfPresent", ContextInstanceHandle.class, String.class)
                 .setModifiers(ACC_PUBLIC);
@@ -231,16 +229,16 @@ public class ContextInstancesGenerator extends AbstractGenerator {
         StringSwitch strSwitch = getIfPresent.stringSwitch(getIfPresent.getMethodParam(0));
         // https://github.com/quarkusio/gizmo/issues/164
         strSwitch.fallThrough();
-        for (BeanInfo bean : applicationScopedBeans) {
+        for (BeanInfo bean : beans) {
             strSwitch.caseOf(bean.getIdentifier(), bc -> {
-                bc.returnValue(bc.readInstanceField(idToField.get(bean.getIdentifier()), bc.getThis()));
+                bc.returnValue(bc.readInstanceField(idToFields.get(bean.getIdentifier()).instance, bc.getThis()));
             });
         }
         strSwitch.defaultCase(bc -> bc.throwException(IllegalArgumentException.class, "Unknown bean identifier"));
     }
 
-    private void implementComputeIfAbsent(ClassCreator contextInstances, List<BeanInfo> applicationScopedBeans,
-            Map<String, FieldDescriptor> idToField, FieldDescriptor lockField) {
+    private void implementComputeIfAbsent(ClassCreator contextInstances, List<BeanInfo> beans,
+            Map<String, InstanceAndLock> idToFields) {
         MethodCreator computeIfAbsent = contextInstances
                 .getMethodCreator("computeIfAbsent", ContextInstanceHandle.class, String.class, Supplier.class)
                 .setModifiers(ACC_PUBLIC);
@@ -248,47 +246,50 @@ public class ContextInstancesGenerator extends AbstractGenerator {
         StringSwitch strSwitch = computeIfAbsent.stringSwitch(computeIfAbsent.getMethodParam(0));
         // https://github.com/quarkusio/gizmo/issues/164
         strSwitch.fallThrough();
-        for (BeanInfo bean : applicationScopedBeans) {
-            FieldDescriptor instanceField = idToField.get(bean.getIdentifier());
+        for (BeanInfo bean : beans) {
+            InstanceAndLock fields = idToFields.get(bean.getIdentifier());
             // There is a separate compute method for every bean instance field
-            MethodCreator compute = contextInstances.getMethodCreator("c" + instanceField.getName(),
+            MethodCreator compute = contextInstances.getMethodCreator("c" + fields.instance.getName(),
                     ContextInstanceHandle.class, Supplier.class).setModifiers(ACC_PRIVATE);
             // ContextInstanceHandle<?> copy = this.1;
             // if (copy != null) {
             //    return copy;
             // }
-            // lock.lock();
+            // this.1l.lock();
             // try {
             //    if (this.1 == null) {
             //       this.1 = supplier.get();
             //    }
-            //    lock.unlock();
+            //    this.1l.unlock();
             //    return this.1;
             // } catch(Throwable t) {
-            //    lock.unlock();
+            //    this.1l.unlock();
             //    throw t;
             // }
-            ResultHandle copy = compute.readInstanceField(instanceField, compute.getThis());
+            ResultHandle copy = compute.readInstanceField(fields.instance, compute.getThis());
             compute.ifNotNull(copy).trueBranch().returnValue(copy);
-            ResultHandle lock = compute.readInstanceField(lockField, compute.getThis());
+            ResultHandle lock = compute.readInstanceField(fields.lock, compute.getThis());
             compute.invokeInterfaceMethod(MethodDescriptors.LOCK_LOCK, lock);
             TryBlock tryBlock = compute.tryBlock();
-            ResultHandle val = tryBlock.readInstanceField(instanceField, compute.getThis());
+            ResultHandle val = tryBlock.readInstanceField(fields.instance, compute.getThis());
             BytecodeCreator isNull = tryBlock.ifNull(val).trueBranch();
             ResultHandle newVal = isNull.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
                     compute.getMethodParam(0));
-            isNull.writeInstanceField(instanceField, compute.getThis(), newVal);
+            isNull.writeInstanceField(fields.instance, compute.getThis(), newVal);
             tryBlock.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
             CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
             catchBlock.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
             catchBlock.throwException(catchBlock.getCaughtException());
-            compute.returnValue(compute.readInstanceField(instanceField, compute.getThis()));
+            compute.returnValue(compute.readInstanceField(fields.instance, compute.getThis()));
 
             strSwitch.caseOf(bean.getIdentifier(), bc -> {
                 bc.returnValue(bc.invokeVirtualMethod(compute.getMethodDescriptor(), bc.getThis(), bc.getMethodParam(1)));
             });
         }
         strSwitch.defaultCase(bc -> bc.throwException(IllegalArgumentException.class, "Unknown bean identifier"));
+    }
+
+    record InstanceAndLock(FieldDescriptor instance, FieldDescriptor lock) {
     }
 
 }

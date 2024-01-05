@@ -71,7 +71,7 @@
         <grpc-jprotoc.version>1.2.1</grpc-jprotoc.version>
         <protoc.version>3.25.0</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
-        <proto-google-common-protos.version>2.28.0</proto-google-common-protos.version>
+        <proto-google-common-protos.version>2.30.0</proto-google-common-protos.version>
 
         <!-- TestNG version: we don't enforce it in the BOM as it is mostly used in the MP TCKs and we need to use the version from the TCKs -->
         <testng.version>7.4.0</testng.version>

@@ -3,6 +3,7 @@ package io.quarkus.grpc.runtime.devmode;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
 
 import io.grpc.ServerInterceptor;
 import io.grpc.ServerMethodDefinition;
@@ -90,8 +91,14 @@ public class GrpcServerReloader {
 
     public static void shutdown() {
         if (server != null) {
-            server.shutdown();
-            server = null;
+            try {
+                server.shutdown();
+            } catch (RejectedExecutionException ignored) {
+                // Ignore this, it means the application is already shutting down
+            } finally {
+                server = null;
+            }
+
         }
     }
 }

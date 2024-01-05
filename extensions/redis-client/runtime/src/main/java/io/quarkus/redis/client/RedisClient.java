@@ -214,7 +214,10 @@ public interface RedisClient {
 
     Response pfcount(List<String> args);
 
+    @Deprecated
     Response pfdebug(List<String> args);
+
+    Response pfdebug(String command, String key);
 
     Response pfmerge(List<String> args);
 

@@ -751,6 +751,9 @@
                                     <externalRules>
                                         <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
                                     </externalRules>
+                                    <externalRules>
+                                        <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
+                                    </externalRules>
                                 </rules>
                             </configuration>
                             <goals>

@@ -43,7 +43,7 @@ For more information, see the Quarkus xref:security-customization.adoc[Security 
 
 To get started with security in Quarkus, consider securing your Quarkus application endpoints with the built-in Quarkus xref:security-basic-authentication.adoc[Basic authentication] and the Jakarta Persistence identity provider and enabling role-based access control.
 
-Complete the steps in the xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence] tutorial.
+Complete the steps in the xref:security-getting-started-tutorial.adoc[Getting started with Security by using Basic authentication and Jakarta Persistence] tutorial.
 
 After successfully securing your Quarkus application with Basic authentication, you can increase the security further by adding more advanced authentication mechanisms, for example, the Quarkus xref:security-oidc-code-flow-authentication.adoc[OpenID Connect (OIDC) authorization code flow mechanism] guide.
 
@@ -103,6 +103,6 @@ For information about security vulnerabilities, see the xref:security-vulnerabil
 == References
 
 * xref:security-basic-authentication.adoc[Basic authentication]
-* xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence]
+* xref:security-getting-started-tutorial.adoc[Getting started with Security by using Basic authentication and Jakarta Persistence]
 * xref:security-oidc-code-flow-authentication-tutorial.adoc[Protect a web application by using OIDC authorization code flow]
 * xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a service application by using OIDC Bearer token authentication]

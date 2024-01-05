@@ -65,7 +65,7 @@ For more information, see the following documentation:
 * xref:security-basic-authentication.adoc[Basic authentication]
 ** xref:security-basic-authentication-howto.adoc[Enable Basic authentication]
 * xref:security-jpa.adoc[Quarkus Security with Jakarta Persistence]
-** xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence]
+** xref:security-getting-started-tutorial.adoc[Getting started with Security by using Basic authentication and Jakarta Persistence]
 * xref:security-identity-providers.adoc[Identity providers]
 
 [[form-auth]]

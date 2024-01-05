@@ -14,7 +14,7 @@ import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 
 @ApplicationScoped
-public class ChannelEmitterWithMultipleDefinitions {
+public class ChannelEmitterWithMultipleDifferentDefinitions {
 
     @Inject
     @Channel("sink")
@@ -26,7 +26,7 @@ public class ChannelEmitterWithMultipleDefinitions {
 
     @Inject
     public void setEmitter(
-            @Channel("sink") @Broadcast @OnOverflow(value = OnOverflow.Strategy.BUFFER) Emitter<String> sink2) {
+            @Channel("sink") @OnOverflow(value = OnOverflow.Strategy.BUFFER, bufferSize = 4) Emitter<String> sink2) {
         this.emitterForSink2 = sink2;
     }
 

@@ -129,13 +129,13 @@ public class QuarkusEmitterConfiguration implements EmitterConfiguration {
                 && broadcast == that.broadcast
                 && numberOfSubscriberBeforeConnecting == that.numberOfSubscriberBeforeConnecting
                 && Objects.equals(name, that.name)
-                && Objects.equals(emitterType, that.emitterType)
+                && Objects.equals(emitterType.value(), that.emitterType.value())
                 && overflowBufferStrategy == that.overflowBufferStrategy;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, emitterType, overflowBufferStrategy, overflowBufferSize, broadcast,
+        return Objects.hash(name, emitterType.value(), overflowBufferStrategy, overflowBufferSize, broadcast,
                 numberOfSubscriberBeforeConnecting);
     }
 

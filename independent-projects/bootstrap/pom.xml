@@ -34,7 +34,7 @@
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.inject.version>1</javax.inject.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <version.compiler.plugin>3.11.0</version.compiler.plugin>
+        <version.compiler.plugin>3.12.1</version.compiler.plugin>
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.2.3</version.surefire.plugin>
         <jandex.version>3.1.6</jandex.version>

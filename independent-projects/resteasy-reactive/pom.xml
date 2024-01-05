@@ -56,7 +56,7 @@
         <gizmo.version>1.7.0</gizmo.version>
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
 
-        <version.compiler.plugin>3.11.0</version.compiler.plugin>
+        <version.compiler.plugin>3.12.1</version.compiler.plugin>
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.2.3</version.surefire.plugin>
         <mutiny.version>2.5.3</mutiny.version>

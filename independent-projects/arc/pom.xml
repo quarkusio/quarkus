@@ -61,7 +61,7 @@
         <version.cdi-tck>4.0.12</version.cdi-tck>
         <version.junit4>4.13.2</version.junit4>
         <!-- Maven plugin versions -->
-        <version.compiler.plugin>3.11.0</version.compiler.plugin>
+        <version.compiler.plugin>3.12.1</version.compiler.plugin>
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.2.3</version.surefire.plugin>
     </properties>

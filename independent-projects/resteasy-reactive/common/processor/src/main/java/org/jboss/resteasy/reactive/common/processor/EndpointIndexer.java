@@ -1630,6 +1630,9 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             DefaultProducesHandler jsonDefaultProducersHandler,
             DefaultProducesHandler.Context context) {
         if (hasJson(method) || (hasNoTypesDefined(method) && isDefaultJson(jsonDefaultProducersHandler, context))) {
+            if (STRING.toString().equals(method.getSimpleReturnType())) { // when returning string, we assume that the method implementation is actually handling to conversion
+                return;
+            }
             boolean appProvidedJsonReaderExists = appProvidedJsonProviderExists(getSerializerScanningResult().getReaders());
             boolean appProvidedJsonWriterExists = appProvidedJsonProviderExists(getSerializerScanningResult().getWriters());
             if (!appProvidedJsonReaderExists || !appProvidedJsonWriterExists) {

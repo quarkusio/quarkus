@@ -17,6 +17,8 @@ import jakarta.enterprise.context.spi.Context;
 import jakarta.enterprise.context.spi.Contextual;
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.event.Event;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Stereotype;
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
@@ -37,6 +39,7 @@ import jakarta.enterprise.inject.spi.InterceptionType;
 import jakarta.enterprise.inject.spi.Interceptor;
 import jakarta.enterprise.inject.spi.ObserverMethod;
 import jakarta.enterprise.inject.spi.ProducerFactory;
+import jakarta.inject.Named;
 import jakarta.inject.Qualifier;
 import jakarta.interceptor.InterceptorBinding;
 
@@ -314,4 +317,71 @@ public class BeanManagerImpl implements BeanManager {
         return ArcContainerImpl.instance().instance;
     }
 
+    @Override
+    public boolean isMatchingBean(Set<Type> beanTypes, Set<Annotation> beanQualifiers, Type requiredType,
+            Set<Annotation> requiredQualifiers) {
+        illegalNull(beanTypes, "beanTypes");
+        illegalNull(beanQualifiers, "beanQualifiers");
+        illegalNull(requiredType, "requiredType");
+        illegalNull(requiredQualifiers, "requiredQualifiers");
+
+        Set<Type> legalBeanTypes = new HashSet<>();
+        legalBeanTypes.add(Object.class);
+        for (Type beanType : beanTypes) {
+            if (!Types.isIllegalBeanType(beanType)) {
+                legalBeanTypes.add(beanType);
+            }
+        }
+        ArcContainerImpl.instance().registeredQualifiers.verify(beanQualifiers);
+        ArcContainerImpl.instance().registeredQualifiers.verify(requiredQualifiers);
+
+        beanQualifiers = new HashSet<>(beanQualifiers);
+        beanQualifiers.add(Any.Literal.INSTANCE);
+        if (beanQualifiers.stream().allMatch(it -> it.annotationType() == Any.class || it.annotationType() == Named.class)) {
+            beanQualifiers.add(Default.Literal.INSTANCE);
+        }
+
+        if (requiredQualifiers.isEmpty()) {
+            requiredQualifiers = Qualifiers.IP_DEFAULT_QUALIFIERS;
+        }
+
+        if (!BeanTypeAssignabilityRules.instance().matches(requiredType, legalBeanTypes)) {
+            return false;
+        }
+        return ArcContainerImpl.instance().registeredQualifiers.hasQualifiers(beanQualifiers,
+                requiredQualifiers.toArray(new Annotation[0]));
+    }
+
+    @Override
+    public boolean isMatchingEvent(Type specifiedType, Set<Annotation> specifiedQualifiers, Type observedEventType,
+            Set<Annotation> observedEventQualifiers) {
+        illegalNull(specifiedType, "specifiedType");
+        illegalNull(specifiedQualifiers, "specifiedQualifiers");
+        illegalNull(observedEventType, "observedEventType");
+        illegalNull(observedEventQualifiers, "observedEventQualifiers");
+
+        if (Types.containsTypeVariable(specifiedType)) {
+            throw new IllegalArgumentException("Event type contains a type variable: " + specifiedType);
+        }
+        ArcContainerImpl.instance().registeredQualifiers.verify(specifiedQualifiers);
+        ArcContainerImpl.instance().registeredQualifiers.verify(observedEventQualifiers);
+
+        Set<Annotation> eventQualifiers = new HashSet<>(specifiedQualifiers);
+        if (eventQualifiers.isEmpty()) {
+            eventQualifiers.add(Default.Literal.INSTANCE);
+        }
+        eventQualifiers.add(Any.Literal.INSTANCE);
+
+        Set<Type> eventTypes = new HierarchyDiscovery(specifiedType).getTypeClosure();
+        if (!EventTypeAssignabilityRules.instance().matches(observedEventType, eventTypes)) {
+            return false;
+        }
+        return ArcContainerImpl.instance().registeredQualifiers.isSubset(observedEventQualifiers, eventQualifiers);
+    }
+
+    private static void illegalNull(Object obj, String name) {
+        if (obj == null) {
+            throw new IllegalArgumentException(name + " must be set");
+        }
+    }
 }

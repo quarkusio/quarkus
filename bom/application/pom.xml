@@ -179,8 +179,6 @@
         <mongo-crypt.version>1.8.0</mongo-crypt.version>
         <proton-j.version>0.34.1</proton-j.version>
         <javaparser.version>3.25.6</javaparser.version>
-        <okhttp.version>3.14.9</okhttp.version><!-- keep in sync with okio -->
-        <okio.version>1.17.6</okio.version><!-- keep in sync with okhttp -->
         <hibernate-quarkus-local-cache.version>0.3.0</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.12.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP7</quarkus-spring-api.version>
@@ -4200,21 +4198,6 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>com.squareup.okhttp3</groupId>
-                <artifactId>okhttp</artifactId>
-                <version>${okhttp.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.squareup.okhttp3</groupId>
-                <artifactId>logging-interceptor</artifactId>
-                <version>${okhttp.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.squareup.okio</groupId>
-                <artifactId>okio</artifactId>
-                <version>${okio.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.mongodb</groupId>
                 <artifactId>mongodb-driver-sync</artifactId>
                 <version>${mongo-client.version}</version>
@@ -6272,6 +6255,11 @@
                             <excludeScopes>test</excludeScopes>
                             <excludeArtifactKeys>
                                 <key>junit:junit</key> <!-- comes from the jackson-bom -->
+
+                                <!-- we don't want our BOM to enforce Okhttp dependencies -->
+                                <key>com.squareup.okhttp3:*</key>
+                                <key>com.squareup.okhttp:*</key>
+                                <key>com.squareup.okio:*</key>
 
                                 <!-- jboss-parent:40 still manages jdk-misc, but does not define version.jdk-misc anymore. -->
                                 <!-- We can just remove it because is not needed anyway. -->

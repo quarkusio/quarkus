@@ -326,6 +326,98 @@ public interface ExtensionsService {
 ----
 
 
+=== Using ClientMultipartForm
+
+MultipartForm can be built using the Class `ClientMultipartForm` which supports building the form as needed:
+
+`ClientMultipartForm` can be programmatically created with custom inputs and/or from `MultipartFormDataInput` and/or from custom Resteasy Reactive Input annotated with `@RestForm` if received.
+
+[source, java]
+----
+public interface MultipartService {
+
+  @POST
+  @Path("/multipart")
+  @Consumes(MediaType.MULTIPART_FORM_DATA)
+  @Produces(MediaType.APPLICATION_JSON)
+  Map<String, String> multipart(ClientMultipartForm dataParts); // <1>
+}
+----
+
+<1> input to the method is a custom Generic `ClientMultipartForm` which matches external application api contract.
+
+
+More information about this Class and supported methods can be found on the javadoc of link:https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-client/latest/org/jboss/resteasy/reactive/client/api/ClientMultipartForm.html[`ClientMultipartForm`].
+
+
+Build `ClientMultipartForm` from `MultipartFormDataInput` programmatically
+
+[source, java]
+----
+public ClientMultipartForm buildClientMultipartForm(MultipartFormDataInput inputForm) // <1>
+    throws IOException {
+  ClientMultipartForm multiPartForm = ClientMultipartForm.create(); // <2>
+  for (Entry<String, Collection<FormValue>> attribute : inputForm.getValues().entrySet()) {
+    for (FormValue fv : attribute.getValue()) {
+      if (fv.isFileItem()) {
+        final FileItem fi = fv.getFileItem();
+        String mediaType = Objects.toString(fv.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE),
+            MediaType.APPLICATION_OCTET_STREAM);
+        if (fi.isInMemory()) {
+          multiPartForm.binaryFileUpload(attribute.getKey(), fv.getFileName(),
+              Buffer.buffer(IOUtils.toByteArray(fi.getInputStream())), mediaType); // <3>
+        } else {
+          multiPartForm.binaryFileUpload(attribute.getKey(), fv.getFileName(),
+              fi.getFile().toString(), mediaType); // <4>
+        }
+      } else {
+        multiPartForm.attribute(attribute.getKey(), fv.getValue(), fv.getFileName()); // <5>
+      }
+    }
+  }
+  return multiPartForm;
+}
+----
+
+<1> `MultipartFormDataInput` inputForm supported by RestEasy Reactive (Server).
+<2> Creating a `ClientMultipartForm` object to populate with various dataparts.
+<3> Adding InMemory `FileItem` to `ClientMultipartForm`
+<4> Adding physical `FileItem` to `ClientMultipartForm`
+<5> Adding any attribute directly to `ClientMultipartForm` if not `FileItem`.
+
+Build `ClientMultipartForm` from custom Attributes annotated with `@RestForm`
+
+[source, java]
+----
+public class MultiPartPayloadFormData { // <1>
+
+  @RestForm("files")
+  @PartType(MediaType.APPLICATION_OCTET_STREAM)
+  List<FileUpload> files;
+
+  @RestForm("jsonPayload")
+  @PartType(MediaType.TEXT_PLAIN)
+  String jsonPayload;
+}
+
+/*
+ * Generate ClientMultipartForm from custom attributes annotated with @RestForm
+ */
+public ClientMultipartForm buildClientMultipartForm(MultiPartPayloadFormData inputForm) { // <1>
+  ClientMultipartForm multiPartForm = ClientMultipartForm.create();
+  multiPartForm.attribute("jsonPayload", inputForm.getJsonPayload(), "jsonPayload"); // <2>
+  inputForm.getFiles().forEach(fu -> {
+    multiPartForm.binaryFileUpload("file", fu.name(), fu.filePath().toString(), fu.contentType()); // <3>
+  });
+  return multiPartForm;
+}
+----
+
+<1> `MultiPartPayloadFormData` custom Object created to match the API contract for calling service which needs to be converted to `ClientMultipartForm`
+<2> Adding attribute `jsonPayload` directly to `ClientMultipartForm`
+<3> Adding `FileUpload` objects to `ClientMultipartForm` as binaryFileUpload with contentType.
+
+
 == Create the configuration
 
 In order to determine the base URL to which REST calls will be made, the REST Client uses configuration from `application.properties`.

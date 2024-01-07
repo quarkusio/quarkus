@@ -1404,6 +1404,16 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-confluent-registry-json-schema</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-confluent-registry-json-schema-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-confluent-registry-avro-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -3397,7 +3407,6 @@
                 <artifactId>apicurio-common-rest-client-vertx</artifactId>
                 <version>${apicurio-common-rest-client.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-mutiny</artifactId>

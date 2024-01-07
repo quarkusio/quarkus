@@ -17,6 +17,8 @@ public abstract class KafkaJsonSchemaTestBase {
 
     static final String APICURIO_PATH = "/json-schema/apicurio";
 
+    static final String CONFLUENT_PATH = "/json-schema/confluent";
+
     abstract JsonSchemaKafkaCreator creator();
 
     @Test
@@ -39,6 +41,20 @@ public abstract class KafkaJsonSchemaTestBase {
         String topic = "test-json-schema-apicurio-consumer";
         KafkaProducer<Integer, Pet> producer = creator().createApicurioProducer("test-json-schema-apicurio-test");
         testJsonSchemaConsumer(producer, APICURIO_PATH, topic);
+    }
+
+    @Test
+    public void testConfluentJsonSchemaProducer() {
+        KafkaConsumer<Integer, Pet> consumer = creator().createConfluentConsumer(
+                "test-json-schema-confluent",
+                "test-json-schema-confluent-producer");
+        testJsonSchemaProducer(consumer, CONFLUENT_PATH);
+    }
+
+    @Test
+    public void testConfluentJsonSchemaConsumer() {
+        KafkaProducer<Integer, Pet> producer = creator().createConfluentProducer("test-json-schema-confluent-test");
+        testJsonSchemaConsumer(producer, CONFLUENT_PATH, "test-json-schema-confluent-consumer");
     }
 
     protected void testJsonSchemaProducer(KafkaConsumer<Integer, Pet> consumer, String path) {

@@ -17,7 +17,8 @@ public class KafkaResource implements QuarkusTestResourceLifecycleManager, DevSe
         String bootstrapServers = devServicesProperties.get("kafka.bootstrap.servers");
         if (bootstrapServers != null) {
             String apicurioUrl = devServicesProperties.get("mp.messaging.connector.smallrye-kafka.apicurio.registry.url");
-            creator = new JsonSchemaKafkaCreator(bootstrapServers, apicurioUrl);
+            String confluentUrl = devServicesProperties.get("mp.messaging.connector.smallrye-kafka.schema.registry.url");
+            creator = new JsonSchemaKafkaCreator(bootstrapServers, apicurioUrl, confluentUrl);
         }
     }
 

@@ -15,8 +15,29 @@
     <name>Quarkus - Confluent Schema Registry</name>
     <packaging>pom</packaging>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <artifactId>joda-time</artifactId>
+                <groupId>joda-time</groupId>
+                <version>2.10.14</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-scripting-compiler-embeddable</artifactId>
+                <version>1.6.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.json</groupId>
+                <artifactId>json</artifactId>
+                <version>20230227</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <modules>
         <module>common</module>
         <module>avro</module>
+        <module>json-schema</module>
     </modules>
 </project>

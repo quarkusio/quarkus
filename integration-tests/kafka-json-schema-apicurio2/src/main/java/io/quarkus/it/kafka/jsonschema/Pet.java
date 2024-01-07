@@ -1,5 +1,25 @@
 package io.quarkus.it.kafka.jsonschema;
 
+import io.confluent.kafka.schemaregistry.annotations.Schema;
+
+//This class is used by both serializers, but for it to be usable by the Confluent serializer the schema must be attached here in the annotation
+@Schema(value = """
+        {
+          "$id": "https://example.com/person.schema.json",
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "title": "Pet",
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The pet's name."
+            },
+            "color": {
+              "type": "string",
+              "description": "The pet's color."
+            }
+          }
+        }""", refs = {})
 public class Pet {
 
     private String name;

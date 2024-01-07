@@ -25,6 +25,20 @@ public class JsonSchemaEndpoint {
     JsonSchemaKafkaCreator creator;
 
     @GET
+    @Path("/confluent")
+    public JsonObject getConfluent() {
+        return get(
+                creator.createConfluentConsumer("test-json-schema-confluent-consumer", "test-json-schema-confluent-consumer"));
+    }
+
+    @POST
+    @Path("/confluent")
+    public void sendConfluent(Pet pet) {
+        KafkaProducer<Integer, Pet> p = creator.createConfluentProducer("test-json-schema-confluent");
+        send(p, pet, "test-json-schema-confluent-producer");
+    }
+
+    @GET
     @Path("/apicurio")
     public JsonObject getApicurio() {
         return get(creator.createApicurioConsumer("test-json-schema-apicurio-consumer", "test-json-schema-apicurio-consumer"));

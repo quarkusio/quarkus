@@ -13,6 +13,26 @@
     <name>Quarkus - Integration Tests - Kafka Json Schema with Apicurio 2.x</name>
     <description>The Apache Kafka Json Schema with Apicurio Registry 2.x integration tests module</description>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <artifactId>joda-time</artifactId>
+                <groupId>joda-time</groupId>
+                <version>2.10.14</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-scripting-compiler-embeddable</artifactId>
+                <version>1.6.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.json</groupId>
+                <artifactId>json</artifactId>
+                <version>20230227</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -43,10 +63,15 @@
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-csv</artifactId>
         </dependency>
-        <!-- Apicurio -->
+        <!-- Confluent (Not in Maven Central) -->
+        <!-- Apicurio & Confluent -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-apicurio-registry-json-schema</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-confluent-registry-json-schema</artifactId>
         </dependency>
 
         <!-- test dependencies -->
@@ -139,6 +164,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-apicurio-registry-json-schema-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-confluent-registry-json-schema-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

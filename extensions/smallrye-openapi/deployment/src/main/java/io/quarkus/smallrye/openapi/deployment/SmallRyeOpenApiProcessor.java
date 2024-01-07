@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -473,20 +475,19 @@ public class SmallRyeOpenApiProcessor {
     }
 
     private List<String> getUserDefinedFilters(OpenApiConfig openApiConfig, IndexView index, OpenApiFilter.RunStage stage) {
-        List<String> userDefinedFilters = new ArrayList<>();
-        Collection<AnnotationInstance> annotations = index.getAnnotations(DotName.createSimple(OpenApiFilter.class.getName()));
-        for (AnnotationInstance ai : annotations) {
-            AnnotationTarget annotationTarget = ai.target();
-            ClassInfo classInfo = annotationTarget.asClass();
-            if (classInfo.interfaceNames().contains(DotName.createSimple(OASFilter.class.getName()))) {
-
-                OpenApiFilter.RunStage runStage = OpenApiFilter.RunStage.valueOf(ai.value().asEnum());
-                if (runStage.equals(OpenApiFilter.RunStage.BOTH) || runStage.equals(stage)) {
-                    userDefinedFilters.add(classInfo.name().toString());
-                }
-            }
-        }
-        return userDefinedFilters;
+        EnumSet<OpenApiFilter.RunStage> stages = EnumSet.of(OpenApiFilter.RunStage.BOTH, stage);
+        Comparator<Object> comparator = Comparator
+                .comparing(x -> ((AnnotationInstance) x).valueWithDefault(index, "priority").asInt())
+                .reversed();
+        return index
+                .getAnnotations(OpenApiFilter.class)
+                .stream()
+                .filter(ai -> stages.contains(OpenApiFilter.RunStage.valueOf(ai.value().asEnum())))
+                .sorted(comparator)
+                .map(ai -> ai.target().asClass())
+                .filter(c -> c.interfaceNames().contains(DotName.createSimple(OASFilter.class.getName())))
+                .map(c -> c.name().toString())
+                .collect(Collectors.toList());
     }
 
     private boolean isManagement(ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,

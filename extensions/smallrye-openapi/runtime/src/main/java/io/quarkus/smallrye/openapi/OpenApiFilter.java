@@ -19,6 +19,13 @@ import java.lang.annotation.Target;
 public @interface OpenApiFilter {
     RunStage value() default RunStage.RUN; // When this filter should run, default Runtime
 
+    /**
+     * Filter with a higher priority will applied first
+     *
+     * @return
+     */
+    int priority() default 1;
+
     static enum RunStage {
         BUILD,
         RUN,

@@ -11,6 +11,7 @@
     <quarkus.platform.version>@project.version@</quarkus.platform.version>
     <quarkus-plugin.version>@project.version@</quarkus-plugin.version>
     <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
+    <surefire-plugin.version>${version.surefire.plugin}</surefire-plugin.version>
     <maven.compiler.source>${maven.compiler.source}</maven.compiler.source>
     <maven.compiler.target>${maven.compiler.target}</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -62,6 +63,7 @@
           <execution>
             <goals>
               <goal>build</goal>
+              <goal>generate-filters</goal>
             </goals>
           </execution>
         </executions>
@@ -93,9 +95,28 @@
       <build>
         <plugins>
           <plugin>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <version>\${surefire-plugin.version}</version>
+              <executions>
+                <execution>
+                  <goals>
+                    <goal>integration-test</goal>
+                    <goal>verify</goal>
+                  </goals>
+                  <configuration>
+                    <systemPropertyVariables>
+                      <native.image.path>\${project.build.directory}/\${project.build.finalName}-runner</native.image.path>
+                      <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                      <maven.home>\${maven.home}</maven.home>
+                    </systemPropertyVariables>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+          <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <argLine>-agentlib:native-image-agent=config-output-dir=target/native-agent-base-config</argLine>
+                <argLine>-agentlib:native-image-agent=access-filter-file=target/quarkus-access-filter.json,caller-filter-file=target/quarkus-caller-filter.json,config-output-dir=target/native-agent-base-config</argLine>
             </configuration>
           </plugin>
         </plugins>

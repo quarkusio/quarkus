@@ -9,6 +9,9 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.builder.Json;
 import io.quarkus.builder.JsonReader;
@@ -16,11 +19,14 @@ import io.quarkus.builder.JsonTransform;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageAgentConfigDirectoryBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
 public class NativeImageAgentConfigStep {
+    private static final Logger log = Logger.getLogger(NativeImageAgentConfigStep.class);
+
     private final Pattern resourceSkipPattern;
 
     public NativeImageAgentConfigStep() {
@@ -29,7 +35,8 @@ public class NativeImageAgentConfigStep {
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void transformConfig(BuildProducer<NativeImageAgentConfigDirectoryBuildItem> nativeImageAgentConfigDirectoryProducer,
+    void transformConfig(NativeConfig nativeConfig,
+            BuildProducer<NativeImageAgentConfigDirectoryBuildItem> nativeImageAgentConfigDirectoryProducer,
             NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
             BuildSystemTargetBuildItem buildSystemTargetBuildItem) throws IOException {
         final Path basePath = buildSystemTargetBuildItem.getOutputDirectory()
@@ -41,13 +48,32 @@ public class NativeImageAgentConfigStep {
             if (!targetPath.toFile().exists()) {
                 targetPath.toFile().mkdirs();
             }
-            nativeImageAgentConfigDirectoryProducer.produce(new NativeImageAgentConfigDirectoryBuildItem(targetDirName));
-            transformJsonObject(basePath, "resource-config.json", targetPath, JsonTransform.dropping(this::discardResource));
-
-            Files.copy(basePath.resolve("jni-config.json"), targetPath.resolve("jni-config.json"));
-            Files.copy(basePath.resolve("proxy-config.json"), targetPath.resolve("proxy-config.json"));
             Files.copy(basePath.resolve("reflect-config.json"), targetPath.resolve("reflect-config.json"));
             Files.copy(basePath.resolve("serialization-config.json"), targetPath.resolve("serialization-config.json"));
+            Files.copy(basePath.resolve("jni-config.json"), targetPath.resolve("jni-config.json"));
+            Files.copy(basePath.resolve("proxy-config.json"), targetPath.resolve("proxy-config.json"));
+            transformJsonObject(basePath, "resource-config.json", targetPath, JsonTransform.dropping(this::discardResource));
+
+            if (log.isInfoEnabled()) {
+                log.info("Discovered native image agent generated files");
+                logConfigurationFileContents("reflect-config.json", targetPath);
+                logConfigurationFileContents("serialization-config.json", targetPath);
+                logConfigurationFileContents("jni-config.json", targetPath);
+                logConfigurationFileContents("proxy-config.json", targetPath);
+                logConfigurationFileContents("resource-config.json", targetPath);
+            }
+
+            if (nativeConfig.agentConfigurationApply()) {
+                log.info("Applying native image agent generated files to current native executable build");
+                nativeImageAgentConfigDirectoryProducer.produce(new NativeImageAgentConfigDirectoryBuildItem(targetDirName));
+            }
+        }
+    }
+
+    private static void logConfigurationFileContents(String configurationFileName, Path targetPath) throws IOException {
+        try (Stream<String> lines = Files.lines(targetPath.resolve(configurationFileName))) {
+            log.infof("Generated %s:%n%s", configurationFileName,
+                    lines.collect(Collectors.joining(System.lineSeparator())));
         }
     }
 

@@ -20,7 +20,8 @@ public class NativeAgentIT extends MojoTestBase {
     public void testRunIntegrationTests() throws MavenInvocationException, IOException, InterruptedException {
         final File testDir = initProject("projects/native-agent-integration");
         final RunningInvoker running = new RunningInvoker(testDir, false);
-        MavenProcessInvocationResult result = running.execute(List.of("clean", "verify", "-Pnative-with-agent"), Map.of());
+        MavenProcessInvocationResult result = running.execute(
+                List.of("clean", "verify", "-Dnative-with-agent", "-Dquarkus.native.agent-configuration-apply"), Map.of());
         assertThat(result.getProcess().waitFor()).isZero();
     }
 }

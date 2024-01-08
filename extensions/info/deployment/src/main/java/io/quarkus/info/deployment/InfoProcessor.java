@@ -26,6 +26,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.builder.Version;
@@ -274,6 +275,7 @@ public class InfoProcessor {
             List<InfoBuildTimeValuesBuildItem> buildTimeValues,
             List<InfoBuildTimeContributorBuildItem> contributors,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeanBuildItemBuildProducer,
             InfoRecorder recorder) {
         Map<String, Object> buildTimeInfo = buildTimeValues.stream().collect(
                 Collectors.toMap(InfoBuildTimeValuesBuildItem::getName, InfoBuildTimeValuesBuildItem::getValue, (x, y) -> y,
@@ -281,6 +283,7 @@ public class InfoProcessor {
         List<InfoContributor> infoContributors = contributors.stream()
                 .map(InfoBuildTimeContributorBuildItem::getInfoContributor)
                 .collect(Collectors.toList());
+        unremovableBeanBuildItemBuildProducer.produce(UnremovableBeanBuildItem.beanTypes(InfoContributor.class));
         return nonApplicationRootPathBuildItem.routeBuilder()
                 .management()
                 .route(buildTimeConfig.path())

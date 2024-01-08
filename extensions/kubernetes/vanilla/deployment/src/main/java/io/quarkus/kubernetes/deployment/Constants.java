@@ -54,6 +54,7 @@ public final class Constants {
     static final String QUARKUS_ANNOTATIONS_COMMIT_ID = "app.quarkus.io/commit-id";
     static final String QUARKUS_ANNOTATIONS_VCS_URL = "app.quarkus.io/vcs-uri";
     static final String QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP = "app.quarkus.io/build-timestamp";
+    static final String QUARKUS_ANNOTATIONS_QUARKUS_VERSION = "app.quarkus.io/quarkus-version";
 
     public static final String HTTP_PORT = "http";
     public static final int DEFAULT_HTTP_PORT = 8080;

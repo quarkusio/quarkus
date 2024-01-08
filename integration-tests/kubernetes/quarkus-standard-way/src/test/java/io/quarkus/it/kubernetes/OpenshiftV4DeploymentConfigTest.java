@@ -47,6 +47,7 @@ public class OpenshiftV4DeploymentConfigTest {
                 assertThat(m.getLabels().get("app.kubernetes.io/name")).isEqualTo("openshift-v4-deploymentconfig");
                 assertThat(m.getLabels().get("app")).isNull();
                 assertThat(m.getNamespace()).isNull();
+                assertThat(m.getAnnotations().get("app.quarkus.io/quarkus-version")).isNotBlank();
             });
             AbstractObjectAssert<?, ?> specAssert = assertThat(h).extracting("spec");
             specAssert.extracting("selector").isInstanceOfSatisfying(Map.class, selectorsMap -> {

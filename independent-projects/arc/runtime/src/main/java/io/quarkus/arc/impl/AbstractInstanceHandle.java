@@ -7,16 +7,12 @@ import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.spi.CreationalContext;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InstanceHandle;
 
 abstract class AbstractInstanceHandle<T> implements InstanceHandle<T> {
-
-    private static final Logger LOGGER = Logger.getLogger(AbstractInstanceHandle.class.getName());
 
     @SuppressWarnings("rawtypes")
     private static final AtomicIntegerFieldUpdater<AbstractInstanceHandle> DESTROYED_UPDATER = AtomicIntegerFieldUpdater

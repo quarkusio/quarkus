@@ -1,4 +1,4 @@
-package io.quarkus.arc.test.contexts.application.optimized;
+package io.quarkus.arc.test.contexts.request.optimized;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -14,6 +14,7 @@ import java.util.concurrent.TimeoutException;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,7 @@ import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
 
-public class ApplicationContextInstancesTest {
+public class RequestContextInstancesTest {
 
     @RegisterExtension
     ArcTestContainer container = ArcTestContainer.builder()
@@ -36,6 +37,8 @@ public class ApplicationContextInstancesTest {
     @Test
     public void testContext() {
         ArcContainer container = Arc.container();
+        container.requestContext().activate();
+
         InstanceHandle<Boom> handle = container.instance(Boom.class);
         Boom boom = handle.get();
         // ContextInstances#computeIfAbsent()
@@ -44,22 +47,23 @@ public class ApplicationContextInstancesTest {
 
         // ContextInstances#remove()
         handle.destroy();
-        // Bim bean is not destroyed
         // ContextInstances#getAllPresent()
-        assertEquals(1, container.getActiveContext(ApplicationScoped.class).getState().getContextualInstances().size());
+        assertEquals(0, container.getActiveContext(RequestScoped.class).getState().getContextualInstances().size());
 
         // Init a new instance of Boom
         String id2 = boom.ping();
         assertNotEquals(id1, id2);
         assertEquals(id2, boom.ping());
 
-        InjectableContext appContext = container.getActiveContext(ApplicationScoped.class);
+        InjectableContext appContext = container.getActiveContext(RequestScoped.class);
         // ContextInstances#removeEach()
         appContext.destroy();
         assertNotEquals(id2, boom.ping());
+
+        container.requestContext().terminate();
     }
 
-    @ApplicationScoped
+    @RequestScoped
     public static class Boom {
 
         private String id;

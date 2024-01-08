@@ -3,29 +3,37 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Using OpenID Connect (OIDC) and Keycloak to Centralize Authorization
+= Using OpenID Connect (OIDC) and Keycloak to centralize authorization
 include::_attributes.adoc[]
+:diataxis-type: howto
 :categories: security
 :keywords: sso oidc security keycloak
-:summary: This guide demonstrates how your Quarkus application can authorize access to protected resources using Keycloak Authorization Services.
 :topics: security,authentication,authorization,keycloak,sso,oidc
 :extensions: io.quarkus:quarkus-oidc,io.quarkus:quarkus-keycloak-authorization
 
-This guide demonstrates how your Quarkus application can authorize a bearer token access to protected resources using https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services].
+Learn how to enable bearer token authorization in your Quarkus application using link:https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services] for secure access to protected resources.
 
-The `quarkus-keycloak-authorization` extension is based on `quarkus-oidc` and provides a policy enforcer that enforces access to protected resources based on permissions managed by Keycloak and currently can only be used with the Quarkus xref:security-oidc-bearer-token-authentication.adoc[OIDC service applications].
+The `quarkus-keycloak-authorization` extension relies on `quarkus-oidc`.
+It includes a policy enforcer that regulates access to secured resources.
+Access is governed by permissions set in Keycloak.
+Currently, this extension is compatible solely with Quarkus xref:security-oidc-bearer-token-authentication.adoc[OIDC service applications].
 
 It provides a flexible and dynamic authorization capability based on Resource-Based Access Control.
 
-Instead of explicitly enforcing access based on some specific access control mechanism such as Role-Based Access Control(RBAC), `quarkus-keycloak-authorization` checks whether a request is allowed to access a resource based on its name, identifier or URI by sending a bearer access token verified by `quarkus-oidc` to Keycloak Authorization Services where an authorization decision is made.
+Rather than explicitly enforcing access through specific mechanisms such as role-based access control (RBAC), `quarkus-keycloak-authorization` determines request permissions based on resource attributes such as name, identifier, or Uniform Resource Identifier (URI).
+This process involves sending a `quarkus-oidc`-verified bearer access token to Keycloak Authorization Services for an authorization decision.
 
-Use `quarkus-keycloak-authorization` only if you work with Keycloak and have Keycloak Authorization Services enabled to make authorization decisions. Use `quarkus-oidc` if you do not work with Keycloak or work with Keycloak but do not have its Keycloak Authorization Services enabled to make authorization decisions.
+Use `quarkus-keycloak-authorization` only if you work with Keycloak and have Keycloak Authorization Services enabled to make authorization decisions.
+Use `quarkus-oidc` if you do not work with Keycloak or work with Keycloak but do not have its Keycloak Authorization Services enabled to make authorization decisions.
 
-By externalizing authorization from your application, you are allowed to protect your applications using different access control mechanisms as well as avoid re-deploying your application every time your security requirements change, where Keycloak will be acting as a centralized authorization service from where your protected resources and their associated permissions are managed.
+By shifting authorization responsibilities outside your application, you enhance security through various access control methods while eliminating the need for frequent re-deployments whenever security needs evolve.
+In this case, Keycloak acts as a centralized authorization hub, managing your protected resources and their corresponding permissions effectively.
 
-See the xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication] guide for more information about `Bearer Token` authentication mechanism. It is important to realize that it is the `Bearer Token` authentication mechanism which does the authentication and creates a security identity - while the `quarkus-keycloak-authorization` extension is responsible for applying a Keycloak Authorization Policy to this identity based on the current request path and other policy settings.
+For more information, see the xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication] guide.
+It is important to realize that the Bearer token authentication mechanism does the authentication and creates a security identity.
+Meanwhile, the `quarkus-keycloak-authorization` extension applies a Keycloak Authorization Policy to this identity based on the current request path and other policy settings.
 
-Please see https://www.keycloak.org/docs/latest/authorization_services/index.html#_enforcer_overview[Keycloak Authorization Services documentation] for more information.
+For more information, see https://www.keycloak.org/docs/latest/authorization_services/index.html#_enforcer_overview[Keycloak Authorization Services documentation].
 
 == Prerequisites
 
@@ -36,25 +44,28 @@ include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
-In this example, we build a very simple microservice which offers two endpoints:
+In this example, we build a very simple microservice that offers two endpoints:
 
 * `/api/users/me`
 * `/api/admin`
 
-These endpoints are protected and can only be accessed if a client is sending a bearer token along with the request, which must be valid (e.g.: signature, expiration and audience) and trusted by the microservice.
+These endpoints are protected.
+Access is granted only when a client sends a bearer token with the request.
+This token must be valid, having a correct signature, expiration date, and audience.
+Additionally, the microservice must trust the token.
 
-The bearer token is issued by a Keycloak Server and represents the subject to which the token was issued for.
+The bearer token is issued by a Keycloak server and represents the subject for which the token was issued.
 For being an OAuth 2.0 Authorization Server, the token also references the client acting on behalf of the user.
 
 The `/api/users/me` endpoint can be accessed by any user with a valid token.
-As a response, it returns a JSON document with details about the user where these details are obtained from the information carried on the token.
-This endpoint is protected with RBAC (Role-Based Access Control) and only users granted with the `user` role can access this endpoint.
+As a response, it returns a JSON document with details about the user obtained from the information carried on the token.
+This endpoint is protected with RBAC, and only users granted with the `user` role can access this endpoint.
 
-The `/api/admin` endpoint is protected with RBAC (Role-Based Access Control) and only users granted with the `admin` role can access it.
+The `/api/admin` endpoint is protected with RBAC, and only users granted the `admin` role can access it.
 
-This is a very simple example using RBAC policies to govern access to your resources.
-However, Keycloak supports other types of policies that you can use to perform even more fine-grained access control.
-By using this example, you'll see that your application is completely decoupled from your authorization policies with enforcement being purely based on the accessed resource.
+This is a very simple example of using RBAC policies to govern access to your resources.
+However, Keycloak supports other policies that you can use to perform even more fine-grained access control.
+By using this example, you'll see that your application is completely decoupled from your authorization policies, with enforcement purely based on the accessed resource.
 
 == Solution
 
@@ -63,9 +74,9 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `security-keycloak-authorization-quickstart` link:{quickstarts-tree-url}/security-keycloak-authorization-quickstart[directory].
+The solution is in the `security-keycloak-authorization-quickstart` link:{quickstarts-tree-url}/security-keycloak-authorization-quickstart[directory].
 
-== Creating the Project
+== Creating the project
 
 First, we need a new project.
 Create a new project with the following command:
@@ -74,7 +85,8 @@ Create a new project with the following command:
 :create-app-extensions: oidc,keycloak-authorization,resteasy-reactive-jackson
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a project, importing the `keycloak-authorization` extension which is an implementation of a Keycloak Adapter for Quarkus applications and provides all the necessary capabilities to integrate with a Keycloak Server and perform bearer token authorization.
+This command generates a project, importing the `keycloak-authorization` extension.
+This extension implements a Keycloak Adapter for Quarkus applications and provides all the necessary capabilities to integrate with a Keycloak server and perform bearer token authorization.
 
 If you already have your Quarkus project configured, you can add the `oidc` and `keycloak-authorization` extensions
 to your project by running the following command in your project base directory:
@@ -82,7 +94,7 @@ to your project by running the following command in your project base directory:
 :add-extension-extensions: oidc,keycloak-authorization
 include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your build file:
+This adds the following dependencies to your build file:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -105,7 +117,7 @@ implementation("io.quarkus:quarkus-keycloak-authorization")
 ----
 
 Let's start by implementing the `/api/users/me` endpoint.
-As you can see from the source code below it is just a regular Jakarta REST resource:
+As you can see in the following source code, it is a regular Jakarta REST resource:
 
 [source,java]
 ----
@@ -172,12 +184,12 @@ public class AdminResource {
 }
 ----
 
-Note that we did not define any annotation such as `@RolesAllowed` to explicitly enforce access to a resource.
-The extension will be responsible to map the URIs of the protected resources you have in Keycloak and evaluate the permissions accordingly, granting or denying access depending on the permissions that will be granted by Keycloak.
+Be aware that we have not defined annotations such as `@RolesAllowed` to explicitly enforce access to a resource.
+Instead, the extension is responsible for mapping the URIs of the protected resources in Keycloak and evaluating the permissions accordingly, granting or denying access depending on the permissions granted by Keycloak.
 
 === Configuring the application
 
-The OpenID Connect extension allows you to define the adapter configuration using the `application.properties` file which should be located at the `src/main/resources` directory.
+The OpenID Connect extension allows you to define the adapter configuration by using the `application.properties` file, which is usually located in the `src/main/resources` directory.
 
 [source,properties]
 ----
@@ -191,31 +203,35 @@ quarkus.oidc.tls.verification=none
 quarkus.keycloak.policy-enforcer.enable=true
 
 # Tell Dev Services for Keycloak to import the realm file
-# This property is not effective when running the application in JVM or Native modes
+# This property is not effective when running the application in JVM or native modes
 quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 ----
 
-NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures that `Dev Services for Keycloak` will launch a container for you when the application is run in a dev mode. See <<keycloak-dev-mode,Running the Application in Dev mode>> section below for more information.
+NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures that Dev Services for Keycloak launches a container for you when the application is run in dev mode.
+For more information, see the <<keycloak-dev-mode,Running the application in Dev mode>> section.
 
-NOTE: By default, applications using the `quarkus-oidc` extension are marked as a `service` type application (see `quarkus.oidc.application-type`). This extension also supports only  `web-app` type applications but only if the access token returned as part of the authorization code grant response is marked as a source of roles: `quarkus.oidc.roles.source=accesstoken` (`web-app` type applications check ID token roles by default).
+NOTE: By default, applications that use the `quarkus-oidc` extension are marked as a `service` type application (see `quarkus.oidc.application-type`).
+This extension also supports only  `web-app` type applications but only if the access token returned as part of the authorization code grant response is marked as a source of roles: `quarkus.oidc.roles.source=accesstoken` (`web-app` type applications check ID token roles by default).
 
-== Starting and Configuring the Keycloak Server
+== Starting and configuring the Keycloak server
 
-NOTE: Do not start the Keycloak server when you run the application in a dev mode - `Dev Services for Keycloak` will launch a container. See <<keycloak-dev-mode,Running the Application in Dev mode>> section below for more information.
+NOTE: Do not start the Keycloak server when you run the application in dev mode.
+Dev Services for Keycloak launches a container.
+For more information, see the <<keycloak-dev-mode,Running the application in Dev mode>> section.
 
-To start a Keycloak Server you can use Docker and just run the following command:
+To start a Keycloak server, use the following Docker command:
 
 [source,bash,subs=attributes+]
 ----
 docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8543:8443 -v "$(pwd)"/config/keycloak-keystore.jks:/etc/keycloak-keystore.jks quay.io/keycloak/keycloak:{keycloak.version} start  --hostname-strict=false --https-key-store-file=/etc/keycloak-keystore.jks
 ----
 
-where `keycloak.version` should be set to `23.0.0` or higher and the `keycloak-keystore.jks` can be found in https://github.com/quarkusio/quarkus-quickstarts/blob/main/security-keycloak-authorization-quickstart/config/keycloak-keystore.jks[quarkus-quickstarts/security-keycloak-authorization-quickstart/config]
+where `keycloak.version` must be `23.0.0` or later and the `keycloak-keystore.jks` can be found in https://github.com/quarkusio/quarkus-quickstarts/blob/main/security-keycloak-authorization-quickstart/config/keycloak-keystore.jks[quarkus-quickstarts/security-keycloak-authorization-quickstart/config].
 
-You should be able to access your Keycloak Server at https://localhost:8543[localhost:8543].
+Try to access your Keycloak server at https://localhost:8543[localhost:8543].
 
-Log in as the `admin` user to access the Keycloak Administration Console.
-Username should be `admin` and password `admin`.
+To access the Keycloak Administration Console, log in as the `admin` user.
+The username and password are both `admin`.
 
 Import the link:{quickstarts-tree-url}/security-keycloak-authorization-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm.
 For more details, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
@@ -227,46 +243,49 @@ image::keycloak-authorization-permissions.png[alt=Keycloak Authorization Permiss
 It explains why the endpoint has no `@RolesAllowed` annotations - the resource access permissions are set directly in Keycloak.
 
 [[keycloak-dev-mode]]
-== Running the Application in Dev mode
+== Running the application in dev mode
 
 To run the application in dev mode, use:
 
 include::{includes}/devtools/dev.adoc[]
 
-xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will launch a Keycloak container and import the link:{quickstarts-tree-url}/security-keycloak-authorization-quickstart/config/quarkus-realm.json[realm configuration file].
+xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] launches a Keycloak container and imports a `quarkus-realm.json`.
 
-Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev-ui[/q/dev-ui] and click on a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
+Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev-ui[/q/dev-ui] and click a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
 
-You will be asked to log in into a `Single Page Application` provided by `OpenID Connect Dev UI`:
+When asked to log in to a `Single Page Application` provided by `OpenID Connect Dev UI`:
 
- * Login as `alice` (password: `alice`) who only has a `User Permission` to access the `/api/users/me` resource
- ** accessing `/api/admin` will return `403`
- ** accessing `/api/users/me` will return `200`
- * Logout and login as `admin` (password: `admin`) who has both `Admin Permission` to access the `/api/admin` resource and `User Permission` to access the `/api/users/me` resource
- ** accessing `/api/admin` will return `200`
- ** accessing `/api/users/me` will return `200`
+ * Log in as `alice` (password: `alice`), who only has a `User Permission` to access the `/api/users/me` resource:
+ ** Access `/api/admin`, which returns `403`.
+ ** Access `/api/users/me`, which returns `200`.
+ * Log out and log in as `admin` (password: `admin`), who has both `Admin Permission` to access the `/api/admin` resource and `User Permission` to access the `/api/users/me` resource:
+ ** Access `/api/admin`, which returns `200`.
+ ** Access `/api/users/me`, which returns `200`.
 
-If you have started xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] without importing a realm file such as link:{quickstarts-tree-url}/security-keycloak-authorization-quickstart/config/quarkus-realm.json[quarkus-realm.json] which is already configured to support Keycloak Authorization then a default `quarkus` realm without Keycloak authorization policies will be created. In this case you must select the `Keycloak Admin` link in the `OpenId Connect` Dev UI card and configure link:https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization] in the default `quarkus` realm.
+If you have started xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] without importing a realm file such as link:{quickstarts-tree-url}/security-keycloak-authorization-quickstart/config/quarkus-realm.json[quarkus-realm.json] that is already configured to support Keycloak Authorization, create a default `quarkus` realm without Keycloak authorization policies.
+In this case, you must select the `Keycloak Admin` link in the `OpenId Connect` Dev UI card and configure link:https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services] in the default `quarkus` realm.
 
 The `Keycloak Admin` link is easy to find in Dev UI:
 
 image::dev-ui-oidc-keycloak-card.png[alt=Dev UI OpenID Connect Card,role="center"]
 
-When logging in the Keycloak admin console, the username is `admin` and the password is `admin`.
+When logging into the Keycloak admin console, the username and password are both `admin`.
 
-If your application configures Keycloak authorization with link:https://www.keycloak.org/docs/latest/authorization_services/index.html#_policy_js[JavaScript policies] that are deployed to Keycloak in a jar file then you can configure `Dev Services for Keycloak` to copy this jar to the Keycloak container, for example:
+If your application uses Keycloak authorization configured with link:https://www.keycloak.org/docs/latest/authorization_services/index.html#_policy_js[JavaScript policies] that are deployed in a JAR file, you can set up Dev Services for Keycloak to transfer this archive to the Keycloak container.
+For instance:
 
 [source,properties]
 ----
 quarkus.keycloak.devservices.resource-aliases.policies=/policies.jar <1>
 quarkus.keycloak.devservices.resource-mappings.policies=/opt/keycloak/providers/policies.jar <2>
 ----
-<1> `policies` alias is created for the `/policies.jar` classpath resource. Policy jars can also be located in the file system.
-<2> The policies jar is mapped to the `/opt/keycloak/providers/policies.jar` container location.
+<1> `policies` alias is created for the `/policies.jar` classpath resource.
+Policy archive can also be located in the file system.
+<2> The policies archive is mapped to the `/opt/keycloak/providers/policies.jar` container location.
 
-== Running the Application in JVM mode
+== Running the application in JVM mode
 
-When you're done playing with the `dev` mode" you can run it as a standard Java application.
+After exploring the application in dev mode, you can run it as a standard Java application.
 
 First compile it:
 
@@ -279,17 +298,17 @@ Then run it:
 java -jar target/quarkus-app/quarkus-run.jar
 ----
 
-== Running the Application in Native Mode
+== Running the application in native mode
 
-This same demo can be compiled into native code: no modifications required.
+This same demo can be compiled into native code; no modifications are required.
 
-This implies that you no longer need to install a JVM on your production environment, as the runtime technology is included in the produced binary, and optimized to run with minimal resource overhead.
+This implies that you no longer need to install a JVM on your production environment because the runtime technology is included in the produced binary and optimized to run with minimal resources.
 
-Compilation will take a bit longer, so this step is disabled by default; let's build again by enabling the `native` profile:
+Compilation takes a bit longer, so this step is turned off by default; let's build again by enabling the `native` profile:
 
 include::{includes}/devtools/build-native.adoc[]
 
-After getting a cup of coffee, you'll be able to run this binary directly:
+After a while, you can run this binary directly:
 
 [source,bash]
 ----
@@ -297,13 +316,13 @@ After getting a cup of coffee, you'll be able to run this binary directly:
 ----
 
 [[testing]]
-== Testing the Application
+== Testing the application
 
-See <<keycloak-dev-mode,Running the Application in Dev mode>> section above about testing your application in a dev mode.
+See the preceding <<keycloak-dev-mode,Running the application in Dev mode>> section about testing your application in a dev mode.
 
-You can test the application launched in JVM or Native modes with `curl`.
+You can test the application launched in JVM or native modes with `curl`.
 
-The application is using bearer token authorization and the first thing to do is obtain an access token from the Keycloak Server in order to access the application resources:
+The application uses bearer token authorization, and the first thing to do is obtain an access token from the Keycloak server to access the application resources:
 
 [source,bash]
 ----
@@ -315,11 +334,11 @@ export access_token=$(\
  )
 ----
 
-The example above obtains an access token for user `alice`.
+The preceding example obtains an access token for user `alice`.
 
 Any user is allowed to access the
-`http://localhost:8080/api/users/me` endpoint
-which basically returns a JSON payload with details about the user.
+`http://localhost:8080/api/users/me` endpoint,
+which returns a JSON payload with details about the user.
 
 [source,bash]
 ----
@@ -329,7 +348,7 @@ curl -v -X GET \
 ----
 
 The `http://localhost:8080/api/admin` endpoint can only be accessed by users with the `admin` role.
-If you try to access this endpoint with the previously issued access token, you should get a `403` response from the server.
+If you try to access this endpoint with the previously issued access token, you get a `403` response from the server.
 
 [source,bash]
 ----
@@ -338,7 +357,7 @@ If you try to access this endpoint with the previously issued access token, you 
    -H "Authorization: Bearer "$access_token
 ----
 
-In order to access the admin endpoint you should obtain a token for the `admin` user:
+To access the admin endpoint, get a token for the `admin` user:
 
 [source,bash]
 ----
@@ -350,11 +369,10 @@ export access_token=$(\
  )
 ----
 
-== Injecting the Authorization Client
+== Injecting the authorization client
 
-In some cases, you may want to use the https://www.keycloak.org/docs/latest/authorization_services/#_service_client_api[Keycloak Authorization Client Java API] to perform
-specific operations like managing resources and obtaining permissions directly from Keycloak. For that, you can inject a
-`AuthzClient` instance into your beans as follows:
+In some cases, using the link:https://www.keycloak.org/docs/latest/authorization_services/#_service_client_api[Keycloak Authorization Client Java API] is beneficial for tasks such as managing resources and obtaining permissions directly from Keycloak.
+For this purpose, you can inject an `AuthzClient` instance into your beans as follows:
 
 [source,java]
 ----
@@ -364,32 +382,34 @@ public class ProtectedResource {
 }
 ----
 
-Note: If you want to use the `AuthzClient` directly make sure to set `quarkus.keycloak.policy-enforcer.enable=true` otherwise there is no Bean available for injection.
+NOTE: If you want to use the `AuthzClient` directly, set `quarkus.keycloak.policy-enforcer.enable=true`; otherwise, no bean is available for injection.
 
-== Mapping Protected Resources
+== Mapping protected resources
 
-By default, the extension is going to fetch resources on-demand from Keycloak where their `URI` are used to map the resources in your application that should be protected.
+By default, the extension fetches resources on-demand from Keycloak, using their URI to identify and map the resources in your application that need to be protected.
 
-If you want to disable this behavior and fetch resources during startup, you can use the following configuration:
+To disable this on-demand fetching and instead pre-load resources at startup, apply the following configuration setting:
 
 [source,properties]
 ----
 quarkus.keycloak.policy-enforcer.lazy-load-paths=false
 ----
 
-Note that, depending on how many resources you have in Keycloak the time taken to fetch them may impact your application startup time.
+The time required to pre-load resources from Keycloak at startup varies based on their quantity, potentially affecting your application's initial load time."
 
-== More About Configuring Protected Resources
+== More about configuring protected resources
 
-In the default configuration, Keycloak is responsible for managing the roles and deciding who can access which routes.
+In the default configuration, Keycloak manages the roles and decides who can access which routes.
 
-To configure the protected routes using the `@RolesAllowed` annotation or the `application.properties` file, check the xref:security-oidc-bearer-token-authentication.adoc[Using OpenID Connect Adapter to Protect Jakarta REST Applications] and xref:security-authorize-web-endpoints-reference.adoc[Security Authorization] guides. For more details, check the xref:security-overview.adoc[Security guide].
+To configure the protected routes by using the `@RolesAllowed` annotation or the `application.properties` file, check the xref:security-oidc-bearer-token-authentication.adoc[OpenID Connect (OIDC) Bearer token authentication] and xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints] guides.
+For more details, check the xref:security-overview.adoc[Quarkus Security overview].
 
-== Access to Public Resources
+== Access to public resources
 
-If you'd like to access a public resource without `quarkus-keycloak-authorization` trying to apply its policies to it then you need to create a `permit` HTTP Policy configuration in `application.properties` as documented in the xref:security-authorize-web-endpoints-reference.adoc[Security Authorization] guide.
+To enable access to a public resource without the `quarkus-keycloak-authorization` applying its policies, create a `permit` HTTP Policy configuration in `application.properties`.
+For more information, see the xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints] guide.
 
-Disabling a policy check using a Keycloak Authorization Policy such as:
+There's no need to deactivate policy checks for a Keycloak Authorization Policy with settings such as these:
 
 [source,properties]
 ----
@@ -397,9 +417,7 @@ quarkus.keycloak.policy-enforcer.paths.1.path=/api/public
 quarkus.keycloak.policy-enforcer.paths.1.enforcement-mode=DISABLED
 ----
 
-is no longer required.
-
-If you'd like to block access to the public resource to anonymous users then you can create an enforcing Keycloak Authorization Policy:
+To block access to the public resource to anonymous users, you can create an enforcing Keycloak Authorization Policy:
 
 [source,properties]
 ----
@@ -407,12 +425,14 @@ quarkus.keycloak.policy-enforcer.paths.1.path=/api/public-enforcing
 quarkus.keycloak.policy-enforcer.paths.1.enforcement-mode=ENFORCING
 ----
 
-Note only the default tenant configuration applies when controlling anonymous access to the public resource is required.
+Only the default tenant configuration applies when controlling anonymous access to the public resource is required.
 
-== Checking Permission Scopes Programmatically
+== Checking permission scopes programmatically
 
-In addition to resource permissions, you may want to specify method scopes. The scope usually represents an action that
-can be performed on a resource. You can create an enforcing Keycloak Authorization Policy with method scope like this:
+In addition to resource permissions, you can specify method scopes.
+The scope usually represents an action that can be performed on a resource.
+You can create an enforcing Keycloak Authorization Policy with a method scope.
+For example:
 
 [source,properties]
 ----
@@ -430,11 +450,11 @@ quarkus.keycloak.policy-enforcer.paths.3.path=/api/protected/annotation-way
 ----
 <1> User must have resource permission 'Scope Permission Resource' and scope 'read'
 
-Request path `/api/protected/standard-way` is now secured by the Keycloak Policy Enforcer and does not require
-any additions (such as `@RolesAllowed` annotation). In some cases, you may want to perform the same check programmatically.
-You are allowed to do that by injecting a `SecurityIdentity` instance in your beans, as demonstrated in the example below.
-Alternatively, if you annotate resource method with the `@PermissionsAllowed` annotation, you can achieve the same effect.
-The following example shows three resource method that all requires same 'read' scope:
+The Keycloak Policy Enforcer now secures the `/api/protected/standard-way` request path, eliminating the need for additional annotations such as `@RolesAllowed`.
+However, in certain scenarios, a programmatic check is necessary.
+You can achieve this by injecting a `SecurityIdentity` instance into your beans, as shown in the following example.
+Or, you can get the same result by annotating the resource method with `@PermissionsAllowed`.
+The following example demonstrates three resource methods, each requiring the same `read` scope:
 
 [source,java]
 ----
@@ -490,14 +510,14 @@ public class ProtectedResource {
     }
 }
 ----
-<1> Request sub-path `/standard-way` requires both resource permission and scope `read` according to the configuration properties we set in the `application.properties` before.
+<1> Request sub-path `/standard-way` requires both resource permission and scope `read` according to the configuration properties we previously set in the `application.properties`.
 <2> Request sub-path `/programmatic-way` only requires permission `Scope Permission Resource`, but we can enforce scope with `SecurityIdentity#checkPermission`.
 <3> The `@PermissionsAllowed` annotation only grants access to the requests with permission `Scope Permission Resource` and scope `read`.
 For more information, see the section xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[Authorization using annotations] of the Security Authorization guide.
 
-== Multi-Tenancy
+== Multi-tenancy
 
-It is possible to configure multiple policy enforcer configurations, one per each tenant, similarly to how it can be done for xref:security-openid-connect-multitenancy.adoc[Multi-Tenant OpenID Connect Service Applications].
+You can set up policy enforcer configurations for each tenant, similar to how it is done with xref:security-openid-connect-multitenancy.adoc[OpenID Connect (OIDC) multi-tenancy].
 
 For example:
 
@@ -541,16 +561,17 @@ quarkus.keycloak.webapp-tenant.policy-enforcer.paths.1.path=/api/permission
 quarkus.keycloak.webapp-tenant.policy-enforcer.paths.1.claim-information-point.claims.static-claim=static-claim
 ----
 
-== Configuration Reference
+== Configuration reference
 
-The configuration is based on the official https://www.keycloak.org/docs/latest/authorization_services/index.html#_enforcer_filter[Keycloak Policy Enforcer Configuration]. If you are looking for more details about the different configuration options, please take a look at this documentation,
+This configuration adheres to the official [Keycloak Policy Enforcer Configuration](https://www.keycloak.org/docs/latest/authorization_services/index.html#_enforcer_filter) guidelines.
+For detailed insights into various configuration options, see the following documentation:
 
 include::{generated-dir}/config/quarkus-keycloak-keycloak-policy-enforcer-config.adoc[opts=optional]
 
 == References
 
-* https://www.keycloak.org/documentation.html[Keycloak Documentation]
-* https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services Documentation]
+* https://www.keycloak.org/documentation.html[Keycloak documentation]
+* https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * xref:security-overview.adoc[Quarkus Security overview]

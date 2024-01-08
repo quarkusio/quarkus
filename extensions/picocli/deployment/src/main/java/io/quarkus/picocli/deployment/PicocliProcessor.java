@@ -12,6 +12,7 @@ import org.jboss.jandex.MethodInfo;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Feature;
@@ -76,6 +77,7 @@ class PicocliProcessor {
     void picocliRunner(ApplicationIndexBuildItem applicationIndex,
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<AdditionalBeanBuildItem> additionalBean,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBean,
             BuildProducer<QuarkusApplicationClassBuildItem> quarkusApplicationClass,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
         IndexView index = combinedIndex.getIndex();
@@ -99,6 +101,17 @@ class PicocliProcessor {
             additionalBean.produce(AdditionalBeanBuildItem.unremovableOf(DefaultPicocliCommandLineFactory.class));
             quarkusApplicationClass.produce(new QuarkusApplicationClassBuildItem(PicocliRunner.class));
         }
+
+        // Make all classes that can be instantiated by IFactory unremovable
+        unremovableBean.produce(UnremovableBeanBuildItem.beanTypes(CommandLine.ITypeConverter.class,
+                CommandLine.IVersionProvider.class,
+                CommandLine.IModelTransformer.class,
+                CommandLine.IModelTransformer.class,
+                CommandLine.IDefaultValueProvider.class,
+                CommandLine.IParameterConsumer.class,
+                CommandLine.IParameterPreprocessor.class,
+                CommandLine.INegatableOptionTransformer.class,
+                CommandLine.IHelpFactory.class));
     }
 
     private List<DotName> classesAnnotatedWith(IndexView indexView, String annotationClassName) {

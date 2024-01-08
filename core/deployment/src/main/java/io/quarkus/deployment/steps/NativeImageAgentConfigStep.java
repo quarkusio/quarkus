@@ -21,21 +21,11 @@ import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
 public class NativeImageAgentConfigStep {
-    private final Pattern jniSkipPattern;
-    private final Pattern proxySkipPattern;
-    private final Pattern reflectionSkipPattern;
     private final Pattern resourceSkipPattern;
-    private final Pattern serializationSkipPattern;
 
     public NativeImageAgentConfigStep() {
-        jniSkipPattern = discardPattern("apache.maven", "gradle");
-        proxySkipPattern = discardPattern("apache.http", "gradle", "jakarta");
-        reflectionSkipPattern = discardPattern("apache.http", "apache.commons", "apache.maven", "aether", "hamcrest", "jackson",
-                "jakarta", "jboss", "junit",
-                "gradle", "groovy", "gson", "microprofile", "netty", "quarkus", "restassured", "smallrye", "Test", "vertx");
         resourceSkipPattern = discardPattern("apache.maven", "application.properties", "groovy", "jboss", "junit",
                 "logging.properties", "microprofile", "quarkus", "slf4j", "smallrye", "surefire", "Test.class");
-        serializationSkipPattern = discardPattern("gradle", "junit", "quarkus");
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -52,24 +42,12 @@ public class NativeImageAgentConfigStep {
                 targetPath.toFile().mkdirs();
             }
             nativeImageAgentConfigDirectoryProducer.produce(new NativeImageAgentConfigDirectoryBuildItem(targetDirName));
+            transformJsonObject(basePath, "resource-config.json", targetPath, JsonTransform.dropping(this::discardResource));
 
-            //            transformJsonArray(basePath, "jni-config.json", targetPath,
-            //                    JsonTransform.dropping(v -> discardNamed(v, jniSkipPattern)));
-            //            transformJsonArray(basePath, "proxy-config.json", targetPath, JsonTransform.dropping(this::discardProxyInterface));
-            //            transformJsonArray(basePath, "reflect-config.json", targetPath,
-            //                    JsonTransform.dropping(v -> discardNamed(v, reflectionSkipPattern)));
-            //            transformJsonObject(basePath, "resource-config.json", targetPath, JsonTransform.dropping(this::discardPattern));
-            //            transformJsonObject(basePath, "serialization-config.json", targetPath,
-            //                    JsonTransform.dropping(v -> discardNamed(v, serializationSkipPattern)));
-
-            transformJsonArray(basePath, "jni-config.json", targetPath,
-                    JsonTransform.dropping(v -> false));
-            transformJsonArray(basePath, "proxy-config.json", targetPath, JsonTransform.dropping(v -> false));
-            transformJsonArray(basePath, "reflect-config.json", targetPath,
-                    JsonTransform.dropping(v -> false));
-            transformJsonObject(basePath, "resource-config.json", targetPath, JsonTransform.dropping(v -> false));
-            transformJsonObject(basePath, "serialization-config.json", targetPath,
-                    JsonTransform.dropping(v -> false));
+            Files.copy(basePath.resolve("jni-config.json"), targetPath.resolve("jni-config.json"));
+            Files.copy(basePath.resolve("proxy-config.json"), targetPath.resolve("proxy-config.json"));
+            Files.copy(basePath.resolve("reflect-config.json"), targetPath.resolve("reflect-config.json"));
+            Files.copy(basePath.resolve("serialization-config.json"), targetPath.resolve("serialization-config.json"));
         }
     }
 
@@ -85,45 +63,13 @@ public class NativeImageAgentConfigStep {
         }
     }
 
-    private void transformJsonArray(Path base, String name, Path target, JsonTransform transform) throws IOException {
-        final String original = Files.readString(base.resolve(name));
-        final JsonReader.JsonArray jsonRead = JsonReader.of(original).read();
-        final Json.JsonArrayBuilder jsonBuilder = Json.array().skipEscape(true);
-        jsonBuilder.transform(jsonRead, transform);
-
-        try (BufferedWriter writer = new BufferedWriter(
-                new FileWriter(target.resolve(name).toFile(), StandardCharsets.UTF_8))) {
-            jsonBuilder.appendTo(writer);
-        }
-    }
-
-    private boolean discardProxyInterface(JsonReader.JsonValue value) {
-        if (value instanceof JsonReader.JsonObject) {
-            final JsonReader.JsonObject obj = (JsonReader.JsonObject) value;
-            return obj.<JsonReader.JsonArray> get("interfaces").<JsonReader.JsonString> stream()
-                    .anyMatch(proxyInterface -> proxySkipPattern.matcher(proxyInterface.value()).find());
-        }
-
-        return false;
-    }
-
-    private boolean discardPattern(JsonReader.JsonValue value) {
+    private boolean discardResource(JsonReader.JsonValue value) {
         if (value instanceof JsonReader.JsonMember) {
             final JsonReader.JsonMember member = (JsonReader.JsonMember) value;
             if ("pattern".equals(member.attribute().value())) {
                 final JsonReader.JsonString memberValue = (JsonReader.JsonString) member.value();
                 return resourceSkipPattern.matcher(memberValue.value()).find();
             }
-        }
-
-        return false;
-    }
-
-    private boolean discardNamed(JsonReader.JsonValue value, Pattern pattern) {
-        if (value instanceof JsonReader.JsonObject) {
-            final JsonReader.JsonObject obj = (JsonReader.JsonObject) value;
-            final String name = obj.<JsonReader.JsonString> get("name").value();
-            return pattern.matcher(name).find();
         }
 
         return false;

@@ -1,5 +1,6 @@
 package io.quarkus.liquibase.runtime;
 
+import java.util.Locale;
 import java.util.function.Function;
 
 import javax.sql.DataSource;
@@ -13,6 +14,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -32,9 +34,16 @@ public class LiquibaseRecorder {
         return new Function<SyntheticCreationalContext<LiquibaseFactory>, LiquibaseFactory>() {
             @Override
             public LiquibaseFactory apply(SyntheticCreationalContext<LiquibaseFactory> context) {
-                DataSource dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
-                if (dataSource instanceof UnconfiguredDataSource) {
-                    throw new UnsatisfiedResolutionException("No datasource has been configured");
+                DataSource dataSource;
+                try {
+                    dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
+                    if (dataSource instanceof UnconfiguredDataSource) {
+                        throw DataSourceUtil.dataSourceNotConfigured(dataSourceName);
+                    }
+                } catch (RuntimeException e) {
+                    throw new UnsatisfiedResolutionException(String.format(Locale.ROOT,
+                            "Unable to find datasource '%s' for Liquibase: %s",
+                            dataSourceName, e.getMessage()), e);
                 }
 
                 LiquibaseFactoryProducer liquibaseProducer = context.getInjectedReference(LiquibaseFactoryProducer.class);

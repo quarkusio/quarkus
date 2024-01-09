@@ -2,7 +2,9 @@
 package io.quarkus.deployment.recording;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -19,6 +21,12 @@ final class PropertyUtils {
     private static final Function<Class<?>, Property[]> FUNCTION = new Function<Class<?>, Property[]>() {
         @Override
         public Property[] apply(Class<?> type) {
+            if (type.isRecord()) {
+                RecordComponent[] recordComponents = type.getRecordComponents();
+                return Arrays.stream(recordComponents)
+                        .map(rc -> new Property(rc.getName(), rc.getAccessor(), null, rc.getType())).toArray(Property[]::new);
+            }
+
             List<Property> ret = new ArrayList<>();
             Method[] methods = type.getMethods();
 

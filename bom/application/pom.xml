@@ -132,7 +132,7 @@
         <h2.version>2.2.220</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions -->
         <postgresql-jdbc.version>42.6.0</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.1.4</mariadb-jdbc.version>
-        <mysql-jdbc.version>8.0.30</mysql-jdbc.version>
+        <mysql-jdbc.version>8.2.0</mysql-jdbc.version>
         <mssql-jdbc.version>12.2.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.3.0.23.09</oracle-jdbc.version>
@@ -5705,8 +5705,8 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>mysql</groupId>
-                <artifactId>mysql-connector-java</artifactId>
+                <groupId>com.mysql</groupId>
+                <artifactId>mysql-connector-j</artifactId>
                 <version>${mysql-jdbc.version}</version>
                 <exclusions>
                     <exclusion>

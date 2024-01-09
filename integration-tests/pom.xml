@@ -417,6 +417,7 @@
                 <module>grpc-stork-simple</module>
                 <module>grpc-exceptions</module>
                 <module>grpc-test-random-port</module>
+                <module>grpc-multiplex</module>
                 <module>google-cloud-functions-http</module>
                 <module>google-cloud-functions</module>
                 <module>istio</module>

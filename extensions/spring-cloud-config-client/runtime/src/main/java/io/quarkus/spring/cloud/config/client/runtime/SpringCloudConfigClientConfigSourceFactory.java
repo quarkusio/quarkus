@@ -11,6 +11,7 @@ import java.util.Map;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.runtime.appcds.AppCDSRecorder;
 import io.quarkus.spring.cloud.config.client.runtime.Response.PropertySource;
 import io.smallrye.config.ConfigSourceContext;
 import io.smallrye.config.ConfigSourceFactory.ConfigurableConfigSourceFactory;
@@ -24,6 +25,12 @@ public class SpringCloudConfigClientConfigSourceFactory
     @Override
     public Iterable<ConfigSource> getConfigSources(final ConfigSourceContext context,
             final SpringCloudConfigClientConfig config) {
+        boolean inAppCDsGeneration = Boolean
+                .parseBoolean(System.getProperty(AppCDSRecorder.QUARKUS_APPCDS_GENERATE_PROP, "false"));
+        if (inAppCDsGeneration) {
+            return Collections.emptyList();
+        }
+
         List<ConfigSource> sources = new ArrayList<>();
 
         if (!config.enabled()) {

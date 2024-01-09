@@ -18,6 +18,7 @@ import io.smallrye.config.WithName;
 @ConfigMapping(prefix = "quarkus.otel")
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public interface OTelBuildConfig {
+
     String INSTRUMENTATION_NAME = "io.quarkus.opentelemetry";
 
     /**
@@ -61,4 +62,9 @@ public interface OTelBuildConfig {
      */
     @WithDefault(TRACE_CONTEXT + "," + BAGGAGE)
     List<String> propagators();
+
+    /**
+     * Enable/disable instrumentation for specific technologies.
+     */
+    InstrumentBuildTimeConfig instrument();
 }

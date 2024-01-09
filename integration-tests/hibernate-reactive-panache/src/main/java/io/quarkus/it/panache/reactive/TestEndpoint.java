@@ -22,6 +22,7 @@ import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.junit.jupiter.api.Assertions;
 
 import io.quarkus.hibernate.reactive.panache.Panache;
+import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 import io.quarkus.hibernate.reactive.panache.PanacheQuery;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.panache.common.Page;
@@ -1596,6 +1597,12 @@ public class TestEndpoint {
                 }).flatMap(person -> {
                     Assertions.assertEquals("2", person.name);
 
+                    return Person.find("select uniqueName, name\nfrom\n io.quarkus.it.panache.Person\nwhere\n name = ?1", "2")
+                            .project(PersonName.class)
+                            .<PersonName> firstResult();
+                }).flatMap(person -> {
+                    Assertions.assertEquals("2", person.name);
+
                     return Person.find("name = :name", Parameters.with("name", "2")).project(PersonName.class)
                             .<PersonName> firstResult();
                 }).flatMap(person -> {
@@ -1990,5 +1997,35 @@ public class TestEndpoint {
 
                     return Person.deleteAll();
                 }).map(v -> "OK");
+    }
+
+    @GET
+    @Path("testStripNewLine")
+    @WithTransaction
+    public Uni<String> testNewLineStrip() {
+        Person person = new Person();
+        person.name = "Jakub";
+        return person.persist()
+                .flatMap(v -> {
+                    PanacheQuery<PanacheEntityBase> persons = Person.find("\nFROM\n Person2  \nWHERE\n name = ?1", "Jakub");
+                    return persons.list()
+                            .flatMap(list -> {
+                                assertEquals(1, list.size());
+                                assertEquals(person, list.get(0));
+                                return Person.count("\nFROM\n Person2 \nWHERE\n name = ?1", "Jakub");
+                            }).flatMap(count -> {
+                                assertEquals(1, count);
+
+                                return Person.update("\nUPDATE\n Person2 set name = 'Jacob' \nWHERE\n name = ?1", "Jakub");
+                            }).flatMap(updateCount -> {
+                                assertEquals(1, updateCount);
+
+                                return Person.delete("\nDELETE\n Person2 \nWHERE\n name = ?1", "Jacob");
+                            }).map(deleteCount -> {
+                                assertEquals(1, deleteCount);
+
+                                return "OK";
+                            });
+                });
     }
 }

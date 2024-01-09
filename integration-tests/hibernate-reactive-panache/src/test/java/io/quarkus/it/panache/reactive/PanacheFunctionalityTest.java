@@ -156,6 +156,11 @@ public class PanacheFunctionalityTest {
 
     @Test
     public void testSortByNullPrecedence() {
+        RestAssured.when().get("/test/testStripNewLine").then().body(is("OK"));
+    }
+
+    @Test
+    public void testNewLineStrip() {
         RestAssured.when().get("/test/testSortByNullPrecedence").then().body(is("OK"));
     }
 

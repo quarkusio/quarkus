@@ -78,7 +78,7 @@ public class CommonPanacheQueryImpl<Entity> {
             selectQuery = NamedQueryUtil.getNamedQuery(query.substring(1));
         }
 
-        String lowerCasedTrimmedQuery = selectQuery.trim().toLowerCase();
+        String lowerCasedTrimmedQuery = selectQuery.trim().replace('\n', ' ').replace('\r', ' ').toLowerCase();
         if (lowerCasedTrimmedQuery.startsWith("select new ")) {
             throw new PanacheQueryException("Unable to perform a projection on a 'select new' query: " + query);
         }
@@ -89,7 +89,7 @@ public class CommonPanacheQueryImpl<Entity> {
         // New query: SELECT new org.acme.ProjectionClass(e.field1, e.field2) from EntityClass e
         if (lowerCasedTrimmedQuery.startsWith("select ")) {
             int endSelect = lowerCasedTrimmedQuery.indexOf(" from ");
-            String trimmedQuery = selectQuery.trim();
+            String trimmedQuery = selectQuery.trim().replace('\n', ' ').replace('\r', ' ');
             // 7 is the length of "select "
             String selectClause = trimmedQuery.substring(7, endSelect).trim();
             String from = trimmedQuery.substring(endSelect);

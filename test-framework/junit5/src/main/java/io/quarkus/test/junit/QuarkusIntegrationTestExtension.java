@@ -146,8 +146,14 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         QuarkusTestExtensionState state = getState(extensionContext);
         Class<? extends QuarkusTestProfile> selectedProfile = findProfile(testClass);
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
+        // we reset the failed state if we changed test class
+        boolean isNewTestClass = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass);
+        if (isNewTestClass && state != null) {
+            state.setTestFailed(null);
+            currentJUnitTestClass = extensionContext.getRequiredTestClass();
+        }
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
-        boolean reloadTestResources = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
+        boolean reloadTestResources = isNewTestClass
                 && (hasPerTestResources || QuarkusTestExtension.hasPerTestResources(extensionContext));
         if ((state == null && !failedBoot) || wrongProfile || reloadTestResources) {
             if (wrongProfile || reloadTestResources) {

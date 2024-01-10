@@ -28,6 +28,7 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.gradle.QuarkusPlugin;
 import io.quarkus.gradle.tasks.worker.BuildWorker;
 import io.quarkus.maven.dependency.GACTV;
+import io.smallrye.config.Expressions;
 
 /**
  * Base class for the {@link QuarkusBuildDependencies}, {@link QuarkusBuildCacheableAppParts}, {@link QuarkusBuild} tasks
@@ -207,12 +208,14 @@ abstract class QuarkusBuildTask extends QuarkusTask {
 
         ApplicationModel appModel = resolveAppModelForBuild();
         Map<String, String> configMap = new HashMap<>();
-        for (Map.Entry<String, String> entry : extension().buildEffectiveConfiguration(appModel.getAppArtifact()).configMap()
-                .entrySet()) {
-            if (entry.getKey().startsWith("quarkus.")) {
-                configMap.put(entry.getKey(), entry.getValue());
+        EffectiveConfig effectiveConfig = extension().buildEffectiveConfiguration(appModel.getAppArtifact());
+        Expressions.withoutExpansion(() -> {
+            for (Map.Entry<String, String> entry : effectiveConfig.configMap().entrySet()) {
+                if (entry.getKey().startsWith("quarkus.")) {
+                    configMap.put(entry.getKey(), effectiveConfig.config().getRawValue(entry.getKey()));
+                }
             }
-        }
+        });
 
         getLogger().info("Starting Quarkus application build for package type {}", packageType);
 

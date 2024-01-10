@@ -17,7 +17,7 @@
         <angus-activation.version>2.0.1</angus-activation.version>
         <bouncycastle.version>1.77</bouncycastle.version>
         <bouncycastle.fips.version>1.0.2.4</bouncycastle.fips.version>
-        <bouncycastle.tls.fips.version>1.0.17</bouncycastle.tls.fips.version>
+        <bouncycastle.tls.fips.version>1.0.18</bouncycastle.tls.fips.version>
         <expressly.version>5.0.0</expressly.version>
         <findbugs.version>3.0.2</findbugs.version>
         <jandex.version>3.1.6</jandex.version>
@@ -157,14 +157,14 @@
         <aws-xray.version>2.14.0</aws-xray.version>
         <azure-functions-java-library.version>2.2.0</azure-functions-java-library.version>
         <azure-functions-java-spi.version>1.0.0</azure-functions-java-spi.version>
-        <kotlin.version>1.9.21</kotlin.version>
+        <kotlin.version>1.9.22</kotlin.version>
         <kotlin.coroutine.version>1.7.3</kotlin.coroutine.version>
         <azure.toolkit-lib.version>0.27.0</azure.toolkit-lib.version>
         <kotlin-serialization.version>1.6.2</kotlin-serialization.version>
         <dekorate.version>4.0.3</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <jboss-logmanager.version>3.0.2.Final</jboss-logmanager.version>
+        <jboss-logmanager.version>3.0.4.Final</jboss-logmanager.version>
         <flyway.version>9.22.3</flyway.version>
         <yasson.version>3.0.3</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->

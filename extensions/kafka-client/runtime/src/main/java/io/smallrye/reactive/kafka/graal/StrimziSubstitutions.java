@@ -9,7 +9,7 @@ import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.RecomputeFieldValue;
+import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
@@ -72,10 +72,8 @@ final class Target_com_jayway_jsonpath_internal_filter_ValueNode {
 
 @TargetClass(className = "com.jayway.jsonpath.internal.DefaultsImpl", onlyWith = HasStrimzi.class)
 final class Target_com_jayway_jsonpath_internal_DefaultsImpl {
-
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FromAlias)
-    @Alias
-    public static Target_com_jayway_jsonpath_internal_DefaultsImpl INSTANCE = new Target_com_jayway_jsonpath_internal_DefaultsImpl();
+    @Delete // Delete the no longer used mappingProvider
+    private MappingProvider mappingProvider;
 
     @Substitute
     public JsonProvider jsonProvider() {

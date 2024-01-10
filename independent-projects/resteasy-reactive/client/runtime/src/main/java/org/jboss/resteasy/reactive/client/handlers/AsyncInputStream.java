@@ -285,7 +285,7 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
 
         /**
          * Drain the buffer.
-         * <p/>
+         * <p>
          * Calling this assumes {@code (demand > 0L && !pending.isEmpty()) == true}
          */
         private void drain() {
@@ -336,9 +336,9 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
 
         /**
          * Request a specific {@code amount} of elements to be fetched, the amount is added to the actual demand.
-         * <p/>
+         * <p>
          * Pending elements in the buffer will be delivered asynchronously on the context to the handler.
-         * <p/>
+         * <p>
          * This method can be called from any thread.
          *
          * @return {@code true} when the buffer will be drained
@@ -360,7 +360,7 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
 
         /**
          * Clear the buffer synchronously.
-         * <p/>
+         * <p>
          * No handler will be called.
          *
          * @return a reference to this, so the API can be used fluently
@@ -382,9 +382,9 @@ public class AsyncInputStream implements ReadStream<Buffer>, AutoCloseable {
 
         /**
          * Resume the buffer, and sets the buffer in {@code flowing} mode.
-         * <p/>
+         * <p>
          * Pending elements in the buffer will be delivered asynchronously on the context to the handler.
-         * <p/>
+         * <p>
          * This method can be called from any thread.
          */
         public void resume() {

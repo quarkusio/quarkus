@@ -15,7 +15,7 @@ import io.opentelemetry.proto.common.v1.AnyValue;
 import io.opentelemetry.proto.common.v1.KeyValue;
 import io.opentelemetry.proto.trace.v1.ResourceSpans;
 import io.opentelemetry.proto.trace.v1.ScopeSpans;
-import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import io.opentelemetry.semconv.ResourceAttributes;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -43,23 +43,9 @@ class GrpcHelloServiceTest {
                 .sayHello(HelloRequest.newBuilder().setName("neo-blocking").build())
                 .await().atMost(TIMEOUT);
         Assertions.assertEquals(reply.getMessage(), "Hello neo-blocking");
-        Thread.sleep(1000);
+        //        Thread.sleep(1000);
         verifyTraces();
     }
-    //
-    //
-    //    @Test
-    //    void test() {
-    //        verifyHttpResponse();
-    //        verifyTraces();
-    //    }
-
-    //    private void verifyHttpResponse() {
-    //        when()
-    //                .get("/hello")
-    //                .then()
-    //                .statusCode(200);
-    //    }
 
     private void verifyTraces() {
         await()

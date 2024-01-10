@@ -37,16 +37,19 @@ import io.quarkus.runtime.LaunchMode;
 
 public class ApplicationDeploymentClasspathBuilder {
 
+    private static String getLaunchModeAlias(LaunchMode mode) {
+        if (mode == LaunchMode.DEVELOPMENT) {
+            return "Dev";
+        }
+        if (mode == LaunchMode.TEST) {
+            return "Test";
+        }
+        return "Prod";
+    }
+
     private static String getRuntimeConfigName(LaunchMode mode, boolean base) {
         final StringBuilder sb = new StringBuilder();
-        sb.append("quarkus");
-        if (mode == LaunchMode.DEVELOPMENT) {
-            sb.append("Dev");
-        } else if (mode == LaunchMode.TEST) {
-            sb.append("Test");
-        } else {
-            sb.append("Prod");
-        }
+        sb.append("quarkus").append(getLaunchModeAlias(mode));
         if (base) {
             sb.append("Base");
         }
@@ -118,6 +121,8 @@ public class ApplicationDeploymentClasspathBuilder {
     private final String runtimeConfigurationName;
     private final String platformConfigurationName;
     private final String deploymentConfigurationName;
+    private final String compileOnlyConfigurationName;
+
     /**
      * The platform configuration updates the PlatformImports, but since the PlatformImports don't
      * have a place to be stored in the project, they're stored here. The way that extensions are
@@ -136,10 +141,12 @@ public class ApplicationDeploymentClasspathBuilder {
         this.platformConfigurationName = ToolingUtils.toPlatformConfigurationName(this.runtimeConfigurationName);
         this.deploymentConfigurationName = ToolingUtils.toDeploymentConfigurationName(this.runtimeConfigurationName);
         this.platformImportName = project.getPath() + ":" + this.platformConfigurationName;
+        this.compileOnlyConfigurationName = "quarkus" + getLaunchModeAlias(mode) + "CompileOnlyConfiguration";
 
         setUpPlatformConfiguration();
         setUpRuntimeConfiguration();
         setUpDeploymentConfiguration();
+        setUpCompileOnlyConfiguration();
     }
 
     private void setUpPlatformConfiguration() {
@@ -254,6 +261,16 @@ public class ApplicationDeploymentClasspathBuilder {
         }
     }
 
+    private void setUpCompileOnlyConfiguration() {
+        if (!project.getConfigurations().getNames().contains(compileOnlyConfigurationName)) {
+            project.getConfigurations().register(compileOnlyConfigurationName, config -> {
+                config.extendsFrom(project.getConfigurations().getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME));
+                config.shouldResolveConsistentlyWith(getDeploymentConfiguration());
+                config.setCanBeConsumed(false);
+            });
+        }
+    }
+
     public Configuration getPlatformConfiguration() {
         return project.getConfigurations().getByName(this.platformConfigurationName);
     }
@@ -272,6 +289,14 @@ public class ApplicationDeploymentClasspathBuilder {
 
     public Configuration getDeploymentConfiguration() {
         return project.getConfigurations().getByName(this.deploymentConfigurationName);
+    }
+
+    /**
+     * Compile-only configuration which is consistent with the deployment one
+     */
+    public Configuration getCompileOnly() {
+        this.getDeploymentConfiguration().resolve();
+        return project.getConfigurations().getByName(compileOnlyConfigurationName);
     }
 
     /**

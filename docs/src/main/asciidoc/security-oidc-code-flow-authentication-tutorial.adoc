@@ -11,11 +11,11 @@ include::_attributes.adoc[]
 :topics: security,oidc,keycloak,authorization
 :extensions: io.quarkus:quarkus-oidc
 
-With the Quarkus OpenID Connect (OIDC) extension, you can protect application HTTP endpoints by using the OIDC Authorization Code Flow mechanism.
+Discover how to secure application HTTP endpoints by using the Quarkus OpenID Connect (OIDC) authorization code flow mechanism with the Quarkus OIDC extension, providing robust authentication and authorization.
 
-To learn more about the OIDC authorization code flow mechanism, see xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications].
+For more information, see xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications].
 
-To learn about how well-known social providers such as Apple, Facebook, GitHub, Google, Mastodon, Microsoft, Twitch, Twitter (X), and Spotify can be used with Quarkus OIDC, see xref:security-openid-connect-providers.adoc[Configuring Well-Known OpenID Connect Providers].
+To learn how well-known social providers such as Apple, Facebook, GitHub, Google, Mastodon, Microsoft, Twitch, Twitter (X), and Spotify can be used with Quarkus OIDC, see xref:security-openid-connect-providers.adoc[Configuring Well-Known OpenID Connect Providers].
 See also, xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus].
 
 If you want to protect your service applications by using OIDC Bearer token authentication, see xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication].
@@ -59,7 +59,7 @@ If you already have your Quarkus project configured, you can add the `oidc` exte
 :add-extension-extensions: oidc
 include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your build file:
+This adds the following dependency to your build file:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -78,7 +78,7 @@ implementation("io.quarkus:quarkus-oidc")
 
 == Write the application
 
-Let's write a simple Jakarta REST resource which has all the tokens returned in the authorization code grant response injected:
+Let's write a simple Jakarta REST resource that has all the tokens returned in the authorization code grant response injected:
 
 [source,java]
 ----
@@ -118,10 +118,11 @@ public class TokenResource {
    RefreshToken refreshToken;
 
    /**
-    * Returns the tokens available to the application. This endpoint exists only for demonstration purposes, you should not
-    * expose these tokens in a real application.
+    * Returns the tokens available to the application.
+    * This endpoint exists only for demonstration purposes.
+    * Do not not expose these tokens in a real application.
     *
-    * @return a HTML page containing the tokens available to the application
+    * @return an HTML page containing the tokens available to the application
     */
    @GET
    @Produces("text/html")
@@ -151,15 +152,15 @@ public class TokenResource {
 ----
 
 This endpoint has ID, access, and refresh tokens injected.
-It returns a `preferred_username` claim from the ID token, a `scope` claim from the access token, and also a refresh token availability status.
+It returns a `preferred_username` claim from the ID token, a `scope` claim from the access token, and a refresh token availability status.
 
-Note that you do not have to inject the tokens - it is only required if the endpoint needs to use the ID token to interact with the currently authenticated user or use the access token to access a downstream service on behalf of this user.
+You only need to inject the tokens if the endpoint needs to use the ID token to interact with the currently authenticated user or use the access token to access a downstream service on behalf of this user.
 
 // SJ: TO DO - update link to point to new reference guide. For more information, see <<access_id_and_access_tokens,Access ID and Access Tokens>> section.
 
 == Configure the application
 
-The OIDC extension allows you to define the configuration using the `application.properties` file which should be located at the `src/main/resources` directory.
+The OIDC extension allows you to define the configuration by using the `application.properties` file in the `src/main/resources` directory.
 
 [source,properties]
 ----
@@ -173,12 +174,12 @@ quarkus.http.auth.permission.authenticated.policy=authenticated
 
 This is the simplest configuration you can have when enabling authentication to your application.
 
-The `quarkus.oidc.client-id` property references the `client_id` issued by the OIDC provider and the `quarkus.oidc.credentials.secret` property sets the client secret.
+The `quarkus.oidc.client-id` property references the `client_id` issued by the OIDC provider, and the `quarkus.oidc.credentials.secret` property sets the client secret.
 
-The `quarkus.oidc.application-type` property is set to `web-app` in order to tell Quarkus that you want to enable the OIDC authorization code flow, so that your users are redirected to the OIDC provider to authenticate.
+The `quarkus.oidc.application-type` property is set to `web-app` to tell Quarkus that you want to enable the OIDC authorization code flow so your users are redirected to the OIDC provider to authenticate.
 
 Finally, the `quarkus.http.auth.permission.authenticated` permission is set to tell Quarkus about the paths you want to protect.
-In this case, all paths are being protected by a policy that ensures that only `authenticated` users are allowed to access.
+In this case, all paths are protected by a policy that ensures only `authenticated` users can access them.
 For more information, see xref:security-authorize-web-endpoints-reference.adoc[Security Authorization Guide].
 
 == Start and configure the Keycloak server
@@ -190,12 +191,12 @@ To start a Keycloak server, use Docker and run the following command:
 docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 
-where `keycloak.version` should be set to `23.0.0` or higher.
+where `keycloak.version` is set to `23.0.0` or later.
 
-You should be able to access your Keycloak Server at http://localhost:8180[localhost:8180].
+You can access your Keycloak Server at http://localhost:8180[localhost:8180].
 
 To access the Keycloak Administration Console, log in as the `admin` user.
-Username should be `admin` and password `admin`.
+The username and password are both `admin`.
 
 Import the link:{quickstarts-tree-url}/security-openid-connect-web-authentication-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm.
 For more information, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#configuring-realms[create and configure a new realm].
@@ -206,7 +207,7 @@ To run the application in a dev mode, use:
 
 include::{includes}/devtools/dev.adoc[]
 
-When you're done playing with dev mode, you can run it as a standard Java application.
+After exploring the application in dev mode, you can run it as a standard Java application.
 
 First, compile it:
 
@@ -224,15 +225,14 @@ java -jar target/quarkus-app/quarkus-run.jar
 This same demo can be compiled into native code.
 No modifications are required.
 
-This implies that you no longer need to install a JVM on your production environment, as the runtime technology is included in
-the produced binary, and optimized to run with minimal resource overhead.
+This implies that you no longer need to install a JVM on your production environment, as the runtime technology is included in the produced binary and optimized to run with minimal resources.
 
-Compilation will take a bit longer, so this step is disabled by default.
+Compilation takes longer, so this step is turned off by default.
 You can build again by enabling the native build:
 
 include::{includes}/devtools/build-native.adoc[]
 
-After getting a cup of coffee, you can run this binary directly:
+After a while, you can run this binary directly:
 
 [source,bash]
 ----
@@ -246,16 +246,18 @@ To test the application, open your browser and access the following URL:
 
 * http://localhost:8080/tokens[http://localhost:8080/tokens]
 
-If everything is working as expected, you are redirected to the Keycloak server to authenticate.
+If everything works as expected, you are redirected to the Keycloak server to authenticate.
 
-To authenticate to the application, type the following credentials when at the Keycloak login page:
+To authenticate to the application, enter the following credentials when at the Keycloak login page:
 
 * Username: *alice*
 * Password: *alice*
 
-After clicking the `Login` button, you are redirected back to the application and a session cookie will be created.
+After clicking the `Login` button, you are redirected back to the application, and a session cookie is created.
 
-The session for this demo is short-lived and you will be asked to re-authenticate on every page refresh. Please follow the Keycloak https://www.keycloak.org/docs/latest/server_admin/#_timeouts[session timeout] documentation to learn how to increase the session timeouts. For example, you can access Keycloak Admin console directly from Dev UI by selecting a `Keycloak Admin` link if you use xref:security-oidc-code-flow-authentication.adoc#integration-testing-keycloak-devservices[Dev Services for Keycloak] in dev mode:
+The session for this demo is short-lived, so you are asked to re-authenticate on every page refresh.
+For more information about increasing the session timeouts, see the link:https://www.keycloak.org/docs/latest/server_admin/#_timeouts[session timeout] section in the Keycloak documentation.
+For example, you can access the Keycloak Admin console directly from Dev UI by selecting a `Keycloak Admin` link if you use xref:security-oidc-code-flow-authentication.adoc#integration-testing-keycloak-devservices[Dev Services for Keycloak] in dev mode:
 
 image::dev-ui-oidc-keycloak-card.png[alt=Dev UI OpenID Connect Card,role="center"]
 
@@ -263,7 +265,6 @@ For more information about writing the integration tests that depend on `Dev Ser
 
 == Summary
 
-Congratulations!
 You have learned how to set up and use the OIDC authorization code flow mechanism to protect and test application HTTP endpoints.
 After you have completed this tutorial, explore xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication] and xref:security-authentication-mechanisms.adoc[other authentication mechanisms].
 

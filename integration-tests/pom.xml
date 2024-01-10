@@ -359,6 +359,7 @@
                 <module>rest-client-reactive</module>
                 <module>rest-client-reactive-http2</module>
                 <module>rest-client-reactive-kotlin-serialization</module>
+                <module>rest-client-reactive-kotlin-serialization-with-validator</module>
                 <module>rest-client-reactive-multipart</module>
                 <module>rest-client-reactive-stork</module>
                 <module>packaging</module>
@@ -373,6 +374,7 @@
                 <module>micrometer-mp-metrics</module>
                 <module>micrometer-prometheus</module>
                 <module>opentelemetry</module>
+                <module>opentelemetry-quickstart</module>
                 <module>opentelemetry-spi</module>
                 <module>opentelemetry-jdbc-instrumentation</module>
                 <module>opentelemetry-quartz</module>

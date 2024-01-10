@@ -3,18 +3,20 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= OpenID Connect Client and Token Propagation Quickstart
+= OpenID Connect client and token propagation quickstart
 include::_attributes.adoc[]
+:diataxis-type: tutorial
 :categories: security
-:summary: This guide explains how to use OpenID Connect and OAuth2 Client and Filters to acquire, refresh and propagate access tokens.
 :topics: security,oidc,client
 :extensions: io.quarkus:quarkus-oidc-client
 
-This quickstart demonstrates how to use `OpenID Connect Client Reactive Filter` to acquire and propagate access tokens as `HTTP Authorization Bearer` access tokens, alongside `OpenID Token Propagation Reactive Filter` which propagates the incoming `HTTP Authorization Bearer` access tokens.
+Learn how to use OpenID Connect (OIDC) and OAuth2 clients with filters to get, refresh, and propagate access tokens in your applications.
 
-Please check xref:security-openid-connect-client-reference.adoc[OpenID Connect Client and Token Propagation Reference Guide] for all the information related to `Oidc Client` and `Token Propagation` support in Quarkus.
+This approach uses an OIDC token propagation Reactive filter to propagate the incoming bearer access tokens.
 
-Please also read xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication] guide if you need to protect your applications using Bearer Token Authorization.
+For more information about `Oidc Client` and `Token Propagation` support in Quarkus, see the xref:security-openid-connect-client-reference.adoc[OpenID Connect (OIDC) and OAuth2 client and filters reference guide.
+
+To protect your applications by using Bearer Token Authorization, see the xref:security-oidc-bearer-token-authentication.adoc[OpenID Connect (OIDC) Bearer token authentication] guide.
 
 == Prerequisites
 
@@ -24,23 +26,29 @@ include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
-In this example, we will build an application which consists of two Jakarta REST resources, `FrontendResource` and `ProtectedResource`. `FrontendResource` propagates access tokens to `ProtectedResource` and uses either `OpenID Connect Client Reactive Filter` to acquire a token first before propagating it or `OpenID Token Propagation Reactive Filter` to propagate the incoming, already existing access token.
+In this example, an application is built with two Jakarta REST resources, `FrontendResource` and `ProtectedResource`.
+Here, `FrontendResource` uses one of two methods to propagate access tokens to `ProtectedResource`:
 
-`FrontendResource` has 4 endpoints:
+* It can get a token by using an OIDC token propagation Reactive filter before propagating it.
+* It can use an OIDC token propagation Reactive filter to propagate the incoming access token.
+
+`FrontendResource` has four endpoints:
 
 * `/frontend/user-name-with-oidc-client-token`
 * `/frontend/admin-name-with-oidc-client-token`
 * `/frontend/user-name-with-propagated-token`
 * `/frontend/admin-name-with-propagated-token`
 
-`FrontendResource` will use REST Client with `OpenID Connect Client Reactive Filter` to acquire and propagate an access token to `ProtectedResource` when either `/frontend/user-name-with-oidc-client-token` or `/frontend/admin-name-with-oidc-client-token` is called. And it will use REST Client with `OpenID Connect Token Propagation Reactive Filter` to propagate the current incoming access token to `ProtectedResource` when either `/frontend/user-name-with-propagated-token` or `/frontend/admin-name-with-propagated-token` is called.
+`FrontendResource` uses a REST Client with an OIDC token propagation Reactive filter to get and propagate an access token to `ProtectedResource` when either `/frontend/user-name-with-oidc-client-token` or `/frontend/admin-name-with-oidc-client-token` is called.
+Also, `FrontendResource` uses a REST Client with `OpenID Connect Token Propagation Reactive Filter` to propagate the current incoming access token to `ProtectedResource` when either `/frontend/user-name-with-propagated-token` or `/frontend/admin-name-with-propagated-token` is called.
 
-`ProtecedResource` has 2 endpoints:
+`ProtectedResource` has two endpoints:
 
 * `/protected/user-name`
 * `/protected/admin-name`
 
-Both of these endpoints return the username extracted from the incoming access token which was propagated to `ProtectedResource` from `FrontendResource`. The only difference between these endpoints is that calling `/protected/user-name` is only allowed if the current access token has a `user` role and calling `/protected/admin-name` is only allowed if the current access token has an `admin` role.
+Both endpoints return the username extracted from the incoming access token, which was propagated to `ProtectedResource` from `FrontendResource`.
+The only difference between these endpoints is that calling `/protected/user-name` is only allowed if the current access token has a `user` role, and calling `/protected/admin-name` is only allowed if the current access token has an `admin` role.
 
 == Solution
 
@@ -49,24 +57,25 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `security-openid-connect-client-quickstart` link:{quickstarts-tree-url}/security-openid-connect-client-quickstart[directory].
+The solution is in the `security-openid-connect-client-quickstart` link:{quickstarts-tree-url}/security-openid-connect-client-quickstart[directory].
 
-== Creating the Maven Project
+== Creating the Maven project
 
-First, we need a new project. Create a new project with the following command:
+First, you need a new project.
+Create a new project with the following command:
 
 :create-app-artifact-id: security-openid-connect-client-quickstart
 :create-app-extensions: oidc,oidc-client-reactive-filter,oidc-token-propagation-reactive,resteasy-reactive
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a Maven project, importing the `oidc`, `oidc-client-reactive-filter`, `oidc-token-propagation-reactive-filter` and `resteasy-reactive` extensions.
+This command generates a Maven project, importing the `oidc`, `oidc-client-reactive-filter`, `oidc-token-propagation-reactive-filter`, and `resteasy-reactive` extensions.
 
 If you already have your Quarkus project configured, you can add these extensions to your project by running the following command in your project base directory:
 
 :add-extension-extensions: oidc,oidc-client-reactive-filter,oidc-token-propagation-reactive,resteasy-reactive
 include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your build file:
+This command adds the following extensions to your build file:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -97,7 +106,7 @@ implementation("io.quarkus:quarkus-oidc,oidc-client-reactive-filter,oidc-token-p
 
 == Writing the application
 
-Let's start by implementing `ProtectedResource`:
+Start by implementing `ProtectedResource`:
 
 [source,java]
 ----
@@ -139,9 +148,12 @@ public class ProtectedResource {
 }
 ----
 
-As you can see `ProtectedResource` returns a name from both `userName()` and `adminName()` methods. The name is extracted from the current `JsonWebToken`.
+`ProtectedResource` returns a name from both `userName()` and `adminName()` methods.
+The name is extracted from the current `JsonWebToken`.
 
-Next let's add a REST Client with `OidcClientRequestReactiveFilter` and another REST Client with `AccessTokenRequestReactiveFilter`. `FrontendResource` will use these two clients to call `ProtectedResource`:
+Next, add two REST clients, `OidcClientRequestReactiveFilter` and `AccessTokenRequestReactiveFilter`, which `FrontendResource` uses to call `ProtectedResource`.
+
+Add the `OidcClientRequestReactiveFilter` REST Client:
 
 [source,java]
 ----
@@ -174,7 +186,9 @@ public interface RestClientWithOidcClientFilter {
 }
 ----
 
-where `RestClientWithOidcClientFilter` will depend on `OidcClientRequestReactiveFilter` to acquire and propagate the tokens and
+The `RestClientWithOidcClientFilter` interface depends on `OidcClientRequestReactiveFilter` to get and propagate the tokens.
+
+Add the `AccessTokenRequestReactiveFilter` REST Client:
 
 [source,java]
 ----
@@ -207,11 +221,13 @@ public interface RestClientWithTokenPropagationFilter {
 }
 ----
 
-where `RestClientWithTokenPropagationFilter` will depend on `AccessTokenRequestReactiveFilter` to propagate the incoming, already existing tokens.
+The `RestClientWithTokenPropagationFilter` interface depends on `AccessTokenRequestReactiveFilter` to propagate the incoming already-existing tokens.
 
-Note that both `RestClientWithOidcClientFilter` and `RestClientWithTokenPropagationFilter` interfaces are identical - the reason behind it is that combining `OidcClientRequestReactiveFilter` and `AccessTokenRequestReactiveFilter` on the same REST Client will cause side effects as both filters can interfere with other, for example, `OidcClientRequestReactiveFilter` may override the token propagated by `AccessTokenRequestReactiveFilter` or `AccessTokenRequestReactiveFilter` can fail if it is called when no token is available to propagate and `OidcClientRequestReactiveFilter` is expected to acquire a new token instead.
+Note that both `RestClientWithOidcClientFilter` and `RestClientWithTokenPropagationFilter` interfaces are the same.
+This is because combining `OidcClientRequestReactiveFilter` and `AccessTokenRequestReactiveFilter` on the same REST Client causes side effects because both filters can interfere with each other.
+For example, `OidcClientRequestReactiveFilter` can override the token propagated by `AccessTokenRequestReactiveFilter`, or `AccessTokenRequestReactiveFilter` can fail if it is called when no token is available to propagate and `OidcClientRequestReactiveFilter` is expected to get a new token instead.
 
-Now let's complete creating the application with adding `FrontendResource`:
+Now, finish creating the application by adding `FrontendResource`:
 
 [source,java]
 ----
@@ -266,9 +282,10 @@ public class FrontendResource {
 }
 ----
 
-`FrontendResource` will use REST Client with `OpenID Connect Client Reactive Filter` to acquire and propagate an access token to `ProtectedResource` when either `/frontend/user-name-with-oidc-client-token` or `/frontend/admin-name-with-oidc-client-token` is called. And it will use REST Client with `OpenID Connect Token Propagation Reactive Filter` to propagate the current incoming access token to `ProtectedResource` when either `/frontend/user-name-with-propagated-token` or `/frontend/admin-name-with-propagated-token` is called.
+`FrontendResource` uses REST Client with an OIDC token propagation Reactive filter to get and propagate an access token to `ProtectedResource` when either `/frontend/user-name-with-oidc-client-token` or `/frontend/admin-name-with-oidc-client-token` is called.
+Also, `FrontendResource` uses REST Client with `OpenID Connect Token Propagation Reactive Filter` to propagate the current incoming access token to `ProtectedResource` when either `/frontend/user-name-with-propagated-token` or `/frontend/admin-name-with-propagated-token` is called.
 
-Finally, let's add a Jakarta REST `ExceptionMapper`:
+Finally, add a Jakarta REST `ExceptionMapper`:
 
 [source,java]
 ----
@@ -291,11 +308,13 @@ public class FrontendExceptionMapper implements ExceptionMapper<ClientWebApplica
 }
 ----
 
-This exception mapper is only added to verify during the tests that `ProtectedResource` returns `403` when the token has no expected role. Without this mapper `RESTEasy Reactive` will correctly convert the exceptions which will escape from REST Client calls to `500` to avoid leaking the information from the downstream resources such as `ProtectedResource` but in the tests it will not be possible to assert that `500` is in fact caused by an authorization exception as opposed to some internal error.
+This exception mapper is only added to verify during the tests that `ProtectedResource` returns `403` when the token has no expected role.
+Without this mapper, `RESTEasy Reactive` would correctly convert the exceptions that escape from REST Client calls to `500` to avoid leaking the information from the downstream resources such as `ProtectedResource`.
+However, in the tests, it would not be possible to assert that `500` is caused by an authorization exception instead of some internal error.
 
 == Configuring the application
 
-We have prepared the code, and now let's configure the application:
+Having prepared the code, you configure the application:
 
 [source,properties]
 ----
@@ -306,7 +325,7 @@ quarkus.oidc.client-id=backend-service
 quarkus.oidc.credentials.secret=secret
 
 # Tell Dev Services for Keycloak to import the realm file
-# This property is not effective when running the application in JVM or Native modes but only in dev and test modes.
+# This property is ineffective when running the application in JVM or Native modes but only in dev and test modes.
 
 quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 
@@ -319,7 +338,7 @@ quarkus.oidc-client.grant.type=password
 quarkus.oidc-client.grant-options.password.username=alice
 quarkus.oidc-client.grant-options.password.password=alice
 
-# Configure REST Clients
+# Configure REST clients
 
 %prod.port=8080
 %dev.port=8080
@@ -329,91 +348,103 @@ org.acme.security.openid.connect.client.RestClientWithOidcClientFilter/mp-rest/u
 org.acme.security.openid.connect.client.RestClientWithTokenPropagationFilter/mp-rest/url=http://localhost:${port}/protected
 ----
 
-This configuration references Keycloak which will be used by `ProtectedResource` to verify the incoming access tokens and by `OidcClient` to get the tokens for a user `alice` using a `password` grant. Both RESTClients point to `ProtectedResource`'s HTTP address.
+This configuration references Keycloak, which is used by `ProtectedResource` to verify the incoming access tokens and by `OidcClient` to get the tokens for a user `alice` by using a `password` grant.
+Both REST clients point to `ProtectedResource`'s HTTP address.
 
-NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures that `Dev Services for Keycloak` will launch a container for you when the application is run in dev or test modes. See <<keycloak-dev-mode,Running the Application in Dev mode>> section below for more information.
+NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures that `Dev Services for Keycloak` launches a container for you when the application is run in dev or test modes.
+For more information, see the <<keycloak-dev-mode,Running the application in dev mode>> section.
 
-== Starting and Configuring the Keycloak Server
+== Starting and configuring the Keycloak server
 
-NOTE: Do not start the Keycloak server when you run the application in dev mode or test modes - `Dev Services for Keycloak` will launch a container. See <<keycloak-dev-mode,Running the Application in Dev mode>> section below for more information. Make sure to put the link:{quickstarts-tree-url}/security-openid-connect-client-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath (`target/classes` directory) so that it gets imported automatically when running in dev mode - unless you have already built a link:{quickstarts-tree-url}/security-openid-connect-quickstart[complete solution] in which case this realm file will be added to the classpath during the build.
+NOTE: Do not start the Keycloak server when you run the application in dev or test modes; `Dev Services for Keycloak` launches a container.
+For more information, see the <<keycloak-dev-mode,Running the application in dev mode>> section.
+Ensure you put the link:{quickstarts-tree-url}/security-openid-connect-client-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath, in the `target/classes` directory.
+This placement ensures that the file is automatically imported in dev mode.
+However, if you have already built a link:{quickstarts-tree-url}/security-openid-connect-quickstart[complete solution], you do not need to add the realm file to the classpath because the build process has already done so.
 
-To start a Keycloak Server you can use Docker and just run the following command:
+To start a Keycloak Server, you can use Docker and just run the following command:
 
 [source,bash,subs=attributes+]
 ----
 docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 
-where `keycloak.version` should be set to `17.0.0` or higher.
+Set `{keycloak.version}` to `23.0.0` or later.
 
-You should be able to access your Keycloak Server at http://localhost:8180[localhost:8180].
+You can access your Keycloak Server at http://localhost:8180[localhost:8180].
 
-Log in as the `admin` user to access the Keycloak Administration Console. Username should be `admin` and password `admin`.
+Log in as the `admin` user to access the Keycloak Administration Console.
+The password is `admin`.
 
-Import the link:{quickstarts-tree-url}/security-openid-connect-client-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm. For more details, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
+Import the link:{quickstarts-tree-url}/security-openid-connect-client-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm.
+For more details, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
 
-This `quarkus` realm file will add a `frontend` client, and `alice` and `admin` users. `alice` has a `user` role, `admin` - both `user` and `admin` roles.
+This `quarkus` realm file adds a `frontend` client, and `alice` and `admin` users.
+`alice` has a `user` role.
+`admin` has both `user` and `admin` roles.
 
 [[keycloak-dev-mode]]
-== Running the Application in Dev mode
+== Running the application in dev mode
 
 To run the application in a dev mode, use:
 
 include::{includes}/devtools/dev.adoc[]
 
-xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] will launch a Keycloak container and import a `quarkus-realm.json`.
+xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak] launches a Keycloak container and imports `quarkus-realm.json`.
 
-Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev-ui[/q/dev-ui] and click on a `Provider: Keycloak` link in an `OpenID Connect` `Dev UI` card.
+Open a xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev-ui[/q/dev-ui] and click a `Provider: Keycloak` link in the *OpenID Connect Dev UI* card.
 
-You will be asked to log in into a `Single Page Application` provided by `OpenID Connect Dev UI`:
+When asked, log in to a `Single Page Application` provided by the OpenID Connect Dev UI:
 
- * Login as `alice` (password: `alice`) who has a `user` role
- ** accessing `/frontend/user-name-with-propagated-token` will return `200`
- ** accessing `/frontend/admin-name-with-propagated-token` will return `403`
- * Logout and login as `admin` (password: `admin`) who has both `admin` and `user` roles
- ** accessing `/frontend/user-name-with-propagated-token` will return `200`
- ** accessing `/frontend/admin-name-with-propagated-token` will return `200`
+ * Log in as `alice`, with the password, `alice`.
+This user has a `user` role.
+ ** Access `/frontend/user-name-with-propagated-token`, which returns `200`.
+ ** Access `/frontend/admin-name-with-propagated-token`, which returns `403`.
+ * Log out and back in as `admin` with the password, `admin`.
+This user has both `admin` and `user` roles.
+ ** Access `/frontend/user-name-with-propagated-token`, which returns `200`.
+ ** Access `/frontend/admin-name-with-propagated-token`, which returns `200`.
 
-In this case you are testing that `FrontendResource` can propagate the access tokens acquired by `OpenID Connect Dev UI`.
+In this case, you are testing that `FrontendResource` can propagate the access tokens from the OpenID Connect Dev UI.
 
-== Running the Application in JVM mode
+== Running the application in JVM mode
 
-When you're done playing with the `dev` mode" you can run it as a standard Java application.
+After exploring the application in dev mode, you can run it as a standard Java application.
 
-First compile it:
+First, compile it:
 
 include::{includes}/devtools/build.adoc[]
 
-Then run it:
+Then, run it:
 
 [source,bash]
 ----
 java -jar target/quarkus-app/quarkus-run.jar
 ----
 
-== Running the Application in Native Mode
+== Running the application in native mode
 
-This same demo can be compiled into native code: no modifications required.
+You can compile this demo into native code; no modifications are required.
 
 This implies that you no longer need to install a JVM on your
 production environment, as the runtime technology is included in
-the produced binary, and optimized to run with minimal resource overhead.
+the produced binary and optimized to run with minimal resources.
 
-Compilation will take a bit longer, so this step is disabled by default;
-let's build again by enabling the `native` profile:
+Compilation takes longer, so this step is turned off by default.
+To build again, enable the `native` profile:
 
 include::{includes}/devtools/build-native.adoc[]
 
-After getting a cup of coffee, you'll be able to run this binary directly:
+After a little while, when the build finishes, you can run the native binary directly:
 
 [source,bash]
 ----
 ./target/security-openid-connect-quickstart-1.0.0-SNAPSHOT-runner
 ----
 
-== Testing the Application
+== Testing the application
 
-See <<keycloak-dev-mode,Running the Application in Dev mode>> section above about testing your application in dev mode.
+For more information about testing your application in dev mode, see the preceding <<keycloak-dev-mode,Running the application in dev mode>> section.
 
 You can test the application launched in JVM or Native modes with `curl`.
 
@@ -429,7 +460,7 @@ export access_token=$(\
  )
 ----
 
-Now use this token to call `/frontend/user-name-with-propagated-token` and `/frontend/admin-name-with-propagated-token`:
+Now, use this token to call `/frontend/user-name-with-propagated-token` and `/frontend/admin-name-with-propagated-token`:
 
 [source,bash]
 ----
@@ -438,7 +469,7 @@ curl -i -X GET \
   -H "Authorization: Bearer "$access_token
 ----
 
-will return `200` status code and the name `alice` while
+This command returns the `200` status code and the name `alice`.
 
 [source,bash]
 ----
@@ -447,9 +478,10 @@ curl -i -X GET \
   -H "Authorization: Bearer "$access_token
 ----
 
-will return `403` - recall that `alice` only has a `user` role.
+In contrast, this command returns `403`.
+Recall that `alice` only has a `user` role.
 
-Next obtain an access token for `admin`:
+Next, obtain an access token for `admin`:
 
 [source,bash]
 ----
@@ -461,7 +493,7 @@ export access_token=$(\
  )
 ----
 
-and use this token to call `/frontend/user-name-with-propagated-token` and `/frontend/admin-name-with-propagated-token`:
+Use this token to call `/frontend/user-name-with-propagated-token`:
 
 [source,bash]
 ----
@@ -470,7 +502,9 @@ curl -i -X GET \
   -H "Authorization: Bearer "$access_token
 ----
 
-will return `200` status code and the name `admin`, and
+This command returns a `200` status code and the name `admin`.
+
+Now, use this token to call `/frontend/admin-name-with-propagated-token`:
 
 [source,bash]
 ----
@@ -479,10 +513,11 @@ curl -i -X GET \
   -H "Authorization: Bearer "$access_token
 ----
 
-will also return `200` status code and the name `admin`, as `admin` has both `user` and `admin` roles.
+This command also returns the `200` status code and the name `admin` because `admin` has both `user` and `admin` roles.
 
 
-Now let's check `FrontendResource` methods which do not propagate the existing tokens but use `OidcClient` to acquire and propagate the tokens. You have seen that `OidcClient` is configured to acquire the tokens for the `alice` user, so:
+Now, check the `FrontendResource` methods, which do not propagate the existing tokens but use `OidcClient` to get and propagate the tokens.
+As already shown, `OidcClient` is configured to get the tokens for the `alice` user, so:
 
 [source,bash]
 ----
@@ -490,7 +525,7 @@ curl -i -X GET \
   http://localhost:8080/frontend/user-name-with-oidc-client-token
 ----
 
-will return `200` status code and the name `alice`, but
+This command returns the `200` status code and the name `alice`.
 
 [source,bash]
 ----
@@ -498,7 +533,7 @@ curl -i -X GET \
   http://localhost:8080/frontend/admin-name-with-oidc-client-token
 ----
 
-will return `403` status code.
+In contrast with the preceding command, this command returns a `403` status code.
 
 == References
 

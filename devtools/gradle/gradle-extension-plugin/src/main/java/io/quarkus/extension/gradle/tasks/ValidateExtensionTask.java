@@ -17,8 +17,10 @@ import org.gradle.api.tasks.TaskAction;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.extension.gradle.QuarkusExtensionConfiguration;
+import io.quarkus.gradle.tooling.dependency.ArtifactExtensionDependency;
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
+import io.quarkus.gradle.tooling.dependency.ProjectExtensionDependency;
 
 public class ValidateExtensionTask extends DefaultTask {
 
@@ -82,10 +84,20 @@ public class ValidateExtensionTask extends DefaultTask {
     private List<AppArtifactKey> collectRuntimeExtensionsDeploymentKeys(Set<ResolvedArtifact> runtimeArtifacts) {
         List<AppArtifactKey> runtimeExtensions = new ArrayList<>();
         for (ResolvedArtifact resolvedArtifact : runtimeArtifacts) {
-            ExtensionDependency extension = DependencyUtils.getExtensionInfoOrNull(getProject(), resolvedArtifact);
+            ExtensionDependency<?> extension = DependencyUtils.getExtensionInfoOrNull(getProject(), resolvedArtifact);
             if (extension != null) {
-                runtimeExtensions.add(new AppArtifactKey(extension.getDeploymentModule().getGroupId(),
-                        extension.getDeploymentModule().getArtifactId()));
+                if (extension instanceof ProjectExtensionDependency) {
+                    final ProjectExtensionDependency ped = (ProjectExtensionDependency) extension;
+
+                    runtimeExtensions
+                            .add(new AppArtifactKey(ped.getDeploymentModule().getGroup().toString(),
+                                    ped.getDeploymentModule().getName()));
+                } else if (extension instanceof ArtifactExtensionDependency) {
+                    final ArtifactExtensionDependency aed = (ArtifactExtensionDependency) extension;
+
+                    runtimeExtensions.add(new AppArtifactKey(aed.getDeploymentModule().getGroupId(),
+                            aed.getDeploymentModule().getArtifactId()));
+                }
             }
         }
         return runtimeExtensions;

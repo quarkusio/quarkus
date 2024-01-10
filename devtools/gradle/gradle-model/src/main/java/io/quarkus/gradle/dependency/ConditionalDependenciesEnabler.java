@@ -26,12 +26,12 @@ public class ConditionalDependenciesEnabler {
     /**
      * Links dependencies to extensions
      */
-    private final Map<GACT, Set<ExtensionDependency>> featureVariants = new HashMap<>();
+    private final Map<GACT, Set<ExtensionDependency<?>>> featureVariants = new HashMap<>();
     /**
      * Despite its name, only contains extensions which have no conditional dependencies, or have
      * resolved their conditional dependencies.
      */
-    private final Map<ModuleVersionIdentifier, ExtensionDependency> allExtensions = new HashMap<>();
+    private final Map<ModuleVersionIdentifier, ExtensionDependency<?>> allExtensions = new HashMap<>();
     private final Project project;
     private final Configuration enforcedPlatforms;
     private final Set<ArtifactKey> existingArtifacts = new HashSet<>();
@@ -74,10 +74,9 @@ public class ConditionalDependenciesEnabler {
             }
             reset();
         }
-
     }
 
-    public Collection<ExtensionDependency> getAllExtensions() {
+    public Collection<ExtensionDependency<?>> getAllExtensions() {
         return allExtensions.values();
     }
 
@@ -92,7 +91,7 @@ public class ConditionalDependenciesEnabler {
         for (ResolvedArtifact artifact : runtimeArtifacts) {
             // Add to master list of artifacts:
             existingArtifacts.add(getKey(artifact));
-            ExtensionDependency extension = DependencyUtils.getExtensionInfoOrNull(project, artifact);
+            ExtensionDependency<?> extension = DependencyUtils.getExtensionInfoOrNull(project, artifact);
             // If this artifact represents an extension:
             if (extension != null) {
                 // Add to master list of accepted extensions:
@@ -102,6 +101,12 @@ public class ConditionalDependenciesEnabler {
                     if (!exists(conditionalDep)) {
                         queueConditionalDependency(extension, conditionalDep);
                     }
+                }
+
+                // If the extension doesn't have any conditions we just enable it by default
+                if (extension.getDependencyConditions().isEmpty()) {
+                    extension.setConditional(true);
+                    enableConditionalDependency(extension.getExtensionId());
                 }
             }
         }
@@ -121,7 +126,7 @@ public class ConditionalDependenciesEnabler {
                     && conditionalDep.getVersion().equals(artifact.getModuleVersion().getId().getVersion())
                     && artifact.getModuleVersion().getId().getGroup().equals(conditionalDep.getGroup())) {
                 // Once the dependency is found, reload the extension info from within
-                final ExtensionDependency extensionDependency = DependencyUtils.getExtensionInfoOrNull(project, artifact);
+                final ExtensionDependency<?> extensionDependency = DependencyUtils.getExtensionInfoOrNull(project, artifact);
                 // Now check if this conditional dependency is resolved given the latest graph evolution
                 if (extensionDependency != null && (extensionDependency.getDependencyConditions().isEmpty()
                         || exist(extensionDependency.getDependencyConditions()))) {
@@ -141,7 +146,7 @@ public class ConditionalDependenciesEnabler {
         for (ResolvedArtifact artifact : resolvedArtifacts) {
             // First add the artifact to the master list
             existingArtifacts.add(getKey(artifact));
-            ExtensionDependency extensionDependency = DependencyUtils.getExtensionInfoOrNull(project, artifact);
+            ExtensionDependency<?> extensionDependency = DependencyUtils.getExtensionInfoOrNull(project, artifact);
             if (extensionDependency == null) {
                 continue;
             }
@@ -159,7 +164,7 @@ public class ConditionalDependenciesEnabler {
         return satisfied;
     }
 
-    private void queueConditionalDependency(ExtensionDependency extension, Dependency conditionalDep) {
+    private void queueConditionalDependency(ExtensionDependency<?> extension, Dependency conditionalDep) {
         // 1. Add to master list of unresolved/unsatisfied dependencies
         // 2. Add map entry to link dependency to extension
         featureVariants.computeIfAbsent(getFeatureKey(conditionalDep), k -> {
@@ -177,7 +182,7 @@ public class ConditionalDependenciesEnabler {
     }
 
     private void enableConditionalDependency(ModuleVersionIdentifier dependency) {
-        final Set<ExtensionDependency> extensions = featureVariants.remove(getFeatureKey(dependency));
+        final Set<ExtensionDependency<?>> extensions = featureVariants.remove(getFeatureKey(dependency));
         if (extensions == null) {
             return;
         }
@@ -193,7 +198,7 @@ public class ConditionalDependenciesEnabler {
                 .contains(ArtifactKey.of(dependency.getGroup(), dependency.getName(), null, ArtifactCoords.TYPE_JAR));
     }
 
-    public boolean exists(ExtensionDependency dependency) {
+    public boolean exists(ExtensionDependency<?> dependency) {
         return existingArtifacts
                 .contains(ArtifactKey.of(dependency.getGroup(), dependency.getName(), null, ArtifactCoords.TYPE_JAR));
     }

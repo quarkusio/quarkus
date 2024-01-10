@@ -1597,7 +1597,9 @@ public class TestEndpoint {
                 }).flatMap(person -> {
                     Assertions.assertEquals("2", person.name);
 
-                    return Person.find("select uniqueName, name\nfrom\n io.quarkus.it.panache.Person\nwhere\n name = ?1", "2")
+                    return Person
+                            .find("select uniqueName, name\nfrom\n io.quarkus.it.panache.reactive.Person\nwhere\n name = ?1",
+                                    "2")
                             .project(PersonName.class)
                             .<PersonName> firstResult();
                 }).flatMap(person -> {

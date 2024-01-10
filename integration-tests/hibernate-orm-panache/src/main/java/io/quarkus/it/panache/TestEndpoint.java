@@ -1718,4 +1718,29 @@ public class TestEndpoint {
 
         return "OK";
     }
+
+    @GET
+    @Path("testStripNewLine")
+    @Transactional
+    public String testNewLineStrip() {
+
+        Person person = new Person();
+        person.name = "Jakub";
+        person.persist();
+
+        List<Person> persons = Person.find("\nFROM\n Person2  \nWHERE\n name = ?1", "Jakub").list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
+        long count = Person.count("\nFROM\n Person2 \nWHERE\n name = ?1", "Jakub");
+        Assertions.assertEquals(1, count);
+
+        int updateCount = Person.update("\nUPDATE\n Person2 set name = 'Jacob' \nWHERE\n name = ?1", "Jakub");
+        Assertions.assertEquals(1, updateCount);
+
+        long deleteCount = Person.delete("\nDELETE\n Person2 \nWHERE\n name = ?1", "Jacob");
+        Assertions.assertEquals(1, deleteCount);
+
+        return "OK";
+    }
 }

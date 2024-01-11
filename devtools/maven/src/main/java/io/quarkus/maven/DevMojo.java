@@ -96,6 +96,7 @@ import io.quarkus.bootstrap.devmode.DependenciesFilter;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.maven.ApplicationDependencyModelResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
@@ -1360,6 +1361,7 @@ public class DevMojo extends AbstractMojo {
                     .setDevMode(true)
                     .setTest(LaunchMode.TEST.equals(getLaunchModeClasspath()))
                     .setCollectReloadableDependencies(!noDeps)
+                    .setIncubatingModelResolver(ApplicationDependencyModelResolver.isIncubatingEnabled(project.getProperties()))
                     .resolveModel(mvnCtx.getCurrentProject().getAppArtifact());
         }
 

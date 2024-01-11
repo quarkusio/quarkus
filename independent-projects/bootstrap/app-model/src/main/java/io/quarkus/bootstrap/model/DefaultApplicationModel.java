@@ -29,8 +29,8 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
         this.appArtifact = builder.appArtifact;
         this.dependencies = builder.buildDependencies();
         this.platformImports = builder.platformImports;
-        this.capabilityContracts = builder.extensionCapabilities;
-        this.localProjectArtifacts = builder.reloadableWorkspaceModules;
+        this.capabilityContracts = List.copyOf(builder.extensionCapabilities);
+        this.localProjectArtifacts = Set.copyOf(builder.reloadableWorkspaceModules);
         this.excludedResources = builder.excludedResources;
     }
 

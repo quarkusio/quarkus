@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.jboss.logging.Logger;
 
@@ -36,13 +38,13 @@ public class ApplicationModelBuilder {
     ResolvedDependency appArtifact;
 
     final Map<ArtifactKey, ResolvedDependencyBuilder> dependencies = new LinkedHashMap<>();
-    final Set<ArtifactKey> parentFirstArtifacts = new HashSet<>();
-    final Set<ArtifactKey> runnerParentFirstArtifacts = new HashSet<>();
-    final List<ArtifactCoordsPattern> excludedArtifacts = new ArrayList<>();
-    final Map<ArtifactKey, Set<String>> excludedResources = new HashMap<>(0);
-    final Set<ArtifactKey> lesserPriorityArtifacts = new HashSet<>();
-    final Set<ArtifactKey> reloadableWorkspaceModules = new HashSet<>();
-    final List<ExtensionCapabilities> extensionCapabilities = new ArrayList<>();
+    final Collection<ArtifactKey> parentFirstArtifacts = new ConcurrentLinkedDeque<>();
+    final Collection<ArtifactKey> runnerParentFirstArtifacts = new ConcurrentLinkedDeque<>();
+    final Collection<ArtifactCoordsPattern> excludedArtifacts = new ConcurrentLinkedDeque<>();
+    final Map<ArtifactKey, Set<String>> excludedResources = new ConcurrentHashMap<>();
+    final Collection<ArtifactKey> lesserPriorityArtifacts = new ConcurrentLinkedDeque<>();
+    final Collection<ArtifactKey> reloadableWorkspaceModules = new ConcurrentLinkedDeque<>();
+    final Collection<ExtensionCapabilities> extensionCapabilities = new ConcurrentLinkedDeque<>();
     PlatformImports platformImports;
     final Map<WorkspaceModuleId, WorkspaceModule.Mutable> projectModules = new HashMap<>();
 

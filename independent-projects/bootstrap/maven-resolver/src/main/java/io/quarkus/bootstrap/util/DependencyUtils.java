@@ -10,6 +10,7 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
+import org.eclipse.aether.util.graph.transformer.ConflictResolver;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
@@ -151,5 +152,14 @@ public class DependencyUtils {
                 .setType(artifact.getExtension())
                 .setVersion(artifact.getVersion())
                 .setResolvedPaths(artifact.getFile() == null ? PathList.empty() : PathList.of(artifact.getFile().toPath()));
+    }
+
+    public static boolean hasWinner(DependencyNode node) {
+        return node.getData().containsKey(ConflictResolver.NODE_DATA_WINNER) && node.getChildren().isEmpty();
+    }
+
+    public static DependencyNode getWinner(DependencyNode node) {
+        final DependencyNode winner = (DependencyNode) node.getData().get(ConflictResolver.NODE_DATA_WINNER);
+        return winner == null || !node.getChildren().isEmpty() ? null : winner;
     }
 }

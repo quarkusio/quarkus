@@ -34,8 +34,10 @@ import org.eclipse.aether.version.Version;
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
+import io.quarkus.bootstrap.resolver.maven.ApplicationDependencyModelResolver;
 import io.quarkus.bootstrap.resolver.maven.ApplicationDependencyTreeResolver;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.DependencyLoggingConfig;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.util.DependencyUtils;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
@@ -55,17 +57,34 @@ import io.quarkus.paths.PathList;
 public class BootstrapAppModelResolver implements AppModelResolver {
 
     protected final MavenArtifactResolver mvn;
-    protected Consumer<String> buildTreeConsumer;
+    private DependencyLoggingConfig depLogConfig;
     protected boolean devmode;
     protected boolean test;
     private boolean collectReloadableDeps = true;
+    private boolean incubatingModelResolver;
 
     public BootstrapAppModelResolver(MavenArtifactResolver mvn) {
         this.mvn = mvn;
     }
 
+    /**
+     * Temporary method that will be removed once the incubating implementation becomes the default.
+     *
+     * @return this application model resolver
+     */
+    public BootstrapAppModelResolver setIncubatingModelResolver(boolean incubatingModelResolver) {
+        this.incubatingModelResolver = incubatingModelResolver;
+        return this;
+    }
+
     public void setBuildTreeLogger(Consumer<String> buildTreeConsumer) {
-        this.buildTreeConsumer = buildTreeConsumer;
+        if (buildTreeConsumer != null) {
+            depLogConfig = DependencyLoggingConfig.builder().setMessageConsumer(buildTreeConsumer).build();
+        }
+    }
+
+    public void setDepLogConfig(DependencyLoggingConfig depLogConfig) {
+        this.depLogConfig = depLogConfig;
     }
 
     /**
@@ -328,13 +347,33 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         }
         var collectRtDepsRequest = MavenArtifactResolver.newCollectRequest(artifact, directDeps, managedDeps, List.of(), repos);
         try {
-            ApplicationDependencyTreeResolver.newInstance()
-                    .setArtifactResolver(mvn)
-                    .setApplicationModelBuilder(appBuilder)
-                    .setCollectReloadableModules(collectReloadableDeps && reloadableModules.isEmpty())
-                    .setCollectCompileOnly(filteredProvidedDeps)
-                    .setBuildTreeConsumer(buildTreeConsumer)
-                    .resolve(collectRtDepsRequest);
+            long start = 0;
+            boolean logTime = false;
+            if (logTime) {
+                start = System.currentTimeMillis();
+            }
+            if (incubatingModelResolver) {
+                ApplicationDependencyModelResolver.newInstance()
+                        .setArtifactResolver(mvn)
+                        .setApplicationModelBuilder(appBuilder)
+                        .setCollectReloadableModules(collectReloadableDeps && reloadableModules.isEmpty())
+                        .setCollectCompileOnly(filteredProvidedDeps)
+                        .setDependencyLogging(depLogConfig)
+                        .resolve(collectRtDepsRequest);
+            } else {
+                ApplicationDependencyTreeResolver.newInstance()
+                        .setArtifactResolver(mvn)
+                        .setApplicationModelBuilder(appBuilder)
+                        .setCollectReloadableModules(collectReloadableDeps && reloadableModules.isEmpty())
+                        .setCollectCompileOnly(filteredProvidedDeps)
+                        .setBuildTreeConsumer(depLogConfig == null ? null : depLogConfig.getMessageConsumer())
+                        .resolve(collectRtDepsRequest);
+            }
+            if (logTime) {
+                System.err.println(
+                        "Application model resolved in " + (System.currentTimeMillis() - start) + "ms, incubating="
+                                + incubatingModelResolver);
+            }
         } catch (BootstrapDependencyProcessingException e) {
             throw new AppModelResolverException(
                     "Failed to inject extension deployment dependencies for " + appArtifact.toCompactCoords(), e);

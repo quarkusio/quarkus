@@ -29,8 +29,8 @@ public class LongStreamTestBase {
                         .build());
 
         AssertSubscriber<LongReply> subscriber = multiplex.parse(multi)
-                                                         .subscribe()
-                                                         .withSubscriber(AssertSubscriber.create(10));
+                .subscribe()
+                .withSubscriber(AssertSubscriber.create(10));
 
         Set<Long> longSet = subscriber.awaitCompletion()
                 .getItems()

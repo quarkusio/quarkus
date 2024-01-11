@@ -46,7 +46,7 @@
         <!-- Versions -->
         <jakarta.enterprise.cdi-api.version>4.0.1</jakarta.enterprise.cdi-api.version>
         <jandex.version>3.1.6</jandex.version>
-        <bytebuddy.version>1.12.12</bytebuddy.version>
+        <bytebuddy.version>1.14.7</bytebuddy.version>
         <junit5.version>5.10.1</junit5.version>
         <maven.version>3.9.6</maven.version>
         <assertj.version>3.24.2</assertj.version>
@@ -72,6 +72,7 @@
         <awaitility.version>4.2.0</awaitility.version>
         <smallrye-mutiny-vertx-core.version>3.7.2</smallrye-mutiny-vertx-core.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
+        <mockito.version>5.8.0</mockito.version>
         <mutiny-zero.version>1.0.0</mutiny-zero.version>
 
         <!-- Forbidden API checks -->

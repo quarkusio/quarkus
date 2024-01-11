@@ -638,12 +638,24 @@ public class BeanDeployment {
      * This returns a collection because in case of repeating interceptor bindings there can be multiple.
      * For most instances this will be a singleton instance (if given annotation is an interceptor binding) or
      * an empty list for cases where the annotation is not an interceptor binding.
+     * <p>
+     * In addition to repeating annotations, the result also includes transitive interceptor bindings.
      *
      * @param annotation annotation to be inspected
      * @return a collection of interceptor bindings or an empty collection
      */
     public Collection<AnnotationInstance> extractInterceptorBindings(AnnotationInstance annotation) {
-        return extractAnnotations(annotation, interceptorBindings, repeatingInterceptorBindingAnnotations);
+        Collection<AnnotationInstance> result = extractAnnotations(annotation, interceptorBindings,
+                repeatingInterceptorBindingAnnotations);
+        if (result.isEmpty()) {
+            return result;
+        }
+        Set<AnnotationInstance> transitive = transitiveInterceptorBindings.get(annotation.name());
+        if (transitive != null) {
+            result = new HashSet<>(result);
+            result.addAll(transitive);
+        }
+        return result;
     }
 
     private static Collection<AnnotationInstance> extractAnnotations(AnnotationInstance annotation,
@@ -665,10 +677,6 @@ public class BeanDeployment {
 
     ClassInfo getInterceptorBinding(DotName name) {
         return interceptorBindings.get(name);
-    }
-
-    Set<AnnotationInstance> getTransitiveInterceptorBindings(DotName name) {
-        return transitiveInterceptorBindings.get(name);
     }
 
     Map<DotName, Set<AnnotationInstance>> getTransitiveInterceptorBindings() {

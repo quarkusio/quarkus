@@ -67,7 +67,7 @@
         <kubernetes-client.version>6.10.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.59.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <grpc.version>1.61.0</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <grpc-jprotoc.version>1.2.1</grpc-jprotoc.version>
         <protoc.version>3.25.0</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>

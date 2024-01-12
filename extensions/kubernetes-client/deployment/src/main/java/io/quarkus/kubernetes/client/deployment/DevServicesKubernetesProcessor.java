@@ -1,56 +1,17 @@
 package io.quarkus.kubernetes.client.deployment;
 
-import static com.dajudge.kindcontainer.KubernetesVersionEnum.latest;
-import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.singletonList;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.time.Duration;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import org.jboss.logging.Logger;
-import org.testcontainers.DockerClientFactory;
-import org.testcontainers.containers.ContainerState;
-
-import com.dajudge.kindcontainer.ApiServerContainer;
-import com.dajudge.kindcontainer.ApiServerContainerVersion;
-import com.dajudge.kindcontainer.K3sContainer;
-import com.dajudge.kindcontainer.K3sContainerVersion;
-import com.dajudge.kindcontainer.KindContainer;
-import com.dajudge.kindcontainer.KindContainerVersion;
-import com.dajudge.kindcontainer.KubernetesContainer;
-import com.dajudge.kindcontainer.KubernetesVersionEnum;
+import com.dajudge.kindcontainer.*;
 import com.dajudge.kindcontainer.client.KubeConfigUtils;
-import com.dajudge.kindcontainer.client.config.Cluster;
-import com.dajudge.kindcontainer.client.config.ClusterSpec;
-import com.dajudge.kindcontainer.client.config.Context;
-import com.dajudge.kindcontainer.client.config.ContextSpec;
-import com.dajudge.kindcontainer.client.config.KubeConfig;
-import com.dajudge.kindcontainer.client.config.User;
-import com.dajudge.kindcontainer.client.config.UserSpec;
+import com.dajudge.kindcontainer.client.config.*;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectContainerResponse;
-
 import io.fabric8.kubernetes.client.Config;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
-import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.deployment.builditem.*;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
-import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
-import io.quarkus.deployment.builditem.DockerStatusBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
@@ -63,8 +24,24 @@ import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
 import io.quarkus.kubernetes.client.runtime.KubernetesDevServicesBuildTimeConfig;
 import io.quarkus.kubernetes.client.runtime.KubernetesDevServicesBuildTimeConfig.Flavor;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import org.jboss.logging.Logger;
+import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.ContainerState;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { GlobalDevServicesConfig.Enabled.class, NoQuarkusTestKubernetesClient.class })
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.Duration;
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import static com.dajudge.kindcontainer.KubernetesVersionEnum.latest;
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.singletonList;
+
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = {GlobalDevServicesConfig.Enabled.class, NoQuarkusTestKubernetesClient.class})
 public class DevServicesKubernetesProcessor {
     private static final String KUBERNETES_CLIENT_DEVSERVICES_OVERRIDE_KUBECONFIG = "quarkus.kubernetes-client.devservices.override-kubeconfig";
     private static final Logger log = Logger.getLogger(DevServicesKubernetesProcessor.class);
@@ -161,7 +138,7 @@ public class DevServicesKubernetesProcessor {
 
     @SuppressWarnings("unchecked")
     private RunningDevService startKubernetes(DockerStatusBuildItem dockerStatusBuildItem, KubernetesDevServiceCfg config,
-            LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) {
+                                              LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting Dev Services for Kubernetes, as it has been disabled in the config.");
@@ -242,7 +219,7 @@ public class DevServicesKubernetesProcessor {
                 .map(containerAddress -> new RunningDevService(Feature.KUBERNETES_CLIENT.getName(),
                         containerAddress.getId(),
                         null,
-                        resolveConfigurationFromRunningContainer(containerAddress)))
+                        resolveConfigurationFromRunningContainer(containerAddress, config.flavor)))
                 .orElseGet(defaultKubernetesClusterSupplier);
     }
 
@@ -274,9 +251,9 @@ public class DevServicesKubernetesProcessor {
                 "quarkus.kubernetes-client.namespace", "default");
     }
 
-    private Map<String, String> resolveConfigurationFromRunningContainer(ContainerAddress containerAddress) {
+    private Map<String, String> resolveConfigurationFromRunningContainer(ContainerAddress containerAddress, Flavor flavor) {
         var dockerClient = DockerClientFactory.lazyClient();
-        var container = new RunningContainer(dockerClient, containerAddress);
+        var container = new RunningContainer(dockerClient, containerAddress, flavor);
 
         return container.getKubeconfig();
     }
@@ -339,32 +316,28 @@ public class DevServicesKubernetesProcessor {
         private final InspectContainerResponse containerInfo;
 
         private final ContainerAddress containerAddress;
+        private final Flavor flavor;
 
-        public RunningContainer(DockerClient dockerClient, ContainerAddress containerAddress) {
+        public RunningContainer(DockerClient dockerClient, ContainerAddress containerAddress, Flavor flavor) {
             this.dockerClient = dockerClient;
             this.containerAddress = containerAddress;
             this.containerInfo = dockerClient.inspectContainerCmd(getContainerId()).exec();
+            this.flavor = flavor;
         }
 
         public Map<String, String> getKubeconfig() {
-            var image = getContainerInfo().getConfig().getImage();
-            if (image.contains("rancher/k3s")) {
-                return getKubernetesClientConfigFromKubeConfig(
+            return switch (flavor) {
+                case k3s -> getKubernetesClientConfigFromKubeConfig(
                         KubeConfigUtils.parseKubeConfig(KubeConfigUtils.replaceServerInKubeconfig(containerAddress.getUrl(),
                                 getFileContentFromContainer(K3S_KUBECONFIG))));
-            } else if (image.contains("kindest/node")) {
-                return getKubernetesClientConfigFromKubeConfig(
+                case kind -> getKubernetesClientConfigFromKubeConfig(
                         KubeConfigUtils.parseKubeConfig(KubeConfigUtils.replaceServerInKubeconfig(containerAddress.getUrl(),
                                 getFileContentFromContainer(KIND_KUBECONFIG))));
-            } else if (image.contains("k8s.gcr.io/kube-apiserver") ||
-                    image.contains("registry.k8s.io/kube-apiserver")) {
-                return getKubernetesClientConfigFromKubeConfig(getKubeconfigFromApiContainer(containerAddress.getUrl()));
-            }
-
-            // this can happen only if the user manually start
-            // a DEV_SERVICE_LABEL labeled container with an invalid image name
-            throw new RuntimeException("The container with the label '" + DEV_SERVICE_LABEL
-                    + "' is not compatible with Dev Services for Kubernetes. Stop it or disable Dev Services for Kubernetes.");
+                case api_only ->
+                        getKubernetesClientConfigFromKubeConfig(getKubeconfigFromApiContainer(containerAddress.getUrl()));
+                default -> throw new RuntimeException("The container with the label '" + DEV_SERVICE_LABEL
+                        + "' is not compatible with Dev Services for Kubernetes. Stop it or disable Dev Services for Kubernetes.");
+            };
         }
 
         protected KubeConfig getKubeconfigFromApiContainer(final String url) {

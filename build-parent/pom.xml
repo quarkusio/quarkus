@@ -499,7 +499,7 @@
             <dependency>
                 <groupId>org.mvnpm.at.hpcc-js</groupId>
                 <artifactId>wasm</artifactId>
-                <version>2.14.1</version>
+                <version>2.15.1</version>
                 <scope>runtime</scope>
             </dependency>
             <dependency>

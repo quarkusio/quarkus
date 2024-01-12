@@ -426,9 +426,15 @@ public interface ReactiveRedisClient {
 
     Response pfcountAndAwait(List<String> args);
 
+    @Deprecated
     Uni<Response> pfdebug(List<String> args);
 
+    @Deprecated
     Response pfdebugAndAwait(List<String> args);
+
+    Uni<Response> pfdebug(String command, String key);
+
+    Response pfdebugAndAwait(String command, String key);
 
     Uni<Response> pfmerge(List<String> args);
 

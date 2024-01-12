@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web, serialization
 :summary: JSON is now the lingua franca between microservices. In this guide, we see how you can get your REST services to consume and produce JSON payloads.
+:topics: rest,json,resteasy-reactive
+:extensions: io.quarkus:quarkus-resteasy-reactive-jackson,io.quarkus:quarkus-resteasy-reactive-jsonb,io.quarkus:quarkus-resteasy-reactive
 
 JSON is now the _lingua franca_ between microservices.
 
@@ -226,7 +228,7 @@ public class RegisterCustomModuleCustomizer implements ObjectMapperCustomizer {
 
 Users can even provide their own `ObjectMapper` bean if they so choose.
 If this is done, it is very important to manually inject and apply all `io.quarkus.jackson.ObjectMapperCustomizer` beans in the CDI producer that produces `ObjectMapper`.
-Failure to do so will prevent Jackson specific customizations provided by various extensions from being applied. 
+Failure to do so will prevent Jackson specific customizations provided by various extensions from being applied.
 
 [source,java]
 ----

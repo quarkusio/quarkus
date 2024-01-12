@@ -218,7 +218,8 @@ public class TestSupport implements TestController {
                         for (ResolvedDependency d : testModel.getDependencies()) {
                             if (d.isClassLoaderParentFirst() && !currentParentFirst.contains(d.getKey())) {
                                 if (clBuilder == null) {
-                                    clBuilder = QuarkusClassLoader.builder("Continuous Testing Parent-First",
+                                    clBuilder = QuarkusClassLoader.builder("Continuous Testing Parent-First"
+                                            + curatedApplication.getClassLoaderNameSuffix(),
                                             getClass().getClassLoader().getParent(), false);
                                 }
                                 clBuilder.addElement(ClassPathElement.fromDependency(d));

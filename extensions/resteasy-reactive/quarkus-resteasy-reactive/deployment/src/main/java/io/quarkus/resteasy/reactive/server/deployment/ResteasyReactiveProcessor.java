@@ -12,6 +12,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -110,6 +111,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResponseHeaderMethodScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResponseStatusMethodScanner;
 import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
+import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFileBodyHandler;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyAsyncFileMessageBodyWriter;
@@ -165,6 +167,8 @@ import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
 import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.server.EndpointDisabled;
+import io.quarkus.resteasy.reactive.server.runtime.QuarkusServerFileBodyHandler;
+import io.quarkus.resteasy.reactive.server.runtime.QuarkusServerPathBodyHandler;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveInitialiser;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRuntimeRecorder;
@@ -178,6 +182,7 @@ import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.Unauthorized
 import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler;
 import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityInterceptorHandler;
 import io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler;
+import io.quarkus.resteasy.reactive.server.runtime.security.SecurityEventContext;
 import io.quarkus.resteasy.reactive.server.spi.AnnotationsTransformerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.ContextTypeBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.HandlerConfigurationProviderBuildItem;
@@ -203,7 +208,7 @@ import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
+import io.quarkus.vertx.http.runtime.RouteConstants;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -1021,6 +1026,16 @@ public class ResteasyReactiveProcessor {
     }
 
     @BuildStep
+    public void fileHandling(BuildProducer<BuiltInReaderOverrideBuildItem> overrideProducer,
+            BuildProducer<MessageBodyReaderBuildItem> readerProducer) {
+        overrideProducer.produce(new BuiltInReaderOverrideBuildItem(ServerFileBodyHandler.class.getName(),
+                QuarkusServerFileBodyHandler.class.getName()));
+        readerProducer.produce(
+                new MessageBodyReaderBuildItem(QuarkusServerPathBodyHandler.class.getName(), Path.class.getName(), List.of(
+                        MediaType.WILDCARD), RuntimeType.SERVER, true, Priorities.USER));
+    }
+
+    @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT, useIdentityComparisonForParameters = false)
     public void serverSerializers(ResteasyReactiveRecorder recorder,
             BeanContainerBuildItem beanContainerBuildItem,
@@ -1029,6 +1044,7 @@ public class ResteasyReactiveProcessor {
             List<MessageBodyWriterBuildItem> additionalMessageBodyWriters,
             List<MessageBodyReaderOverrideBuildItem> messageBodyReaderOverrideBuildItems,
             List<MessageBodyWriterOverrideBuildItem> messageBodyWriterOverrideBuildItems,
+            List<BuiltInReaderOverrideBuildItem> builtInReaderOverrideBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ServerSerialisersBuildItem> serverSerializersProducer) {
 
@@ -1046,11 +1062,16 @@ public class ResteasyReactiveProcessor {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(builtinWriter.writerClass.getName())
                     .build());
         }
+        Map<String, String> builtInReaderOverrides = BuiltInReaderOverrideBuildItem.toMap(builtInReaderOverrideBuildItems);
         for (Serialisers.BuiltinReader builtinReader : ServerSerialisers.BUILTIN_READERS) {
-            registerReader(recorder, serialisers, builtinReader.entityClass.getName(), builtinReader.readerClass.getName(),
+            String effectiveReaderClassName = builtinReader.readerClass.getName();
+            if (builtInReaderOverrides.containsKey(effectiveReaderClassName)) {
+                effectiveReaderClassName = builtInReaderOverrides.get(effectiveReaderClassName);
+            }
+            registerReader(recorder, serialisers, builtinReader.entityClass.getName(), effectiveReaderClassName,
                     beanContainerBuildItem.getValue(),
                     builtinReader.mediaType, builtinReader.constraint);
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(builtinReader.readerClass.getName())
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(effectiveReaderClassName)
                     .build());
         }
 
@@ -1251,11 +1272,11 @@ public class ResteasyReactiveProcessor {
                 .produce(new ResteasyReactiveDeploymentInfoBuildItem(deploymentInfo));
 
         boolean servletPresent = false;
-        int order = VertxHttpRecorder.AFTER_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET;
+        int order = RouteConstants.ROUTE_ORDER_AFTER_DEFAULT + REST_ROUTE_ORDER_OFFSET;
         if (capabilities.isPresent("io.quarkus.servlet")) {
             //if servlet is present we run RR before the default route
             //otherwise we run after it
-            order = VertxHttpRecorder.BEFORE_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET;
+            order = RouteConstants.ROUTE_ORDER_BEFORE_DEFAULT + REST_ROUTE_ORDER_OFFSET;
             servletPresent = true;
         }
 
@@ -1587,6 +1608,7 @@ public class ResteasyReactiveProcessor {
                     StandardSecurityCheckInterceptor.AuthenticatedInterceptor.class,
                     StandardSecurityCheckInterceptor.PermitAllInterceptor.class,
                     StandardSecurityCheckInterceptor.PermissionsAllowedInterceptor.class));
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(SecurityEventContext.class));
         }
     }
 

@@ -7,6 +7,8 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import io.quarkus.vertx.http.runtime.security.ImmutableSubstringMap.SubstringMatch;
+
 /**
  * Handler that dispatches to a given handler based of a prefix match of the path.
  * <p>
@@ -16,7 +18,10 @@ import java.util.concurrent.ConcurrentMap;
  * <p>
  *
  * @author Stuart Douglas
+ *
+ * @deprecated use {@link ImmutablePathMatcher} instead
  */
+@Deprecated
 public class PathMatcher<T> {
 
     private static final String STRING_PATH_SEPARATOR = "/";
@@ -55,7 +60,7 @@ public class PathMatcher<T> {
         final int[] lengths = this.lengths;
         for (int pathLength : lengths) {
             if (pathLength == length) {
-                SubstringMap.SubstringMatch<T> next = paths.get(path, length);
+                SubstringMatch<T> next = paths.get(path, length);
                 if (next != null) {
                     return new PathMatch<>(path, "", next.getValue());
                 }
@@ -64,7 +69,7 @@ public class PathMatcher<T> {
                 if (c == '/') {
 
                     //String part = path.substring(0, pathLength);
-                    SubstringMap.SubstringMatch<T> next = paths.get(path, pathLength);
+                    SubstringMatch<T> next = paths.get(path, pathLength);
                     if (next != null) {
                         return new PathMatch<>(next.getKey(), path.substring(pathLength), next.getValue());
                     }
@@ -117,7 +122,7 @@ public class PathMatcher<T> {
     public T getPrefixPath(final String path) {
 
         // enable the prefix path mechanism to return the default handler
-        SubstringMap.SubstringMatch<T> match = paths.get(path);
+        SubstringMatch<T> match = paths.get(path);
         if (PathMatcher.STRING_PATH_SEPARATOR.equals(path) && match == null) {
             return this.defaultHandler;
         }

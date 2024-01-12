@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.server.vertx.test.resource.basic;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.client.Client;
@@ -13,7 +15,6 @@ import org.jboss.resteasy.reactive.server.vertx.test.simple.PortProviderUtil;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,7 +56,8 @@ public class ReponseInfoTest {
     private void basicTest(String path) {
         WebTarget base = client.target(PortProviderUtil.generateURL(path, ReponseInfoTest.class.getSimpleName()));
         Response response = base.request().get();
-        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+        assertEquals(true, response.readEntity(boolean.class));
         response.close();
     }
 

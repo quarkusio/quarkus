@@ -99,10 +99,13 @@ public final class MicrometerConfig {
         public KafkaConfigGroup kafka;
 
         public RedisConfigGroup redis;
+        public StorkConfigGroup stork;
 
         public GrpcServerConfigGroup grpcServer;
 
         public GrpcClientConfigGroup grpcClient;
+
+        public ReactiveMessagingConfigGroup messaging;
 
         public MPMetricsConfigGroup mpMetrics;
 

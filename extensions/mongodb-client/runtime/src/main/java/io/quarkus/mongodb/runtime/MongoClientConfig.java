@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import org.bson.UuidRepresentation;
+
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -196,5 +198,12 @@ public class MongoClientConfig {
      */
     @ConfigItem(name = "health.database", defaultValue = "admin")
     public String healthDatabase;
+
+    /**
+     * Configures the UUID representation to use when encoding instances of {@link java.util.UUID}
+     * and when decoding BSON binary values with subtype of 3.
+     */
+    @ConfigItem
+    public Optional<UuidRepresentation> uuidRepresentation;
 
 }

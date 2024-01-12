@@ -6,6 +6,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public final class JavaVersion {
 
@@ -61,14 +62,25 @@ public final class JavaVersion {
     }
 
     // ordering is important here, so let's keep them ordered
-    public static final SortedSet<Integer> JAVA_VERSIONS_LTS = new TreeSet<>(List.of(11, 17, 21));
-    public static final int DEFAULT_JAVA_VERSION = 11;
-    public static final int MAX_LTS_SUPPORTED_BY_KOTLIN = 17;
+    public static final SortedSet<Integer> JAVA_VERSIONS_LTS = new TreeSet<>(List.of(17, 21));
+    public static final int DEFAULT_JAVA_VERSION = 17;
+    // we want to maximize the compatibility of extensions with the Quarkus ecosystem so let's stick to 17 by default
+    public static final String DEFAULT_JAVA_VERSION_FOR_EXTENSION = "17";
+    public static final int MAX_LTS_SUPPORTED_BY_KOTLIN = 21;
     public static final String DETECT_JAVA_RUNTIME_VERSION = "<<detect java runtime version>>";
     public static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(\\d+)(?:\\..*)?");
 
     public static int determineBestJavaLtsVersion() {
         return determineBestJavaLtsVersion(Runtime.version().feature());
+    }
+
+    public static SortedSet<Integer> getCompatibleLTSVersions(JavaVersion minimumJavaVersion) {
+        if (minimumJavaVersion.isEmpty()) {
+            return JAVA_VERSIONS_LTS;
+        }
+        return JAVA_VERSIONS_LTS.stream()
+                .filter(v -> v >= minimumJavaVersion.getAsInt())
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     public static int determineBestJavaLtsVersion(int runtimeVersion) {

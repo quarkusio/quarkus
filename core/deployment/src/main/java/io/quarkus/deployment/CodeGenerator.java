@@ -64,7 +64,9 @@ public class CodeGenerator {
             PathCollection sourceParentDirs, Path generatedSourcesDir, Path buildDir,
             Consumer<Path> sourceRegistrar, ApplicationModel appModel, Properties properties,
             String launchMode, boolean test) throws CodeGenException {
-        final List<CodeGenData> generators = init(classLoader, sourceParentDirs, generatedSourcesDir, buildDir,
+        Map<String, String> props = new HashMap<>();
+        properties.entrySet().stream().forEach(e -> props.put((String) e.getKey(), (String) e.getValue()));
+        final List<CodeGenData> generators = init(appModel, props, classLoader, sourceParentDirs, generatedSourcesDir, buildDir,
                 sourceRegistrar);
         if (generators.isEmpty()) {
             return;
@@ -77,7 +79,10 @@ public class CodeGenerator {
         }
     }
 
-    private static List<CodeGenData> init(ClassLoader deploymentClassLoader,
+    private static List<CodeGenData> init(
+            ApplicationModel model,
+            Map<String, String> properties,
+            ClassLoader deploymentClassLoader,
             PathCollection sourceParentDirs,
             Path generatedSourcesDir,
             Path buildDir,
@@ -89,24 +94,29 @@ public class CodeGenerator {
             }
             final List<CodeGenData> result = new ArrayList<>(codeGenProviders.size());
             for (CodeGenProvider provider : codeGenProviders) {
+                provider.init(model, properties);
                 Path outputDir = codeGenOutDir(generatedSourcesDir, provider, sourceRegistrar);
                 for (Path sourceParentDir : sourceParentDirs) {
+                    Path in = provider.getInputDirectory();
+                    if (in == null) {
+                        in = sourceParentDir.resolve(provider.inputDirectory());
+                    }
                     result.add(
-                            new CodeGenData(provider, outputDir, sourceParentDir.resolve(provider.inputDirectory()), buildDir));
+                            new CodeGenData(provider, outputDir, in, buildDir));
                 }
             }
             return result;
         });
     }
 
-    public static List<CodeGenData> init(ClassLoader deploymentClassLoader, Collection<ModuleInfo> modules)
+    public static List<CodeGenData> init(ApplicationModel model, Map<String, String> properties,
+            ClassLoader deploymentClassLoader, Collection<ModuleInfo> modules)
             throws CodeGenException {
         return callWithClassloader(deploymentClassLoader, () -> {
             List<CodeGenProvider> codeGenProviders = null;
             List<CodeGenData> codeGens = List.of();
             for (DevModeContext.ModuleInfo module : modules) {
                 if (!module.getSourceParents().isEmpty() && module.getPreBuildOutputDir() != null) { // it's null for remote dev
-
                     if (codeGenProviders == null) {
                         codeGenProviders = loadCodeGenProviders(deploymentClassLoader);
                         if (codeGenProviders.isEmpty()) {
@@ -115,14 +125,19 @@ public class CodeGenerator {
                     }
 
                     for (CodeGenProvider provider : codeGenProviders) {
+                        provider.init(model, properties);
                         Path outputDir = codeGenOutDir(Path.of(module.getPreBuildOutputDir()), provider,
                                 sourcePath -> module.addSourcePathFirst(sourcePath.toAbsolutePath().toString()));
                         for (Path sourceParentDir : module.getSourceParents()) {
                             if (codeGens.isEmpty()) {
                                 codeGens = new ArrayList<>();
                             }
+                            Path in = provider.getInputDirectory();
+                            if (in == null) {
+                                in = sourceParentDir.resolve(provider.inputDirectory());
+                            }
                             codeGens.add(
-                                    new CodeGenData(provider, outputDir, sourceParentDir.resolve(provider.inputDirectory()),
+                                    new CodeGenData(provider, outputDir, in,
                                             Path.of(module.getTargetDir())));
                         }
 
@@ -346,39 +361,36 @@ public class CodeGenerator {
     private static Map<String, List<String>> getUnavailableConfigServices(ResolvedDependency dep, ClassLoader classLoader)
             throws CodeGenException {
         try (OpenPathTree openTree = dep.getContentTree().open()) {
-            return openTree.apply(META_INF_SERVICES, visit -> {
+            var unavailableServices = new HashMap<String, List<String>>();
+            openTree.apply(META_INF_SERVICES, visit -> {
                 if (visit == null) {
-                    // the application module does not include META-INF/services entry
-                    return Map.of();
+                    // the application module does not include META-INF/services entry. Return `null` here, to let
+                    // MultiRootPathTree.apply() look into all roots.
+                    return null;
                 }
-                Map<String, List<String>> unavailableServices = Map.of();
                 var servicesDir = visit.getPath();
                 for (String serviceClass : CONFIG_SERVICES) {
                     var serviceFile = servicesDir.resolve(serviceClass);
                     if (!Files.exists(serviceFile)) {
                         continue;
                     }
-                    final List<String> implList;
+                    var unavailableList = unavailableServices.computeIfAbsent(META_INF_SERVICES + serviceClass,
+                            k -> new ArrayList<>());
                     try {
-                        implList = Files.readAllLines(serviceFile);
+                        Files.readAllLines(serviceFile).stream()
+                                .map(String::trim)
+                                // skip comments and empty lines
+                                .filter(line -> !line.startsWith("#") && !line.isEmpty())
+                                .filter(className -> classLoader.getResource(className.replace('.', '/') + ".class") == null)
+                                .forEach(unavailableList::add);
                     } catch (IOException e) {
                         throw new UncheckedIOException("Failed to read " + serviceFile, e);
                     }
-                    final List<String> unavailableList = new ArrayList<>(implList.size());
-                    for (String impl : implList) {
-                        if (classLoader.getResource(impl.replace('.', '/') + ".class") == null) {
-                            unavailableList.add(impl);
-                        }
-                    }
-                    if (!unavailableList.isEmpty()) {
-                        if (unavailableServices.isEmpty()) {
-                            unavailableServices = new HashMap<>();
-                        }
-                        unavailableServices.put(META_INF_SERVICES + serviceClass, unavailableList);
-                    }
                 }
-                return unavailableServices;
+                // Always return null to let MultiRootPathTree.apply() look into all roots.
+                return null;
             });
+            return unavailableServices;
         } catch (IOException e) {
             throw new CodeGenException("Failed to read " + dep.getResolvedPaths(), e);
         }

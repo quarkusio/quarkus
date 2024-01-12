@@ -54,8 +54,8 @@ export class QwcBuildItems extends QwcHotReloadElement {
 
   hotReload(){
     this.jsonRpc.getBuildItems().then(e => {
-      this._buildItems = e.result;
-      this._count = this._buildItems.length;
+      this._buildItems = e.result.items;
+      this._count = e.result.itemsCount;
       this._filtered = this._buildItems;
     });
   }  
@@ -94,7 +94,7 @@ export class QwcBuildItems extends QwcHotReloadElement {
 
   _render() {
     return html`<div class="build-items">
-            <div class="summary">Produced <strong>${this._count}</strong> build items.</div>
+            <div class="summary">Produced <strong>${this._count}</strong> build items of <strong>${this._buildItems.length}</strong> types.</div>
             <vaadin-text-field
                     placeholder="Filter"
                     style="width: 100%;"

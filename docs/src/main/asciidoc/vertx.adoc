@@ -6,6 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using Eclipse Vert.x API from a Quarkus Application
 include::_attributes.adoc[]
 :categories: miscellaneous
+:keywords: vertx event verticle
 :summary: This guide explains how to use Vert.x in Quarkus to build reactive applications.
 
 https://vertx.io[Vert.x] is a toolkit for building reactive applications.
@@ -274,6 +275,7 @@ workbag.”
 ...
 ----
 
+[[event-bus]]
 == Using the event bus
 
 One of the core features of Vert.x is the https://vertx.io/docs/vertx-core/java/#event_bus[event bus].

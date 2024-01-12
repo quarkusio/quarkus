@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: core, writing-extensions, native
 :summary: This guide is a collection of tips to help you solve the problems you encounter when compiling applications to native executable.
+:topics: native,extensions
 
 This guide contains various tips and tricks for getting around problems that might arise when attempting to run Java applications as native executables.
 
@@ -36,6 +37,8 @@ So this directory is not a shortcut for "let's automatically include these resou
 Other resources should be declared explicitly.
 ====
 
+==== Using the `quarkus.native.resources.includes` configuration property
+
 To include more resources in the native executable, the easiest way is to use the `quarkus.native.resources.includes` configuration property,
 and its counterpart to exclude resources `quarkus.native.resources.excludes`.
 
@@ -54,8 +57,19 @@ will include:
 * all files in the `foo/` directory and its subdirectories except for files in `foo/private/` and its subdirectories,
 * all text files in the `bar/` directory and its subdirectories.
 
+==== Using a configuration file
+
 If globs are not sufficiently precise for your use case and you need to rely on regular expressions, or if you prefer relying on the GraalVM infrastructure,
-you can also create a `resources-config.json` (the most common location is within `src/main/resources`) JSON file defining which resources should be included:
+you can also create a `resources-config.json` (the most common location is within `src/main/resources`) JSON file defining which resources should be included.
+
+[WARNING]
+====
+Relying on the GraalVM infrastructure means that you are responsible for keeping the configuration file up to date as new Mandrel and GraalVM versions are released.
+
+Please also note that the `resources-config.json` file will be overwritten by Quarkus if placed directly under `src/main/resources/META-INF/native-image/` as Quarkus generates its own configuration file in this directory.
+====
+
+An example of such a file is the following:
 
 [source,json]
 ----
@@ -83,8 +97,17 @@ The final order of business is to make the configuration file known to the `nati
 
 [source,properties]
 ----
-quarkus.native.additional-build-args =-H:ResourceConfigurationFiles=resources-config.json
+quarkus.native.additional-build-args =\
+    -H:+UnlockExperimentalVMOptions,\
+    -H:ResourceConfigurationFiles=resources-config.json,\
+    -H:-UnlockExperimentalVMOptions
 ----
+
+[NOTE]
+====
+Starting with Mandrel 23.1 and GraalVM for JDK 21, `-H:ResourceConfigurationFiles=resources-config.json` results in a warning being shown unless wrapped in `-H:+UnlockExperimentalVMOptions` and `-H:-UnlockExperimentalVMOptions`.
+The absence of these options will result in build failures in the future.
+====
 
 In the previous snippet we were able to simply use `resources-config.json` instead of specifying the entire path of the file simply because it was added to `src/main/resources`.
 If the file had been added to another directory, the proper file path would have had to be specified manually.
@@ -96,8 +119,10 @@ Multiple options may be separated by a comma. For example, one could use:
 [source,properties]
 ----
 quarkus.native.additional-build-args =\
+    -H:+UnlockExperimentalVMOptions,\
     -H:ResourceConfigurationFiles=resources-config.json,\
-    -H:ReflectionConfigurationFiles=reflection-config.json
+    -H:ReflectionConfigurationFiles=reflection-config.json,\
+    -H:-UnlockExperimentalVMOptions
 ----
 
 in order to ensure that various resources are included and additional reflection is registered.
@@ -114,7 +139,9 @@ When using Maven, we could use the following configuration:
         <id>native</id>
         <properties>
             <quarkus.package.type>native</quarkus.package.type>
-            <quarkus.native.additional-build-args>-H:ResourceConfigurationFiles=resources-config.json</quarkus.native.additional-build-args>
+            <quarkus.native.additional-build-args>
+                -H:+UnlockExperimentalVMOptions,-H:ResourceConfigurationFiles=resources-config.json,-H:-UnlockExperimentalVMOptions
+            </quarkus.native.additional-build-args>
         </properties>
     </profile>
 </profiles>
@@ -224,7 +251,12 @@ public class MyReflectionConfiguration {
 
 ==== Using a configuration file
 
-You can use a configuration file to register classes for reflection.
+You can also use a configuration file to register classes for reflection, if you prefer relying on the GraalVM infrastructure.
+
+[WARNING]
+====
+Relying on the GraalVM infrastructure means that you are responsible for keeping the configuration file up to date as new Mandrel and GraalVM versions are released.
+====
 
 As an example, in order to register all methods of class `com.acme.MyClass` for reflection, we create `reflection-config.json` (the most common location is within `src/main/resources`)
 
@@ -252,8 +284,17 @@ The final order of business is to make the configuration file known to the `nati
 
 [source,properties]
 ----
-quarkus.native.additional-build-args =-H:ReflectionConfigurationFiles=reflection-config.json
+quarkus.native.additional-build-args =\
+    -H:+UnlockExperimentalVMOptions,\
+    -H:ReflectionConfigurationFiles=reflection-config.json,\
+    -H:-UnlockExperimentalVMOptions
 ----
+
+[NOTE]
+====
+Starting with Mandrel 23.1 and GraalVM for JDK 21, `-H:ResourceConfigurationFiles=resources-config.json` results in a warning being shown unless wrapped in `-H:+UnlockExperimentalVMOptions` and `-H:-UnlockExperimentalVMOptions`.
+The absence of these options will result in build failures in the future.
+====
 
 In the previous snippet we were able to simply use `reflection-config.json` instead of specifying the entire path of the file simply because it was added to `src/main/resources`.
 If the file had been added to another directory, the proper file path would have had to be specified manually.
@@ -265,8 +306,10 @@ Multiple options may be separated by a comma. For example, one could use:
 [source,properties]
 ----
 quarkus.native.additional-build-args =\
+    -H:+UnlockExperimentalVMOptions,\
     -H:ResourceConfigurationFiles=resources-config.json,\
-    -H:ReflectionConfigurationFiles=reflection-config.json
+    -H:ReflectionConfigurationFiles=reflection-config.json,\
+    -H:-UnlockExperimentalVMOptions
 ----
 
 in order to ensure that various resources are included and additional reflection is registered.
@@ -283,7 +326,9 @@ When using Maven, we could use the following configuration:
         <id>native</id>
         <properties>
             <quarkus.package.type>native</quarkus.package.type>
-            <quarkus.native.additional-build-args>-H:ReflectionConfigurationFiles=reflection-config.json</quarkus.native.additional-build-args>
+            <quarkus.native.additional-build-args>
+                -H:+UnlockExperimentalVMOptions,-H:ReflectionConfigurationFiles=reflection-config.json,-H:-UnlockExperimentalVMOptions
+            </quarkus.native.additional-build-args>
         </properties>
     </profile>
 </profiles>

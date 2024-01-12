@@ -17,6 +17,7 @@ public class OidcConfigurationMetadata {
     private static final String END_SESSION_ENDPOINT = "end_session_endpoint";
     private static final String SCOPES_SUPPORTED = "scopes_supported";
 
+    private final String discoveryUri;
     private final String tokenUri;
     private final String introspectionUri;
     private final String authorizationUri;
@@ -33,6 +34,7 @@ public class OidcConfigurationMetadata {
             String userInfoUri,
             String endSessionUri,
             String issuer) {
+        this.discoveryUri = null;
         this.tokenUri = tokenUri;
         this.introspectionUri = introspectionUri;
         this.authorizationUri = authorizationUri;
@@ -44,10 +46,12 @@ public class OidcConfigurationMetadata {
     }
 
     public OidcConfigurationMetadata(JsonObject wellKnownConfig) {
-        this(wellKnownConfig, null);
+        this(wellKnownConfig, null, null);
     }
 
-    public OidcConfigurationMetadata(JsonObject wellKnownConfig, OidcConfigurationMetadata localMetadataConfig) {
+    public OidcConfigurationMetadata(JsonObject wellKnownConfig, OidcConfigurationMetadata localMetadataConfig,
+            String discoveryUri) {
+        this.discoveryUri = discoveryUri;
         this.tokenUri = getMetadataValue(wellKnownConfig, TOKEN_ENDPOINT,
                 localMetadataConfig == null ? null : localMetadataConfig.tokenUri);
         this.introspectionUri = getMetadataValue(wellKnownConfig, INTROSPECTION_ENDPOINT,
@@ -67,6 +71,10 @@ public class OidcConfigurationMetadata {
 
     private static String getMetadataValue(JsonObject wellKnownConfig, String propertyName, String localValue) {
         return localValue != null ? localValue : wellKnownConfig.getString(propertyName);
+    }
+
+    public String getDiscoveryUri() {
+        return discoveryUri;
     }
 
     public String getTokenUri() {

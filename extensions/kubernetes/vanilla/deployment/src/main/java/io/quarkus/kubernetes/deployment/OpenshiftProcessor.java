@@ -157,8 +157,7 @@ public class OpenshiftProcessor {
             result.add(new ConfiguratorBuildItem(new AddPortToOpenshiftConfig(config.remoteDebug.buildDebugPort())));
         }
 
-        if (!capabilities.isPresent(Capability.CONTAINER_IMAGE_S2I)
-                && !capabilities.isPresent("io.quarkus.openshift")
+        if (!capabilities.isPresent("io.quarkus.openshift")
                 && !capabilities.isPresent(Capability.CONTAINER_IMAGE_OPENSHIFT)) {
             result.add(new ConfiguratorBuildItem(new DisableS2iConfigurator()));
 

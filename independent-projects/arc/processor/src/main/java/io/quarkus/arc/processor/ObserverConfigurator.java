@@ -35,6 +35,7 @@ public final class ObserverConfigurator extends ConfiguratorBase<ObserverConfigu
     boolean isAsync;
     TransactionPhase transactionPhase;
     Consumer<MethodCreator> notifyConsumer;
+    boolean forceApplicationClass;
 
     public ObserverConfigurator(Consumer<ObserverConfigurator> consumer) {
         this.consumer = consumer;
@@ -115,6 +116,15 @@ public final class ObserverConfigurator extends ConfiguratorBase<ObserverConfigu
 
     public ObserverConfigurator notify(Consumer<MethodCreator> notifyConsumer) {
         this.notifyConsumer = notifyConsumer;
+        return this;
+    }
+
+    /**
+     * Forces the observer to be considered an 'application class', so it will be defined in the runtime
+     * ClassLoader and re-created on each redeployment.
+     */
+    public ObserverConfigurator forceApplicationClass() {
+        this.forceApplicationClass = true;
         return this;
     }
 

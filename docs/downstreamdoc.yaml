@@ -6,7 +6,7 @@ guides:
   - src/main/asciidoc/security-authorize-web-endpoints-reference.adoc
   - src/main/asciidoc/security-basic-authentication.adoc
   - src/main/asciidoc/security-basic-authentication-howto.adoc
-  - src/main/asciidoc/security-basic-authentication-tutorial.adoc
+  - src/main/asciidoc/security-getting-started-tutorial.adoc
   - src/main/asciidoc/security-identity-providers.adoc
   - src/main/asciidoc/security-jpa.adoc
   - src/main/asciidoc/security-oidc-bearer-token-authentication.adoc
@@ -17,3 +17,4 @@ guides:
   - src/main/asciidoc/security-openid-connect-client-reference.adoc
   - src/main/asciidoc/security-overview.adoc
   - src/main/asciidoc/security-proactive-authentication.adoc
+  - src/main/asciidoc/security-cors.adoc

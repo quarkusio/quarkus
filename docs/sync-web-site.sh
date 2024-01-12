@@ -32,11 +32,16 @@ fi
 
 if [ -z $TARGET_DIR ]; then
   TARGET_DIR=target/web-site
+  rm -rf ${TARGET_DIR}
   GIT_OPTIONS=""
   if [[ "$QUARKUS_WEB_SITE_PUSH" != "true" ]]; then
     GIT_OPTIONS="--depth=1"
   fi
-  git clone -b develop --single-branch $GIT_OPTIONS git@github.com:quarkusio/quarkusio.github.io.git ${TARGET_DIR}
+  if [ -n "${RELEASE_GITHUB_TOKEN}" ]; then
+    git clone -b develop --single-branch $GIT_OPTIONS https://github.com/quarkusio/quarkusio.github.io.git ${TARGET_DIR}
+  else
+    git clone -b develop --single-branch $GIT_OPTIONS git@github.com:quarkusio/quarkusio.github.io.git ${TARGET_DIR}
+  fi
 fi
 
 if [ $BRANCH == "main" ] && [ "$QUARKUS_RELEASE" == "true" ]; then
@@ -117,6 +122,15 @@ if [ -f target/indexByType.yaml ]; then
   mkdir -p $TARGET_INDEX
   echo "# Generated file. Do not edit" > $TARGET_INDEX/quarkus.yaml
   cat target/indexByType.yaml >> $TARGET_INDEX/quarkus.yaml
+  echo
+fi
+
+if [ -f target/relations.yaml ]; then
+  echo
+  echo "Copying target/relations.yaml to $TARGET_INDEX/relations.yaml"
+  mkdir -p $TARGET_INDEX
+  echo "# Generated file. Do not edit" > $TARGET_INDEX/relations.yaml
+  cat target/relations.yaml >> $TARGET_INDEX/relations.yaml
   echo
 fi
 

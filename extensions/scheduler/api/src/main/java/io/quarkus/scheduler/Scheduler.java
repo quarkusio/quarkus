@@ -111,6 +111,9 @@ public interface Scheduler {
          * The schedule is defined either by {@link #setCron(String)} or by {@link #setInterval(String)}. If both methods are
          * used, then the cron expression takes precedence.
          * <p>
+         * A value less than one second may not be supported by the underlying scheduler implementation. In that case a warning
+         * message is logged immediately.
+         * <p>
          * {@link Scheduled#every()}
          *
          * @param every
@@ -145,6 +148,15 @@ public interface Scheduler {
          * @see Scheduled#skipExecutionIf()
          */
         JobDefinition setSkipPredicate(SkipPredicate skipPredicate);
+
+        /**
+         * {@link Scheduled#skipExecutionIf()}
+         *
+         * @param skipPredicateClass
+         * @return self
+         * @see Scheduled#skipExecutionIf()
+         */
+        JobDefinition setSkipPredicate(Class<? extends SkipPredicate> skipPredicateClass);
 
         /**
          * {@link Scheduled#overdueGracePeriod()}

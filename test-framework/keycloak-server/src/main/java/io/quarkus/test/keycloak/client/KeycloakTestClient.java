@@ -1,10 +1,14 @@
 package io.quarkus.test.keycloak.client;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -30,8 +34,14 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
 
     private DevServicesContext testContext;
 
-    public KeycloakTestClient() {
+    private final String authServerUrl;
 
+    public KeycloakTestClient() {
+        this(null);
+    }
+
+    public KeycloakTestClient(String authServerUrl) {
+        this.authServerUrl = authServerUrl;
     }
 
     /**
@@ -268,6 +278,9 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
      * For example: 'http://localhost:8081/auth/realms/quarkus'.
      */
     public String getAuthServerUrl() {
+        if (this.authServerUrl != null) {
+            return this.authServerUrl;
+        }
         String authServerUrl = getPropertyValue(CLIENT_AUTH_SERVER_URL_PROP, null);
         if (authServerUrl == null) {
             authServerUrl = getPropertyValue(AUTH_SERVER_URL_PROP, null);
@@ -314,6 +327,30 @@ public class KeycloakTestClient implements DevServicesContext.ContextAware {
      */
     public void deleteRealm(RealmRepresentation realm) {
         deleteRealm(realm.getRealm());
+    }
+
+    public void createRealmFromPath(String path) {
+        RealmRepresentation representation = readRealmFile(path);
+        createRealm(representation);
+    }
+
+    public RealmRepresentation readRealmFile(String realmPath) {
+        try {
+            return readRealmFile(Path.of(realmPath).toUri().toURL(), realmPath);
+        } catch (MalformedURLException ex) {
+            // Will not happen as this method is called only when it is confirmed the file exists
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public RealmRepresentation readRealmFile(URL url, String realmPath) {
+        try {
+            try (InputStream is = url.openStream()) {
+                return JsonSerialization.readValue(is, RealmRepresentation.class);
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException("Realm " + realmPath + " resource can not be opened", ex);
+        }
     }
 
     private String getPropertyValue(String prop, String defaultValue) {

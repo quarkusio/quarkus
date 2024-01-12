@@ -1,8 +1,14 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
 = Quarkus Virtual Thread support for gRPC services
-
 include::_attributes.adoc[]
 :runonvthread: https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/latest/io/smallrye/common/annotation/RunOnVirtualThread.html
 :blocking_annotation: https://javadoc.io/doc/io.smallrye.reactive/smallrye-reactive-messaging-api/latest/io/smallrye/reactive/messaging/annotations/Blocking.html
+:topics: grpc,virtual-threads
+:extensions: io.quarkus:quarkus-grpc
 
 This guide explains how to benefit from Java virtual threads when implementing a gRPC service.
 
@@ -20,7 +26,7 @@ But, you can also use the link:{blocking_annotation}[@Blocking] annotation to in
 The idea behind Quarkus Virtual Thread support for gRPC services is to offload the service method invocation on virtual threads, instead of running it on an event-loop thread or a worker thread.
 
 To enable virtual thread support on a service method, simply add the link:{runonvthread}[@RunOnVirtualThread] annotation to the method.
-If the JDK is compatible (Java 19 or later versions) then the invocation will be offloaded to a new virtual thread.
+If the JDK is compatible (Java 19 or later versions - we recommend 21+) then the invocation will be offloaded to a new virtual thread.
 It will then be possible to perform blocking operations without blocking the platform thread upon which the virtual thread is mounted.
 
 == Configuring gRPC services to use virtual threads
@@ -43,22 +49,22 @@ First, make sure to have the gRPC extension dependency in your build file:
 implementation("io.quarkus:quarkus-grpc")
 ----
 
-You also need to make sure that you are using Java 19 or later, this can be enforced in your `pom.xml` file with the following:
+You also need to make sure that you are using Java 19 or later (we recommend 21+), this can be enforced in your `pom.xml` file with the following:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <properties>
-    <maven.compiler.source>19</maven.compiler.source>
-    <maven.compiler.target>19</maven.compiler.target>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
 </properties>
 ----
 
-Virtual threads are still a preview feature, so you need to start your application with the `--enable-preview` flag:
+Run your application with:
 
 [source, bash]
 ----
-java --enable-preview -jar target/quarkus-app/quarkus-run.jar
+java -jar target/quarkus-app/quarkus-run.jar
 ----
 
 or to use the Quarkus Dev mode, insert the following to the `quarkus-maven-plugin` configuration:
@@ -80,16 +86,11 @@ or to use the Quarkus Dev mode, insert the following to the `quarkus-maven-plugi
         </execution>
     </executions>
     <configuration>
-      <source>19</source>
-      <target>19</target>
-      <compilerArgs>
-        <arg>--enable-preview</arg>
-      </compilerArgs>
+      <source>21</source>
+      <target>21</target>
     </configuration>
 </plugin>
 ----
-
-NOTE: The `--enable-preview` flag is not necessary with Java 21+.
 
 Then you can start using the annotation `@RunOnVirtualThread` in your service implementation:
 

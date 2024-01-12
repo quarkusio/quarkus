@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -27,6 +28,7 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.gradle.QuarkusPlugin;
 import io.quarkus.gradle.tasks.worker.BuildWorker;
 import io.quarkus.maven.dependency.GACTV;
+import io.smallrye.config.Expressions;
 
 /**
  * Base class for the {@link QuarkusBuildDependencies}, {@link QuarkusBuildCacheableAppParts}, {@link QuarkusBuild} tasks
@@ -205,14 +207,22 @@ abstract class QuarkusBuildTask extends QuarkusTask {
         });
 
         ApplicationModel appModel = resolveAppModelForBuild();
-        Map<String, String> configMap = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).configMap();
+        Map<String, String> configMap = new HashMap<>();
+        EffectiveConfig effectiveConfig = extension().buildEffectiveConfiguration(appModel.getAppArtifact());
+        Expressions.withoutExpansion(() -> {
+            for (Map.Entry<String, String> entry : effectiveConfig.configMap().entrySet()) {
+                if (entry.getKey().startsWith("quarkus.")) {
+                    configMap.put(entry.getKey(), effectiveConfig.config().getRawValue(entry.getKey()));
+                }
+            }
+        });
 
         getLogger().info("Starting Quarkus application build for package type {}", packageType);
 
         if (getLogger().isEnabled(LogLevel.INFO)) {
             getLogger().info("Effective properties: {}",
                     configMap.entrySet().stream()
-                            .filter(e -> e.getKey().startsWith("quarkus.")).map(Object::toString)
+                            .map(Object::toString)
                             .sorted()
                             .collect(Collectors.joining("\n    ", "\n    ", "")));
         }
@@ -220,7 +230,7 @@ abstract class QuarkusBuildTask extends QuarkusTask {
         WorkQueue workQueue = workQueue(configMap, () -> extension().buildForkOptions);
 
         workQueue.submit(BuildWorker.class, params -> {
-            params.getBuildSystemProperties().putAll(configMap);
+            params.getBuildSystemProperties().putAll(extension().buildSystemProperties(appModel.getAppArtifact()));
             params.getBaseName().set(extension().finalName());
             params.getTargetDirectory().set(buildDir.toFile());
             params.getAppModel().set(appModel);

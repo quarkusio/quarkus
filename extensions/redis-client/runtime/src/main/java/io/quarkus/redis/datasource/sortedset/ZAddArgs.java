@@ -69,7 +69,7 @@ public class ZAddArgs implements RedisCommandExtraArguments {
     }
 
     @Override
-    public List<String> toArgs() {
+    public List<Object> toArgs() {
         if (xx && nx) {
             throw new IllegalArgumentException("Cannot use XX and NX together");
         }
@@ -77,7 +77,7 @@ public class ZAddArgs implements RedisCommandExtraArguments {
             throw new IllegalArgumentException("Cannot use LT and GT together");
         }
 
-        List<String> args = new ArrayList<>();
+        List<Object> args = new ArrayList<>();
         putFlag(args, nx, "NX");
         putFlag(args, xx, "XX");
         putFlag(args, lt, "LT");
@@ -86,7 +86,7 @@ public class ZAddArgs implements RedisCommandExtraArguments {
         return args;
     }
 
-    public void putFlag(List<String> args, boolean value, String flag) {
+    public void putFlag(List<Object> args, boolean value, String flag) {
         if (value) {
             args.add(flag);
         }

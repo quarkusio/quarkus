@@ -104,7 +104,6 @@ import io.quarkus.qute.EngineConfiguration;
 import io.quarkus.qute.ErrorCode;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expression.VirtualMethodPart;
-import io.quarkus.qute.Expressions;
 import io.quarkus.qute.LoopSectionHelper;
 import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ParameterDeclaration;
@@ -121,7 +120,6 @@ import io.quarkus.qute.TemplateExtension;
 import io.quarkus.qute.TemplateGlobal;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateLocator;
-import io.quarkus.qute.TemplateNode;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.Variant;
@@ -155,6 +153,7 @@ import io.quarkus.runtime.util.StringUtil;
 public class QuteProcessor {
 
     public static final DotName LOCATION = Names.LOCATION;
+    public static final String GLOBAL_NAMESPACE = "global";
 
     private static final Logger LOGGER = Logger.getLogger(QuteProcessor.class);
 
@@ -162,7 +161,7 @@ public class QuteProcessor {
     private static final String CHECKED_TEMPLATE_BASE_PATH = "basePath";
     private static final String CHECKED_TEMPLATE_DEFAULT_NAME = "defaultName";
     private static final String IGNORE_FRAGMENTS = "ignoreFragments";
-    private static final String BASE_PATH = "templates";
+    private static final String DEFAULT_ROOT_PATH = "templates";
 
     private static final Set<String> ITERATION_METADATA_KEYS = Set.of("count", "index", "indexParity", "hasNext", "odd",
             "isOdd", "even", "isEven", "isLast", "isFirst");
@@ -184,6 +183,20 @@ public class QuteProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.QUTE);
+    }
+
+    @BuildStep
+    TemplateRootBuildItem defaultTemplateRoot() {
+        return new TemplateRootBuildItem(DEFAULT_ROOT_PATH);
+    }
+
+    @BuildStep
+    TemplateRootsBuildItem collectTemplateRoots(List<TemplateRootBuildItem> templateRoots) {
+        Set<String> roots = new HashSet<>();
+        for (TemplateRootBuildItem root : templateRoots) {
+            roots.add(root.getPath());
+        }
+        return new TemplateRootsBuildItem(Set.copyOf(roots));
     }
 
     @BuildStep
@@ -657,49 +670,9 @@ public class QuteProcessor {
             }
         });
 
-        // It's a file-based template
-        // We need to find out whether the parsed template represents a checked template
-        Map<String, String> pathToPathWithoutSuffix = new HashMap<>();
-        for (String path : filePaths.getFilePaths()) {
-            for (String suffix : config.suffixes) {
-                if (path.endsWith(suffix)) {
-                    // Remove the suffix and add to Map
-                    pathToPathWithoutSuffix.put(path, path.substring(0, path.length() - (suffix.length() + 1)));
-                    break;
-                }
-            }
-
-            // Path has already no suffix
-            if (!pathToPathWithoutSuffix.containsKey(path)) {
-                pathToPathWithoutSuffix.put(path, path);
-            }
-        }
-
-        // Checked Template id -> method parameter declaration
-        Map<String, Map<String, MethodParameterDeclaration>> checkedTemplateIdToParamDecl = new HashMap<>();
-        for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
-            if (checkedTemplate.isFragment()) {
-                continue;
-            }
-            for (Entry<String, String> entry : checkedTemplate.bindings.entrySet()) {
-                checkedTemplateIdToParamDecl
-                        .computeIfAbsent(checkedTemplate.templateId, s -> new HashMap<>())
-                        .put(entry.getKey(), new MethodParameterDeclaration(entry.getValue(), entry.getKey()));
-            }
-        }
-
-        // Message Bundle Template id -> method parameter declaration
-        Map<String, Map<String, MethodParameterDeclaration>> msgBundleTemplateIdToParamDecl = new HashMap<>();
-        for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
-            MethodInfo method = messageBundleMethod.getMethod();
-            for (ListIterator<Type> it = method.parameterTypes().listIterator(); it.hasNext();) {
-                Type paramType = it.next();
-                String name = MessageBundleProcessor.getParameterName(method, it.previousIndex());
-                msgBundleTemplateIdToParamDecl
-                        .computeIfAbsent(messageBundleMethod.getTemplateId(), s -> new HashMap<>())
-                        .put(name, new MethodParameterDeclaration(getCheckedTemplateParameterTypeName(paramType), name));
-            }
-        }
+        Map<String, MessageBundleMethodBuildItem> messageBundleMethodsMap = messageBundleMethods.stream()
+                .filter(MessageBundleMethodBuildItem::isValidatable)
+                .collect(Collectors.toMap(MessageBundleMethodBuildItem::getTemplateId, Function.identity()));
 
         builder.addParserHook(new ParserHook() {
 
@@ -715,8 +688,17 @@ public class QuteProcessor {
                                 getCheckedTemplateParameterTypeName(global.getVariableType()).toString());
                     }
 
-                    addMethodParamsToParserHelper(parserHelper, pathToPathWithoutSuffix.get(templateId),
-                            checkedTemplateIdToParamDecl);
+                    // It's a file-based template
+                    // We need to find out whether the parsed template represents a checked template
+                    String path = templatePathWithoutSuffix(templateId, config);
+                    for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
+                        if (checkedTemplate.templateId.equals(path)) {
+                            for (Entry<String, String> entry : checkedTemplate.bindings.entrySet()) {
+                                parserHelper.addParameter(entry.getKey(), entry.getValue());
+                            }
+                            break;
+                        }
+                    }
 
                     if (templateId.startsWith(TemplatePathBuildItem.TAGS)) {
                         parserHelper.addParameter(UserTagSectionHelper.Factory.ARGS,
@@ -724,7 +706,16 @@ public class QuteProcessor {
                     }
                 }
 
-                addMethodParamsToParserHelper(parserHelper, templateId, msgBundleTemplateIdToParamDecl);
+                // If needed add params to message bundle templates
+                MessageBundleMethodBuildItem messageBundleMethod = messageBundleMethodsMap.get(templateId);
+                if (messageBundleMethod != null) {
+                    MethodInfo method = messageBundleMethod.getMethod();
+                    for (ListIterator<Type> it = method.parameterTypes().listIterator(); it.hasNext();) {
+                        Type paramType = it.next();
+                        String name = MessageBundleProcessor.getParameterName(method, it.previousIndex());
+                        parserHelper.addParameter(name, getCheckedTemplateParameterTypeName(paramType));
+                    }
+                }
             }
 
         }).build();
@@ -736,17 +727,7 @@ public class QuteProcessor {
         for (TemplatePathBuildItem path : templatePaths) {
             Template template = dummyEngine.getTemplate(path.getPath());
             if (template != null) {
-                String templateIdWithoutSuffix = pathToPathWithoutSuffix.get(template.getId());
-
-                final List<ParameterDeclaration> parameterDeclarations;
-                if (checkedTemplateIdToParamDecl.isEmpty()) {
-                    parameterDeclarations = template.getParameterDeclarations();
-                } else {
-                    // Add method parameter declarations if they were not overridden in the template
-                    parameterDeclarations = mergeParamDeclarations(
-                            template.getParameterDeclarations(),
-                            checkedTemplateIdToParamDecl.get(templateIdWithoutSuffix));
-                }
+                String templateIdWithoutSuffix = templatePathWithoutSuffix(template.getId(), config);
 
                 if (!checkedFragments.isEmpty()) {
                     for (CheckedTemplateBuildItem checkedFragment : checkedFragments) {
@@ -766,21 +747,15 @@ public class QuteProcessor {
                 }
 
                 analysis.add(new TemplateAnalysis(null, template.getGeneratedId(), template.getExpressions(),
-                        parameterDeclarations, path.getPath(), template.getFragmentIds()));
+                        template.getParameterDeclarations(), path.getPath(), template.getFragmentIds()));
             }
         }
 
         // Message bundle templates
         for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
             Template template = dummyEngine.parse(messageBundleMethod.getTemplate(), null, messageBundleMethod.getTemplateId());
-
-            // Add method parameter declarations if they were not overridden in the template
-            List<ParameterDeclaration> paramDeclarations = mergeParamDeclarations(
-                    template.getParameterDeclarations(),
-                    msgBundleTemplateIdToParamDecl.get(messageBundleMethod.getTemplateId()));
-
             analysis.add(new TemplateAnalysis(messageBundleMethod.getTemplateId(), template.getGeneratedId(),
-                    template.getExpressions(), paramDeclarations,
+                    template.getExpressions(), template.getParameterDeclarations(),
                     messageBundleMethod.getMethod().declaringClass().name() + "#" + messageBundleMethod.getMethod().name()
                             + "()",
                     template.getFragmentIds()));
@@ -789,6 +764,17 @@ public class QuteProcessor {
         LOGGER.debugf("Finished analysis of %s templates in %s ms", analysis.size(),
                 TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
         return new TemplatesAnalysisBuildItem(analysis);
+    }
+
+    private String templatePathWithoutSuffix(String path, QuteConfig config) {
+        for (String suffix : config.suffixes) {
+            if (path.endsWith(suffix)) {
+                // Remove the suffix
+                path = path.substring(0, path.length() - (suffix.length() + 1));
+                break;
+            }
+        }
+        return path;
     }
 
     @BuildStep
@@ -925,29 +911,6 @@ public class QuteProcessor {
         return builder.toString();
     }
 
-    private List<ParameterDeclaration> mergeParamDeclarations(List<ParameterDeclaration> parameterDeclarations,
-            Map<String, MethodParameterDeclaration> paramNameToDeclaration) {
-        if (paramNameToDeclaration != null) {
-            Map<String, ParameterDeclaration> mergeResult = new HashMap<>(paramNameToDeclaration);
-            for (ParameterDeclaration paramDeclaration : parameterDeclarations) {
-                // Template parameter declarations override method parameter declarations
-                mergeResult.put(paramDeclaration.getKey(), paramDeclaration);
-            }
-            return List.copyOf(mergeResult.values());
-        }
-        return parameterDeclarations;
-    }
-
-    private void addMethodParamsToParserHelper(ParserHelper parserHelper, String templateId,
-            Map<String, Map<String, MethodParameterDeclaration>> templateIdToParamDecl) {
-        var paramNameToDeclaration = templateIdToParamDecl.get(templateId);
-        if (paramNameToDeclaration != null) {
-            for (MethodParameterDeclaration parameterDeclaration : paramNameToDeclaration.values()) {
-                parserHelper.addParameter(parameterDeclaration.getKey(), parameterDeclaration.getParamType());
-            }
-        }
-    }
-
     @BuildStep
     void validateExpressions(TemplatesAnalysisBuildItem templatesAnalysis,
             BeanArchiveIndexBuildItem beanArchiveIndex,
@@ -960,7 +923,8 @@ public class QuteProcessor {
             List<CheckedTemplateBuildItem> checkedTemplates,
             List<TemplateDataBuildItem> templateData,
             QuteConfig config,
-            PackageConfig packageConfig) {
+            PackageConfig packageConfig,
+            List<TemplateGlobalBuildItem> globals) {
 
         long start = System.nanoTime();
 
@@ -1034,7 +998,7 @@ public class QuteProcessor {
                         incorrectExpressions, expression, index, implicitClassToMembersUsed, templateIdToPathFun,
                         generatedIdsToMatches, extensionMethodExcludes,
                         checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData, regularExtensionMethods,
-                        namespaceExtensionMethods, assignabilityCheck);
+                        namespaceExtensionMethods, assignabilityCheck, globals);
                 generatedIdsToMatches.put(expression.getGeneratedId(), match);
             }
 
@@ -1168,7 +1132,8 @@ public class QuteProcessor {
             Map<String, TemplateDataBuildItem> namespaceTemplateData,
             List<TemplateExtensionMethodBuildItem> regularExtensionMethods,
             Map<String, List<TemplateExtensionMethodBuildItem>> namespaceToExtensionMethods,
-            AssignabilityCheck assignabilityCheck) {
+            AssignabilityCheck assignabilityCheck,
+            List<TemplateGlobalBuildItem> globals) {
 
         LOGGER.debugf("Validate %s from %s", expression, expression.getOrigin());
 
@@ -1178,7 +1143,7 @@ public class QuteProcessor {
         validateParametersOfNestedVirtualMethods(config, templateAnalysis, results, excludes, incorrectExpressions, expression,
                 index, implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches, extensionMethodExcludes,
                 checkedTemplate, lookupConfig, namedBeans, namespaceTemplateData, regularExtensionMethods,
-                namespaceToExtensionMethods, assignabilityCheck);
+                namespaceToExtensionMethods, assignabilityCheck, globals);
 
         MatchResult match = new MatchResult(assignabilityCheck);
 
@@ -1186,7 +1151,8 @@ public class QuteProcessor {
         // Process the namespace
         // ======================
         NamespaceResult namespaceResult = processNamespace(expression, match, index, incorrectExpressions, namedBeans, results,
-                templateAnalysis, namespaceTemplateData, lookupConfig, namespaceToExtensionMethods, templateIdToPathFun);
+                templateAnalysis, namespaceTemplateData, lookupConfig, namespaceToExtensionMethods, templateIdToPathFun,
+                globals);
         if (namespaceResult.ignoring) {
             return match;
         }
@@ -1364,19 +1330,44 @@ public class QuteProcessor {
                     ignoring = true;
                 }
             } else {
-                // No namespace extension method found - incorrect expression
-                incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                        String.format("No matching namespace [%s] extension method found", namespace.namespace),
-                        expression.getOrigin()));
-                match.clearValues();
-                putResult(match, results, expression);
-                ignoring = true;
+                if (namespace.hasGlobal()) {
+                    ClassInfo variableClass = index.getClassByName(namespace.global.getVariableType().name());
+                    if (variableClass != null) {
+                        match.setValues(variableClass, namespace.global.getVariableType());
+                        iterator = processHintsIfNeeded(root, iterator, parts, templateAnalysis, root.asHintInfo().hints, match,
+                                index, expression, generatedIdsToMatches, incorrectExpressions);
+                    } else {
+                        // Global variable type not available
+                        putResult(match, results, expression);
+                        ignoring = true;
+                    }
+                } else {
+                    // No global and no namespace extension method found - incorrect expression
+                    incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                            String.format("No matching namespace [%s] extension method found", namespace.namespace),
+                            expression.getOrigin()));
+                    match.clearValues();
+                    putResult(match, results, expression);
+                    ignoring = true;
+                }
             }
 
         } else if (namespace.hasDataNamespaceInfo()) {
             // Validate as Data namespace expression has parameter declaration bound to the variable
             // Skip the first part, e.g. for {data:item.name} we start validation with "name"
             match.setValues(namespace.dataNamespaceExpTypeInfo.rawClass, namespace.dataNamespaceExpTypeInfo.resolvedType);
+        } else if (namespace.hasGlobal()) {
+            // "global:" namespace is used and no namespace extension methods exist
+            ClassInfo variableClass = index.getClassByName(namespace.global.getVariableType().name());
+            if (variableClass != null) {
+                match.setValues(variableClass, namespace.global.getVariableType());
+                iterator = processHintsIfNeeded(root, iterator, parts, templateAnalysis, root.asHintInfo().hints, match,
+                        index, expression, generatedIdsToMatches, incorrectExpressions);
+            } else {
+                // Global variable type not available
+                putResult(match, results, expression);
+                ignoring = true;
+            }
         } else if (rootClazz == null) {
             // No namespace is used or no declarative resolver (extension methods, @TemplateData, etc.)
             if (root.isTypeInfo()) {
@@ -1422,7 +1413,8 @@ public class QuteProcessor {
                 // myArray[0], myArray.1
                 try {
                     Integer.parseInt(name);
-                    match.setValues(null, match.type().asArrayType().constituent());
+                    Type constituent = match.type().asArrayType().constituent();
+                    match.setValues(match.assignabilityCheck.computingIndex.getClassByName(constituent.name()), constituent);
                     return true;
                 } catch (NumberFormatException e) {
                     // not an integer index
@@ -1436,7 +1428,8 @@ public class QuteProcessor {
                 Expression param = params.get(0);
                 Object literalValue = param.getLiteral();
                 if (literalValue == null || literalValue instanceof Integer) {
-                    match.setValues(null, match.type().asArrayType().constituent());
+                    Type constituent = match.type().asArrayType().constituent();
+                    match.setValues(match.assignabilityCheck.computingIndex.getClassByName(constituent.name()), constituent);
                     return true;
                 }
             } else if (name.equals("take") || name.equals("takeLast")) {
@@ -1452,7 +1445,8 @@ public class QuteProcessor {
             Map<String, MatchResult> results, TemplateAnalysis templateAnalysis,
             Map<String, TemplateDataBuildItem> namespaceTemplateData, JavaMemberLookupConfig lookupConfig,
             Map<String, List<TemplateExtensionMethodBuildItem>> namespaceToExtensionMethods,
-            Function<String, String> templateIdToPathFun) {
+            Function<String, String> templateIdToPathFun,
+            List<TemplateGlobalBuildItem> globals) {
         String namespace = expression.getNamespace();
         if (namespace == null) {
             return NamespaceResult.EMPTY;
@@ -1462,6 +1456,10 @@ public class QuteProcessor {
         TemplateDataBuildItem templateData = null;
         List<TemplateExtensionMethodBuildItem> namespaceExtensionMethods = null;
         boolean ignored = false;
+        TemplateGlobalBuildItem global = namespace.equals(GLOBAL_NAMESPACE)
+                ? globals.stream().filter(g -> g.getName().equals(expression.getParts().get(0).getName())).findFirst()
+                        .orElse(null)
+                : null;
 
         if (namespace.equals(INJECT_NAMESPACE) || namespace.equals(CDI_NAMESPACE)) {
             // cdi:, inject:
@@ -1479,17 +1477,24 @@ public class QuteProcessor {
             // data:
             Expression.Part firstPart = expression.getParts().get(0);
             String firstPartName = firstPart.getName();
-            for (ParameterDeclaration paramDeclaration : templateAnalysis.parameterDeclarations) {
-                if (paramDeclaration.getKey().equals(firstPartName)) {
-                    // Data Namespace expression has bounded parameter declaration
-                    dataNamespaceTypeInfo = TypeInfos
-                            .create(paramDeclaration.getTypeInfo(), firstPart, index, templateIdToPathFun,
-                                    expression.getOrigin())
-                            .asTypeInfo();
+            // FIXME This is not entirely correct
+            // First we try to find a non-synthetic param declaration that matches the given name,
+            // and then we try the synthetic ones.
+            // However, this might result in confusing behavior when type-safe templates are used together with type-safe expressions.
+            // But this should not be a common use case.
+            ParameterDeclaration paramDeclaration = null;
+            for (ParameterDeclaration pd : templateAnalysis.getSortedParameterDeclarations()) {
+                if (pd.getKey().equals(firstPartName)) {
+                    paramDeclaration = pd;
                     break;
                 }
             }
-            if (dataNamespaceTypeInfo == null) {
+            if (paramDeclaration != null) {
+                dataNamespaceTypeInfo = TypeInfos
+                        .create(paramDeclaration.getTypeInfo(), firstPart, index, templateIdToPathFun,
+                                expression.getOrigin())
+                        .asTypeInfo();
+            } else {
                 putResult(match, results, expression);
                 ignored = true;
             }
@@ -1504,22 +1509,26 @@ public class QuteProcessor {
                 filter = filter.and(templateData::filter);
                 lookupConfig = new FirstPassJavaMemberLookupConfig(lookupConfig, filter, true);
             } else {
-                // Extension methods exist for the given namespace
+                // Extension methods may exist for the given namespace
                 namespaceExtensionMethods = namespaceToExtensionMethods.get(namespace);
+
                 if (namespaceExtensionMethods == null) {
-                    // All other namespaces are ignored
-                    putResult(match, results, expression);
-                    ignored = true;
+                    if (!namespace.equals(GLOBAL_NAMESPACE) || global == null) {
+                        // Not "global:" with a matching global variable
+                        // All other namespaces are ignored
+                        putResult(match, results, expression);
+                        ignored = true;
+                    }
                 }
             }
         }
         return new NamespaceResult(namespace, rootClazz, dataNamespaceTypeInfo, templateData, namespaceExtensionMethods,
-                ignored, lookupConfig);
+                ignored, lookupConfig, global);
     }
 
     private static class NamespaceResult {
 
-        static final NamespaceResult EMPTY = new NamespaceResult(null, null, null, null, null, false, null);
+        static final NamespaceResult EMPTY = new NamespaceResult(null, null, null, null, null, false, null, null);
 
         private final String namespace;
         private final ClassInfo rootClazz;
@@ -1528,11 +1537,12 @@ public class QuteProcessor {
         private final List<TemplateExtensionMethodBuildItem> extensionMethods;
         private final boolean ignoring;
         private final JavaMemberLookupConfig lookupConfig;
+        private final TemplateGlobalBuildItem global;
 
         NamespaceResult(String namespace, ClassInfo rootClazz, TypeInfo dataNamespaceExpTypeInfo,
-                TemplateDataBuildItem templateData,
-                List<TemplateExtensionMethodBuildItem> namespaceExtensionMethods, boolean ignoring,
-                JavaMemberLookupConfig lookupConfig) {
+                TemplateDataBuildItem templateData, List<TemplateExtensionMethodBuildItem> namespaceExtensionMethods,
+                boolean ignoring,
+                JavaMemberLookupConfig lookupConfig, TemplateGlobalBuildItem global) {
             this.namespace = namespace;
             this.rootClazz = rootClazz;
             this.dataNamespaceExpTypeInfo = dataNamespaceExpTypeInfo;
@@ -1540,6 +1550,7 @@ public class QuteProcessor {
             this.extensionMethods = namespaceExtensionMethods;
             this.ignoring = ignoring;
             this.lookupConfig = lookupConfig;
+            this.global = global;
         }
 
         boolean hasExtensionMethods() {
@@ -1556,6 +1567,10 @@ public class QuteProcessor {
 
         boolean hasLookupConfig() {
             return lookupConfig != null;
+        }
+
+        boolean hasGlobal() {
+            return global != null;
         }
 
         boolean isIn(String... values) {
@@ -1624,7 +1639,8 @@ public class QuteProcessor {
             Map<String, TemplateDataBuildItem> namespaceTemplateData,
             List<TemplateExtensionMethodBuildItem> regularExtensionMethods,
             Map<String, List<TemplateExtensionMethodBuildItem>> namespaceExtensionMethods,
-            AssignabilityCheck assignabilityCheck) {
+            AssignabilityCheck assignabilityCheck,
+            List<TemplateGlobalBuildItem> globals) {
         for (Expression.Part part : expression.getParts()) {
             if (part.isVirtualMethod()) {
                 for (Expression param : part.asVirtualMethod().getParameters()) {
@@ -1636,7 +1652,8 @@ public class QuteProcessor {
                         validateNestedExpressions(config, templateAnalysis, null, results, excludes,
                                 incorrectExpressions, param, index, implicitClassToMembersUsed, templateIdToPathFun,
                                 generatedIdsToMatches, extensionMethodExcludes, checkedTemplate, lookupConfig, namedBeans,
-                                namespaceTemplateData, regularExtensionMethods, namespaceExtensionMethods, assignabilityCheck);
+                                namespaceTemplateData, regularExtensionMethods, namespaceExtensionMethods, assignabilityCheck,
+                                globals);
                     }
                 }
             }
@@ -1783,7 +1800,7 @@ public class QuteProcessor {
         Expression.Part firstPart = expression.getParts().get(0);
         if (firstPart.isVirtualMethod()) {
             incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                    "The inject: namespace must be followed by a bean name",
+                    "The " + expression.getNamespace() + ": namespace must be followed by a bean name",
                     expression.getOrigin()));
             return null;
         }
@@ -1793,8 +1810,12 @@ public class QuteProcessor {
             return bean;
         } else {
             // User is injecting a non-existing bean
-            incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                    beanName, null, expression.getOrigin()));
+            if (!expression.toOriginalString().endsWith("or(null)")) {
+                // Fail unless a safe expression
+                // Note that foo.val?? becomes foo.val.or(null) during parsing
+                incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                        beanName, null, expression.getOrigin()));
+            }
             return null;
         }
     }
@@ -1859,7 +1880,7 @@ public class QuteProcessor {
             CompletedApplicationClassPredicateBuildItem applicationClassPredicate,
             BuildProducer<GeneratedValueResolverBuildItem> generatedResolvers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<GeneratedTemplateInitializerBuildItem> generatedInitializers) {
+            BuildProducer<TemplateGlobalProviderBuildItem> globalProviders) {
 
         if (!incorrectExpressions.isEmpty()) {
             // Skip generation if a validation error occurs
@@ -2029,7 +2050,7 @@ public class QuteProcessor {
         }
 
         if (!templateGlobals.isEmpty()) {
-            TemplateGlobalGenerator globalGenerator = new TemplateGlobalGenerator(classOutput);
+            TemplateGlobalGenerator globalGenerator = new TemplateGlobalGenerator(classOutput, GLOBAL_NAMESPACE, -1000, index);
 
             Map<DotName, Map<String, AnnotationTarget>> classToTargets = new HashMap<>();
             Map<DotName, List<TemplateGlobalBuildItem>> classToGlobals = templateGlobals.stream()
@@ -2044,7 +2065,7 @@ public class QuteProcessor {
             }
 
             for (String generatedType : globalGenerator.getGeneratedTypes()) {
-                generatedInitializers.produce(new GeneratedTemplateInitializerBuildItem(generatedType));
+                globalProviders.produce(new TemplateGlobalProviderBuildItem(generatedType));
                 reflectiveClass.produce(ReflectiveClassBuildItem.builder(generatedType).build());
             }
         }
@@ -2084,63 +2105,89 @@ public class QuteProcessor {
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
-            QuteConfig config)
+            QuteConfig config,
+            TemplateRootsBuildItem templateRoots)
             throws IOException {
-        Set<Path> basePaths = new HashSet<>();
         Set<ApplicationArchive> allApplicationArchives = applicationArchives.getAllApplicationArchives();
         List<ResolvedDependency> extensionArtifacts = curateOutcome.getApplicationModel().getDependencies().stream()
                 .filter(Dependency::isRuntimeExtensionArtifact).collect(Collectors.toList());
+
+        // Make sure the new templates are watched as well
+        watchedPaths.produce(HotDeploymentWatchedFileBuildItem.builder().setLocationPredicate(new Predicate<String>() {
+            @Override
+            public boolean test(String path) {
+                for (String rootPath : templateRoots) {
+                    if (path.startsWith(rootPath)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }).build());
 
         for (ResolvedDependency artifact : extensionArtifacts) {
             if (isApplicationArchive(artifact, allApplicationArchives)) {
                 // Skip extension archives that are also application archives
                 continue;
             }
-            for (Path path : artifact.getResolvedPaths()) {
-                if (Files.isDirectory(path)) {
-                    // Try to find the templates in the root dir
-                    try (Stream<Path> paths = Files.list(path)) {
-                        Path basePath = paths.filter(QuteProcessor::isBasePath).findFirst().orElse(null);
-                        if (basePath != null) {
-                            LOGGER.debugf("Found extension templates dir: %s", path);
-                            scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
-                                    config);
-                            break;
-                        }
-                    }
+            for (Path resolvedPath : artifact.getResolvedPaths()) {
+                if (Files.isDirectory(resolvedPath)) {
+                    scanPath(resolvedPath, resolvedPath, config, templateRoots, watchedPaths, templatePaths,
+                            nativeImageResources);
                 } else {
-                    try (FileSystem artifactFs = ZipUtils.newFileSystem(path)) {
-                        Path basePath = artifactFs.getPath(BASE_PATH);
-                        if (Files.exists(basePath)) {
-                            LOGGER.debugf("Found extension templates in: %s", path);
-                            scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
-                                    config);
+                    try (FileSystem artifactFs = ZipUtils.newFileSystem(resolvedPath)) {
+                        for (String templateRoot : templateRoots) {
+                            Path artifactBasePath = artifactFs.getPath(templateRoot);
+                            if (Files.exists(artifactBasePath)) {
+                                LOGGER.debugf("Found extension templates in: %s", resolvedPath);
+                                scan(artifactBasePath, artifactBasePath, templateRoot + "/", watchedPaths, templatePaths,
+                                        nativeImageResources,
+                                        config);
+                            }
                         }
                     } catch (IOException e) {
-                        LOGGER.warnf(e, "Unable to create the file system from the path: %s", path);
+                        LOGGER.warnf(e, "Unable to create the file system from the path: %s", resolvedPath);
                     }
                 }
             }
         }
         for (ApplicationArchive archive : allApplicationArchives) {
             archive.accept(tree -> {
-                for (Path rootDir : tree.getRoots()) {
+                for (Path root : tree.getRoots()) {
                     // Note that we cannot use ApplicationArchive.getChildPath(String) here because we would not be able to detect
                     // a wrong directory name on case-insensitive file systems
-                    try (Stream<Path> rootDirPaths = Files.list(rootDir)) {
-                        Path basePath = rootDirPaths.filter(QuteProcessor::isBasePath).findFirst().orElse(null);
-                        if (basePath != null) {
-                            LOGGER.debugf("Found templates dir: %s", basePath);
-                            basePaths.add(basePath);
-                            scan(basePath, basePath, BASE_PATH + "/", watchedPaths, templatePaths, nativeImageResources,
-                                    config);
-                            break;
-                        }
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
+                    scanPath(root, root, config, templateRoots, watchedPaths, templatePaths, nativeImageResources);
                 }
             });
+        }
+    }
+
+    private void scanPath(Path rootPath, Path path, QuteConfig config, TemplateRootsBuildItem templateRoots,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
+            BuildProducer<TemplatePathBuildItem> templatePaths,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources) {
+        if (!Files.isDirectory(path)) {
+            return;
+        }
+        try (Stream<Path> paths = Files.list(path)) {
+            for (Path file : paths.collect(Collectors.toList())) {
+                if (Files.isDirectory(file)) {
+                    // Iterate over the directories in the root
+                    // "/io", "/META-INF", "/templates", "/web", etc.
+                    Path relativePath = rootPath.relativize(file);
+                    if (templateRoots.isRoot(relativePath)) {
+                        LOGGER.debugf("Found templates dir: %s", file);
+                        scan(file, file, file.getFileName() + "/", watchedPaths, templatePaths,
+                                nativeImageResources,
+                                config);
+                    } else if (templateRoots.maybeRoot(relativePath)) {
+                        // Scan the path recursively because the template root may be nested, for example "/web/public"
+                        scanPath(rootPath, file, config, templateRoots, watchedPaths, templatePaths, nativeImageResources);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -2398,7 +2445,8 @@ public class QuteProcessor {
     void initialize(BuildProducer<SyntheticBeanBuildItem> syntheticBeans, QuteRecorder recorder,
             List<GeneratedValueResolverBuildItem> generatedValueResolvers, List<TemplatePathBuildItem> templatePaths,
             Optional<TemplateVariantsBuildItem> templateVariants,
-            List<GeneratedTemplateInitializerBuildItem> templateInitializers) {
+            List<TemplateGlobalProviderBuildItem> templateInitializers,
+            TemplateRootsBuildItem templateRoots) {
 
         List<String> templates = new ArrayList<>();
         List<String> tags = new ArrayList<>();
@@ -2422,7 +2470,8 @@ public class QuteProcessor {
                 .supplier(recorder.createContext(generatedValueResolvers.stream()
                         .map(GeneratedValueResolverBuildItem::getClassName).collect(Collectors.toList()), templates,
                         tags, variants, templateInitializers.stream()
-                                .map(GeneratedTemplateInitializerBuildItem::getClassName).collect(Collectors.toList())))
+                                .map(TemplateGlobalProviderBuildItem::getClassName).collect(Collectors.toList()),
+                        templateRoots.getPaths().stream().map(p -> p + "/").collect(Collectors.toSet())))
                 .done());
     }
 
@@ -3326,8 +3375,11 @@ public class QuteProcessor {
         String fullPath = basePath + filePath;
         LOGGER.debugf("Produce template build items [filePath: %s, fullPath: %s, originalPath: %s", filePath, fullPath,
                 originalPath);
-        // NOTE: we cannot just drop the template because a template param can be added
-        watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(fullPath, true));
+        boolean restartNeeded = true;
+        if (config.devMode.noRestartTemplates.isPresent()) {
+            restartNeeded = !config.devMode.noRestartTemplates.get().matcher(fullPath).matches();
+        }
+        watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(fullPath, restartNeeded));
         nativeImageResources.produce(new NativeImageResourceBuildItem(fullPath));
         templatePaths.produce(
                 new TemplatePathBuildItem(filePath, originalPath, readTemplateContent(originalPath, config.defaultCharset)));
@@ -3379,10 +3431,6 @@ public class QuteProcessor {
             }
         }
         return false;
-    }
-
-    private static boolean isBasePath(Path path) {
-        return path.getFileName().toString().equals(BASE_PATH);
     }
 
     private void checkDuplicatePaths(List<TemplatePathBuildItem> templatePaths) {
@@ -3519,41 +3567,6 @@ public class QuteProcessor {
             return "BUILD_" + name();
         }
 
-    }
-
-    private static final class MethodParameterDeclaration implements ParameterDeclaration {
-
-        private final String paramType;
-        private final String paramName;
-
-        private MethodParameterDeclaration(String paramType, String paramName) {
-            this.paramType = paramType;
-            this.paramName = paramName;
-        }
-
-        public String getParamType() {
-            return paramType;
-        }
-
-        @Override
-        public String getTypeInfo() {
-            return Expressions.typeInfoFrom(paramType);
-        }
-
-        @Override
-        public String getKey() {
-            return paramName;
-        }
-
-        @Override
-        public Expression getDefaultValue() {
-            return null;
-        }
-
-        @Override
-        public TemplateNode.Origin getOrigin() {
-            return null;
-        }
     }
 
 }

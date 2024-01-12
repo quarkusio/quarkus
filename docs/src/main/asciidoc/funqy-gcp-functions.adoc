@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains Funqy's Google Cloud Platform Functions binding.
+:topics: google,gcp,serverless,function,cloud,funqy
+:extensions: io.quarkus:quarkus-funqy-http,io.quarkus:quarkus-funqy-google-cloud-functions
 
 The guide walks through quickstart code to show you how you can deploy Funqy functions to Google Cloud Functions.
 
@@ -145,7 +147,7 @@ You will have a single JAR inside the `target/deployment` repository that contai
 Then you will be able to use `gcloud` to deploy your function to Google Cloud.
 The `gcloud` command will be different depending on which event triggers your function.
 
-NOTE: We will use the Java 17 runtime but you can switch to the Java 11 runtime by using `--runtime=java11` instead of `--runtime=java17` on the deploy commands.
+NOTE: We will use the Java 17 runtime but you can switch to the Java 21 runtime by using `--runtime=java21` instead of `--runtime=java17` on the deploy commands.
 
 [WARNING]
 ====
@@ -382,6 +384,8 @@ To use it, you must add the following test dependency in your `pom.xml`.
 
 This extension provides a `@WithFunction` annotation that can be used to annotate `@QuarkusTest` test cases to start a Cloud Function invoker before you test cases and stop it at the end.
 This annotation must be configured with the type of the function you want to launch, and optionally the name of the function in case you have multiple functions inside your application.
+
+The default Quarkus test port configuration (`quarkus.http.test-port`) will be honored and if you set it to 0 a random port will be assigned to the function invoker.
 
 === Background Functions - PubSub
 

@@ -37,14 +37,14 @@ public class SseParserTest {
         testParser("data:foo\ndata:\ndata:bar\n\n", "foo\n\nbar", null, null, null, SseEvent.RECONNECT_NOT_SET);
 
         // no data: no event
-        testParser("\n", null, null, null, null, SseEvent.RECONNECT_NOT_SET);
-        testParser("data:\n\n", null, null, null, null, SseEvent.RECONNECT_NOT_SET);
-        testParser("data\n\n", null, null, null, null, SseEvent.RECONNECT_NOT_SET);
+        testParser("\n", "", null, null, null, SseEvent.RECONNECT_NOT_SET);
+        testParser("data:\n\n", "", null, null, null, SseEvent.RECONNECT_NOT_SET);
+        testParser("data\n\n", "", null, null, null, SseEvent.RECONNECT_NOT_SET);
 
         // all fields
         testParser("data:DATA\nid:ID\n:COMMENT\nretry:23\nevent:NAME\n\n", "DATA", "COMMENT", "ID", "NAME", 23);
         // all fields and no data
-        testParser("id:ID\n:COMMENT\nretry:23\nevent:NAME\n\n", null, "COMMENT", "ID", "NAME", 23);
+        testParser("id:ID\n:COMMENT\nretry:23\nevent:NAME\n\n", "", "COMMENT", "ID", "NAME", 23);
 
         // optional space after colon
         testParser("data:foo\n\n", "foo", null, null, null, SseEvent.RECONNECT_NOT_SET);
@@ -108,6 +108,22 @@ public class SseParserTest {
         testParser(Arrays.asList("data:f", "oo\n\n"),
                 Collections.singletonList(new InboundSseEventImpl(null, null)
                         .setData("foo")));
+        testParser(Arrays.asList("dat", "a:foo\n\n"),
+                Collections.singletonList(new InboundSseEventImpl(null, null)
+                        .setData("foo")));
+        testParser(Arrays.asList("data", ":foo\n\n"),
+                Collections.singletonList(new InboundSseEventImpl(null, null)
+                        .setData("foo")));
+        testParser(Arrays.asList("data:", "foo\n\n"),
+                Collections.singletonList(new InboundSseEventImpl(null, null)
+                        .setData("foo")));
+        // chunk at the worst possible place, make sure we don't drop events
+        testParser(Arrays.asList("data:foo\n", "\n"),
+                Collections.singletonList(new InboundSseEventImpl(null, null)
+                        .setData("foo")));
+        testParser(Arrays.asList("data:foo\n", "data:bar\n", "\n"),
+                Collections.singletonList(new InboundSseEventImpl(null, null)
+                        .setData("foo\nbar")));
         // one event in two buffers within a UTF-8 char
         testParserWithBytes(
                 Arrays.asList(new byte[] { 'd', 'a', 't', 'a', ':', (byte) 0b11000010 },

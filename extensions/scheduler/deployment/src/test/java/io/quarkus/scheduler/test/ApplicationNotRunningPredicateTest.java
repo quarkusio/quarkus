@@ -6,9 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.annotation.Priority;
 import jakarta.enterprise.event.Observes;
-import jakarta.interceptor.Interceptor;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -43,15 +41,15 @@ public class ApplicationNotRunningPredicateTest {
 
     static class Jobs {
 
-        volatile boolean preStart;
+        volatile boolean started;
 
-        void started(@Observes @Priority(Interceptor.Priority.PLATFORM_BEFORE) StartupEvent event) {
-            preStart = true;
+        void started(@Observes StartupEvent event) {
+            started = true;
         }
 
         @Scheduled(every = "0.2s", skipExecutionIf = Scheduled.ApplicationNotRunning.class)
         void scheduleAfterStarted() {
-            if (!preStart) {
+            if (!started) {
                 throw new IllegalStateException();
             }
         }

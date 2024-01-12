@@ -11,7 +11,7 @@ import static io.restassured.RestAssured.given;
 @WithFunction(value = FunctionType.FUNQY_CLOUD_EVENTS, functionName = "helloCloudEvent")
 class GreetingFunctionsCloudEventsTest {
     @Test
-    public void testHelloCloudEvent() {
+    void testHelloCloudEvent() {
         given()
                 .body("{\n" +
                         "        \"bucket\": \"MY_BUCKET\",\n" +

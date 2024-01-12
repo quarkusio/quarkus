@@ -23,7 +23,7 @@ import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Typed;
 import jakarta.inject.Singleton;
 import jakarta.interceptor.Interceptor;
@@ -37,7 +37,6 @@ import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.FailedExecution;
 import io.quarkus.scheduler.Scheduled;
@@ -55,6 +54,7 @@ import io.quarkus.scheduler.Trigger;
 import io.quarkus.scheduler.common.runtime.AbstractJobDefinition;
 import io.quarkus.scheduler.common.runtime.DefaultInvoker;
 import io.quarkus.scheduler.common.runtime.Events;
+import io.quarkus.scheduler.common.runtime.InstrumentedInvoker;
 import io.quarkus.scheduler.common.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.common.runtime.ScheduledMethod;
 import io.quarkus.scheduler.common.runtime.SchedulerContext;
@@ -64,6 +64,7 @@ import io.quarkus.scheduler.common.runtime.StatusEmitterInvoker;
 import io.quarkus.scheduler.common.runtime.SyntheticScheduled;
 import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
 import io.quarkus.scheduler.runtime.SchedulerRuntimeConfig.StartMode;
+import io.quarkus.scheduler.spi.JobInstrumenter;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.smallrye.common.vertx.VertxContext;
@@ -78,7 +79,7 @@ public class SimpleScheduler implements Scheduler {
     private static final Logger LOG = Logger.getLogger(SimpleScheduler.class);
 
     // milliseconds
-    private static final long CHECK_PERIOD = 1000L;
+    public static final long CHECK_PERIOD = 1000L;
 
     private final ScheduledExecutorService scheduledExecutor;
     private final Vertx vertx;
@@ -94,12 +95,15 @@ public class SimpleScheduler implements Scheduler {
     private final Event<SchedulerResumed> schedulerResumedEvent;
     private final Event<ScheduledJobPaused> scheduledJobPausedEvent;
     private final Event<ScheduledJobResumed> scheduledJobResumedEvent;
+    private final SchedulerConfig schedulerConfig;
+    private final Instance<JobInstrumenter> jobInstrumenter;
 
     public SimpleScheduler(SchedulerContext context, SchedulerRuntimeConfig schedulerRuntimeConfig,
             Event<SkippedExecution> skippedExecutionEvent, Event<SuccessfulExecution> successExecutionEvent,
             Event<FailedExecution> failedExecutionEvent, Event<SchedulerPaused> schedulerPausedEvent,
             Event<SchedulerResumed> schedulerResumedEvent, Event<ScheduledJobPaused> scheduledJobPausedEvent,
-            Event<ScheduledJobResumed> scheduledJobResumedEvent, Vertx vertx) {
+            Event<ScheduledJobResumed> scheduledJobResumedEvent, Vertx vertx, SchedulerConfig schedulerConfig,
+            Instance<JobInstrumenter> jobInstrumenter) {
         this.running = true;
         this.enabled = schedulerRuntimeConfig.enabled;
         this.scheduledTasks = new ConcurrentHashMap<>();
@@ -111,6 +115,8 @@ public class SimpleScheduler implements Scheduler {
         this.schedulerResumedEvent = schedulerResumedEvent;
         this.scheduledJobPausedEvent = scheduledJobPausedEvent;
         this.scheduledJobResumedEvent = scheduledJobResumedEvent;
+        this.schedulerConfig = schedulerConfig;
+        this.jobInstrumenter = jobInstrumenter;
 
         CronDefinition definition = CronDefinitionBuilder.instanceDefinitionFor(context.getCronType());
         this.cronParser = new CronParser(definition);
@@ -153,9 +159,13 @@ public class SimpleScheduler implements Scheduler {
                 Optional<SimpleTrigger> trigger = createTrigger(id, method.getMethodDescription(), cronParser, scheduled,
                         defaultOverdueGracePeriod);
                 if (trigger.isPresent()) {
+                    JobInstrumenter instrumenter = null;
+                    if (schedulerConfig.tracingEnabled && jobInstrumenter.isResolvable()) {
+                        instrumenter = jobInstrumenter.get();
+                    }
                     ScheduledInvoker invoker = initInvoker(context.createInvoker(method.getInvokerClassName()),
                             skippedExecutionEvent, successExecutionEvent, failedExecutionEvent,
-                            scheduled.concurrentExecution(), initSkipPredicate(scheduled.skipExecutionIf()));
+                            scheduled.concurrentExecution(), initSkipPredicate(scheduled.skipExecutionIf()), instrumenter);
                     scheduledTasks.put(trigger.get().id, new ScheduledTask(trigger.get(), invoker, false));
                 }
             }
@@ -168,7 +178,7 @@ public class SimpleScheduler implements Scheduler {
         if (scheduledTasks.containsKey(identity)) {
             throw new IllegalStateException("A job with this identity is already scheduled: " + identity);
         }
-        return new SimpleJobDefinition(identity);
+        return new SimpleJobDefinition(identity, schedulerConfig);
     }
 
     @Override
@@ -339,7 +349,7 @@ public class SimpleScheduler implements Scheduler {
                     SchedulerUtils.parseCronTimeZone(scheduled), methodDescription));
         } else if (!scheduled.every().isEmpty()) {
             final OptionalLong everyMillis = SchedulerUtils.parseEveryAsMillis(scheduled);
-            if (!everyMillis.isPresent()) {
+            if (everyMillis.isEmpty()) {
                 return Optional.empty();
             }
             return Optional.of(new IntervalTrigger(id, start, everyMillis.getAsLong(),
@@ -352,13 +362,16 @@ public class SimpleScheduler implements Scheduler {
     public static ScheduledInvoker initInvoker(ScheduledInvoker invoker, Event<SkippedExecution> skippedExecutionEvent,
             Event<SuccessfulExecution> successExecutionEvent,
             Event<FailedExecution> failedExecutionEvent, ConcurrentExecution concurrentExecution,
-            Scheduled.SkipPredicate skipPredicate) {
+            Scheduled.SkipPredicate skipPredicate, JobInstrumenter instrumenter) {
         invoker = new StatusEmitterInvoker(invoker, successExecutionEvent, failedExecutionEvent);
         if (concurrentExecution == ConcurrentExecution.SKIP) {
             invoker = new SkipConcurrentExecutionInvoker(invoker, skippedExecutionEvent);
         }
         if (skipPredicate != null) {
             invoker = new SkipPredicateInvoker(invoker, skipPredicate, skippedExecutionEvent);
+        }
+        if (instrumenter != null) {
+            invoker = new InstrumentedInvoker(invoker, instrumenter);
         }
         return invoker;
     }
@@ -367,7 +380,7 @@ public class SimpleScheduler implements Scheduler {
         if (predicateClass.equals(Scheduled.Never.class)) {
             return null;
         }
-        return Arc.container().select(predicateClass, Any.Literal.INSTANCE).get();
+        return SchedulerUtils.instantiateBeanOrClass(predicateClass);
     }
 
     static class ScheduledTask {
@@ -490,6 +503,11 @@ public class SimpleScheduler implements Scheduler {
             super(id, start, description);
             this.interval = interval;
             this.gracePeriod = gracePeriod;
+            if (interval < CHECK_PERIOD) {
+                LOG.warnf(
+                        "An every() value less than %s ms is not supported - the scheduled job will be executed with a delay: %s",
+                        CHECK_PERIOD, description);
+            }
         }
 
         @Override
@@ -629,8 +647,11 @@ public class SimpleScheduler implements Scheduler {
 
     class SimpleJobDefinition extends AbstractJobDefinition {
 
-        SimpleJobDefinition(String id) {
+        private final SchedulerConfig schedulerConfig;
+
+        SimpleJobDefinition(String id, SchedulerConfig schedulerConfig) {
             super(id);
+            this.schedulerConfig = schedulerConfig;
         }
 
         @Override
@@ -683,8 +704,12 @@ public class SimpleScheduler implements Scheduler {
                     defaultOverdueGracePeriod);
             if (trigger.isPresent()) {
                 SimpleTrigger simpleTrigger = trigger.get();
+                JobInstrumenter instrumenter = null;
+                if (schedulerConfig.tracingEnabled && jobInstrumenter.isResolvable()) {
+                    instrumenter = jobInstrumenter.get();
+                }
                 invoker = initInvoker(invoker, skippedExecutionEvent, successExecutionEvent,
-                        failedExecutionEvent, concurrentExecution, skipPredicate);
+                        failedExecutionEvent, concurrentExecution, skipPredicate, instrumenter);
                 ScheduledTask scheduledTask = new ScheduledTask(trigger.get(), invoker, true);
                 ScheduledTask existing = scheduledTasks.putIfAbsent(simpleTrigger.id, scheduledTask);
                 if (existing != null) {

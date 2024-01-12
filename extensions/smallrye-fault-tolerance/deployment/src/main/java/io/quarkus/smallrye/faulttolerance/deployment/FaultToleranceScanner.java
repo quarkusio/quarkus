@@ -80,7 +80,7 @@ final class FaultToleranceScanner {
     void forEachMethod(ClassInfo clazz, Consumer<MethodInfo> action) {
         for (MethodInfo method : clazz.methods()) {
             if (method.name().startsWith("<")) {
-                // constructors (or static init blocks) can't be intercepted
+                // constructors and static inititalizers can't be intercepted
                 continue;
             }
             if (method.isSynthetic()) {

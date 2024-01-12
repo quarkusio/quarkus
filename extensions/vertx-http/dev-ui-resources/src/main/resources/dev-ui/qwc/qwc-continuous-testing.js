@@ -105,7 +105,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
             this._state = JSON.parse(jsonRpcResponse.result);
         });
         this._streamResultsObserver = this.jsonRpc.streamTestResults().onNext(jsonRpcResponse => {
-            this._results = JSON.parse(jsonRpcResponse.result);
+            this._results = jsonRpcResponse.result;
         });
     }
 
@@ -121,7 +121,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         });
         this.jsonRpc.lastKnownResults().then(jsonRpcResponse => {
             if(jsonRpcResponse.result){
-                this._results = JSON.parse(jsonRpcResponse.result);
+                this._results = jsonRpcResponse.result;
             }
         });
     }

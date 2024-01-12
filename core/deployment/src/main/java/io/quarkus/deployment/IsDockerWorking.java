@@ -1,7 +1,7 @@
 
 package io.quarkus.deployment;
 
-import static io.quarkus.runtime.util.ContainerRuntimeUtil.ContainerRuntime.UNAVAILABLE;
+import static io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime.UNAVAILABLE;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.console.StartupLogCompressor;
-import io.quarkus.runtime.util.ContainerRuntimeUtil;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 
 public class IsDockerWorking implements BooleanSupplier {
 

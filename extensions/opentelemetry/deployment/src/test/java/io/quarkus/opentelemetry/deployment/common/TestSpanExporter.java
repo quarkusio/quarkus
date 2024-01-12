@@ -51,7 +51,8 @@ public class TestSpanExporter implements SpanExporter {
     }
 
     public void assertSpanCount(int spanCount) {
-        await().atMost(30, SECONDS).untilAsserted(() -> assertEquals(spanCount, finishedSpanItems.size()));
+        await().atMost(30, SECONDS).untilAsserted(
+                () -> assertEquals(spanCount, finishedSpanItems.size(), "Spans: " + finishedSpanItems.toString()));
     }
 
     public void reset() {

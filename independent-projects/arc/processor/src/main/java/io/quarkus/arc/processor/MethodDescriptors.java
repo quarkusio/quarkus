@@ -9,7 +9,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -61,6 +63,9 @@ public final class MethodDescriptors {
             Map.class, String.class);
 
     public static final MethodDescriptor SUPPLIER_GET = MethodDescriptor.ofMethod(Supplier.class, "get", Object.class);
+
+    public static final MethodDescriptor CONSUMER_ACCEPT = MethodDescriptor.ofMethod(Consumer.class, "accept",
+            void.class, Object.class);
 
     public static final MethodDescriptor CREATIONAL_CTX_CHILD = MethodDescriptor.ofMethod(CreationalContextImpl.class, "child",
             CreationalContextImpl.class,
@@ -239,6 +244,9 @@ public final class MethodDescriptors {
     public static final MethodDescriptor ARC_CONTAINER_GET_ACTIVE_CONTEXT = MethodDescriptor.ofMethod(ArcContainer.class,
             "getActiveContext", InjectableContext.class, Class.class);
 
+    public static final MethodDescriptor ARC_CONTAINER_GET_CONTEXTS = MethodDescriptor.ofMethod(ArcContainer.class,
+            "getContexts", List.class, Class.class);
+
     public static final MethodDescriptor CONTEXT_GET = MethodDescriptor.ofMethod(Context.class, "get", Object.class,
             Contextual.class,
             CreationalContext.class);
@@ -271,6 +279,10 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor CLIENT_PROXIES_GET_APP_SCOPED_DELEGATE = MethodDescriptor.ofMethod(ClientProxies.class,
             "getApplicationScopedDelegate", Object.class, InjectableContext.class, InjectableBean.class);
+
+    public static final MethodDescriptor CLIENT_PROXIES_GET_SINGLE_CONTEXT_DELEGATE = MethodDescriptor.ofMethod(
+            ClientProxies.class,
+            "getSingleContextDelegate", Object.class, InjectableContext.class, InjectableBean.class);
 
     public static final MethodDescriptor CLIENT_PROXIES_GET_DELEGATE = MethodDescriptor.ofMethod(ClientProxies.class,
             "getDelegate", Object.class, InjectableBean.class);
@@ -306,6 +318,9 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor INTERCEPT_FUNCTION_INTERCEPT = MethodDescriptor.ofMethod(InterceptFunction.class,
             "intercept", Object.class, ArcInvocationContext.class);
+
+    public static final MethodDescriptor LOCK_LOCK = MethodDescriptor.ofMethod(Lock.class, "lock", void.class);
+    public static final MethodDescriptor LOCK_UNLOCK = MethodDescriptor.ofMethod(Lock.class, "unlock", void.class);
 
     private MethodDescriptors() {
     }

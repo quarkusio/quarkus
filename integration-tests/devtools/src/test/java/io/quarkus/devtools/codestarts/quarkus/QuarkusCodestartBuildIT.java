@@ -120,7 +120,6 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
         final BuildTool buildTool = BuildTool.findTool(buildToolName);
 
         final Map<String, Object> data = getTestInputData(Collections.singletonMap("artifact-id", name));
-        // for JVM 8 and 14 this will generate project with java 1.8, for JVM 11 project with java 11
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addData(data)
                 .buildTool(buildTool)

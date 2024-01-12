@@ -2,6 +2,7 @@ package io.quarkus.restclient.config;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.enterprise.inject.CreationException;
@@ -10,16 +11,18 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.configuration.MemorySize;
 
 @ConfigRoot(name = "rest-client", phase = ConfigPhase.RUN_TIME)
 public class RestClientsConfig {
 
     /**
      * Configurations of REST client instances.
-     *
+     * <p>
      * The key can be either the value of the configKey parameter of a `@RegisterRestClient` annotation, or the name of
      * a class bearing that annotation, in which case it is possible to use the short name, as well as fully qualified
      * name.
@@ -38,10 +41,10 @@ public class RestClientsConfig {
     /**
      * By default, REST Client Reactive uses text/plain content type for String values
      * and application/json for everything else.
-     *
+     * <p>
      * MicroProfile Rest Client spec requires the implementations to always default to application/json.
      * This build item disables the "smart" behavior of RESTEasy Reactive to comply to the spec.
-     *
+     * <p>
      * This property is applicable to reactive REST clients only.
      */
     @ConfigItem(defaultValue = "false")
@@ -52,9 +55,9 @@ public class RestClientsConfig {
      * The modes are described in the
      * <a href="https://netty.io/4.1/api/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.EncoderMode.html">Netty
      * documentation</a>
-     *
+     * <p>
      * By default, Rest Client Reactive uses RFC1738.
-     *
+     * <p>
      * This property is applicable to reactive REST clients only.
      */
     @ConfigItem
@@ -63,7 +66,7 @@ public class RestClientsConfig {
     /**
      * A string value in the form of `<proxyHost>:<proxyPort>` that specifies the HTTP proxy server hostname
      * (or IP address) and port for requests of clients to use.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem
@@ -71,9 +74,9 @@ public class RestClientsConfig {
 
     /**
      * Proxy username, equivalent to the http.proxy or https.proxy JVM settings.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
-     *
+     * <p>
      * This property is applicable to reactive REST clients only.
      */
     @ConfigItem
@@ -81,9 +84,9 @@ public class RestClientsConfig {
 
     /**
      * Proxy password, equivalent to the http.proxyPassword or https.proxyPassword JVM settings.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
-     *
+     * <p>
      * This property is applicable to reactive REST clients only.
      */
     @ConfigItem
@@ -92,9 +95,9 @@ public class RestClientsConfig {
     /**
      * Hosts to access without proxy, similar to the http.nonProxyHosts or https.nonProxyHosts JVM settings.
      * Please note that unlike the JVM settings, this property is empty by default.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
-     *
+     * <p>
      * This property is applicable to reactive REST clients only.
      */
     @ConfigItem
@@ -106,7 +109,7 @@ public class RestClientsConfig {
 
     /**
      * A timeout in milliseconds that REST clients should wait to connect to the remote endpoint.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem(defaultValue = "15000", defaultValueDocumentation = "15000 ms")
@@ -114,7 +117,7 @@ public class RestClientsConfig {
 
     /**
      * A timeout in milliseconds that REST clients should wait for a response from the remote endpoint.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem(defaultValue = "30000", defaultValueDocumentation = "30000 ms")
@@ -123,7 +126,7 @@ public class RestClientsConfig {
     /**
      * If true, the REST clients will not provide additional contextual information (like REST client class and method
      * names) when exception occurs during a client invocation.
-     *
+     * <p>
      * This property is applicable to reactive REST clients only.
      */
     @ConfigItem(defaultValue = "false")
@@ -131,9 +134,9 @@ public class RestClientsConfig {
 
     /**
      * Default configuration for the HTTP user-agent header to use in all REST clients.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
-     *
+     * <p>
      * This property is applicable to reactive REST clients only.
      */
     @ConfigItem
@@ -147,7 +150,7 @@ public class RestClientsConfig {
 
     /**
      * The class name of the host name verifier. The class must have a public no-argument constructor.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem
@@ -156,7 +159,7 @@ public class RestClientsConfig {
     /**
      * The time in ms for which a connection remains unused in the connection pool before being evicted and closed.
      * A timeout of {@code 0} means there is no timeout.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem
@@ -164,7 +167,7 @@ public class RestClientsConfig {
 
     /**
      * The size of the connection pool for this client.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem
@@ -172,7 +175,7 @@ public class RestClientsConfig {
 
     /**
      * If set to false disables the keep alive completely.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem(defaultValue = "true")
@@ -180,9 +183,9 @@ public class RestClientsConfig {
 
     /**
      * The maximum number of redirection a request can follow.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
-     *
+     * <p>
      * This property is applicable to reactive REST clients only.
      */
     @ConfigItem
@@ -190,7 +193,7 @@ public class RestClientsConfig {
 
     /**
      * A boolean value used to determine whether the client should follow HTTP redirect responses.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem
@@ -199,7 +202,7 @@ public class RestClientsConfig {
     /**
      * Map where keys are fully-qualified provider classnames to include in the client, and values are their integer
      * priorities. The equivalent of the `@RegisterProvider` annotation.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem
@@ -209,11 +212,11 @@ public class RestClientsConfig {
      * The CDI scope to use for injections of REST client instances. Value can be either a fully qualified class name of a CDI
      * scope annotation (such as "jakarta.enterprise.context.ApplicationScoped") or its simple name (such
      * as"ApplicationScoped").
-     *
+     * <p>
      * Default scope for the rest-client extension is "Dependent" (which is the spec-compliant behavior).
-     *
+     * <p>
      * Default scope for the rest-client-reactive extension is "ApplicationScoped".
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem
@@ -222,7 +225,7 @@ public class RestClientsConfig {
     /**
      * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
      * or "ARRAY_PAIRS" that specifies the format in which multiple values for the same query parameter is used.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem
@@ -231,7 +234,7 @@ public class RestClientsConfig {
     /**
      * Set whether hostname verification is enabled. Default is enabled.
      * This setting should not be disabled in production as it makes the client vulnerable to MITM attacks.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem
@@ -239,7 +242,7 @@ public class RestClientsConfig {
 
     /**
      * The trust store location. Can point to either a classpath resource or a file.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem
@@ -247,7 +250,7 @@ public class RestClientsConfig {
 
     /**
      * The trust store password.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem
@@ -255,7 +258,7 @@ public class RestClientsConfig {
 
     /**
      * The type of the trust store. Defaults to "JKS".
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem
@@ -263,7 +266,7 @@ public class RestClientsConfig {
 
     /**
      * The key store location. Can point to either a classpath resource or a file.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem
@@ -271,7 +274,7 @@ public class RestClientsConfig {
 
     /**
      * The key store password.
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem
@@ -279,7 +282,7 @@ public class RestClientsConfig {
 
     /**
      * The type of the key store. Defaults to "JKS".
-     *
+     * <p>
      * Can be overwritten by client-specific settings.
      */
     @ConfigItem
@@ -290,6 +293,15 @@ public class RestClientsConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean http2;
+
+    /**
+     * The max HTTP chunk size (8096 bytes by default).
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    @ConfigDocDefault("8k")
+    public Optional<MemorySize> maxChunkSize;
 
     /**
      * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the
@@ -324,6 +336,10 @@ public class RestClientsConfig {
 
     public void putClientConfig(Class<?> clientInterface, RestClientConfig clientConfig) {
         configs.put(clientInterface.getName(), clientConfig);
+    }
+
+    public Set<String> getConfigKeys() {
+        return configs.keySet();
     }
 
     public static RestClientsConfig getInstance() {

@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -84,6 +86,7 @@ import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildIt
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.security.Authenticated;
+import io.quarkus.smallrye.openapi.OpenApiFilter;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoRolesAllowedFilter;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoServerFilter;
@@ -161,8 +164,14 @@ public class SmallRyeOpenApiProcessor {
     private static final String VERT_X = "Vert.x";
 
     static {
+        System.setProperty(io.smallrye.openapi.api.constants.OpenApiConstants.DEFAULT_PRODUCES_STREAMING,
+                "application/octet-stream");
+        System.setProperty(io.smallrye.openapi.api.constants.OpenApiConstants.DEFAULT_CONSUMES_STREAMING,
+                "application/octet-stream");
         System.setProperty(io.smallrye.openapi.api.constants.OpenApiConstants.DEFAULT_PRODUCES, "application/json");
         System.setProperty(io.smallrye.openapi.api.constants.OpenApiConstants.DEFAULT_CONSUMES, "application/json");
+        System.setProperty(io.smallrye.openapi.api.constants.OpenApiConstants.DEFAULT_PRODUCES_PRIMITIVES, "text/plain");
+        System.setProperty(io.smallrye.openapi.api.constants.OpenApiConstants.DEFAULT_CONSUMES_PRIMITIVES, "text/plain");
     }
 
     @BuildStep
@@ -232,6 +241,25 @@ public class SmallRyeOpenApiProcessor {
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(OASFilter.class).setRuntimeInit()
                 .supplier(recorder.autoSecurityFilterSupplier(autoSecurityFilter)).done());
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void registerAnnotatedUserDefinedRuntimeFilters(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
+            OpenApiRecorder recorder) {
+        Config config = ConfigProvider.getConfig();
+        OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
+
+        List<String> userDefinedRuntimeFilters = getUserDefinedRuntimeFilters(openApiConfig,
+                apiFilteredIndexViewBuildItem.getIndex());
+
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(OpenApiRecorder.UserDefinedRuntimeFilters.class)
+                .supplier(recorder.createUserDefinedRuntimeFilters(userDefinedRuntimeFilters))
+                .done());
+
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(userDefinedRuntimeFilters.toArray(new String[] {})).build());
     }
 
     @BuildStep
@@ -430,6 +458,36 @@ public class SmallRyeOpenApiProcessor {
                 addToOpenAPIDefinitionProducer.produce(new AddToOpenAPIDefinitionBuildItem(serverFilter));
             }
         }
+    }
+
+    private List<String> getUserDefinedBuildtimeFilters(OpenApiConfig openApiConfig, IndexView index) {
+        return getUserDefinedFilters(openApiConfig, index, OpenApiFilter.RunStage.BUILD);
+    }
+
+    private List<String> getUserDefinedRuntimeFilters(OpenApiConfig openApiConfig, IndexView index) {
+        List<String> userDefinedFilters = getUserDefinedFilters(openApiConfig, index, OpenApiFilter.RunStage.RUN);
+        // Also add the MP way
+        String filter = openApiConfig.filter();
+        if (filter != null) {
+            userDefinedFilters.add(filter);
+        }
+        return userDefinedFilters;
+    }
+
+    private List<String> getUserDefinedFilters(OpenApiConfig openApiConfig, IndexView index, OpenApiFilter.RunStage stage) {
+        EnumSet<OpenApiFilter.RunStage> stages = EnumSet.of(OpenApiFilter.RunStage.BOTH, stage);
+        Comparator<Object> comparator = Comparator
+                .comparing(x -> ((AnnotationInstance) x).valueWithDefault(index, "priority").asInt())
+                .reversed();
+        return index
+                .getAnnotations(OpenApiFilter.class)
+                .stream()
+                .filter(ai -> stages.contains(OpenApiFilter.RunStage.valueOf(ai.value().asEnum())))
+                .sorted(comparator)
+                .map(ai -> ai.target().asClass())
+                .filter(c -> c.interfaceNames().contains(DotName.createSimple(OASFilter.class.getName())))
+                .map(c -> c.name().toString())
+                .collect(Collectors.toList());
     }
 
     private boolean isManagement(ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
@@ -1100,7 +1158,10 @@ public class SmallRyeOpenApiProcessor {
         OpenApiDocument document = prepareOpenApiDocument(loadedModel, null, Collections.emptyList(), index);
 
         if (includeRuntimeFilters) {
-            document.filter(filter(openApiConfig, index)); // This usually happens at runtime, so when storing we want to filter here too.
+            List<String> userDefinedRuntimeFilters = getUserDefinedRuntimeFilters(openApiConfig, index);
+            for (String s : userDefinedRuntimeFilters) {
+                document.filter(filter(s, index)); // This usually happens at runtime, so when storing we want to filter here too.
+            }
         }
 
         // By default, also add the auto generated server
@@ -1151,6 +1212,11 @@ public class SmallRyeOpenApiProcessor {
             OASFilter otherExtensionFilter = openAPIBuildItem.getOASFilter();
             document.filter(otherExtensionFilter);
         }
+        // Add user defined Build time filters
+        List<String> userDefinedFilters = getUserDefinedBuildtimeFilters(openApiConfig, index);
+        for (String filter : userDefinedFilters) {
+            document.filter(filter(filter, index));
+        }
         return document;
     }
 
@@ -1161,8 +1227,7 @@ public class SmallRyeOpenApiProcessor {
         return document;
     }
 
-    private OASFilter filter(OpenApiConfig openApiConfig, IndexView index) {
-        return OpenApiProcessor.getFilter(openApiConfig,
-                Thread.currentThread().getContextClassLoader(), index);
+    private OASFilter filter(String className, IndexView index) {
+        return OpenApiProcessor.getFilter(className, Thread.currentThread().getContextClassLoader(), index);
     }
 }

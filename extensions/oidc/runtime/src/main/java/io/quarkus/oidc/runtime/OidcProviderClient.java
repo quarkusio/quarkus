@@ -4,6 +4,8 @@ import java.io.Closeable;
 import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.jboss.logging.Logger;
@@ -14,11 +16,16 @@ import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcRequestContextProperties;
+import io.quarkus.oidc.common.OidcRequestFilter;
+import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret.Method;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.OidcEndpointAccessException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.MultiMap;
@@ -38,21 +45,29 @@ public class OidcProviderClient implements Closeable {
     private static final String APPLICATION_JSON = "application/json";
 
     private final WebClient client;
+    private final Vertx vertx;
     private final OidcConfigurationMetadata metadata;
     private final OidcTenantConfig oidcConfig;
     private final String clientSecretBasicAuthScheme;
     private final String introspectionBasicAuthScheme;
     private final Key clientJwtKey;
+    private final Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters;
+    private final boolean clientSecretQueryAuthentication;
 
     public OidcProviderClient(WebClient client,
+            Vertx vertx,
             OidcConfigurationMetadata metadata,
-            OidcTenantConfig oidcConfig) {
+            OidcTenantConfig oidcConfig,
+            Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters) {
         this.client = client;
+        this.vertx = vertx;
         this.metadata = metadata;
         this.oidcConfig = oidcConfig;
         this.clientSecretBasicAuthScheme = OidcCommonUtils.initClientSecretBasicAuth(oidcConfig);
         this.clientJwtKey = OidcCommonUtils.initClientJwtKey(oidcConfig);
         this.introspectionBasicAuthScheme = initIntrospectionBasicAuthScheme(oidcConfig);
+        this.filters = filters;
+        this.clientSecretQueryAuthentication = oidcConfig.credentials.clientSecret.method.orElse(null) == Method.QUERY;
     }
 
     private static String initIntrospectionBasicAuthScheme(OidcTenantConfig oidcConfig) {
@@ -69,14 +84,15 @@ public class OidcProviderClient implements Closeable {
         return metadata;
     }
 
-    public Uni<JsonWebKeySet> getJsonWebKeySet() {
-        return client.getAbs(metadata.getJsonWebKeySetUri()).send().onItem()
+    public Uni<JsonWebKeySet> getJsonWebKeySet(OidcRequestContextProperties contextProperties) {
+        return filter(OidcEndpoint.Type.JWKS, client.getAbs(metadata.getJsonWebKeySetUri()), null, contextProperties).send()
+                .onItem()
                 .transform(resp -> getJsonWebKeySet(resp));
     }
 
     public Uni<UserInfo> getUserInfo(String token) {
         LOG.debugf("Get UserInfo on: %s auth: %s", metadata.getUserInfoUri(), OidcConstants.BEARER_SCHEME + " " + token);
-        return client.getAbs(metadata.getUserInfoUri())
+        return filter(OidcEndpoint.Type.USERINFO, client.getAbs(metadata.getUserInfoUri()), null, null)
                 .putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + token)
                 .send().onItem().transform(resp -> getUserInfo(resp));
     }
@@ -126,42 +142,62 @@ public class OidcProviderClient implements Closeable {
 
     private UniOnItem<HttpResponse<Buffer>> getHttpResponse(String uri, MultiMap formBody, boolean introspect) {
         HttpRequest<Buffer> request = client.postAbs(uri);
-        request.putHeader(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
-        request.putHeader(ACCEPT_HEADER, APPLICATION_JSON);
+
+        Buffer buffer = null;
+
+        if (!clientSecretQueryAuthentication) {
+            request.putHeader(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
+            request.putHeader(ACCEPT_HEADER, APPLICATION_JSON);
+
+            if (introspect && introspectionBasicAuthScheme != null) {
+                request.putHeader(AUTHORIZATION_HEADER, introspectionBasicAuthScheme);
+                if (oidcConfig.clientId.isPresent() && oidcConfig.introspectionCredentials.includeClientId) {
+                    formBody.set(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+                }
+            } else if (clientSecretBasicAuthScheme != null) {
+                request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
+            } else if (clientJwtKey != null) {
+                String jwt = OidcCommonUtils.signJwtWithKey(oidcConfig, metadata.getTokenUri(), clientJwtKey);
+                if (OidcCommonUtils.isClientSecretPostJwtAuthRequired(oidcConfig.credentials)) {
+                    formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+                    formBody.add(OidcConstants.CLIENT_SECRET, jwt);
+                } else {
+                    formBody.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
+                    formBody.add(OidcConstants.CLIENT_ASSERTION, jwt);
+                }
+            } else if (OidcCommonUtils.isClientSecretPostAuthRequired(oidcConfig.credentials)) {
+                formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+                formBody.add(OidcConstants.CLIENT_SECRET, OidcCommonUtils.clientSecret(oidcConfig.credentials));
+            } else {
+                formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+            }
+            buffer = OidcCommonUtils.encodeForm(formBody);
+        } else {
+            formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
+            formBody.add(OidcConstants.CLIENT_SECRET, OidcCommonUtils.clientSecret(oidcConfig.credentials));
+            for (Map.Entry<String, String> entry : formBody) {
+                request.addQueryParam(entry.getKey(), OidcCommonUtils.urlEncode(entry.getValue()));
+            }
+            request.putHeader(ACCEPT_HEADER, APPLICATION_JSON);
+            buffer = Buffer.buffer();
+        }
+
         if (oidcConfig.codeGrant.headers != null) {
             for (Map.Entry<String, String> headerEntry : oidcConfig.codeGrant.headers.entrySet()) {
                 request.putHeader(headerEntry.getKey(), headerEntry.getValue());
             }
         }
-        if (introspect && introspectionBasicAuthScheme != null) {
-            request.putHeader(AUTHORIZATION_HEADER, introspectionBasicAuthScheme);
-            if (oidcConfig.clientId.isPresent() && oidcConfig.introspectionCredentials.includeClientId) {
-                formBody.set(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
-            }
-        } else if (clientSecretBasicAuthScheme != null) {
-            request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
-        } else if (clientJwtKey != null) {
-            String jwt = OidcCommonUtils.signJwtWithKey(oidcConfig, metadata.getTokenUri(), clientJwtKey);
-            if (OidcCommonUtils.isClientSecretPostJwtAuthRequired(oidcConfig.credentials)) {
-                formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
-                formBody.add(OidcConstants.CLIENT_SECRET, jwt);
-            } else {
-                formBody.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
-                formBody.add(OidcConstants.CLIENT_ASSERTION, jwt);
-            }
-        } else if (OidcCommonUtils.isClientSecretPostAuthRequired(oidcConfig.credentials)) {
-            formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
-            formBody.add(OidcConstants.CLIENT_SECRET, OidcCommonUtils.clientSecret(oidcConfig.credentials));
-        } else {
-            formBody.add(OidcConstants.CLIENT_ID, oidcConfig.clientId.get());
-        }
+
         LOG.debugf("Get token on: %s params: %s headers: %s", metadata.getTokenUri(), formBody, request.headers());
         // Retry up to three times with a one-second delay between the retries if the connection is closed.
-        Uni<HttpResponse<Buffer>> response = request.sendBuffer(OidcCommonUtils.encodeForm(formBody))
+
+        OidcEndpoint.Type endpoint = introspect ? OidcEndpoint.Type.INTROSPECTION : OidcEndpoint.Type.TOKEN;
+        Uni<HttpResponse<Buffer>> response = filter(endpoint, request, buffer, null).sendBuffer(buffer)
                 .onFailure(ConnectException.class)
                 .retry()
                 .atMost(oidcConfig.connectionRetryCount).onFailure().transform(t -> t.getCause());
         return response.onItem();
+
     }
 
     private AuthorizationCodeTokens getAuthorizationCodeTokens(HttpResponse<Buffer> resp) {
@@ -211,5 +247,23 @@ public class OidcProviderClient implements Closeable {
 
     public Key getClientJwtKey() {
         return clientJwtKey;
+    }
+
+    private HttpRequest<Buffer> filter(OidcEndpoint.Type endpointType, HttpRequest<Buffer> request, Buffer body,
+            OidcRequestContextProperties contextProperties) {
+        if (!filters.isEmpty()) {
+            Map<String, Object> newProperties = contextProperties == null ? new HashMap<>()
+                    : new HashMap<>(contextProperties.getAll());
+            newProperties.put(OidcConfigurationMetadata.class.getName(), metadata);
+            OidcRequestContextProperties newContextProperties = new OidcRequestContextProperties(newProperties);
+            for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(filters, endpointType)) {
+                filter.filter(request, body, newContextProperties);
+            }
+        }
+        return request;
+    }
+
+    public Vertx getVertx() {
+        return vertx;
     }
 }

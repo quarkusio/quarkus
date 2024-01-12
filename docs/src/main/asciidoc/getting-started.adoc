@@ -10,6 +10,7 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: getting-started
 
 Learn how to create a Hello World Quarkus app.
 This guide covers:
@@ -479,6 +480,8 @@ but users can also choose to expose one that might present a security risk under
 === Info endpoint
 
 If the application contains the `quarkus-info` extension, then Quarkus will by default expose the `/q/info` endpoint which provides information about the build, java version, version control, and operating system. The level of detail of the exposed information is configurable.
+
+All CDI beans implementing the `InfoContributor` will be picked up and their data will be append to the endpoint.
 
 ==== Configuration Reference
 

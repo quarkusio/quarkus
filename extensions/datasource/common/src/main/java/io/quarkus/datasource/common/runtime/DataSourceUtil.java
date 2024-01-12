@@ -2,6 +2,10 @@ package io.quarkus.datasource.common.runtime;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 public final class DataSourceUtil {
 
@@ -32,6 +36,18 @@ public final class DataSourceUtil {
                     "quarkus.datasource.\"" + datasourceName + "\"." + radical,
                     "quarkus.datasource." + datasourceName + "." + radical);
         }
+    }
+
+    public static ConfigurationException dataSourceNotConfigured(String dataSourceName) {
+        return new ConfigurationException(String.format(Locale.ROOT,
+                "Datasource '%s' is not configured."
+                        + " To solve this, configure datasource '%s'."
+                        + " Refer to https://quarkus.io/guides/datasource for guidance.",
+                dataSourceName, dataSourceName),
+                Set.of(dataSourcePropertyKey(dataSourceName, "db-kind"),
+                        dataSourcePropertyKey(dataSourceName, "username"),
+                        dataSourcePropertyKey(dataSourceName, "password"),
+                        dataSourcePropertyKey(dataSourceName, "jdbc.url")));
     }
 
     private DataSourceUtil() {

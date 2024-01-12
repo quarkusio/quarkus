@@ -121,9 +121,8 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
     }
 
     /**
-     *
      * Returns a path representing the archive root. Note that if this is a jar archive this is not the path to the
-     * jar, but rather a path to the root of the mounted {@link com.sun.nio.zipfs.ZipFileSystem}
+     * jar, but rather a path to the root of the mounted {@link com.sun.nio.zipfs.ZipFileSystem}.
      *
      * @return The archive root.
      * @deprecated in favor of {@link #getRootDirectories()}
@@ -134,14 +133,13 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Collection of path representing the archive's root directories. If there is a JAR among the paths
+     * Collection of paths representing the archive's root directories. If there is a JAR among the paths
      * (returned by {@link #getResolvedPaths()}) this method will return the path to the root of the mounted
      * {@link java.nio.file.ZipFileSystem}
      * instead.
      *
      * @deprecated in favor of {@link #getRootDirectories()}
-     *
-     * @return Collection of path representing the archive's root directories.
+     * @return Collection of paths representing the archive's root directories
      */
     @Deprecated
     public PathsCollection getRootDirs() {
@@ -149,12 +147,12 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Collection of path representing the archive's root directories. If there is a JAR among the paths
+     * Collection of paths representing the archive's root directories. If there is a JAR among the paths
      * (returned by {@link #getResolvedPaths()}) this method will return the path to the root of the mounted
      * {@link java.nio.file.ZipFileSystem}
      * instead.
      *
-     * @return Collection of path representing the archive's root directories.
+     * @return Collection of paths representing the archive's root directories
      */
     public PathCollection getRootDirectories() {
         return rootDirs;
@@ -164,8 +162,7 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
      * Collection of paths that collectively constitute the application archive's content.
      *
      * @deprecated in favor of {@link #getResolvedPaths()}
-     *
-     * @return collection of paths that collectively constitute the application archive content.
+     * @return collection of paths that collectively constitute the application archive content
      */
     @Deprecated
     public PathsCollection getPaths() {
@@ -175,7 +172,7 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
     /**
      * Collection of paths that collectively constitute the application archive's content.
      *
-     * @return collection of paths that collectively constitute the application archive content.
+     * @return collection of paths that collectively constitute the application archive content
      */
     public PathCollection getResolvedPaths() {
         return paths;

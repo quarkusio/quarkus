@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.deployment.tracing;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -26,7 +27,6 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -36,7 +36,6 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.TracerProducer;
-import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
 import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
 
@@ -54,12 +53,6 @@ public class TracerProcessor {
             CombinedIndexBuildItem indexBuildItem,
             Capabilities capabilities,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-
-        if (capabilities.isPresent(Capability.OPENTRACING) ||
-                capabilities.isPresent(Capability.SMALLRYE_OPENTRACING)) {
-            throw new ConfigurationException("The OpenTelemetry extension tracer can not be used in " +
-                    "conjunction with either the SmallRye OpenTracing or Jaeger extensions.");
-        }
 
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .setUnremovable()
@@ -126,7 +119,21 @@ public class TracerProcessor {
         // Drop framework paths
         List<String> nonApplicationUris = new ArrayList<>();
         frameworkEndpoints.ifPresent(
-                frameworkEndpointsBuildItem -> nonApplicationUris.addAll(frameworkEndpointsBuildItem.getEndpoints()));
+                frameworkEndpointsBuildItem -> {
+                    for (String endpoint : frameworkEndpointsBuildItem.getEndpoints()) {
+                        // Management routes are using full urls -> Extract the path.
+                        if (endpoint.startsWith("http://") || endpoint.startsWith("https://")) {
+                            try {
+                                nonApplicationUris.add(new URL(endpoint).getPath());
+                            } catch (Exception ignored) { // Not an URL
+                                nonApplicationUris.add(endpoint);
+                            }
+                        } else {
+                            nonApplicationUris.add(endpoint);
+                        }
+                    }
+                });
+
         dropNonApplicationUris.produce(new DropNonApplicationUrisBuildItem(nonApplicationUris));
 
         // Drop Static Resources

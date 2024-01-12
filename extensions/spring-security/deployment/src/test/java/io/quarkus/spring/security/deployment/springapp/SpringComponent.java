@@ -37,6 +37,11 @@ public class SpringComponent {
         return person.getName();
     }
 
+    @PreAuthorize("#person.name != authentication.principal.username")
+    public String principalNameFromObjectIsNot(Person person) {
+        return person.getName();
+    }
+
     public String notSecured() {
         return "notSecured";
     }

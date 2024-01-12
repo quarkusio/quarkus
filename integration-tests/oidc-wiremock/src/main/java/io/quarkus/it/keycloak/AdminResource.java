@@ -53,6 +53,22 @@ public class AdminResource {
         return "granted:" + identity.getRoles();
     }
 
+    @Path("bearer-certificate-full-chain")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String bearerCertificateFullChain() {
+        return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-kid-or-chain")
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String bearerKidOrChain() {
+        return "granted:" + identity.getRoles();
+    }
+
     @Path("bearer-role-claim-path")
     @GET
     @RolesAllowed("custom")

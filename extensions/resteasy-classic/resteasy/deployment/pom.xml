@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-deployment</artifactId>
-    <name>Quarkus - RESTEasy - Deployment</name>
+    <name>Quarkus - RESTEasy Classic - Deployment</name>
 
     <dependencies>
         <dependency>

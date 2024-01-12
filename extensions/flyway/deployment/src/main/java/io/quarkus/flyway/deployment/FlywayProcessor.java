@@ -117,7 +117,9 @@ class FlywayProcessor {
             Location applicationMigrationLocation = new Location(applicationMigration);
             String applicationMigrationPath = applicationMigrationLocation.getPath();
 
-            if (applicationMigrationPath != null) {
+            if ((applicationMigrationPath != null) &&
+            // we don't include .class files in the watched files because that messes up live reload
+                    !applicationMigrationPath.endsWith(".class")) {
                 hotDeploymentProducer.produce(new HotDeploymentWatchedFileBuildItem(applicationMigrationPath));
             }
         }

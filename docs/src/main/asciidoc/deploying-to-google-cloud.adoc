@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains how to deploy a Quarkus application to Google Cloud.
+:topics: devops,google,gcp,cloud,deployment
 
 This guide covers:
 
@@ -250,7 +251,6 @@ Finally, you need to configure your datasource specifically to use the socket fa
 ----
 quarkus.datasource.db-kind=postgresql
 quarkus.datasource.jdbc.url=jdbc:postgresql:///mydatabase <1>
-quarkus.datasource.jdbc.driver=org.postgresql.Driver
 quarkus.datasource.username=quarkus
 quarkus.datasource.password=quarkus
 quarkus.datasource.jdbc.additional-jdbc-properties.cloudSqlInstance=project-id:gcp-region:instance <2>
@@ -288,6 +288,15 @@ quarkus.vertx.prefer-native-transport=true
 ----
 
 WARNING: This only works when your application is running inside a Google Cloud managed runtime like App Engine.
+
+=== Using Cloud SQL with native executables
+
+When generating native executables, you must also mark `jnr.ffi.provider.jffi.NativeFinalizer$SingletonHolder` as runtime initialized.
+
+[source,properties]
+----
+quarkus.native.additional-build-args=--initialize-at-run-time=jnr.ffi.provider.jffi.NativeFinalizer$SingletonHolder
+----
 
 == Going further
 

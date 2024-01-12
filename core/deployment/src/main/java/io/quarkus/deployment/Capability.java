@@ -32,10 +32,12 @@ public interface Capability {
     String LRA_PARTICIPANT = QUARKUS_PREFIX + ".lra.participant";
 
     String JACKSON = QUARKUS_PREFIX + ".jackson";
+    String JSONB = QUARKUS_PREFIX + ".jsonb";
+
+    String JAXB = QUARKUS_PREFIX + ".jaxb";
+    String JAXP = QUARKUS_PREFIX + ".jaxp";
 
     String KOTLIN = QUARKUS_PREFIX + ".kotlin";
-
-    String JSONB = QUARKUS_PREFIX + ".jsonb";
 
     String HAL = QUARKUS_PREFIX + ".hal";
 
@@ -97,7 +99,6 @@ public interface Capability {
     String METRICS = QUARKUS_PREFIX + ".metrics";
     String CONTAINER_IMAGE_JIB = QUARKUS_PREFIX + ".container.image.jib";
     String CONTAINER_IMAGE_DOCKER = QUARKUS_PREFIX + ".container.image.docker";
-    String CONTAINER_IMAGE_S2I = QUARKUS_PREFIX + ".container.image.s2i";
     String CONTAINER_IMAGE_OPENSHIFT = QUARKUS_PREFIX + ".container.image.openshift";
     String CONTAINER_IMAGE_BUILDPACK = QUARKUS_PREFIX + ".container.image.buildpack";
     String HIBERNATE_ORM = QUARKUS_PREFIX + ".hibernate.orm";
@@ -113,16 +114,8 @@ public interface Capability {
 
     String KEYCLOAK_AUTHORIZATION = QUARKUS_PREFIX + ".keycloak.authorization";
 
-    /**
-     * Presence of an io.opentracing tracer (for example, Jaeger).
-     */
-    String OPENTRACING = QUARKUS_PREFIX + ".opentracing";
-    /**
-     * Presence of SmallRye OpenTracing.
-     */
     String SCHEDULER = QUARKUS_PREFIX + ".scheduler";
 
-    String SMALLRYE_OPENTRACING = QUARKUS_PREFIX + ".smallrye.opentracing";
     String SMALLRYE_HEALTH = QUARKUS_PREFIX + ".smallrye.health";
     String SMALLRYE_OPENAPI = QUARKUS_PREFIX + ".smallrye.openapi";
     String SMALLRYE_GRAPHQL = QUARKUS_PREFIX + ".smallrye.graphql";
@@ -137,6 +130,7 @@ public interface Capability {
 
     String APICURIO_REGISTRY = QUARKUS_PREFIX + ".apicurio.registry";
     String APICURIO_REGISTRY_AVRO = APICURIO_REGISTRY + ".avro";
+    String APICURIO_REGISTRY_JSON_SCHEMA = APICURIO_REGISTRY + ".json";
 
     String CONFLUENT_REGISTRY = QUARKUS_PREFIX + ".confluent.registry";
     String CONFLUENT_REGISTRY_AVRO = CONFLUENT_REGISTRY + ".avro";
@@ -150,4 +144,9 @@ public interface Capability {
 
     String CACHE = QUARKUS_PREFIX + ".cache";
     String JDBC_ORACLE = QUARKUS_PREFIX + ".jdbc.oracle";
+    String REACTIVE_PG_CLIENT = QUARKUS_PREFIX + ".reactive-pg-client";
+    String REACTIVE_ORACLE_CLIENT = QUARKUS_PREFIX + ".reactive-oracle-client";
+    String REACTIVE_MYSQL_CLIENT = QUARKUS_PREFIX + ".reactive-mysql-client";
+    String REACTIVE_MSSQL_CLIENT = QUARKUS_PREFIX + ".reactive-mssql-client";
+    String REACTIVE_DB2_CLIENT = QUARKUS_PREFIX + ".reactive-db2-client";
 }

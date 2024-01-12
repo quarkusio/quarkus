@@ -4,8 +4,10 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Security Testing
-
 include::_attributes.adoc[]
+:categories: security
+:topics: security,testing
+:extensions: io.quarkus:quarkus-test-security
 
 This document describes how to test Quarkus Security.
 

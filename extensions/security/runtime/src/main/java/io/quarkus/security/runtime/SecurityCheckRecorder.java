@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -68,6 +69,16 @@ public class SecurityCheckRecorder {
         return check;
     }
 
+    /* STATIC INIT */
+    public void recordRolesAllowedConfigExpression(String configExpression, int configKeyIndex,
+            BiConsumer<String, Supplier<String[]>> configValueRecorder) {
+        QuarkusSecurityRolesAllowedConfigBuilder.addProperty(configKeyIndex, configExpression);
+        // one configuration expression resolves to string array because the expression can be list treated as list
+        Supplier<String[]> configValSupplier = resolveRolesAllowedConfigExp(new String[] { configExpression },
+                new int[] { 0 }, new int[] { configKeyIndex });
+        configValueRecorder.accept(configExpression, configValSupplier);
+    }
+
     private static Supplier<String[]> resolveRolesAllowedConfigExp(String[] allowedRoles, int[] configExpIndexes,
             int[] configKeys) {
 
@@ -87,15 +98,17 @@ public class SecurityCheckRecorder {
                         // @RolesAllowed({"${my.roles}"}) => my.roles=one,two <=> @RolesAllowed({"one", "two"})
                         if (strVal != null && strVal.contains(",")) {
                             var strArr = StringUtil.split(strVal);
-                            if (strArr.length > 1) {
+                            if (strArr.length >= 1) {
                                 // role order is irrelevant as logical operator between them is OR
 
-                                // first role will go to the original place
+                                // first role will go to the original place, double escaped comma will be parsed correctly
                                 strVal = strArr[0];
 
-                                // the rest of the roles will be appended at the end
-                                for (int i1 = 1; i1 < strArr.length; i1++) {
-                                    roles.add(strArr[i1]);
+                                if (strArr.length > 1) {
+                                    // the rest of the roles will be appended at the end
+                                    for (int i1 = 1; i1 < strArr.length; i1++) {
+                                        roles.add(strArr[i1]);
+                                    }
                                 }
                             }
                         }

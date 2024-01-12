@@ -5,8 +5,6 @@ import static io.quarkus.grpc.auth.BlockingHttpSecurityPolicy.BLOCK_REQUEST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -14,7 +12,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.inject.Singleton;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -29,9 +26,6 @@ import io.grpc.Metadata;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcClientUtils;
 import io.quarkus.grpc.GrpcService;
-import io.quarkus.security.credential.PasswordCredential;
-import io.quarkus.security.identity.request.AuthenticationRequest;
-import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
@@ -52,18 +46,18 @@ public abstract class GrpcAuthTestBase {
             "quarkus.security.users.embedded.plain-text=true\n" +
             "quarkus.http.auth.basic=true\n";
 
-    protected static QuarkusUnitTest createQuarkusUnitTest(String extraProperty) {
+    protected static QuarkusUnitTest createQuarkusUnitTest(String extraProperty, boolean useGrpcAuthMechanism) {
         return new QuarkusUnitTest().setArchiveProducer(
                 () -> {
                     var props = PROPS;
                     if (extraProperty != null) {
                         props += extraProperty;
                     }
-
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Service.class, BasicGrpcSecurityMechanism.class, BlockingHttpSecurityPolicy.class)
+                    var jar = ShrinkWrap.create(JavaArchive.class)
+                            .addClasses(Service.class, BlockingHttpSecurityPolicy.class)
                             .addPackage(SecuredService.class.getPackage())
                             .add(new StringAsset(props), "application.properties");
+                    return useGrpcAuthMechanism ? jar.addClass(BasicGrpcSecurityMechanism.class) : jar;
                 });
     }
 
@@ -285,31 +279,6 @@ public abstract class GrpcAuthTestBase {
             return Multi.createBy()
                     .repeating().supplier(() -> newBuilder().setIsOnEventLoop(Context.isOnEventLoopThread()).build())
                     .atMost(5);
-        }
-    }
-
-    @Singleton
-    public static class BasicGrpcSecurityMechanism implements GrpcSecurityMechanism {
-        @Override
-        public boolean handles(Metadata metadata) {
-            String authString = metadata.get(AUTHORIZATION);
-            return authString != null && authString.startsWith("Basic ");
-        }
-
-        @Override
-        public AuthenticationRequest createAuthenticationRequest(Metadata metadata) {
-            String authString = metadata.get(AUTHORIZATION);
-            authString = authString.substring("Basic ".length());
-            byte[] decode = Base64.getDecoder().decode(authString);
-            String plainChallenge = new String(decode, StandardCharsets.UTF_8);
-            int colonPos;
-            if ((colonPos = plainChallenge.indexOf(':')) > -1) {
-                String userName = plainChallenge.substring(0, colonPos);
-                char[] password = plainChallenge.substring(colonPos + 1).toCharArray();
-                return new UsernamePasswordAuthenticationRequest(userName, new PasswordCredential(password));
-            } else {
-                return null;
-            }
         }
     }
 }

@@ -267,7 +267,7 @@ class QuarkusCodestartGenerationTest {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .buildTool(BuildTool.GRADLE)
                 .addData(getGenerationTestInputData())
-                .addCodestarts(Collections.singletonList("github-action"))
+                .addCodestarts(Collections.singletonList("tooling-github-action"))
                 .build();
         Path projectDir = testDirPath.resolve("gradle-github");
         getCatalog().createProject(input).generate(projectDir);
@@ -284,7 +284,7 @@ class QuarkusCodestartGenerationTest {
                 .buildTool(BuildTool.GRADLE)
                 .noBuildToolWrapper()
                 .addData(getGenerationTestInputData())
-                .addCodestarts(Collections.singletonList("github-action"))
+                .addCodestarts(Collections.singletonList("tooling-github-action"))
                 .build();
         Path projectDir = testDirPath.resolve("gradle-nowrapper-github");
         getCatalog().createProject(input).generate(projectDir);
@@ -315,13 +315,13 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
                 .satisfies(checkContains("./mvnw package"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.16"))//TODO: make a test for java17
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-17:1.18"))
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
                 .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
                 .satisfies(checkContains("./mvnw package -Dquarkus.package.type=legacy-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.16"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-17:1.18"))
                 .satisfies(checkContains("EXPOSE 8080"))
                 .satisfies(checkContains("USER 185"))
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
@@ -341,13 +341,13 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
                 .satisfies(checkContains("./gradlew build"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.16"))//TODO: make a test for java17
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-17:1.18"))
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
                 .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
                 .satisfies(checkContains("./gradlew build -Dquarkus.package.type=legacy-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.16"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-17:1.18"))
                 .satisfies(checkContains("EXPOSE 8080"))
                 .satisfies(checkContains("USER 185"))
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))

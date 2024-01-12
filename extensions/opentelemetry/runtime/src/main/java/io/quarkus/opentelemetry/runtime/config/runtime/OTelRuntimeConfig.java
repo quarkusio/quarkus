@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.runtime.config.runtime;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,4 +64,16 @@ public interface OTelRuntimeConfig {
      */
     @WithName("experimental.resource.disabled-keys")
     Optional<List<String>> experimentalResourceDisabledKeys();
+
+    /**
+     * The maximum amount of time Quarkus will wait for the OpenTelemetry SDK to flush unsent spans and shutdown.
+     */
+    @WithName("experimental.shutdown-wait-time")
+    @WithDefault("1s")
+    Duration experimentalShutdownWaitTime();
+
+    /**
+     * Enable/disable instrumentation for specific technologies.
+     */
+    InstrumentRuntimeConfig instrument();
 }

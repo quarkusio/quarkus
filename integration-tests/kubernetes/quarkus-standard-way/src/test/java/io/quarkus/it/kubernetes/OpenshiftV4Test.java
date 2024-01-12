@@ -40,16 +40,17 @@ public class OpenshiftV4Test {
         List<HasMetadata> openshiftList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
+        assertThat(openshiftList).filteredOn(h -> "Deployment".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("openshift-v4");
                 assertThat(m.getLabels().get("app.openshift.io/runtime")).isEqualTo("test");
                 assertThat(m.getLabels().get("app.kubernetes.io/name")).isEqualTo("openshift-v4");
                 assertThat(m.getLabels().get("app")).isNull();
                 assertThat(m.getNamespace()).isNull();
+                assertThat(m.getAnnotations().get("app.quarkus.io/quarkus-version")).isNotBlank();
             });
             AbstractObjectAssert<?, ?> specAssert = assertThat(h).extracting("spec");
-            specAssert.extracting("selector").isInstanceOfSatisfying(Map.class, selectorsMap -> {
+            specAssert.extracting("selector.matchLabels").isInstanceOfSatisfying(Map.class, selectorsMap -> {
                 assertThat(selectorsMap).containsOnly(entry("app.kubernetes.io/name", "openshift-v4"),
                         entry("app.kubernetes.io/version", "0.1-SNAPSHOT"));
             });

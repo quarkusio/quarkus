@@ -10,6 +10,7 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: configuration
 
 IMPORTANT: The content of this guide has been revised and split into additional topics. Please check the <<additional-information,Additional Information>> section.
 
@@ -78,17 +79,33 @@ nor `\_` with `_`: `FOO_BAR_0_` or `FOO_BAR_0__BAZ`
 
 [CAUTION]
 ====
-In some situations, looking up the exact property name is impossible. For instance, when looking
-up a configuration that is part of a `Map`, and the property name contains a dynamic segment (the `Map` key). In this
-case, Quarkus relies upon each source’s list of property names. These must be converted back to their most likely
-dotted format for Environment Variables.
+In some situations, looking up the exact property name is impossible. This is the case for configuration names that
+contain user defined path segments.
 
-By default, the underscore `_` of an Environment Variable name always maps to a dot `.`. If the property name contains
-a dash or some other special character, that property name can be specified in another Config Source, with the expected
-dotted format. It will provide additional information to perform a two-way conversion and match the property names.
+Applying the conversion rules for Environment Variables names, `quarkus.datasource."datasource-name".jdbc.url` becomes
+`QUARKUS_DATASOURCE\__DATASOURCE_NAME__JDBC_URL`. The configuration will work as expected if both properties are
+available in the Config system.
 
-To correctly lookup `Map` properties where `FOO_BAR_BAZ` is the property name and `BAR_BAZ` is the key, add
-`foo.bar-baz` in a source with an ordinal lower than the EnvConfigSource (`300`).
+If only `QUARKUS_DATASOURCE\__DATASOURCE_NAME__JDBC_URL` is present, the Config system needs to reconvert the
+configuration name to its most likely dotted format. This works fine for fixed configuration segments, but not for
+names that contain dynamic segments. In this case, Quarkus is unable to determine if `DATASOURCE_NAME` should be
+converted to `datasource.name` or `datasource-name` (or any other special character separator).
+
+For this reason, such properties always require their dotted version name in another source (the value can be left
+empty) to disambiguate the Environment Variable name. It will provide additional information to perform a two-way
+conversion and match the property names together.
+
+[source,properties]
+----
+# value can be left empty
+quarkus.datasource."datasource-name".jdbc.url=
+----
+
+[source,bash]
+----
+EXPORT QUARKUS_DATASOURCE__DATASOURCE_NAME__JDBC_URL=jdbc:postgresql://localhost:5432/database
+----
+
 ====
 
 
@@ -100,10 +117,10 @@ To correctly lookup `Map` properties where `FOO_BAR_BAZ` is the property name an
 ----
 QUARKUS_DATASOURCE_PASSWORD=youshallnotpass <1>
 ----
-<1> The name `QUARKUS_DATASOURCE_PASSWORD` the same conversion rules used for <<environment-variables>>.
+<1> The name `QUARKUS_DATASOURCE_PASSWORD` follows the same conversion rules used for <<environment-variables>>.
 
 For `dev` mode, this file can be placed in the root of the project, but it is advised to **not** check it in to version
-control.
+control because it typically contains passwords, access tokens, API keys or other secrets.
 
 IMPORTANT: Environment variables in the `.env` file are not available via the `System.getenv(String)` API.
 
@@ -703,6 +720,68 @@ Unlike the build configuration options recorded during the `quarkus:build` goal,
 options exposed by a `org.eclipse.microprofile.config.Config` instance. Which means this report may include some build configuration options that will not be used by the Quarkus application build process but also may be missing some
 build configuration options since MicroProfile Config specification allows configuration sources not to expose all the property names they provide to users.
 ====
+
+== Config property values injected during static initialization phase
+
+Quarkus collects the config property values injected in CDI beans during xref:writing-extensions.adoc#bootstrap-three-phases[static initialization phase].
+The collected values are then compared with their runtime initialization counterparts and if a mismatch is detected the application startup fails.
+How can it happen?
+For example, let's have a CDI bean `org.acme.MyBean`.
+`MyBean` injects a `@ConfigProperty` of name `foo` and is initialized during the native build.
+The config property does not exist during the native build and so the default value `bar` is used.
+But later, when the application is started the property is defined with a system property: `-Dfoo=baz`.
+This would lead to inconsistent state and unexpected behavior.
+Therefore, Quarkus would fail in this situation by default.
+
+[source,java]
+----
+package org.acme;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.context.Initialized;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+@ApplicationScoped
+public class MyBean {
+
+   @ConfigProperty(name = "foo", defaultValue = "bar") <1>
+   String foo;
+
+    void onInit(@Observes @Initialized(ApplicationScoped.class) Object event) { <2>
+       // this observer method is notified during STATIC_INIT...
+    }
+}
+----
+<1> The config property is injected when the bean is created and the value is fixed.
+<2> In this particular case, the observer `@Initialized(ApplicationScoped.class)` caused the initialization of the bean. However, there are other possibilities. For example, some extensions initialize components during static initialization phase.
+
+You can annotate an injected field/parameter with `@io.quarkus.runtime.annotations.StaticInitSafe` to mark the injected configuration object as safe to be initialized during the static initialization phase.
+
+[source,java]
+----
+package org.acme;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.context.Initialized;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import io.quarkus.runtime.annotations.StaticInitSafe;
+
+@ApplicationScoped
+public class MyBeanNoFailure {
+
+   @StaticInitSafe <1>
+   @ConfigProperty(name = "foo", defaultValue = "bar")
+   String foo;
+
+    void onInit(@Observes @Initialized(ApplicationScoped.class) Object event) {
+       // this observer method is notified during STATIC_INIT...
+    }
+}
+----
+<1> Instructs Quarkus not to fail if a mismatch is detected.
+
 
 [[additional-information]]
 == Additional Information

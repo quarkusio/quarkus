@@ -1,11 +1,15 @@
 package io.quarkus.vertx.http.runtime.security;
 
 import java.net.URI;
+import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+
+import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
@@ -18,6 +22,10 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
+import io.quarkus.vertx.http.runtime.FormAuthConfig;
+import io.quarkus.vertx.http.runtime.FormAuthRuntimeConfig;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.Handler;
@@ -46,6 +54,45 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     private final String cookiePath;
 
     private final PersistentLoginManager loginManager;
+
+    //the temp encryption key, persistent across dev mode restarts
+    static volatile String encryptionKey;
+
+    @Inject
+    FormAuthenticationMechanism(HttpConfiguration httpConfiguration, HttpBuildTimeConfig buildTimeConfig) {
+        String key;
+        if (!httpConfiguration.encryptionKey.isPresent()) {
+            if (encryptionKey != null) {
+                //persist across dev mode restarts
+                key = encryptionKey;
+            } else {
+                byte[] data = new byte[32];
+                new SecureRandom().nextBytes(data);
+                key = encryptionKey = Base64.getEncoder().encodeToString(data);
+                log.warn("Encryption key was not specified for persistent FORM auth, using temporary key " + key);
+            }
+        } else {
+            key = httpConfiguration.encryptionKey.get();
+        }
+        FormAuthConfig form = buildTimeConfig.auth.form;
+        FormAuthRuntimeConfig runtimeForm = httpConfiguration.auth.form;
+        this.loginManager = new PersistentLoginManager(key, runtimeForm.cookieName, runtimeForm.timeout.toMillis(),
+                runtimeForm.newCookieInterval.toMillis(), runtimeForm.httpOnlyCookie, runtimeForm.cookieSameSite.name(),
+                runtimeForm.cookiePath.orElse(null));
+        this.loginPage = startWithSlash(runtimeForm.loginPage.orElse(null));
+        this.errorPage = startWithSlash(runtimeForm.errorPage.orElse(null));
+        this.landingPage = startWithSlash(runtimeForm.landingPage.orElse(null));
+        this.postLocation = startWithSlash(form.postLocation);
+        this.usernameParameter = runtimeForm.usernameParameter;
+        this.passwordParameter = runtimeForm.passwordParameter;
+        this.locationCookie = runtimeForm.locationCookie;
+        this.cookiePath = runtimeForm.cookiePath.orElse(null);
+        boolean redirectAfterLogin = runtimeForm.redirectAfterLogin;
+        this.redirectToLandingPage = landingPage != null && redirectAfterLogin;
+        this.redirectToLoginPage = loginPage != null;
+        this.redirectToErrorPage = errorPage != null;
+        this.cookieSameSite = CookieSameSite.valueOf(runtimeForm.cookieSameSite.name());
+    }
 
     public FormAuthenticationMechanism(String loginPage, String postLocation,
             String usernameParameter, String passwordParameter, String errorPage, String landingPage,
@@ -239,5 +286,12 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     @Override
     public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
         return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.POST, postLocation, FORM));
+    }
+
+    private static String startWithSlash(String page) {
+        if (page == null) {
+            return null;
+        }
+        return page.startsWith("/") ? page : "/" + page;
     }
 }

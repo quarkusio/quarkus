@@ -1,5 +1,6 @@
 package io.quarkus.oidc;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -40,7 +41,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public boolean tenantEnabled = true;
 
     /**
-     * The application type, which can be one of the following values from enum {@link ApplicationType}.
+     * The application type, which can be one of the following {@link ApplicationType} values.
      */
     @ConfigItem(defaultValueDocumentation = "service")
     public Optional<ApplicationType> applicationType = Optional.empty();
@@ -54,9 +55,9 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public Optional<String> authorizationPath = Optional.empty();
 
     /**
-     * Relative path or absolute URL of the OIDC userinfo endpoint.
+     * Relative path or absolute URL of the OIDC UserInfo endpoint.
      * This property must only be set for the 'web-app' applications if OIDC discovery is disabled
-     * and 'authentication.user-info-required' property is enabled.
+     * and `authentication.user-info-required` property is enabled.
      * This property will be ignored if the discovery is enabled.
      */
     @ConfigItem
@@ -171,6 +172,66 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public Logout logout = new Logout();
 
     /**
+     * Configuration of the certificate chain which can be used to verify tokens.
+     * If the certificate chain trusstore is configured then the tokens can be verified using the certificate
+     * chain inlined in the Base64-encoded format as an `x5c` header in the token itself.
+     */
+    @ConfigItem
+    public CertificateChain certificateChain = new CertificateChain();
+
+    @ConfigGroup
+    public static class CertificateChain {
+        /**
+         * Truststore file which keeps thumbprints of the trusted certificates
+         */
+        @ConfigItem
+        public Optional<Path> trustStoreFile = Optional.empty();
+
+        /**
+         * A parameter to specify the password of the truststore file if it is configured with {@link #trustStoreFile}.
+         */
+        @ConfigItem
+        public Optional<String> trustStorePassword;
+
+        /**
+         * A parameter to specify the alias of the truststore certificate.
+         */
+        @ConfigItem
+        public Optional<String> trustStoreCertAlias = Optional.empty();
+
+        /**
+         * An optional parameter to specify type of the truststore file. If not given, the type is automatically detected
+         * based on the file name.
+         */
+        @ConfigItem
+        public Optional<String> trustStoreFileType = Optional.empty();
+
+        public Optional<Path> getTrustStoreFile() {
+            return trustStoreFile;
+        }
+
+        public void setTrustStoreFile(Path trustStoreFile) {
+            this.trustStoreFile = Optional.of(trustStoreFile);
+        }
+
+        public Optional<String> getTrustStoreCertAlias() {
+            return trustStoreCertAlias;
+        }
+
+        public void setTrustStoreCertAlias(String trustStoreCertAlias) {
+            this.trustStoreCertAlias = Optional.of(trustStoreCertAlias);
+        }
+
+        public Optional<String> getTrustStoreFileType() {
+            return trustStoreFileType;
+        }
+
+        public void setTrustStoreFileType(Optional<String> trustStoreFileType) {
+            this.trustStoreFileType = trustStoreFileType;
+        }
+    }
+
+    /**
      * Different options to configure authorization requests
      */
     public Authentication authentication = new Authentication();
@@ -189,7 +250,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
     /**
      * Allow caching the token introspection data.
      * Note enabling this property does not enable the cache itself but only permits to cache the token introspection
-     * for a given tenant. If the default token cache can be used then please see {@link OidcConfig.TokenCache} how to enable
+     * for a given tenant. If the default token cache can be used, see {@link OidcConfig.TokenCache} to enable
      * it.
      */
     @ConfigItem(defaultValue = "true")
@@ -198,7 +259,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
     /**
      * Allow caching the user info data.
      * Note enabling this property does not enable the cache itself but only permits to cache the user info data
-     * for a given tenant. If the default token cache can be used then please see {@link OidcConfig.TokenCache} how to enable
+     * for a given tenant. If the default token cache can be used, see {@link OidcConfig.TokenCache} to enable
      * it.
      */
     @ConfigItem(defaultValue = "true")
@@ -381,6 +442,81 @@ public class OidcTenantConfig extends OidcCommonConfig {
         }
     }
 
+    /**
+     * Configuration for controlling how JsonWebKeySet containing verification keys should be acquired and managed.
+     */
+    @ConfigItem
+    public Jwks jwks = new Jwks();
+
+    @ConfigGroup
+    public static class Jwks {
+
+        /**
+         * If JWK verification keys should be fetched at the moment a connection to the OIDC provider
+         * is initialized.
+         * <p/>
+         * Disabling this property will delay the key acquisition until the moment the current token
+         * has to be verified. Typically it can only be necessary if the token or other telated request properties
+         * provide an additional context which is required to resolve the keys correctly.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean resolveEarly = true;
+
+        /**
+         * Maximum number of JWK keys that can be cached.
+         * This property will be ignored if the {@link #resolveEarly} property is set to true.
+         */
+        @ConfigItem(defaultValue = "10")
+        public int cacheSize = 10;
+
+        /**
+         * Number of minutes a JWK key can be cached for.
+         * This property will be ignored if the {@link #resolveEarly} property is set to true.
+         */
+        @ConfigItem(defaultValue = "10M")
+        public Duration cacheTimeToLive = Duration.ofMinutes(10);
+
+        /**
+         * Cache timer interval.
+         * If this property is set then a timer will check and remove the stale entries periodically.
+         * This property will be ignored if the {@link #resolveEarly} property is set to true.
+         */
+        @ConfigItem
+        public Optional<Duration> cleanUpTimerInterval = Optional.empty();
+
+        public int getCacheSize() {
+            return cacheSize;
+        }
+
+        public void setCacheSize(int cacheSize) {
+            this.cacheSize = cacheSize;
+        }
+
+        public Duration getCacheTimeToLive() {
+            return cacheTimeToLive;
+        }
+
+        public void setCacheTimeToLive(Duration cacheTimeToLive) {
+            this.cacheTimeToLive = cacheTimeToLive;
+        }
+
+        public Optional<Duration> getCleanUpTimerInterval() {
+            return cleanUpTimerInterval;
+        }
+
+        public void setCleanUpTimerInterval(Duration cleanUpTimerInterval) {
+            this.cleanUpTimerInterval = Optional.of(cleanUpTimerInterval);
+        }
+
+        public boolean isResolveEarly() {
+            return resolveEarly;
+        }
+
+        public void setResolveEarly(boolean resolveEarly) {
+            this.resolveEarly = resolveEarly;
+        }
+    }
+
     @ConfigGroup
     public static class Frontchannel {
         /**
@@ -437,14 +573,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public boolean splitTokens;
 
         /**
-         * Mandates that the session cookie that stores the tokens is encrypted.
+         * Mandates that the Default TokenStateManager will encrypt the session cookie that stores the tokens.
          */
         @ConfigItem(defaultValue = "true")
         public boolean encryptionRequired = true;
 
         /**
-         * Secret which will be used to encrypt the session cookie storing the tokens when {@link #encryptionRequired} property
-         * is enabled.
+         * Secret which will be used by the Default TokenStateManager to encrypt the session cookie
+         * storing the tokens when {@link #encryptionRequired} property is enabled.
          * <p>
          * If this secret is not set, the client secret configured with
          * either `quarkus.oidc.credentials.secret` or `quarkus.oidc.credentials.client-secret.value` will be checked.
@@ -689,7 +825,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          */
         public enum ResponseMode {
             /**
-             * Authorization response parameters are encoded in the query string added to the redirect_uri
+             * Authorization response parameters are encoded in the query string added to the `redirect_uri`
              */
             QUERY,
 
@@ -707,19 +843,19 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<ResponseMode> responseMode = Optional.empty();
 
         /**
-         * Relative path for calculating a "redirect_uri" query parameter.
+         * Relative path for calculating a `redirect_uri` query parameter.
          * It has to start from a forward slash and will be appended to the request URI's host and port.
-         * For example, if the current request URI is 'https://localhost:8080/service' then a 'redirect_uri' parameter
+         * For example, if the current request URI is 'https://localhost:8080/service' then a `redirect_uri` parameter
          * will be set to 'https://localhost:8080/' if this property is set to '/' and be the same as the request URI
          * if this property has not been configured.
          * Note the original request URI will be restored after the user has authenticated if 'restorePathAfterRedirect' is set
-         * to 'true'.
+         * to `true`.
          */
         @ConfigItem
         public Optional<String> redirectPath = Optional.empty();
 
         /**
-         * If this property is set to 'true' then the original request URI which was used before
+         * If this property is set to `true` then the original request URI which was used before
          * the authentication will be restored after the user has been redirected back to the application.
          *
          * Note if `redirectPath` property is not set, the original request URI will be restored even if this property is
@@ -737,8 +873,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         /**
          * Relative path to the public endpoint which will process the error response from the OIDC authorization endpoint.
-         * If the user authentication has failed then the OIDC provider will return an 'error' and an optional
-         * 'error_description'
+         * If the user authentication has failed then the OIDC provider will return an `error` and an optional
+         * `error_description`
          * parameters, instead of the expected authorization 'code'.
          *
          * If this property is set then the user will be redirected to the endpoint which can return a user-friendly
@@ -769,7 +905,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public boolean verifyAccessToken;
 
         /**
-         * Force 'https' as the 'redirect_uri' parameter scheme when running behind an SSL terminating reverse proxy.
+         * Force 'https' as the `redirect_uri` parameter scheme when running behind an SSL/TLS terminating reverse proxy.
          * This property, if enabled, will also affect the logout `post_logout_redirect_uri` and the local redirect requests.
          */
         @ConfigItem(defaultValueDocumentation = "false")
@@ -791,7 +927,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public boolean nonceRequired = false;
 
         /**
-         * Add the 'openid' scope automatically to the list of scopes. This is required for OpenId Connect providers
+         * Add the `openid` scope automatically to the list of scopes. This is required for OpenId Connect providers
          * but will not work for OAuth2 providers such as Twitter OAuth2 which does not accept that scope and throws an error.
          */
         @ConfigItem(defaultValueDocumentation = "true")
@@ -811,8 +947,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<List<String>> forwardParams = Optional.empty();
 
         /**
-         * If enabled the state, session and post logout cookies will have their 'secure' parameter set to 'true'
-         * when HTTP is used. It may be necessary when running behind an SSL terminating reverse proxy.
+         * If enabled the state, session and post logout cookies will have their 'secure' parameter set to `true`
+         * when HTTP is used. It may be necessary when running behind an SSL/TLS terminating reverse proxy.
          * The cookies will always be secure if HTTPS is used even if this property is set to false.
          */
         @ConfigItem(defaultValue = "false")
@@ -820,8 +956,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         /**
          * Cookie name suffix.
-         * For example, a session cookie name for the default OIDC tenant is 'q_session' but can be changed to 'q_session_test'
-         * if this property is set to 'test'.
+         * For example, a session cookie name for the default OIDC tenant is `q_session` but can be changed to `q_session_test`
+         * if this property is set to `test`.
          */
         @ConfigItem
         public Optional<String> cookieSuffix = Optional.empty();
@@ -861,8 +997,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * However, if multiple authentications are attempted from the same browser, for example, from the different
          * browser tabs, then the currently available state cookie may represent the authentication flow
          * initiated from another tab and not related to the current request.
-         * Disable this property if you would like to avoid supporting multiple authorization code flows running in the same
-         * browser.
+         * Disable this property to permit only a single authorization code flow in the same browser.
          *
          */
         @ConfigItem(defaultValue = "true")
@@ -886,14 +1021,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * with {@link #redirectPath} may be needed to avoid such errors.
          * <p/>
          * However, setting this property to `false` may help if the above options are not suitable.
-         * It will cause a new authentication redirect to OpenId Connect provider. Please be aware doing so may increase the
+         * It will cause a new authentication redirect to OpenId Connect provider. Doing so may increase the
          * risk of browser redirect loops.
          */
         @ConfigItem(defaultValue = "false")
         public boolean failOnMissingStateParam = false;
 
         /**
-         * If this property is set to 'true' then an OIDC UserInfo endpoint will be called.
+         * If this property is set to `true` then an OIDC UserInfo endpoint will be called.
          * This property will be enabled if `quarkus.oidc.roles.source` is `userinfo`
          * or `quarkus.oidc.token.verify-access-token-with-user-info` is `true`
          * or `quarkus.oidc.authentication.id-token-required` is set to `false`,
@@ -906,7 +1041,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * Session age extension in minutes.
          * The user session age property is set to the value of the ID token life-span by default and
          * the user will be redirected to the OIDC provider to re-authenticate once the session has expired.
-         * If this property is set to a non-zero value then the expired ID token can be refreshed before
+         * If this property is set to a non-zero value, then the expired ID token can be refreshed before
          * the session has expired.
          * This property will be ignored if the `token.refresh-expired` property has not been enabled.
          */
@@ -914,7 +1049,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Duration sessionAgeExtension = Duration.ofMinutes(5);
 
         /**
-         * If this property is set to 'true' then a normal 302 redirect response will be returned
+         * If this property is set to `true` then a normal 302 redirect response will be returned
          * if the request was initiated via JavaScript API such as XMLHttpRequest or Fetch and the current user needs to be
          * (re)authenticated which may not be desirable for Single-page applications (SPA) since
          * it automatically following the redirect may not work given that OIDC authorization endpoints typically do not support
@@ -1276,7 +1411,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
         }
 
         /**
-         * Expected issuer 'iss' claim value.
+         * Expected issuer `iss` claim value.
          * Note this property overrides the `issuer` property which may be set in OpenId Connect provider's well-known
          * configuration.
          * If the `iss` claim value varies depending on the host/IP address or tenant id of the provider then you may skip the
@@ -1356,7 +1491,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<Duration> age = Optional.empty();
 
         /**
-         * Name of the claim which contains a principal name. By default, the 'upn', 'preferred_username' and `sub` claims are
+         * Name of the claim which contains a principal name. By default, the `upn`, `preferred_username` and `sub` claims are
          * checked.
          */
         @ConfigItem
@@ -1404,6 +1539,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<String> header = Optional.empty();
 
         /**
+         * HTTP Authorization header scheme.
+         */
+        @ConfigItem(defaultValue = OidcConstants.BEARER_SCHEME)
+        public String authorizationScheme = OidcConstants.BEARER_SCHEME;
+
+        /**
          * Required signature algorithm.
          * OIDC providers support many signature algorithms but if necessary you can restrict
          * Quarkus application to accept tokens signed only using an algorithm configured with this property.
@@ -1418,7 +1559,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * the providers may not control the private decryption keys.
          * In such cases set this property to point to the file containing the decryption private key in
          * PEM or JSON Web Key (JWK) format.
-         * Note that if a 'private_key_jwt' client authentication method is used then the private key
+         * Note that if a `private_key_jwt` client authentication method is used then the private key
          * which is used to sign client authentication JWT tokens will be used to try to decrypt an encrypted ID token
          * if this property is not set.
          */
@@ -1428,7 +1569,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
         /**
          * Allow the remote introspection of JWT tokens when no matching JWK key is available.
          *
-         * Note this property is set to 'true' by default for backward-compatibility reasons and will be set to `false`
+         * Note this property is set to `true` by default for backward-compatibility reasons and will be set to `false`
          * instead in one of the next releases.
          *
          * Also note this property will be ignored if JWK endpoint URI is not available and introspecting the tokens is
@@ -1623,11 +1764,19 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public void setSubjectRequired(boolean subjectRequired) {
             this.subjectRequired = subjectRequired;
         }
+
+        public String getAuthorizationScheme() {
+            return authorizationScheme;
+        }
+
+        public void setAuthorizationScheme(String authorizationScheme) {
+            this.authorizationScheme = authorizationScheme;
+        }
     }
 
     public static enum ApplicationType {
         /**
-         * A {@code WEB_APP} is a client that serves pages, usually a frontend application. For this type of client the
+         * A {@code WEB_APP} is a client that serves pages, usually a front-end application. For this type of client the
          * Authorization Code Flow is defined as the preferred method for authenticating users.
          */
         WEB_APP,
@@ -1655,11 +1804,15 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
     public static enum Provider {
         APPLE,
+        DISCORD,
         FACEBOOK,
         GITHUB,
         GOOGLE,
+        LINKEDIN,
+        MASTODON,
         MICROSOFT,
         SPOTIFY,
+        STRAVA,
         TWITCH,
         TWITTER,
         // New name for Twitter
@@ -1720,5 +1873,13 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
     public void setCodeGrant(CodeGrant codeGrant) {
         this.codeGrant = codeGrant;
+    }
+
+    public CertificateChain getCertificateChain() {
+        return certificateChain;
+    }
+
+    public void setCertificateChain(CertificateChain certificateChain) {
+        this.certificateChain = certificateChain;
     }
 }

@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: architecture
 :summary: How dev mode differs from a production application
+:topics: internals,dev-mode
 
 This document explains how the dev mode in Quarkus differs from a production application.
 
@@ -49,7 +50,7 @@ Examples of such operations are:
 ====
 A new Dev UI has been implemented in Quarkus 3.x.
 Not all the features are available yet.
-You can still access the previous version of the Dev UI using: http://localhost:8080/q/dev-v1/.
+You can still access the previous version of the Dev UI using: http://localhost:8080/q/dev-ui/.
 ====
 
 === Error pages

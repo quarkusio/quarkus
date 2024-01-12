@@ -292,11 +292,11 @@ public class InjectionPointInfo {
                 }
                 String method = target.asMethod().name();
                 if (method.equals(Methods.INIT)) {
-                    method = "";
+                    method = " constructor";
                 } else {
-                    method = "#" + method;
+                    method = "#" + method + "()";
                 }
-                return target.asMethod().declaringClass().name() + method + "()" + ":" + param;
+                return "parameter '" + param + "' of " + target.asMethod().declaringClass().name() + method;
             default:
                 return target.toString();
         }
@@ -388,7 +388,8 @@ public class InjectionPointInfo {
         public int hashCode() {
             final int prime = 31;
             int result = 1;
-            result = prime * result + ((qualifiers == null) ? 0 : qualifiers.hashCode());
+            // We cannot use AnnotationInstance#hashCode() as it includes the AnnotationTarget
+            result = prime * result + annotationSetHashCode(qualifiers);
             result = prime * result + ((type == null) ? 0 : type.hashCode());
             return result;
         }
@@ -409,8 +410,8 @@ public class InjectionPointInfo {
                 if (other.qualifiers != null) {
                     return false;
                 }
-            } else if (!qualifiersAreEqual(qualifiers, other.qualifiers)) {
-                // We cannot use AnnotationInstance#equals() as it requires the exact same annotationTarget instance
+            } else if (!annotationSetEquals(qualifiers, other.qualifiers)) {
+                // We cannot use AnnotationInstance#equals() as it requires the exact same AnnotationTarget instance
                 return false;
             }
             if (type == null) {
@@ -423,16 +424,16 @@ public class InjectionPointInfo {
             return true;
         }
 
-        private boolean qualifiersAreEqual(Set<AnnotationInstance> q1, Set<AnnotationInstance> q2) {
-            if (q1 == q2) {
+        private static boolean annotationSetEquals(Set<AnnotationInstance> s1, Set<AnnotationInstance> s2) {
+            if (s1 == s2) {
                 return true;
             }
-            if (q1.size() != q2.size()) {
+            if (s1.size() != s2.size()) {
                 return false;
             }
-            for (AnnotationInstance a1 : q1) {
-                for (AnnotationInstance a2 : q2) {
-                    if (!annotationsAreEqual(a1, a2)) {
+            for (AnnotationInstance a1 : s1) {
+                for (AnnotationInstance a2 : s2) {
+                    if (!annotationEquals(a1, a2)) {
                         return false;
                     }
                 }
@@ -440,11 +441,25 @@ public class InjectionPointInfo {
             return true;
         }
 
-        private boolean annotationsAreEqual(AnnotationInstance a1, AnnotationInstance a2) {
+        private static boolean annotationEquals(AnnotationInstance a1, AnnotationInstance a2) {
             if (a1 == a2) {
                 return true;
             }
             return a1.name().equals(a2.name()) && a1.values().equals(a2.values());
+        }
+
+        private static int annotationSetHashCode(Set<AnnotationInstance> s) {
+            int result = 1;
+            for (AnnotationInstance a : s) {
+                result = 31 * result + annotationHashCode(a);
+            }
+            return result;
+        }
+
+        private static int annotationHashCode(AnnotationInstance a) {
+            int result = a.name().hashCode();
+            result = 31 * result + a.values().hashCode();
+            return result;
         }
 
     }

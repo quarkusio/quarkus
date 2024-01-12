@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.Application;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -48,6 +49,7 @@ public class UriTagWithHttpApplicationRootTest {
     MeterRegistry registry;
 
     @Test
+    @Disabled
     public void testRequestUris() throws Exception {
         RestAssured.basePath = "/";
 

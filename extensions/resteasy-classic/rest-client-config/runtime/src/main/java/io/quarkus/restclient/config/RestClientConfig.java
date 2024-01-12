@@ -8,8 +8,10 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.configuration.MemorySize;
 import io.smallrye.config.SmallRyeConfig;
 
 @ConfigGroup
@@ -21,7 +23,6 @@ public class RestClientConfig {
         EMPTY = new RestClientConfig();
         EMPTY.url = Optional.empty();
         EMPTY.uri = Optional.empty();
-        EMPTY.scope = Optional.empty();
         EMPTY.providers = Optional.empty();
         EMPTY.connectTimeout = Optional.empty();
         EMPTY.readTimeout = Optional.empty();
@@ -50,6 +51,7 @@ public class RestClientConfig {
         EMPTY.name = Optional.empty();
         EMPTY.userAgent = Optional.empty();
         EMPTY.http2 = Optional.empty();
+        EMPTY.maxChunkSize = Optional.empty();
         EMPTY.alpn = Optional.empty();
         EMPTY.captureStacktrace = Optional.empty();
     }
@@ -69,14 +71,6 @@ public class RestClientConfig {
      */
     @ConfigItem
     public Optional<String> uri;
-
-    /**
-     * The CDI scope to use for injection. This property can contain either a fully qualified class name of a CDI scope
-     * annotation (such as "jakarta.enterprise.context.ApplicationScoped") or its simple name (such as
-     * "ApplicationScoped").
-     */
-    @ConfigItem
-    public Optional<String> scope;
 
     /**
      * Map where keys are fully-qualified provider classnames to include in the client, and values are their integer
@@ -260,6 +254,15 @@ public class RestClientConfig {
     public Optional<Boolean> http2;
 
     /**
+     * The max HTTP chunk size (8096 bytes by default).
+     * <p>
+     * This property is applicable to reactive REST clients only.
+     */
+    @ConfigItem
+    @ConfigDocDefault("8K")
+    public Optional<MemorySize> maxChunkSize;
+
+    /**
      * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the
      * protocols exposed by the server. By default, it will try to use HTTP/2 first and if it's not enabled, it will
      * use HTTP/1.1.
@@ -280,7 +283,6 @@ public class RestClientConfig {
 
         instance.url = getConfigValue(configKey, "url", String.class);
         instance.uri = getConfigValue(configKey, "uri", String.class);
-        instance.scope = getConfigValue(configKey, "scope", String.class);
         instance.providers = getConfigValue(configKey, "providers", String.class);
         instance.connectTimeout = getConfigValue(configKey, "connect-timeout", Long.class);
         instance.readTimeout = getConfigValue(configKey, "read-timeout", Long.class);
@@ -307,6 +309,7 @@ public class RestClientConfig {
         instance.name = getConfigValue(configKey, "name", String.class);
         instance.userAgent = getConfigValue(configKey, "user-agent", String.class);
         instance.http2 = getConfigValue(configKey, "http2", Boolean.class);
+        instance.maxChunkSize = getConfigValue(configKey, "max-chunk-size", MemorySize.class);
         instance.captureStacktrace = getConfigValue(configKey, "capture-stacktrace", Boolean.class);
 
         instance.multipart = new RestClientMultipartConfig();
@@ -320,7 +323,6 @@ public class RestClientConfig {
 
         instance.url = getConfigValue(interfaceClass, "url", String.class);
         instance.uri = getConfigValue(interfaceClass, "uri", String.class);
-        instance.scope = getConfigValue(interfaceClass, "scope", String.class);
         instance.providers = getConfigValue(interfaceClass, "providers", String.class);
         instance.connectTimeout = getConfigValue(interfaceClass, "connect-timeout", Long.class);
         instance.readTimeout = getConfigValue(interfaceClass, "read-timeout", Long.class);
@@ -347,6 +349,7 @@ public class RestClientConfig {
         instance.name = getConfigValue(interfaceClass, "name", String.class);
         instance.userAgent = getConfigValue(interfaceClass, "user-agent", String.class);
         instance.http2 = getConfigValue(interfaceClass, "http2", Boolean.class);
+        instance.maxChunkSize = getConfigValue(interfaceClass, "max-chunk-size", MemorySize.class);
         instance.alpn = getConfigValue(interfaceClass, "alpn", Boolean.class);
         instance.captureStacktrace = getConfigValue(interfaceClass, "capture-stacktrace", Boolean.class);
 

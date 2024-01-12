@@ -10,6 +10,8 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: messaging,kafka,reactive-messaging
+:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-kafka
 
 This reference guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with Apache Kafka.
 
@@ -350,12 +352,12 @@ If `throttled.unprocessed-record-max-age.ms` is set to less than or equal to `0`
 Such a setting might lead to running out of memory if there are "poison pill" messages (that are never acked).
 This strategy is the default if `enable.auto.commit` is not explicitly set to true.
 
-- `checkpoint` allows persisting consumer offsets on a **state store**, instead of committing them back to the Kafka broker. 
-Using the `CheckpointMetadata` API, consumer code can persist a _processing state_ with the record offset to mark the progress of a consumer. 
-When the processing continues from a previously persisted offset, it seeks the Kafka consumer to that offset and also restores the persisted state, continuing the stateful processing from where it left off. 
-The checkpoint strategy holds locally the processing state associated with the latest offset, and persists it periodically to the state store (period specified by `auto.commit.interval.ms` (default: 5000)). 
-The connector will be marked as unhealthy if no processing state is persisted to the state store in `checkpoint.unsynced-state-max-age.ms` (default: 10000). 
-If `checkpoint.unsynced-state-max-age.ms` is set to less than or equal to 0, it does not perform any health check verification. 
+- `checkpoint` allows persisting consumer offsets on a **state store**, instead of committing them back to the Kafka broker.
+Using the `CheckpointMetadata` API, consumer code can persist a _processing state_ with the record offset to mark the progress of a consumer.
+When the processing continues from a previously persisted offset, it seeks the Kafka consumer to that offset and also restores the persisted state, continuing the stateful processing from where it left off.
+The checkpoint strategy holds locally the processing state associated with the latest offset, and persists it periodically to the state store (period specified by `auto.commit.interval.ms` (default: 5000)).
+The connector will be marked as unhealthy if no processing state is persisted to the state store in `checkpoint.unsynced-state-max-age.ms` (default: 10000).
+If `checkpoint.unsynced-state-max-age.ms` is set to less than or equal to 0, it does not perform any health check verification.
 For more information, see <<stateful-processing-checkpointing>>
 
 - `latest` commits the record offset received by the Kafka consumer as soon as the associated message is acknowledged (if the offset is higher than the previously committed offset).
@@ -490,11 +492,19 @@ image::kafka-one-app-one-consumer.png[alt=Architecture, width=60%, align=center]
 
 . *Multiple consumer threads inside a consumer group*
 +
-For a given application instance, the number of consumers inside the consumer group can be configured using `mp.messaging.incoming.$channel.partitions` property.
+For a given application instance, the number of consumers inside the consumer group can be configured using `mp.messaging.incoming.$channel.concurrency` property.
 The partitions of the subscribed topic will be divided among the consumer threads.
-Note that if the `partitions` value exceed the number of partitions of the topic, some consumer threads won't be assigned any partitions.
+Note that if the `concurrency` value exceed the number of partitions of the topic, some consumer threads won't be assigned any partitions.
 +
 image::kafka-one-app-two-consumers.png[alt=Architecture, width=60%, align=center]
++
+[NOTE]
+.Deprecation
+====
+The https://smallrye.io/smallrye-reactive-messaging/latest/concepts/incoming-concurrency/[concurrency attribute]
+provides a connector agnostic way for non-blocking concurrent channels and replaces the Kafka connector specific `partitions` attribute.
+The `partitions` attribute is therefore deprecated and will be removed in future releases.
+====
 
 . *Multiple consumer applications inside a consumer group*
 +
@@ -656,6 +666,36 @@ mp.messaging.incoming.your-channel.group.id=${quarkus.uuid}
 
 IMPORTANT: If the `group.id` attribute is not set, it defaults the `quarkus.application.name` configuration property.
 
+==== Manual topic-partition assignment
+
+The `assign-seek` channel attribute allows manually assigning topic-partitions to a Kafka incoming channel,
+and optionally seek to a specified offset in the partition to start consuming records.
+If `assign-seek` is used, the consumer will not be dynamically subscribed to topics,
+but instead will statically assign the described partitions.
+In manual topic-partition rebalancing doesn't happen and therefore rebalance listeners are never called.
+
+The attribute takes a list of triplets separated by commas: `<topic>:<partition>:<offset>`.
+
+For example, the configuration
+
+[source, properties]
+----
+mp.messaging.incoming.data.assign-seek=topic1:0:10, topic2:1:20
+----
+
+assigns the consumer to:
+
+- Partition 0 of topic 'topic1', setting the initial position at offset 10.
+- Partition 1 of topic 'topic2', setting the initial position at offset 20.
+
+The topic, partition, and offset in each triplet can have the following variations:
+
+- If the topic is omitted, the configured topic will be used.
+- If the offset is omitted, partitions are assigned to the consumer but won't be sought to offset.
+- If offset is 0, it seeks to the beginning of the topic-partition.
+- If offset is -1, it seeks to the end of the topic-partition.
+
+
 === Receiving Kafka Records in Batches
 
 By default, incoming methods receive each Kafka record individually.
@@ -713,17 +753,17 @@ The `checkpoint` commit strategy is an experimental feature and can change in th
 ====
 
 Smallrye Reactive Messaging `checkpoint` commit strategy allows consumer applications to process messages in a stateful manner, while also respecting Kafka consumer scalability.
-An incoming channel with `checkpoint` commit strategy persists consumer offsets on an external 
+An incoming channel with `checkpoint` commit strategy persists consumer offsets on an external
 <<state-stores,state store>>, such as a relational database or a key-value store.
-As a result of processing consumed records, the consumer application can accumulate an internal state for each topic-partition assigned to the Kafka consumer. 
+As a result of processing consumed records, the consumer application can accumulate an internal state for each topic-partition assigned to the Kafka consumer.
 This local state will be periodically persisted to the state store and will be associated with the offset of the record that produced it.
 
-This strategy does not commit any offsets to the Kafka broker, so when new partitions get assigned to the consumer, 
-i.e. consumer restarts or consumer group instances scale, 
+This strategy does not commit any offsets to the Kafka broker, so when new partitions get assigned to the consumer,
+i.e. consumer restarts or consumer group instances scale,
 the consumer resumes the processing from the latest _checkpointed_ offset with its saved state.
 
 The `@Incoming` channel consumer code can manipulate the processing state through the `CheckpointMetadata` API.
-For example, a consumer calculating the moving average of prices received on a Kafka topic would look the following: 
+For example, a consumer calculating the moving average of prices received on a Kafka topic would look the following:
 
 [source,java]
 ----
@@ -746,20 +786,20 @@ public class MeanCheckpointConsumer {
     public CompletionStage<Void> consume(Message<Double> record) {
         // Get the `CheckpointMetadata` from the incoming message
         CheckpointMetadata<AveragePrice> checkpoint = CheckpointMetadata.fromMessage(record);
-    
+
         // `CheckpointMetadata` allows transforming the processing state
         // Applies the given function, starting from the value `0.0` when no previous state exists
         checkpoint.transform(new AveragePrice(), average -> average.update(record.getPayload()), /* persistOnAck */ true);
-    
+
         // `persistOnAck` flag set to true, ack will persist the processing state
         // associated with the latest offset (per partition).
         return record.ack();
     }
-    
+
     static class AveragePrice {
         long count;
         double mean;
-    
+
         AveragePrice update(double newPrice) {
             mean += ((newPrice - mean) / ++count);
             return this;
@@ -768,25 +808,25 @@ public class MeanCheckpointConsumer {
 }
 ----
 
-The `transform` method applies the transformation function to the current state, producing a changed state and registering it locally for checkpointing. 
-By default, the local state is persisted to the state store periodically, period specified by `auto.commit.interval.ms`, (default: 5000). 
-If `persistOnAck` flag is given, the latest state is persisted to the state store eagerly on message acknowledgment. 
+The `transform` method applies the transformation function to the current state, producing a changed state and registering it locally for checkpointing.
+By default, the local state is persisted to the state store periodically, period specified by `auto.commit.interval.ms`, (default: 5000).
+If `persistOnAck` flag is given, the latest state is persisted to the state store eagerly on message acknowledgment.
 The `setNext` method works similarly directly setting the latest state.
 
-The checkpoint commit strategy tracks when a processing state is last persisted for each topic-partition. 
+The checkpoint commit strategy tracks when a processing state is last persisted for each topic-partition.
 If an outstanding state change can not be persisted for `checkpoint.unsynced-state-max-age.ms` (default: 10000), the channel is marked unhealthy.
 
 [[state-stores]]
 ==== State stores
 
-State store implementations determine where and how the processing states are persisted. 
+State store implementations determine where and how the processing states are persisted.
 This is configured by the `mp.messaging.incoming.[channel-name].checkpoint.state-store` property.
-The serialization of state objects depends on the state store implementation. 
+The serialization of state objects depends on the state store implementation.
 In order to instruct state stores for serialization can require configuring the class name of state objects using `mp.messaging.incoming.[channel-name].checkpoint.state-type` property.
 
 Quarkus provides following state store implementations:
 
-- `quarkus-redis`: Uses the xref:redis-reference.adoc[`quarkus-redis-client`] extension to persist processing states. 
+- `quarkus-redis`: Uses the xref:redis-reference.adoc[`quarkus-redis-client`] extension to persist processing states.
 Jackson is used to serialize processing state in Json. For complex objects it is required to configure the `checkpoint.state-type` property with the class name of the object.
 By default, the state store uses the default redis client, but if a xref:redis-reference.adoc#default-and-named-clients[named client] is to be used, the client name can be specified using the `mp.messaging.incoming.[channel-name].checkpoint.quarkus-redis.client-name` property.
 Processing states will be stored in Redis using the key naming scheme `[consumer-group-id]:[topic]:[partition]`.
@@ -807,8 +847,8 @@ quarkus.redis.my-redis.hosts=redis://localhost:7000
 quarkus.redis.my-redis.password=<redis-pwd>
 ----
 
-- `quarkus-hibernate-reactive`: Uses the xref:hibernate-reactive.adoc[`quarkus-hibernate-reactive`] extension to persist processing states. 
-Processing state objects are required to be a Jakarta Persistence entity and extend the `CheckpointEntity` class, 
+- `quarkus-hibernate-reactive`: Uses the xref:hibernate-reactive.adoc[`quarkus-hibernate-reactive`] extension to persist processing states.
+Processing state objects are required to be a Jakarta Persistence entity and extend the `CheckpointEntity` class,
 which handles object identifiers composed of the consumer group id, topic and partition.
 Therefore, the class name of the entity needs to be configured using the `checkpoint.state-type` property.
 
@@ -846,7 +886,7 @@ public class AveragePriceEntity extends CheckpointEntity {
 ----
 
 - `quarkus-hibernate-orm`: Uses the xref:hibernate-orm.adoc[`quarkus-hibernate-orm`] extension to persist processing states.
-It is similar to the previous state store, but it uses Hibernate ORM instead of Hibernate Reactive. 
+It is similar to the previous state store, but it uses Hibernate ORM instead of Hibernate Reactive.
 
 When configured, it can use a named `persistence-unit` for the checkpointing state store:
 
@@ -865,7 +905,7 @@ quarkus.hibernate-orm."prices".datasource=prices
 quarkus.hibernate-orm."prices".packages=org.acme
 ----
 
-For instructions on how to implement custom state stores, 
+For instructions on how to implement custom state stores,
 see https://smallrye.io/smallrye-reactive-messaging/3.22.0/kafka/receiving-kafka-records/#implementing-state-stores[Implementing State Stores].
 
 == Sending messages to Kafka
@@ -1110,7 +1150,7 @@ The new `Emitter.send` method returns a `CompletionStage` completed when the pro
 ====
 
 [NOTE]
-.Depreciation
+.Deprecation
 ====
 `MutinyEmitter#send(Message msg)` method is deprecated in favor of following methods receiving `Message` for emitting:
 
@@ -1245,6 +1285,66 @@ Reciprocally, multiple producers on the same channel can be merged by setting `m
 On the `@Incoming` methods, you can control how multiple channels are merged using the `@Merge` annotation.
 ====
 
+Repeating the `@Outgoing` annotation on outbound or processing methods allows another way of dispatching messages to multiple outgoing channels:
+
+[source, java]
+----
+import java.util.Random;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
+
+@ApplicationScoped
+public class MultipleProducers {
+
+    private final Random random = new Random();
+
+    @Outgoing("generated")
+    @Outgoing("generated-2")
+    double priceBroadcast() {
+        return random.nextDouble();
+    }
+
+}
+----
+
+In the previous example generated price will be broadcast to both outbound channels.
+The following example selectively sends messages to multiple outgoing channels using the `Targeted` container object,
+containing key as channel name and value as message payload.
+
+[source, java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
+
+import io.smallrye.reactive.messaging.Targeted;
+
+@ApplicationScoped
+public class TargetedProducers {
+
+    @Incoming("in")
+    @Outgoing("out1")
+    @Outgoing("out2")
+    @Outgoing("out3")
+    public Targeted process(double price) {
+        Targeted targeted = Targeted.of("out1", "Price: " + price,
+                "out2", "Quote: " + price);
+        if (price > 90.0) {
+            return targeted.with("out3", price);
+        }
+        return targeted;
+    }
+
+}
+----
+
+Note that <<serialization-autodetection,the auto-detection for Kafka serializers>> doesn't work for signatures using the `Targeted`.
+
+For more details on using multiple outgoings, please refer to the http://smallrye.io/smallrye-reactive-messaging/4.10.0/concepts/outgoings/[SmallRye Reactive Messaging documentation].
+
 === Kafka Transactions
 
 Kafka transactions enable atomic writes to multiple Kafka topics and partitions.
@@ -1314,6 +1414,55 @@ If you'd like to consume records only written and committed inside a Kafka trans
 mp.messaging.incoming.prices-in.isolation.level=read_committed
 ----
 
+== Kafka Request-Reply
+
+The Kafka Request-Reply pattern allows to publish a request record to a Kafka topic and then await for a reply record that responds to the initial request.
+The Kafka connector provides the `KafkaRequestReply` custom emitter that implements the requestor (or the client) of the request-reply pattern for Kafka outbound channels:
+
+It can be injected as a regular emitter `@Channel`:
+
+[source, java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.kafka.reply.KafkaRequestReply;
+
+@ApplicationScoped
+@Path("/kafka")
+public class KafkaRequestReplyEmitter {
+
+    @Channel("request-reply")
+    KafkaRequestReply<Integer, String> requestReply;
+
+    @POST
+    @Path("/req-rep")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Uni<String> post(Integer request) {
+        return requestReply.request(request);
+    }
+
+}
+----
+
+The request method publishes the record to the configured target topic of the outgoing channel,
+and polls a reply topic (by default, the target topic with `-replies` suffix) for a reply record.
+When the reply is received the returned `Uni` is completed with the record value.
+The request send operation generates a **correlation id** and sets a header (by default `REPLY_CORRELATION_ID`),
+which it expects to be sent back in the reply record.
+
+The replier can be implemented using a Reactive Messaging processor (see <<processing-messages>>).
+
+For more information on Kafka Request Reply feature and advanced configuration options,
+see the https://smallrye.io/smallrye-reactive-messaging/latest/kafka/request-reply/[Smallrye Reactive Messaging Documentation].
+
+[[processing-messages]]
 == Processing Messages
 
 Applications streaming data often need to consume some events from a topic, process them and publish the result to a different topic.
@@ -1732,6 +1881,10 @@ that will deserialize to a `io.vertx.core.json.JsonObject`. The corresponding se
 
 This is described in a dedicated guide: xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
 
+== JSON Schema Serialization
+
+This is described in a dedicated guide: xref:kafka-schema-registry-json-schema.adoc[Using Apache Kafka with Schema Registry and JSON Schema].
+
 [[serialization-autodetection]]
 == Serializer/deserializer autodetection
 
@@ -1824,7 +1977,9 @@ Refer to <<jackson-serialization>> to write your own serializer/deserializer for
 
 == Using Schema Registry
 
-This is described in a dedicated guide: xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
+This is described in a dedicated guide for Avro: xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
+And a different one for JSON Schema: xref:kafka-schema-registry-json-schema.adoc[Using Apache Kafka with Schema Registry and JSON Schema].
+
 
 [[kafka-health-check]]
 == Health Checks
@@ -1876,6 +2031,34 @@ and for an outgoing channel checks that the topic used by the producer exist in 
 Note that to achieve this, an _admin connection_ is required.
 You can adjust the timeout for topic verification calls to the broker using the `health-topic-verification-timeout` configuration.
 
+== Observability
+
+If the xref:opentelemetry.adoc[OpenTelemetry extension] is present,
+then the Kafka connector channels work out-of-the-box with the OpenTelemetry Tracing.
+Messages written to Kafka topics propagate the current tracing span.
+On incoming channels, if a consumed Kafka record contains tracing information the message processing inherits the message span as parent.
+
+Tracing can be disabled explicitly per channel:
+
+[source, properties]
+----
+mp.messaging.incoming.data.tracing-enabled=false
+----
+
+If the xref:telemetry-micrometer.adoc[Micrometer extension] is present,
+then Kafka producer and consumer clients metrics are exposed as Micrometer meters.
+
+Per channel metrics are also exposed as Micrometer meters.
+The number of messages produced or received per channel, acknowledgments and duration of processing are exposed.
+
+The messaging meters can be disabled:
+
+[source, properties]
+----
+quarkus.micrometer.binder.messaging.enabled=false
+----
+
+
 == Kafka Streams
 
 This is described in a dedicated guide: xref:kafka-streams.adoc[Using Apache Kafka Streams].
@@ -1890,10 +2073,8 @@ mp.messaging.outgoing.fruit-out.compression.type=snappy
 ----
 
 In JVM mode, it will work out of the box.
-However, to compile your application to a native executable, you need to:
-
-1. Uses GraalVM 21.+
-2. Add `quarkus.kafka.snappy.enabled=true` to your `application.properties`
+However, to compile your application to a native executable, you need to
+add `quarkus.kafka.snappy.enabled=true` to your `application.properties`.
 
 In native mode, Snappy is disabled by default as the use of Snappy requires embedding a native library and unpacking it when the application starts.
 
@@ -1909,12 +2090,19 @@ First, add the following dependency to your application:
     <groupId>io.strimzi</groupId>
     <artifactId>kafka-oauth-client</artifactId>
 </dependency>
+<!-- if compiling to native you'd need also the following dependency -->
+<dependency>
+    <groupId>io.strimzi</groupId>
+    <artifactId>kafka-oauth-common</artifactId>
+</dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
 implementation("io.strimzi:kafka-oauth-client")
+// if compiling to native you'd need also the following dependency
+implementation("io.strimzi:kafka-oauth-common")
 ----
 
 This dependency provides the callback handler required to handle the OAuth workflow.
@@ -2017,11 +2205,14 @@ Create a Quarkus Test using the test resource created above:
 
 [source, java]
 ----
+import static org.awaitility.Awaitility.await;
+
 @QuarkusTest
 @QuarkusTestResource(KafkaTestResourceLifecycleManager.class)
 class BaristaTest {
 
     @Inject
+    @Connector("smallrye-in-memory")
     InMemoryConnector connector; // <1>
 
     @Test
@@ -2054,11 +2245,93 @@ class BaristaTest {
 The application will process this message and send a message to `beverages` channel.
 <5> Use the `received` method on `beverages` channel to check the messages produced by the application.
 
+If your Kafka consumer is batch based, you will need to send a batch of messages to the channel as by creating them manually.
+
+For instance:
+
+[source, java]
+----
+@ApplicationScoped
+public class BeverageProcessor {
+
+    @Incoming("orders")
+    CompletionStage<Void> process(KafkaRecordBatch<String, Order> orders) {
+        System.out.println("Order received " + orders.getPayload().size());
+        return orders.ack();
+    }
+}
+----
+
+[source, java]
+----
+import static org.awaitility.Awaitility.await;
+
+@QuarkusTest
+@QuarkusTestResource(KafkaTestResourceLifecycleManager.class)
+class BaristaTest {
+
+    @Inject
+    @Connector("smallrye-in-memory")
+
+    InMemoryConnector connector;
+
+    @Test
+    void testProcessOrder() {
+        InMemorySource<IncomingKafkaRecordBatch<String, Order>> ordersIn = connector.source("orders");
+        var committed = new AtomicBoolean(false);  // <1>
+        var commitHandler = new KafkaCommitHandler() {
+            @Override
+            public <K, V> Uni<Void> handle(IncomingKafkaRecord<K, V> record) {
+                committed.set(true);  // <2>
+                return null;
+            }
+        };
+        var failureHandler = new KafkaFailureHandler() {
+            @Override
+            public <K, V> Uni<Void> handle(IncomingKafkaRecord<K, V> record, Throwable reason, Metadata metadata) {
+                return null;
+            }
+        };
+
+        Order order = new Order();
+        order.setProduct("coffee");
+        order.setName("Coffee lover");
+        order.setOrderId("1234");
+        var record = new ConsumerRecord<>("topic", 0, 0, "key", order);
+        var records = new ConsumerRecords<>(Map.of(new TopicPartition("topic", 1), List.of(record)));
+        var batch = new IncomingKafkaRecordBatch<>(
+            records, "kafka", 0, commitHandler, failureHandler, false, false);  // <3>
+
+        ordersIn.send(batch);
+
+        await().until(committed::get);  // <4>
+    }
+}
+----
+<1> Create an `AtomicBoolean` to track if the batch has been committed.
+<2> Update `committed` when the batch is committed.
+<3> Create a `IncomingKafkaRecordBatch` with a single record.
+<4> Wait until the batch is committed.
+
 [IMPORTANT]
 ====
 With in-memory channels we were able to test application code processing messages without starting a Kafka broker.
 Note that different in-memory channels are independent, and switching channel connector to in-memory does not simulate message delivery between channels configured to the same Kafka topic.
 ====
+
+==== Context propagation with InMemoryConnector
+
+By default, in-memory channels dispatch messages on the caller thread, which would be the main thread in unit tests.
+
+The `quarkus-test-vertx` dependency provides the `@io.quarkus.test.vertx.RunOnVertxContext` annotation,
+which when used on a test method, executes the test on a Vert.x context.
+
+However, most of the other connectors handle context propagation dispatching messages on separate duplicated Vert.x contexts.
+
+If your tests are dependent on context propagation,
+you can configure the in-memory connector channels with the `run-on-vertx-context` attribute to dispatch events,
+including messages and acknowledgements, on a Vert.x context.
+Alternatively you can switch this behaviour using the `InMemorySource#runOnVertxContext` method.
 
 === Testing using a Kafka broker
 
@@ -2130,7 +2403,7 @@ The configuration of the created Kafka broker can be customized using `@Resource
 [source,java]
 ----
 @QuarkusTestResource(value = KafkaCompanionResource.class, initArgs = {
-        @ResourceArg(name = "strimzi.kafka.image", value = "quay.io/strimzi/kafka:0.28.0-kafka-3.0.0"), // Image name
+        @ResourceArg(name = "strimzi.kafka.image", value = "quay.io/strimzi-test-container/test-container:0.105.0-kafka-3.6.0"), // Image name
         @ResourceArg(name = "kafka.port", value = "9092"), // Fixed port for kafka, by default it will be exposed on a random port
         @ResourceArg(name = "kraft", value = "true"), // Enable Kraft mode
         @ResourceArg(name = "num.partitions", value = "3"), // Other custom broker configurations
@@ -2190,7 +2463,7 @@ See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture do
 
 == Channel Decorators
 
-SmallRye Reactive Messaging supports decorating incoming and outgoing channels for implementing cross-cutting concerns such as monitoring, tracing or message interception. For more information on implementing decorators and message interceptors see the http://smallrye.io/smallrye-reactive-messaging/3.19.1/concepts/decorators/[SmallRye Reactive Messaging documentation].
+SmallRye Reactive Messaging supports decorating incoming and outgoing channels for implementing cross-cutting concerns such as monitoring, tracing or message interception. For more information on implementing decorators and message interceptors see the http://smallrye.io/smallrye-reactive-messaging/latest/concepts/decorators/[SmallRye Reactive Messaging documentation].
 
 [[kafka-configuration]]
 == Configuration Reference
@@ -2559,9 +2832,9 @@ public class FruitStore {
 }
 ----
 <1> Inject the Hibernate Reactive `Session`
-<2> Hibernate Reactive `Session` and `Panache` APIs require an active CDI Request context. 
+<2> Hibernate Reactive `Session` and `Panache` APIs require an active CDI Request context.
 `@ActivateRequestContext` annotation creates a new request context and destroys it when the `Uni` returned from the method completes.
-If `Panache` is not used, `Mutiny.SessionFactory` can be injected and used similarly without the need of activating the request context or closing the session manually. 
+If `Panache` is not used, `Mutiny.SessionFactory` can be injected and used similarly without the need of activating the request context or closing the session manually.
 <3> Requests a new transaction. The transaction completes when the passed action completes.
 <4> Persist the entity. It returns a `Uni<Fruit>`.
 <5> Switch back to a `Uni<Void>`.

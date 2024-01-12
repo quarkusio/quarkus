@@ -25,12 +25,13 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+
+import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 public class TestResourceManager implements Closeable {
 
@@ -178,9 +179,16 @@ public class TestResourceManager implements Closeable {
                 throw new RuntimeException("Unable to stop Quarkus test resource " + entry.getTestResource(), e);
             }
         }
+        // TODO using QuarkusConfigFactory.setConfig(null) here makes continuous testing fail,
+        //   e.g. in io.quarkus.hibernate.orm.HibernateHotReloadTestCase
+        //   or io.quarkus.opentelemetry.deployment.OpenTelemetryContinuousTestingTest;
+        //   maybe this cleanup is not really necessary and just "doesn't hurt" because
+        //   the released config is still cached in QuarkusConfigFactory#config
+        //   and will be restored soon after when QuarkusConfigFactory#getConfigFor is called?
+        //   In that case we should remove this cleanup.
         try {
-            ConfigProviderResolver cpr = ConfigProviderResolver.instance();
-            cpr.releaseConfig(cpr.getConfig());
+            ((SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver.instance())
+                    .releaseConfig(Thread.currentThread().getContextClassLoader());
         } catch (Throwable ignored) {
         }
         configProperties.clear();

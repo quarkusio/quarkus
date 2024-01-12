@@ -114,16 +114,24 @@ class VertxHttpProcessor {
         for (RouteBuildItem route : routes) {
             if (FRAMEWORK_ROUTE.equals(route.getRouteType())) {
                 if (route.getConfiguredPathInfo() != null) {
-                    frameworkEndpoints.add(route.getConfiguredPathInfo().getEndpointPath(nonApplicationRootPath,
-                            managementInterfaceBuildTimeConfig, launchModeBuildItem));
+                    String endpointPath = route.getConfiguredPathInfo().getEndpointPath(nonApplicationRootPath,
+                            managementInterfaceBuildTimeConfig, launchModeBuildItem);
+                    frameworkEndpoints.add(endpointPath);
                     continue;
                 }
                 if (route.getRouteFunction() != null && route.getRouteFunction() instanceof BasicRoute) {
                     BasicRoute basicRoute = (BasicRoute) route.getRouteFunction();
                     if (basicRoute.getPath() != null) {
-                        // Calling TemplateHtmlBuilder does not see very correct here, but it is the underlying API for ConfiguredPathInfo
-                        frameworkEndpoints
-                                .add(adjustRoot(nonApplicationRootPath.getNonApplicationRootPath(), basicRoute.getPath()));
+                        if (basicRoute.getPath().startsWith(nonApplicationRootPath.getNonApplicationRootPath())) {
+                            // Do not repeat the non application root path.
+                            frameworkEndpoints.add(basicRoute.getPath());
+                        } else {
+                            // Calling TemplateHtmlBuilder does not see very correct here, but it is the underlying API for ConfiguredPathInfo
+                            String adjustRoot = adjustRoot(nonApplicationRootPath.getNonApplicationRootPath(),
+                                    basicRoute.getPath());
+                            frameworkEndpoints.add(adjustRoot);
+                        }
+
                     }
                 }
             }

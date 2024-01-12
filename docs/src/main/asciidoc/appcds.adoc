@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: core, cloud
 :summary: This reference guide explains how to enable AppCDS with Quarkus.
+:topics: appcds,serverless
 
 This reference guide explains how to enable Application Class Data Sharing in your Quarkus applications.
 
@@ -85,6 +86,11 @@ More specifically, the application is run up until the steps that actually open 
 
 This results in an archive generation process that on one hand is completely safe, but on the other hand is unable to archive every single class that the application might need at boot time.
 As a result, users are expected to get a slightly more effective archive if they manually go through the hoops of generating the AppCDS archive.
+====
+
+[IMPORTANT]
+====
+AppCDS has improved significantly in the latest JDK releases. This means that to ensure the best possible improvements from it, make sure your projects targets the highest possible Java version (ideally 17 or 21).
 ====
 
 === Usage in containers

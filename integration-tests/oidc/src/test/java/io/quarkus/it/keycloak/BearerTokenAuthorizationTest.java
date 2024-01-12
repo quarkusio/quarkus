@@ -212,4 +212,24 @@ public class BearerTokenAuthorizationTest {
                         () -> RestAssured.given().auth().oauth2(token).when()
                                 .get("/api/users/me").thenReturn().statusCode() == 401);
     }
+
+    @Test
+    public void testAuthenticationEvent() {
+        RestAssured.given()
+                .get("/authentication-event/failure-observed")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("false"));
+        RestAssured.given().auth()
+                .preemptive().basic("alice", "wrongpassword")
+                .header("keep-event", "true")
+                .when().get("/authentication-event/secured")
+                .then()
+                .statusCode(401);
+        RestAssured.given()
+                .get("/authentication-event/failure-observed")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("true"));
+    }
 }

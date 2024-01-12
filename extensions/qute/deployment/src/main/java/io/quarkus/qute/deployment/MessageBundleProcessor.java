@@ -354,6 +354,10 @@ public class MessageBundleProcessor {
             List<TemplateGlobalBuildItem> templateGlobals,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions) {
 
+        if (messageBundleMethods.isEmpty()) {
+            return;
+        }
+
         Map<String, MessageBundleMethodBuildItem> bundleMethods = messageBundleMethods.stream()
                 .filter(MessageBundleMethodBuildItem::isValidatable)
                 .collect(Collectors.toMap(MessageBundleMethodBuildItem::getTemplateId, Function.identity()));
@@ -435,7 +439,12 @@ public class MessageBundleProcessor {
             List<CheckedTemplateBuildItem> checkedTemplates,
             BeanDiscoveryFinishedBuildItem beanDiscovery,
             List<TemplateDataBuildItem> templateData,
-            QuteConfig config) {
+            QuteConfig config,
+            List<TemplateGlobalBuildItem> globals) {
+
+        if (messageBundles.isEmpty()) {
+            return;
+        }
 
         IndexView index = beanArchiveIndex.getIndex();
         Function<String, String> templateIdToPathFun = new Function<String, String>() {
@@ -585,7 +594,7 @@ public class MessageBundleProcessor {
                                             implicitClassToMembersUsed, templateIdToPathFun, generatedIdsToMatches,
                                             extensionMethodExcludes, checkedTemplate, lookupConfig, namedBeans,
                                             namespaceTemplateData, regularExtensionMethods, namespaceExtensionMethods,
-                                            assignabilityCheck);
+                                            assignabilityCheck, globals);
                                     MatchResult match = results.get(param.toOriginalString());
                                     if (match != null && !match.isEmpty() && !assignabilityCheck.isAssignableFrom(match.type(),
                                             methodParams.get(idx))) {
@@ -629,6 +638,9 @@ public class MessageBundleProcessor {
     @BuildStep(onlyIf = IsNormal.class)
     void generateExamplePropertiesFiles(List<MessageBundleMethodBuildItem> messageBundleMethods,
             BuildSystemTargetBuildItem target, BuildProducer<GeneratedResourceBuildItem> dummy) throws IOException {
+        if (messageBundleMethods.isEmpty()) {
+            return;
+        }
         Map<String, List<MessageBundleMethodBuildItem>> bundles = new HashMap<>();
         for (MessageBundleMethodBuildItem messageBundleMethod : messageBundleMethods) {
             if (messageBundleMethod.isDefaultBundle()) {

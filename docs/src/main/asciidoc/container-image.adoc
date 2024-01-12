@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: Learn how to build and push container images with Jib, OpenShift or Docker as part of the Quarkus build.
+:topics: devops,cloud
+:extensions: io.quarkus:quarkus-container-image-openshift,io.quarkus:quarkus-container-image-jib,io.quarkus:quarkus-container-image-docker,io.quarkus:quarkus-container-image-buildpack
 
 Quarkus provides extensions for building (and pushing) container images. Currently, it supports:
 
@@ -45,7 +47,7 @@ For example, the presence of `src/main/jib/foo/bar` would result in  `/foo/bar` 
 
 There are cases where the built container image may need to have Java debugging conditionally enabled at runtime.
 
-When the base image has not been changed (and therefore `ubi8/openjdk-11-runtime` or `ubi8/openjdk-17-runtime` is used), then the `quarkus.jib.jvm-arguments` configuration property can be used in order to
+When the base image has not been changed (and therefore `ubi8/openjdk-11-runtime`,  `ubi8/openjdk-17-runtime`, or `ubi8/openjdk-21-runtime` is used), then the `quarkus.jib.jvm-arguments` configuration property can be used in order to
 make the JVM listen on the debug port at startup.
 
 The exact configuration is:
@@ -61,7 +63,7 @@ Other base images might provide launch scripts that enable debugging when an env
 
 The `quarkus.jib.jvm-entrypoint` configuration property can be used to completely override the container entry point and can thus be used to either hard code the JVM debug configuration or point to a script that handles the details.
 
-For example, if the base images `ubi8/openjdk-11-runtime` or `ubi8/openjdk-17-runtime` are used to build the container, the entry point can be hard-coded on the application properties file.
+For example, if the base images `ubi8/openjdk-11-runtime`, `ubi8/openjdk-17-runtime` or  `ubi8/openjdk-21-runtime` are used to build the container, the entry point can be hard-coded on the application properties file.
 
 .Example application.properties
 [source,properties]
@@ -86,7 +88,7 @@ java \
   -jar quarkus-run.jar
 ----
 
-NOTE: `/home/jboss` is the WORKDIR for all quarkus binaries in the base images `ubi8/openjdk-11-runtime` and `ubi8/openjdk-17-runtime` (https://catalog.redhat.com/software/containers/ubi8/openjdk-17/618bdbf34ae3739687568813?container-tabs=dockerfile[Dockerfile for ubi8/openjdk-17-runtime, window="_blank"])
+NOTE: `/home/jboss` is the WORKDIR for all quarkus binaries in the base images `ubi8/openjdk-11-runtime`, `ubi8/openjdk-17-runtime` and `ubi8/openjdk-21-runtime` (https://catalog.redhat.com/software/containers/ubi8/openjdk-17/618bdbf34ae3739687568813?container-tabs=dockerfile[Dockerfile for ubi8/openjdk-17-runtime, window="_blank"])
 
 ==== Multi-module projects and layering
 
@@ -138,7 +140,7 @@ The creation of such objects is being taken care of by the Quarkus Kubernetes ex
 [#buildpack]
 === Buildpack
 
-The extension `quarkus-container-image-buildpack` is using buildpacks in order to perform container image builds. 
+The extension `quarkus-container-image-buildpack` is using buildpacks in order to perform container image builds.
 Under the hood buildpacks will use a Docker daemon for the actual build.
 While buildpacks support alternatives to Docker, this extension will only work with Docker.
 

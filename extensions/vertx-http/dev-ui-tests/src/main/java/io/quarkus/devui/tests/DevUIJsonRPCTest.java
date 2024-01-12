@@ -59,7 +59,7 @@ public class DevUIJsonRPCTest {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T executeJsonRPCMethod(TypeReference typeReference, String methodName, Map<String, String> params)
+    public <T> T executeJsonRPCMethod(TypeReference typeReference, String methodName, Map<String, Object> params)
             throws Exception {
         int id = sendRequest(methodName, params);
         T response = getJsonRPCResponse(typeReference, id);
@@ -71,7 +71,7 @@ public class DevUIJsonRPCTest {
         return executeJsonRPCMethod(methodName, null);
     }
 
-    public JsonNode executeJsonRPCMethod(String methodName, Map<String, String> params) throws Exception {
+    public JsonNode executeJsonRPCMethod(String methodName, Map<String, Object> params) throws Exception {
         return executeJsonRPCMethod(JsonNode.class, methodName, params);
     }
 
@@ -80,7 +80,7 @@ public class DevUIJsonRPCTest {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T executeJsonRPCMethod(Class<T> classType, String methodName, Map<String, String> params) throws Exception {
+    public <T> T executeJsonRPCMethod(Class<T> classType, String methodName, Map<String, Object> params) throws Exception {
 
         int id = sendRequest(methodName, params);
         T response = getJsonRPCResponse(classType, id);
@@ -168,7 +168,7 @@ public class DevUIJsonRPCTest {
         }
     }
 
-    private String createJsonRPCRequest(int id, String methodName, Map<String, String> params) throws IOException {
+    private String createJsonRPCRequest(int id, String methodName, Map<String, Object> params) throws IOException {
 
         ObjectNode request = mapper.createObjectNode();
 
@@ -177,15 +177,16 @@ public class DevUIJsonRPCTest {
         request.put("method", this.namespace + "." + methodName);
         ObjectNode jsonParams = mapper.createObjectNode();
         if (params != null && !params.isEmpty()) {
-            for (Map.Entry<String, String> p : params.entrySet()) {
-                jsonParams.put(p.getKey(), p.getValue());
+            for (Map.Entry<String, Object> p : params.entrySet()) {
+                JsonNode convertValue = mapper.convertValue(p.getValue(), JsonNode.class);
+                jsonParams.putIfAbsent(p.getKey(), convertValue);
             }
         }
         request.set("params", jsonParams);
         return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(request);
     }
 
-    private int sendRequest(String methodName, Map<String, String> params) throws IOException {
+    private int sendRequest(String methodName, Map<String, Object> params) throws IOException {
         int id = random.nextInt(Integer.MAX_VALUE);
         String request = createJsonRPCRequest(id, methodName, params);
         log.debug("request = " + request);

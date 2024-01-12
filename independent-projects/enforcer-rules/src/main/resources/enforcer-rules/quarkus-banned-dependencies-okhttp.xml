@@ -1,0 +1,12 @@
+<enforcer>
+    <rules>
+        <bannedDependencies>
+            <excludes>
+                <!-- Exclude okhttp -->
+                <exclude>com.squareup.okhttp3:*</exclude>
+                <exclude>com.squareup.okhttp:*</exclude>
+                <exclude>com.squareup.okio:*</exclude>
+            </excludes>
+        </bannedDependencies>
+    </rules>
+</enforcer>

@@ -55,6 +55,17 @@
             -->
         </dependency>
 
+        <!-- OpenTelemetry tracing -->
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-instrumentation-api</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-instrumentation-api-semconv</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <build>

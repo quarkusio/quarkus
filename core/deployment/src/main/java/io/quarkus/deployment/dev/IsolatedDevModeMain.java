@@ -20,7 +20,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.formatters.ColorPatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
@@ -284,26 +283,22 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(runner.getClassLoader());
             try {
-                runner.close();
-            } catch (Exception e) {
-                e.printStackTrace();
+                try {
+                    runner.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                try {
+                    // TODO is this even useful?
+                    //  It's not using the config factory from the right classloader...
+                    QuarkusConfigFactory.setConfig(null);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             } finally {
                 Thread.currentThread().setContextClassLoader(old);
             }
         }
-        QuarkusConfigFactory.setConfig(null);
-
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
-        try {
-            final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
-            cpr.releaseConfig(cpr.getConfig());
-        } catch (Throwable ignored) {
-            // just means no config was installed, which is fine
-        } finally {
-            Thread.currentThread().setContextClassLoader(old);
-        }
-        runner = null;
     }
 
     public void close() {

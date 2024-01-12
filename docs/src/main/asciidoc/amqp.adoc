@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: messaging
 :summary: This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with AMQP.
+:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-amqp
+:topics: messaging,amqp
 
 This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with AMQP 1.0.
 
@@ -255,7 +257,7 @@ Open the `src/main/resources/application.properties` file and add:
 mp.messaging.incoming.requests.address=quote-requests
 ----
 
-The configuration keys are structured as follows:
+The configuration properties are structured as follows:
 
 `mp.messaging.[outgoing|incoming].{channel-name}.property=value`
 

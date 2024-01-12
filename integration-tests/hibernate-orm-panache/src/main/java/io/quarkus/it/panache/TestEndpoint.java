@@ -193,6 +193,9 @@ public class TestEndpoint {
         Assertions.assertThrows(PanacheQueryException.class,
                 () -> Person.update("Person.updateAllNames", Parameters.with("name", "stef2").map()));
 
+        Assertions.assertThrows(PanacheQueryException.class,
+                () -> Person.update("Person.updateAllNames"));
+
         Assertions.assertEquals(1, Person.update("#Person.updateAllNames", Parameters.with("name", "stef3")));
         persons = Person.find("#Person.getByName", Parameters.with("name", "stef3")).list();
         Assertions.assertEquals(1, persons.size());

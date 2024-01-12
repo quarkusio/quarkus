@@ -31,7 +31,7 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
 
     private List<String> incomings = new ArrayList<>();
 
-    private String outgoing;
+    private List<String> outgoings = new ArrayList<>();
 
     private Acknowledgment.Strategy acknowledgment;
 
@@ -62,6 +62,8 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
     private Type keyType;
     private Type valueType;
     private Class<? extends KeyValueExtractor> keyed;
+
+    private boolean hasTargetedOutput = false;
 
     public String getBeanId() {
         return beanId;
@@ -117,11 +119,16 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
 
     @Override
     public String getOutgoing() {
-        return outgoing;
+        return outgoings.get(0);
     }
 
-    public void setOutgoing(String outgoing) {
-        this.outgoing = outgoing;
+    @Override
+    public List<String> getOutgoings() {
+        return outgoings;
+    }
+
+    public void setOutgoings(List<String> outgoings) {
+        this.outgoings = outgoings;
     }
 
     @Override
@@ -309,5 +316,18 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
 
     public void setKeyed(Class<? extends KeyValueExtractor> keyed) {
         this.keyed = keyed;
+    }
+
+    @Override
+    public boolean hasTargetedOutput() {
+        return hasTargetedOutput;
+    }
+
+    public boolean isHasTargetedOutput() {
+        return hasTargetedOutput;
+    }
+
+    public void setHasTargetedOutput(boolean hasTargetedOutput) {
+        this.hasTargetedOutput = hasTargetedOutput;
     }
 }

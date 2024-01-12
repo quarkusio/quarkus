@@ -16,9 +16,9 @@ public final class ArtifactResultBuildItem extends MultiBuildItem {
 
     private final Path path;
     private final String type;
-    private final Map<String, Object> metadata;
+    private final Map<String, String> metadata;
 
-    public ArtifactResultBuildItem(Path path, String type, Map<String, Object> metadata) {
+    public ArtifactResultBuildItem(Path path, String type, Map<String, String> metadata) {
         this.path = path;
         this.type = type;
         this.metadata = metadata;
@@ -32,7 +32,7 @@ public final class ArtifactResultBuildItem extends MultiBuildItem {
         return type;
     }
 
-    public Map<String, Object> getMetadata() {
+    public Map<String, String> getMetadata() {
         return metadata;
     }
 }

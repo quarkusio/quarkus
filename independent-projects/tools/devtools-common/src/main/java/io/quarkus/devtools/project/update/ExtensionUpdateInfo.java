@@ -93,4 +93,8 @@ public final class ExtensionUpdateInfo {
         return VersionUpdateType.UPDATE_VERSION.equals(getVersionUpdateType())
                 || VersionUpdateType.RECOMMEND_PLATFORM_MANAGED.equals(getVersionUpdateType());
     }
+
+    public boolean isVersionUpdate() {
+        return !VersionUpdateType.ADD_VERSION.equals(getVersionUpdateType());
+    }
 }

@@ -86,17 +86,6 @@ public class ServerSerialisers extends Serialisers {
     private static final String LENGTH_LOWER = "length";
     private static final String CONTENT_TYPE = CONTENT + "-" + TYPE; // use this instead of the Vert.x constant because the TCK expects upper case
 
-    static {
-        primitivesToWrappers.put(boolean.class, Boolean.class);
-        primitivesToWrappers.put(char.class, Character.class);
-        primitivesToWrappers.put(byte.class, Byte.class);
-        primitivesToWrappers.put(short.class, Short.class);
-        primitivesToWrappers.put(int.class, Integer.class);
-        primitivesToWrappers.put(long.class, Long.class);
-        primitivesToWrappers.put(float.class, Float.class);
-        primitivesToWrappers.put(double.class, Double.class);
-    }
-
     public final static List<Serialisers.BuiltinReader> BUILTIN_READERS = List.of(
             new Serialisers.BuiltinReader(String.class, ServerStringMessageBodyHandler.class,
                     MediaType.WILDCARD),

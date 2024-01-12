@@ -15,6 +15,7 @@ import static io.quarkus.annotation.processor.Constants.DOT;
 import static io.quarkus.annotation.processor.Constants.EMPTY;
 import static io.quarkus.annotation.processor.Constants.HYPHENATED_ELEMENT_NAME;
 import static io.quarkus.annotation.processor.Constants.LIST_OF_CONFIG_ITEMS_TYPE_REF;
+import static io.quarkus.annotation.processor.Constants.NEW_LINE;
 import static io.quarkus.annotation.processor.Constants.NO_DEFAULT;
 import static io.quarkus.annotation.processor.Constants.OBJECT_MAPPER;
 import static io.quarkus.annotation.processor.Constants.PARENT;
@@ -495,7 +496,8 @@ class ConfigDocItemFinder {
                 if (rawJavaDoc != null && !rawJavaDoc.isBlank()) {
                     // Show enum constant description as a Tooltip
                     String javaDoc = enumJavaDocParser.parseConfigDescription(rawJavaDoc);
-                    acceptedValues.add(String.format(Constants.TOOLTIP, enumValue, javaDoc));
+                    acceptedValues.add(String.format(Constants.TOOLTIP, enumValue,
+                            javaDoc.replace("<p>", EMPTY).replace("</p>", EMPTY).replace(NEW_LINE, " ")));
                 } else {
                     acceptedValues.add(Constants.CODE_DELIMITER
                             + enumValue + Constants.CODE_DELIMITER);

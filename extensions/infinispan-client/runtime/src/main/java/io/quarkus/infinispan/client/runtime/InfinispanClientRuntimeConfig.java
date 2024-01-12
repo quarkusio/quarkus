@@ -167,6 +167,19 @@ public class InfinispanClientRuntimeConfig {
     Optional<List<String>> sslCiphers;
 
     /**
+     * Do SSL hostname validation.
+     * Defaults to true.
+     */
+    @ConfigItem
+    Optional<Boolean> sslHostNameValidation;
+
+    /**
+     * SNI host name. Mandatory when SSL is enabled and host name validation is true.
+     */
+    @ConfigItem
+    Optional<String> sniHostName;
+
+    /**
      * Whether a tracing propagation is enabled in case the Opentelemetry extension is present.
      * By default the propagation of the context is propagated from the client to the Infinispan Server.
      */

@@ -4,8 +4,10 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Build, Sign and Encrypt JSON Web Tokens
-
 include::_attributes.adoc[]
+:categories: security
+:topics: security,jwt
+:extensions: io.quarkus:quarkus-smallrye-jwt-build
 
 According to link:https://datatracker.ietf.org/doc/html/rfc7519[RFC7519], JSON Web Token (JWT) is a compact, URL-safe means of representing claims which are encoded as a JSON object that is used as the payload of a JSON Web Signature (JWS) structure or as the plaintext of a JSON Web Encryption (JWE) structure, enabling the claims to be digitally signed or integrity protected with a Message Authentication Code(MAC) and/or encrypted.
 
@@ -316,7 +318,7 @@ SmallRye JWT supports the following properties which can be used to customize th
 |===
 |Property Name|Default|Description
 |smallrye.jwt.sign.key.location|`none`|Location of a private key which will be used to sign the claims when either a no-argument `sign()` or `innerSign()` method is called.
-|smallrye.jwt.sign.key|none|Key value which will be used to sign the claims when either a no-argument sign() or innerSign() method is called.
+|smallrye.jwt.sign.key|none|Key value which will be used to sign the claims when either a no-argument `sign()` or `innerSign()` method is called.
 |smallrye.jwt.sign.key.id|`none`|Signing key identifier which is checked only when JWK keys are used.
 |smallrye.jwt.encrypt.key.location|`none`|Location of a public key which will be used to encrypt the claims or inner JWT when a no-argument `encrypt()` method is called.
 |smallrye.jwt.sign.relax-key-validation|false|Relax the validation of the signing keys.

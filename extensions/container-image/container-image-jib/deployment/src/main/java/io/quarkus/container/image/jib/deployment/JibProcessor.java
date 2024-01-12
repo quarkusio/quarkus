@@ -80,9 +80,9 @@ import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ResolvedDependency;
-import io.quarkus.runtime.util.ContainerRuntimeUtil;
 
 public class JibProcessor {
 
@@ -92,8 +92,17 @@ public class JibProcessor {
     private static final IsClassPredicate IS_CLASS_PREDICATE = new IsClassPredicate();
     private static final String BINARY_NAME_IN_CONTAINER = "application";
 
-    private static final String JAVA_17_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17-runtime:1.16";
-    private static final String JAVA_11_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11-runtime:1.16";
+    private static final String UBI8_PREFIX = "registry.access.redhat.com/ubi8";
+    private static final String OPENJDK_PREFIX = "openjdk";
+    private static final String RUNTIME_SUFFIX = "runtime";
+
+    private static final String JAVA_21_BASE_IMAGE = String.format("%s/%s-21-%s:1.18", UBI8_PREFIX, OPENJDK_PREFIX,
+            RUNTIME_SUFFIX);
+    private static final String JAVA_17_BASE_IMAGE = String.format("%s/%s-17-%s:1.18", UBI8_PREFIX, OPENJDK_PREFIX,
+            RUNTIME_SUFFIX);
+
+    private static final String RUN_JAVA_PATH = "/opt/jboss/container/java/run/run-java.sh";
+
     private static final String DEFAULT_BASE_IMAGE_USER = "185";
 
     private static final String OPENTELEMETRY_CONTEXT_CONTEXT_STORAGE_PROVIDER_SYS_PROP = "io.opentelemetry.context.contextStorageProvider";
@@ -134,10 +143,10 @@ public class JibProcessor {
         }
 
         var javaVersion = compiledJavaVersion.getJavaVersion();
-        if (javaVersion.isJava17OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
-            return JAVA_17_BASE_IMAGE;
+        if (javaVersion.isJava21OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
+            return JAVA_21_BASE_IMAGE;
         }
-        return JAVA_11_BASE_IMAGE;
+        return JAVA_17_BASE_IMAGE;
     }
 
     @BuildStep(onlyIf = { IsNormal.class, JibBuild.class }, onlyIfNot = NativeBuild.class)
@@ -383,6 +392,8 @@ public class JibProcessor {
                 }
                 registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig(dockerConfigPath));
             }
+
+            registryImage.addCredentialRetriever(credentialRetrieverFactory.googleApplicationDefaultCredentials());
         }
         return registryImage;
     }
@@ -422,17 +433,25 @@ public class JibProcessor {
         Path appLibDir = componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.MAIN);
 
         AbsoluteUnixPath workDirInContainer = AbsoluteUnixPath.get(jibConfig.workingDirectory);
+        Map<String, String> envVars = createEnvironmentVariables(jibConfig);
 
         List<String> entrypoint;
         if (jibConfig.jvmEntrypoint.isPresent()) {
-            entrypoint = jibConfig.jvmEntrypoint.get();
+            entrypoint = Collections.unmodifiableList(jibConfig.jvmEntrypoint.get());
+        } else if (containsRunJava(baseJvmImage) && appCDSResult.isEmpty()) {
+            // we want to use run-java.sh by default. However, if AppCDS are being used, run-java.sh cannot be used because it would lead to using different JVM args
+            // which would mean AppCDS would not be taken into account at all
+            entrypoint = List.of(RUN_JAVA_PATH);
+            envVars.put("JAVA_APP_JAR", workDirInContainer + "/" + JarResultBuildStep.QUARKUS_RUN_JAR);
+            envVars.put("JAVA_OPTS_APPEND", String.join(" ", determineEffectiveJvmArguments(jibConfig, appCDSResult)));
         } else {
             List<String> effectiveJvmArguments = determineEffectiveJvmArguments(jibConfig, appCDSResult);
-            entrypoint = new ArrayList<>(3 + effectiveJvmArguments.size());
-            entrypoint.add("java");
-            entrypoint.addAll(effectiveJvmArguments);
-            entrypoint.add("-jar");
-            entrypoint.add(JarResultBuildStep.QUARKUS_RUN_JAR);
+            List<String> argsList = new ArrayList<>(3 + effectiveJvmArguments.size());
+            argsList.add("java");
+            argsList.addAll(effectiveJvmArguments);
+            argsList.add("-jar");
+            argsList.add(JarResultBuildStep.QUARKUS_RUN_JAR);
+            entrypoint = Collections.unmodifiableList(argsList);
         }
 
         List<ResolvedDependency> fastChangingLibs = new ArrayList<>();
@@ -605,7 +624,7 @@ public class JibProcessor {
             jibContainerBuilder
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)
-                    .setEnvironment(getEnvironmentVariables(jibConfig))
+                    .setEnvironment(envVars)
                     .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
 
             mayInheritEntrypoint(jibContainerBuilder, entrypoint, jibConfig.jvmArguments);
@@ -625,6 +644,12 @@ public class JibProcessor {
         } catch (InvalidImageReferenceException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    // TODO: this needs to be a lot more sophisticated
+    private boolean containsRunJava(String baseJvmImage) {
+        return baseJvmImage.startsWith(UBI8_PREFIX) && baseJvmImage.contains(OPENJDK_PREFIX)
+                && baseJvmImage.contains(RUNTIME_SUFFIX);
     }
 
     public JibContainerBuilder addLayer(JibContainerBuilder jibContainerBuilder, List<Path> files,
@@ -715,7 +740,7 @@ public class JibProcessor {
             }
 
             JibContainerBuilder jibContainerBuilder = javaContainerBuilder.toContainerBuilder()
-                    .setEnvironment(getEnvironmentVariables(jibConfig))
+                    .setEnvironment(createEnvironmentVariables(jibConfig))
                     .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
 
             if (jibConfig.useCurrentTimestamp) {
@@ -759,7 +784,7 @@ public class JibProcessor {
                             .build())
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)
-                    .setEnvironment(getEnvironmentVariables(jibConfig))
+                    .setEnvironment(createEnvironmentVariables(jibConfig))
                     .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
 
             mayInheritEntrypoint(jibContainerBuilder, entrypoint, jibConfig.nativeArguments.orElse(null));
@@ -777,7 +802,7 @@ public class JibProcessor {
         }
     }
 
-    private Map<String, String> getEnvironmentVariables(ContainerImageJibConfig jibConfig) {
+    private Map<String, String> createEnvironmentVariables(ContainerImageJibConfig jibConfig) {
         Map<String, String> original = jibConfig.environmentVariables;
         if (original.isEmpty()) {
             return original;

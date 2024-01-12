@@ -31,7 +31,6 @@ public class OpenshiftWithLocalDockerAndDeploymentResourceTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
             .setApplicationName("openshift-with-local-docker-and-deployment-resource")
             .setApplicationVersion("0.1-SNAPSHOT")
-            .overrideConfigKey("quarkus.openshift.deployment-kind", "Deployment")
             .overrideConfigKey("quarkus.container-image.builder", "docker")
             .overrideConfigKey("quarkus.container-image.group", "testme")
             .setLogFileName("k8s.log")

@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.info.BuildInfo;
 import io.quarkus.info.GitInfo;
 import io.quarkus.info.JavaInfo;
@@ -52,7 +54,8 @@ public class InfoRecorder {
         };
     }
 
-    public Supplier<BuildInfo> buildInfoSupplier(String group, String artifact, String version, String time) {
+    public Supplier<BuildInfo> buildInfoSupplier(String group, String artifact, String version, String time,
+            String quarkusVersion) {
         return new Supplier<BuildInfo>() {
             @Override
             public BuildInfo get() {
@@ -75,6 +78,11 @@ public class InfoRecorder {
                     @Override
                     public OffsetDateTime time() {
                         return OffsetDateTime.parse(time, ISO_OFFSET_DATE_TIME);
+                    }
+
+                    @Override
+                    public String quarkusVersion() {
+                        return quarkusVersion;
                     }
                 };
             }
@@ -135,6 +143,10 @@ public class InfoRecorder {
             for (InfoContributor contributor : knownContributors) {
                 //TODO: we might want this to be done lazily
                 // also, do we want to merge information or simply replace like we are doing here?
+                finalBuildInfo.put(contributor.name(), contributor.data());
+            }
+            for (InstanceHandle<InfoContributor> handler : Arc.container().listAll(InfoContributor.class)) {
+                InfoContributor contributor = handler.get();
                 finalBuildInfo.put(contributor.name(), contributor.data());
             }
         }

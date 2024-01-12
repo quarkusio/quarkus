@@ -85,9 +85,7 @@ public final class SessionOperations {
      * @return a new {@link Uni}
      */
     public static <T> Uni<T> withTransaction(Supplier<Uni<T>> work) {
-        return withSession(s -> {
-            return s.withTransaction(t -> work.get());
-        });
+        return withSession(s -> s.withTransaction(t -> work.get()));
     }
 
     /**
@@ -98,9 +96,7 @@ public final class SessionOperations {
      * @return a new {@link Uni}
      */
     public static <T> Uni<T> withTransaction(Function<Transaction, Uni<T>> work) {
-        return withSession(s -> {
-            return s.withTransaction(t -> work.apply(t));
-        });
+        return withSession(s -> s.withTransaction(work));
     }
 
     /**
@@ -122,8 +118,8 @@ public final class SessionOperations {
             return getSessionFactory()
                     .openSession()
                     .invoke(s -> context.putLocal(key, s))
-                    .chain(s -> work.apply(s))
-                    .eventually(() -> closeSession());
+                    .chain(work::apply)
+                    .eventually(SessionOperations::closeSession);
         }
     }
 
@@ -152,7 +148,7 @@ public final class SessionOperations {
             if (context.getLocal(SESSION_ON_DEMAND_KEY) != null) {
                 if (context.getLocal(SESSION_ON_DEMAND_OPENED_KEY) != null) {
                     // a new reactive session is opened in a previous stage
-                    return Uni.createFrom().item(() -> getCurrentSession());
+                    return Uni.createFrom().item(SessionOperations::getCurrentSession);
                 } else {
                     // open a new reactive session and store it in the vertx duplicated context
                     // the context was marked as "lazy" which means that the session will be eventually closed
@@ -161,8 +157,9 @@ public final class SessionOperations {
                 }
             } else {
                 throw new IllegalStateException("No current Mutiny.Session found"
-                        + "\n\t- no reactive session was found in the context and the context was not marked to open a new session lazily"
-                        + "\n\t- you might need to annotate the business method with @WithSession");
+                        + "\n\t- no reactive session was found in the Vert.x context and the context was not marked to open a new session lazily"
+                        + "\n\t- a session is opened automatically for JAX-RS resource methods annotated with an HTTP method (@GET, @POST, etc.); inherited annotations are not taken into account"
+                        + "\n\t- you may need to annotate the business method with @WithSession or @WithTransaction");
             }
         }
     }

@@ -86,6 +86,17 @@ public class ExceptionUtil {
         return chain.isEmpty() ? null : chain.get(chain.size() - 1);
     }
 
+    public static <T> boolean isAnyCauseInstanceOf(Throwable exception, Class<T> classToCheck) {
+        Throwable curr = exception;
+        do {
+            if (classToCheck.isInstance(curr)) {
+                return true;
+            }
+            curr = curr.getCause();
+        } while (curr != null);
+        return false;
+    }
+
     /**
      * Creates and returns a new {@link Throwable} which has the following characteristics:
      * <ul>

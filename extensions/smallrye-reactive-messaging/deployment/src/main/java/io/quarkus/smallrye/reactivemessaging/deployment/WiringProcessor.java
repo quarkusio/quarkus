@@ -107,15 +107,19 @@ public class WiringProcessor {
                         ReactiveMessagingDotNames.INCOMINGS);
                 AnnotationInstance outgoing = transformedAnnotations.getAnnotation(method,
                         ReactiveMessagingDotNames.OUTGOING);
+                AnnotationInstance outgoings = transformedAnnotations.getAnnotation(method,
+                        ReactiveMessagingDotNames.OUTGOINGS);
                 AnnotationInstance blocking = transformedAnnotations.getAnnotation(method,
                         BLOCKING);
-                if (incoming != null || incomings != null || outgoing != null) {
+                if (incoming != null || incomings != null || outgoing != null || outgoings != null) {
                     handleMethodAnnotatedWithIncoming(appChannels, validationErrors, configDescriptionBuildItemBuildProducer,
                             method, incoming);
                     handleMethodAnnotationWithIncomings(appChannels, validationErrors, configDescriptionBuildItemBuildProducer,
                             method, incomings);
                     handleMethodAnnotationWithOutgoing(appChannels, validationErrors, configDescriptionBuildItemBuildProducer,
                             method, outgoing);
+                    handleMethodAnnotationWithOutgoings(appChannels, validationErrors, configDescriptionBuildItemBuildProducer,
+                            method, outgoings);
 
                     if (WiringHelper.isSynthetic(method)) {
                         continue;
@@ -215,6 +219,24 @@ public class WiringProcessor {
                     "The connector to use", null, null, ConfigPhase.BUILD_TIME));
 
             produceOutgoingChannel(appChannels, outgoing.value().asString());
+        }
+    }
+
+    private void handleMethodAnnotationWithOutgoings(BuildProducer<ChannelBuildItem> appChannels,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
+            BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer,
+            MethodInfo method, AnnotationInstance outgoings) {
+        if (outgoings != null) {
+            for (AnnotationInstance instance : outgoings.value().asNestedArray()) {
+                if (instance.value().asString().isEmpty()) {
+                    validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
+                            new DeploymentException("Empty @Outgoing annotation on method " + method)));
+                }
+                configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
+                        "mp.messaging.outgoing." + instance.value().asString() + ".connector", null,
+                        "The connector to use", null, null, ConfigPhase.BUILD_TIME));
+                produceOutgoingChannel(appChannels, instance.value().asString());
+            }
         }
     }
 

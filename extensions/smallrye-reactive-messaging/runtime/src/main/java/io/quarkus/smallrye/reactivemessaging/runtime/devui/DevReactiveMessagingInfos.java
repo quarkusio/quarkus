@@ -34,21 +34,24 @@ public class DevReactiveMessagingInfos {
                         .get();
 
                 // collect all channels
-                Map<String, Component> publishers = new HashMap<>();
+                Map<String, List<Component>> publishers = new HashMap<>();
                 Map<String, List<Component>> consumers = new HashMap<>();
                 Function<String, List<Component>> fun = e -> new ArrayList<>();
 
                 // Unfortunately, there is no easy way to obtain the connectors metadata
                 Connectors connectors = container.instance(Connectors.class).get();
-                publishers.putAll(connectors.outgoingConnectors);
+                for (Entry<String, Component> entry : connectors.outgoingConnectors.entrySet()) {
+                    publishers.computeIfAbsent(entry.getKey(), fun)
+                            .add(entry.getValue());
+                }
                 for (Entry<String, Component> entry : connectors.incomingConnectors.entrySet()) {
                     consumers.computeIfAbsent(entry.getKey(), fun)
                             .add(entry.getValue());
                 }
 
                 for (EmitterConfiguration emitter : context.getEmitterConfigurations()) {
-                    publishers.put(emitter.name(),
-                            new Component(ComponentType.EMITTER,
+                    publishers.computeIfAbsent(emitter.name(), fun)
+                            .add(new Component(ComponentType.EMITTER,
                                     emitter.broadcast() ? "<span class=\"annotation\">&#64;Broadcast</span> "
                                             : "" + asCode(DevConsoleRecorder.EMITTERS.get(emitter.name()))));
                 }
@@ -58,23 +61,27 @@ public class DevReactiveMessagingInfos {
                                     asCode(DevConsoleRecorder.CHANNELS.get(channel.channelName))));
                 }
                 for (MediatorConfiguration mediator : context.getMediatorConfigurations()) {
-                    boolean isProcessor = !mediator.getIncoming().isEmpty() && mediator.getOutgoing() != null;
+                    boolean isProcessor = !mediator.getIncoming().isEmpty() && !mediator.getOutgoings().isEmpty();
                     if (isProcessor) {
-                        publishers.put(mediator.getOutgoing(),
-                                new Component(ComponentType.PROCESSOR, asMethod(mediator.methodAsString())));
+                        for (String outgoing : mediator.getOutgoings()) {
+                            publishers.computeIfAbsent(outgoing, fun)
+                                    .add(new Component(ComponentType.PROCESSOR, asMethod(mediator.methodAsString())));
+                        }
                         for (String incoming : mediator.getIncoming()) {
                             consumers.computeIfAbsent(incoming, fun)
                                     .add(new Component(ComponentType.PROCESSOR,
                                             asMethod(mediator.methodAsString())));
                         }
-                    } else if (mediator.getOutgoing() != null) {
-                        StringBuilder builder = new StringBuilder();
-                        builder.append(asMethod(mediator.methodAsString()));
-                        if (mediator.getBroadcast()) {
-                            builder.append("[broadcast: true]");
+                    } else if (!mediator.getOutgoings().isEmpty()) {
+                        for (String outgoing : mediator.getOutgoings()) {
+                            StringBuilder builder = new StringBuilder();
+                            builder.append(asMethod(mediator.methodAsString()));
+                            if (mediator.getBroadcast()) {
+                                builder.append("[broadcast: true]");
+                            }
+                            publishers.computeIfAbsent(outgoing, fun)
+                                    .add(new Component(ComponentType.PUBLISHER, builder.toString()));
                         }
-                        publishers.put(mediator.getOutgoing(),
-                                new Component(ComponentType.PUBLISHER, builder.toString()));
                     } else if (!mediator.getIncoming().isEmpty()) {
                         for (String incoming : mediator.getIncoming()) {
                             consumers.computeIfAbsent(incoming, fun)
@@ -113,12 +120,12 @@ public class DevReactiveMessagingInfos {
     public static class DevChannelInfo implements Comparable<DevChannelInfo> {
 
         private final String name;
-        private final Component publisher;
+        private final List<Component> publishers;
         private final List<Component> consumers;
 
-        public DevChannelInfo(String name, Component publisher, List<Component> consumers) {
+        public DevChannelInfo(String name, List<Component> publishers, List<Component> consumers) {
             this.name = name;
-            this.publisher = publisher;
+            this.publishers = publishers != null ? publishers : Collections.emptyList();
             this.consumers = consumers != null ? consumers : Collections.emptyList();
         }
 
@@ -126,8 +133,8 @@ public class DevReactiveMessagingInfos {
             return name;
         }
 
-        public Component getPublisher() {
-            return publisher;
+        public List<Component> getPublishers() {
+            return publishers;
         }
 
         public List<Component> getConsumers() {
@@ -136,27 +143,17 @@ public class DevReactiveMessagingInfos {
 
         @Override
         public int compareTo(DevChannelInfo other) {
-            if (publisher != other.publisher) {
-                if (other.publisher == null) {
-                    return -1;
-                }
-                if (publisher == null) {
-                    return 1;
-                }
-                // publisher connectors first
-                if (publisher.type != other.publisher.type) {
-                    return publisher.type == ComponentType.CONNECTOR ? -1 : 1;
-                }
+            // publisher connectors last
+            long publisherConnectors = publishers.stream().filter(Component::isConnector).count();
+            long otherPublisherConnectors = other.publishers.stream().filter(Component::isConnector).count();
+            if (publisherConnectors != otherPublisherConnectors) {
+                return Long.compare(otherPublisherConnectors, publisherConnectors);
             }
             // consumer connectors last
             long consumerConnectors = consumers.stream().filter(Component::isConnector).count();
             long otherConsumersConnectors = other.consumers.stream().filter(Component::isConnector).count();
             if (consumerConnectors != otherConsumersConnectors) {
                 return Long.compare(otherConsumersConnectors, consumerConnectors);
-            }
-            if (publisher != other.publisher && publisher.type == ComponentType.CONNECTOR
-                    && other.publisher.type != ComponentType.CONNECTOR) {
-                return 1;
             }
             // alphabetically
             return name.compareTo(other.name);

@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: data
 :summary: This guide covers how to use the Apache Cassandra NoSQL database in Quarkus.
+:topics: data,cassandra
 
 Apache Cassandra® is a free and open-source, distributed, wide column store, NoSQL database
 management system designed to handle large amounts of data across many commodity servers, providing
@@ -143,7 +144,7 @@ TIP: `@DaoFactory` method names are irrelevant.
 `@DaoFactory` methods should return beans of the following types:
 
 - Any `@Dao`-annotated interface, e.g. `FruitDao`;
-- A `CompletationStage` of any `@Dao`-annotated interface, e.g. `CompletionStage<FruitDao>`.
+- A `CompletionStage` of any `@Dao`-annotated interface, e.g. `CompletionStage<FruitDao>`.
 - A `Uni` of any `@Dao`-annotated interface, e.g. `Uni<FruitDao>`.
 
 TIP: `Uni` is a type from the Mutiny library, which is the reactive programming library used by
@@ -253,7 +254,7 @@ link:https://javadoc.io/doc/com.datastax.oss.quarkus/cassandra-quarkus-client/la
 bean: this application-scoped, singleton bean is your main entry point to the Cassandra client; it
 is a specialized Cassandra driver session instance with a few methods tailored especially for
 Quarkus. Read its javadocs carefully!
-- You can also inject `CompletationStage<QuarkusCqlSession>` or `Uni<QuarkusCqlSession>`.
+- You can also inject `CompletionStage<QuarkusCqlSession>` or `Uni<QuarkusCqlSession>`.
 
 In our example, both `FruitMapper` and `FruitDao` could be injected anywhere. We chose to inject
 `FruitDao` in `FruitService`.

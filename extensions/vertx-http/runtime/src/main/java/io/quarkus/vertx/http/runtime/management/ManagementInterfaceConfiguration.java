@@ -24,6 +24,11 @@ import io.quarkus.vertx.http.runtime.ServerSslConfig;
 public class ManagementInterfaceConfiguration {
 
     /**
+     * Authentication configuration
+     */
+    public ManagementRuntimeAuthConfig auth;
+
+    /**
      * The HTTP port
      */
     @ConfigItem(defaultValue = "9000")

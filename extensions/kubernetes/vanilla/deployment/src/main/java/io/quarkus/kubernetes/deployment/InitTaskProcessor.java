@@ -3,6 +3,7 @@ package io.quarkus.kubernetes.deployment;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
@@ -21,9 +22,9 @@ import io.quarkus.kubernetes.spi.PolicyRule;
 
 public class InitTaskProcessor {
 
-    private static final String INIT_CONTAINER_WAITER_NAME = "init";
+    private static final String INIT_CONTAINER_WAITER_NAME = "wait-for-";
 
-    static void process(
+    public static void process(
             String target, // kubernetes, openshift, etc.
             String name,
             ContainerImageInfoBuildItem image,
@@ -40,7 +41,12 @@ public class InitTaskProcessor {
 
         boolean generateRoleForJobs = false;
         for (InitTaskBuildItem task : initTasks) {
-            InitTaskConfig config = initTasksConfig.getOrDefault(task.getName(), initTaskDefaults);
+            String taskName = task.getName()
+                    //Strip appplication.name prefix and init suffix (for compatibility with previous versions)
+                    .replaceAll("^" + Pattern.quote(name + "-"), "")
+                    .replaceAll(Pattern.quote("-init") + "$", "");
+            String jobName = name + "-" + taskName + "-init";
+            InitTaskConfig config = initTasksConfig.getOrDefault(taskName, initTaskDefaults);
             if (config == null || config.enabled) {
                 generateRoleForJobs = true;
                 jobs.produce(KubernetesJobBuildItem.create(image.getImage())
@@ -60,10 +66,11 @@ public class InitTaskProcessor {
                                     .build())));
                 });
 
-                String waitForImage = config.image.orElse(config.waitForImage);
-                initContainers.produce(KubernetesInitContainerBuildItem.create(INIT_CONTAINER_WAITER_NAME, waitForImage)
-                        .withTarget(target)
-                        .withArguments(List.of("job", task.getName())));
+                String waitForImage = config.image.orElse(config.waitForContainer.image);
+                initContainers
+                        .produce(KubernetesInitContainerBuildItem.create(INIT_CONTAINER_WAITER_NAME + taskName, waitForImage)
+                                .withTarget(target)
+                                .withArguments(List.of("job", jobName)));
             }
         }
 

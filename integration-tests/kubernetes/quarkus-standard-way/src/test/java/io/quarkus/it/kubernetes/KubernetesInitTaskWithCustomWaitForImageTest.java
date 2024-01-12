@@ -33,7 +33,7 @@ public class KubernetesInitTaskWithCustomWaitForImageTest {
             .setApplicationName(NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
             .setLogFileName("k8s.log")
-            .overrideConfigKey("quarkus.kubernetes.init-task-defaults.wait-for-image", WAIT_FOR_IMAGE)
+            .overrideConfigKey("quarkus.kubernetes.init-task-defaults.wait-for-container.image", WAIT_FOR_IMAGE)
             .setForcedDependencies(Arrays.asList(
                     new AppArtifact("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
                     new AppArtifact("io.quarkus", "quarkus-flyway", Version.getVersion())));
@@ -66,7 +66,7 @@ public class KubernetesInitTaskWithCustomWaitForImageTest {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getInitContainers()).singleElement().satisfies(container -> {
-                            assertThat(container.getName()).isEqualTo("init");
+                            assertThat(container.getName()).isEqualTo("wait-for-flyway");
                             assertThat(container.getImage()).isEqualTo(WAIT_FOR_IMAGE);
                         });
 

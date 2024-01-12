@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.runtime.LaunchMode;
@@ -23,13 +25,16 @@ import io.quarkus.vertx.http.runtime.ServerSslConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceConfiguration;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.Http2Settings;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.TrafficShapingOptions;
 
+@SuppressWarnings("OptionalIsPresent")
 public class HttpServerOptionsUtils {
 
     /**
@@ -273,9 +278,49 @@ public class HttpServerOptionsUtils {
                 settings.setMaxHeaderListSize(httpConfiguration.limits.maxHeaderListSize.getAsLong());
             }
             httpServerOptions.setInitialSettings(settings);
+
+            // RST attack protection - https://github.com/netty/netty/security/advisories/GHSA-xpw8-rcwv-8f8p
+            if (httpConfiguration.limits.rstFloodMaxRstFramePerWindow.isPresent()) {
+                httpServerOptions
+                        .setHttp2RstFloodMaxRstFramePerWindow(httpConfiguration.limits.rstFloodMaxRstFramePerWindow.getAsInt());
+            }
+            if (httpConfiguration.limits.rstFloodWindowDuration.isPresent()) {
+                httpServerOptions.setHttp2RstFloodWindowDuration(
+                        (int) httpConfiguration.limits.rstFloodWindowDuration.get().toSeconds());
+                httpServerOptions.setHttp2RstFloodWindowDurationTimeUnit(TimeUnit.SECONDS);
+            }
+
         }
 
         httpServerOptions.setUseProxyProtocol(httpConfiguration.proxy.useProxyProtocol);
+        configureTrafficShapingIfEnabled(httpServerOptions, httpConfiguration);
+    }
+
+    private static void configureTrafficShapingIfEnabled(HttpServerOptions httpServerOptions,
+            HttpConfiguration httpConfiguration) {
+        if (httpConfiguration.trafficShaping.enabled) {
+            TrafficShapingOptions options = new TrafficShapingOptions();
+            if (httpConfiguration.trafficShaping.checkInterval.isPresent()) {
+                options.setCheckIntervalForStats(httpConfiguration.trafficShaping.checkInterval.get().toSeconds());
+                options.setCheckIntervalForStatsTimeUnit(TimeUnit.SECONDS);
+            }
+            if (httpConfiguration.trafficShaping.maxDelay.isPresent()) {
+                options.setMaxDelayToWait(httpConfiguration.trafficShaping.maxDelay.get().toSeconds());
+                options.setMaxDelayToWaitUnit(TimeUnit.SECONDS);
+            }
+            if (httpConfiguration.trafficShaping.inboundGlobalBandwidth.isPresent()) {
+                options.setInboundGlobalBandwidth(httpConfiguration.trafficShaping.inboundGlobalBandwidth.get().asLongValue());
+            }
+            if (httpConfiguration.trafficShaping.outboundGlobalBandwidth.isPresent()) {
+                options.setOutboundGlobalBandwidth(
+                        httpConfiguration.trafficShaping.outboundGlobalBandwidth.get().asLongValue());
+            }
+            if (httpConfiguration.trafficShaping.peakOutboundGlobalBandwidth.isPresent()) {
+                options.setPeakOutboundGlobalBandwidth(
+                        httpConfiguration.trafficShaping.peakOutboundGlobalBandwidth.get().asLongValue());
+            }
+            httpServerOptions.setTrafficShapingOptions(options);
+        }
     }
 
     public static void applyCommonOptionsForManagementInterface(HttpServerOptions options,
@@ -385,5 +430,26 @@ public class HttpServerOptionsUtils {
         int idleTimeout = (int) httpConfiguration.idleTimeout.toMillis();
         options.setIdleTimeout(idleTimeout);
         options.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
+    }
+
+    public static HttpConfiguration.InsecureRequests getInsecureRequestStrategy(HttpBuildTimeConfig buildTimeConfig,
+            Optional<HttpConfiguration.InsecureRequests> requests) {
+        if (requests.isPresent()) {
+            var value = requests.get();
+            if (buildTimeConfig.tlsClientAuth == ClientAuth.REQUIRED && value == HttpConfiguration.InsecureRequests.ENABLED) {
+                Logger.getLogger(HttpServerOptionsUtils.class).warn(
+                        "When configuring TLS client authentication to be required, it is recommended to **NOT** set `quarkus.http.insecure-requests` to `enabled`. "
+                                +
+                                "You can switch to `redirect` by setting `quarkus.http.insecure-requests=redirect`.");
+            }
+            return value;
+        }
+        if (buildTimeConfig.tlsClientAuth == ClientAuth.REQUIRED) {
+            Logger.getLogger(HttpServerOptionsUtils.class).info(
+                    "TLS client authentication is required, thus disabling insecure requests. " +
+                            "You can switch to `redirect` by setting `quarkus.http.insecure-requests=redirect`.");
+            return HttpConfiguration.InsecureRequests.DISABLED;
+        }
+        return HttpConfiguration.InsecureRequests.ENABLED;
     }
 }

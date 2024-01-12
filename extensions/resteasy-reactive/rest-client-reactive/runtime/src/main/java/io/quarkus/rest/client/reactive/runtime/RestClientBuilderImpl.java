@@ -70,6 +70,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private String nonProxyHosts;
 
     private ClientLogger clientLogger;
+    private LoggingScope loggingScope;
+    private Integer loggingBodyLimit;
 
     @Override
     public RestClientBuilderImpl baseUrl(URL url) {
@@ -164,6 +166,16 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     public RestClientBuilderImpl clientLogger(ClientLogger clientLogger) {
         this.clientLogger = clientLogger;
+        return this;
+    }
+
+    public RestClientBuilderImpl loggingScope(LoggingScope loggingScope) {
+        this.loggingScope = loggingScope;
+        return this;
+    }
+
+    public RestClientBuilderImpl loggingBodyLimit(Integer limit) {
+        this.loggingBodyLimit = limit;
         return this;
     }
 
@@ -307,7 +319,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
         ArcContainer arcContainer = Arc.container();
         if (arcContainer == null) {
-            throw new IllegalStateException("The Reactive REST Client is not meant to be used outside of Quarkus");
+            throw new IllegalStateException(
+                    "The Reactive REST Client needs to be built within the context of a Quarkus application with a valid ArC (CDI) context running.");
         }
 
         RestClientListeners.get().forEach(listener -> listener.onNewClient(aClass, this));
@@ -333,11 +346,19 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         RestClientsConfig restClientsConfig = arcContainer.instance(RestClientsConfig.class).get();
 
         RestClientLoggingConfig logging = restClientsConfig.logging;
-        LoggingScope loggingScope = logging != null ? logging.scope.map(LoggingScope::forName).orElse(LoggingScope.NONE)
-                : LoggingScope.NONE;
-        Integer loggingBodySize = logging != null ? logging.bodyLimit : 100;
-        clientBuilder.loggingScope(loggingScope);
-        clientBuilder.loggingBodySize(loggingBodySize);
+
+        LoggingScope effectiveLoggingScope = loggingScope; // if a scope was specified programmatically, it takes precedence
+        if (effectiveLoggingScope == null) {
+            effectiveLoggingScope = logging != null ? logging.scope.map(LoggingScope::forName).orElse(LoggingScope.NONE)
+                    : LoggingScope.NONE;
+        }
+
+        Integer effectiveLoggingBodyLimit = loggingBodyLimit; // if a limit was specified programmatically, it takes precedence
+        if (effectiveLoggingBodyLimit == null) {
+            effectiveLoggingBodyLimit = logging != null ? logging.bodyLimit : 100;
+        }
+        clientBuilder.loggingScope(effectiveLoggingScope);
+        clientBuilder.loggingBodySize(effectiveLoggingBodyLimit);
         if (clientLogger != null) {
             clientBuilder.clientLogger(clientLogger);
         } else {
@@ -365,6 +386,10 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         Integer maxChunkSize = (Integer) getConfiguration().getProperty(QuarkusRestClientProperties.MAX_CHUNK_SIZE);
         if (maxChunkSize != null) {
             clientBuilder.maxChunkSize(maxChunkSize);
+        } else if (restClientsConfig.maxChunkSize.isPresent()) {
+            clientBuilder.maxChunkSize((int) restClientsConfig.maxChunkSize.get().asLongValue());
+        } else if (restClientsConfig.multipart.maxChunkSize.isPresent()) {
+            clientBuilder.maxChunkSize(restClientsConfig.multipart.maxChunkSize.get());
         } else {
             clientBuilder.maxChunkSize(DEFAULT_MAX_CHUNK_SIZE);
         }
@@ -427,4 +452,5 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         }
         return null;
     }
+
 }

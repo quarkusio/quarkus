@@ -43,6 +43,7 @@ public class KnativeTest {
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertThat(s.getMetadata()).satisfies(m -> {
                         assertThat(m.getNamespace()).isNull();
+                        assertThat(m.getAnnotations().get("app.quarkus.io/quarkus-version")).isNotBlank();
                     });
 
                     assertThat(spec.getTemplate()).satisfies(template -> {

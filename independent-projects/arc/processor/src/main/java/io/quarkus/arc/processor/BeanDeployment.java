@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -49,6 +50,7 @@ import io.quarkus.arc.processor.BeanProcessor.BuildContextImpl;
 import io.quarkus.arc.processor.BeanRegistrar.RegistrationContext;
 import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import io.quarkus.arc.processor.BuildExtension.Key;
+import io.quarkus.arc.processor.Types.TypeClosure;
 import io.quarkus.arc.processor.bcextensions.ExtensionsEntryPoint;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.ResultHandle;
@@ -57,12 +59,14 @@ public class BeanDeployment {
 
     private static final Logger LOGGER = Logger.getLogger(BeanDeployment.class);
 
-    private final String name;
+    final String name;
     private final BuildContextImpl buildContext;
 
     private final IndexView beanArchiveComputingIndex;
     private final IndexView beanArchiveImmutableIndex;
     private final IndexView applicationIndex;
+
+    private final Predicate<DotName> applicationClassPredicate;
 
     private final Map<DotName, ClassInfo> qualifiers;
     private final Map<DotName, ClassInfo> repeatingQualifierAnnotations;
@@ -77,6 +81,7 @@ public class BeanDeployment {
 
     private final List<BeanInfo> beans;
     private volatile Map<DotName, List<BeanInfo>> beansByType;
+    private final List<SkippedClass> skippedClasses;
 
     private final List<InterceptorInfo> interceptors;
     private final List<DecoratorInfo> decorators;
@@ -99,7 +104,7 @@ public class BeanDeployment {
 
     private final List<InjectionPointInfo> injectionPoints;
 
-    private final boolean removeUnusedBeans;
+    final boolean removeUnusedBeans;
 
     private final List<Predicate<BeanInfo>> unusedExclusions;
 
@@ -142,6 +147,7 @@ public class BeanDeployment {
         this.beanArchiveComputingIndex = builder.beanArchiveComputingIndex;
         this.beanArchiveImmutableIndex = Objects.requireNonNull(builder.beanArchiveImmutableIndex);
         this.applicationIndex = builder.applicationIndex;
+        this.applicationClassPredicate = builder.applicationClassPredicate;
         this.annotationStore = new AnnotationStore(initAndSort(builder.annotationTransformers, buildContext), buildContext);
         buildContext.putInternal(Key.ANNOTATION_STORE, annotationStore);
 
@@ -215,6 +221,7 @@ public class BeanDeployment {
         this.interceptors = new CopyOnWriteArrayList<>();
         this.decorators = new CopyOnWriteArrayList<>();
         this.beans = new CopyOnWriteArrayList<>();
+        this.skippedClasses = new CopyOnWriteArrayList<>();
         this.observers = new CopyOnWriteArrayList<>();
 
         this.assignabilityCheck = new AssignabilityCheck(getBeanArchiveIndex(), applicationIndex);
@@ -268,9 +275,11 @@ public class BeanDeployment {
 
     BeanRegistrar.RegistrationContext registerBeans(List<BeanRegistrar> beanRegistrars) {
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
-        this.beans.addAll(
-                findBeans(initBeanDefiningAnnotations(beanDefiningAnnotations.values(), stereotypes.keySet()), observers,
-                        injectionPoints, jtaCapabilities));
+        BeanDiscoveryResult beanDiscoveryResult = findBeans(
+                initBeanDefiningAnnotations(beanDefiningAnnotations.values(), stereotypes.keySet()), observers,
+                injectionPoints, jtaCapabilities);
+        this.beans.addAll(beanDiscoveryResult.beans);
+        this.skippedClasses.addAll(beanDiscoveryResult.skippedClasses);
         // Note that we use unmodifiable views because the underlying collections may change in the next phase
         // E.g. synthetic beans are added and unused interceptors removed
         buildContext.putInternal(Key.BEANS, Collections.unmodifiableList(beans));
@@ -283,7 +292,7 @@ public class BeanDeployment {
         buildContext.putInternal(Key.INJECTION_POINTS, Collections.unmodifiableList(this.injectionPoints));
 
         if (buildCompatibleExtensions != null) {
-            buildCompatibleExtensions.runRegistration(beanArchiveComputingIndex, beans, observers);
+            buildCompatibleExtensions.runRegistration(beanArchiveComputingIndex, beans, interceptors, observers);
         }
 
         return registerSyntheticBeans(beanRegistrars, buildContext);
@@ -938,7 +947,23 @@ public class BeanDeployment {
         }
     }
 
-    private List<BeanInfo> findBeans(Collection<DotName> beanDefiningAnnotations, List<ObserverInfo> observers,
+    record BeanDiscoveryResult(List<BeanInfo> beans, List<SkippedClass> skippedClasses) {
+    }
+
+    /**
+     * A class found during discovery but skipped for a specific reason.
+     */
+    record SkippedClass(ClassInfo clazz, SkippedReason reason) {
+    }
+
+    enum SkippedReason {
+        EXCLUDED_TYPE,
+        VETOED,
+        NO_BEAN_DEF_ANNOTATION,
+        NO_BEAN_CONSTRUCTOR
+    }
+
+    private BeanDiscoveryResult findBeans(Collection<DotName> beanDefiningAnnotations, List<ObserverInfo> observers,
             List<InjectionPointInfo> injectionPoints, boolean jtaCapabilities) {
 
         Set<ClassInfo> beanClasses = new HashSet<>();
@@ -953,8 +978,17 @@ public class BeanDeployment {
                 .map(StereotypeInfo::getName)
                 .collect(Collectors.toSet());
 
+        List<SkippedClass> skipped = new ArrayList<>();
+        List<ClassInfo> noBeanDefiningAnnotationClasses = new ArrayList<>();
+
+        Set<DotName> seenClasses = new HashSet<>();
+
         // If needed use the specialized immutable index to discover beans
         for (ClassInfo beanClass : beanArchiveImmutableIndex.getKnownClasses()) {
+            if (!seenClasses.add(beanClass.name())) {
+                // avoid discovering the same bean twice
+                continue;
+            }
 
             if (Modifier.isInterface(beanClass.flags()) || Modifier.isAbstract(beanClass.flags())
                     || beanClass.isAnnotation() || beanClass.isEnum()) {
@@ -969,6 +1003,7 @@ public class BeanDeployment {
             }
 
             if (isExcluded(beanClass)) {
+                skipped.add(new SkippedClass(beanClass, SkippedReason.EXCLUDED_TYPE));
                 continue;
             }
 
@@ -988,18 +1023,21 @@ public class BeanDeployment {
                 // in strict compatibility mode, the bean needs to have either no args ctor or some with @Inject
                 // note that we perform validation (for multiple ctors for instance) later in the cycle
                 if (strictCompatibility && numberOfConstructorsWithInject == 0) {
+                    skipped.add(new SkippedClass(beanClass, SkippedReason.NO_BEAN_CONSTRUCTOR));
                     continue;
                 }
 
                 // without strict compatibility, a bean without no-arg constructor needs to have either a constructor
                 // annotated with @Inject or a single constructor
                 if (numberOfConstructorsWithInject == 0 && numberOfConstructorsWithoutInject != 1) {
+                    skipped.add(new SkippedClass(beanClass, SkippedReason.NO_BEAN_CONSTRUCTOR));
                     continue;
                 }
             }
 
             if (isVetoed(beanClass)) {
                 // Skip vetoed bean classes
+                skipped.add(new SkippedClass(beanClass, SkippedReason.VETOED));
                 continue;
             }
 
@@ -1023,9 +1061,12 @@ public class BeanDeployment {
             if (annotationStore.hasAnyAnnotation(beanClass, beanDefiningAnnotations)) {
                 hasBeanDefiningAnnotation = true;
                 beanClasses.add(beanClass);
+            } else {
+                noBeanDefiningAnnotationClasses.add(beanClass);
             }
 
-            // non-inherited methods
+            // non-inherited methods: producers and disposers
+            // Impl.note: we cannot optimize with beanClass.hasAnnotation() as the annotations can be added with a transformer
             for (MethodInfo method : beanClass.methods()) {
                 if (method.isSynthetic()) {
                     continue;
@@ -1141,8 +1182,9 @@ public class BeanDeployment {
                             beanClasses.add(beanClass);
                         }
                     }
-                } else {
+                } else if (!annotationStore.hasAnnotation(field, DotNames.PRODUCES)) {
                     // Verify that non-producer fields are not annotated with stereotypes
+                    // (vetoed producers must _not_ be checked)
                     for (AnnotationInstance i : annotationStore.getAnnotations(field)) {
                         if (realStereotypes.contains(i.name())) {
                             throw new DefinitionException(
@@ -1206,10 +1248,10 @@ public class BeanDeployment {
         for (MethodInfo producerMethod : producerMethods) {
             BeanInfo declaringBean = beanClassToBean.get(producerMethod.declaringClass());
             if (declaringBean != null) {
-                Set<Type> beanTypes = Types.getProducerMethodTypeClosure(producerMethod, this);
-                DisposerInfo disposer = findDisposer(beanTypes, declaringBean, producerMethod, disposers);
+                TypeClosure typeClosure = Types.getProducerMethodTypeClosure(producerMethod, this);
+                DisposerInfo disposer = findDisposer(typeClosure.types(), declaringBean, producerMethod, disposers);
                 unusedDisposers.remove(disposer);
-                BeanInfo producerMethodBean = Beans.createProducerMethod(beanTypes, producerMethod, declaringBean, this,
+                BeanInfo producerMethodBean = Beans.createProducerMethod(typeClosure, producerMethod, declaringBean, this,
                         disposer, injectionPointTransformer);
                 if (producerMethodBean != null) {
                     beans.add(producerMethodBean);
@@ -1221,8 +1263,8 @@ public class BeanDeployment {
         for (FieldInfo producerField : producerFields) {
             BeanInfo declaringBean = beanClassToBean.get(producerField.declaringClass());
             if (declaringBean != null) {
-                Set<Type> beanTypes = Types.getProducerFieldTypeClosure(producerField, this);
-                DisposerInfo disposer = findDisposer(beanTypes, declaringBean, producerField, disposers);
+                TypeClosure typeClosure = Types.getProducerFieldTypeClosure(producerField, this);
+                DisposerInfo disposer = findDisposer(typeClosure.types(), declaringBean, producerField, disposers);
                 unusedDisposers.remove(disposer);
                 BeanInfo producerFieldBean = Beans.createProducerField(producerField, declaringBean, this,
                         disposer);
@@ -1271,7 +1313,18 @@ public class BeanDeployment {
                 LOGGER.logf(Level.TRACE, "Created %s", bean);
             }
         }
-        return beans;
+
+        for (Iterator<ClassInfo> it = noBeanDefiningAnnotationClasses.iterator(); it.hasNext();) {
+            ClassInfo clazz = it.next();
+            if (beanClasses.contains(clazz)) {
+                // Bean class is not annotated with a bean defining annotation but declares observer, producer, disposer..
+                continue;
+            }
+            skipped.add(new SkippedClass(clazz, SkippedReason.NO_BEAN_DEF_ANNOTATION));
+        }
+
+        LOGGER.debugf("Found %s beans, skipped %s classes", beans.size(), skipped.size());
+        return new BeanDiscoveryResult(beans, skipped);
     }
 
     private boolean isVetoed(ClassInfo beanClass) {
@@ -1383,7 +1436,7 @@ public class BeanDeployment {
         }
         if (buildCompatibleExtensions != null) {
             buildCompatibleExtensions.runSynthesis(beanArchiveComputingIndex);
-            buildCompatibleExtensions.registerSyntheticBeans(context);
+            buildCompatibleExtensions.registerSyntheticBeans(context, applicationClassPredicate);
         }
         this.injectionPoints.addAll(context.syntheticInjectionPoints);
         return context;
@@ -1398,7 +1451,7 @@ public class BeanDeployment {
             context.extension = null;
         }
         if (buildCompatibleExtensions != null) {
-            buildCompatibleExtensions.registerSyntheticObservers(context);
+            buildCompatibleExtensions.registerSyntheticObservers(context, applicationClassPredicate);
             buildCompatibleExtensions.runRegistrationAgain(beanArchiveComputingIndex, beans, observers);
         }
         return context;
@@ -1432,7 +1485,7 @@ public class BeanDeployment {
                 configurator.observedQualifiers,
                 Reception.ALWAYS, configurator.transactionPhase, configurator.isAsync, configurator.priority,
                 observerTransformers, buildContext,
-                jtaCapabilities, configurator.notifyConsumer, configurator.params));
+                jtaCapabilities, configurator.notifyConsumer, configurator.params, configurator.forceApplicationClass));
     }
 
     static void processErrors(List<Throwable> errors) {
@@ -1579,6 +1632,29 @@ public class BeanDeployment {
                 }
             }
         }
+
+        List<Map.Entry<String, List<BeanInfo>>> duplicateBeanIds = beans.stream()
+                .collect(Collectors.groupingBy(BeanInfo::getIdentifier))
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getValue().size() > 1)
+                .collect(Collectors.toList());
+        if (!duplicateBeanIds.isEmpty()) {
+            String separator = "====================";
+            StringBuilder error = new StringBuilder("\n")
+                    .append(separator).append(separator).append(separator).append(separator).append("\n")
+                    .append("Multiple beans with the same identifier found!\n")
+                    .append("----------------------------------------------\n")
+                    .append("This is an internal error. Please report a bug and attach the following listing.\n\n");
+            for (Map.Entry<String, List<BeanInfo>> entry : duplicateBeanIds) {
+                error.append(entry.getKey()).append(" -> ").append(entry.getValue().size()).append(" beans:\n");
+                for (BeanInfo bean : entry.getValue()) {
+                    error.append("- ").append(bean).append("\n");
+                }
+            }
+            error.append(separator).append(separator).append(separator).append(separator).append("\n");
+            errors.add(new DeploymentException(error.toString()));
+        }
     }
 
     private void findNamespaces(BeanInfo bean, Set<String> namespaces) {
@@ -1635,6 +1711,26 @@ public class BeanDeployment {
      */
     public Set<String> getQualifierNonbindingMembers(DotName name) {
         return qualifierNonbindingMembers.getOrDefault(name, Collections.emptySet());
+    }
+
+    /**
+     * Returns the set of skipped classes that match the given required type.
+     *
+     * @param type
+     * @return set of skipped classes
+     */
+    List<SkippedClass> findSkippedClassesMatching(Type type) {
+        List<SkippedClass> skipped = new ArrayList<>();
+        for (SkippedClass skippedClass : skippedClasses) {
+            Set<Type> types = Types.getClassUnrestrictedTypeClosure(skippedClass.clazz, this);
+            for (Type beanType : types) {
+                if (beanResolver.matches(type, beanType)) {
+                    skipped.add(skippedClass);
+                    break;
+                }
+            }
+        }
+        return skipped;
     }
 
     @Override

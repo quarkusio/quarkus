@@ -222,7 +222,8 @@ public class LocalWorkspaceDiscoveryTest {
         assertNotNull(ws.getProject("org.acme", "quarkus-quickstart-multimodule-rest"));
         assertNotNull(ws.getProject("org.acme", "acme-integration-tests"));
         assertNotNull(ws.getProject("org.acme", "acme-rest-tests"));
-        assertEquals(6, ws.getProjects().size());
+        assertNotNull(ws.getProject("org.acme", "other"));
+        assertEquals(7, ws.getProjects().size());
     }
 
     @Test
@@ -535,7 +536,8 @@ public class LocalWorkspaceDiscoveryTest {
     @Test
     public void loadNonModuleChildProject() throws Exception {
         final LocalProject project = LocalProject
-                .loadWorkspace(workDir.resolve("root").resolve("non-module-child").resolve("target").resolve("classes"));
+                .loadWorkspace(IoUtils
+                        .mkdirs(workDir.resolve("root").resolve("non-module-child").resolve("target").resolve("classes")));
         assertNotNull(project);
         assertNotNull(project.getWorkspace());
         assertEquals("non-module-child", project.getArtifactId());

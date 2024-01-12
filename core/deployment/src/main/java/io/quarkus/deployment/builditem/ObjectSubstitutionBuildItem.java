@@ -4,11 +4,11 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.runtime.ObjectSubstitution;
 
 /**
- * Used to capture object substitution information for non-serializable classes
+ * Used to capture object substitution information for non-serializable classes.
  */
 public final class ObjectSubstitutionBuildItem extends MultiBuildItem {
     /**
-     * Holder to keep type info around for compiler
+     * Holder to keep type info around for compiler.
      *
      * @param <F> - from class
      * @param <T> - to class

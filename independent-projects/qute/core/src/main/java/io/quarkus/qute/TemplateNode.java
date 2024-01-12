@@ -107,6 +107,13 @@ public interface TemplateNode {
             }
         }
 
+        /**
+         * @return {@code true} if the template node was not part of the original template, {@code false} otherwise
+         */
+        default boolean isSynthetic() {
+            return getLine() == -1;
+        }
+
     }
 
 }

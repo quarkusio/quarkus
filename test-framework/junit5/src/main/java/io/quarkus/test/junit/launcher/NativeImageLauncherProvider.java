@@ -17,6 +17,7 @@ import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DefaultNativeImageLauncher;
 import io.quarkus.test.common.LauncherUtil;
 import io.quarkus.test.common.NativeImageLauncher;
+import io.quarkus.test.common.TestConfigUtil;
 
 public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
     @Override
@@ -41,10 +42,10 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
             launcher.init(new NativeImageLauncherProvider.DefaultNativeImageInitContext(
                     config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
-                    ConfigUtil.waitTimeValue(config),
-                    ConfigUtil.integrationTestProfile(config),
-                    ConfigUtil.argLineValue(config),
-                    ConfigUtil.env(config),
+                    TestConfigUtil.waitTimeValue(config),
+                    TestConfigUtil.integrationTestProfile(config),
+                    TestConfigUtil.argLineValue(config),
+                    TestConfigUtil.env(config),
                     context.devServicesLaunchResult(),
                     System.getProperty("native.image.path"),
                     config.getOptionalValue("quarkus.package.output-directory", String.class).orElse(null),

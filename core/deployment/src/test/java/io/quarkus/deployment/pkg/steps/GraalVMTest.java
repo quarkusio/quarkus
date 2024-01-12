@@ -1,7 +1,7 @@
 package io.quarkus.deployment.pkg.steps;
 
+import static io.quarkus.deployment.pkg.steps.GraalVM.Distribution.GRAALVM;
 import static io.quarkus.deployment.pkg.steps.GraalVM.Distribution.MANDREL;
-import static io.quarkus.deployment.pkg.steps.GraalVM.Distribution.ORACLE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.stream.Stream;
@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.quarkus.deployment.builditem.nativeimage.NativeMinimalJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.steps.GraalVM.Distribution;
 import io.quarkus.deployment.pkg.steps.GraalVM.Version;
 
@@ -19,20 +20,20 @@ public class GraalVMTest {
     @Test
     public void testGraalVMVersionDetected() {
         // Version detection after: https://github.com/oracle/graal/pull/6302 (3 lines of version output)
-        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", ORACLE), MANDREL,
+        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", GRAALVM), MANDREL,
                 Version.of(Stream.of(("native-image 17.0.6 2023-01-17\n"
                         + "OpenJDK Runtime Environment Mandrel-23.0.0-dev (build 17.0.6+10)\n"
                         + "OpenJDK 64-Bit Server VM Mandrel-23.0.0-dev (build 17.0.6+10, mixed mode)").split("\\n"))));
-        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", ORACLE), MANDREL,
+        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", GRAALVM), MANDREL,
                 Version.of(Stream.of(("native-image 17.0.6 2023-01-17\n"
                         + "GraalVM Runtime Environment Mandrel-23.0.0-dev (build 17.0.6+10)\n"
                         + "Substrate VM Mandrel-23.0.0-dev (build 17.0.6+10, serial gc)").split("\\n"))));
-        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", ORACLE), MANDREL,
+        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", GRAALVM), MANDREL,
                 Version.of(Stream.of(("native-image 17.0.7 2023-04-18\n"
                         + "OpenJDK Runtime Environment Mandrel-23.0.0.0-Final (build 17.0.7+7)\n"
                         + "OpenJDK 64-Bit Server VM Mandrel-23.0.0.0-Final (build 17.0.7+7, mixed mode)").split("\\n"))));
         // should also work when the image is not around and we have to download it
-        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", ORACLE), MANDREL,
+        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", GRAALVM), MANDREL,
                 Version.of(
                         Stream.of(("Unable to find image 'quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-17' locally\n"
                                 + "jdk-17: Pulling from quarkus/ubi-quarkus-mandrel-builder-image\n"
@@ -57,31 +58,41 @@ public class GraalVMTest {
                                 + "OpenJDK Runtime Environment Mandrel-23.0.0.0-Final (build 17.0.7+7)\n"
                                 + "OpenJDK 64-Bit Server VM Mandrel-23.0.0.0-Final (build 17.0.7+7, mixed mode)")
                                 .split("\\n"))));
-        assertVersion(new Version("GraalVM 23.0", "23.0", ORACLE), ORACLE,
+        assertVersion(new Version("GraalVM 23.0", "23.0", GRAALVM), GRAALVM,
                 Version.of(Stream.of(("native-image 20 2023-03-21\n"
                         + "GraalVM Runtime Environment GraalVM CE (build 20+34-jvmci-23.0-b10)\n"
                         + "Substrate VM GraalVM CE (build 20+34, serial gc)").split("\\n"))));
 
+        // Should also work for other unknown implementations of GraalVM
+        assertVersion(new Version("GraalVM 23.0", "23.0", GRAALVM), GRAALVM,
+                Version.of(Stream.of(("native-image 20 2023-07-30\n"
+                        + "Foo Runtime Environment whatever (build 20+34-jvmci-23.0-b7)\n"
+                        + "Foo VM whatever (build 20+34, serial gc)").split("\\n"))));
+        assertVersion(new Version("GraalVM 23.0", "23.0", GRAALVM), GRAALVM,
+                Version.of(Stream.of(("native-image 20 2023-07-30\n"
+                        + "Another Runtime Environment whatever (build 20+34-jvmci-23.0-b7)\n"
+                        + "Another VM whatever (build 20+34, serial gc)").split("\\n"))));
+
         // Older version parsing
-        assertVersion(new Version("GraalVM 20.1", "20.1", ORACLE), ORACLE,
+        assertVersion(new Version("GraalVM 20.1", "20.1", GRAALVM), GRAALVM,
                 Version.of(Stream.of("GraalVM Version 20.1.0 (Java Version 11.0.7)")));
-        assertVersion(new Version("GraalVM 20.1.0.1", "20.1.0.1", ORACLE), MANDREL, Version
+        assertVersion(new Version("GraalVM 20.1.0.1", "20.1.0.1", GRAALVM), MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.1.0.1.Alpha2 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(new Version("GraalVM 20.1.0.1", "20.1.0.1", ORACLE), MANDREL, Version
+        assertVersion(new Version("GraalVM 20.1.0.1", "20.1.0.1", GRAALVM), MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.1.0.1-Final 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(new Version("GraalVM 21.0", "21.0", ORACLE), MANDREL, Version
+        assertVersion(new Version("GraalVM 21.0", "21.0", GRAALVM), MANDREL, Version
                 .of(Stream.of("GraalVM Version 21.0.0.0-0b3 (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(new Version("GraalVM 20.3.1.2", "20.3.1.2", ORACLE), MANDREL, Version
+        assertVersion(new Version("GraalVM 20.3.1.2", "20.3.1.2", GRAALVM), MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.3.1.2-dev (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(new Version("GraalVM 21.1", "21.1", ORACLE), MANDREL, Version
+        assertVersion(new Version("GraalVM 21.1", "21.1", GRAALVM), MANDREL, Version
                 .of(Stream.of("native-image 21.1.0.0-Final (Mandrel Distribution) (Java Version 11.0.11+9)")));
-        assertVersion(new Version("GraalVM 21.1", "21.1", ORACLE), MANDREL, Version
+        assertVersion(new Version("GraalVM 21.1", "21.1", GRAALVM), MANDREL, Version
                 .of(Stream.of("GraalVM 21.1.0.0-Final (Mandrel Distribution) (Java Version 11.0.11+9)")));
-        assertVersion(new Version("GraalVM 21.1", "21.1", ORACLE), ORACLE, Version
+        assertVersion(new Version("GraalVM 21.1", "21.1", GRAALVM), GRAALVM, Version
                 .of(Stream.of("GraalVM 21.1.0 Java 11 CE (Java Version 11.0.11+5-jvmci-21.1-b02)")));
-        assertVersion(new Version("GraalVM 21.1", "21.1", ORACLE), ORACLE, Version
+        assertVersion(new Version("GraalVM 21.1", "21.1", GRAALVM), GRAALVM, Version
                 .of(Stream.of("native-image 21.1.0.0 Java 11 CE (Java Version 11.0.11+5-jvmci-21.1-b02)")));
-        assertVersion(new Version("GraalVM 21.2", "21.2", ORACLE), MANDREL, Version
+        assertVersion(new Version("GraalVM 21.2", "21.2", GRAALVM), MANDREL, Version
                 .of(Stream.of("native-image 21.2.0.0-Final Mandrel Distribution (Java Version 11.0.12+7)")));
     }
 
@@ -91,6 +102,67 @@ public class GraalVMTest {
         if (distro == MANDREL) {
             assertThat(version.isMandrel()).isTrue();
         }
+    }
+
+    @Test
+    public void testGraalVM21LibericaVersionParser() {
+        Version graalVM21Dev = Version.of(Stream.of(("native-image 21.0.1 2023-10-17\n"
+                + "GraalVM Runtime Environment Liberica-NIK-23.1.1-1 (build 21.0.1+12-LTS)\n"
+                + "Substrate VM Liberica-NIK-23.1.1-1 (build 21.0.1+12-LTS, serial gc)").split("\\n")));
+        assertThat(graalVM21Dev.distribution.name()).isEqualTo("LIBERICA");
+        assertThat(graalVM21Dev.getVersionAsString()).isEqualTo("23.1.1");
+        assertThat(graalVM21Dev.javaVersion.toString()).isEqualTo("21.0.1+12-LTS");
+        assertThat(graalVM21Dev.javaVersion.feature()).isEqualTo(21);
+        assertThat(graalVM21Dev.javaVersion.update()).isEqualTo(1);
+    }
+
+    @Test
+    public void testGraalVM21VersionParser() {
+        Version graalVM21Dev = Version.of(Stream.of(("native-image 21 2023-09-19\n"
+                + "GraalVM Runtime Environment GraalVM CE 21+35.1 (build 21+35-jvmci-23.1-b15)\n"
+                + "Substrate VM GraalVM CE 21+35.1 (build 21+35, serial gc)").split("\\n")));
+        assertThat(graalVM21Dev.distribution.name()).isEqualTo("GRAALVM");
+        assertThat(graalVM21Dev.getVersionAsString()).isEqualTo("23.1");
+        assertThat(graalVM21Dev.javaVersion.toString()).isEqualTo("21+35-jvmci-23.1-b15");
+        assertThat(graalVM21Dev.javaVersion.feature()).isEqualTo(21);
+        assertThat(graalVM21Dev.javaVersion.update()).isEqualTo(0);
+    }
+
+    @Test
+    public void testGraalVM21DevVersionParser() {
+        Version graalVM21Dev = Version.of(Stream.of(("native-image 21 2023-09-19\n" +
+                "GraalVM Runtime Environment GraalVM CE 21-dev+35.1 (build 21+35-jvmci-23.1-b14)\n" +
+                "Substrate VM GraalVM CE 21-dev+35.1 (build 21+35, serial gc)").split("\\n")));
+        assertThat(graalVM21Dev.distribution.name()).isEqualTo("GRAALVM");
+        assertThat(graalVM21Dev.getVersionAsString()).isEqualTo("23.1-dev");
+        assertThat(graalVM21Dev.javaVersion.toString()).isEqualTo("21+35-jvmci-23.1-b14");
+        assertThat(graalVM21Dev.javaVersion.feature()).isEqualTo(21);
+        assertThat(graalVM21Dev.javaVersion.update()).isEqualTo(0);
+    }
+
+    @Test
+    public void testGraalVM22DevVersionParser() {
+        Version graalVM22Dev = Version.of(Stream.of(("native-image 22 2024-03-19\n"
+                + "GraalVM Runtime Environment GraalVM CE 22-dev+16.1 (build 22+16-jvmci-b01)\n"
+                + "Substrate VM GraalVM CE 22-dev+16.1 (build 22+16, serial gc)").split("\\n")));
+        assertThat(graalVM22Dev.distribution.name()).isEqualTo("GRAALVM");
+        assertThat(graalVM22Dev.getVersionAsString()).isEqualTo("24.0-dev");
+        assertThat(graalVM22Dev.javaVersion.toString()).isEqualTo("22+16-jvmci-b01");
+        assertThat(graalVM22Dev.javaVersion.feature()).isEqualTo(22);
+        assertThat(graalVM22Dev.javaVersion.update()).isEqualTo(0);
+    }
+
+    @Test
+    public void testGraalVMEE22DevVersionParser() {
+        Version graalVMEE22Dev = Version.of(Stream.of(("native-image 22 2024-03-19\n"
+                + "Java(TM) SE Runtime Environment Oracle GraalVM 22-dev+25.1 (build 22+25-jvmci-b01)\n"
+                + "Java HotSpot(TM) 64-Bit Server VM Oracle GraalVM 22-dev+25.1 (build 22+25-jvmci-b01, mixed mode, sharing)")
+                .split("\\n")));
+        assertThat(graalVMEE22Dev.distribution.name()).isEqualTo("GRAALVM");
+        assertThat(graalVMEE22Dev.getVersionAsString()).isEqualTo("24.0-dev");
+        assertThat(graalVMEE22Dev.javaVersion.toString()).isEqualTo("22+25-jvmci-b01");
+        assertThat(graalVMEE22Dev.javaVersion.feature()).isEqualTo(22);
+        assertThat(graalVMEE22Dev.javaVersion.update()).isEqualTo(0);
     }
 
     @Test
@@ -198,13 +270,13 @@ public class GraalVMTest {
     "GraalVM 21.3.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)                              |11|13|",
     "GraalVM 21.3.0 Java 17 CE (Java Version 17.0.1+12-jvmci-21.3-b05)                              |17| 1|",
     "GraalVM 22.0.0-dev Java 11 CE (Java Version 11.0.13+8-jvmci-22.0-b02)                          |11|13|",
-    "GraalVM Version 19.3.0 CE                                                                      |11|-1|",
+    "GraalVM Version 19.3.0 CE                                                                      |11|0|",
     "GraalVM Version 20.1.0.4.Final (Mandrel Distribution) (Java Version 11.0.10+9)                 |11|10|",
     "GraalVM Version 20.3.3.0-0b1 (Mandrel Distribution) (Java Version 11.0.12+7-LTS)               |11|12|",
     "native-image 21.1.0.0-Final (Mandrel Distribution) (Java Version 11.0.11+9)                    |11|11|",
     "native-image 21.2.0.2-0b3 Mandrel Distribution (Java Version 11.0.13+8-LTS)                    |11|13|",
     "native-image 21.3.0.0-Final Mandrel Distribution (Java Version 11.0.13+8)                      |11|13|",
-    "native-image 21.3.0.0-Final Mandrel Distribution (Java Version 17-internal+0-adhoc.karm.jdk17u)|17|-1|",
+    "native-image 21.3.0.0-Final Mandrel Distribution (Java Version 17-internal+0-adhoc.karm.jdk17u)|17|0|",
     "native-image 21.3.0.0-Final Mandrel Distribution (Java Version 17.0.1+12)                      |17| 1|",
     })
     // @formatter:on
@@ -213,8 +285,8 @@ public class GraalVMTest {
         final Version v = Version.of(Stream.of(versions[0].trim()));
         final int expectedJdkFeature = Integer.parseInt(versions[1].trim());
         final int expectedJdkUpdate = Integer.parseInt(versions[2].trim());
-        Assertions.assertEquals(expectedJdkFeature, v.javaFeatureVersion, "JDK feature version mismatch.");
-        Assertions.assertEquals(expectedJdkUpdate, v.javaUpdateVersion, "JDK feature version mismatch.");
+        Assertions.assertEquals(expectedJdkFeature, v.javaVersion.feature(), "JDK feature version mismatch.");
+        Assertions.assertEquals(expectedJdkUpdate, v.javaVersion.update(), "JDK update version mismatch.");
     }
 
     @ParameterizedTest
@@ -222,32 +294,44 @@ public class GraalVMTest {
     @ValueSource(strings = {
     "GraalVM 21.3.0 Java 17 CE (Java Version 17.0.1+12-jvmci-21.3-b05)                               |> | GraalVM 21.3.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)",
     "GraalVM 22.0.0-dev Java 11 CE (Java Version 11.0.13+8-jvmci-22.0-b02)                           |< | GraalVM 22.0.0-dev Java 11 CE (Java Version 11.0.14+3-jvmci-22.0-b02)",
+    "GraalVM 22.0.0-dev Java 11 CE (Java Version 11.0.13+8-jvmci-22.0-b02)                           |==| GraalVM 22.0.0-dev Java 11 CE (Java Version 11.0.13+8-jvmci-22.0-b04)",
+    "GraalVM 22.0.0-dev Java 11 CE (Java Version 11.0.13+8-jvmci-22.0-b02)                           |==| GraalVM 22.0.0-dev Java 11 CE (Java Version 11.0.13+8-jvmci-21.0-b04)",
     "GraalVM Version 19.3.0 CE                                                                       |==| GraalVM Version 19.0.0 CE",
     "native-image 21.3.0.0-Final Mandrel Distribution (Java Version 17-internal+0-adhoc.karm.jdk17u) |< | native-image 21.3.0.0-Final Mandrel Distribution (Java Version 17.0.1+12)",
-    "GraalVM 20.3.3 Java 11 (Java Version 11.0.12+6-jvmci-20.3-b20)                                  |==| GraalVM Version 20.3.3.0-0b1 (Mandrel Distribution) (Java Version 11.0.12+7-LTS)",
+    "GraalVM 20.3.3 Java 11 (Java Version 11.0.12+6-jvmci-20.3-b20)                                  |< | GraalVM Version 20.3.3.0-0b1 (Mandrel Distribution) (Java Version 11.0.12+7-LTS)",
     })
     // @formatter:on
     public void testJDKVersionCompare(String s) {
         final String[] versions = s.split("\\|");
         final Version a = Version.of(Stream.of(versions[0].trim()));
         final Version b = Version.of(Stream.of(versions[2].trim()));
+        final NativeMinimalJavaVersionBuildItem aMinimal = new NativeMinimalJavaVersionBuildItem(a.javaVersion.toString(), "");
+        final NativeMinimalJavaVersionBuildItem bMinimal = new NativeMinimalJavaVersionBuildItem(b.javaVersion.toString(), "");
         final String cmp = versions[1].trim();
         switch (cmp) {
             case "<":
-                Assertions.assertTrue(b.jdkVersionGreaterOrEqualTo(a.javaFeatureVersion, a.javaUpdateVersion),
-                        String.format("JDK %d.0.%d greater or equal to JDK %d.0.%d.",
-                                b.javaFeatureVersion, b.javaUpdateVersion, a.javaFeatureVersion, a.javaUpdateVersion));
+                Assertions.assertTrue(b.jdkVersionGreaterOrEqualTo(aMinimal),
+                        String.format("JDK %s greater or equal to JDK %s.",
+                                b.javaVersion, a.javaVersion));
+                Assertions.assertFalse(a.jdkVersionGreaterOrEqualTo(bMinimal),
+                        String.format("JDK %s smaller than JDK %s.",
+                                a.javaVersion, b.javaVersion));
                 break;
             case ">":
-                Assertions.assertTrue(a.jdkVersionGreaterOrEqualTo(b.javaFeatureVersion, b.javaUpdateVersion),
-                        String.format("JDK %d.0.%d greater or equal to JDK %d.0.%d.",
-                                a.javaFeatureVersion, a.javaUpdateVersion, b.javaFeatureVersion, b.javaUpdateVersion));
+                Assertions.assertTrue(a.jdkVersionGreaterOrEqualTo(bMinimal),
+                        String.format("JDK %s greater or equal to JDK %s.",
+                                a.javaVersion, b.javaVersion));
+                Assertions.assertFalse(b.jdkVersionGreaterOrEqualTo(aMinimal),
+                        String.format("JDK %s smaller than JDK %s.",
+                                b.javaVersion, a.javaVersion));
                 break;
             case "==":
-                Assertions.assertTrue(
-                        a.javaFeatureVersion == b.javaFeatureVersion && a.javaUpdateVersion == b.javaUpdateVersion,
-                        String.format("JDK %d.0.%d equal to JDK %d.0.%d.",
-                                a.javaFeatureVersion, a.javaUpdateVersion, b.javaFeatureVersion, b.javaUpdateVersion));
+                Assertions.assertEquals(0, a.javaVersion.compareToIgnoreOptional(b.javaVersion),
+                        String.format("JDK %s equal to JDK %s.",
+                                b.javaVersion, a.javaVersion));
+                Assertions.assertTrue(a.jdkVersionGreaterOrEqualTo(bMinimal),
+                        String.format("JDK %s greater or equal to JDK %s.",
+                                a.javaVersion, b.javaVersion));
                 break;
             default:
                 throw new IllegalArgumentException("Fix the test data. Symbol " + cmp + " is unknown.");

@@ -165,7 +165,7 @@ public class LocalProject {
         }
     }
 
-    LocalProject(Model rawModel, LocalWorkspace workspace) throws BootstrapMavenException {
+    LocalProject(Model rawModel, LocalWorkspace workspace) {
         this.modelBuildingResult = null;
         this.rawModel = rawModel;
         this.dir = rawModel.getProjectDirectory().toPath();

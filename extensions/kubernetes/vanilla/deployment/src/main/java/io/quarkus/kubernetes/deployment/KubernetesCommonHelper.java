@@ -7,6 +7,7 @@ import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_COMMIT_ID;
+import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_QUARKUS_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_VCS_URL;
 import static io.quarkus.kubernetes.deployment.Constants.SERVICE_ACCOUNT;
 
@@ -26,6 +27,8 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import org.jboss.logging.Logger;
 
 import io.dekorate.kubernetes.config.Annotation;
 import io.dekorate.kubernetes.config.ConfigMapVolumeBuilder;
@@ -79,6 +82,7 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.PodSpecBuilder;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRuleBuilder;
+import io.quarkus.builder.Version;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
@@ -106,6 +110,7 @@ import io.quarkus.kubernetes.spi.RoleRef;
 import io.quarkus.kubernetes.spi.Subject;
 
 public class KubernetesCommonHelper {
+    private static final Logger LOG = Logger.getLogger(KubernetesCommonHelper.class);
     private static final String ANY = null;
     private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
     private static final String[] PROMETHEUS_ANNOTATION_TARGETS = { "Service",
@@ -125,9 +130,10 @@ public class KubernetesCommonHelper {
     public static Optional<Project> createProject(ApplicationInfoBuildItem app,
             Optional<CustomProjectRootBuildItem> customProjectRoot, Path artifactPath) {
         //Let dekorate create a Project instance and then override with what is found in ApplicationInfoBuildItem.
+        final var name = app.getName();
         try {
             Project project = FileProjectFactory.create(artifactPath.toFile());
-            BuildInfo buildInfo = new BuildInfo(app.getName(), app.getVersion(),
+            BuildInfo buildInfo = new BuildInfo(name, app.getVersion(),
                     "jar", project.getBuildInfo().getBuildTool(),
                     project.getBuildInfo().getBuildToolVersion(),
                     artifactPath.toAbsolutePath(),
@@ -139,6 +145,7 @@ public class KubernetesCommonHelper {
                             buildInfo, project.getScmInfo()));
 
         } catch (Exception e) {
+            LOG.debugv(e, "Couldn't create project for {0} application", name);
             return Optional.empty();
         }
     }
@@ -354,8 +361,7 @@ public class KubernetesCommonHelper {
             }
         }
 
-        // Add service account from extensions: use the one provided by the user always
-        Optional<String> effectiveServiceAccount = config.getServiceAccount();
+        Optional<String> effectiveServiceAccount = Optional.empty();
         String effectiveServiceAccountNamespace = null;
         for (KubernetesServiceAccountBuildItem sa : serviceAccountsFromExtensions) {
             String saName = Optional.ofNullable(sa.getName()).orElse(name);
@@ -380,6 +386,12 @@ public class KubernetesCommonHelper {
                 effectiveServiceAccount = Optional.of(saName);
                 effectiveServiceAccountNamespace = sa.getValue().namespace.orElse(null);
             }
+        }
+
+        // The user provided service account should always take precedence
+        if (config.getServiceAccount().isPresent()) {
+            effectiveServiceAccount = config.getServiceAccount();
+            effectiveServiceAccountNamespace = null;
         }
 
         // Prepare default configuration
@@ -699,9 +711,25 @@ public class KubernetesCommonHelper {
                 .map(Optional::get)
                 .collect(Collectors.toList());
 
+        List<ApplyServiceAccountNameDecorator> serviceAccountDecorators = decorators.stream()
+                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
+                .map(d -> d.getDecorator(ApplyServiceAccountNameDecorator.class))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+
         items.stream().filter(item -> item.getTarget() == null || item.getTarget().equals(target)).forEach(item -> {
 
             for (final AddImagePullSecretDecorator delegate : imagePullSecretDecorators) {
+                result.add(new DecoratorBuildItem(target, new NamedResourceDecorator<PodSpecBuilder>("Job", item.getName()) {
+                    @Override
+                    public void andThenVisit(PodSpecBuilder builder, ObjectMeta meta) {
+                        delegate.andThenVisit(builder, meta);
+                    }
+                }));
+            }
+
+            for (final ApplyServiceAccountNameDecorator delegate : serviceAccountDecorators) {
                 result.add(new DecoratorBuildItem(target, new NamedResourceDecorator<PodSpecBuilder>("Job", item.getName()) {
                     @Override
                     public void andThenVisit(PodSpecBuilder builder, ObjectMeta meta) {
@@ -951,6 +979,8 @@ public class KubernetesCommonHelper {
             result.add(new DecoratorBuildItem(target, new RemoveAnnotationDecorator(Annotations.VCS_URL)));
             result.add(new DecoratorBuildItem(target, new RemoveAnnotationDecorator(Annotations.COMMIT_ID)));
 
+            result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
+                    new Annotation(QUARKUS_ANNOTATIONS_QUARKUS_VERSION, Version.getVersion(), new String[0]))));
             //Add quarkus vcs annotations
             if (commitId != null && !config.isIdempotent()) {
                 result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
@@ -970,12 +1000,21 @@ public class KubernetesCommonHelper {
                             now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd - HH:mm:ss Z")), new String[0]))));
         }
 
-        if (config.getPrometheusConfig().annotations) {
-            // Add metrics annotations
-            metricsConfiguration.ifPresent(m -> {
-                String path = m.metricsEndpoint();
-                String prefix = config.getPrometheusConfig().prefix;
-                if (port.isPresent() && path != null) {
+        // Add metrics annotations
+        metricsConfiguration.ifPresent(m -> {
+            String path = m.metricsEndpoint();
+            String prefix = config.getPrometheusConfig().prefix;
+            if (port.isPresent() && path != null) {
+                if (config.getPrometheusConfig().generateServiceMonitor) {
+                    result.add(new DecoratorBuildItem(target, new AddServiceMonitorResourceDecorator(
+                            config.getPrometheusConfig().scheme.orElse("http"),
+                            config.getPrometheusConfig().port.orElse(String.valueOf(port.get().getContainerPort())),
+                            config.getPrometheusConfig().path.orElse(path),
+                            10,
+                            true)));
+                }
+
+                if (config.getPrometheusConfig().annotations) {
                     result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
                             config.getPrometheusConfig().scrape.orElse(prefix + "/scrape"), "true",
                             PROMETHEUS_ANNOTATION_TARGETS)));
@@ -988,8 +1027,8 @@ public class KubernetesCommonHelper {
                             config.getPrometheusConfig().scheme.orElse(prefix + "/scheme"), "http",
                             PROMETHEUS_ANNOTATION_TARGETS)));
                 }
-            });
-        }
+            }
+        });
 
         //Add metrics annotations
         return result;

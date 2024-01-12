@@ -20,7 +20,7 @@ public class PolicyMappingConfig {
     /**
      * The HTTP policy that this permission set is linked to.
      *
-     * There are 3 built in policies: permit, deny and authenticated. Role based
+     * There are three built-in policies: permit, deny and authenticated. Role based
      * policies can be defined, and extensions can add their own policies.
      */
     @ConfigItem
@@ -60,4 +60,11 @@ public class PolicyMappingConfig {
      */
     @ConfigItem
     public Optional<String> authMechanism;
+
+    /**
+     * Indicates that this policy always applies to the matched paths in addition to the policy with a winning path.
+     * Avoid creating more than one shared policy to minimize the performance impact.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean shared;
 }

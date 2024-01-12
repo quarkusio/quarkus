@@ -14,6 +14,7 @@
     <name>Quarkus - Integration Tests - Hibernate ORM - Compatibility with databases meant for ORM 5.6 - PostgreSQL</name>
 
     <properties>
+        <postgres.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.url>
         <!-- We test features in Hibernate ORM that are timezone-sensitive, e.g. ZoneOffsetDateTime normalization -->
         <surefire.argLine.additional>-Duser.timezone=Europe/Paris</surefire.argLine.additional>
     </properties>
@@ -192,9 +193,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <postgres.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

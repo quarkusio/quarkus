@@ -73,7 +73,7 @@ public class ApplicationArchiveBuildStep {
     void addConfiguredIndexedDependencies(BuildProducer<IndexDependencyBuildItem> indexDependencyBuildItemBuildProducer) {
         for (IndexDependencyConfig indexDependencyConfig : config.indexDependency.values()) {
             indexDependencyBuildItemBuildProducer.produce(new IndexDependencyBuildItem(indexDependencyConfig.groupId,
-                    indexDependencyConfig.artifactId, indexDependencyConfig.classifier.orElse(null)));
+                    indexDependencyConfig.artifactId.orElse(null), indexDependencyConfig.classifier.orElse(null)));
         }
     }
 
@@ -167,15 +167,21 @@ public class ApplicationArchiveBuildStep {
         if (indexDependencyBuildItems.isEmpty()) {
             return;
         }
-        final Set<ArtifactKey> indexDependencyKeys = new HashSet<>(indexDependencyBuildItems.size());
+        final Set<ArtifactKey> indexDependencyKeys = new HashSet<>();
+        final Set<String> indexGroupIds = new HashSet<>();
         for (IndexDependencyBuildItem indexDependencyBuildItem : indexDependencyBuildItems) {
-            indexDependencyKeys.add(ArtifactKey.of(indexDependencyBuildItem.getGroupId(),
-                    indexDependencyBuildItem.getArtifactId(),
-                    indexDependencyBuildItem.getClassifier(),
-                    ArtifactCoords.TYPE_JAR));
+            if (indexDependencyBuildItem.getArtifactId() != null) {
+                indexDependencyKeys.add(ArtifactKey.of(indexDependencyBuildItem.getGroupId(),
+                        indexDependencyBuildItem.getArtifactId(),
+                        indexDependencyBuildItem.getClassifier(),
+                        ArtifactCoords.TYPE_JAR));
+            } else {
+                indexGroupIds.add(indexDependencyBuildItem.getGroupId());
+            }
         }
         for (ResolvedDependency dep : curateOutcomeBuildItem.getApplicationModel().getDependencies()) {
-            if (dep.isRuntimeCp() && indexDependencyKeys.contains(dep.getKey())) {
+            if (dep.isRuntimeCp()
+                    && (indexDependencyKeys.contains(dep.getKey()) || indexGroupIds.contains(dep.getGroupId()))) {
                 for (Path path : dep.getContentTree().getRoots()) {
                     if (!root.isExcludedFromIndexing(path)
                             && !root.getResolvedPaths().contains(path)

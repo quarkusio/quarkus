@@ -11,6 +11,10 @@ public class PropertiesUtil {
     private PropertiesUtil() {
     }
 
+    /**
+     * @deprecated Use {@link PropertiesUtil#filterPropertiesInRoots(Iterable, Set)} instead.
+     */
+    @Deprecated(forRemoval = true)
     public static boolean isPropertyInRoot(Set<String> roots, NameIterator propertyName) {
         for (String root : roots) {
             // match everything

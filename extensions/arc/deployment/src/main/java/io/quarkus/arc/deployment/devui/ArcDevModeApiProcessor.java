@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.quarkus.arc.deployment.ArcConfig;
 import io.quarkus.arc.deployment.CompletedApplicationClassPredicateBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
@@ -29,7 +30,7 @@ import io.quarkus.dev.console.DevConsoleManager;
 public class ArcDevModeApiProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public void collectBeanInfo(ValidationPhaseBuildItem validationPhaseBuildItem,
+    public void collectBeanInfo(ArcConfig config, ValidationPhaseBuildItem validationPhaseBuildItem,
             CompletedApplicationClassPredicateBuildItem predicate,
             BuildProducer<ArcBeanInfoBuildItem> arcBeanInfoProducer) {
         BeanDeploymentValidator.ValidationContext validationContext = validationPhaseBuildItem.getContext();
@@ -63,35 +64,36 @@ public class ArcDevModeApiProcessor {
         }
 
         // Build dependency graphs
-        BeanResolver resolver = validationPhaseBuildItem.getBeanResolver();
-        Collection<BeanInfo> beans = validationContext.get(BuildExtension.Key.BEANS);
-        Map<BeanInfo, List<InjectionPointInfo>> directDependents = new HashMap<>();
-        List<InjectionPointInfo> allInjectionPoints = new ArrayList<>();
-        Map<BeanInfo, List<BeanInfo>> declaringToProducers = validationContext.beans().producers()
-                .collect(Collectors.groupingBy(BeanInfo::getDeclaringBean));
-        for (BeanInfo b : beans) {
-            if (b.hasInjectionPoint()) {
-                for (InjectionPointInfo ip : b.getAllInjectionPoints()) {
-                    if (ip.getTargetBean().isPresent()) {
-                        allInjectionPoints.add(ip);
+        Map<String, List<String>> beanDependenciesMap = new HashMap<>();
+        if (config.devMode.generateDependencyGraphs) {
+            BeanResolver resolver = validationPhaseBuildItem.getBeanResolver();
+            Collection<BeanInfo> beans = validationContext.get(BuildExtension.Key.BEANS);
+            Map<BeanInfo, List<InjectionPointInfo>> directDependents = new HashMap<>();
+            List<InjectionPointInfo> allInjectionPoints = new ArrayList<>();
+            Map<BeanInfo, List<BeanInfo>> declaringToProducers = validationContext.beans().producers()
+                    .collect(Collectors.groupingBy(BeanInfo::getDeclaringBean));
+            for (BeanInfo b : beans) {
+                if (b.hasInjectionPoint()) {
+                    for (InjectionPointInfo ip : b.getAllInjectionPoints()) {
+                        if (ip.getTargetBean().isPresent()) {
+                            allInjectionPoints.add(ip);
+                        }
                     }
                 }
             }
+            for (BeanInfo bean : beans) {
+                DependencyGraph dependencyGraph = buildDependencyGraph(bean, validationContext, resolver, beanInfos,
+                        allInjectionPoints, declaringToProducers,
+                        directDependents);
+                beanInfos.addDependencyGraph(bean.getIdentifier(), dependencyGraph);
+                // id -> [dep1Id, dep2Id]
+                beanDependenciesMap.put(bean.getIdentifier(),
+                        dependencyGraph.filterLinks(link -> link.type.equals("directDependency")).nodes.stream()
+                                .map(DevBeanInfo::getId).filter(id -> !id.equals(bean.getIdentifier()))
+                                .collect(Collectors.toList()));
+            }
         }
 
-        Map<String, List<String>> beanDependenciesMap = new HashMap<>();
-
-        for (BeanInfo bean : beans) {
-            DependencyGraph dependencyGraph = buildDependencyGraph(bean, validationContext, resolver, beanInfos,
-                    allInjectionPoints, declaringToProducers,
-                    directDependents);
-            beanInfos.addDependencyGraph(bean.getIdentifier(), dependencyGraph);
-            // id -> [dep1Id, dep2Id]
-            beanDependenciesMap.put(bean.getIdentifier(),
-                    dependencyGraph.filterLinks(link -> link.type.equals("directDependency")).nodes.stream()
-                            .map(DevBeanInfo::getId).filter(id -> !id.equals(bean.getIdentifier()))
-                            .collect(Collectors.toList()));
-        }
         // Set the global that could be used at runtime when generating the json payload for /q/arc/beans
         DevConsoleManager.setGlobal(DevBeanInfos.BEAN_DEPENDENCIES, beanDependenciesMap);
 

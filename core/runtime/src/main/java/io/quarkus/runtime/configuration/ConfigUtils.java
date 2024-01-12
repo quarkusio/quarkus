@@ -1,42 +1,22 @@
 package io.quarkus.runtime.configuration;
 
-import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
-import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOG_VALUES;
-import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_MAPPING_VALIDATE_UNKNOWN;
-import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE;
-import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_PROFILE_PARENT;
-
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.function.IntFunction;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
-import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 
 import io.quarkus.runtime.LaunchMode;
-import io.smallrye.config.ConfigSourceInterceptor;
-import io.smallrye.config.ConfigSourceInterceptorContext;
-import io.smallrye.config.ConfigSourceInterceptorFactory;
 import io.smallrye.config.DotEnvConfigSourceProvider;
-import io.smallrye.config.FallbackConfigSourceInterceptor;
-import io.smallrye.config.NameIterator;
-import io.smallrye.config.Priorities;
-import io.smallrye.config.RelocateConfigSourceInterceptor;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -81,96 +61,21 @@ public final class ConfigUtils {
         SmallRyeConfigBuilder builder = emptyConfigBuilder();
 
         if (launchMode.isDevOrTest() && runTime) {
-            builder.withSources(new RuntimeOverrideConfigSource(Thread.currentThread().getContextClassLoader()));
+            builder.withSources(new RuntimeOverrideConfigSource(builder.getClassLoader()));
         }
         if (runTime) {
             builder.withDefaultValue(UUID_KEY, UUID.randomUUID().toString());
         }
         if (addDiscovered) {
-            builder.addDiscoveredSources();
+            builder.addDiscoveredCustomizers().addDiscoveredSources();
         }
         return builder;
     }
 
     public static SmallRyeConfigBuilder emptyConfigBuilder() {
-        SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
-        LaunchMode launchMode = ProfileManager.getLaunchMode();
-        builder.withDefaultValue(launchMode.getProfileKey(), launchMode.getDefaultProfile());
-
-        builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
-            @Override
-            public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
-                return new RelocateConfigSourceInterceptor(Map.of(SMALLRYE_CONFIG_PROFILE, launchMode.getProfileKey()));
-            }
-
-            @Override
-            public OptionalInt getPriority() {
-                return OptionalInt.of(Priorities.LIBRARY + 200 - 10);
-            }
-        });
-
-        builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
-            @Override
-            public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
-                Map<String, String> relocations = new HashMap<>();
-                relocations.put(SMALLRYE_CONFIG_LOCATIONS, "quarkus.config.locations");
-                relocations.put(SMALLRYE_CONFIG_PROFILE_PARENT, "quarkus.config.profile.parent");
-                relocations.put(SMALLRYE_CONFIG_MAPPING_VALIDATE_UNKNOWN, "quarkus.config.mapping.validate-unknown");
-                relocations.put(SMALLRYE_CONFIG_LOG_VALUES, "quarkus.config.log.values");
-
-                // Also adds relocations to all profiles
-                return new RelocateConfigSourceInterceptor(new Function<String, String>() {
-                    @Override
-                    public String apply(final String name) {
-                        String relocate = relocations.get(name);
-                        if (relocate != null) {
-                            return relocate;
-                        }
-
-                        if (name.startsWith("%") && name.endsWith(SMALLRYE_CONFIG_LOCATIONS)) {
-                            io.smallrye.config.NameIterator ni = new io.smallrye.config.NameIterator(name);
-                            return ni.getNextSegment() + "." + "quarkus.config.locations";
-                        }
-
-                        if (name.startsWith("%") && name.endsWith(SMALLRYE_CONFIG_PROFILE_PARENT)) {
-                            io.smallrye.config.NameIterator ni = new NameIterator(name);
-                            return ni.getNextSegment() + "." + "quarkus.config.profile.parent";
-                        }
-
-                        return name;
-                    }
-                });
-            }
-
-            @Override
-            public OptionalInt getPriority() {
-                // So it executes before the ProfileConfigSourceInterceptor and applies the profile relocation
-                return OptionalInt.of(Priorities.LIBRARY + 200 - 5);
-            }
-        });
-
-        builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
-            @Override
-            public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
-                Map<String, String> fallbacks = new HashMap<>();
-                fallbacks.put("quarkus.profile", SMALLRYE_CONFIG_PROFILE);
-                fallbacks.put("quarkus.config.locations", SMALLRYE_CONFIG_LOCATIONS);
-                fallbacks.put("quarkus.config.profile.parent", SMALLRYE_CONFIG_PROFILE_PARENT);
-                fallbacks.put("quarkus.config.mapping.validate-unknown", SMALLRYE_CONFIG_MAPPING_VALIDATE_UNKNOWN);
-                fallbacks.put("quarkus.config.log.values", SMALLRYE_CONFIG_LOG_VALUES);
-                return new FallbackConfigSourceInterceptor(fallbacks);
-            }
-
-            @Override
-            public OptionalInt getPriority() {
-                return OptionalInt.of(Priorities.LIBRARY + 600 - 5);
-            }
-        });
-
-        // Ignore unmapped quarkus properties, because properties in the same root may be split between build / runtime
-        builder.withMappingIgnore("quarkus.**");
-
-        builder.forClassLoader(Thread.currentThread().getContextClassLoader())
+        return new SmallRyeConfigBuilder()
+                .forClassLoader(Thread.currentThread().getContextClassLoader())
+                .withCustomizers(new QuarkusConfigBuilderCustomizer())
                 .addDiscoveredConverters()
                 .addDefaultInterceptors()
                 .addDiscoveredInterceptors()
@@ -179,63 +84,6 @@ public final class ConfigUtils {
                 .withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem())
                 .withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath())
                 .withSources(new DotEnvConfigSourceProvider());
-
-        return builder;
-    }
-
-    @SuppressWarnings("unchecked")
-    public static SmallRyeConfigBuilder configBuilder(SmallRyeConfigBuilder builder, List<String> configBuildersNames) {
-        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-        try {
-            List<ConfigBuilder> configBuilders = new ArrayList<>();
-            for (String configBuilderName : configBuildersNames) {
-                Class<ConfigBuilder> configBuilderClass = (Class<ConfigBuilder>) contextClassLoader
-                        .loadClass(configBuilderName);
-                configBuilders.add(configBuilderClass.getDeclaredConstructor().newInstance());
-            }
-            configBuilders.sort(ConfigBuilderComparator.INSTANCE);
-
-            for (ConfigBuilder configBuilder : configBuilders) {
-                builder = configBuilder.configBuilder(builder);
-                if (builder == null) {
-                    throw new ConfigurationException(configBuilder.getClass().getName() + " returned a null builder");
-                }
-            }
-
-        } catch (ClassNotFoundException | InstantiationException | InvocationTargetException | NoSuchMethodException
-                | IllegalAccessException e) {
-            throw new ConfigurationException(e);
-        }
-        return builder;
-    }
-
-    /**
-     * Add a configuration source provider to the builder.
-     *
-     * @param builder the builder
-     * @param provider the provider to add
-     */
-    public static void addSourceProvider(SmallRyeConfigBuilder builder, ConfigSourceProvider provider) {
-        final Iterable<ConfigSource> sources = provider.getConfigSources(Thread.currentThread().getContextClassLoader());
-        for (ConfigSource source : sources) {
-            builder.withSources(source);
-        }
-    }
-
-    /**
-     * Add a configuration source providers to the builder.
-     *
-     * @param builder the builder
-     * @param providers the providers to add
-     */
-    public static void addSourceProviders(SmallRyeConfigBuilder builder, Collection<ConfigSourceProvider> providers) {
-        for (ConfigSourceProvider provider : providers) {
-            addSourceProvider(builder, provider);
-        }
-    }
-
-    public static void addSourceFactoryProvider(SmallRyeConfigBuilder builder, ConfigSourceFactoryProvider provider) {
-        builder.withSources(provider.getConfigSourceFactory(Thread.currentThread().getContextClassLoader()));
     }
 
     public static List<String> getProfiles() {
@@ -303,14 +151,5 @@ public final class ConfigUtils {
             }
         }
         return Optional.empty();
-    }
-
-    private static class ConfigBuilderComparator implements Comparator<ConfigBuilder> {
-        private static final ConfigBuilderComparator INSTANCE = new ConfigBuilderComparator();
-
-        @Override
-        public int compare(ConfigBuilder o1, ConfigBuilder o2) {
-            return Integer.compare(o1.priority(), o2.priority());
-        }
     }
 }

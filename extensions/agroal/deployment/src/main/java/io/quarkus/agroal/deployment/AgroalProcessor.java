@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
 
 import javax.sql.XADataSource;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
-import jakarta.inject.Singleton;
 
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
@@ -72,6 +72,7 @@ class AgroalProcessor {
 
     private static final String OPEN_TELEMETRY_DRIVER = "io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver";
     private static final DotName DATA_SOURCE = DotName.createSimple(javax.sql.DataSource.class.getName());
+    private static final DotName AGROAL_DATA_SOURCE = DotName.createSimple(AgroalDataSource.class.getName());
 
     @BuildStep
     void agroal(BuildProducer<FeatureBuildItem> feature) {
@@ -277,7 +278,8 @@ class AgroalProcessor {
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                     .configure(AgroalDataSource.class)
                     .addType(DATA_SOURCE)
-                    .scope(Singleton.class)
+                    .addType(AGROAL_DATA_SOURCE)
+                    .scope(ApplicationScoped.class)
                     .setRuntimeInit()
                     .unremovable()
                     .addInjectionPoint(ClassType.create(DotName.createSimple(DataSources.class)))

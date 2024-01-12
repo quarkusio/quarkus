@@ -10,6 +10,7 @@ import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -36,6 +37,18 @@ public class UserAgentTest {
         assertThat(client.callWithUserAgent("custom-agent")).isEqualTo("custom-agent");
     }
 
+    @Test
+    void testHeadersWithImplicitValue() {
+        ClientWithAnnotation client = RestClientBuilder.newBuilder().baseUri(baseUri).build(ClientWithAnnotation.class);
+        assertThat(client.callWithImplicitValue()).isEqualTo("Annotated");
+    }
+
+    @Test
+    void testHeadersWithExplicitValue() {
+        ClientWithAnnotation client = RestClientBuilder.newBuilder().baseUri(baseUri).build(ClientWithAnnotation.class);
+        assertThat(client.callWithExplicitValue("custom-agent")).isEqualTo("custom-agent");
+    }
+
     @Path("/")
     @ApplicationScoped
     public static class Resource {
@@ -54,6 +67,18 @@ public class UserAgentTest {
         @Path("/")
         @GET
         String callWithUserAgent(@HeaderParam("User-AgenT") String userAgent);
+    }
+
+    @ClientHeaderParam(name = "User-Agent", value = "Annotated")
+    public interface ClientWithAnnotation {
+
+        @Path("/")
+        @GET
+        String callWithImplicitValue();
+
+        @Path("/")
+        @GET
+        String callWithExplicitValue(@HeaderParam("User-Agent") String userAgent);
     }
 
 }

@@ -154,8 +154,8 @@
                     <artifactId>gradle-enterprise-maven-extension</artifactId>
                     <configuration>
                         <gradleEnterprise>
-                            <normalization combine.children="append">
-                                <runtimeClassPath>
+                            <normalization>
+                                <runtimeClassPath combine.children="append">
                                     <propertiesNormalizations>
                                         <propertiesNormalization>
                                             <path>application.properties</path>

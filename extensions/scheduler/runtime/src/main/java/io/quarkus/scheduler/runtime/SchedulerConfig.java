@@ -25,9 +25,9 @@ public class SchedulerConfig {
     public boolean metricsEnabled;
 
     /**
-     * Tracing will be enabled if the OpenTelemetry extension is present and this value is true.
+     * Controls whether tracing is enabled. If set to true and the OpenTelemetry extension is present,
+     * tracing will be enabled, creating automatic Spans for each scheduled task.
      */
     @ConfigItem(name = "tracing.enabled")
     public boolean tracingEnabled;
-
 }

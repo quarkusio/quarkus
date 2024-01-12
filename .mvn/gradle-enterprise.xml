@@ -23,11 +23,11 @@
     </buildScan>
     <buildCache>
         <local>
-            <enabled>#{env['GRADLE_LOCAL_BUILD_CACHE'] != null}</enabled>
+            <enabled>#{env['GRADLE_LOCAL_BUILD_CACHE'] != null and env['RELEASE_GITHUB_TOKEN'] == null}</enabled>
         </local>
         <remote>
-            <enabled>true</enabled>
-            <storeEnabled>#{env['CI'] != null}</storeEnabled>
+            <enabled>#{env['RELEASE_GITHUB_TOKEN'] == null}</enabled>
+            <storeEnabled>#{env['CI'] != null and env['GRADLE_ENTERPRISE_ACCESS_KEY'] != null and env['GRADLE_ENTERPRISE_ACCESS_KEY'] != '' and env['RELEASE_GITHUB_TOKEN'] == null}</storeEnabled>
         </remote>
     </buildCache>
 </gradleEnterprise>

@@ -35,20 +35,15 @@ public class OidcSessionImpl implements OidcSession {
 
     @Override
     public Uni<Void> logout() {
-        String sessionCookieName = routingContext.get(OidcUtils.SESSION_COOKIE_NAME);
-        if (sessionCookieName != null) {
-            Uni<OidcTenantConfig> oidcConfigUni = resolver.resolveConfig(routingContext);
-            return oidcConfigUni.onItem().transformToUni(new Function<OidcTenantConfig, Uni<? extends Void>>() {
+        Uni<OidcTenantConfig> oidcConfigUni = resolver.resolveConfig(routingContext);
+        return oidcConfigUni.onItem().transformToUni(new Function<OidcTenantConfig, Uni<? extends Void>>() {
+            @Override
+            public Uni<Void> apply(OidcTenantConfig oidcConfig) {
+                return OidcUtils.removeSessionCookie(routingContext, oidcConfig,
+                        resolver.getTokenStateManager());
+            }
+        });
 
-                @Override
-                public Uni<Void> apply(OidcTenantConfig oidcConfig) {
-                    return OidcUtils.removeSessionCookie(routingContext, oidcConfig, sessionCookieName,
-                            resolver.getTokenStateManager());
-                }
-
-            });
-        }
-        return Uni.createFrom().voidItem();
     }
 
     @Override

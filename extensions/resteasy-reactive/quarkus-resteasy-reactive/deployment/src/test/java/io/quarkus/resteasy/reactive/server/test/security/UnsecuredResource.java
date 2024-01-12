@@ -5,6 +5,7 @@ import jakarta.annotation.security.PermitAll;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
+import io.quarkus.security.Authenticated;
 import io.smallrye.common.annotation.NonBlocking;
 
 /**
@@ -37,6 +38,13 @@ public class UnsecuredResource {
     @DenyAll
     public String denyAll() {
         return "denyAll";
+    }
+
+    @Path("/authenticated")
+    @GET
+    @Authenticated
+    public String authenticated() {
+        return "authenticated";
     }
 
     @Path("/sub")

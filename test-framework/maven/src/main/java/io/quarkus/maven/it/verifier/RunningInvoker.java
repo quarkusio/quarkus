@@ -112,6 +112,7 @@ public class RunningInvoker extends MavenProcessInvoker {
 
         DefaultInvocationRequest request = new DefaultInvocationRequest();
         request.setGoals(goals);
+        request.setShowErrors(true);
         request.setDebug(debug);
         if (parallel) {
             request.setThreads("1C");

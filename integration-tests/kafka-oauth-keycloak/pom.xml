@@ -44,6 +44,11 @@
             <groupId>io.strimzi</groupId>
             <artifactId>kafka-oauth-client</artifactId>
         </dependency>
+        <!-- required for native compilation as strimzi substitutions require these classes -->
+        <dependency>
+            <groupId>io.strimzi</groupId>
+            <artifactId>kafka-oauth-common</artifactId>
+        </dependency>
 
         <!-- test dependencies -->
         <dependency>
@@ -69,6 +74,11 @@
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-keycloak-server</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -174,7 +184,8 @@
                             <skip>false</skip>
                             <systemPropertyVariables>
                                 <!-- Configure the app to test to resolve "keycloak" hostname to the Docker hostname -->
-                                <jdk.net.hosts.file>target/hosts</jdk.net.hosts.file>
+                                <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
+                                <keycloak.realm.json>${project.basedir}/src/test/resources/keycloak/realms/kafka-authz-realm.json</keycloak.realm.json>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
@@ -183,7 +194,8 @@
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables>
-                                <quarkus.test.arg-line>-Djdk.net.hosts.file=${basedir}/target/hosts</quarkus.test.arg-line>
+                                <keycloak.docker.image>${keycloak.docker.image}</keycloak.docker.image>
+                                <keycloak.realm.json>${project.basedir}/src/test/resources/keycloak/realms/kafka-authz-realm.json</keycloak.realm.json>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>

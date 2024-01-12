@@ -57,6 +57,9 @@ public class ClassNames {
 
     public static final DotName INTERCEPTOR = createConstant("org.hibernate.Interceptor");
     public static final DotName STATEMENT_INSPECTOR = createConstant("org.hibernate.resource.jdbc.spi.StatementInspector");
+    public static final DotName FORMAT_MAPPER = createConstant("org.hibernate.type.format.FormatMapper");
+    public static final DotName JSON_FORMAT = createConstant("io.quarkus.hibernate.orm.JsonFormat");
+    public static final DotName XML_FORMAT = createConstant("io.quarkus.hibernate.orm.XmlFormat");
 
     public static final List<DotName> GENERATORS = List.of(
             createConstant("org.hibernate.generator.internal.CurrentTimestampGeneration"),

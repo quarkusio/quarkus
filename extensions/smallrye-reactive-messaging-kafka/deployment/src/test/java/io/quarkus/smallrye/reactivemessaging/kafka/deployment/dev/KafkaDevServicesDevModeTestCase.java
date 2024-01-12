@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.kafka.deployment.dev;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -10,7 +12,6 @@ import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.sse.SseEventSource;
 
-import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -57,10 +58,10 @@ public class KafkaDevServicesDevModeTestCase {
             source.open();
 
             Awaitility.await()
-                    .until(() -> received.size() >= 2);
+                    .untilAsserted(() -> assertThat(received).hasSizeGreaterThanOrEqualTo(2));
         }
 
-        Assertions.assertThat(received)
+        assertThat(received)
                 .hasSizeGreaterThanOrEqualTo(2)
                 .allMatch(value -> (value >= 0) && (value < 100));
 
@@ -75,10 +76,10 @@ public class KafkaDevServicesDevModeTestCase {
             source.open();
 
             Awaitility.await()
-                    .until(() -> received.size() >= 2);
+                    .untilAsserted(() -> assertThat(received).hasSizeGreaterThanOrEqualTo(2));
         }
 
-        Assertions.assertThat(received)
+        assertThat(received)
                 .hasSizeGreaterThanOrEqualTo(2)
                 .allMatch(value -> (value >= 0) && (value < 100));
     }

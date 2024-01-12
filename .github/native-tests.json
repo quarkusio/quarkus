@@ -39,7 +39,7 @@
         {
             "category": "Data6",
             "timeout": 95,
-            "test-modules": "elasticsearch-rest-client, elasticsearch-java-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-tenancy, hibernate-search-orm-opensearch, hibernate-search-orm-elasticsearch-coordination-outbox-polling",
+            "test-modules": "elasticsearch-rest-client, elasticsearch-java-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-tenancy, hibernate-search-orm-opensearch, hibernate-search-orm-elasticsearch-outbox-polling",
             "os-name": "ubuntu-latest"
         },
         {
@@ -57,7 +57,7 @@
         {
             "category": "Messaging1",
             "timeout": 115,
-            "test-modules": "kafka, kafka-ssl, kafka-sasl, kafka-avro-apicurio2, kafka-snappy, kafka-streams, reactive-messaging-kafka, kafka-oauth-keycloak",
+            "test-modules": "kafka, kafka-ssl, kafka-sasl, kafka-avro-apicurio2, kafka-json-schema-apicurio2, kafka-snappy, kafka-streams, reactive-messaging-kafka, kafka-oauth-keycloak",
             "os-name": "ubuntu-latest"
         },
         {
@@ -111,7 +111,7 @@
         {
             "category": "Misc3",
             "timeout": 80,
-            "test-modules": "kubernetes-client, openshift-client, kubernetes-service-binding-jdbc, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-metrics, smallrye-opentracing",
+            "test-modules": "kubernetes-client, openshift-client, kubernetes-service-binding-jdbc, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-graphql-client-keycloak, smallrye-metrics",
             "os-name": "ubuntu-latest"
         },
         {

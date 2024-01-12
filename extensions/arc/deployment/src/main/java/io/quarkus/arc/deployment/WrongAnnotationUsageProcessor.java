@@ -44,6 +44,7 @@ public class WrongAnnotationUsageProcessor {
         unsupported.add(new UnsupportedAnnotation("com.google.inject.Singleton", correctSingleton));
         unsupported.add(new UnsupportedAnnotation("jakarta.ejb.Singleton", correctSingleton));
         unsupported.add(new UnsupportedAnnotation("groovy.lang.Singleton", correctSingleton));
+        unsupported.add(new UnsupportedAnnotation("javax.inject.Singleton", correctSingleton));
 
         String correctInject = "@jakarta.inject.Inject";
         unsupported.add(new UnsupportedAnnotation("javax.inject.Inject", correctInject));

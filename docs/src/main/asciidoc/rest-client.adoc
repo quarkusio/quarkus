@@ -6,7 +6,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using the legacy REST Client
 include::_attributes.adoc[]
 :categories: web
-:summary: This guide explains how to use the RESTEasy REST Client in order to interact with REST APIs (JSON and other) with very little effort.
+:summary: This guide explains how to use the RESTEasy Classic REST Client in order to interact with REST APIs (JSON and other) with very little effort.
+:topics: rest,rest-client,resteasy-classic
+:extensions: io.quarkus:quarkus-rest-client,io.quarkus:quarkus-rest-client-jackson,io.quarkus:quarkus-rest-client-jsonb
 
 [WARNING]
 ====
@@ -347,11 +349,11 @@ A HTTP server can redirect a response to another location by sending a response 
 - `quarkus.rest-client.follow-redirects` to enable redirection for all REST clients.
 - `quarkus.rest-client.<client-prefix>.follow-redirects` to enable redirection for a specific REST client.
 
-If this property is true, then REST Client will perform a new request that it receives a redirection response from the HTTP server. 
+If this property is true, then REST Client will perform a new request that it receives a redirection response from the HTTP server.
 
 Additionally, we can limit the number of redirections using the property "max-redirects".
 
-One important note is that according to the https://www.rfc-editor.org/rfc/rfc2616#section-10.3.8[RFC2616] specs, by default the redirection will only happen for GET or HEAD methods. 
+One important note is that according to the https://www.rfc-editor.org/rfc/rfc2616#section-10.3.8[RFC2616] specs, by default the redirection will only happen for GET or HEAD methods.
 
 == Async Support
 

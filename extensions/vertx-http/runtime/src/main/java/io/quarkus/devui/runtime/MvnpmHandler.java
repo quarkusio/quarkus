@@ -45,18 +45,20 @@ public class MvnpmHandler implements Handler<RoutingContext> {
 
         try {
             URL url = mvnpmLoader.getResource(BASE_DIR + fullPath);
-            URLConnection openConnection = url.openConnection();
-            long lastModified = openConnection.getLastModified();
-            try (InputStream is = openConnection.getInputStream()) {
-                if (is != null) {
-                    byte[] contents = is.readAllBytes();
-                    event.response()
-                            .putHeader(HttpHeaders.CONTENT_TYPE, getContentType(fileName))
-                            .putHeader(HttpHeaders.CACHE_CONTROL, "public, immutable, max-age=31536000")
-                            .putHeader(HttpHeaders.LAST_MODIFIED, formatDate(lastModified))
-                            .putHeader("date", formatDate(LocalDateTime.now()))
-                            .end(Buffer.buffer(contents));
-                    return;
+            if (url != null) {
+                URLConnection openConnection = url.openConnection();
+                long lastModified = openConnection.getLastModified();
+                try (InputStream is = openConnection.getInputStream()) {
+                    if (is != null) {
+                        byte[] contents = is.readAllBytes();
+                        event.response()
+                                .putHeader(HttpHeaders.CONTENT_TYPE, getContentType(fileName))
+                                .putHeader(HttpHeaders.CACHE_CONTROL, "public, immutable, max-age=31536000")
+                                .putHeader(HttpHeaders.LAST_MODIFIED, formatDate(lastModified))
+                                .putHeader("date", formatDate(LocalDateTime.now()))
+                                .end(Buffer.buffer(contents));
+                        return;
+                    }
                 }
             }
         } catch (IOException ex) {

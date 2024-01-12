@@ -6,10 +6,13 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Contexts and Dependency Injection
 include::_attributes.adoc[]
 :categories: core
+:keywords: arc
 :summary: Go more in depth into the Quarkus implementation of CDI.
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: cdi,arc,injection,interceptor,observer
+:extensions: io.quarkus:quarkus-arc
 
 Quarkus DI solution (also called ArC) is based on the https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html[Jakarta Contexts and Dependency Injection 4.0, window="_blank"] specification.
 It implements the CDI Lite specification, with selected improvements on top, and passes the CDI Lite TCK.
@@ -92,7 +95,7 @@ You can find the latest plugin version in the https://plugins.gradle.org/plugin/
 [source,kotlin,subs=attributes+]
 ----
 plugins {
-    id("org.kordamp.gradle.jandex") version '{jandex-gradle-plugin-version}'
+    id("org.kordamp.gradle.jandex") version "{jandex-gradle-plugin-version}"
 }
 ----
 You can find the latest plugin version in the https://plugins.gradle.org/plugin/org.kordamp.gradle.jandex[Gradle Plugin Portal]
@@ -105,9 +108,11 @@ If you can't modify the dependency, you can still index it by adding `quarkus.in
 [source,properties]
 ----
 quarkus.index-dependency.<name>.group-id=
-quarkus.index-dependency.<name>.artifact-id=
+quarkus.index-dependency.<name>.artifact-id=(this one is optional)
 quarkus.index-dependency.<name>.classifier=(this one is optional)
 ----
+
+TIP: If no `artifact-id` is specified then all dependencies with the specificed `group-id` are indexed.
 
 For example, the following entries ensure that the `org.acme:acme-api` dependency is indexed:
 
@@ -527,6 +532,25 @@ public class CustomTracerConfiguration {
 `@DefaultBean` allows extensions (or any other code for that matter) to provide defaults while backing off if beans of that type are supplied in any
 way Quarkus supports.
 
+Default beans can optionally declare `@jakarta.annotation.Priority`.
+If there is no priority defined, `@Priority(0)` is assumed.
+Priority value is used for bean ordering and during typesafe resolution to disambiguate multiple matching default beans.
+
+[source,java]
+----
+@Dependent
+public class CustomizedDefaultConfiguration {
+
+    @Produces
+    @DefaultBean
+    @Priority(100)
+    public Configuration customizedConfiguration(){
+        // create a customized default Configuration
+        // this will have priority over previously defined default bean
+    }
+}
+----
+
 [[enable_build_profile]]
 === Enabling Beans for Quarkus Build Profile
 
@@ -578,6 +602,8 @@ public class TracerConfiguration {
 ----
 
 NOTE: The runtime profile has absolutely no effect on the bean resolution using `@IfBuildProfile` and `@UnlessBuildProfile`.
+
+TIP: It is also possible to use `@IfBuildProfile` and `@UnlessBuildProfile` on stereotypes.
 
 [[enable_build_properties]]
 === Enabling Beans for Quarkus Build Properties
@@ -631,6 +657,8 @@ public class TracerConfiguration {
 ----
 
 NOTE: Properties set at runtime have absolutely no effect on the bean resolution using `@IfBuildProperty`.
+
+TIP: It is also possible to use `@IfBuildProperty` and `@UnlessBuildProperty` on stereotypes.
 
 === Declaring Selected Alternatives
 

@@ -223,6 +223,23 @@ public class ArcConfig {
     @ConfigItem
     public ArcContextPropagationConfig contextPropagation;
 
+    /**
+     * If set to {@code true}, the container should try to optimize the contexts for some of the scopes. If set to {@code auto}
+     * then optimize the contexts if there's less than 1000 beans in the application. If set to {@code false} do not optimize
+     * the contexts.
+     * <p>
+     * Typically, some implementation parts of the context for {@link jakarta.enterprise.context.ApplicationScoped} could be
+     * pregenerated during build.
+     */
+    @ConfigItem(defaultValue = "auto", generateDocumentation = false)
+    public OptimizeContexts optimizeContexts;
+
+    public enum OptimizeContexts {
+        TRUE,
+        FALSE,
+        AUTO
+    }
+
     public final boolean isRemoveUnusedBeansFieldValid() {
         return ALLOWED_REMOVE_UNUSED_BEANS_VALUES.contains(removeUnusedBeans.toLowerCase());
     }

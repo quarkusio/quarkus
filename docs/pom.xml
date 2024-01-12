@@ -17,10 +17,10 @@
     <properties>
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
-        <graal-community.version-for-documentation>for JDK 17</graal-community.version-for-documentation>
-        <graal-community.tag-for-documentation>jdk17</graal-community.tag-for-documentation>
-        <graal-community.image-tag-for-documentation>jdk-17</graal-community.image-tag-for-documentation>
-        <mandrel.image-tag-for-documentation>jdk-17</mandrel.image-tag-for-documentation>
+        <graal-community.version-for-documentation>for JDK 21</graal-community.version-for-documentation>
+        <graal-community.tag-for-documentation>jdk21</graal-community.tag-for-documentation>
+        <graal-community.image-tag-for-documentation>jdk-21</graal-community.image-tag-for-documentation>
+        <mandrel.image-tag-for-documentation>jdk-21</mandrel.image-tag-for-documentation>
 
         <assembly-maven-plugin.version>3.5.0</assembly-maven-plugin.version>
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
@@ -29,7 +29,7 @@
         <roaster-jdt.version>2.26.0.Final</roaster-jdt.version>
         <maven-model-helper.version>21</maven-model-helper.version>
         <eclipse-collections.version>11.1.0</eclipse-collections.version>
-        <jgit.version>6.6.1.202309021850-r</jgit.version>
+        <jgit.version>6.8.0.202311291450-r</jgit.version>
 
         <quarkus-home-url>https://quarkus.io</quarkus-home-url>
         <quarkus-base-url>https://github.com/quarkusio/quarkus</quarkus-base-url>
@@ -39,8 +39,8 @@
         <vale.image>docker.io/jdkato/vale:v2.15.5</vale.image>
 
         <!-- Keep these in sync with the full versions in bom/application/pom.xml -->
-        <hibernate-orm.version-for-documentation>6.2</hibernate-orm.version-for-documentation>
-        <hibernate-search.version-for-documentation>6.2</hibernate-search.version-for-documentation>
+        <hibernate-orm.version-for-documentation>6.4</hibernate-orm.version-for-documentation>
+        <hibernate-search.version-for-documentation>7.0</hibernate-search.version-for-documentation>
     </properties>
 
     <name>Quarkus - Documentation</name>
@@ -218,6 +218,19 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-apicurio-registry-json-schema-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -335,6 +348,19 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-confluent-registry-json-schema-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-container-image-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -388,19 +414,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-container-image-openshift-deployment</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-container-image-s2i-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -855,7 +868,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-search-orm-coordination-outbox-polling-deployment</artifactId>
+            <artifactId>quarkus-hibernate-search-orm-elasticsearch-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -868,7 +881,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-search-orm-elasticsearch-deployment</artifactId>
+            <artifactId>quarkus-hibernate-search-orm-outbox-polling-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -934,19 +947,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jacoco-deployment</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jaeger-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -1583,6 +1583,19 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc-client-graphql-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc-client-reactive-filter-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -1597,6 +1610,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc-common-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc-db-token-state-manager-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -2506,19 +2532,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-opentracing-deployment</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-reactive-messaging-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -2956,6 +2969,8 @@
                         </goals>
                         <configuration>
                             <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <mainClass>io.quarkus.docs.generation.AllConfigGenerator</mainClass>
                             <arguments>
                                 <argument>${project.basedir}/../devtools/bom-descriptor-json/target/quarkus-bom-quarkus-platform-descriptor-${project.version}-${project.version}.json</argument>
@@ -2973,6 +2988,8 @@
                         </goals>
                         <configuration>
                             <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <mainClass>io.quarkus.docs.generation.QuarkusMavenPluginDocsGenerator</mainClass>
                             <arguments>
                                 <argument>${project.basedir}/../devtools/maven/target/classes/META-INF/maven/plugin.xml</argument>
@@ -2990,6 +3007,8 @@
                         </goals>
                         <configuration>
                             <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <mainClass>io.quarkus.docs.generation.QuarkusBuildItemDoc</mainClass>
                             <arguments>
                                 <argument>${generated-dir}/config/quarkus-all-build-items.adoc</argument>
@@ -3009,6 +3028,8 @@
                         </goals>
                         <configuration>
                             <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <mainClass>io.quarkus.docs.generation.CopyExampleSource</mainClass>
                             <arguments>
                                 <argument>${code-examples-dir}</argument>
@@ -3028,6 +3049,8 @@
                         </goals>
                         <configuration>
                             <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <mainClass>io.quarkus.docs.generation.YamlMetadataGenerator</mainClass>
                             <arguments>
                                 <argument>${project.basedir}/target/asciidoc/sources</argument>
@@ -3046,6 +3069,8 @@
                         </goals>
                         <configuration>
                             <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
                             <mainClass>io.quarkus.docs.generation.ReferenceIndexGenerator</mainClass>
                             <arguments>
                                 <argument>${project.basedir}/target/asciidoc/sources</argument>

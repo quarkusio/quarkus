@@ -1,5 +1,6 @@
 package io.quarkus.deployment.configuration;
 
+import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClassWithPrefix;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ import io.smallrye.config.ConfigMappingInterface.MapProperty;
 import io.smallrye.config.ConfigMappingInterface.Property;
 import io.smallrye.config.ConfigMappingLoader;
 import io.smallrye.config.ConfigMappingMetadata;
+import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 
 public class ConfigMappingUtils {
 
@@ -58,32 +60,41 @@ public class ConfigMappingUtils {
             Class<?> configClass = toClass(target.asClass().name());
             String prefix = Optional.ofNullable(annotationPrefix).map(AnnotationValue::asString).orElse("");
             Kind configClassKind = getConfigClassType(instance);
-            processConfigClass(configClass, configClassKind, prefix, true, combinedIndex, generatedClasses, reflectiveClasses,
-                    configClasses);
+            processConfigClass(configClassWithPrefix(configClass, prefix), configClassKind, true, combinedIndex,
+                    generatedClasses, reflectiveClasses, configClasses);
         }
     }
 
+    public static void processConfigMapping(
+            CombinedIndexBuildItem combinedIndex,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ConfigClassBuildItem> configClasses) {
+        processConfigClasses(combinedIndex, generatedClasses, reflectiveClasses, configClasses, CONFIG_MAPPING_NAME);
+    }
+
     public static void processExtensionConfigMapping(
-            Class<?> configClass,
-            String prefix,
+            ConfigClassWithPrefix configClass,
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ConfigClassBuildItem> configClasses) {
 
-        processConfigClass(configClass, Kind.MAPPING, prefix, false, combinedIndex, generatedClasses, reflectiveClasses,
+        processConfigClass(configClass, Kind.MAPPING, false, combinedIndex, generatedClasses, reflectiveClasses,
                 configClasses);
     }
 
     private static void processConfigClass(
-            Class<?> configClass,
+            ConfigClassWithPrefix configClassWithPrefix,
             Kind configClassKind,
-            String prefix,
             boolean isApplicationClass,
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ConfigClassBuildItem> configClasses) {
+
+        Class<?> configClass = configClassWithPrefix.getKlass();
+        String prefix = configClassWithPrefix.getPrefix();
 
         List<ConfigMappingMetadata> configMappingsMetadata = ConfigMappingLoader.getConfigMappingsMetadata(configClass);
         Set<String> generatedClassesNames = new HashSet<>();

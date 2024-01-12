@@ -160,7 +160,7 @@ public class DirectoryClassPathElement extends AbstractClassPathElement {
     }
 
     @Override
-    public ProtectionDomain getProtectionDomain(ClassLoader classLoader) {
+    public ProtectionDomain getProtectionDomain() {
         URL url = null;
         try {
             URI uri = root.toUri();
@@ -169,8 +169,7 @@ public class DirectoryClassPathElement extends AbstractClassPathElement {
             throw new RuntimeException("Unable to create protection domain for " + root, e);
         }
         CodeSource codesource = new CodeSource(url, (Certificate[]) null);
-        ProtectionDomain protectionDomain = new ProtectionDomain(codesource, null, classLoader, null);
-        return protectionDomain;
+        return new ProtectionDomain(codesource, null);
     }
 
     @Override

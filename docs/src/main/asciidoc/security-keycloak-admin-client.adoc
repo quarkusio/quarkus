@@ -4,8 +4,11 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Keycloak Admin Client
-
 include::_attributes.adoc[]
+:categories: security
+:keywords: sso oidc security keycloak
+:topics: security,authentication,authorization,keycloak,sso
+:extensions: io.quarkus:quarkus-keycloak-admin-client-reactive,io.quarkus:quarkus-keycloak-admin-client
 
 The Quarkus Keycloak Admin Client and its reactive twin support Keycloak Admin Client which can be used to configure a running Keycloak server.
 
@@ -17,7 +20,7 @@ To learn more about the Keycloak Admin Client, please refer to its https://www.k
 
 :prerequisites-docker:
 include::{includes}/prerequisites.adoc[]
-* https://www.keycloak.org/docs/latest/server_installation/index.html[Keycloak]
+* https://www.keycloak.org[Keycloak]
 
 == Creating the Project
 
@@ -121,8 +124,8 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.representations.idm.RoleRepresentation;
 
-import jakarta.annotations.PostConstruct;
-import jakarta.annotations.PreConstruct;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import java.util.List;

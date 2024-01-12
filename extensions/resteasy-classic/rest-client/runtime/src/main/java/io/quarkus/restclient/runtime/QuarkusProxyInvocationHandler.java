@@ -30,7 +30,6 @@ import jakarta.ws.rs.ext.ParamConverterProvider;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.microprofile.client.ExceptionMapping;
-import org.jboss.resteasy.microprofile.client.InvocationContextImpl;
 import org.jboss.resteasy.microprofile.client.RestClientProxy;
 import org.jboss.resteasy.microprofile.client.header.ClientHeaderFillingException;
 
@@ -52,7 +51,9 @@ public class QuarkusProxyInvocationHandler implements InvocationHandler {
 
     private final Set<Object> providerInstances;
 
-    private final Map<Method, List<InvocationContextImpl.InterceptorInvocation>> interceptorChains;
+    private final Map<Method, List<QuarkusInvocationContextImpl.InterceptorInvocation>> interceptorChains;
+
+    private final Map<Method, Set<Annotation>> interceptorBindingsMap;
 
     private final ResteasyClient client;
 
@@ -70,10 +71,13 @@ public class QuarkusProxyInvocationHandler implements InvocationHandler {
         this.closed = new AtomicBoolean();
         if (beanManager != null) {
             this.creationalContext = beanManager.createCreationalContext(null);
-            this.interceptorChains = initInterceptorChains(beanManager, creationalContext, restClientInterface);
+            this.interceptorBindingsMap = new HashMap<>();
+            this.interceptorChains = initInterceptorChains(beanManager, creationalContext, restClientInterface,
+                    interceptorBindingsMap);
         } else {
             this.creationalContext = null;
             this.interceptorChains = Collections.emptyMap();
+            this.interceptorBindingsMap = Collections.emptyMap();
         }
     }
 
@@ -152,10 +156,10 @@ public class QuarkusProxyInvocationHandler implements InvocationHandler {
             args = argsReplacement;
         }
 
-        List<InvocationContextImpl.InterceptorInvocation> chain = interceptorChains.get(method);
+        List<QuarkusInvocationContextImpl.InterceptorInvocation> chain = interceptorChains.get(method);
         if (chain != null) {
             // Invoke business method interceptors
-            return new InvocationContextImpl(target, method, args, chain).proceed();
+            return new QuarkusInvocationContextImpl(target, method, args, chain, interceptorBindingsMap.get(method)).proceed();
         } else {
             try {
                 return method.invoke(target, args);
@@ -245,10 +249,11 @@ public class QuarkusProxyInvocationHandler implements InvocationHandler {
         }
     }
 
-    private static Map<Method, List<InvocationContextImpl.InterceptorInvocation>> initInterceptorChains(
-            BeanManager beanManager, CreationalContext<?> creationalContext, Class<?> restClientInterface) {
+    private static Map<Method, List<QuarkusInvocationContextImpl.InterceptorInvocation>> initInterceptorChains(
+            BeanManager beanManager, CreationalContext<?> creationalContext, Class<?> restClientInterface,
+            Map<Method, Set<Annotation>> interceptorBindingsMap) {
 
-        Map<Method, List<InvocationContextImpl.InterceptorInvocation>> chains = new HashMap<>();
+        Map<Method, List<QuarkusInvocationContextImpl.InterceptorInvocation>> chains = new HashMap<>();
         // Interceptor as a key in a map is not entirely correct (custom interceptors) but should work in most cases
         Map<Interceptor<?>, Object> interceptorInstances = new HashMap<>();
 
@@ -267,12 +272,13 @@ public class QuarkusProxyInvocationHandler implements InvocationHandler {
                 List<Interceptor<?>> interceptors = beanManager.resolveInterceptors(InterceptionType.AROUND_INVOKE,
                         interceptorBindings);
                 if (!interceptors.isEmpty()) {
-                    List<InvocationContextImpl.InterceptorInvocation> chain = new ArrayList<>();
+                    List<QuarkusInvocationContextImpl.InterceptorInvocation> chain = new ArrayList<>();
                     for (Interceptor<?> interceptor : interceptors) {
-                        chain.add(new InvocationContextImpl.InterceptorInvocation(interceptor,
+                        chain.add(new QuarkusInvocationContextImpl.InterceptorInvocation(interceptor,
                                 interceptorInstances.computeIfAbsent(interceptor,
                                         i -> beanManager.getReference(i, i.getBeanClass(), creationalContext))));
                     }
+                    interceptorBindingsMap.put(method, Set.of(interceptorBindings));
                     chains.put(method, chain);
                 }
             }

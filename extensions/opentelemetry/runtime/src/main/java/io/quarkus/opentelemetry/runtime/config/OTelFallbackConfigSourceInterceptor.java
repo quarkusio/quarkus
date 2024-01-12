@@ -42,7 +42,7 @@ public class OTelFallbackConfigSourceInterceptor extends FallbackConfigSourceInt
     @Override
     public ConfigValue getValue(final ConfigSourceInterceptorContext context, final String name) {
         ConfigValue value = super.getValue(context, name);
-        if (name.equals("quarkus.otel.traces.sampler")) {
+        if (value != null && name.equals("quarkus.otel.traces.sampler")) {
             return value.withValue(LEGACY_SAMPLER_NAME_CONVERTER.convert(value.getValue()));
         }
         return value;

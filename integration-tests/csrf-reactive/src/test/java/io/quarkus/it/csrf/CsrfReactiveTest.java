@@ -41,6 +41,8 @@ public class CsrfReactiveTest {
         try (final WebClient webClient = createWebClient()) {
             webClient.addRequestHeader("Authorization", basicAuth("alice", "alice"));
             HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenForm");
+            htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenForm");
+            assertNotNull(htmlPage.getWebResponse().getResponseHeaderValue("Set-Cookie"));
 
             assertEquals("CSRF Token Form Test", htmlPage.getTitleText());
 
@@ -51,11 +53,49 @@ public class CsrfReactiveTest {
             assertNotNull(webClient.getCookieManager().getCookie("csrftoken"));
 
             TextPage textPage = loginForm.getInputByName("submit").click();
-
+            assertNotNull(htmlPage.getWebResponse().getResponseHeaderValue("Set-Cookie"));
             assertEquals("alice:true:tokenHeaderIsSet=false", textPage.getContent());
 
+            // This request which returns String is not CSRF protected
             textPage = webClient.getPage("http://localhost:8081/service/hello");
             assertEquals("hello", textPage.getContent());
+            // therefore no Set-Cookie header is expected
+            assertNull(textPage.getWebResponse().getResponseHeaderValue("Set-Cookie"));
+
+            // Repeat a form submission
+            textPage = loginForm.getInputByName("submit").click();
+            assertNotNull(htmlPage.getWebResponse().getResponseHeaderValue("Set-Cookie"));
+            assertEquals("alice:true:tokenHeaderIsSet=false", textPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCsrfTokenTwoForms() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.addRequestHeader("Authorization", basicAuth("alice", "alice"));
+            HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenFirstForm");
+
+            assertEquals("CSRF Token First Form Test", htmlPage.getTitleText());
+
+            HtmlForm loginForm = htmlPage.getForms().get(0);
+
+            loginForm.getInputByName("name").setValueAttribute("alice");
+
+            assertNotNull(webClient.getCookieManager().getCookie("csrftoken"));
+
+            htmlPage = loginForm.getInputByName("submit").click();
+
+            assertEquals("CSRF Token Second Form Test", htmlPage.getTitleText());
+
+            loginForm = htmlPage.getForms().get(0);
+
+            loginForm.getInputByName("name").setValueAttribute("alice");
+
+            TextPage textPage = loginForm.getInputByName("submit").click();
+            assertNotNull(webClient.getCookieManager().getCookie("csrftoken"));
+            assertEquals("alice:true:tokenHeaderIsSet=false", textPage.getContent());
 
             webClient.getCookieManager().clearCookies();
         }

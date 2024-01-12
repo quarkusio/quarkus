@@ -1,6 +1,6 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
-name: "REST Client Reactive JSON-B"
+name: "RESTEasy Reactive's REST Client JSON-B"
 metadata:
   keywords:
   - "rest-client-jsonb"

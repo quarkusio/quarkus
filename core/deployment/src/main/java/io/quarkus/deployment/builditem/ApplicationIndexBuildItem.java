@@ -5,7 +5,7 @@ import org.jboss.jandex.Index;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * The Jandex index of the application root
+ * The Jandex index of the application root.
  */
 public final class ApplicationIndexBuildItem extends SimpleBuildItem {
 

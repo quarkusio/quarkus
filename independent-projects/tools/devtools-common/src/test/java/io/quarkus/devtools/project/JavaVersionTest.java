@@ -1,10 +1,13 @@
 package io.quarkus.devtools.project;
 
 import static io.quarkus.devtools.project.JavaVersion.DETECT_JAVA_RUNTIME_VERSION;
+import static io.quarkus.devtools.project.JavaVersion.JAVA_VERSIONS_LTS;
 import static io.quarkus.devtools.project.JavaVersion.computeJavaVersion;
 import static io.quarkus.devtools.project.JavaVersion.determineBestJavaLtsVersion;
+import static io.quarkus.devtools.project.JavaVersion.getCompatibleLTSVersions;
 import static io.quarkus.devtools.project.SourceType.JAVA;
 import static io.quarkus.devtools.project.SourceType.KOTLIN;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
@@ -17,18 +20,21 @@ class JavaVersionTest {
     }
 
     @Test
-    public void givenJavaVersion16ShouldReturn11() {
-        assertEquals("11", computeJavaVersion(JAVA, "16.0.1"));
+    public void givenJavaVersion22ShouldReturn21() {
+        assertEquals("21", computeJavaVersion(JAVA, "22.0.1"));
     }
 
     @Test
-    public void givenJavaVersion11ShouldReturn11() {
-        assertEquals("11", computeJavaVersion(JAVA, "11"));
+    public void givenJavaVersion21ShouldReturn21() {
+        assertEquals("21", computeJavaVersion(JAVA, "21"));
     }
 
     @Test
-    public void givenJavaVersion18ShouldReturn17() {
-        assertEquals("17", computeJavaVersion(JAVA, "18"));
+    void shouldProperlyUseMinJavaVersion() {
+        assertThat(getCompatibleLTSVersions(new JavaVersion("17"))).isEqualTo(JAVA_VERSIONS_LTS);
+        assertThat(getCompatibleLTSVersions(new JavaVersion("21"))).containsExactly(21);
+        assertThat(getCompatibleLTSVersions(new JavaVersion("100"))).isEmpty();
+        assertThat(getCompatibleLTSVersions(JavaVersion.NA)).isEqualTo(JAVA_VERSIONS_LTS);
     }
 
     @Test
@@ -39,11 +45,12 @@ class JavaVersionTest {
 
     @Test
     public void testDetermineBestLtsVersion() {
-        assertEquals(11, determineBestJavaLtsVersion(8));
-        assertEquals(11, determineBestJavaLtsVersion(11));
-        assertEquals(11, determineBestJavaLtsVersion(12));
+        assertEquals(17, determineBestJavaLtsVersion(8));
+        assertEquals(17, determineBestJavaLtsVersion(11));
         assertEquals(17, determineBestJavaLtsVersion(17));
         assertEquals(17, determineBestJavaLtsVersion(18));
+        assertEquals(21, determineBestJavaLtsVersion(21));
+        assertEquals(21, determineBestJavaLtsVersion(22));
     }
 
     @Test

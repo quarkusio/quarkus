@@ -32,7 +32,7 @@ public class SecurityTransformerUtils {
         return hasStandardSecurityAnnotation(classInfo.declaredAnnotations());
     }
 
-    private static boolean hasStandardSecurityAnnotation(Collection<AnnotationInstance> instances) {
+    static boolean hasStandardSecurityAnnotation(Collection<AnnotationInstance> instances) {
         for (AnnotationInstance instance : instances) {
             if (SECURITY_ANNOTATIONS.contains(instance.name())) {
                 return true;
@@ -49,7 +49,7 @@ public class SecurityTransformerUtils {
         return findFirstStandardSecurityAnnotation(classInfo.declaredAnnotations());
     }
 
-    private static Optional<AnnotationInstance> findFirstStandardSecurityAnnotation(Collection<AnnotationInstance> instances) {
+    static Optional<AnnotationInstance> findFirstStandardSecurityAnnotation(Collection<AnnotationInstance> instances) {
         for (AnnotationInstance instance : instances) {
             if (SECURITY_ANNOTATIONS.contains(instance.name())) {
                 return Optional.of(instance);

@@ -1,8 +1,10 @@
 package io.quarkus.oidc.runtime;
 
 import static io.quarkus.oidc.runtime.OidcUtils.validateAndCreateIdentity;
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
 
 import java.security.Principal;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -32,10 +34,8 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
-import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
 public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticationRequest> {
@@ -48,12 +48,12 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     private static final Uni<TokenVerificationResult> NULL_CODE_ACCESS_TOKEN_UNI = Uni.createFrom().nullItem();
     private static final String CODE_ACCESS_TOKEN_RESULT = "code_flow_access_token_result";
 
-    private final DefaultTenantConfigResolver tenantResolver;
+    protected final DefaultTenantConfigResolver tenantResolver;
     private final BlockingTaskRunner<Void> uniVoidOidcContext;
     private final BlockingTaskRunner<TokenIntrospection> getIntrospectionRequestContext;
     private final BlockingTaskRunner<UserInfo> getUserInfoRequestContext;
 
-    public OidcIdentityProvider(DefaultTenantConfigResolver tenantResolver, BlockingSecurityExecutor blockingExecutor) {
+    OidcIdentityProvider(DefaultTenantConfigResolver tenantResolver, BlockingSecurityExecutor blockingExecutor) {
         this.tenantResolver = tenantResolver;
         this.uniVoidOidcContext = new BlockingTaskRunner<>(blockingExecutor);
         this.getIntrospectionRequestContext = new BlockingTaskRunner<>(blockingExecutor);
@@ -72,65 +72,72 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             return Uni.createFrom().nullItem();
         }
         LOG.debug("Starting creating SecurityIdentity");
-        RoutingContext vertxContext = HttpSecurityUtils.getRoutingContextAttribute(request);
-        vertxContext.put(AuthenticationRequestContext.class.getName(), context);
 
-        Uni<TenantConfigContext> tenantConfigContext = tenantResolver.resolveContext(vertxContext);
-
-        return tenantConfigContext.onItem()
+        return resolveTenantConfigContext(request, context).onItem()
                 .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
                     @Override
                     public Uni<SecurityIdentity> apply(TenantConfigContext tenantConfigContext) {
                         return Uni.createFrom().deferred(new Supplier<Uni<? extends SecurityIdentity>>() {
                             @Override
                             public Uni<SecurityIdentity> get() {
-                                return authenticate(request, vertxContext, tenantConfigContext);
+                                return authenticate(request, getRequestData(request), tenantConfigContext);
                             }
                         });
                     }
                 });
     }
 
-    private Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
-            RoutingContext vertxContext,
+    protected Uni<TenantConfigContext> resolveTenantConfigContext(TokenAuthenticationRequest request,
+            AuthenticationRequestContext context) {
+        return tenantResolver.resolveContext(
+                getRoutingContextAttribute(request).put(AuthenticationRequestContext.class.getName(), context));
+    }
+
+    protected Map<String, Object> getRequestData(TokenAuthenticationRequest request) {
+        return getRoutingContextAttribute(request).data();
+    }
+
+    private Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request, Map<String, Object> requestData,
             TenantConfigContext resolvedContext) {
         if (resolvedContext.oidcConfig.publicKey.isPresent()) {
             LOG.debug("Performing token verification with a configured public key");
             return validateTokenWithoutOidcServer(request, resolvedContext);
+        } else if (resolvedContext.oidcConfig.getCertificateChain().trustStoreFile.isPresent()) {
+            LOG.debug("Performing token verification with a public key inlined in the certificate chain");
+            return validateTokenWithoutOidcServer(request, resolvedContext);
         } else {
-            return validateAllTokensWithOidcServer(vertxContext, request, resolvedContext);
+            return validateAllTokensWithOidcServer(requestData, request, resolvedContext);
         }
     }
 
-    private Uni<SecurityIdentity> validateAllTokensWithOidcServer(RoutingContext vertxContext,
-            TokenAuthenticationRequest request,
-            TenantConfigContext resolvedContext) {
+    private Uni<SecurityIdentity> validateAllTokensWithOidcServer(Map<String, Object> requestData,
+            TokenAuthenticationRequest request, TenantConfigContext resolvedContext) {
 
         if (resolvedContext.oidcConfig.token.verifyAccessTokenWithUserInfo.orElse(false)
-                && isOpaqueAccessToken(vertxContext, request, resolvedContext)) {
+                && isOpaqueAccessToken(requestData, request, resolvedContext)) {
             // UserInfo has to be acquired first as a precondition for verifying opaque access tokens.
             // Typically it will be done for bearer access tokens therefore even if the access token has expired
             // the client will be able to refresh if needed, no refresh token is available to Quarkus during the
             // bearer access token verification
             if (resolvedContext.oidcConfig.authentication.isUserInfoRequired().orElse(false)) {
-                return getUserInfoUni(vertxContext, request, resolvedContext).onItemOrFailure().transformToUni(
+                return getUserInfoUni(requestData, request, resolvedContext).onItemOrFailure().transformToUni(
                         new BiFunction<UserInfo, Throwable, Uni<? extends SecurityIdentity>>() {
                             @Override
                             public Uni<SecurityIdentity> apply(UserInfo userInfo, Throwable t) {
                                 if (t != null) {
                                     return Uni.createFrom().failure(new AuthenticationFailedException(t));
                                 }
-                                return validateTokenWithUserInfoAndCreateIdentity(vertxContext, request, resolvedContext,
+                                return validateTokenWithUserInfoAndCreateIdentity(requestData, request, resolvedContext,
                                         userInfo);
                             }
                         });
             } else {
-                return validateTokenWithUserInfoAndCreateIdentity(vertxContext, request, resolvedContext, null);
+                return validateTokenWithUserInfoAndCreateIdentity(requestData, request, resolvedContext, null);
             }
         } else {
             final Uni<TokenVerificationResult> primaryTokenUni;
             if (isInternalIdToken(request)) {
-                if (vertxContext.get(NEW_AUTHENTICATION) == Boolean.TRUE) {
+                if (requestData.get(NEW_AUTHENTICATION) == Boolean.TRUE) {
                     // No need to verify it in this case as 'CodeAuthenticationMechanism' has just created it
                     primaryTokenUni = Uni.createFrom()
                             .item(new TokenVerificationResult(OidcUtils.decodeJwtContent(request.getToken().getToken()), null));
@@ -138,13 +145,13 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     primaryTokenUni = verifySelfSignedTokenUni(resolvedContext, request.getToken().getToken());
                 }
             } else {
-                primaryTokenUni = verifyTokenUni(vertxContext, resolvedContext, request.getToken().getToken(),
+                primaryTokenUni = verifyTokenUni(requestData, resolvedContext, request.getToken(),
                         isIdToken(request), null);
             }
 
             // Verify Code Flow access token first if it is available and has to be verified.
             // It may be refreshed if it has or has nearly expired
-            Uni<TokenVerificationResult> codeAccessTokenUni = verifyCodeFlowAccessTokenUni(vertxContext, request,
+            Uni<TokenVerificationResult> codeAccessTokenUni = verifyCodeFlowAccessTokenUni(requestData, request,
                     resolvedContext,
                     null);
             return codeAccessTokenUni.onItemOrFailure().transformToUni(
@@ -156,23 +163,23 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                         : new AuthenticationFailedException(t));
                             }
                             if (codeAccessTokenResult != null) {
-                                if (tokenAutoRefreshPrepared(codeAccessTokenResult, vertxContext,
+                                if (tokenAutoRefreshPrepared(codeAccessTokenResult, requestData,
                                         resolvedContext.oidcConfig)) {
                                     return Uni.createFrom().failure(new TokenAutoRefreshException(null));
                                 }
-                                vertxContext.put(CODE_ACCESS_TOKEN_RESULT, codeAccessTokenResult);
+                                requestData.put(CODE_ACCESS_TOKEN_RESULT, codeAccessTokenResult);
                             }
-                            return getUserInfoAndCreateIdentity(primaryTokenUni, vertxContext, request, resolvedContext);
+                            return getUserInfoAndCreateIdentity(primaryTokenUni, requestData, request, resolvedContext);
                         }
                     });
 
         }
     }
 
-    private Uni<SecurityIdentity> validateTokenWithUserInfoAndCreateIdentity(RoutingContext vertxContext,
+    private Uni<SecurityIdentity> validateTokenWithUserInfoAndCreateIdentity(Map<String, Object> requestData,
             TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext, UserInfo userInfo) {
-        Uni<TokenVerificationResult> codeAccessTokenUni = verifyCodeFlowAccessTokenUni(vertxContext, request, resolvedContext,
+        Uni<TokenVerificationResult> codeAccessTokenUni = verifyCodeFlowAccessTokenUni(requestData, request, resolvedContext,
                 userInfo);
 
         return codeAccessTokenUni.onItemOrFailure().transformToUni(
@@ -184,11 +191,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                         }
 
                         if (codeAccessToken != null) {
-                            vertxContext.put(CODE_ACCESS_TOKEN_RESULT, codeAccessToken);
+                            requestData.put(CODE_ACCESS_TOKEN_RESULT, codeAccessToken);
                         }
 
-                        Uni<TokenVerificationResult> tokenUni = verifyTokenUni(vertxContext, resolvedContext,
-                                request.getToken().getToken(),
+                        Uni<TokenVerificationResult> tokenUni = verifyTokenUni(requestData, resolvedContext,
+                                request.getToken(),
                                 false, userInfo);
 
                         return tokenUni.onItemOrFailure()
@@ -200,7 +207,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                                     return Uni.createFrom().failure(new AuthenticationFailedException(t));
                                                 }
 
-                                                return createSecurityIdentityWithOidcServer(result, vertxContext, request,
+                                                return createSecurityIdentityWithOidcServer(result, requestData, request,
                                                         resolvedContext, userInfo);
                                             }
                                         });
@@ -210,7 +217,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private Uni<SecurityIdentity> getUserInfoAndCreateIdentity(Uni<TokenVerificationResult> tokenUni,
-            RoutingContext vertxContext, TokenAuthenticationRequest request,
+            Map<String, Object> requestData, TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext) {
 
         return tokenUni.onItemOrFailure()
@@ -221,19 +228,19 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             return Uni.createFrom().failure(new AuthenticationFailedException(t));
                         }
                         if (resolvedContext.oidcConfig.authentication.isUserInfoRequired().orElse(false)) {
-                            return getUserInfoUni(vertxContext, request, resolvedContext).onItemOrFailure().transformToUni(
+                            return getUserInfoUni(requestData, request, resolvedContext).onItemOrFailure().transformToUni(
                                     new BiFunction<UserInfo, Throwable, Uni<? extends SecurityIdentity>>() {
                                         @Override
                                         public Uni<SecurityIdentity> apply(UserInfo userInfo, Throwable t) {
                                             if (t != null) {
                                                 return Uni.createFrom().failure(new AuthenticationFailedException(t));
                                             }
-                                            return createSecurityIdentityWithOidcServer(result, vertxContext, request,
+                                            return createSecurityIdentityWithOidcServer(result, requestData, request,
                                                     resolvedContext, userInfo);
                                         }
                                     });
                         } else {
-                            return createSecurityIdentityWithOidcServer(result, vertxContext, request, resolvedContext, null);
+                            return createSecurityIdentityWithOidcServer(result, requestData, request, resolvedContext, null);
                         }
 
                     }
@@ -241,21 +248,21 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
     }
 
-    private boolean isOpaqueAccessToken(RoutingContext vertxContext, TokenAuthenticationRequest request,
+    private boolean isOpaqueAccessToken(Map<String, Object> requestData, TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext) {
         if (request.getToken() instanceof AccessTokenCredential) {
             return ((AccessTokenCredential) request.getToken()).isOpaque();
         } else if (request.getToken() instanceof IdTokenCredential
                 && (resolvedContext.oidcConfig.authentication.verifyAccessToken
                         || resolvedContext.oidcConfig.roles.source.orElse(null) == Source.accesstoken)) {
-            final String codeAccessToken = (String) vertxContext.get(OidcConstants.ACCESS_TOKEN_VALUE);
+            final String codeAccessToken = (String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE);
             return OidcUtils.isOpaqueToken(codeAccessToken);
         }
         return false;
     }
 
     private Uni<SecurityIdentity> createSecurityIdentityWithOidcServer(TokenVerificationResult result,
-            RoutingContext vertxContext, TokenAuthenticationRequest request, TenantConfigContext resolvedContext,
+            Map<String, Object> requestData, TokenAuthenticationRequest request, TenantConfigContext resolvedContext,
             final UserInfo userInfo) {
 
         // Token has been verified, as a JWT or an opaque token, possibly involving
@@ -279,14 +286,14 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     return Uni.createFrom().failure(new AuthenticationCompletionException(errorMessage));
                 }
 
-                JsonObject rolesJson = getRolesJson(vertxContext, resolvedContext, tokenCred, tokenJson,
+                JsonObject rolesJson = getRolesJson(requestData, resolvedContext, tokenCred, tokenJson,
                         userInfo);
-                SecurityIdentity securityIdentity = validateAndCreateIdentity(vertxContext, tokenCred,
-                        resolvedContext, tokenJson, rolesJson, userInfo, result.introspectionResult);
+                SecurityIdentity securityIdentity = validateAndCreateIdentity(requestData, tokenCred,
+                        resolvedContext, tokenJson, rolesJson, userInfo, result.introspectionResult, request);
                 // If the primary token is a bearer access token then there's no point of checking if
                 // it should be refreshed as RT is only available for the code flow tokens
                 if (isIdToken(request)
-                        && tokenAutoRefreshPrepared(result, vertxContext, resolvedContext.oidcConfig)) {
+                        && tokenAutoRefreshPrepared(result, requestData, resolvedContext.oidcConfig)) {
                     return Uni.createFrom().failure(new TokenAutoRefreshException(securityIdentity));
                 } else {
                     return Uni.createFrom().item(securityIdentity);
@@ -344,14 +351,15 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 OidcUtils.setSecurityIdentityRoles(builder, resolvedContext.oidcConfig, rolesJson);
                 OidcUtils.setSecurityIdentityPermissions(builder, resolvedContext.oidcConfig, rolesJson);
             }
-            OidcUtils.setBlockingApiAttribute(builder, vertxContext);
             OidcUtils.setTenantIdAttribute(builder, resolvedContext.oidcConfig);
+            var vertxContext = getRoutingContextAttribute(request);
+            OidcUtils.setBlockingApiAttribute(builder, vertxContext);
             OidcUtils.setRoutingContextAttribute(builder, vertxContext);
             SecurityIdentity identity = builder.build();
             // If the primary token is a bearer access token then there's no point of checking if
             // it should be refreshed as RT is only available for the code flow tokens
             if (isIdToken(request)
-                    && tokenAutoRefreshPrepared(result, vertxContext, resolvedContext.oidcConfig)) {
+                    && tokenAutoRefreshPrepared(result, requestData, resolvedContext.oidcConfig)) {
                 return Uni.createFrom().failure(new TokenAutoRefreshException(identity));
             }
             return Uni.createFrom().item(identity);
@@ -367,12 +375,12 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         return request.getToken() instanceof IdTokenCredential;
     }
 
-    private static boolean tokenAutoRefreshPrepared(TokenVerificationResult result, RoutingContext vertxContext,
+    private static boolean tokenAutoRefreshPrepared(TokenVerificationResult result, Map<String, Object> requestData,
             OidcTenantConfig oidcConfig) {
         if (result != null && oidcConfig.token.refreshExpired
                 && oidcConfig.token.getRefreshTokenTimeSkew().isPresent()
-                && vertxContext.get(REFRESH_TOKEN_GRANT_RESPONSE) != Boolean.TRUE
-                && vertxContext.get(NEW_AUTHENTICATION) != Boolean.TRUE) {
+                && requestData.get(REFRESH_TOKEN_GRANT_RESPONSE) != Boolean.TRUE
+                && requestData.get(NEW_AUTHENTICATION) != Boolean.TRUE) {
             Long expiry = null;
             if (result.localVerificationResult != null) {
                 expiry = result.localVerificationResult.getLong(Claims.exp.name());
@@ -388,7 +396,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         return false;
     }
 
-    private static JsonObject getRolesJson(RoutingContext vertxContext, TenantConfigContext resolvedContext,
+    private static JsonObject getRolesJson(Map<String, Object> requestData, TenantConfigContext resolvedContext,
             TokenCredential tokenCred,
             JsonObject tokenJson, UserInfo userInfo) {
         JsonObject rolesJson = tokenJson;
@@ -397,33 +405,34 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 rolesJson = new JsonObject(userInfo.getJsonObject().toString());
             } else if (tokenCred instanceof IdTokenCredential
                     && resolvedContext.oidcConfig.roles.source.get() == Source.accesstoken) {
-                rolesJson = ((TokenVerificationResult) vertxContext.get(CODE_ACCESS_TOKEN_RESULT)).localVerificationResult;
+                rolesJson = ((TokenVerificationResult) requestData.get(CODE_ACCESS_TOKEN_RESULT)).localVerificationResult;
                 if (rolesJson == null) {
                     // JSON token representation may be null not only if it is an opaque access token
                     // but also if it is JWT and no JWK with a matching kid is available, asynchronous
                     // JWK refresh has not finished yet, but the fallback introspection request has succeeded.
-                    rolesJson = OidcUtils.decodeJwtContent((String) vertxContext.get(OidcConstants.ACCESS_TOKEN_VALUE));
+                    rolesJson = OidcUtils.decodeJwtContent((String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE));
                 }
             }
         }
         return rolesJson;
     }
 
-    private Uni<TokenVerificationResult> verifyCodeFlowAccessTokenUni(RoutingContext vertxContext,
+    private Uni<TokenVerificationResult> verifyCodeFlowAccessTokenUni(Map<String, Object> requestData,
             TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext, UserInfo userInfo) {
         if (request.getToken() instanceof IdTokenCredential
                 && (resolvedContext.oidcConfig.authentication.verifyAccessToken
                         || resolvedContext.oidcConfig.roles.source.orElse(null) == Source.accesstoken)) {
-            final String codeAccessToken = (String) vertxContext.get(OidcConstants.ACCESS_TOKEN_VALUE);
-            return verifyTokenUni(vertxContext, resolvedContext, codeAccessToken, false, userInfo);
+            final String codeAccessToken = (String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE);
+            return verifyTokenUni(requestData, resolvedContext, new AccessTokenCredential(codeAccessToken), false, userInfo);
         } else {
             return NULL_CODE_ACCESS_TOKEN_UNI;
         }
     }
 
-    private Uni<TokenVerificationResult> verifyTokenUni(RoutingContext vertxContext, TenantConfigContext resolvedContext,
-            String token, boolean enforceAudienceVerification, UserInfo userInfo) {
+    private Uni<TokenVerificationResult> verifyTokenUni(Map<String, Object> requestData, TenantConfigContext resolvedContext,
+            TokenCredential tokenCred, boolean enforceAudienceVerification, UserInfo userInfo) {
+        final String token = tokenCred.getToken();
         if (OidcUtils.isOpaqueToken(token)) {
             if (!resolvedContext.oidcConfig.token.allowOpaqueTokenIntrospection) {
                 LOG.debug("Token is opaque but the opaque token introspection is not allowed");
@@ -447,9 +456,9 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             // Verify JWT token with the remote introspection
             LOG.debug("Starting the JWT token introspection");
             return introspectTokenUni(resolvedContext, token, false);
-        } else {
+        } else if (resolvedContext.oidcConfig.jwks.resolveEarly) {
             // Verify JWT token with the local JWK keys with a possible remote introspection fallback
-            final String nonce = vertxContext.get(OidcConstants.NONCE);
+            final String nonce = (String) requestData.get(OidcConstants.NONCE);
             try {
                 LOG.debug("Verifying the JWT token with the local JWK keys");
                 return Uni.createFrom()
@@ -465,6 +474,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     return Uni.createFrom().failure(t);
                 }
             }
+        } else {
+            final String nonce = (String) requestData.get(OidcConstants.NONCE);
+            return resolveJwksAndVerifyTokenUni(resolvedContext, tokenCred, enforceAudienceVerification,
+                    resolvedContext.oidcConfig.token.isSubjectRequired(), nonce);
         }
     }
 
@@ -481,6 +494,15 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         return resolvedContext.provider.refreshJwksAndVerifyJwtToken(token, enforceAudienceVerification, subjectRequired, nonce)
                 .onFailure(f -> fallbackToIntrospectionIfNoMatchingKey(f, resolvedContext))
                 .recoverWithUni(f -> introspectTokenUni(resolvedContext, token, true));
+    }
+
+    private Uni<TokenVerificationResult> resolveJwksAndVerifyTokenUni(TenantConfigContext resolvedContext,
+            TokenCredential tokenCred,
+            boolean enforceAudienceVerification, boolean subjectRequired, String nonce) {
+        return resolvedContext.provider
+                .getKeyResolverAndVerifyJwtToken(tokenCred, enforceAudienceVerification, subjectRequired, nonce)
+                .onFailure(f -> fallbackToIntrospectionIfNoMatchingKey(f, resolvedContext))
+                .recoverWithUni(f -> introspectTokenUni(resolvedContext, tokenCred.getToken(), true));
     }
 
     private static boolean fallbackToIntrospectionIfNoMatchingKey(Throwable f, TenantConfigContext resolvedContext) {
@@ -538,17 +560,18 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             TenantConfigContext resolvedContext) {
 
         try {
-            TokenVerificationResult result = resolvedContext.provider.verifyJwtToken(request.getToken().getToken(), false,
+            TokenVerificationResult result = resolvedContext.provider.verifyJwtToken(request.getToken().getToken(),
+                    resolvedContext.oidcConfig.token.subjectRequired,
                     false, null);
             return Uni.createFrom()
-                    .item(validateAndCreateIdentity(null, request.getToken(), resolvedContext,
-                            result.localVerificationResult, result.localVerificationResult, null, null));
+                    .item(validateAndCreateIdentity(Map.of(), request.getToken(), resolvedContext,
+                            result.localVerificationResult, result.localVerificationResult, null, null, request));
         } catch (Throwable t) {
             return Uni.createFrom().failure(new AuthenticationFailedException(t));
         }
     }
 
-    private Uni<UserInfo> getUserInfoUni(RoutingContext vertxContext, TokenAuthenticationRequest request,
+    private Uni<UserInfo> getUserInfoUni(Map<String, Object> requestData, TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext) {
         if (isInternalIdToken(request) && resolvedContext.oidcConfig.cacheUserInfoInIdtoken) {
             JsonObject userInfo = OidcUtils.decodeJwtContent(request.getToken().getToken())
@@ -559,7 +582,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         }
 
         LOG.debug("Requesting UserInfo");
-        String contextAccessToken = vertxContext.get(OidcConstants.ACCESS_TOKEN_VALUE);
+        String contextAccessToken = (String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE);
         final String accessToken = contextAccessToken != null ? contextAccessToken : request.getToken().getToken();
 
         UserInfoCache userInfoCache = tenantResolver.getUserInfoCache();

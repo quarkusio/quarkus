@@ -22,7 +22,9 @@ import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveSecurityConte
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
 
 public class SecurityContextOverrideHandler implements ServerRestHandler {
 
@@ -46,6 +48,7 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
         requestContext.requireCDIRequestScope();
         InjectableInstance<CurrentIdentityAssociation> instance = getCurrentIdentityAssociation();
         if (instance.isResolvable()) {
+            RoutingContext routingContext = requestContext.unwrap(RoutingContext.class);
             CurrentIdentityAssociation currentIdentityAssociation = instance.get();
             Uni<SecurityIdentity> oldIdentity = currentIdentityAssociation.getDeferredIdentity();
             currentIdentityAssociation.setIdentity(oldIdentity.map(new Function<SecurityIdentity, SecurityIdentity>() {
@@ -53,7 +56,7 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
                 public SecurityIdentity apply(SecurityIdentity old) {
                     Set<Credential> oldCredentials = old.getCredentials();
                     Map<String, Object> oldAttributes = old.getAttributes();
-                    return new SecurityIdentity() {
+                    SecurityIdentity newIdentity = new SecurityIdentity() {
                         @Override
                         public Principal getPrincipal() {
                             return modified.getUserPrincipal();
@@ -107,6 +110,10 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
                             return Uni.createFrom().nullItem();
                         }
                     };
+                    if (routingContext != null) {
+                        routingContext.setUser(new QuarkusHttpUser(newIdentity));
+                    }
+                    return newIdentity;
                 }
             }));
         }

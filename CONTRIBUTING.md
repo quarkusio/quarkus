@@ -222,8 +222,12 @@ in [`native-tests.json`](.github/native-tests.json) to have its integration test
 
 If you have not done so on this machine, you need to:
 
+* Make sure you have a case-sensitive filesystem. Java development on a case-insensitive filesystem can cause headaches.
+    * Linux: You're good to go.
+    * macOS: Use the `Disk Utility.app` to check. It also allows you to create a case-sensitive volume to store your code projects. See this [blog entry](https://karnsonline.com/case-sensitive-apfs/) for more.
+    * Windows: [Enable case sensitive file names per directory](https://learn.microsoft.com/en-us/windows/wsl/case-sensitivity)
 * Install Git and configure your GitHub access
-* Install Java SDK 11+ (OpenJDK recommended)
+* Install Java SDK 17+ (OpenJDK recommended)
 * Install [GraalVM](https://quarkus.io/guides/building-native-image)
 * Install platform C developer tools:
     * Linux
@@ -351,6 +355,10 @@ goals `clean install` by default. For more details about `-Dquickly` have a look
 in `quarkus-parent` (root `pom.xml`).
 
 When contributing to Quarkus, it is recommended to respect the following rules.
+
+> **Note:** The `impsort-maven-plugin` uses the `.cache` directory on each module to speed up the build.
+> Because we have configured the plugin to store in a versioned directory, you may notice over time that the `.cache` directory grows in size. You can safely delete the `.cache` directory in each module to reclaim the space.
+> Running `./mvnw clean -Dclean-cache` automatically deletes that directory for you.
 
 **Contributing to an extension**
 
@@ -740,7 +748,7 @@ This project is an open source project, please act responsibly, be nice, polite 
 
   See section `IDEA Setup` as there are different possible solutions described.
 
-* IntelliJ does not recognize the project as a Java 11 project
+* IntelliJ does not recognize the project as a Java 17 project
 
   In the Maven pane, uncheck the `include-jdk-misc` and `compile-java8-release-flag` profiles
 
@@ -778,3 +786,6 @@ This project is an open source project, please act responsibly, be nice, polite 
   [WARNING] Rule 0: ... failed with message:
   ...
   ```
+* Tests fail with `Caused by: io.quarkus.runtime.QuarkusBindException: Port(s) already bound: 8080: Address already in use`
+
+    Check that you do not have other Quarkus dev environments, apps or other web servers running on this default 8080 port.

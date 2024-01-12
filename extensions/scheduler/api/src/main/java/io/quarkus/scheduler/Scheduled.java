@@ -88,11 +88,14 @@ public @interface Scheduled {
     String cron() default "";
 
     /**
-     * Defines a period between invocations.
+     * Defines the period between invocations.
      * <p>
      * The value is parsed with {@link Duration#parse(CharSequence)}. However, if an expression starts with a digit, "PT" prefix
      * is added automatically, so for example, {@code 15m} can be used instead of {@code PT15M} and is parsed as "15 minutes".
      * Note that the absolute value of the value is always used.
+     * <p>
+     * A value less than one second may not be supported by the underlying scheduler implementation. In that case a warning
+     * message is logged during build and application start.
      * <p>
      * The value can be a property expression. In this case, the scheduler attempts to use the configured value instead:
      * {@code @Scheduled(every = "${myJob.everyExpression}")}.
@@ -149,11 +152,12 @@ public @interface Scheduled {
     ConcurrentExecution concurrentExecution() default PROCEED;
 
     /**
-     * Specify the bean class that can be used to skip any execution of a scheduled method.
+     * Specify the predicate that can be used to skip an execution of a scheduled method.
      * <p>
-     * There must be exactly one bean that has the specified class in its set of bean types, otherwise the build
-     * fails. Furthermore, the scope of the bean must be active during execution. If the scope is {@link Dependent} then the
-     * bean instance belongs exclusively to the specific scheduled method and is destroyed when the application is shut down.
+     * The class must either represent a CDI bean or declare a public no-args constructor. In case of CDI, there must be exactly
+     * one bean that has the specified class in its set of bean types, otherwise the build fails. Furthermore, the scope of the
+     * bean must be active during execution of the job. If the scope is {@link Dependent} then the bean instance belongs
+     * exclusively to the specific scheduled method and is destroyed when the application is shut down.
      *
      * @return the bean class
      */

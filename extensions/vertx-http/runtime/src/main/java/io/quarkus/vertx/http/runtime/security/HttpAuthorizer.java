@@ -3,11 +3,17 @@ package io.quarkus.vertx.http.runtime.security;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Singleton;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.spi.runtime.AuthorizationController;
+import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
+import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 
 /**
@@ -18,15 +24,20 @@ public class HttpAuthorizer extends AbstractHttpAuthorizer {
 
     HttpAuthorizer(HttpAuthenticator httpAuthenticator, IdentityProviderManager identityProviderManager,
             AuthorizationController controller, Instance<HttpSecurityPolicy> installedPolicies,
-            BlockingSecurityExecutor blockingExecutor) {
-        super(httpAuthenticator, identityProviderManager, controller, toList(installedPolicies), blockingExecutor);
+            BlockingSecurityExecutor blockingExecutor, BeanManager beanManager,
+            Event<AuthorizationFailureEvent> authZFailureEvent, Event<AuthorizationSuccessEvent> authZSuccessEvent,
+            @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
+        super(httpAuthenticator, identityProviderManager, controller, toList(installedPolicies), beanManager, blockingExecutor,
+                authZFailureEvent, authZSuccessEvent, securityEventsEnabled);
     }
 
     private static List<HttpSecurityPolicy> toList(Instance<HttpSecurityPolicy> installedPolicies) {
-        List<HttpSecurityPolicy> policies = new ArrayList<>();
+        List<HttpSecurityPolicy> globalPolicies = new ArrayList<>();
         for (HttpSecurityPolicy i : installedPolicies) {
-            policies.add(i);
+            if (i.name() == null && !(i instanceof AbstractPathMatchingHttpSecurityPolicy i1 && i1.hasNoPermissions())) {
+                globalPolicies.add(i);
+            }
         }
-        return policies;
+        return globalPolicies;
     }
 }

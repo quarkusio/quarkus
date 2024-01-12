@@ -80,7 +80,7 @@ public class LoggingSetupRecorder {
         new LoggingSetupRecorder(new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(config, buildConfig,
                 DiscoveredLogComponents.ofEmpty(),
                 Collections.emptyMap(),
-                false, null, null,
+                false, null,
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
@@ -92,7 +92,6 @@ public class LoggingSetupRecorder {
             DiscoveredLogComponents discoveredLogComponents,
             final Map<String, InheritableLevel> categoryDefaultMinLevels,
             final boolean enableWebStream,
-            final RuntimeValue<Optional<Handler>> wsDevUiConsoleHandler,
             final RuntimeValue<Optional<Handler>> streamingDevUiConsoleHandler,
             final List<RuntimeValue<Optional<Handler>>> additionalHandlers,
             final List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
@@ -184,22 +183,6 @@ public class LoggingSetupRecorder {
         }
 
         if ((launchMode.isDevOrTest() || enableWebStream)
-                && wsDevUiConsoleHandler != null
-                && wsDevUiConsoleHandler.getValue().isPresent()) {
-
-            Handler handler = wsDevUiConsoleHandler.getValue().get();
-            handler.setErrorManager(errorManager);
-            handler.setFilter(new LogCleanupFilter(filterElements, shutdownNotifier));
-
-            if (possibleBannerSupplier != null && possibleBannerSupplier.getValue().isPresent()) {
-                Supplier<String> bannerSupplier = possibleBannerSupplier.getValue().get();
-                String header = "\n" + bannerSupplier.get();
-                handler.publish(new LogRecord(Level.INFO, header));
-            }
-            handlers.add(handler);
-        }
-
-        if ((launchMode.isDevOrTest())
                 && streamingDevUiConsoleHandler != null
                 && streamingDevUiConsoleHandler.getValue().isPresent()) {
 

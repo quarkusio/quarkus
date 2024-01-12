@@ -30,6 +30,12 @@ public class TestResource {
     Template csrfTokenForm;
 
     @Inject
+    Template csrfTokenFirstForm;
+
+    @Inject
+    Template csrfTokenSecondForm;
+
+    @Inject
     Template csrfTokenHeader;
 
     @Inject
@@ -47,6 +53,14 @@ public class TestResource {
     @Authenticated
     public TemplateInstance getCsrfTokenForm() {
         return csrfTokenForm.instance();
+    }
+
+    @GET
+    @Path("/csrfTokenFirstForm")
+    @Produces(MediaType.TEXT_HTML)
+    @Authenticated
+    public TemplateInstance getCsrfTokenFirstForm() {
+        return csrfTokenFirstForm.instance();
     }
 
     @GET
@@ -68,6 +82,22 @@ public class TestResource {
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_PLAIN)
     public String postCsrfTokenForm(@FormParam("name") String name, @HeaderParam("X-CSRF-TOKEN") String csrfHeader) {
+        return name + ":" + routingContext.get("csrf_token_verified", false) + ":tokenHeaderIsSet=" + (csrfHeader != null);
+    }
+
+    @POST
+    @Path("/csrfTokenFirstForm")
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance postCsrfTokenFirstForm() {
+        return csrfTokenSecondForm.instance();
+    }
+
+    @POST
+    @Path("/csrfTokenSecondForm")
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Produces(MediaType.TEXT_PLAIN)
+    public String postCsrfTokenSecondForm(@FormParam("name") String name, @HeaderParam("X-CSRF-TOKEN") String csrfHeader) {
         return name + ":" + routingContext.get("csrf_token_verified", false) + ":tokenHeaderIsSet=" + (csrfHeader != null);
     }
 

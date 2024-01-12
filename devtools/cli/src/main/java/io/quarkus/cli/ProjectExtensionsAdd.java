@@ -17,7 +17,7 @@ public class ProjectExtensionsAdd extends BaseBuildCommand implements Callable<I
     @CommandLine.Mixin
     RunModeOption runMode;
 
-    @CommandLine.Parameters(arity = "1", paramLabel = "EXTENSION", description = "extensions to add to this project")
+    @CommandLine.Parameters(arity = "1", paramLabel = "EXTENSION", description = "extensions to add to this project", split = ",")
     Set<String> extensions;
 
     @Override

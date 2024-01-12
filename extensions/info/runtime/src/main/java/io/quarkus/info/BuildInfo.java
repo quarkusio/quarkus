@@ -11,4 +11,6 @@ public interface BuildInfo {
     String version();
 
     OffsetDateTime time();
+
+    String quarkusVersion();
 }

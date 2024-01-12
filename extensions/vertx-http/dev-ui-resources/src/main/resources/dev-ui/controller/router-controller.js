@@ -200,14 +200,10 @@ export class RouterController {
             }
         } else {
             // We know and already loaded the requested location
-            if (currentSelection === path) {
-                Router.go({pathname: path, search});
-                // The default naked route  
-            } else if (!RouterController.router.location.route && defaultRoute && currentSelection.endsWith('/dev-ui/')) {
+            if (!RouterController.router.location.route && defaultRoute && currentSelection.endsWith('/dev-ui/')) {
                 Router.go({pathname: path, search});
                 // We do not know and have not yet loaded the requested location
             } else if (!RouterController.router.location.route && defaultRoute) {
-
                 // pass original query param
                 const currentQueryString = window.location.search;
                 const origSearch = currentQueryString?.length > 0 ? '&' + currentQueryString : '';

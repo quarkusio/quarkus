@@ -6,6 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 
 import io.quarkus.runtime.StartupEvent;
+import io.quarkus.vertx.http.runtime.RouteConstants;
 import io.quarkus.vertx.http.runtime.ServerLimitsConfig;
 import io.quarkus.vertx.http.runtime.options.HttpServerCommonHandlers;
 import io.vertx.core.buffer.Buffer;
@@ -21,11 +22,12 @@ public class UploadRoute {
 
     /**
      * Installs two POST-routes - one that bypasses the body-length limit using {@code order(-3)}
-     * ({@link HttpServerCommonHandlers#enforceMaxBodySize(ServerLimitsConfig, Router)} uses {@code order(-2)}) and one that
+     * ({@link HttpServerCommonHandlers#enforceMaxBodySize(ServerLimitsConfig, Router)} uses
+     * {@value RouteConstants#ROUTE_ORDER_UPLOAD_LIMIT} for {@link io.vertx.ext.web.Route#order(int)}) and one that
      * does not bypass body-size enforcement.
      */
     void installRoute(@Observes StartupEvent startupEvent, Router router) {
-        router.post("/unlimited-upload").order(-3).handler(UploadHandler::newRequest);
+        router.post("/unlimited-upload").order(RouteConstants.ROUTE_ORDER_UPLOAD_LIMIT - 1).handler(UploadHandler::newRequest);
         router.post("/limited-upload").handler(UploadHandler::newRequest);
     }
 

@@ -11,7 +11,7 @@ import static io.restassured.RestAssured.given;
 @WithFunction(value = FunctionType.FUNQY_BACKGROUND, functionName = "helloPubSubWorld")
 class GreetingFunctionsPubSubTest {
     @Test
-    public void testHelloPubSubWorld() {
+    void testHelloPubSubWorld() {
         given()
                 .body("{\"data\":{\"data\":\"world\"}}")
                 .when()

@@ -2,10 +2,12 @@ package io.quarkus.hibernate.orm.runtime.boot;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
+import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 import io.quarkus.runtime.annotations.RecordableConstructor;
@@ -21,12 +23,16 @@ public final class QuarkusPersistenceUnitDefinition {
     private final List<RecordableXmlMapping> xmlMappings;
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
+    private final Optional<FormatMapperKind> jsonMapperCreator;
+    private final Optional<FormatMapperKind> xmlMapperCreator;
     private final List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors;
 
     public QuarkusPersistenceUnitDefinition(PersistenceUnitDescriptor persistenceUnitDescriptor,
             String configurationName, RecordedConfig config,
             List<RecordableXmlMapping> xmlMappings,
             boolean isReactive, boolean fromPersistenceXml,
+            Optional<FormatMapperKind> jsonMapperCreator,
+            Optional<FormatMapperKind> xmlMapperCreator,
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         Objects.requireNonNull(persistenceUnitDescriptor);
         Objects.requireNonNull(config);
@@ -36,6 +42,8 @@ public final class QuarkusPersistenceUnitDefinition {
         this.xmlMappings = xmlMappings;
         this.isReactive = isReactive;
         this.fromPersistenceXml = fromPersistenceXml;
+        this.jsonMapperCreator = jsonMapperCreator;
+        this.xmlMapperCreator = xmlMapperCreator;
         this.integrationStaticDescriptors = integrationStaticDescriptors;
     }
 
@@ -45,6 +53,8 @@ public final class QuarkusPersistenceUnitDefinition {
             List<RecordableXmlMapping> xmlMappings,
             boolean reactive,
             boolean fromPersistenceXml,
+            Optional<FormatMapperKind> jsonMapperCreator,
+            Optional<FormatMapperKind> xmlMapperCreator,
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         Objects.requireNonNull(actualHibernateDescriptor);
         Objects.requireNonNull(config);
@@ -53,6 +63,8 @@ public final class QuarkusPersistenceUnitDefinition {
         this.xmlMappings = xmlMappings;
         this.isReactive = reactive;
         this.fromPersistenceXml = fromPersistenceXml;
+        this.jsonMapperCreator = jsonMapperCreator;
+        this.xmlMapperCreator = xmlMapperCreator;
         this.integrationStaticDescriptors = integrationStaticDescriptors;
     }
 
@@ -79,6 +91,14 @@ public final class QuarkusPersistenceUnitDefinition {
 
     public boolean isFromPersistenceXml() {
         return fromPersistenceXml;
+    }
+
+    public Optional<FormatMapperKind> getJsonMapperCreator() {
+        return jsonMapperCreator;
+    }
+
+    public Optional<FormatMapperKind> getXmlMapperCreator() {
+        return xmlMapperCreator;
     }
 
     public List<HibernateOrmIntegrationStaticDescriptor> getIntegrationStaticDescriptors() {

@@ -9,6 +9,8 @@ include::_attributes.adoc[]
 :summary: This guide covers how to use the Flyway extension to manage your schema migrations.
 :migrations-path: src/main/resources/db/migration
 :config-file: application.properties
+:topics: flyway,data,schema-migration,database
+:extensions: io.quarkus:quarkus-flyway
 
 https://flywaydb.org/[Flyway] is a popular database migration tool that is commonly used in JVM environments.
 
@@ -285,6 +287,7 @@ You can find more information about this feature in the xref:hibernate-orm.adoc#
 
 == Flyway on Kubernetes
 Sometimes, it's helpful not to execute Flyway initialization on each application startup. One such example is when deploying
+
 on Kubernetes, where it doesn't make sense to execute Flyway on every single replica. Instead it's desirable to execute it
 once and then start the actual application without Flyway. To support this use case, when generating manifests for Kubernetes
 the generated manifests contain a Kubernetes initialization `Job` for Flyway.
@@ -312,7 +315,7 @@ To change the `wait-for` image which by default is `groundnuty/k8s-wait-for:no-r
 
 [source,properties]
 ----
-quarkus.kubernetes.init-task-defaults.wait-for-image=my/wait-for-image:1.0
+quarkus.kubernetes.init-task-defaults.wait-for-container.image=my/wait-for-image:1.0
 ----
 
 or on Openshift:
@@ -320,7 +323,7 @@ or on Openshift:
 
 [source,properties]
 ----
-quarkus.openshift.init-task-defaults.wait-for-image=my/wait-for-image:1.0
+quarkus.openshift.init-task-defaults.wait-for-container.image=my/wait-for-image:1.0
 ----
 
 **Note**: In this context globally means `for all extensions that support init task externalization`.

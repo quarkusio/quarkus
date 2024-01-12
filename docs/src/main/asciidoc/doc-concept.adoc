@@ -9,6 +9,7 @@ include::_attributes.adoc[]
 :diataxis-type: concept
 :categories: contributing
 :fn-diataxis: footnote:diataxis[Procida, D. Diátaxis documentation framework. https://diataxis.fr/]
+:topics: internals,documentation
 
 Quarkus documentation is structured into four distinct content types: concepts, how-tos, tutorials, and references.
 The composition and structure of Quarkus docs follow the Diátaxis systematic documentation framework for technical documentation authoring.
@@ -16,7 +17,7 @@ Each content type resolves a different user need, fulfills a different purpose, 
 
 == Diátaxis documentation framework
 
-We chose to align Quarkus docs with the Diátaxis documentation framework{fn-diataxis}, which defines a core content structure that addresses the different needs users have when consulting docs. 
+We chose to align Quarkus docs with the Diátaxis documentation framework{fn-diataxis}, which defines a core content structure that addresses the different needs users have when consulting docs.
 
 image::diataxis-framework.png[The content types in the Diátaxis documentation framework{fn-diataxis},width=40%, align=left]
 
@@ -46,11 +47,11 @@ You can cite design decisions, historical reasons, and technical constraints to 
 
 > How-to guides are _directions_ that take the reader through the steps required to solve a real-world problem. How-to guides are _goal-oriented_.
 
-Good how-to guides: 
+Good how-to guides:
 
 - guide (walk-through) or demonstrate how to complete a task.
-- assume you have enough context to begin the task. 
-- describes the concrete steps necessary to complete a task, but these steps 
+- assume you have enough context to begin the task.
+- describes the concrete steps necessary to complete a task, but these steps
   could be in the middle of a larger task.
 - do not explain concepts, they rely on other documents (like concepts) to do that.
 - are adaptable to real-world use cases.
@@ -61,15 +62,15 @@ Good how-to guides:
 
 > Reference guides are _technical descriptions_ of the machinery and how to operate it. Reference material is _information-oriented_.
 
-Good reference guides: 
+Good reference guides:
 
 - are concise and to the point. They state, describe, and inform.
-- are consistent (to the extent possible) with other reference guides. 
+- are consistent (to the extent possible) with other reference guides.
   Following the template helps here.
-- remain focused on describing their topic. 
+- remain focused on describing their topic.
   They don't explain or provide additional context from other sources.
 - provide examples or illustrations that help readers understand what is being described.
-- are kept up to date. While configuration reference material is generated, 
+- are kept up to date. While configuration reference material is generated,
   extension references that describe how configuration should be applied must be accurate to be useful.
 
 
@@ -78,13 +79,13 @@ Good reference guides:
 
 > Tutorials are _lessons_ that take the reader by the hand through a series of steps to complete a project of some kind. Tutorials are _learning-oriented_.
 
-Good tutorials: 
+Good tutorials:
 
 - provide a learning experience, giving the reader something they can do.
 - get the reader started (they do not create an expert).
 - provide the reader with concrete steps to follow that each have a comprehensible result.
 - are reliable and consistent (they work for all users, every time).
-- include only enough information to complete the task. 
+- include only enough information to complete the task.
   They delegate to other documentation types (concepts or reference) to provide additional context.
 - focus on one way of doing the task. Alternative approaches are explored in other document types
   (a how-to guide, for example).

@@ -308,14 +308,14 @@ public class PublisherResponseHandler implements ServerRestHandler {
                     produces = REST_MULTI_DEFAULT_SERVER_MEDIA_TYPE;
                 } else {
                     throw new IllegalStateException(
-                            "Negotiation or dynamic media type not supported yet for Multi: please use the @Produces annotation when returning a Multi");
+                            "Negotiation or dynamic media type resolution for Multi is only supported when using 'org.jboss.resteasy.reactive.RestMulti'");
                 }
 
             }
             MediaType[] mediaTypes = produces.getSortedOriginalMediaTypes();
             if (mediaTypes.length != 1) {
                 throw new IllegalStateException(
-                        "Negotiation or dynamic media type not supported yet for Multi: please use a single @Produces annotation");
+                        "Negotiation or dynamic media type resolution for Multi is only supported when using 'org.jboss.resteasy.reactive.RestMulti'");
             }
 
             MediaType mediaType = mediaTypes[0];

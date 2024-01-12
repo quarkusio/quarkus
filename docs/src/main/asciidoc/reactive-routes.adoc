@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web
 :summary: This guide demonstrates how to use reactive routes.
+:topics: http,web,routing
+:extensions: io.quarkus:quarkus-reactive-routes
 
 Reactive routes propose an alternative approach to implement HTTP endpoints where you declare and chain _routes_.
 This approach became very popular in the JavaScript world, with frameworks like Express.Js or Hapi.
@@ -78,8 +80,8 @@ public class MyDeclarativeRoutes {
     void hello(RoutingContext rc) { // <3>
         rc.response().end("hello");
     }
-    
-    @Route(path = "/world") 
+
+    @Route(path = "/world")
     String helloWorld() { // <4>
         return "Hello world!";
     }
@@ -136,7 +138,7 @@ public void blocking(RoutingContext rc) {
     // ...
 }
 ----
-When `@Blocking` is used, it ignores the `type` attribute of `@Route`.
+When `@Blocking` is used, the `type` attribute of the `@Route` is ignored.
 ====
 
 The `@Route` annotation is repeatable and so you can declare several routes for a single method:
@@ -161,6 +163,12 @@ String person() {
 }
 ----
 <1> If the `accept` header matches `text/html`, we set the content type automatically to `text/html`.
+
+=== Executing route on a virtual thread
+
+You can annotate a route method with `@io.smallrye.common.annotation.RunOnVirtualThread` in order to execute it on a virtual thread.
+However, keep in mind that not everything can run safely on virtual threads.
+You should read the xref:virtual-threads.adoc#run-code-on-virtual-threads-using-runonvirtualthread[Virtual thread support reference] carefully and get acquainted with all the details.
 
 === Handling conflicting routes
 
@@ -214,20 +222,20 @@ public class SimpleRoutes {
     }
 }
 ----
-<1> The `path` value is used as a prefix for any route method declared on the class where `Route#path()` is used. 
+<1> The `path` value is used as a prefix for any route method declared on the class where `Route#path()` is used.
 <2> The value of `produces()` is used for content-based routing for all routes where `Route#produces()` is empty.
 
 
 == Reactive Route Methods
 
 A route method must be a non-private non-static method of a CDI bean.
-If the annotated method returns `void` then it has to accept at least one argument - see the supported types below. 
+If the annotated method returns `void` then it has to accept at least one argument - see the supported types below.
 If the annotated method does not return `void` then the arguments are optional.
 
 NOTE: Methods that return `void` must __end__ the response or the HTTP request to this route will never end.
 Some methods of `RoutingExchange` do it for you, others not and you must call the `end()` method of the response by yourself, please refer to its JavaDoc for more information.
 
-A route method can accept arguments of the following types: 
+A route method can accept arguments of the following types:
 
 * `io.vertx.ext.web.RoutingContext`
 * `io.quarkus.vertx.web.RoutingExchange`
@@ -240,10 +248,10 @@ Furthermore, it is possible to inject the `HttpServerRequest` parameters into me
 
 [options="header",cols="1,1"]
 |===
-|Parameter Type   | Obtained via  
+|Parameter Type   | Obtained via
 //-------------
-|`java.lang.String`   |`routingContext.request().getParam()`   
-|`java.util.Optional<String>`   |`routingContext.request().getParam()`   
+|`java.lang.String`   |`routingContext.request().getParam()`
+|`java.util.Optional<String>`   |`routingContext.request().getParam()`
 |`java.util.List<String>`   |`routingContext.request().params().getAll()`
 |===
 
@@ -260,10 +268,10 @@ The `HttpServerRequest` headers can be injected into method parameters annotated
 
 [options="header",cols="1,1"]
 |===
-|Parameter Type   | Obtained via  
+|Parameter Type   | Obtained via
 //-------------
-|`java.lang.String`   |`routingContext.request().getHeader()`   
-|`java.util.Optional<String>`   |`routingContext.request().getHeader()`   
+|`java.lang.String`   |`routingContext.request().getHeader()`
+|`java.util.Optional<String>`   |`routingContext.request().getHeader()`
 |`java.util.List<String>`   |`routingContext.request().headers().getAll()`
 |===
 
@@ -280,13 +288,13 @@ The request body can be injected into a method parameter annotated with `@io.qua
 
 [options="header",cols="1,1"]
 |===
-|Parameter Type   | Obtained via  
+|Parameter Type   | Obtained via
 //-------------
-|`java.lang.String`   |`routingContext.getBodyAsString()`   
-|`io.vertx.core.buffer.Buffer`   |`routingContext.getBody()`   
-|`io.vertx.core.json.JsonObject`   |`routingContext.getBodyAsJson()`   
-|`io.vertx.core.json.JsonArray`   |`routingContext.getBodyAsJsonArray()`   
-|any other type   |`routingContext.getBodyAsJson().mapTo(MyPojo.class)`   
+|`java.lang.String`   |`routingContext.getBodyAsString()`
+|`io.vertx.core.buffer.Buffer`   |`routingContext.getBody()`
+|`io.vertx.core.json.JsonObject`   |`routingContext.getBodyAsJson()`
+|`io.vertx.core.json.JsonArray`   |`routingContext.getBodyAsJsonArray()`
+|any other type   |`routingContext.getBodyAsJson().mapTo(MyPojo.class)`
 |===
 
 .Request Body Example
@@ -299,7 +307,7 @@ Person createPerson(@Body Person person, @Param("id") Optional<String> primaryKe
 }
 ----
 
-A failure handler can declare a single method parameter whose type extends `Throwable`. 
+A failure handler can declare a single method parameter whose type extends `Throwable`.
 The type of the parameter is used to match the result of `RoutingContext#failure()`.
 
 .Failure Handler Example
@@ -781,7 +789,7 @@ Also see xref:openapi-swaggerui.adoc[the OpenAPI Guide].
 
 === Adding MicroProfile OpenAPI Annotations
 
-You can use link:https://github.com/eclipse/microprofile-open-api[MicroProfile OpenAPI] to better document your schema, 
+You can use link:https://github.com/eclipse/microprofile-open-api[MicroProfile OpenAPI] to better document your schema,
 for instance, adding header info, or specifying the return type on `void` methods might be useful:
 
 [source, java]
@@ -803,21 +811,21 @@ public class MyDeclarativeRoutes {
 
     // neither path nor regex is set - match a path derived from the method name
     @Route(methods = Route.HttpMethod.GET)
-    @APIResponse(responseCode="200", 
-            description="Say hello", 
+    @APIResponse(responseCode="200",
+            description="Say hello",
             content=@Content(mediaType="application/json", schema=@Schema(type=SchemaType.STRING))) // <2>
     void hello(RoutingContext rc) {
         rc.response().end("hello");
     }
-    
-    @Route(path = "/world") 
+
+    @Route(path = "/world")
     String helloWorld() {
         return "Hello world!";
     }
 
     @Route(path = "/greetings", methods = HttpMethod.GET)
-    @APIResponse(responseCode="200", 
-            description="Greeting", 
+    @APIResponse(responseCode="200",
+            description="Greeting",
             content=@Content(mediaType="application/json", schema=@Schema(type=SchemaType.STRING)))
     void greetings(RoutingExchange ex) {
         ex.ok("hello " + ex.getParam("name").orElse("world"));

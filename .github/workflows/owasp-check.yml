@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       fail-fast: false
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -21,10 +21,10 @@ jobs:
         fetch-depth: 1
         ref: main
     - name: Setup Java JDK
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         distribution: temurin
-        java-version: 11
+        java-version: 17
 
 
     - name: Build Java

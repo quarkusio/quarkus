@@ -1,6 +1,7 @@
 package io.quarkus.opentelemetry.runtime.tracing;
 
-import static io.opentelemetry.semconv.resource.attributes.ResourceAttributes.SERVICE_NAME;
+import static io.opentelemetry.semconv.ResourceAttributes.HOST_NAME;
+import static io.opentelemetry.semconv.ResourceAttributes.SERVICE_NAME;
 
 import java.util.List;
 
@@ -14,7 +15,7 @@ public class TracerUtil {
     private TracerUtil() {
     }
 
-    public static Resource mapResourceAttributes(List<String> resourceAttributes, String serviceName) {
+    public static Resource mapResourceAttributes(List<String> resourceAttributes, String serviceName, String hostname) {
         final AttributesBuilder attributesBuilder = Attributes.builder();
 
         if (!resourceAttributes.isEmpty()) {
@@ -25,6 +26,10 @@ public class TracerUtil {
 
         if (serviceName != null) {
             attributesBuilder.put(SERVICE_NAME.getKey(), serviceName);
+        }
+
+        if (hostname != null) {
+            attributesBuilder.put(HOST_NAME, hostname);
         }
 
         return Resource.create(attributesBuilder.build());

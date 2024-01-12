@@ -29,8 +29,11 @@ public class OidcTokenReactivePropagationTest {
             loginForm.getInputByName("password").setValueAttribute("alice");
 
             TextPage textPage = loginForm.getInputByName("login").click();
+            assertEquals("Bearer:alice", textPage.getContent());
 
-            assertEquals("alice", textPage.getContent());
+            textPage = webClient.getPage("http://localhost:8081/frontend/id-token-propagation");
+            assertEquals("ID:alice", textPage.getContent());
+
             webClient.getCookieManager().clearCookies();
         }
     }

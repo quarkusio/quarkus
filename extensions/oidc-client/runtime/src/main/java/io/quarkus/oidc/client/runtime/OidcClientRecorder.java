@@ -2,6 +2,7 @@ package io.quarkus.oidc.client.runtime;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -16,6 +17,8 @@ import io.quarkus.oidc.client.OidcClientConfig.Grant;
 import io.quarkus.oidc.client.OidcClientException;
 import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.Tokens;
+import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.runtime.TlsConfig;
@@ -120,6 +123,8 @@ public class OidcClientRecorder {
 
         WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx.get()), options);
 
+        Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcCommonUtils.getOidcRequestFilters();
+
         Uni<OidcConfigurationMetadata> tokenUrisUni = null;
         if (OidcCommonUtils.isAbsoluteUrl(oidcConfig.tokenPath)) {
             tokenUrisUni = Uni.createFrom().item(
@@ -133,7 +138,7 @@ public class OidcClientRecorder {
                                 OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.tokenPath),
                                 OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.revokePath)));
             } else {
-                tokenUrisUni = discoverTokenUris(client, authServerUriString.toString(), oidcConfig);
+                tokenUrisUni = discoverTokenUris(client, oidcRequestFilters, authServerUriString.toString(), oidcConfig);
             }
         }
         return tokenUrisUni.onItemOrFailure()
@@ -188,7 +193,8 @@ public class OidcClientRecorder {
                         return new OidcClientImpl(client, metadata.tokenRequestUri, metadata.tokenRevokeUri, grantType,
                                 tokenGrantParams,
                                 commonRefreshGrantParams,
-                                oidcConfig);
+                                oidcConfig,
+                                oidcRequestFilters);
                     }
 
                 });
@@ -205,10 +211,11 @@ public class OidcClientRecorder {
         }
     }
 
-    private static Uni<OidcConfigurationMetadata> discoverTokenUris(WebClient client, String authServerUrl,
-            OidcClientConfig oidcConfig) {
+    private static Uni<OidcConfigurationMetadata> discoverTokenUris(WebClient client,
+            Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters,
+            String authServerUrl, OidcClientConfig oidcConfig) {
         final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
-        return OidcCommonUtils.discoverMetadata(client, authServerUrl, connectionDelayInMillisecs)
+        return OidcCommonUtils.discoverMetadata(client, oidcRequestFilters, authServerUrl, connectionDelayInMillisecs)
                 .onItem().transform(json -> new OidcConfigurationMetadata(json.getString("token_endpoint"),
                         json.getString("revocation_endpoint")));
     }

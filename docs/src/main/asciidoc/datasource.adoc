@@ -8,12 +8,14 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: reference
 :categories: data,getting-started,reactive
+:topics: data,database,datasource,sql,jdbc,reactive
+:extensions: io.quarkus:quarkus-agroal,io.quarkus:quarkus-reactive-mysql-client,io.quarkus:quarkus-reactive-oracle-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-db2-client,io.quarkus:quarkus-reactive-pg-client,io.quarkus:quarkus-reactive-mssql-client,io.quarkus:quarkus-jdbc-db2,io.quarkus:quarkus-jdbc-derby,io.quarkus:quarkus-jdbc-h2,io.quarkus:quarkus-jdbc-mariadb,io.quarkus:quarkus-jdbc-mssql,io.quarkus:quarkus-jdbc-mysql,io.quarkus:quarkus-jdbc-oracle,io.quarkus:quarkus-jdbc-postgresql
 
 Use a unified configuration model to define data sources for Java Database Connectivity (JDBC) and Reactive drivers.
 
 ////
 Note for contributors and writers:
-In text, use `data source` in code, `datasource` or `DataSource` is more common.
+In text, use "data source". In code, "datasource" or "DataSource" is more common.
 See, https://docs.oracle.com/javase/tutorial/jdbc/basics/connecting.html
 ////
 
@@ -30,7 +32,7 @@ Additionally, refer to the Quarkus xref:hibernate-orm.adoc[Hibernate ORM] guide 
 
 == Get started with configuring `datasources` in Quarkus
 
-For rapid configuration of datasources, this section offers a brief overview and code samples for testing and utilization, suitable for users familiar with the fundamentals.
+For users familiar with the fundamentals, this section provides an overview and code samples to set up data sources quickly.
 
 For more advanced configuration with examples, see <<datasource-reference>>.
 
@@ -46,7 +48,7 @@ In dev mode, if you do not provide any explicit database connection details, Qua
 If you provide user credentials, the underlying database will be configured to use them.
 This is useful if you want to connect to the database with an external tool.
 
-To utilize this feature, ensure a Docker or Podman container runtime is installed, depending on the database type. Certain databases, such as H2, operate in in-memory mode and do not require a container runtime.
+To use this feature, ensure a Docker or Podman container runtime is installed, depending on the database type. Certain databases, such as H2, operate in in-memory mode and do not require a container runtime.
 
 TIP: Prefix the actual connection details for prod mode with `%prod.` to ensure they are not applied in dev mode.
 For more information, see the xref:config-reference.adoc#profiles[Profiles] section of the "Configuration reference" guide.
@@ -158,7 +160,7 @@ Quarkus currently includes the following built-in database kinds:
 You can use any JDBC driver in a Quarkus app in JVM mode as described in <<other-databases,Using other databases>>.
 However, using a non-built-in database kind is unlikely to work when compiling your application to a native executable.
 
-For native executable builds, it is recommended to either utilize the available JDBC Quarkus extensions or contribute a custom extension for your specific driver.
+For native executable builds, it is recommended to either use the available JDBC Quarkus extensions or contribute a custom extension for your specific driver.
 ====
 
 . Configure the following properties to define credentials:
@@ -214,7 +216,7 @@ However, for custom drivers, Agroal needs to be added explicitly.
 ====
 
 
-..  For use with a custom JDBC driver, add the `quarkus-agroal` dependency to your project alongside the extension for your relational database driver:
+.. For use with a custom JDBC driver, add the `quarkus-agroal` dependency to your project alongside the extension for your relational database driver:
 +
 [source,bash]
 ----
@@ -301,22 +303,6 @@ Quarkus offers several reactive clients for use with a reactive datasource.
 +
 The installed extension must be consistent with the `quarkus.datasource.db-kind` you define in your datasource configuration.
 
-[WARNING]
-====
-The Reactive Oracle datasource depends on the https://docs.oracle.com/en/database/oracle/oracle-database/23/jjdbc/jdbc-reactive-extensions.html[Reactive Extensions] provided by Oracle in its JDBC driver.
-
-There is a bug in versions 23.2 and 21.11 of the Oracle JDBC driver that prevents from getting any response if:
-
-* Reactive Extensions are used to execute an update/insert query that ends with an error (e.g. constraint violation), and
-* https://vertx.io/docs/vertx-oracle-client/java/#_retrieving_generated_key_values[generated keys retrieval] is enabled.
-
-It is not known yet when the bug will be fixed.
-In the meantime, you can either:
-
-* change the version of the driver in your project to `com.oracle.database.jdbc:ojdbc11:21.10.0.0`, or
-* avoid executing queries with generated keys retrieval (e.g. load sequence value before inserting)
-====
-
 . After adding the driver, configure the connection URL and define a proper size for your connection pool.
 +
 [source,properties]
@@ -365,7 +351,7 @@ The Hibernate ORM extension supports defining xref:hibernate-orm.adoc#multiple-p
 For each persistence unit, point to the datasource of your choice.
 ====
 
-Defining multiple datasources works like defining a single datasource, with one important change - you have to specify a name (configuration key) for each datasource.
+Defining multiple datasources works like defining a single datasource, with one important change - you have to specify a name (configuration property) for each datasource.
 
 The following example provides three different datasources:
 
@@ -393,7 +379,7 @@ quarkus.datasource.inventory.jdbc.url=jdbc:h2:mem:inventory
 quarkus.datasource.inventory.jdbc.max-size=12
 ----
 
-Notice there is an extra section in the configuration key.
+Notice there is an extra section in the configuration property.
 The syntax is as follows: `quarkus.datasource.[optional name.][datasource property]`.
 
 NOTE: Even when only one database extension is installed, named databases need to specify at least one build-time property so that Quarkus can detect them.
@@ -426,7 +412,7 @@ AgroalDataSource inventoryDataSource;
 If you use the link:https://quarkus.io/extensions/io.quarkus/quarkus-smallrye-health[`quarkus-smallrye-health`] extension, the `quarkus-agroal` and reactive client extensions automatically add a readiness health check to validate the datasource.
 
 When you access your application’s health readiness endpoint, `/q/health/ready` by default, you receive information about the datasource validation status.
-If you have multiple datasources, all datasources are checked, and if a single datasource validation failure occurs, the status changes to`DOWN`.
+If you have multiple datasources, all datasources are checked, and if a single datasource validation failure occurs, the status changes to `DOWN`.
 
 This behavior can be disabled by using the `quarkus.datasource.health.enabled` property.
 
@@ -434,7 +420,7 @@ To exclude only a particular datasource from the health check, use:
 
 [source,properties]
 ----
- `quarkus.datasource."datasource-name".health-exclude=true`
+quarkus.datasource."datasource-name".health-exclude=true
 ----
 
 === Datasource metrics
@@ -575,10 +561,11 @@ For more information, see the link:https://db.apache.org/derby/docs/10.8/devguid
 
 Example:: `jdbc:h2:tcp://localhost/~/test`, `jdbc:h2:mem:myDB`
 
-H2 is an embedded database that can run as a server, based on a file, or run completely in memory.
+H2 is a database that can run in embedded or server mode.
+It can use a file storage or run entirely in memory.
 All of these options are available as listed above.
 
-For more information, see the link:https://h2database.com/html/features.html?highlight=url&search=url#database_url[official documentation].
+For more information, see the link:https://h2database.com/html/features.html#database_url[official documentation].
 
 ==== MariaDB
 
@@ -606,7 +593,7 @@ hostDescription:: `<host>[:<portnumber>] or address=(host=<host>)[(port=<portnum
 
 Example:: `jdbc:mysql://localhost:3306/test`
 
-For more information, see the link:https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference.html[official documentation].
+For more information, see the link:https://dev.mysql.com/doc/connector-j/en/[official documentation].
 
 ===== MySQL limitations
 
@@ -652,7 +639,7 @@ When using one of the built-in datasource kinds, the JDBC and Reactive drivers a
 
 |`db2`
 |`quarkus-jdbc-db2`
-a|* JDBC: `com.ibm.db2.jcc.DBDriver`
+a|* JDBC: `com.ibm.db2.jcc.DB2Driver`
 
 * XA: `com.ibm.db2.jcc.DB2XADataSource`
 

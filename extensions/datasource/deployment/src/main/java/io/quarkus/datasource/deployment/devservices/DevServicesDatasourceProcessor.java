@@ -199,7 +199,7 @@ public class DevServicesDatasourceProcessor {
             LaunchMode launchMode, Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig globalDevServicesConfig) {
         boolean explicitlyDisabled = !(dataSourceBuildTimeConfig.devservices().enabled().orElse(true));
-        String dataSourcePrettyName = DataSourceUtil.isDefault(dbName) ? "default datasource" : "datasource" + dbName;
+        String dataSourcePrettyName = DataSourceUtil.isDefault(dbName) ? "default datasource" : "datasource " + dbName;
 
         if (explicitlyDisabled) {
             //explicitly disabled
@@ -276,7 +276,8 @@ public class DevServicesDatasourceProcessor {
                     dataSourceBuildTimeConfig.devservices().username(),
                     dataSourceBuildTimeConfig.devservices().password(),
                     dataSourceBuildTimeConfig.devservices().initScriptPath(),
-                    dataSourceBuildTimeConfig.devservices().volumes());
+                    dataSourceBuildTimeConfig.devservices().volumes(),
+                    dataSourceBuildTimeConfig.devservices().reuse());
 
             DevServicesDatasourceProvider.RunningDevServicesDatasource datasource = devDbProvider
                     .startDatabase(

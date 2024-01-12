@@ -182,9 +182,9 @@ public final class HibernateOrmProcessor {
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MSSQL,
                 "org.hibernate.dialect.SQLServerDialect", DialectVersions.Defaults.MSSQL));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.MYSQL,
-                "org.hibernate.dialect.MySQLDialect", DialectVersions.Defaults.MYSQL));
+                "org.hibernate.dialect.MySQLDialect"));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.ORACLE,
-                "org.hibernate.dialect.OracleDialect", DialectVersions.Defaults.ORACLE));
+                "org.hibernate.dialect.OracleDialect"));
         producer.produce(new DatabaseKindDialectBuildItem(DatabaseKind.POSTGRESQL,
                 "org.hibernate.dialect.PostgreSQLDialect"));
     }
@@ -326,7 +326,7 @@ public final class HibernateOrmProcessor {
                                     hibernateOrmConfig.database.ormCompatibilityVersion, Collections.emptyMap()),
                             null,
                             jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
-                            false, true));
+                            false, true, capabilities));
         }
 
         if (impliedPU.shouldGenerateImpliedBlockingPersistenceUnit()) {
@@ -416,6 +416,7 @@ public final class HibernateOrmProcessor {
             JpaModelIndexBuildItem indexBuildItem,
             TransformedClassesBuildItem transformedClassesBuildItem,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
+            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             LiveReloadBuildItem liveReloadBuildItem) {
         Set<String> managedClassAndPackageNames = new HashSet<>(jpaModel.getEntityClassNames());
@@ -426,6 +427,11 @@ public final class HibernateOrmProcessor {
             // is used for packages too, and it relies (indirectly) on getManagedClassNames().
             managedClassAndPackageNames.addAll(pud.getManagedClassNames());
         }
+
+        for (AdditionalJpaModelBuildItem additionalJpaModelBuildItem : additionalJpaModelBuildItems) {
+            managedClassAndPackageNames.add(additionalJpaModelBuildItem.getClassName());
+        }
+
         PreGeneratedProxies proxyDefinitions = generatedProxies(managedClassAndPackageNames,
                 indexBuildItem.getIndex(), transformedClassesBuildItem,
                 generatedClassBuildItemBuildProducer, liveReloadBuildItem);
@@ -865,13 +871,10 @@ public final class HibernateOrmProcessor {
                 && (!hibernateOrmConfig.defaultPersistenceUnit.datasource.isPresent()
                         || DataSourceUtil.isDefault(hibernateOrmConfig.defaultPersistenceUnit.datasource.get()))
                 && !defaultJdbcDataSource.isPresent()) {
-            throw new ConfigurationException(
-                    "Model classes are defined for the default persistence unit, but no default datasource was found."
-                            + " The default EntityManagerFactory will not be created."
-                            + " To solve this, configure the default datasource."
-                            + " Refer to https://quarkus.io/guides/datasource for guidance.",
-                    new HashSet<>(Arrays.asList("quarkus.datasource.db-kind", "quarkus.datasource.username",
-                            "quarkus.datasource.password", "quarkus.datasource.jdbc.url")));
+            String persistenceUnitName = PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+            String dataSourceName = DataSourceUtil.DEFAULT_DATASOURCE_NAME;
+            throw PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, dataSourceName,
+                    DataSourceUtil.dataSourceNotConfigured(dataSourceName));
         }
 
         for (Entry<String, HibernateOrmConfigPersistenceUnit> persistenceUnitEntry : hibernateOrmConfig.persistenceUnits
@@ -1118,7 +1121,7 @@ public final class HibernateOrmProcessor {
                                 persistenceUnitConfig.unsupportedProperties),
                         persistenceUnitConfig.multitenantSchemaDatasource.orElse(null),
                         xmlMappings,
-                        false, false));
+                        false, false, capabilities));
     }
 
     private static void collectDialectConfig(String persistenceUnitName,
@@ -1222,14 +1225,12 @@ public final class HibernateOrmProcessor {
     private static Optional<JdbcDataSourceBuildItem> findJdbcDataSource(String persistenceUnitName,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig, List<JdbcDataSourceBuildItem> jdbcDataSources) {
         if (persistenceUnitConfig.datasource.isPresent()) {
+            String dataSourceName = persistenceUnitConfig.datasource.get();
             return Optional.of(jdbcDataSources.stream()
-                    .filter(i -> persistenceUnitConfig.datasource.get().equals(i.getName()))
+                    .filter(i -> dataSourceName.equals(i.getName()))
                     .findFirst()
-                    .orElseThrow(() -> new ConfigurationException(String.format(Locale.ROOT,
-                            "The datasource '%1$s' is not configured but the persistence unit '%2$s' uses it."
-                                    + " To solve this, configure datasource '%1$s'."
-                                    + " Refer to https://quarkus.io/guides/datasource for guidance.",
-                            persistenceUnitConfig.datasource.get(), persistenceUnitName))));
+                    .orElseThrow(() -> PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, dataSourceName,
+                            DataSourceUtil.dataSourceNotConfigured(dataSourceName))));
         } else if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
             return jdbcDataSources.stream()
                     .filter(i -> i.isDefault())

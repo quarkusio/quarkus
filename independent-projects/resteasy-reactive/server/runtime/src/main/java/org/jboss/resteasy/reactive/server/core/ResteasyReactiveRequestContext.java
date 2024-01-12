@@ -19,6 +19,7 @@ import java.util.regex.Matcher;
 
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.GenericEntity;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.PathSegment;
 import jakarta.ws.rs.core.Request;
@@ -135,6 +136,7 @@ public abstract class ResteasyReactiveRequestContext
     private OutputStream outputStream;
     private OutputStream underlyingOutputStream;
     private FormData formData;
+    private boolean producesChecked;
 
     public ResteasyReactiveRequestContext(Deployment deployment,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
@@ -147,6 +149,11 @@ public abstract class ResteasyReactiveRequestContext
 
     @Override
     public abstract ServerHttpResponse serverResponse();
+
+    @Override
+    public HttpHeaders getRequestHeaders() {
+        return getHttpHeaders();
+    }
 
     public Deployment getDeployment() {
         return deployment;
@@ -226,18 +233,20 @@ public abstract class ResteasyReactiveRequestContext
         }
     }
 
-    public String getPathParam(int index) {
-        return doGetPathParam(index, pathParamValues);
+    public String getPathParam(int index, boolean encoded) {
+        return doGetPathParam(index, pathParamValues, encoded);
     }
 
-    private String doGetPathParam(int index, Object pathParamValues) {
+    private String doGetPathParam(int index, Object pathParamValues, boolean encoded) {
         if (pathParamValues instanceof String[]) {
-            return ((String[]) pathParamValues)[index];
+            String pathParam = ((String[]) pathParamValues)[index];
+            return encoded ? pathParam : Encode.decodePath(pathParam);
         }
         if (index > 1) {
             throw new IndexOutOfBoundsException();
         }
-        return (String) pathParamValues;
+        String pathParam = (String) pathParamValues;
+        return encoded ? pathParam : Encode.decodePath(pathParam);
     }
 
     public ResteasyReactiveRequestContext setPathParamValue(int index, String value) {
@@ -794,6 +803,14 @@ public abstract class ResteasyReactiveRequestContext
         }
     }
 
+    public void setProducesChecked(boolean checked) {
+        producesChecked = checked;
+    }
+
+    public boolean isProducesChecked() {
+        return producesChecked;
+    }
+
     @Override
     public Object getHeader(String name, boolean single) {
         if (httpHeaders == null) {
@@ -926,18 +943,11 @@ public abstract class ResteasyReactiveRequestContext
         Integer index = target.getPathParameterIndexes().get(name);
         String value;
         if (index != null) {
-            value = getPathParam(index);
-        } else {
-            // Check previous resources if the path is not defined in the current target
-            value = getResourceLocatorPathParam(name);
+            return getPathParam(index, encoded);
         }
 
-        // It's possible to inject a path param that's not defined, return null in this case
-        if (encoded && value != null) {
-            return Encode.encodeQueryParam(value);
-        }
-
-        return value;
+        // Check previous resources if the path is not defined in the current target
+        return getResourceLocatorPathParam(name, encoded);
     }
 
     @Override
@@ -996,8 +1006,8 @@ public abstract class ResteasyReactiveRequestContext
 
     public abstract Runnable registerTimer(long millis, Runnable task);
 
-    public String getResourceLocatorPathParam(String name) {
-        return getResourceLocatorPathParam(name, (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY));
+    public String getResourceLocatorPathParam(String name, boolean encoded) {
+        return getResourceLocatorPathParam(name, (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY), encoded);
     }
 
     public FormData getFormData() {
@@ -1009,7 +1019,7 @@ public abstract class ResteasyReactiveRequestContext
         return this;
     }
 
-    private String getResourceLocatorPathParam(String name, PreviousResource previousResource) {
+    private String getResourceLocatorPathParam(String name, PreviousResource previousResource, boolean encoded) {
         if (previousResource == null) {
             return null;
         }
@@ -1020,13 +1030,13 @@ public abstract class ResteasyReactiveRequestContext
             for (URITemplate.TemplateComponent component : classPath.components) {
                 if (component.name != null) {
                     if (component.name.equals(name)) {
-                        return doGetPathParam(index, previousResource.locatorPathParamValues);
+                        return doGetPathParam(index, previousResource.locatorPathParamValues, encoded);
                     }
                     index++;
                 } else if (component.names != null) {
                     for (String nm : component.names) {
                         if (nm.equals(name)) {
-                            return doGetPathParam(index, previousResource.locatorPathParamValues);
+                            return doGetPathParam(index, previousResource.locatorPathParamValues, encoded);
                         }
                     }
                     index++;
@@ -1036,19 +1046,19 @@ public abstract class ResteasyReactiveRequestContext
         for (URITemplate.TemplateComponent component : previousResource.locatorTarget.getPath().components) {
             if (component.name != null) {
                 if (component.name.equals(name)) {
-                    return doGetPathParam(index, previousResource.locatorPathParamValues);
+                    return doGetPathParam(index, previousResource.locatorPathParamValues, encoded);
                 }
                 index++;
             } else if (component.names != null) {
                 for (String nm : component.names) {
                     if (nm.equals(name)) {
-                        return doGetPathParam(index, previousResource.locatorPathParamValues);
+                        return doGetPathParam(index, previousResource.locatorPathParamValues, encoded);
                     }
                 }
                 index++;
             }
         }
-        return getResourceLocatorPathParam(name, previousResource.prev);
+        return getResourceLocatorPathParam(name, previousResource.prev, encoded);
     }
 
     public abstract boolean resumeExternalProcessing();

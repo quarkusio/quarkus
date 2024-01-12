@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.resources.Resource;
-import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import io.opentelemetry.semconv.ResourceAttributes;
 
 public class TracerUtilTest {
 
@@ -19,7 +19,7 @@ public class TracerUtilTest {
                 "service.namespace=mynamespace",
                 "service.version=1.0",
                 "deployment.environment=production");
-        Resource resource = TracerUtil.mapResourceAttributes(resourceAttributes, null);
+        Resource resource = TracerUtil.mapResourceAttributes(resourceAttributes, null, null);
         Attributes attributes = resource.getAttributes();
         Assertions.assertThat(attributes.size()).isEqualTo(4);
         Assertions.assertThat(attributes.get(ResourceAttributes.SERVICE_NAME)).isEqualTo("myservice");

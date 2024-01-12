@@ -8,6 +8,7 @@
         <version>999-SNAPSHOT</version>
         <relativePath>../build-parent/pom.xml</relativePath>
     </parent>
+
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-integration-tests-parent</artifactId>
@@ -115,6 +116,23 @@
                                         </fileSets>
                                     </inputs>
                                 </plugin>
+                                <plugin>
+                                    <artifactId>maven-failsafe-plugin</artifactId>
+                                    <inputs>
+                                        <fileSets combine.children="append">
+                                            <fileSet>
+                                                <name>native-runner</name>
+                                                <paths>
+                                                    <path>${project.build.directory}</path>
+                                                </paths>
+                                                <includes>
+                                                    <include>*-runner</include>
+                                                </includes>
+                                                <normalization>RELATIVE_PATH</normalization>
+                                            </fileSet>
+                                        </fileSets>
+                                    </inputs>
+                                </plugin>
                             </plugins>
                         </gradleEnterprise>
                     </configuration>
@@ -203,6 +221,7 @@
                 <module>kafka-oauth-keycloak</module>
                 <module>kafka-snappy</module>
                 <module>kafka-avro-apicurio2</module>
+                <module>kafka-json-schema-apicurio2</module>
                 <module>kafka-streams</module>
                 <module>kafka-devservices</module>
                 <module>jpa</module>
@@ -231,7 +250,7 @@
                 <module>hibernate-reactive-panache</module>
                 <module>hibernate-reactive-panache-kotlin</module>
                 <module>hibernate-search-orm-elasticsearch</module>
-                <module>hibernate-search-orm-elasticsearch-coordination-outbox-polling</module>
+                <module>hibernate-search-orm-elasticsearch-outbox-polling</module>
                 <module>hibernate-search-orm-opensearch</module>
                 <module>hibernate-search-orm-elasticsearch-tenancy</module>
                 <module>hibernate-orm-tenancy</module>
@@ -263,6 +282,7 @@
                 <module>oidc-client-wiremock</module>
                 <module>oidc-token-propagation</module>
                 <module>oidc-token-propagation-reactive</module>
+                <module>openapi</module>
                 <module>smallrye-jwt-oidc-webapp</module>
                 <module>smallrye-jwt-token-propagation</module>
                 <module>oidc-code-flow</module>
@@ -316,7 +336,7 @@
                 <module>smallrye-metrics</module>
                 <module>smallrye-graphql</module>
                 <module>smallrye-graphql-client</module>
-                <module>smallrye-opentracing</module>
+                <module>smallrye-graphql-client-keycloak</module>
                 <module>smallrye-stork-registration</module>
                 <module>jpa-without-entity</module>
                 <module>quartz</module>
@@ -339,6 +359,7 @@
                 <module>rest-client-reactive</module>
                 <module>rest-client-reactive-http2</module>
                 <module>rest-client-reactive-kotlin-serialization</module>
+                <module>rest-client-reactive-kotlin-serialization-with-validator</module>
                 <module>rest-client-reactive-multipart</module>
                 <module>rest-client-reactive-stork</module>
                 <module>packaging</module>
@@ -353,8 +374,11 @@
                 <module>micrometer-mp-metrics</module>
                 <module>micrometer-prometheus</module>
                 <module>opentelemetry</module>
+                <module>opentelemetry-quickstart</module>
                 <module>opentelemetry-spi</module>
                 <module>opentelemetry-jdbc-instrumentation</module>
+                <module>opentelemetry-quartz</module>
+                <module>opentelemetry-scheduler</module>
                 <module>opentelemetry-vertx</module>
                 <module>opentelemetry-reactive</module>
                 <module>opentelemetry-grpc</module>
@@ -372,6 +396,7 @@
                 <module>locales</module>
                 <module>redis-devservices</module>
                 <!-- gRPC tests -->
+                <module>grpc-descriptor-sets</module>
                 <module>grpc-inprocess</module>
                 <module>grpc-vertx</module>
                 <module>grpc-tls</module>
@@ -395,22 +420,9 @@
                 <module>istio</module>
                 <module>management-interface</module>
                 <module>management-interface-auth</module>
+                <module>mtls-certificates</module>
                 <!-- Virtual threads test -->
                 <module>virtual-threads</module>
-            </modules>
-        </profile>
-
-        <!-- Java 17 test profile that restricts running in 17+ JVM version -->
-        <profile>
-            <id>java-17</id>
-            <activation>
-                <property>
-                    <name>!no-test-modules</name>
-                </property>
-                <jdk>[17,)</jdk>
-            </activation>
-            <modules>
-                <module>java-17</module>
             </modules>
         </profile>
 
@@ -466,6 +478,17 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+            <id>native-ci</id>
+            <activation>
+                <property>
+                    <name>env.CI</name>
+                </property>
+            </activation>
+            <properties>
+                <quarkus.native.builder-image.pull>missing</quarkus.native.builder-image.pull>
+            </properties>
         </profile>
 
         <!-- "unbind" all default executions that make no sense for (most) integration-tests -->

@@ -7,10 +7,13 @@ import static org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE;
 import static org.jboss.jandex.Type.Kind.PRIMITIVE;
 import static org.jboss.resteasy.reactive.client.impl.RestClientRequestContext.DEFAULT_CONTENT_TYPE_PROP;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.extractProducesConsumesValues;
+import static org.jboss.resteasy.reactive.common.processor.JandexUtil.*;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COLLECTION;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ENCODED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PART_TYPE_NAME;
@@ -44,7 +47,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.RuntimeType;
@@ -62,6 +64,7 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.ext.ParamConverter;
 import jakarta.ws.rs.ext.ParamConverterProvider;
+import jakarta.ws.rs.sse.SseEventSource;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -77,12 +80,14 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.api.ClientMultipartForm;
 import org.jboss.resteasy.reactive.client.handlers.ClientObservabilityHandler;
 import org.jboss.resteasy.reactive.client.impl.AbstractRxInvoker;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
+import org.jboss.resteasy.reactive.client.impl.SseEventSourceBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.StorkClientRequestFilter;
 import org.jboss.resteasy.reactive.client.impl.UniInvoker;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
@@ -223,6 +228,8 @@ public class JaxrsClientReactiveProcessor {
         serviceProviders.produce(new ServiceProviderBuildItem(ClientBuilder.class.getName(),
                 ClientBuilderImpl.class.getName()));
 
+        serviceProviders.produce(new ServiceProviderBuildItem(SseEventSource.Builder.class.getName(),
+                SseEventSourceBuilderImpl.class.getName()));
     }
 
     @BuildStep
@@ -280,9 +287,8 @@ public class JaxrsClientReactiveProcessor {
             scannedParameterContainers.addAll(parameterContainersBuildItem.getClassNames());
         }
         reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem
-                .builder(scannedParameterContainers.stream().map(name -> name.toString()).collect(Collectors.toSet())
-                        .toArray(new String[0]))
-                .fields().build());
+                .builder(scannedParameterContainers.stream().map(DotName::toString).distinct().toArray(String[]::new))
+                .methods().fields().build());
 
         if (resourceScanningResultBuildItem.isEmpty()
                 || resourceScanningResultBuildItem.get().getResult().getClientInterfaces().isEmpty()) {
@@ -1828,8 +1834,8 @@ public class JaxrsClientReactiveProcessor {
         ResultHandle formParamResult = methodCreator.load(formParamName);
         ResultHandle partFilenameResult = partFilename == null ? formParamResult : methodCreator.load(partFilename);
         methodCreator.assign(multipartForm,
-                methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "entity",
-                        QuarkusMultipartForm.class, String.class, String.class, Object.class, String.class, Class.class),
+                methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(ClientMultipartForm.class, "entity",
+                        ClientMultipartForm.class, String.class, String.class, Object.class, String.class, Class.class),
                         multipartForm, formParamResult, partFilenameResult, fieldValue,
                         methodCreator.load(partType),
                         // FIXME: doesn't support generics
@@ -1839,8 +1845,8 @@ public class JaxrsClientReactiveProcessor {
     private void addPojo(BytecodeCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
             String partType, ResultHandle fieldValue, String type) {
         methodCreator.assign(multipartForm,
-                methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "entity",
-                        QuarkusMultipartForm.class, String.class, Object.class, String.class, Class.class),
+                methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(ClientMultipartForm.class, "entity",
+                        ClientMultipartForm.class, String.class, Object.class, String.class, Class.class),
                         multipartForm, methodCreator.load(formParamName), fieldValue, methodCreator.load(partType),
                         // FIXME: doesn't support generics
                         methodCreator.loadClassFromTCCL(type)));
@@ -1865,8 +1871,8 @@ public class JaxrsClientReactiveProcessor {
                     // MultipartForm#binaryFileUpload(String name, String filename, String pathname, String mediaType);
                     // filename = name
                     methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "binaryFileUpload",
-                                    QuarkusMultipartForm.class, String.class, String.class, String.class,
+                            MethodDescriptor.ofMethod(ClientMultipartForm.class, "binaryFileUpload",
+                                    ClientMultipartForm.class, String.class, String.class, String.class,
                                     String.class),
                             multipartForm, methodCreator.load(formParamName), fileName,
                             pathString, methodCreator.load(partType)));
@@ -1875,8 +1881,8 @@ public class JaxrsClientReactiveProcessor {
                     // MultipartForm#textFileUpload(String name, String filename, String pathname, String mediaType);;
                     // filename = name
                     methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "textFileUpload",
-                                    QuarkusMultipartForm.class, String.class, String.class, String.class,
+                            MethodDescriptor.ofMethod(ClientMultipartForm.class, "textFileUpload",
+                                    ClientMultipartForm.class, String.class, String.class, String.class,
                                     String.class),
                             multipartForm, methodCreator.load(formParamName), fileName,
                             pathString, methodCreator.load(partType)));
@@ -1920,8 +1926,8 @@ public class JaxrsClientReactiveProcessor {
             methodCreator.assign(multipartForm,
                     // MultipartForm#stringFileUpload(String name, String filename, String content, String mediaType);
                     methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "stringFileUpload",
-                                    QuarkusMultipartForm.class, String.class, String.class, String.class,
+                            MethodDescriptor.ofMethod(ClientMultipartForm.class, "stringFileUpload",
+                                    ClientMultipartForm.class, String.class, String.class, String.class,
                                     String.class),
                             multipartForm,
                             methodCreator.load(formParamName),
@@ -1931,7 +1937,7 @@ public class JaxrsClientReactiveProcessor {
         } else {
             methodCreator.assign(multipartForm,
                     methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "attribute", QuarkusMultipartForm.class,
+                            MethodDescriptor.ofMethod(ClientMultipartForm.class, "attribute", ClientMultipartForm.class,
                                     String.class, String.class, String.class),
                             multipartForm, methodCreator.load(formParamName), fieldValue,
                             partFilenameHandle(methodCreator, partFilename)));
@@ -1955,8 +1961,8 @@ public class JaxrsClientReactiveProcessor {
                     // MultipartForm#binaryFileUpload(String name, String filename,  Multi<Byte> content, String mediaType);
                     // filename = name
                     methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "multiAsBinaryFileUpload",
-                                    QuarkusMultipartForm.class, String.class, String.class, Multi.class,
+                            MethodDescriptor.ofMethod(ClientMultipartForm.class, "multiAsBinaryFileUpload",
+                                    ClientMultipartForm.class, String.class, String.class, Multi.class,
                                     String.class),
                             multipartForm, methodCreator.load(formParamName), methodCreator.load(filename),
                             multi, methodCreator.load(partType)));
@@ -1965,8 +1971,8 @@ public class JaxrsClientReactiveProcessor {
                     // MultipartForm#multiAsTextFileUpload(String name, String filename, Multi<Byte> content, String mediaType)
                     // filename = name
                     methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "multiAsTextFileUpload",
-                                    QuarkusMultipartForm.class, String.class, String.class, Multi.class,
+                            MethodDescriptor.ofMethod(ClientMultipartForm.class, "multiAsTextFileUpload",
+                                    ClientMultipartForm.class, String.class, String.class, Multi.class,
                                     String.class),
                             multipartForm, methodCreator.load(formParamName), methodCreator.load(filename),
                             multi, methodCreator.load(partType)));
@@ -1985,8 +1991,8 @@ public class JaxrsClientReactiveProcessor {
             methodCreator.assign(multipartForm,
                     // MultipartForm#binaryFileUpload(String name, String filename, io.vertx.mutiny.core.buffer.Buffer content, String mediaType);
                     methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "binaryFileUpload",
-                                    QuarkusMultipartForm.class, String.class, String.class, Buffer.class,
+                            MethodDescriptor.ofMethod(ClientMultipartForm.class, "binaryFileUpload",
+                                    ClientMultipartForm.class, String.class, String.class, Buffer.class,
                                     String.class),
                             multipartForm, methodCreator.load(formParamName), filenameHandle,
                             buffer, methodCreator.load(partType)));
@@ -1994,8 +2000,8 @@ public class JaxrsClientReactiveProcessor {
             methodCreator.assign(multipartForm,
                     // MultipartForm#textFileUpload(String name, String filename, io.vertx.mutiny.core.buffer.Buffer content, String mediaType)
                     methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "textFileUpload",
-                                    QuarkusMultipartForm.class, String.class, String.class, Buffer.class,
+                            MethodDescriptor.ofMethod(ClientMultipartForm.class, "textFileUpload",
+                                    ClientMultipartForm.class, String.class, String.class, Buffer.class,
                                     String.class),
                             multipartForm, methodCreator.load(formParamName), filenameHandle,
                             buffer, methodCreator.load(partType)));
@@ -2645,7 +2651,7 @@ public class JaxrsClientReactiveProcessor {
             if (isCollection(valueType, index)) {
                 if (valueType.kind() == PARAMETERIZED_TYPE) {
                     Type paramType = valueType.asParameterizedType().arguments().get(0);
-                    if (paramType.kind() == CLASS) {
+                    if ((paramType.kind() == CLASS) || (paramType.kind() == PARAMETERIZED_TYPE)) {
                         componentType = paramType.name().toString();
                     }
                 }
@@ -2672,7 +2678,7 @@ public class JaxrsClientReactiveProcessor {
             } else if (isCollection(type, index)) {
                 if (type.kind() == PARAMETERIZED_TYPE) {
                     Type paramType = type.asParameterizedType().arguments().get(0);
-                    if (paramType.kind() == CLASS) {
+                    if ((paramType.kind() == CLASS) || (paramType.kind() == PARAMETERIZED_TYPE)) {
                         componentType = paramType.name().toString();
                     }
                 }
@@ -2744,28 +2750,11 @@ public class JaxrsClientReactiveProcessor {
     }
 
     private boolean isCollection(Type type, IndexView index) {
-        if (type.kind() == Type.Kind.PRIMITIVE) {
-            return false;
-        }
-        ClassInfo classInfo = index.getClassByName(type.name());
-        if (classInfo == null) {
-            return false;
-        }
-        return classInfo.interfaceNames().stream().anyMatch(DotName.createSimple(Collection.class.getName())::equals);
+        return isAssignableFrom(COLLECTION, type.name(), index);
     }
 
     private boolean isMap(Type type, IndexView index) {
-        if (type.kind() == Type.Kind.PRIMITIVE) {
-            return false;
-        }
-        ClassInfo classInfo = index.getClassByName(type.name());
-        if (classInfo == null) {
-            return false;
-        }
-        if (ResteasyReactiveDotNames.MAP.equals(classInfo.name())) {
-            return true;
-        }
-        return classInfo.interfaceNames().stream().anyMatch(DotName.createSimple(Map.class.getName())::equals);
+        return isAssignableFrom(MAP, type.name(), index);
     }
 
     private void addHeaderParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,

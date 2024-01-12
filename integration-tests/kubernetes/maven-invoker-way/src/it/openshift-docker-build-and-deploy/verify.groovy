@@ -13,5 +13,5 @@ openshiftYml.withInputStream { stream ->
     assert list != null
     
     ImageStream imageStream = list.items.find{r -> r.kind == "ImageStream"}
-    assert imageStream != null
+    assert imageStream == null
 }

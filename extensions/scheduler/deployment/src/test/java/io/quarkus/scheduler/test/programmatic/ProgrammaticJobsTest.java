@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.scheduler.Scheduled;
+import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.Scheduler.JobDefinition;
 import io.quarkus.test.QuarkusUnitTest;
@@ -39,9 +41,21 @@ public class ProgrammaticJobsTest {
 
     static final CountDownLatch SYNC_LATCH = new CountDownLatch(1);
     static final CountDownLatch ASYNC_LATCH = new CountDownLatch(1);
+    static final AtomicInteger SKIPPED_EXECUTIONS = new AtomicInteger();
 
     @Test
     public void testJobs() throws InterruptedException {
+        scheduler.newJob("alwaysSkip1")
+                .setInterval("1s")
+                .setSkipPredicate(ex -> true)
+                .setTask(ex -> SKIPPED_EXECUTIONS.incrementAndGet())
+                .schedule();
+        scheduler.newJob("alwaysSkip2")
+                .setInterval("1s")
+                .setTask(ex -> SKIPPED_EXECUTIONS.incrementAndGet())
+                .setSkipPredicate(AlwaysSkipPredicate.class)
+                .schedule();
+
         Scheduler.JobDefinition job1 = scheduler.newJob("foo")
                 .setInterval("1s")
                 .setTask(ec -> {
@@ -79,6 +93,10 @@ public class ProgrammaticJobsTest {
         assertNull(scheduler.unscheduleJob("nonexisting"));
 
         assertNotNull(scheduler.unscheduleJob("foo"));
+        assertNotNull(scheduler.unscheduleJob("alwaysSkip1"));
+        assertNotNull(scheduler.unscheduleJob("alwaysSkip2"));
+        assertEquals(0, SKIPPED_EXECUTIONS.get());
+        // Jobs#dummy()
         assertEquals(1, scheduler.getScheduledJobs().size());
     }
 
@@ -115,6 +133,15 @@ public class ProgrammaticJobsTest {
 
         void countDown(CountDownLatch latch) {
             latch.countDown();
+        }
+
+    }
+
+    public static class AlwaysSkipPredicate implements Scheduled.SkipPredicate {
+
+        @Override
+        public boolean test(ScheduledExecution execution) {
+            return true;
         }
 
     }

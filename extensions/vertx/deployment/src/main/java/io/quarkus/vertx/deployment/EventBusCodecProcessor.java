@@ -5,9 +5,11 @@ import static io.quarkus.vertx.deployment.VertxConstants.CONSUME_EVENT;
 import static io.quarkus.vertx.deployment.VertxConstants.LOCAL_EVENT_BUS_CODEC;
 import static io.quarkus.vertx.deployment.VertxConstants.UNI;
 
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,11 +19,13 @@ import java.util.stream.Collectors;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
@@ -46,21 +50,24 @@ public class EventBusCodecProcessor {
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<MessageCodecBuildItem> messageCodecs,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<LocalCodecSelectorTypesBuildItem> localCodecSelectorTypes) {
 
         final IndexView index = beanArchiveIndexBuildItem.getIndex();
         Collection<AnnotationInstance> consumeEventAnnotationInstances = index.getAnnotations(CONSUME_EVENT);
         Map<DotName, DotName> codecByTypes = new HashMap<>();
+        Set<DotName> selectorTypes = new HashSet<>();
+
         for (AnnotationInstance consumeEventAnnotationInstance : consumeEventAnnotationInstances) {
             AnnotationTarget typeTarget = consumeEventAnnotationInstance.target();
             if (typeTarget.kind() != AnnotationTarget.Kind.METHOD) {
-                throw new UnsupportedOperationException("@ConsumeEvent annotation must target a method");
+                throw new IllegalStateException("@ConsumeEvent annotation must target a method");
             }
-
+            AnnotationValue local = consumeEventAnnotationInstance.value("local");
+            boolean isLocal = local == null || local.asBoolean();
             MethodInfo method = typeTarget.asMethod();
-            Type codecTargetFromReturnType = extractPayloadTypeFromReturn(method);
-            Type codecTargetFromParameter = extractPayloadTypeFromParameter(method);
 
+            Type codecTargetFromParameter = extractPayloadTypeFromParameter(method);
             // If the @ConsumeEvent set the codec, use this codec. It applies to the parameter
             AnnotationValue codec = consumeEventAnnotationInstance.value("codec");
             if (codec != null && codec.asClass().kind() == Type.Kind.CLASS) {
@@ -68,29 +75,46 @@ public class EventBusCodecProcessor {
                     throw new IllegalStateException("Invalid `codec` argument in @ConsumeEvent - no parameter");
                 }
                 codecByTypes.put(codecTargetFromParameter.name(), codec.asClass().asClassType().name());
-            } else if (codecTargetFromParameter != null) {
-                // Codec is not set, check if we have a built-in codec
-                if (!hasBuiltInCodec(codecTargetFromParameter)) {
-                    // Ensure local delivery.
-                    AnnotationValue local = consumeEventAnnotationInstance.value("local");
-                    if (local != null && !local.asBoolean()) {
-                        throw new UnsupportedOperationException(
-                                "The generic message codec can only be used for local delivery,"
-                                        + ", implement your own event bus codec for " + codecTargetFromParameter.name()
-                                                .toString());
-                    } else if (!codecByTypes.containsKey(codecTargetFromParameter.name())) {
+            } else if (codecTargetFromParameter != null && !hasBuiltInCodec(codecTargetFromParameter)) {
+                // Codec is not set and built-in codecs cannot be used
+                if (!isLocal) {
+                    throw new IllegalStateException(
+                            "The Local Message Codec can only be used for local delivery,"
+                                    + " you will need to implement a message codec for " + codecTargetFromParameter.name()
+                                            .toString()
+                                    + " and make use of @ConsumeEvent#codec()");
+                } else if (!codecByTypes.containsKey(codecTargetFromParameter.name())) {
+                    if (isConcreteClass(codecTargetFromParameter, index)) {
+                        // The default codec makes only sense for concrete classes
                         LOGGER.debugf("Local Message Codec registered for type %s",
                                 codecTargetFromParameter);
                         codecByTypes.put(codecTargetFromParameter.name(), LOCAL_EVENT_BUS_CODEC);
+                    } else {
+                        LOGGER.debugf("Local Message Codec will be selected for type %s", codecTargetFromParameter);
+                        selectorTypes.add(codecTargetFromParameter.name());
                     }
                 }
             }
 
-            if (codecTargetFromReturnType != null && !hasBuiltInCodec(codecTargetFromReturnType)
-                    && !codecByTypes.containsKey(codecTargetFromReturnType.name())) {
-
-                LOGGER.debugf("Local Message Codec registered for type %s", codecTargetFromReturnType);
-                codecByTypes.put(codecTargetFromReturnType.name(), LOCAL_EVENT_BUS_CODEC);
+            Type codecTargetFromReturnType = extractPayloadTypeFromReturn(method);
+            if (codecTargetFromReturnType != null && !hasBuiltInCodec(codecTargetFromReturnType)) {
+                if (!isLocal) {
+                    throw new IllegalStateException(
+                            "The Local Message Codec can only be used for local delivery,"
+                                    + " you will need to modify the method to consume io.vertx.core.eventbus.Message, implement a message codec for "
+                                    + codecTargetFromReturnType.name()
+                                            .toString()
+                                    + " and make use of io.vertx.core.eventbus.DeliveryOptions");
+                } else if (!codecByTypes.containsKey(codecTargetFromReturnType.name())) {
+                    if (isConcreteClass(codecTargetFromReturnType, index)) {
+                        // The default codec makes only sense for concrete classes
+                        LOGGER.debugf("Local Message Codec registered for type %s", codecTargetFromReturnType);
+                        codecByTypes.put(codecTargetFromReturnType.name(), LOCAL_EVENT_BUS_CODEC);
+                    } else {
+                        LOGGER.debugf("Local Message Codec will be selected for type %s", codecTargetFromReturnType);
+                        selectorTypes.add(codecTargetFromReturnType.name());
+                    }
+                }
             }
         }
 
@@ -133,6 +157,9 @@ public class EventBusCodecProcessor {
                         reflectiveClass.produce(ReflectiveClassBuildItem.builder(name).methods().build());
                     }
                 });
+
+        localCodecSelectorTypes.produce(new LocalCodecSelectorTypesBuildItem(
+                selectorTypes.stream().map(Object::toString).collect(Collectors.toSet())));
     }
 
     private static final List<String> BUILT_IN_CODECS = Arrays.asList(
@@ -219,5 +246,15 @@ public class EventBusCodecProcessor {
      */
     private static boolean isMessageClass(ParameterizedType type) {
         return VertxConstants.isMessage(type.name());
+    }
+
+    private static boolean isConcreteClass(Type type, IndexView index) {
+        if (type != null && type.kind() == Kind.CLASS) {
+            ClassInfo clazz = index.getClassByName(type.name());
+            if (clazz != null) {
+                return !clazz.isInterface() && !Modifier.isAbstract(clazz.flags());
+            }
+        }
+        return false;
     }
 }

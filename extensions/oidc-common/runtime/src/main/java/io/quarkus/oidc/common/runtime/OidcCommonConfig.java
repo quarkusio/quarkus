@@ -61,13 +61,12 @@ public class OidcCommonConfig {
     public Optional<Duration> connectionDelay = Optional.empty();
 
     /**
-     * The number of times an attempt to re-establish an already available connection will be repeated for.
-     * Note this property is different to the `connection-delay` property which is only effective during the initial OIDC
+     * The number of times an attempt to re-establish an already available connection will be repeated.
+     * Note this property is different from the `connection-delay` property, which is only effective during the initial OIDC
      * connection creation.
-     * This property is used to try to recover the existing connection which may have been temporarily lost.
-     * For example, if a request to the OIDC token endpoint fails due to a connection exception then the request will be retried
-     * for
-     * a number of times configured by this property.
+     * This property is used to try to recover an existing connection that may have been temporarily lost.
+     * For example, if a request to the OIDC token endpoint fails due to a connection exception, then the request will be
+     * retried the number of times configured by this property.
      */
     @ConfigItem(defaultValue = "3")
     public int connectionRetryCount = 3;
@@ -167,21 +166,27 @@ public class OidcCommonConfig {
                 BASIC,
 
                 /**
-                 * client_secret_post: client id and secret are submitted as the 'client_id' and 'client_secret' form
+                 * client_secret_post: client id and secret are submitted as the `client_id` and `client_secret` form
                  * parameters.
                  */
                 POST,
 
                 /**
-                 * client_secret_jwt: client id and generated JWT secret are submitted as the 'client_id' and 'client_secret'
+                 * client_secret_jwt: client id and generated JWT secret are submitted as the `client_id` and `client_secret`
                  * form
                  * parameters.
                  */
-                POST_JWT
+                POST_JWT,
+
+                /**
+                 * client id and secret are submitted as HTTP query parameters. This option is only supported for the OIDC
+                 * extension.
+                 */
+                QUERY
             }
 
             /**
-             * The client secret value - it will be ignored if 'secret.key' is set
+             * The client secret value - it will be ignored if 'credentials.secret' is set
              */
             @ConfigItem
             public Optional<String> value = Optional.empty();
@@ -224,7 +229,7 @@ public class OidcCommonConfig {
         }
 
         /**
-         * Supports the client authentication 'client_secret_jwt' and 'private_key_jwt' methods which involve sending a JWT
+         * Supports the client authentication 'client_secret_jwt' and `private_key_jwt` methods which involve sending a JWT
          * token
          * assertion signed with either a client secret or private key.
          *
@@ -253,13 +258,13 @@ public class OidcCommonConfig {
             public Optional<String> keyFile = Optional.empty();
 
             /**
-             * If provided, indicates that JWT is signed using a private key from a key store
+             * If provided, indicates that JWT is signed using a private key from a keystore
              */
             @ConfigItem
             public Optional<String> keyStoreFile = Optional.empty();
 
             /**
-             * A parameter to specify the password of the key store file.
+             * A parameter to specify the password of the keystore file.
              */
             @ConfigItem
             public Optional<String> keyStorePassword;
@@ -290,7 +295,7 @@ public class OidcCommonConfig {
             public Optional<String> tokenKeyId = Optional.empty();
 
             /**
-             * Issuer of the signing key added as a JWT 'iss' claim (default: client id)
+             * Issuer of the signing key added as a JWT `iss` claim (default: client id)
              */
             @ConfigItem
             public Optional<String> issuer = Optional.empty();
@@ -442,41 +447,41 @@ public class OidcCommonConfig {
         }
 
         /**
-         * Certificate validation and hostname verification, which can be one of the following values from enum
-         * {@link Verification}. Default is required.
+         * Certificate validation and hostname verification, which can be one of the following {@link Verification} values.
+         * Default is required.
          */
         @ConfigItem
         public Optional<Verification> verification = Optional.empty();
 
         /**
-         * An optional key store which holds the certificate information instead of specifying separate files.
+         * An optional keystore which holds the certificate information instead of specifying separate files.
          */
         @ConfigItem
         public Optional<Path> keyStoreFile = Optional.empty();
 
         /**
-         * An optional parameter to specify type of the key store file. If not given, the type is automatically detected
+         * An optional parameter to specify type of the keystore file. If not given, the type is automatically detected
          * based on the file name.
          */
         @ConfigItem
         public Optional<String> keyStoreFileType = Optional.empty();
 
         /**
-         * An optional parameter to specify a provider of the key store file. If not given, the provider is automatically
+         * An optional parameter to specify a provider of the keystore file. If not given, the provider is automatically
          * detected
-         * based on the key store file type.
+         * based on the keystore file type.
          */
         @ConfigItem
         public Optional<String> keyStoreProvider;
 
         /**
-         * A parameter to specify the password of the key store file. If not given, the default ("password") is used.
+         * A parameter to specify the password of the keystore file. If not given, the default ("password") is used.
          */
         @ConfigItem
         public Optional<String> keyStorePassword;
 
         /**
-         * An optional parameter to select a specific key in the key store. When SNI is disabled, if the key store contains
+         * An optional parameter to select a specific key in the keystore. When SNI is disabled, if the keystore contains
          * multiple
          * keys and no alias is specified, the behavior is undefined.
          */
@@ -490,34 +495,34 @@ public class OidcCommonConfig {
         public Optional<String> keyStoreKeyPassword = Optional.empty();
 
         /**
-         * An optional trust store which holds the certificate information of the certificates to trust
+         * An optional truststore which holds the certificate information of the certificates to trust
          */
         @ConfigItem
         public Optional<Path> trustStoreFile = Optional.empty();
 
         /**
-         * A parameter to specify the password of the trust store file.
+         * A parameter to specify the password of the truststore file.
          */
         @ConfigItem
         public Optional<String> trustStorePassword = Optional.empty();
 
         /**
-         * A parameter to specify the alias of the trust store certificate.
+         * A parameter to specify the alias of the truststore certificate.
          */
         @ConfigItem
         public Optional<String> trustStoreCertAlias = Optional.empty();
 
         /**
-         * An optional parameter to specify type of the trust store file. If not given, the type is automatically detected
+         * An optional parameter to specify type of the truststore file. If not given, the type is automatically detected
          * based on the file name.
          */
         @ConfigItem
         public Optional<String> trustStoreFileType = Optional.empty();
 
         /**
-         * An optional parameter to specify a provider of the trust store file. If not given, the provider is automatically
+         * An optional parameter to specify a provider of the truststore file. If not given, the provider is automatically
          * detected
-         * based on the trust store file type.
+         * based on the truststore file type.
          */
         @ConfigItem
         public Optional<String> trustStoreProvider;

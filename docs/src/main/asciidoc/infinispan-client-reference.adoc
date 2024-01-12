@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: data
 :summary: Infinispan is an in memory distributed data store and cache server that offers flexible deployment options and robust capabilities for storing, managing, and processing data.
+:topics: data,infinispan
+:extensions: io.quarkus:quarkus-infinispan-client
 
 Infinispan is a distributed, in-memory key/value store that provides Quarkus applications with a highly configurable
 and independently scalable data layer.
@@ -52,7 +54,7 @@ You need at least one running instance of the Infinispan Server.
 
 .Development mode
 
-If you are running a Docker instance, you can use link:infinispan-dev-services.adoc[Infinispan Dev Services]
+If you are running a Docker instance, you can use xref:infinispan-dev-services.adoc[Infinispan Dev Services]
 and connect without configuration.
 
 If you want to run the server yourself using Docker, check out the 5-minute https://infinispan.org/get-started/[Getting stated with Infinispan]
@@ -93,26 +95,40 @@ quarkus.infinispan-client.hosts=localhost:11222 <1>
 
 quarkus.infinispan-client.username=admin <2>
 quarkus.infinispan-client.password=password <3>
-
-quarkus.infinispan-client.client-intelligence=BASIC <4>
 ----
 <1> Sets Infinispan Server address list, separated with commas
 <2> Sets the authentication username
 <3> Sets the authentication password
-<4> Sets the client intelligence. Use BASIC as a workaround if using Docker for Mac.
 
 Alternatively, you can use uri connection by providing a single connection property
 [source,properties]
 ----
 quarkus.infinispan-client.uri=hotrod://admin:password@localhost:11222 <1>
-quarkus.infinispan-client.client-intelligence=BASIC <2>
 ----
 <1> Sets Infinispan URI connection. The following properties will be ignored: hosts, username and password.
-<2> Sets the client intelligence. Use BASIC as a workaround if using Docker for Mac
 
 [TIP]
 ====
 Use Infinispan Dev Services to run a server and connect without configuration.
+====
+
+=== Client intelligence
+Infinispan client uses intelligence mechanisms to efficiently send requests to Infinispan Server clusters.
+By default, the *HASH_DISTRIBUTION_AWARE* intelligence mechanism is enabled.
+However, locally with Docker for Mac, you might experience connectivity issues.
+In this case, configure the client intelligence to *BASIC*.
+
+Learn more in the https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#hotrod-client-intelligence_hotrod-java-client[Infinispan documentation].
+
+[source,properties]
+----
+quarkus.infinispan-client.client-intelligence=BASIC <1>
+----
+<1> Docker for Mac workaround.
+
+[IMPORTANT]
+====
+Don't use *BASIC* in production environments by default, performance might be impacted.
 ====
 
 === Configuring backup clusters in Cross-Site Replication
@@ -803,7 +819,6 @@ quarkus.infinispan-client.cache.books.near-cache-mode=INVALIDATED <1>
 quarkus.infinispan-client.cache.books.near-cache-max-entries=200 <2>
 quarkus.infinispan-client.cache.books.near-cache-use-bloom-filter=true <3>
 ----
-
 <1> Enables near caching for the 'books' cache by setting the mode to `INVALIDATED`
 <2> Sets the maximum number of entries that the near cache of the 'books' cache can hold before eviction occurs
 <3> Enables bloom filter for the 'books' cache
@@ -822,11 +837,30 @@ They cannot be used with unbounded near cache: maximum number of entries must be
 
 Encryption at this point requires additional steps to get working.
 
-The first step is to configure the `hotrod-client.properties` file to point to your truststore
+The first step is to configure the `application.properties` file to point to your truststore
 and/or keystore. This is further detailed https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#hotrod_encryption[here].
 
 The Infinispan Client extension enables SSL/TLS by default. You can read more about this
 at xref:native-and-ssl.adoc[Using SSL With Native Executables].
+
+== SSL Host Name Validation
+
+To prevent MITM attacks, when SSL is enabled, SSL host name validation is enabled by default in Infinispan.
+In this case, configuring the SNI host name is mandatory to start the client.
+
+[source,properties]
+----
+quarkus.infinispan-client.sni-host-name=localhost <1>
+----
+<1> Sets the SNI host name
+
+This behaviour can be changed by disabling the validation.
+
+[source,properties]
+----
+quarkus.infinispan-client.ssl-host-name-validation=false <1>
+----
+<1> Disables ssl host name validation
 
 == Additional Features
 

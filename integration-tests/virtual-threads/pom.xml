@@ -36,6 +36,7 @@
         <module>scheduler-virtual-threads</module>
         <module>quartz-virtual-threads</module>
         <module>virtual-threads-disabled</module>
+        <module>reactive-routes-virtual-threads</module>
     </modules>
 
     <build>
@@ -103,22 +104,9 @@
                             <maven.home>${maven.home}</maven.home>
                         </systemPropertyVariables>
                         <!-- gradle scan capture test logging disabled: System.out in virtual threads cause pinning when enabled. -->
-                        <argLine>--enable-preview -Djdk.tracePinnedThreads -Dgradle.scan.captureTestLogging=false</argLine>
+                        <argLine>-Djdk.tracePinnedThreads -Dgradle.scan.captureTestLogging=false</argLine>
                         <skipTests>${skipTests}</skipTests>
                     </configuration>
-                    <executions>
-                        <execution>
-                            <id>pinning-test</id>
-                            <goals>
-                                <goal>test</goal>
-                            </goals>
-                            <configuration>
-                                <includes>
-                                    <include>NoPinningVerify.java</include>
-                                </includes>
-                            </configuration>
-                        </execution>
-                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>io.quarkus</groupId>
@@ -143,7 +131,6 @@
                     <version>${version.compiler.plugin}</version>
                     <configuration>
                         <compilerArgs>
-                            <arg>--enable-preview</arg>
                             <arg>-parameters</arg>
                         </compilerArgs>
                     </configuration>

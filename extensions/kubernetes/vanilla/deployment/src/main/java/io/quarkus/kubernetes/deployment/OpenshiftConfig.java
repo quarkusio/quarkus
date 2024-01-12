@@ -41,6 +41,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     public static enum DeploymentResourceKind {
         Deployment(DEPLOYMENT, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION),
+        @Deprecated(since = "OpenShift 4.14")
         DeploymentConfig(DEPLOYMENT_CONFIG, DEPLOYMENT_CONFIG_GROUP, DEPLOYMENT_CONFIG_VERSION),
         StatefulSet(STATEFULSET, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION),
         Job(JOB, BATCH_GROUP, BATCH_VERSION),
@@ -67,7 +68,9 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     /**
      * The kind of the deployment resource to use.
-     * Supported values are 'Deployment', 'StatefulSet', 'Job', 'CronJob' and 'DeploymentConfig' defaulting to the latter.
+     * Supported values are 'Deployment', 'StatefulSet', 'Job', 'CronJob' and 'DeploymentConfig'. Defaults to 'DeploymentConfig'
+     * if {@code flavor == v3}, or 'Deployment' otherwise.
+     * DeploymentConfig is deprecated as of OpenShift 4.14. See https://access.redhat.com/articles/7041372 for details.
      */
     @ConfigItem
     Optional<DeploymentResourceKind> deploymentKind;
@@ -654,6 +657,6 @@ public class OpenshiftConfig implements PlatformConfiguration {
             return DeploymentResourceKind.Job;
         }
 
-        return DeploymentResourceKind.DeploymentConfig;
+        return (flavor == OpenshiftFlavor.v3) ? DeploymentResourceKind.DeploymentConfig : DeploymentResourceKind.Deployment;
     }
 }

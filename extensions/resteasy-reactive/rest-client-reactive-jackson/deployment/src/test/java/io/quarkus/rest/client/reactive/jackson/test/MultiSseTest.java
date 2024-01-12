@@ -8,15 +8,23 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.sse.OutboundSseEvent;
+import jakarta.ws.rs.sse.Sse;
+import jakarta.ws.rs.sse.SseEventSink;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.RestStreamElementType;
+import org.jboss.resteasy.reactive.client.SseEvent;
+import org.jboss.resteasy.reactive.client.SseEventFilter;
 import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -112,6 +120,82 @@ public class MultiSseTest {
                                 .containsExactly(new Dto("foo", "bar"), new Dto("chocolate", "bar")));
     }
 
+    @Test
+    void shouldBeAbleReadEntireEvent() {
+        var resultList = new CopyOnWriteArrayList<>();
+        createClient()
+                .event()
+                .subscribe().with(new Consumer<>() {
+                    @Override
+                    public void accept(SseEvent<Dto> event) {
+                        resultList.add(new EventContainer(event.id(), event.name(), event.data()));
+                    }
+                });
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> assertThat(resultList).containsExactly(
+                                new EventContainer("id0", "name0", new Dto("name0", "0")),
+                                new EventContainer("id1", "name1", new Dto("name1", "1"))));
+    }
+
+    @Test
+    void shouldBeAbleReadEntireEventWhileAlsoBeingAbleToFilterEvents() {
+        var resultList = new CopyOnWriteArrayList<>();
+        createClient()
+                .eventWithFilter()
+                .subscribe().with(new Consumer<>() {
+                    @Override
+                    public void accept(SseEvent<Dto> event) {
+                        resultList.add(new EventContainer(event.id(), event.name(), event.data()));
+                    }
+                });
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> assertThat(resultList).containsExactly(
+                                new EventContainer("id", "n0", new Dto("name0", "0")),
+                                new EventContainer("id", "n1", new Dto("name1", "1")),
+                                new EventContainer("id", "n2", new Dto("name2", "2"))));
+    }
+
+    static class EventContainer {
+        final String id;
+        final String name;
+        final Dto dto;
+
+        EventContainer(String id, String name, Dto dto) {
+            this.id = id;
+            this.name = name;
+            this.dto = dto;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            EventContainer that = (EventContainer) o;
+            return Objects.equals(id, that.id) && Objects.equals(name, that.name)
+                    && Objects.equals(dto, that.dto);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(id, name, dto);
+        }
+
+        @Override
+        public String toString() {
+            return "EventContainer{" +
+                    "id='" + id + '\'' +
+                    ", name='" + name + '\'' +
+                    ", dto=" + dto +
+                    '}';
+        }
+    }
+
     private SseClient createClient() {
         return QuarkusRestClientBuilder.newBuilder()
                 .baseUri(uri)
@@ -144,6 +228,31 @@ public class MultiSseTest {
         @Produces(MediaType.SERVER_SENT_EVENTS)
         @Path("/with-entity-json")
         Multi<Map<String, String>> postAndReadAsMap(String entity);
+
+        @GET
+        @Path("/event")
+        @Produces(MediaType.SERVER_SENT_EVENTS)
+        Multi<SseEvent<Dto>> event();
+
+        @GET
+        @Path("/event-with-filter")
+        @Produces(MediaType.SERVER_SENT_EVENTS)
+        @SseEventFilter(CustomFilter.class)
+        Multi<SseEvent<Dto>> eventWithFilter();
+    }
+
+    public static class CustomFilter implements Predicate<SseEvent<String>> {
+
+        @Override
+        public boolean test(SseEvent<String> event) {
+            if ("heartbeat".equals(event.id())) {
+                return false;
+            }
+            if ("END".equals(event.data())) {
+                return false;
+            }
+            return true;
+        }
     }
 
     @Path("/sse")
@@ -174,6 +283,68 @@ public class MultiSseTest {
         @Path("/with-entity-json")
         public Multi<Dto> postAndReadAsMap(String entity) {
             return Multi.createBy().repeating().supplier(() -> new Dto("foo", entity)).atMost(3);
+        }
+
+        @GET
+        @Path("/event")
+        @Produces(MediaType.SERVER_SENT_EVENTS)
+        public void event(@Context SseEventSink sink, @Context Sse sse) {
+            // send a stream of few events
+            try (sink) {
+                for (int i = 0; i < 2; i++) {
+                    final OutboundSseEvent.Builder builder = sse.newEventBuilder();
+                    builder.id("id" + i)
+                            .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                            .data(Dto.class, new Dto("name" + i, String.valueOf(i)))
+                            .name("name" + i);
+
+                    sink.send(builder.build());
+                }
+            }
+        }
+
+        @GET
+        @Path("/event-with-filter")
+        @Produces(MediaType.SERVER_SENT_EVENTS)
+        public void eventWithFilter(@Context SseEventSink sink, @Context Sse sse) {
+            try (sink) {
+                sink.send(sse.newEventBuilder()
+                        .id("id")
+                        .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                        .data(Dto.class, new Dto("name0", "0"))
+                        .name("n0")
+                        .build());
+
+                sink.send(sse.newEventBuilder()
+                        .id("heartbeat")
+                        .comment("heartbeat")
+                        .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                        .build());
+
+                sink.send(sse.newEventBuilder()
+                        .id("id")
+                        .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                        .data(Dto.class, new Dto("name1", "1"))
+                        .name("n1")
+                        .build());
+
+                sink.send(sse.newEventBuilder()
+                        .id("heartbeat")
+                        .comment("heartbeat")
+                        .build());
+
+                sink.send(sse.newEventBuilder()
+                        .id("id")
+                        .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                        .data(Dto.class, new Dto("name2", "2"))
+                        .name("n2")
+                        .build());
+
+                sink.send(sse.newEventBuilder()
+                        .id("end")
+                        .data("END")
+                        .build());
+            }
         }
     }
 
@@ -225,6 +396,14 @@ public class MultiSseTest {
         @Override
         public int hashCode() {
             return Objects.hash(name, value);
+        }
+
+        @Override
+        public String toString() {
+            return "Dto{" +
+                    "name='" + name + '\'' +
+                    ", value='" + value + '\'' +
+                    '}';
         }
     }
 }

@@ -12,6 +12,17 @@ if(session?.getRequest()?.getBaseDirectory() != null) {
     if(!publish) {
         // do not publish a build scan for test builds
         log.debug("Disabling build scan publication for " + session.getRequest().getBaseDirectory())
+
+        // change storage location on CI to avoid Develocity scan dumps with disabled publication to be captured for republication
+        if (System.env.GITHUB_ACTIONS) {
+            try {
+                def storageLocationTmpDir = java.nio.file.Files.createTempDirectory(java.nio.file.Paths.get(System.env.RUNNER_TEMP), "buildScanTmp").toAbsolutePath()
+                log.debug('Update storage location to ' + storageLocationTmpDir)
+                gradleEnterprise.setStorageDirectory(storageLocationTmpDir)
+            } catch (IOException e) {
+                log.error('Temporary storage location directory cannot be created, the Build Scan will be published', e)
+            }
+        }
     }
 }
 buildScan.publishAlwaysIf(publish)
@@ -96,3 +107,23 @@ if (System.env.GITHUB_ACTIONS) {
     }
 }
 
+// Check runtime Maven version and Maven Wrapper version are aligned
+def runtimeInfo = (org.apache.maven.rtinfo.RuntimeInformation) session.lookup("org.apache.maven.rtinfo.RuntimeInformation")
+def runtimeMavenVersion = runtimeInfo?.getMavenVersion()
+Properties mavenWrapperProperties = new Properties()
+File mavenWrapperPropertiesFile = new File(".mvn/wrapper/maven-wrapper.properties")
+if(mavenWrapperPropertiesFile.exists()) {
+    mavenWrapperPropertiesFile.withInputStream {
+        mavenWrapperProperties.load(it)
+    }
+    // assuming the wrapper properties contains:
+    // distributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/VERSION/apache-maven-VERSION-bin.zip
+    if(regexp = mavenWrapperProperties."distributionUrl" =~ /.*\/apache-maven-(.*)-bin\.zip/) {
+        def wrapperMavenVersion = regexp.group(1)
+        if (runtimeMavenVersion && wrapperMavenVersion && wrapperMavenVersion != runtimeMavenVersion) {
+            log.warn("Maven Wrapper is configured with a different version (" + wrapperMavenVersion + ") than the runtime version (" + runtimeMavenVersion + "). This will negatively impact build consistency and build caching.")
+            buildScan.tag("misaligned-maven-version")
+            buildScan.value("wrapper-maven-version", wrapperMavenVersion)
+        }
+    }
+}

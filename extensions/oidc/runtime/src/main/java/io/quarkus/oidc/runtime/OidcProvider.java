@@ -27,17 +27,22 @@ import org.jose4j.jwt.consumer.Validator;
 import org.jose4j.jwx.HeaderParameterNames;
 import org.jose4j.jwx.JsonWebStructure;
 import org.jose4j.keys.resolvers.VerificationKeyResolver;
+import org.jose4j.lang.InvalidAlgorithmException;
 import org.jose4j.lang.UnresolvableKeyException;
 
+import io.quarkus.logging.Log;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.CertificateChain;
 import io.quarkus.oidc.TokenCustomizer;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.credential.TokenCredential;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
@@ -64,6 +69,7 @@ public class OidcProvider implements Closeable {
 
     final OidcProviderClient client;
     final RefreshableVerificationKeyResolver asymmetricKeyResolver;
+    final DynamicVerificationKeyResolver keyResolverProvider;
     final OidcTenantConfig oidcConfig;
     final TokenCustomizer tokenCustomizer;
     final String issuer;
@@ -82,8 +88,12 @@ public class OidcProvider implements Closeable {
         this.oidcConfig = oidcConfig;
         this.tokenCustomizer = tokenCustomizer;
         this.asymmetricKeyResolver = jwks == null ? null
-                : new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval);
-
+                : new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval, oidcConfig.certificateChain);
+        if (client != null && oidcConfig != null && !oidcConfig.jwks.resolveEarly) {
+            this.keyResolverProvider = new DynamicVerificationKeyResolver(client, oidcConfig);
+        } else {
+            this.keyResolverProvider = null;
+        }
         this.issuer = checkIssuerProp();
         this.audience = checkAudienceProp();
         this.requiredClaims = checkRequiredClaimsProp();
@@ -95,7 +105,14 @@ public class OidcProvider implements Closeable {
         this.client = null;
         this.oidcConfig = oidcConfig;
         this.tokenCustomizer = TokenCustomizerFinder.find(oidcConfig);
-        this.asymmetricKeyResolver = new LocalPublicKeyResolver(publicKeyEnc);
+        if (publicKeyEnc != null) {
+            this.asymmetricKeyResolver = new LocalPublicKeyResolver(publicKeyEnc);
+        } else if (oidcConfig.certificateChain.trustStoreFile.isPresent()) {
+            this.asymmetricKeyResolver = new CertChainPublicKeyResolver(oidcConfig.certificateChain);
+        } else {
+            throw new IllegalStateException("Neither public key nor certificate chain verification modes are enabled");
+        }
+        this.keyResolverProvider = null;
         this.issuer = checkIssuerProp();
         this.audience = checkAudienceProp();
         this.requiredClaims = checkRequiredClaimsProp();
@@ -282,6 +299,30 @@ public class OidcProvider implements Closeable {
                 });
     }
 
+    public Uni<TokenVerificationResult> getKeyResolverAndVerifyJwtToken(TokenCredential tokenCred,
+            boolean enforceAudienceVerification,
+            boolean subjectRequired, String nonce) {
+        return keyResolverProvider.resolve(tokenCred).onItem()
+                .transformToUni(new Function<VerificationKeyResolver, Uni<? extends TokenVerificationResult>>() {
+
+                    @Override
+                    public Uni<? extends TokenVerificationResult> apply(VerificationKeyResolver resolver) {
+                        try {
+                            return Uni.createFrom()
+                                    .item(verifyJwtTokenInternal(customizeJwtToken(tokenCred.getToken()),
+                                            enforceAudienceVerification,
+                                            subjectRequired, nonce,
+                                            (requiredAlgorithmConstraints != null ? requiredAlgorithmConstraints
+                                                    : ASYMMETRIC_ALGORITHM_CONSTRAINTS),
+                                            resolver, true));
+                        } catch (Throwable t) {
+                            return Uni.createFrom().failure(t);
+                        }
+                    }
+
+                });
+    }
+
     public Uni<TokenIntrospection> introspectToken(String token, boolean fallbackFromJwkMatch) {
         if (client.getMetadata().getIntrospectionUri() == null) {
             String errorMessage = String.format("Token issued to client %s "
@@ -366,10 +407,16 @@ public class OidcProvider implements Closeable {
         volatile JsonWebKeySet jwks;
         volatile long lastForcedRefreshTime;
         volatile long forcedJwksRefreshIntervalMilliSecs;
+        final CertChainPublicKeyResolver chainResolverFallback;
 
-        JsonWebKeyResolver(JsonWebKeySet jwks, Duration forcedJwksRefreshInterval) {
+        JsonWebKeyResolver(JsonWebKeySet jwks, Duration forcedJwksRefreshInterval, CertificateChain chain) {
             this.jwks = jwks;
             this.forcedJwksRefreshIntervalMilliSecs = forcedJwksRefreshInterval.toMillis();
+            if (chain.trustStoreFile.isPresent()) {
+                chainResolverFallback = new CertChainPublicKeyResolver(chain);
+            } else {
+                chainResolverFallback = null;
+            }
         }
 
         @Override
@@ -380,7 +427,7 @@ public class OidcProvider implements Closeable {
             // Try 'kid' first
             String kid = jws.getKeyIdHeaderValue();
             if (kid != null) {
-                key = getKeyWithId(jws, kid);
+                key = getKeyWithId(kid);
                 if (key == null) {
                     // if `kid` was set then the key must exist
                     throw new UnresolvableKeyException(String.format("JWK with kid '%s' is not available", kid));
@@ -389,30 +436,52 @@ public class OidcProvider implements Closeable {
 
             String thumbprint = null;
             if (key == null) {
+                thumbprint = jws.getHeader(HeaderParameterNames.X509_CERTIFICATE_SHA256_THUMBPRINT);
+                if (thumbprint != null) {
+                    key = getKeyWithS256Thumbprint(thumbprint);
+                    if (key == null) {
+                        // if only `x5tS256` was set then the key must exist
+                        throw new UnresolvableKeyException(
+                                String.format("JWK with the SHA256 certificate thumbprint '%s' is not available", thumbprint));
+                    }
+                }
+            }
+
+            if (key == null) {
                 thumbprint = jws.getHeader(HeaderParameterNames.X509_CERTIFICATE_THUMBPRINT);
                 if (thumbprint != null) {
-                    key = getKeyWithThumbprint(jws, thumbprint);
+                    key = getKeyWithThumbprint(thumbprint);
                     if (key == null) {
                         // if only `x5t` was set then the key must exist
                         throw new UnresolvableKeyException(
-                                String.format("JWK with thumbprint '%s' is not available", thumbprint));
+                                String.format("JWK with the certificate thumbprint '%s' is not available", thumbprint));
                     }
                 }
             }
 
             if (key == null && kid == null && thumbprint == null) {
-                key = jwks.getKeyWithoutKeyIdAndThumbprint(jws);
+                try {
+                    key = jwks.getKeyWithoutKeyIdAndThumbprint(jws.getKeyType());
+                } catch (InvalidAlgorithmException ex) {
+                    Log.debug("Token 'alg'(algorithm) header value is invalid", ex);
+                }
+            }
+
+            if (key == null && chainResolverFallback != null) {
+                LOG.debug("JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set,"
+                        + " falling back to the certificate chain resolver");
+                key = chainResolverFallback.resolveKey(jws, nestingContext);
             }
 
             if (key == null) {
                 throw new UnresolvableKeyException(
-                        String.format("JWK is not available, neither 'kid' nor 'x5t' token headers are set", kid));
+                        "JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set");
             } else {
                 return key;
             }
         }
 
-        private Key getKeyWithId(JsonWebSignature jws, String kid) {
+        private Key getKeyWithId(String kid) {
             if (kid != null) {
                 return jwks.getKeyWithId(kid);
             } else {
@@ -421,7 +490,7 @@ public class OidcProvider implements Closeable {
             }
         }
 
-        private Key getKeyWithThumbprint(JsonWebSignature jws, String thumbprint) {
+        private Key getKeyWithThumbprint(String thumbprint) {
             if (thumbprint != null) {
                 return jwks.getKeyWithThumbprint(thumbprint);
             } else {
@@ -430,19 +499,29 @@ public class OidcProvider implements Closeable {
             }
         }
 
+        private Key getKeyWithS256Thumbprint(String thumbprint) {
+            if (thumbprint != null) {
+                return jwks.getKeyWithS256Thumbprint(thumbprint);
+            } else {
+                LOG.debug("Token 'x5tS256' header is not set");
+                return null;
+            }
+        }
+
         public Uni<Void> refresh() {
             final long now = now();
             if (now > lastForcedRefreshTime + forcedJwksRefreshIntervalMilliSecs) {
                 lastForcedRefreshTime = now;
-                return client.getJsonWebKeySet().onItem().transformToUni(new Function<JsonWebKeySet, Uni<? extends Void>>() {
+                return client.getJsonWebKeySet(null).onItem()
+                        .transformToUni(new Function<JsonWebKeySet, Uni<? extends Void>>() {
 
-                    @Override
-                    public Uni<? extends Void> apply(JsonWebKeySet t) {
-                        jwks = t;
-                        return Uni.createFrom().voidItem();
-                    }
+                            @Override
+                            public Uni<? extends Void> apply(JsonWebKeySet t) {
+                                jwks = t;
+                                return Uni.createFrom().voidItem();
+                            }
 
-                });
+                        });
             } else {
                 return Uni.createFrom().voidItem();
             }
@@ -473,18 +552,12 @@ public class OidcProvider implements Closeable {
         @Override
         public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext)
                 throws UnresolvableKeyException {
-            return KeyUtils.createSecretKeyFromSecret(oidcConfig.credentials.secret.get());
+            return KeyUtils.createSecretKeyFromSecret(OidcCommonUtils.clientSecret(oidcConfig.credentials));
         }
     }
 
     public OidcConfigurationMetadata getMetadata() {
         return client.getMetadata();
-    }
-
-    private static interface RefreshableVerificationKeyResolver extends VerificationKeyResolver {
-        default Uni<Void> refresh() {
-            return Uni.createFrom().voidItem();
-        }
     }
 
     private static class CustomClaimsValidator implements Validator {

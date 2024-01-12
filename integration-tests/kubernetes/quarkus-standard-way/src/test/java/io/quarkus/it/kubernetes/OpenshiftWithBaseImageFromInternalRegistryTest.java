@@ -11,9 +11,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.openshift.api.model.BuildConfig;
-import io.fabric8.openshift.api.model.DeploymentConfig;
-import io.fabric8.openshift.api.model.DeploymentTriggerImageChangeParams;
 import io.fabric8.openshift.api.model.ImageStream;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
@@ -45,17 +44,13 @@ public class OpenshiftWithBaseImageFromInternalRegistryTest {
                 .isDirectoryContaining(p -> p.getFileName().endsWith("openshift.yml"));
         List<HasMetadata> openshiftList = DeserializationUtil.deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
+        assertThat(openshiftList).filteredOn(h -> "Deployment".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo(APP_NAME);
             });
-            assertThat(h).isInstanceOfSatisfying(DeploymentConfig.class, d -> {
+            assertThat(h).isInstanceOfSatisfying(Deployment.class, d -> {
                 Container container = d.getSpec().getTemplate().getSpec().getContainers().get(0);
                 assertThat(container.getImage()).endsWith(APP_NAME + ":0.1-SNAPSHOT");
-
-                DeploymentTriggerImageChangeParams imageTriggerParams = d.getSpec().getTriggers().get(0).getImageChangeParams();
-                assertThat(imageTriggerParams.getFrom().getKind()).isEqualTo("ImageStreamTag");
-                assertThat(imageTriggerParams.getFrom().getName()).isEqualTo(APP_NAME + ":0.1-SNAPSHOT");
             });
         });
 
@@ -83,6 +78,5 @@ public class OpenshiftWithBaseImageFromInternalRegistryTest {
                         assertThat(i.getSpec().getDockerImageRepository()).isNull();
                     });
                 });
-
     }
 }

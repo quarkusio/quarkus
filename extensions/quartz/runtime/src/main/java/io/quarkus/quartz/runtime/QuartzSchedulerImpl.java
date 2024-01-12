@@ -85,9 +85,11 @@ import io.quarkus.scheduler.common.runtime.ScheduledMethod;
 import io.quarkus.scheduler.common.runtime.SchedulerContext;
 import io.quarkus.scheduler.common.runtime.SyntheticScheduled;
 import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
+import io.quarkus.scheduler.runtime.SchedulerConfig;
 import io.quarkus.scheduler.runtime.SchedulerRuntimeConfig;
 import io.quarkus.scheduler.runtime.SchedulerRuntimeConfig.StartMode;
 import io.quarkus.scheduler.runtime.SimpleScheduler;
+import io.quarkus.scheduler.spi.JobInstrumenter;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.smallrye.common.vertx.VertxContext;
@@ -123,6 +125,9 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
     private final Event<ScheduledJobPaused> scheduledJobPausedEvent;
     private final Event<ScheduledJobResumed> scheduledJobResumedEvent;
     private final QuartzRuntimeConfig runtimeConfig;
+    private final SchedulerConfig schedulerConfig;
+    private final Instance<JobInstrumenter> jobInstrumenter;
+    private final StoreType storeType;
 
     public QuartzSchedulerImpl(SchedulerContext context, QuartzSupport quartzSupport,
             SchedulerRuntimeConfig schedulerRuntimeConfig,
@@ -131,7 +136,8 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             Event<SchedulerResumed> schedulerResumedEvent, Event<ScheduledJobPaused> scheduledJobPausedEvent,
             Event<ScheduledJobResumed> scheduledJobResumedEvent,
             Instance<Job> jobs, Instance<UserTransaction> userTransaction,
-            Vertx vertx) {
+            Vertx vertx,
+            SchedulerConfig schedulerConfig, Instance<JobInstrumenter> jobInstrumenter) {
         this.shutdownWaitTime = quartzSupport.getRuntimeConfig().shutdownWaitTime;
         this.skippedExecutionEvent = skippedExecutionEvent;
         this.successExecutionEvent = successExecutionEvent;
@@ -143,6 +149,9 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         this.runtimeConfig = quartzSupport.getRuntimeConfig();
         this.enabled = schedulerRuntimeConfig.enabled;
         this.defaultOverdueGracePeriod = schedulerRuntimeConfig.overdueGracePeriod;
+        this.schedulerConfig = schedulerConfig;
+        this.jobInstrumenter = jobInstrumenter;
+        this.storeType = quartzSupport.getBuildTimeConfig().storeType;
 
         StartMode startMode = initStartMode(schedulerRuntimeConfig, runtimeConfig);
 
@@ -176,6 +185,11 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         CronDefinition def = CronDefinitionBuilder.instanceDefinitionFor(cronType);
         cronParser = new CronParser(def);
 
+        JobInstrumenter instrumenter = null;
+        if (schedulerConfig.tracingEnabled && jobInstrumenter.isResolvable()) {
+            instrumenter = jobInstrumenter.get();
+        }
+
         if (!enabled) {
             LOGGER.info("Quartz scheduler is disabled by config property and will not be started");
             this.scheduler = null;
@@ -196,7 +210,8 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                 scheduler = schedulerFactory.getScheduler();
 
                 // Set custom job factory
-                scheduler.setJobFactory(new InvokerJobFactory(scheduledTasks, jobs, vertx));
+                scheduler.setJobFactory(
+                        new InvokerJobFactory(scheduledTasks, jobs, vertx, instrumenter));
 
                 if (transaction != null) {
                     transaction.begin();
@@ -209,11 +224,12 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                         if (identity.isEmpty()) {
                             identity = ++nameSequence + "_" + method.getInvokerClassName();
                         }
+
                         ScheduledInvoker invoker = SimpleScheduler.initInvoker(
                                 context.createInvoker(method.getInvokerClassName()),
                                 skippedExecutionEvent, successExecutionEvent, failedExecutionEvent,
                                 scheduled.concurrentExecution(),
-                                SimpleScheduler.initSkipPredicate(scheduled.skipExecutionIf()));
+                                SimpleScheduler.initSkipPredicate(scheduled.skipExecutionIf()), instrumenter);
 
                         JobDetail jobDetail = createJobDetail(identity, method.getInvokerClassName());
                         Optional<TriggerBuilder<?>> triggerBuilder = createTrigger(identity, scheduled, cronType, runtimeConfig,
@@ -423,6 +439,9 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
 
     @Override
     public JobDefinition newJob(String identity) {
+        if (storeType.isDbStore()) {
+            throw new IllegalStateException("The current store type does not support programmatic scheduling: " + storeType);
+        }
         Objects.requireNonNull(identity);
         if (scheduledTasks.containsKey(identity)) {
             throw new IllegalStateException("A job with this identity is already scheduled: " + identity);
@@ -791,6 +810,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                 };
             } else {
                 invoker = new DefaultInvoker() {
+
                     @Override
                     public CompletionStage<Void> invokeBean(ScheduledExecution execution) {
                         try {
@@ -807,6 +827,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
 
                 };
             }
+
             Scheduled scheduled = new SyntheticScheduled(identity, cron, every, 0, TimeUnit.MINUTES, delayed,
                     overdueGracePeriod, concurrentExecution, skipPredicate, timeZone);
 
@@ -814,8 +835,12 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             Optional<TriggerBuilder<?>> triggerBuilder = createTrigger(identity, scheduled, cronType, runtimeConfig, jobDetail);
 
             if (triggerBuilder.isPresent()) {
+                JobInstrumenter instrumenter = null;
+                if (schedulerConfig.tracingEnabled && jobInstrumenter.isResolvable()) {
+                    instrumenter = jobInstrumenter.get();
+                }
                 invoker = SimpleScheduler.initInvoker(invoker, skippedExecutionEvent, successExecutionEvent,
-                        failedExecutionEvent, concurrentExecution, skipPredicate);
+                        failedExecutionEvent, concurrentExecution, skipPredicate, instrumenter);
                 org.quartz.Trigger trigger = triggerBuilder.get().build();
                 QuartzTrigger existing = scheduledTasks.putIfAbsent(identity, new QuartzTrigger(trigger.getKey(),
                         new Function<>() {
@@ -895,6 +920,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                             });
                         } else {
                             context.executeBlocking(new Callable<Object>() {
+
                                 @Override
                                 public Object call() throws Exception {
                                     return trigger.invoker.invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
@@ -918,9 +944,9 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                 }
             } else {
                 String jobName = jobExecutionContext.getJobDetail().getKey().getName();
-                LOGGER.warnf("Unable to find corresponding Quartz trigger for job %s. " +
-                        "Update your Quartz table by removing all phantom jobs or make sure that there is a " +
-                        "Scheduled method with the identity matching the job's name", jobName);
+                LOGGER.warnf("Unable to find corresponding Quartz trigger for job %s. "
+                        + "Update your Quartz table by removing all phantom jobs or make sure that there is a "
+                        + "Scheduled method with the identity matching the job's name", jobName);
             }
         }
     }
@@ -1018,11 +1044,15 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
         final Map<String, QuartzTrigger> scheduledTasks;
         final Instance<Job> jobs;
         final Vertx vertx;
+        final JobInstrumenter instrumenter;
 
-        InvokerJobFactory(Map<String, QuartzTrigger> scheduledTasks, Instance<Job> jobs, Vertx vertx) {
+        InvokerJobFactory(Map<String, QuartzTrigger> scheduledTasks, Instance<Job> jobs, Vertx vertx,
+                JobInstrumenter instrumenter) {
             this.scheduledTasks = scheduledTasks;
             this.jobs = jobs;
             this.vertx = vertx;
+            this.instrumenter = instrumenter;
+
         }
 
         @SuppressWarnings("unchecked")
@@ -1039,9 +1069,16 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             }
             Instance<?> instance = jobs.select(jobClass);
             if (instance.isResolvable()) {
-                return (Job) instance.get();
+                return jobWithSpanWrapper((Job) instance.get());
             }
-            return super.newJob(bundle, Scheduler);
+            return jobWithSpanWrapper(super.newJob(bundle, Scheduler));
+        }
+
+        private Job jobWithSpanWrapper(Job job) {
+            if (instrumenter != null) {
+                return new InstrumentedJob(job, instrumenter);
+            }
+            return job;
         }
 
     }

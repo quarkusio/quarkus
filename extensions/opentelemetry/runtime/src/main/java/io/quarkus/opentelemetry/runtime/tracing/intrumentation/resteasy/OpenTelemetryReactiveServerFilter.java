@@ -7,7 +7,7 @@ import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.instrumentation.api.instrumenter.LocalRootSpan;
-import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import io.opentelemetry.semconv.SemanticAttributes;
 
 /**
  * Handles RESTEasy Reactive (via Vert.x)

@@ -50,7 +50,7 @@ If you think some information is outdated, either provide a pull request or emai
 |https://github.com/geoand[Georgios Andrianakis]
 
 |Elasticsearch REST Client Common
-|https://github.com/gsmet[Guillaume Smet], https://github.com/loicmathieu[Loïc Mathieu]
+|https://github.com/gsmet[Guillaume Smet], https://github.com/yrodiere[Yoann Rodière], https://github.com/loicmathieu[Loïc Mathieu]
 
 |Elasticsearch REST Client
 |https://github.com/loicmathieu[Loïc Mathieu], https://github.com/gsmet[Guillaume Smet]
@@ -83,16 +83,16 @@ If you think some information is outdated, either provide a pull request or emai
 |https://github.com/cescoffier[Clément Escoffier], https://github.com/alesj[Aleš Justin]
 
 |Hibernate ORM
-|https://github.com/Sanne[Sanne Grinovero], https://github.com/gsmet[Guillaume Smet]
+|https://github.com/yrodiere[Yoann Rodière], https://github.com/gsmet[Guillaume Smet]
 
 |Hibernate ORM with Panache
 |https://github.com/FroMage[Stéphane Épardaud]
 
 |Hibernate ORM with Panache for Kotlin
-|https://github.com/evanchooly[Justin Lee]
+|
 
 |Hibernate Search
-|https://github.com/gsmet[Guillaume Smet]
+|https://github.com/yrodiere[Yoann Rodière], https://github.com/gsmet[Guillaume Smet]
 
 |Hibernate Validator
 |https://github.com/gsmet[Guillaume Smet]
@@ -116,7 +116,7 @@ If you think some information is outdated, either provide a pull request or emai
 |https://github.com/Sanne[Sanne Grinovero], https://github.com/gsmet[Guillaume Smet]
 
 |JDBC - MySQL
-|https://github.com/machi1990[Manyanda Chitimbo], https://github.com/Sanne[Sanne Grinovero], https://github.com/gsmet[Guillaume Smet]
+|https://github.com/machi1990[Manyanda Chitimbo], https://github.com/gsmet[Guillaume Smet]
 
 |JDBC - PostgreSQL
 |https://github.com/Sanne[Sanne Grinovero], https://github.com/gsmet[Guillaume Smet]
@@ -146,7 +146,7 @@ If you think some information is outdated, either provide a pull request or emai
 |https://github.com/mariofusco[Mario Fusco], https://github.com/cristianonicolai[Cristiano Nicolai]
 
 |Kotlin
-|https://github.com/geoand[Georgios Andrianakis], https://github.com/evanchooly[Justin Lee]
+|https://github.com/geoand[Georgios Andrianakis]
 
 |Kubernetes
 |https://github.com/Sgitario[ Jose Carvajal], https://github.com/iocanel[Ioannis Canellos]
@@ -167,7 +167,7 @@ If you think some information is outdated, either provide a pull request or emai
 |https://github.com/cescoffier[Clément Escoffier]
 
 |MongoDB with Panache
-|https://github.com/loicmathieu[Loïc Mathieu], https://github.com/evanchooly[Justin Lee]
+|https://github.com/loicmathieu[Loïc Mathieu]
 
 |Narayana JTA
 |https://github.com/mmusgrov[Michael Musgrove], https://github.com/gsmet[Guillaume Smet]

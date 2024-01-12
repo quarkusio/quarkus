@@ -10,7 +10,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>quarkus-rest-client-reactive-kotlin-serialization</artifactId>
-    <name>Quarkus - REST Client Reactive Kotlin Serialization</name>
+    <name>Quarkus - RESTEasy Reactive's REST Client Kotlin Serialization</name>
     <description>Kotlin serialization support for REST Client Reactive</description>
 
     <dependencies>

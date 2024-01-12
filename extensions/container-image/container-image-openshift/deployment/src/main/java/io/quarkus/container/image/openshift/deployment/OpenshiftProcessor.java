@@ -146,23 +146,13 @@ public class OpenshiftProcessor {
         boolean hasCustomJvmArguments = config.jvmArguments.isPresent();
 
         builderImageProducer.produce(new BaseImageInfoBuildItem(baseJvmImage));
-        Optional<OpenshiftBaseJavaImage> baseImage = OpenshiftBaseJavaImage.findMatching(baseJvmImage);
 
         if (config.buildStrategy == BuildStrategy.BINARY) {
             // Jar directory priorities:
             // 1. explicitly specified by the user.
-            // 2. detected via OpenshiftBaseJavaImage
             // 3. fallback value
-            String jarDirectory = config.jarDirectory
-                    .orElse(baseImage.map(i -> i.getJarDirectory()).orElse(config.FALLBACK_JAR_DIRECTORY));
+            String jarDirectory = config.jarDirectory.orElse(config.FALLBACK_JAR_DIRECTORY);
             String pathToJar = concatUnixPaths(jarDirectory, jarFileName);
-
-            // If the image is known, we can define env vars for classpath, jar, lib etc.
-            baseImage.ifPresent(b -> {
-                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJarEnvVar(), pathToJar, null));
-                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getJvmOptionsEnvVar(),
-                        String.join(" ", config.getEffectiveJvmArguments()), null));
-            });
 
             //In all other cases its the responsibility of the image to set those up correctly.
             if (hasCustomJarPath || hasCustomJvmArguments) {
@@ -172,8 +162,6 @@ public class OpenshiftProcessor {
                 cmd.addAll(Arrays.asList("-jar", pathToJar));
                 envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(JAVA_APP_JAR, pathToJar, null));
                 commandProducer.produce(KubernetesCommandBuildItem.command(cmd));
-            } else if (baseImage.isEmpty()) {
-                envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(JAVA_APP_JAR, pathToJar, null));
             }
         }
     }
@@ -209,26 +197,12 @@ public class OpenshiftProcessor {
 
         if (config.buildStrategy == BuildStrategy.BINARY) {
             builderImageProducer.produce(new BaseImageInfoBuildItem(config.baseNativeImage));
-            Optional<OpenshiftBaseNativeImage> baseImage = OpenshiftBaseNativeImage.findMatching(config.baseNativeImage);
             // Native binary directory priorities:
             // 1. explicitly specified by the user.
-            // 2. detected via OpenshiftBaseNativeImage
-            // 3. fallback value
+            // 2. fallback vale
 
-            String nativeBinaryDirectory = config.nativeBinaryDirectory
-                    .orElse(baseImage.map(i -> i.getNativeBinaryDirectory()).orElse(config.FALLBACK_NATIVE_BINARY_DIRECTORY));
+            String nativeBinaryDirectory = config.nativeBinaryDirectory.orElse(config.FALLBACK_NATIVE_BINARY_DIRECTORY);
             String pathToNativeBinary = concatUnixPaths(nativeBinaryDirectory, nativeBinaryFileName);
-
-            baseImage.ifPresent(b -> {
-                envProducer.produce(
-                        KubernetesEnvBuildItem.createSimpleVar(b.getHomeDirEnvVar(), nativeBinaryDirectory, OPENSHIFT));
-                config.nativeArguments.ifPresent(nativeArguments -> {
-                    envProducer.produce(KubernetesEnvBuildItem.createSimpleVar(b.getOptsEnvVar(),
-                            String.join(" ", nativeArguments), OPENSHIFT));
-                });
-
-            });
-
             if (hasCustomNativePath || hasCustomNativeArguments) {
                 commandProducer
                         .produce(KubernetesCommandBuildItem.commandWithArgs(pathToNativeBinary, config.nativeArguments.get()));

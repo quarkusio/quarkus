@@ -28,13 +28,10 @@ public class TokenCustomizerFinder {
                 } else {
                     throw new OIDCException("Unable to find TokenCustomizer " + customizerName);
                 }
-            } else {
-                for (InstanceHandle<TokenCustomizer> tokenCustomizer : container.listAll(TokenCustomizer.class)) {
-                    TenantFeature tenantAnn = tokenCustomizer.get().getClass().getAnnotation(TenantFeature.class);
-                    if (tenantAnn != null && oidcConfig.tenantId.get().equals(tenantAnn.value())) {
-                        return tokenCustomizer.get();
-                    }
-                }
+            } else if (oidcConfig.tenantId.isPresent()) {
+                return container
+                        .instance(TokenCustomizer.class, TenantFeature.TenantFeatureLiteral.of(oidcConfig.tenantId.get()))
+                        .get();
             }
         }
         return null;

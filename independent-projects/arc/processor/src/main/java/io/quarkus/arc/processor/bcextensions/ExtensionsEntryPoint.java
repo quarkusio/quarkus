@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.Dependent;
@@ -221,7 +222,8 @@ public class ExtensionsEntryPoint {
                         if (InjectableContext.class.isAssignableFrom(contextClass)) {
                             config.contextClass((Class<? extends InjectableContext>) contextClass);
                         } else {
-                            CustomAlterableContextInfo info = customAlterableContexts.add(contextClass, context.isNormal);
+                            CustomAlterableContextInfo info = customAlterableContexts.add(contextClass, context.isNormal,
+                                    scopeAnnotation);
                             config.creator(bytecode -> {
                                 return bytecode.newInstance(MethodDescriptor.ofConstructor(info.generatedName));
                             });
@@ -271,6 +273,7 @@ public class ExtensionsEntryPoint {
      */
     public void runRegistration(org.jboss.jandex.IndexView beanArchiveIndex,
             Collection<io.quarkus.arc.processor.BeanInfo> allBeans,
+            Collection<io.quarkus.arc.processor.InterceptorInfo> allInterceptors,
             Collection<io.quarkus.arc.processor.ObserverInfo> allObservers) {
         if (invoker.isEmpty()) {
             return;
@@ -280,7 +283,7 @@ public class ExtensionsEntryPoint {
 
         try {
             new ExtensionPhaseRegistration(invoker, beanArchiveIndex, errors, annotationOverlays,
-                    allBeans, allObservers).run();
+                    allBeans, allInterceptors, allObservers).run();
         } finally {
             BuildServicesImpl.reset();
         }
@@ -311,7 +314,7 @@ public class ExtensionsEntryPoint {
      * <p>
      * It is a no-op if no {@link BuildCompatibleExtension} was found.
      */
-    public void registerSyntheticBeans(BeanRegistrar.RegistrationContext context) {
+    public void registerSyntheticBeans(BeanRegistrar.RegistrationContext context, Predicate<DotName> isApplicationClass) {
         if (invoker.isEmpty()) {
             return;
         }
@@ -423,6 +426,16 @@ public class ExtensionsEntryPoint {
                     mc.returnValue(null);
                 });
             }
+            // the generated classes need to see the `creatorClass` and the `disposerClass`,
+            // so if they are application classes, the generated classes are forced to also
+            // be application classes, even if the `implementationClass` possibly isn't
+            if (isApplicationClass.test(DotName.createSimple(syntheticBean.creatorClass))) {
+                bean.forceApplicationClass();
+            }
+            if (syntheticBean.disposerClass != null
+                    && isApplicationClass.test(DotName.createSimple(syntheticBean.disposerClass))) {
+                bean.forceApplicationClass();
+            }
             bean.done();
         }
     }
@@ -432,7 +445,8 @@ public class ExtensionsEntryPoint {
      * <p>
      * It is a no-op if no {@link BuildCompatibleExtension} was found.
      */
-    public void registerSyntheticObservers(ObserverRegistrar.RegistrationContext context) {
+    public void registerSyntheticObservers(ObserverRegistrar.RegistrationContext context,
+            Predicate<DotName> isApplicationClass) {
         if (invoker.isEmpty()) {
             return;
         }
@@ -474,6 +488,12 @@ public class ExtensionsEntryPoint {
                 // return type is void
                 mc.returnValue(null);
             });
+            // the generated classes need to see the `implementationClass`, so if it is
+            // an application class, the generated classes are forced to also be application
+            // classes, even if the `declaringClass` possibly isn't
+            if (isApplicationClass.test(DotName.createSimple(syntheticObserver.implementationClass))) {
+                observer.forceApplicationClass();
+            }
             observer.done();
         }
     }
@@ -562,7 +582,7 @@ public class ExtensionsEntryPoint {
 
         try {
             new ExtensionPhaseRegistration(invoker, beanArchiveIndex, errors, annotationOverlays,
-                    syntheticBeans, syntheticObservers).run();
+                    syntheticBeans, Collections.emptyList(), syntheticObservers).run();
         } finally {
             BuildServicesImpl.reset();
         }

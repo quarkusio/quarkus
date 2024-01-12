@@ -3,15 +3,25 @@ package io.quarkus.oidc;
 import java.util.Map;
 
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.AbstractSecurityEvent;
 
 /**
  * Security event.
  *
  */
-public class SecurityEvent {
+public class SecurityEvent extends AbstractSecurityEvent {
     public static final String SESSION_TOKENS_PROPERTY = "session-tokens";
+    public static final String AUTH_SERVER_URL = "auth-server-url";
 
     public enum Type {
+        /**
+         * OIDC connection event which is reported when an attempt to connect to the OIDC server has failed.
+         */
+        OIDC_SERVER_NOT_AVAILABLE,
+        /**
+         * OIDC connection event which is reported when a connection to the OIDC server has been recovered.
+         */
+        OIDC_SERVER_AVAILABLE,
         /**
          * OIDC Login event which is reported after the first user authentication but also when the user's session
          * has expired and the user has re-authenticated at the OIDC provider site.
@@ -58,30 +68,19 @@ public class SecurityEvent {
     }
 
     private final Type eventType;
-    private final SecurityIdentity securityIdentity;
-    private final Map<String, Object> eventProperties;
 
     public SecurityEvent(Type eventType, SecurityIdentity securityIdentity) {
+        super(securityIdentity, null);
         this.eventType = eventType;
-        this.securityIdentity = securityIdentity;
-        this.eventProperties = Map.of();
     }
 
     public SecurityEvent(Type eventType, Map<String, Object> eventProperties) {
+        super(null, eventProperties);
         this.eventType = eventType;
-        this.securityIdentity = null;
-        this.eventProperties = eventProperties;
     }
 
     public Type getEventType() {
         return eventType;
     }
 
-    public SecurityIdentity getSecurityIdentity() {
-        return securityIdentity;
-    }
-
-    public Map<String, Object> getEventProperties() {
-        return eventProperties;
-    }
 }

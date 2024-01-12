@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: writing-extensions
 :summary: How capabilities are implemented and used in Quarkus.
+:topics: extensions
 
 Quarkus extensions may provide certain capabilities and require certain capabilities to be provided by other extensions in an application to function properly.
 
@@ -146,7 +147,7 @@ quarkusExtension {
 NOTE: It is possible to specify `onlyIfNot` conditions as well. . Conditions can also be set for required capabilities.
 ****
 
-In this case, `io.quarkus.container.image.openshift.deployment.OpenshiftBuild` should be included in one of the extension deployment dependencies and implement `java.util.function.BooleanSupplier`. At build time, the Quarkus bootstrap will create an instance of it and register `io.quarkus.container.image.openshift` capability only if its `getAsBoolean()` method returns true. 
+In this case, `io.quarkus.container.image.openshift.deployment.OpenshiftBuild` should be included in one of the extension deployment dependencies and implement `java.util.function.BooleanSupplier`. At build time, the Quarkus bootstrap will create an instance of it and register `io.quarkus.container.image.openshift` capability only if its `getAsBoolean()` method returns true.
 
 An implementation of the `OpenshiftBuild` could look like this:
 [source,java]

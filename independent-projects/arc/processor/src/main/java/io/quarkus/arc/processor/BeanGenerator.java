@@ -200,7 +200,7 @@ public class BeanGenerator extends AbstractGenerator {
         }
 
         String baseName = declaringClassBase + PRODUCER_METHOD_SUFFIX + UNDERSCORE + producerMethod.name() + UNDERSCORE
-                + Hashes.sha1(sigBuilder.toString());
+                + Hashes.sha1_base64(sigBuilder.toString());
         this.beanToGeneratedBaseName.put(bean, baseName);
         String targetPackage = DotNames.packageName(declaringClass.name());
         String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);

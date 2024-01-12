@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: compatibility
 :summary: Spring Data REST simplifies the creation of CRUD applications based on our Spring Data compatibility layer.
+:topics: spring,data,hibernate-orm,jpa,rest,compatibility
+:extensions: io.quarkus:quarkus-spring-data-rest
 
 While users are encouraged to use REST Data with Panache for the REST data access endpoints generation,
 Quarkus provides a compatibility layer for Spring Data REST in the form of the `spring-data-rest` extension.

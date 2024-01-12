@@ -1,7 +1,13 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
 = Automate Quarkus deployment with Ansible
 include::_attributes.adoc[]
 :categories: command-line
 :summary: Build and deploy your Quarkus App using Ansible
+:topics: ansible,devops
 
 
 Let’s see how to build and deploy a Quarkus app using https://docs.ansible.com/ansible/latest/index.html[Ansible]. We’ll see how we can automate the entire process, from the code checkout to the application compilation using Maven and then its deployment and start of the service, as a https://systemd.io/[systemd service], on the target system using Ansible and its collection for Quarkus.
@@ -161,7 +167,7 @@ By default, the Ansible collection for Quarkus will install and use the OpenJDK 
 [source,bash]
 ----
 $ ansible-playbook -i inventory ...
-    -e quarkus_java_package_version: java-11-openjdk
+    -e quarkus_java_package_version: java-17-openjdk
 ----
 ====
 

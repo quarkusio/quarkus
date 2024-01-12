@@ -34,6 +34,7 @@ import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchDevServicesBuildTimeConfig.Distribution;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -220,16 +221,18 @@ public class DevServicesElasticsearchProcessor {
                 container.withLabel(DEV_SERVICE_LABEL, config.serviceName);
             }
             if (config.port.isPresent()) {
-                container.setPortBindings(List.of(config.port.get() + ":" + config.port.get()));
+                container.setPortBindings(List.of(config.port.get() + ":" + ELASTICSEARCH_PORT));
             }
             timeout.ifPresent(container::withStartupTimeout);
 
             container.withEnv(config.containerEnv);
 
+            container.withReuse(config.reuse);
+
             container.start();
             return new DevServicesResultBuildItem.RunningDevService(Feature.ELASTICSEARCH_REST_CLIENT_COMMON.getName(),
                     container.getContainerId(),
-                    container::close,
+                    new ContainerShutdownCloseable(container, "Elasticsearch"),
                     buildPropertiesMap(buildItemConfig,
                             container.getHost() + ":" + container.getMappedPort(ELASTICSEARCH_PORT)));
         };
@@ -268,7 +271,11 @@ public class DevServicesElasticsearchProcessor {
 
         container.addEnv("bootstrap.memory_lock", "true");
         container.addEnv("plugins.index_state_management.enabled", "false");
-
+        // Disable disk-based shard allocation thresholds: on large, relatively full disks (>90% used),
+        // it will lead to index creation to get stuck waiting for other nodes to join the cluster,
+        // which will never happen since we only have one node.
+        // See https://opensearch.org/docs/latest/api-reference/cluster-api/cluster-settings/
+        container.addEnv("cluster.routing.allocation.disk.threshold_enabled", "false");
         container.addEnv("OPENSEARCH_JAVA_OPTS", config.javaOpts);
         return container;
     }

@@ -18,8 +18,8 @@ public class AvroIDLCodeGenProvider extends AvroCodeGenProviderBase implements C
     }
 
     @Override
-    public String inputExtension() {
-        return "avdl";
+    public String[] inputExtensions() {
+        return new String[] { "avdl" };
     }
 
     @Override

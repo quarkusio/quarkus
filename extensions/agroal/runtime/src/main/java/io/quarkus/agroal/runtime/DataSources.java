@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Default;
@@ -122,6 +123,10 @@ public class DataSources {
                 .getDataSource(dataSourceName);
     }
 
+    public boolean isDataSourceCreated(String dataSourceName) {
+        return dataSources.containsKey(dataSourceName);
+    }
+
     public AgroalDataSource getDataSource(String dataSourceName) {
         return dataSources.computeIfAbsent(dataSourceName, new Function<String, AgroalDataSource>() {
             @Override
@@ -129,6 +134,13 @@ public class DataSources {
                 return doCreateDataSource(s);
             }
         });
+    }
+
+    @PostConstruct
+    public void start() {
+        for (String dataSourceName : dataSourceSupport.entries.keySet()) {
+            getDataSource(dataSourceName);
+        }
     }
 
     @SuppressWarnings("resource")
@@ -140,6 +152,7 @@ public class DataSources {
         DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig
                 .dataSources().get(dataSourceName).jdbc();
         DataSourceRuntimeConfig dataSourceRuntimeConfig = dataSourcesRuntimeConfig.dataSources().get(dataSourceName);
+
         DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig
                 .getDataSourceJdbcRuntimeConfig(dataSourceName);
 

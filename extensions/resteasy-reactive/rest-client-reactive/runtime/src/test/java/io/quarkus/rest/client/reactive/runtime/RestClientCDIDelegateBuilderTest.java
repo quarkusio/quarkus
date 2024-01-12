@@ -1,9 +1,11 @@
 package io.quarkus.rest.client.reactive.runtime;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.math.BigInteger;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -16,21 +18,19 @@ import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
-import org.junit.jupiter.api.AfterEach;
+import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
-import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
 import io.quarkus.restclient.config.RestClientConfig;
 import io.quarkus.restclient.config.RestClientMultipartConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
+import io.quarkus.runtime.configuration.MemorySize;
 
 @SuppressWarnings({ "SameParameterValue" })
 public class RestClientCDIDelegateBuilderTest {
@@ -38,33 +38,45 @@ public class RestClientCDIDelegateBuilderTest {
     private static final String TRUSTSTORE_PASSWORD = "truststorePassword";
     private static final String KEYSTORE_PASSWORD = "keystorePassword";
 
-    @TempDir
-    static File tempDir;
-    private static File truststoreFile;
-    private static File keystoreFile;
-    private static Config createdConfig;
+    private static Path truststorePath;
+    private static Path keystorePath;
 
     @BeforeAll
     public static void beforeAll() throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
         // prepare keystore and truststore
 
-        truststoreFile = new File(tempDir, "truststore.jks");
-        keystoreFile = new File(tempDir, "keystore.jks");
+        truststorePath = Files.createTempFile("truststore", ".jks");
 
-        KeyStore truststore = KeyStore.getInstance("JKS");
-        truststore.load(null, TRUSTSTORE_PASSWORD.toCharArray());
-        truststore.store(new FileOutputStream(truststoreFile), TRUSTSTORE_PASSWORD.toCharArray());
+        try (OutputStream truststoreOs = Files.newOutputStream(truststorePath)) {
+            KeyStore truststore = KeyStore.getInstance("JKS");
+            truststore.load(null, TRUSTSTORE_PASSWORD.toCharArray());
+            truststore.store(truststoreOs, TRUSTSTORE_PASSWORD.toCharArray());
+        }
 
-        KeyStore keystore = KeyStore.getInstance("JKS");
-        keystore.load(null, KEYSTORE_PASSWORD.toCharArray());
-        keystore.store(new FileOutputStream(keystoreFile), KEYSTORE_PASSWORD.toCharArray());
+        keystorePath = Files.createTempFile("keystore", ".jks");
+
+        try (OutputStream keystoreOs = Files.newOutputStream(keystorePath)) {
+            KeyStore keystore = KeyStore.getInstance("JKS");
+            keystore.load(null, KEYSTORE_PASSWORD.toCharArray());
+            keystore.store(keystoreOs, KEYSTORE_PASSWORD.toCharArray());
+        }
     }
 
-    @AfterEach
-    public void afterEach() {
-        if (createdConfig != null) {
-            ConfigProviderResolver.instance().releaseConfig(createdConfig);
-            createdConfig = null;
+    @AfterAll
+    public static void afterAll() {
+        if (truststorePath != null) {
+            try {
+                Files.deleteIfExists(truststorePath);
+            } catch (IOException e) {
+                // ignore it
+            }
+        }
+        if (keystorePath != null) {
+            try {
+                Files.deleteIfExists(keystorePath);
+            } catch (IOException e) {
+                // ignore it
+            }
         }
     }
 
@@ -89,7 +101,7 @@ public class RestClientCDIDelegateBuilderTest {
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.SHARED, true);
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.NAME, "my-client");
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE,
-                HttpPostRequestEncoder.EncoderMode.HTML5);
+                PausableHttpPostRequestEncoder.EncoderMode.HTML5);
 
         Mockito.verify(restClientBuilderMock).proxyAddress("host1", 123);
         Mockito.verify(restClientBuilderMock).proxyUser("proxyUser1");
@@ -131,7 +143,7 @@ public class RestClientCDIDelegateBuilderTest {
 
         Mockito.verify(restClientBuilderMock).baseUri(URI.create("http://localhost:8080"));
         Mockito.verify(restClientBuilderMock)
-                .property(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE, HttpPostRequestEncoder.EncoderMode.HTML5);
+                .property(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE, PausableHttpPostRequestEncoder.EncoderMode.HTML5);
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.DISABLE_CONTEXTUAL_ERROR_MESSAGES, true);
 
         Mockito.verify(restClientBuilderMock).proxyAddress("host2", 123);
@@ -179,14 +191,15 @@ public class RestClientCDIDelegateBuilderTest {
         configRoot.multipart = new RestClientMultipartConfig();
         configRoot.multipart.maxChunkSize = Optional.of(1024);
         configRoot.followRedirects = Optional.of(true);
+        configRoot.maxChunkSize = Optional.of(new MemorySize(BigInteger.valueOf(1024)));
         configRoot.providers = Optional
                 .of("io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilderTest$MyResponseFilter2");
         configRoot.queryParamStyle = Optional.of(QueryParamStyle.MULTI_PAIRS);
 
-        configRoot.trustStore = Optional.of(truststoreFile.getAbsolutePath());
+        configRoot.trustStore = Optional.of(truststorePath.toAbsolutePath().toString());
         configRoot.trustStorePassword = Optional.of("truststorePassword");
         configRoot.trustStoreType = Optional.of("JKS");
-        configRoot.keyStore = Optional.of(keystoreFile.getAbsolutePath());
+        configRoot.keyStore = Optional.of(keystorePath.toAbsolutePath().toString());
         configRoot.keyStorePassword = Optional.of("keystorePassword");
         configRoot.keyStoreType = Optional.of("JKS");
 
@@ -217,15 +230,15 @@ public class RestClientCDIDelegateBuilderTest {
         clientConfig.maxRedirects = Optional.of(104);
         clientConfig.followRedirects = Optional.of(true);
         clientConfig.multipart = new RestClientMultipartConfig();
-        clientConfig.multipart.maxChunkSize = Optional.of(1024);
+        clientConfig.maxChunkSize = Optional.of(new MemorySize(BigInteger.valueOf(1024)));
         clientConfig.providers = Optional
                 .of("io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilderTest$MyResponseFilter1");
         clientConfig.queryParamStyle = Optional.of(QueryParamStyle.COMMA_SEPARATED);
 
-        clientConfig.trustStore = Optional.of(truststoreFile.getAbsolutePath());
+        clientConfig.trustStore = Optional.of(truststorePath.toAbsolutePath().toString());
         clientConfig.trustStorePassword = Optional.of("truststorePassword");
         clientConfig.trustStoreType = Optional.of("JKS");
-        clientConfig.keyStore = Optional.of(keystoreFile.getAbsolutePath());
+        clientConfig.keyStore = Optional.of(keystorePath.toAbsolutePath().toString());
         clientConfig.keyStorePassword = Optional.of("keystorePassword");
         clientConfig.keyStoreType = Optional.of("JKS");
 

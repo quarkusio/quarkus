@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>quarkus-resteasy-qute-deployment</artifactId>
-    <name>Quarkus - RESTEasy - Qute - Deployment</name>
+    <name>Quarkus - RESTEasy Classic - Qute - Deployment</name>
 
     <dependencies>
         <dependency>

@@ -14,4 +14,10 @@ public class ArcDevModeConfig {
     @ConfigItem(defaultValue = "false")
     public boolean monitoringEnabled;
 
+    /**
+     * If set to true then the dependency graphs are generated and available in the Dev UI.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean generateDependencyGraphs;
+
 }

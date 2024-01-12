@@ -23,11 +23,11 @@ public class DevServicesConfig {
     public boolean enabled = true;
 
     /**
-     * The container image name to use, for container based DevServices providers.
+     * The container image name to use, for container-based DevServices providers.
      *
      * Image with a Quarkus based distribution is used by default.
      * Image with a WildFly based distribution can be selected instead, for example:
-     * 'quay.io/keycloak/keycloak:19.0.3-legacy'.
+     * `quay.io/keycloak/keycloak:19.0.3-legacy`.
      * <p>
      * Note Keycloak Quarkus and Keycloak WildFly images are initialized differently.
      * By default, Dev Services for Keycloak will assume it is a Keycloak Quarkus image if the image version does not end with a
@@ -35,7 +35,7 @@ public class DevServicesConfig {
      * string.
      * Set 'quarkus.keycloak.devservices.keycloak-x-image' to override this check.
      */
-    @ConfigItem(defaultValue = "quay.io/keycloak/keycloak:22.0.3")
+    @ConfigItem(defaultValue = "quay.io/keycloak/keycloak:23.0.3")
     public String imageName;
 
     /**
@@ -85,6 +85,20 @@ public class DevServicesConfig {
     public Optional<List<String>> realmPath;
 
     /**
+     * Aliases to additional class or file system resources which will be used to initialize Keycloak.
+     * Each map entry represents a mapping between an alias and a class or file system resource path.
+     */
+    @ConfigItem
+    public Map<String, String> resourceAliases;
+    /**
+     * Additional class or file system resources which will be used to initialize Keycloak.
+     * Each map entry represents a mapping between a class or file system resource path alias and the Keycloak container
+     * location.
+     */
+    @ConfigItem
+    public Map<String, String> resourceMappings;
+
+    /**
      * The JAVA_OPTS passed to the keycloak JVM
      */
     @ConfigItem
@@ -106,17 +120,17 @@ public class DevServicesConfig {
 
     /**
      * The Keycloak realm name.
-     * This property will be used to create the realm if the realm file pointed to by the 'realm-path' property does not exist,
-     * default value is 'quarkus' in this case.
-     * If the realm file pointed to by the 'realm-path' property exists then it is still recommended to set this property
-     * for Dev Services for Keycloak to avoid parsing the realm file in order to determine the realm name.
+     * This property will be used to create the realm if the realm file pointed to by the `realm-path` property does not exist,
+     * default value is `quarkus` in this case.
+     * If the realm file pointed to by the `realm-path` property exists then it is still recommended to set this property
+     * for Dev Services for Keycloak to avoid parsing the realm file to determine the realm name.
      *
      */
     @ConfigItem
     public Optional<String> realmName;
 
     /**
-     * Indicates if the Keycloak realm has to be created when the realm file pointed to by the 'realm-path' property does not
+     * Indicates if the Keycloak realm has to be created when the realm file pointed to by the `realm-path` property does not
      * exist.
      *
      * Disable it if you'd like to create a realm using Keycloak Administration Console
@@ -128,7 +142,7 @@ public class DevServicesConfig {
     /**
      * The Keycloak users map containing the username and password pairs.
      * If this map is empty then two users, 'alice' and 'bob' with the passwords matching their names will be created.
-     * This property will be used to create the Keycloak users if the realm file pointed to by the 'realm-path' property does
+     * This property will be used to create the Keycloak users if the realm file pointed to by the `realm-path` property does
      * not exist.
      */
     @ConfigItem
@@ -138,7 +152,7 @@ public class DevServicesConfig {
      * The Keycloak user roles.
      * If this map is empty then a user named 'alice' will get 'admin' and 'user' roles and all other users will get a 'user'
      * role.
-     * This property will be used to create the Keycloak roles if the realm file pointed to by the 'realm-path' property does
+     * This property will be used to create the Keycloak roles if the realm file pointed to by the `realm-path` property does
      * not exist.
      */
     @ConfigItem

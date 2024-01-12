@@ -3,9 +3,8 @@ package io.quarkus.vertx.http.management;
 import java.io.File;
 import java.util.function.Consumer;
 
-import javax.inject.Singleton;
-
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Singleton;
 
 import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;

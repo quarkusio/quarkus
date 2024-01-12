@@ -276,8 +276,6 @@ public class KafkaProcessor {
                 .produce(ReflectiveClassBuildItem.builder(StickyAssignor.class.getName()).build());
 
         handleAvro(reflectiveClass, proxies, serviceProviders, sslNativeSupport, capabilities);
-        handleOpenTracing(reflectiveClass, capabilities);
-        handleStrimziOAuth(curateOutcomeBuildItem, reflectiveClass);
 
     }
 
@@ -315,43 +313,6 @@ public class KafkaProcessor {
     void checkBoostrapServers(KafkaRecorder recorder, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
             recorder.checkBoostrapServers();
-        }
-    }
-
-    private void handleOpenTracing(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, Capabilities capabilities) {
-        //opentracing contrib kafka interceptors: https://github.com/opentracing-contrib/java-kafka-client
-        if (!capabilities.isPresent(Capability.OPENTRACING)
-                || !QuarkusClassLoader.isClassPresentAtRuntime("io.opentracing.contrib.kafka.TracingProducerInterceptor")) {
-            return;
-        }
-
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.opentracing.contrib.kafka.TracingProducerInterceptor",
-                "io.opentracing.contrib.kafka.TracingConsumerInterceptor").methods()
-                .build());
-    }
-
-    private void handleStrimziOAuth(CurateOutcomeBuildItem curateOutcomeBuildItem,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        if (!QuarkusClassLoader.isClassPresentAtRuntime("io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler")) {
-            return;
-        }
-
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder("io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler")
-                        .methods().fields().build());
-
-        if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream().anyMatch(
-                x -> x.getGroupId().equals("org.keycloak") && x.getArtifactId().equals("keycloak-core"))) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder("org.keycloak.jose.jws.JWSHeader",
-                    "org.keycloak.representations.AccessToken",
-                    "org.keycloak.representations.AccessToken$Access",
-                    "org.keycloak.representations.AccessTokenResponse",
-                    "org.keycloak.representations.IDToken",
-                    "org.keycloak.representations.JsonWebToken",
-                    "org.keycloak.jose.jwk.JSONWebKeySet",
-                    "org.keycloak.jose.jwk.JWK",
-                    "org.keycloak.json.StringOrArrayDeserializer",
-                    "org.keycloak.json.StringListMapDeserializer").methods().fields().build());
         }
     }
 
@@ -395,11 +356,18 @@ public class KafkaProcessor {
                     "java.lang.AutoCloseable"));
         }
 
-        // --- Apicurio Registry 2.x ---
+        // --- Apicurio Registry 2.x Avro ---
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.apicurio.registry.serde.avro.AvroKafkaDeserializer")
                 && !capabilities.isPresent(Capability.APICURIO_REGISTRY_AVRO)) {
             throw new RuntimeException(
                     "Apicurio Registry 2.x Avro classes detected, please use the quarkus-apicurio-registry-avro extension");
+        }
+
+        // --- Apicurio Registry 2.x Json Schema ---
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.apicurio.registry.serde.avro.JsonKafkaDeserializer")
+                && !capabilities.isPresent(Capability.APICURIO_REGISTRY_JSON_SCHEMA)) {
+            throw new RuntimeException(
+                    "Apicurio Registry 2.x Json classes detected, please use the quarkus-apicurio-registry-json extension");
         }
     }
 

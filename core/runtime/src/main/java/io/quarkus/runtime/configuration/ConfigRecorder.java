@@ -10,6 +10,7 @@ import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationRuntimeConfig.BuildTimeMismatchAtRuntime;
 import io.smallrye.config.SmallRyeConfig;
@@ -96,5 +97,17 @@ public class ConfigRecorder {
                         + "'. This may lead to unexpected results.");
             }
         }
+    }
+
+    public void unknownConfigFiles() throws Exception {
+        ConfigDiagnostic.unknownConfigFiles(ConfigDiagnostic.configFilesFromLocations());
+    }
+
+    public void releaseConfig(ShutdownContext shutdownContext) {
+        // This is mostly useful to handle restarts in Dev/Test mode.
+        // While this may seem to duplicate code in IsolatedDevModeMain,
+        // it actually does not because it operates on a different instance
+        // of QuarkusConfigFactory from a different classloader.
+        shutdownContext.addLastShutdownTask(QuarkusConfigFactory::releaseTCCLConfig);
     }
 }

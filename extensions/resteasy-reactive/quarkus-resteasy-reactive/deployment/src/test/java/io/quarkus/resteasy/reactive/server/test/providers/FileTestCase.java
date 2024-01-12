@@ -41,6 +41,41 @@ public class FileTestCase {
                 .statusCode(200)
                 .header(HttpHeaders.CONTENT_LENGTH, contentLength)
                 .body(Matchers.equalTo(content));
+        RestAssured.given().header("Range", "bytes=0-9").get("/providers/file/file")
+                .then()
+                .statusCode(206)
+                .header(HttpHeaders.CONTENT_LENGTH, "10")
+                .header("Content-Range", "bytes 0-9/" + contentLength)
+                .body(Matchers.equalTo(content.substring(0, 10)));
+        RestAssured.given().header("Range", "bytes=10-19").get("/providers/file/file")
+                .then()
+                .statusCode(206)
+                .header(HttpHeaders.CONTENT_LENGTH, "10")
+                .header("Content-Range", "bytes 10-19/" + contentLength)
+                .body(Matchers.equalTo(content.substring(10, 20)));
+        RestAssured.given().header("Range", "bytes=10-").get("/providers/file/file")
+                .then()
+                .statusCode(206)
+                .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(content.length() - 10))
+                .header("Content-Range", "bytes 10-" + (content.length() - 1) + "/" + contentLength)
+                .body(Matchers.equalTo(content.substring(10)));
+        RestAssured.given().header("Range", "bytes=-10").get("/providers/file/file")
+                .then()
+                .statusCode(206)
+                .header(HttpHeaders.CONTENT_LENGTH, "10")
+                .header("Content-Range",
+                        "bytes " + (content.length() - 10) + "-" + (content.length() - 1) + "/" + contentLength)
+                .body(Matchers.equalTo(content.substring((content.length() - 10))));
+        RestAssured.given().header("Range", "bytes=" + (content.length() + 1) + "-").get("/providers/file/file")
+                .then()
+                .statusCode(200)
+                .header(HttpHeaders.CONTENT_LENGTH, contentLength)
+                .body(Matchers.equalTo(content));
+        RestAssured.given().header("Range", "bytes=0-1, 3-4").get("/providers/file/file")
+                .then()
+                .statusCode(200)
+                .header(HttpHeaders.CONTENT_LENGTH, contentLength)
+                .body(Matchers.equalTo(content));
         RestAssured.get("/providers/file/file-partial")
                 .then()
                 .statusCode(200)

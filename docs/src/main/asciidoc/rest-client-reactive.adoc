@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web
 :summary: This guide explains how to use the RESTEasy Reactive REST Client.
+:topics: rest,rest-client,resteasy-reactive
+:extensions: io.quarkus:quarkus-rest-client-reactive,io.quarkus:quarkus-rest-client-reactive-jackson,io.quarkus:quarkus-rest-client-reactive-jsonb
 
 This guide explains how to use the REST Client Reactive in order to interact with REST APIs.
 REST Client Reactive is the REST Client implementation compatible with RESTEasy Reactive.
@@ -322,6 +324,98 @@ public interface ExtensionsService {
     Set<Extension> getByStream(@PathParam("stream") String stream, @QueryParam("id") String id);
 }
 ----
+
+
+=== Using ClientMultipartForm
+
+MultipartForm can be built using the Class `ClientMultipartForm` which supports building the form as needed:
+
+`ClientMultipartForm` can be programmatically created with custom inputs and/or from `MultipartFormDataInput` and/or from custom Resteasy Reactive Input annotated with `@RestForm` if received.
+
+[source, java]
+----
+public interface MultipartService {
+
+  @POST
+  @Path("/multipart")
+  @Consumes(MediaType.MULTIPART_FORM_DATA)
+  @Produces(MediaType.APPLICATION_JSON)
+  Map<String, String> multipart(ClientMultipartForm dataParts); // <1>
+}
+----
+
+<1> input to the method is a custom Generic `ClientMultipartForm` which matches external application api contract.
+
+
+More information about this Class and supported methods can be found on the javadoc of link:https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-client/latest/org/jboss/resteasy/reactive/client/api/ClientMultipartForm.html[`ClientMultipartForm`].
+
+
+Build `ClientMultipartForm` from `MultipartFormDataInput` programmatically
+
+[source, java]
+----
+public ClientMultipartForm buildClientMultipartForm(MultipartFormDataInput inputForm) // <1>
+    throws IOException {
+  ClientMultipartForm multiPartForm = ClientMultipartForm.create(); // <2>
+  for (Entry<String, Collection<FormValue>> attribute : inputForm.getValues().entrySet()) {
+    for (FormValue fv : attribute.getValue()) {
+      if (fv.isFileItem()) {
+        final FileItem fi = fv.getFileItem();
+        String mediaType = Objects.toString(fv.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE),
+            MediaType.APPLICATION_OCTET_STREAM);
+        if (fi.isInMemory()) {
+          multiPartForm.binaryFileUpload(attribute.getKey(), fv.getFileName(),
+              Buffer.buffer(IOUtils.toByteArray(fi.getInputStream())), mediaType); // <3>
+        } else {
+          multiPartForm.binaryFileUpload(attribute.getKey(), fv.getFileName(),
+              fi.getFile().toString(), mediaType); // <4>
+        }
+      } else {
+        multiPartForm.attribute(attribute.getKey(), fv.getValue(), fv.getFileName()); // <5>
+      }
+    }
+  }
+  return multiPartForm;
+}
+----
+
+<1> `MultipartFormDataInput` inputForm supported by RestEasy Reactive (Server).
+<2> Creating a `ClientMultipartForm` object to populate with various dataparts.
+<3> Adding InMemory `FileItem` to `ClientMultipartForm`
+<4> Adding physical `FileItem` to `ClientMultipartForm`
+<5> Adding any attribute directly to `ClientMultipartForm` if not `FileItem`.
+
+Build `ClientMultipartForm` from custom Attributes annotated with `@RestForm`
+
+[source, java]
+----
+public class MultiPartPayloadFormData { // <1>
+
+  @RestForm("files")
+  @PartType(MediaType.APPLICATION_OCTET_STREAM)
+  List<FileUpload> files;
+
+  @RestForm("jsonPayload")
+  @PartType(MediaType.TEXT_PLAIN)
+  String jsonPayload;
+}
+
+/*
+ * Generate ClientMultipartForm from custom attributes annotated with @RestForm
+ */
+public ClientMultipartForm buildClientMultipartForm(MultiPartPayloadFormData inputForm) { // <1>
+  ClientMultipartForm multiPartForm = ClientMultipartForm.create();
+  multiPartForm.attribute("jsonPayload", inputForm.getJsonPayload(), "jsonPayload"); // <2>
+  inputForm.getFiles().forEach(fu -> {
+    multiPartForm.binaryFileUpload("file", fu.name(), fu.filePath().toString(), fu.contentType()); // <3>
+  });
+  return multiPartForm;
+}
+----
+
+<1> `MultiPartPayloadFormData` custom Object created to match the API contract for calling service which needs to be converted to `ClientMultipartForm`
+<2> Adding attribute `jsonPayload` directly to `ClientMultipartForm`
+<3> Adding `FileUpload` objects to `ClientMultipartForm` as binaryFileUpload with contentType.
 
 
 == Create the configuration
@@ -881,6 +975,107 @@ If you use a `CompletionStage`, you would need to call the service's method to r
 This difference comes from the laziness aspect of Mutiny and its subscription protocol.
 More details about this can be found in https://smallrye.io/smallrye-mutiny/latest/reference/uni-and-multi/[the Mutiny documentation].
 
+=== Server-Sent Event (SSE) support
+
+Consuming SSE events is possible simply by declaring the result type as a `io.smallrye.mutiny.Multi`.
+
+The simplest example is:
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import io.smallrye.mutiny.Multi;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("/sse")
+@RegisterRestClient(configKey = "some-api")
+public interface SseClient {
+     @GET
+     @Produces(MediaType.SERVER_SENT_EVENTS)
+     Multi<String> get();
+}
+----
+
+[NOTE]
+====
+All the IO involved in streaming the SSE results is done in a non-blocking manner.
+====
+
+Results are not limited to strings - for example when the server returns JSON payload for each event, Quarkus automatically deserializes it into the generic type used in the `Multi`.
+
+[TIP]
+====
+Users can also access the entire SSE event by using the `org.jboss.resteasy.reactive.client.SseEvent` type.
+
+A simple example where the event payloads are `Long` values is the following:
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import io.smallrye.mutiny.Uni;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.reactive.client.SseEvent;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+
+@Path("/sse")
+@RegisterRestClient(configKey = "some-api")
+public interface SseClient {
+     @GET
+     @Produces(MediaType.SERVER_SENT_EVENTS)
+     Multi<SseEvent<Long>> get();
+}
+----
+====
+
+==== Filtering out events
+
+On occasion, the stream of SSE events may contain some events that should not be returned by the client - an example of this is having the server send heartbeat events in order to keep the underlying TCP connection open.
+The REST Client supports filtering out such events by providing the `@org.jboss.resteasy.reactive.client.SseEventFilter`.
+
+Here is an example of filtering out heartbeat events:
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import io.smallrye.mutiny.Uni;
+import java.util.function.Predicate;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.reactive.client.SseEvent;
+import org.jboss.resteasy.reactive.client.SseEventFilter;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+
+@Path("/sse")
+@RegisterRestClient(configKey = "some-api")
+public interface SseClient {
+
+     @GET
+     @Produces(MediaType.SERVER_SENT_EVENTS)
+     @SseEventFilter(HeartbeatFilter.class)
+     Multi<SseEvent<Long>> get();
+
+
+     class HeartbeatFilter implements Predicate<SseEvent<String>> {
+
+        @Override
+        public boolean test(SseEvent<String> event) {
+            return !"heartbeat".equals(event.id());
+        }
+     }
+}
+----
+
 == Custom headers support
 
 There are a few ways in which you can specify custom headers for your REST calls:
@@ -1103,7 +1298,7 @@ public class TestClientRequestFilter implements ResteasyReactiveClientRequestFil
 
 == Customizing the ObjectMapper in REST Client Reactive Jackson
 
-The REST Client Reactive supports adding a custom ObjectMapper to be used only the Client using the annotation `@ClientObjectMapper`. 
+The REST Client Reactive supports adding a custom ObjectMapper to be used only the Client using the annotation `@ClientObjectMapper`.
 
 A simple example is to provide a custom ObjectMapper to the REST Client Reactive Jackson extension by doing:
 
@@ -1127,7 +1322,7 @@ public interface ExtensionsService {
 
 <1> The method must be annotated with `@ClientObjectMapper`.
 <2> It's must be a static method. Also, the parameter `defaultObjectMapper` will be resolved via CDI. If not found, it will throw an exception at runtime.
-<3> In this example, we're creating a copy of the default object mapper. You should *NEVER* modify the default object mapper, but create a copy instead. 
+<3> In this example, we're creating a copy of the default object mapper. You should *NEVER* modify the default object mapper, but create a copy instead.
 
 == Exception handling
 

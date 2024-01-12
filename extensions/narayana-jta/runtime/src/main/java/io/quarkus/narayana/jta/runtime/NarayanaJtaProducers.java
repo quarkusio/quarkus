@@ -16,6 +16,7 @@ import com.arjuna.ats.internal.jbossatx.jta.jca.XATerminator;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple;
 
 import io.quarkus.arc.Unremovable;
+import io.quarkus.narayana.jta.runtime.internal.tsr.TransactionSynchronizationRegistryWrapper;
 
 @Dependent
 public class NarayanaJtaProducers {
@@ -50,7 +51,7 @@ public class NarayanaJtaProducers {
     @ApplicationScoped
     @Unremovable
     public TransactionSynchronizationRegistry transactionSynchronizationRegistry() {
-        return new TransactionSynchronizationRegistryImple();
+        return new TransactionSynchronizationRegistryWrapper(new TransactionSynchronizationRegistryImple());
     }
 
     @Produces

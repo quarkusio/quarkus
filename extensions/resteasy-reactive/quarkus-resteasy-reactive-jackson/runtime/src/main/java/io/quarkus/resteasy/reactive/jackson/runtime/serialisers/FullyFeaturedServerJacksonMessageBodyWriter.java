@@ -38,7 +38,8 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
     private final ObjectWriter defaultWriter;
     private final ConcurrentMap<String, ObjectWriter> perMethodWriter = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, ObjectWriter> perTypeWriter = new ConcurrentHashMap<>();
-    private final ConcurrentMap<ObjectMapper, ObjectWriter> contextResolverMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Class<?>, ObjectMapper> contextResolverMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<ObjectMapper, ObjectWriter> objectWriterMap = new ConcurrentHashMap<>();
 
     @Inject
     public FullyFeaturedServerJacksonMessageBodyWriter(ObjectMapper mapper, Providers providers) {
@@ -112,7 +113,7 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
         if (effectiveMapper == originalMapper) {
             return defaultWriter;
         }
-        return contextResolverMap.computeIfAbsent(effectiveMapper, new Function<>() {
+        return objectWriterMap.computeIfAbsent(effectiveMapper, new Function<>() {
             @Override
             public ObjectWriter apply(ObjectMapper objectMapper) {
                 return createDefaultWriter(effectiveMapper);
@@ -133,7 +134,13 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
             contextResolver = providers.getContextResolver(ObjectMapper.class, null);
         }
         if (contextResolver != null) {
-            ObjectMapper mapperFromContextResolver = contextResolver.getContext(o.getClass());
+            var cr = contextResolver;
+            ObjectMapper mapperFromContextResolver = contextResolverMap.computeIfAbsent(o.getClass(), new Function<>() {
+                @Override
+                public ObjectMapper apply(Class<?> aClass) {
+                    return cr.getContext(o.getClass());
+                }
+            });
             if (mapperFromContextResolver != null) {
                 effectiveMapper = mapperFromContextResolver;
             }

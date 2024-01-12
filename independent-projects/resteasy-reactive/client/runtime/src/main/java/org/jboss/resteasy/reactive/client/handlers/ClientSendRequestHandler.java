@@ -322,22 +322,27 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                             new VertxClientInputStream(clientResponse, 100000, requestContext));
                             requestContext.resume();
                         } else {
-                            clientResponse.bodyHandler(new Handler<>() {
+                            clientResponse.body(new Handler<>() {
                                 @Override
-                                public void handle(Buffer buffer) {
-                                    if (loggingScope != LoggingScope.NONE) {
-                                        clientLogger.logResponse(clientResponse, false);
-                                    }
-                                    try {
-                                        if (buffer.length() > 0) {
-                                            requestContext.setResponseEntityStream(
-                                                    new ByteArrayInputStream(buffer.getBytes()));
-                                        } else {
-                                            requestContext.setResponseEntityStream(null);
+                                public void handle(AsyncResult<Buffer> ar) {
+                                    if (ar.succeeded()) {
+                                        if (loggingScope != LoggingScope.NONE) {
+                                            clientLogger.logResponse(clientResponse, false);
                                         }
-                                        requestContext.resume();
-                                    } catch (Throwable t) {
-                                        requestContext.resume(t);
+                                        Buffer buffer = ar.result();
+                                        try {
+                                            if (buffer.length() > 0) {
+                                                requestContext.setResponseEntityStream(
+                                                        new ByteArrayInputStream(buffer.getBytes()));
+                                            } else {
+                                                requestContext.setResponseEntityStream(null);
+                                            }
+                                            requestContext.resume();
+                                        } catch (Throwable t) {
+                                            requestContext.resume(t);
+                                        }
+                                    } else {
+                                        requestContext.resume(ar.cause());
                                     }
                                 }
                             });

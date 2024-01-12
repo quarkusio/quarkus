@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import java.lang.annotation.Annotation;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Locale;
 
@@ -11,6 +13,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.PersistenceUnitExtension;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 public class PersistenceUnitUtil {
     private static final Logger LOG = Logger.getLogger(PersistenceUnitUtil.class);
@@ -22,8 +25,10 @@ public class PersistenceUnitUtil {
     }
 
     public static <T> InjectableInstance<T> singleExtensionInstanceForPersistenceUnit(Class<T> beanType,
-            String persistenceUnitName) {
-        InjectableInstance<T> instance = extensionInstanceForPersistenceUnit(beanType, persistenceUnitName);
+            String persistenceUnitName,
+            Annotation... additionalQualifiers) {
+        InjectableInstance<T> instance = extensionInstanceForPersistenceUnit(beanType, persistenceUnitName,
+                additionalQualifiers);
         if (instance.isAmbiguous()) {
             throw new IllegalStateException(String.format(Locale.ROOT,
                     "Multiple instances of %1$s were found for persistence unit %2$s. "
@@ -33,9 +38,15 @@ public class PersistenceUnitUtil {
         return instance;
     }
 
-    public static <T> InjectableInstance<T> extensionInstanceForPersistenceUnit(Class<T> beanType, String persistenceUnitName) {
-        return Arc.container().select(beanType,
-                new PersistenceUnitExtension.Literal(persistenceUnitName));
+    public static <T> InjectableInstance<T> extensionInstanceForPersistenceUnit(Class<T> beanType, String persistenceUnitName,
+            Annotation... additionalQualifiers) {
+        if (additionalQualifiers.length == 0) {
+            return Arc.container().select(beanType, new PersistenceUnitExtension.Literal(persistenceUnitName));
+        } else {
+            Annotation[] qualifiers = Arrays.copyOf(additionalQualifiers, additionalQualifiers.length + 1);
+            qualifiers[additionalQualifiers.length] = new PersistenceUnitExtension.Literal(persistenceUnitName);
+            return Arc.container().select(beanType, qualifiers);
+        }
     }
 
     public static class PersistenceUnitNameComparator implements Comparator<String> {
@@ -93,5 +104,14 @@ public class PersistenceUnitUtil {
 
     private static <T> boolean isDefaultBean(InjectableInstance<T> instance) {
         return instance.isResolvable() && instance.getHandle().getBean().isDefaultBean();
+    }
+
+    public static ConfigurationException unableToFindDataSource(String persistenceUnitName,
+            String dataSourceName,
+            Throwable cause) {
+        return new ConfigurationException(String.format(Locale.ROOT,
+                "Unable to find datasource '%s' for persistence unit '%s': %s",
+                dataSourceName, persistenceUnitName, cause.getMessage()),
+                cause);
     }
 }

@@ -7,6 +7,7 @@ import jakarta.ws.rs.Path;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.PermissionsAllowed;
 
 @Path("/service/tenant-public-key")
 @Authenticated
@@ -16,6 +17,7 @@ public class ServiceProtectedResource {
     JsonWebToken accessToken;
 
     @GET
+    @PermissionsAllowed("read:data")
     public String getName() {
         return "tenant-public-key" + ":" + accessToken.getName();
     }

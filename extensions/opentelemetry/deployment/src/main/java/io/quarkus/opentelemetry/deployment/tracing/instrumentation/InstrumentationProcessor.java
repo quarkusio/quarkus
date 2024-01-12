@@ -20,10 +20,13 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.opentelemetry.deployment.tracing.TracerEnabled;
+import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.InstrumentationRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc.GrpcTracingClientInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc.GrpcTracingServerInterceptor;
-import io.quarkus.opentelemetry.runtime.tracing.intrumentation.reactivemessaging.ReactiveMessagingTracingDecorator;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.reactivemessaging.ReactiveMessagingTracingEmitterDecorator;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.reactivemessaging.ReactiveMessagingTracingIncomingDecorator;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.reactivemessaging.ReactiveMessagingTracingOutgoingDecorator;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.restclient.OpenTelemetryClientFilter;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.AttachExceptionHandler;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.OpenTelemetryClassicServerFilter;
@@ -69,17 +72,21 @@ public class InstrumentationProcessor {
     }
 
     @BuildStep(onlyIf = GrpcExtensionAvailable.class)
-    void grpcTracers(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingServerInterceptor.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingClientInterceptor.class));
+    void grpcTracers(BuildProducer<AdditionalBeanBuildItem> additionalBeans, OTelBuildConfig config) {
+        if (config.instrument().grpc()) {
+            additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingServerInterceptor.class));
+            additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingClientInterceptor.class));
+        }
     }
 
     @BuildStep
     void registerRestClientClassicProvider(
             Capabilities capabilities,
             BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexed,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        if (capabilities.isPresent(Capability.REST_CLIENT) && capabilities.isMissing(Capability.REST_CLIENT_REACTIVE)) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            OTelBuildConfig config) {
+        if (capabilities.isPresent(Capability.REST_CLIENT) && capabilities.isMissing(Capability.REST_CLIENT_REACTIVE)
+                && config.instrument().restClientClassic()) {
             additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(OpenTelemetryClientFilter.class.getName()));
             additionalBeans.produce(new AdditionalBeanBuildItem(OpenTelemetryClientFilter.class));
         }
@@ -88,9 +95,12 @@ public class InstrumentationProcessor {
     @BuildStep
     void registerReactiveMessagingMessageDecorator(
             Capabilities capabilities,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        if (capabilities.isPresent(Capability.SMALLRYE_REACTIVE_MESSAGING)) {
-            additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingDecorator.class));
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            OTelBuildConfig config) {
+        if (capabilities.isPresent(Capability.SMALLRYE_REACTIVE_MESSAGING) && config.instrument().reactiveMessaging()) {
+            additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingOutgoingDecorator.class));
+            additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingIncomingDecorator.class));
+            additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingEmitterDecorator.class));
         }
     }
 
@@ -111,36 +121,27 @@ public class InstrumentationProcessor {
 
     // RESTEasy and Vert.x web
     @BuildStep
-    void registerResteasyClassicAndOrResteasyReactiveProvider(
+    void registerResteasyClassicAndOrResteasyReactiveProvider(OTelBuildConfig config,
             Capabilities capabilities,
             BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProviderBuildItemBuildProducer) {
-
-        boolean isResteasyClassicAvailable = capabilities.isPresent(Capability.RESTEASY);
-
-        if (!isResteasyClassicAvailable) {
-            // if RestEasy is not available then no need to continue
-            return;
+        if (capabilities.isPresent(Capability.RESTEASY) && config.instrument().resteasyClassic()) {
+            resteasyJaxrsProviderBuildItemBuildProducer
+                    .produce(new ResteasyJaxrsProviderBuildItem(OpenTelemetryClassicServerFilter.class.getName()));
         }
-
-        resteasyJaxrsProviderBuildItemBuildProducer
-                .produce(new ResteasyJaxrsProviderBuildItem(OpenTelemetryClassicServerFilter.class.getName()));
     }
 
     @BuildStep
     void resteasyReactiveIntegration(
             Capabilities capabilities,
             BuildProducer<CustomContainerRequestFilterBuildItem> containerRequestFilterBuildItemBuildProducer,
-            BuildProducer<PreExceptionMapperHandlerBuildItem> preExceptionMapperHandlerBuildItemBuildProducer) {
-
-        if (!capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
-            // if RESTEasy Reactive is not available then no need to continue
-            return;
+            BuildProducer<PreExceptionMapperHandlerBuildItem> preExceptionMapperHandlerBuildItemBuildProducer,
+            OTelBuildConfig config) {
+        if (capabilities.isPresent(Capability.RESTEASY_REACTIVE) && config.instrument().resteasyReactive()) {
+            containerRequestFilterBuildItemBuildProducer
+                    .produce(new CustomContainerRequestFilterBuildItem(OpenTelemetryReactiveServerFilter.class.getName()));
+            preExceptionMapperHandlerBuildItemBuildProducer
+                    .produce(new PreExceptionMapperHandlerBuildItem(new AttachExceptionHandler()));
         }
 
-        containerRequestFilterBuildItemBuildProducer
-                .produce(new CustomContainerRequestFilterBuildItem(OpenTelemetryReactiveServerFilter.class.getName()));
-        preExceptionMapperHandlerBuildItemBuildProducer
-                .produce(new PreExceptionMapperHandlerBuildItem(new AttachExceptionHandler()));
     }
-
 }

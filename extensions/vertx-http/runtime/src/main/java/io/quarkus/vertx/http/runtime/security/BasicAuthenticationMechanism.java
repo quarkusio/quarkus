@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
@@ -41,6 +42,8 @@ import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -52,19 +55,6 @@ import io.vertx.ext.web.RoutingContext;
 public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism {
 
     private static final Logger log = Logger.getLogger(BasicAuthenticationMechanism.class);
-
-    public static final String SILENT = "silent";
-    public static final String CHARSET = "charset";
-    /**
-     * A comma separated list of patterns and charsets. The pattern is a regular expression.
-     *
-     * Because different browsers use different encodings this allows for the correct encoding to be selected based
-     * on the current browser. In general though it is recommended that BASIC auth not be used when passwords contain
-     * characters outside ASCII, as some browsers use the current locate to determine encoding.
-     *
-     * This list must have an even number of elements, as it is interpreted as pattern,charset,pattern,charset,...
-     */
-    public static final String USER_AGENT_CHARSETS = "user-agent-charsets";
 
     private final String challenge;
 
@@ -85,6 +75,11 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
     private final Charset charset;
     private final Map<Pattern, Charset> userAgentCharsets;
 
+    @Inject
+    BasicAuthenticationMechanism(HttpConfiguration runtimeConfig, HttpBuildTimeConfig buildTimeConfig) {
+        this(runtimeConfig.auth.realm.orElse(null), buildTimeConfig.auth.form.enabled);
+    }
+
     public BasicAuthenticationMechanism(final String realmName) {
         this(realmName, false);
     }
@@ -96,25 +91,6 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
     public BasicAuthenticationMechanism(final String realmName, final boolean silent,
             Charset charset, Map<Pattern, Charset> userAgentCharsets) {
         this.challenge = realmName == null ? BASIC : BASIC_PREFIX + "realm=\"" + realmName + "\"";
-        this.silent = silent;
-        this.charset = charset;
-        this.userAgentCharsets = Collections.unmodifiableMap(new LinkedHashMap<>(userAgentCharsets));
-    }
-
-    @Deprecated
-    public BasicAuthenticationMechanism(final String realmName, final String mechanismName) {
-        this(realmName, mechanismName, false);
-    }
-
-    @Deprecated
-    public BasicAuthenticationMechanism(final String realmName, final String mechanismName, final boolean silent) {
-        this(realmName, mechanismName, silent, StandardCharsets.UTF_8, Collections.emptyMap());
-    }
-
-    @Deprecated
-    public BasicAuthenticationMechanism(final String realmName, final String mechanismName, final boolean silent,
-            Charset charset, Map<Pattern, Charset> userAgentCharsets) {
-        this.challenge = BASIC_PREFIX + "realm=\"" + realmName + "\"";
         this.silent = silent;
         this.charset = charset;
         this.userAgentCharsets = Collections.unmodifiableMap(new LinkedHashMap<>(userAgentCharsets));

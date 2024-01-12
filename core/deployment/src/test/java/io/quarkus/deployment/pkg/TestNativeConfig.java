@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.runtime.util.ContainerRuntimeUtil;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 
 public class TestNativeConfig implements NativeConfig {
 

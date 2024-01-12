@@ -6,6 +6,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Getting Started to SmallRye Reactive Messaging with Apache Pulsar
 include::_attributes.adoc[]
 :categories: messaging
+:topics: messaging,reactive-messaging,pulsar
+:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-pulsar
 :summary: This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with Apache Pulsar.
 
 This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with Apache Pulsar.
@@ -253,7 +255,7 @@ mp.messaging.incoming.requests.subscriptionInitialPosition=Earliest
 ----
 
 Note that in this case we have one incoming and one outgoing connector configuration, each one distinctly named.
-The configuration keys are structured as follows:
+The configuration properties are structured as follows:
 
 `mp.messaging.[outgoing|incoming].{channel-name}.property=value`
 

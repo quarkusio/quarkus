@@ -108,7 +108,7 @@ public class InterceptorGenerator extends BeanGenerator {
             return Collections.emptyList();
         }
 
-        boolean isApplicationClass = applicationClassPredicate.test(creatorClassName);
+        boolean isApplicationClass = applicationClassPredicate.test(creatorClassName) || interceptor.isForceApplicationClass();
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.INTERCEPTOR_BEAN : null, generateSources);
 
@@ -168,7 +168,8 @@ public class InterceptorGenerator extends BeanGenerator {
             return Collections.emptyList();
         }
 
-        boolean isApplicationClass = applicationClassPredicate.test(interceptor.getBeanClass());
+        boolean isApplicationClass = applicationClassPredicate.test(interceptor.getBeanClass())
+                || interceptor.isForceApplicationClass();
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.INTERCEPTOR_BEAN : null, generateSources);
 

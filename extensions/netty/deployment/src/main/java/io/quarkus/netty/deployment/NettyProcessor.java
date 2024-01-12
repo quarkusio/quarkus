@@ -162,6 +162,28 @@ class NettyProcessor {
             log.debug("Not registering Netty native kqueue classes as they were not found");
         }
 
+        builder.addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent")
+                .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent0");
+
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.buffer.UnpooledByteBufAllocator")) {
+            builder.addRuntimeReinitializedClass("io.netty.buffer.UnpooledByteBufAllocator")
+                    .addRuntimeReinitializedClass("io.netty.buffer.Unpooled")
+                    .addRuntimeReinitializedClass("io.vertx.core.http.impl.Http1xServerResponse")
+                    .addRuntimeReinitializedClass("io.netty.handler.codec.http.HttpObjectAggregator")
+                    .addRuntimeReinitializedClass("io.netty.handler.codec.ReplayingDecoderByteBuf")
+                    .addRuntimeReinitializedClass("io.vertx.core.parsetools.impl.RecordParserImpl");
+
+            if (QuarkusClassLoader.isClassPresentAtRuntime("io.vertx.ext.web.client.impl.MultipartFormUpload")) {
+                builder.addRuntimeReinitializedClass("io.vertx.ext.web.client.impl.MultipartFormUpload");
+            }
+
+            if (QuarkusClassLoader
+                    .isClassPresentAtRuntime("org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload")) {
+                builder.addRuntimeReinitializedClass(
+                        "org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload");
+            }
+        }
+
         return builder //TODO: make configurable
                 .build();
     }

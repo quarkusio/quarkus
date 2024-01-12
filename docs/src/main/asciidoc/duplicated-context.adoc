@@ -8,6 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: concept
 :categories: core, architecture
+:topics: internals,extensions
 
 When using a traditional, blocking, and synchronous framework, processing of each request is performed in a dedicated thread.
 So, the same thread is used for the entire processing.

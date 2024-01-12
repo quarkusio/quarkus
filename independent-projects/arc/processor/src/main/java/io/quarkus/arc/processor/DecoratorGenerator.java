@@ -83,7 +83,8 @@ public class DecoratorGenerator extends BeanGenerator {
             return Collections.emptyList();
         }
 
-        boolean isApplicationClass = applicationClassPredicate.test(decorator.getBeanClass());
+        boolean isApplicationClass = applicationClassPredicate.test(decorator.getBeanClass())
+                || decorator.isForceApplicationClass();
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
                 name -> name.equals(generatedName) ? SpecialType.DECORATOR_BEAN : null, generateSources);
 
@@ -125,6 +126,10 @@ public class DecoratorGenerator extends BeanGenerator {
         implementCreate(classOutput, decoratorCreator, decorator, providerType, baseName,
                 injectionPointToProviderField, Collections.emptyMap(), Collections.emptyMap(),
                 targetPackage, isApplicationClass);
+        if (decorator.hasDestroyLogic()) {
+            implementDestroy(decorator, decoratorCreator, providerType, Collections.emptyMap(), isApplicationClass, baseName,
+                    targetPackage);
+        }
         implementGet(decorator, decoratorCreator, providerType, baseName);
         implementGetTypes(decoratorCreator, beanTypes.getFieldDescriptor());
         implementGetBeanClass(decorator, decoratorCreator);

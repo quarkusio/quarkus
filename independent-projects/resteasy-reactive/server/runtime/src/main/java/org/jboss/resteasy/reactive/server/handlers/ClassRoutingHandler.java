@@ -141,6 +141,8 @@ public class ClassRoutingHandler implements ServerRestHandler {
                     throw new NotAcceptableException(INVALID_ACCEPT_HEADER_MESSAGE);
                 }
             }
+
+            requestContext.setProducesChecked(true);
         }
 
         requestContext.restart(target.value);

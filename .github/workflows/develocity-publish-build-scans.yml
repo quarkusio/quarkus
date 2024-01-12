@@ -1,0 +1,44 @@
+name: Develocity - Publish Maven Build Scans
+
+on:
+  workflow_run:
+    workflows: [ "Quarkus CI" ]
+    types: [ completed ]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  publish-build-scans:
+    if: github.repository == 'quarkusio/quarkus' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      pull-requests: write
+      checks: write
+    steps:
+      - name: Setup Build Scan link capture
+        uses: gradle/github-actions/maven-build-scan-setup@v0.2
+      - name: Publish Maven Build Scans
+        id: publish
+        uses: gradle/github-actions/maven-build-scan-publish@v0.2
+        with:
+          develocity-url: 'https://ge.quarkus.io'
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          skip-comment: true
+          skip-summary: true
+      - name: Output JSON file
+        run: |
+          if [ -f "${{ steps.publish.outputs.build-metadata-file-path }}" ]; then
+            echo "```json" >> $GITHUB_STEP_SUMMARY
+            jq '.' ${{ steps.publish.outputs.build-metadata-file-path }} >> $GITHUB_STEP_SUMMARY
+            echo "\n```" >> $GITHUB_STEP_SUMMARY;
+          fi
+      - name: Inject build scans in reports
+        uses: quarkusio/action-helpers@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          action: inject-build-scans
+          workflow-run-id: ${{ github.event.workflow_run.id }}
+          build-metadata-file-path: ${{ steps.publish.outputs.build-metadata-file-path }}

@@ -9,6 +9,8 @@ import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_QUERY_PARAM;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_QUERY_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_REDIRECT_HANDLER;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_REQUEST_FILTER;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_RESPONSE_FILTER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
@@ -32,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.SessionScoped;
 import jakarta.enterprise.inject.Typed;
@@ -64,6 +67,7 @@ import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationSto
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
@@ -83,7 +87,6 @@ import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.gizmo.ClassCreator;
@@ -101,6 +104,7 @@ import io.quarkus.rest.client.reactive.runtime.RestClientReactiveCDIWrapperBase;
 import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
 import io.quarkus.rest.client.reactive.spi.RestClientAnnotationsTransformerBuildItem;
+import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.deployment.RestClientConfigUtils;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
@@ -162,20 +166,6 @@ class RestClientReactiveProcessor {
         Optional<Boolean> disableSmartProducesConfig = mpConfig.getOptionalValue(DISABLE_SMART_PRODUCES_QUARKUS, Boolean.class);
         if (config.disableSmartProduces || disableSmartProducesConfig.orElse(false)) {
             disableSmartProduces.produce(new RestClientDisableSmartDefaultProduces());
-        }
-    }
-
-    @BuildStep
-    void registerRestClientListenerForTracing(
-            Capabilities capabilities,
-            BuildProducer<NativeImageResourceBuildItem> resource,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        if (capabilities.isPresent(Capability.SMALLRYE_OPENTRACING)) {
-            resource.produce(new NativeImageResourceBuildItem(
-                    "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
-            reflectiveClass
-                    .produce(ReflectiveClassBuildItem.builder("io.smallrye.opentracing.SmallRyeRestClientListener")
-                            .build());
         }
     }
 
@@ -310,18 +300,12 @@ class RestClientReactiveProcessor {
                             continue;
                         }
                     }
-                    DotName providerDotName = providerClass.name();
-                    // don't register server specific types
-                    if (providerDotName.equals(ResteasyReactiveDotNames.CONTAINER_REQUEST_FILTER)
-                            || providerDotName.equals(ResteasyReactiveDotNames.CONTAINER_RESPONSE_FILTER)
-                            || providerDotName.equals(ResteasyReactiveDotNames.EXCEPTION_MAPPER)) {
+
+                    if (skipAutoDiscoveredProvider(providerClass.interfaceNames())) {
                         continue;
                     }
 
-                    if (providerClass.interfaceNames().contains(ResteasyReactiveDotNames.FEATURE)) {
-                        continue; // features should not be automatically registered for the client, see javadoc for Feature
-                    }
-
+                    DotName providerDotName = providerClass.name();
                     int priority = getAnnotatedPriority(index, providerDotName.toString(), Priorities.USER);
 
                     constructor.invokeVirtualMethod(
@@ -385,6 +369,42 @@ class RestClientReactiveProcessor {
     }
 
     @BuildStep
+    void handleSseEventFilter(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
+        var index = beanArchiveIndexBuildItem.getIndex();
+        Collection<AnnotationInstance> instances = index.getAnnotations(DotNames.SSE_EVENT_FILTER);
+        if (instances.isEmpty()) {
+            return;
+        }
+
+        List<String> filterClassNames = new ArrayList<>(instances.size());
+        for (AnnotationInstance instance : instances) {
+            if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
+                continue;
+            }
+            if (instance.value() == null) {
+                continue; // can't happen
+            }
+            Type filterType = instance.value().asClass();
+            DotName filterClassName = filterType.name();
+            ClassInfo filterClassInfo = index.getClassByName(filterClassName.toString());
+            if (filterClassInfo == null) {
+                log.warn("Unable to find class '" + filterType.name() + "' in index");
+            } else if (!filterClassInfo.hasNoArgsConstructor()) {
+                throw new RestClientDefinitionException(
+                        "Classes used in @SseEventFilter must have a no-args constructor. Offending class is '"
+                                + filterClassName + "'");
+            } else {
+                filterClassNames.add(filterClassName.toString());
+            }
+        }
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder(filterClassNames.toArray(new String[0]))
+                .constructors(true)
+                .build());
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void addRestClientBeans(Capabilities capabilities,
             CombinedIndexBuildItem combinedIndexBuildItem,
@@ -392,10 +412,13 @@ class RestClientReactiveProcessor {
             List<RestClientAnnotationsTransformerBuildItem> restClientAnnotationsTransformerBuildItem,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             RestClientReactiveConfig clientConfig,
+            RestClientsBuildTimeConfig clientsBuildConfig,
             RestClientRecorder recorder) {
 
         CompositeIndex index = CompositeIndex.create(combinedIndexBuildItem.getIndex());
-        Set<AnnotationInstance> registerRestClientAnnos = new HashSet<>(index.getAnnotations(REGISTER_REST_CLIENT));
+
+        Set<AnnotationInstance> registerRestClientAnnos = determineRegisterRestClientInstances(clientsBuildConfig, index);
+
         Map<String, String> configKeys = new HashMap<>();
         var annotationsStore = new AnnotationStore(restClientAnnotationsTransformerBuildItem.stream()
                 .map(RestClientAnnotationsTransformerBuildItem::getAnnotationsTransformer).collect(toList()));
@@ -554,6 +577,57 @@ class RestClientReactiveProcessor {
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             recorder.setConfigKeys(configKeys);
         }
+    }
+
+    private Set<AnnotationInstance> determineRegisterRestClientInstances(RestClientsBuildTimeConfig clientsConfig,
+            CompositeIndex index) {
+        // these are the actual instances
+        Set<AnnotationInstance> registerRestClientAnnos = new HashSet<>(index.getAnnotations(REGISTER_REST_CLIENT));
+        // a set of the original target class
+        Set<ClassInfo> registerRestClientTargets = registerRestClientAnnos.stream().map(ai -> ai.target().asClass()).collect(
+                Collectors.toSet());
+
+        // now we go through the keys and if any of them correspond to classes that don't have a @RegisterRestClient annotation, we fake that annotation
+        Set<String> configKeyNames = clientsConfig.configs.keySet();
+        for (String configKeyName : configKeyNames) {
+            ClassInfo classInfo = index.getClassByName(configKeyName);
+            if (classInfo == null) {
+                continue;
+            }
+            if (registerRestClientTargets.contains(classInfo)) {
+                continue;
+            }
+            Optional<String> cdiScope = clientsConfig.configs.get(configKeyName).scope;
+            if (cdiScope.isEmpty()) {
+                continue;
+            }
+            registerRestClientAnnos.add(AnnotationInstance.builder(REGISTER_REST_CLIENT).add("configKey", configKeyName)
+                    .buildWithTarget(classInfo));
+        }
+        return registerRestClientAnnos;
+    }
+
+    /**
+     * Based on a list of interfaces implemented by @Provider class, determine if registration
+     * should be skipped or not. Server-specific types should be omitted unless implementation
+     * of a <code>ClientRequestFilter</code> exists on the same class explicitly.
+     * Features should always be omitted.
+     */
+    private boolean skipAutoDiscoveredProvider(List<DotName> providerInterfaceNames) {
+        if (providerInterfaceNames.contains(ResteasyReactiveDotNames.FEATURE)) {
+            return true;
+        }
+        if (providerInterfaceNames.contains(ResteasyReactiveDotNames.CONTAINER_REQUEST_FILTER)
+                || providerInterfaceNames.contains(ResteasyReactiveDotNames.CONTAINER_RESPONSE_FILTER)
+                || providerInterfaceNames.contains(ResteasyReactiveDotNames.EXCEPTION_MAPPER)) {
+            if (providerInterfaceNames.contains(CLIENT_REQUEST_FILTER)
+                    || providerInterfaceNames.contains(CLIENT_RESPONSE_FILTER)) {
+                return false;
+            } else {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Map<String, GeneratedClassResult> populateClientExceptionMapperFromAnnotations(

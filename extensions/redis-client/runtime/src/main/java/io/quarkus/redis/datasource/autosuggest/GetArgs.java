@@ -47,8 +47,8 @@ public class GetArgs implements RedisCommandExtraArguments {
     }
 
     @Override
-    public List<String> toArgs() {
-        List<String> list = new ArrayList<>();
+    public List<Object> toArgs() {
+        List<Object> list = new ArrayList<>();
         if (fuzzy) {
             list.add("FUZZY");
         }

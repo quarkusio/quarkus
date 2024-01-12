@@ -90,6 +90,7 @@ public class HibernateOrmTypesTest {
         annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Incubating"));
         annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Internal"));
         annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Remove"));
+        annotationSet.removeIf(name -> name.toString().equals("org.hibernate.service.JavaServiceLoadable"));
     }
 
     @Test

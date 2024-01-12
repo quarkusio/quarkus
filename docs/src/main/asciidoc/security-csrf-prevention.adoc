@@ -4,12 +4,14 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Cross-Site Request Forgery Prevention
-
 include::_attributes.adoc[]
+:categories: security
+:topics: security,csrf,http
+:extensions: io.quarkus:quarkus-csrf-reactive
 
 https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery (CSRF)] is an attack that forces an end user to execute unwanted actions on a web application in which they are currently authenticated.
 
-Quarkus Security provides a CSRF prevention feature which implements https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#double-submit-cookie[Double Submit Cookie] and [CSRF Request Header] techniques.
+Quarkus Security provides a CSRF prevention feature which implements https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#double-submit-cookie[Double Submit Cookie] and <<csrf-request-header>> techniques.
 
 `Double Submit Cookie` technique requires that the CSRF token sent as `HTTPOnly`, optionally signed, cookie to the client, and
 directly embedded in a hidden form input of server-side rendered HTML forms, or submitted as a request header value.
@@ -58,14 +60,14 @@ Next, let's add a `csrfToken.html` Qute template producing an HTML form in the `
 <html>
 <head>
 <meta charset="UTF-8">
-<title>User Name Input</title> 
+<title>User Name Input</title>
 </head>
 <body>
     <h1>User Name Input</h1>
 
     <form action="/service/csrfTokenForm" method="post">
     	<input type="hidden" name="{inject:csrf.parameterName}" value="{inject:csrf.token}" />  <1>
-    	
+
     	<p>Your Name: <input type="text" name="name" /></p>
     	<p><input type="submit" name="submit"/></p>
     </form>
@@ -137,6 +139,7 @@ You can get `HMAC` signatures created for the generated CSRF tokens and have the
 quarkus.csrf-reactive.token-signature-key=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow
 ----
 
+[[csrf-request-header]]
 == CSRF Request Header
 
 If HTML `form` tags are not used and you need to pass CSRF token as a header, then inject the header name and token, for example, into HTMX:
@@ -168,7 +171,7 @@ quarkus.csrf-reactive.cookie-http-only=false
 ====
 If you would like to enforce CSRF prevention in a Cross-origin environment, please avoid supporting all Origins.
 
-Restrict supported Origins to trusted Origins only, see xref:http-reference.adoc#cors-filter[Cross-origin resource sharing] for more information.
+Restrict supported Origins to trusted Origins only, see xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide for more information.
 ====
 
 == Restrict CSRF token verification
@@ -326,5 +329,5 @@ include::{generated-dir}/config/quarkus-csrf-reactive.adoc[leveloffset=+1, opts=
 * https://owasp.org/www-community/attacks/csrf[OWASP Cross-Site Request Forgery]
 * xref:resteasy-reactive.adoc[RESTEasy Reactive]
 * xref:qute-reference.adoc[Qute Reference]
-* xref:http-reference.adoc#cors-filter[Cross-origin resource sharing]
+* xref:security-cors.adoc#cors-filter[Cross-origin resource sharing]
 * xref:security-overview.adoc[Quarkus Security overview]

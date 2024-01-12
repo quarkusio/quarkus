@@ -36,6 +36,7 @@ public final class HibernateOrmTypes {
             DotName.createSimple("org.hibernate.annotations.NamedNativeQuery"),
             DotName.createSimple("org.hibernate.annotations.NamedQueries"),
             DotName.createSimple("org.hibernate.annotations.NamedQuery"),
+            DotName.createSimple("org.hibernate.annotations.SoftDelete"),
             DotName.createSimple("org.hibernate.annotations.TypeRegistration"),
             DotName.createSimple("org.hibernate.annotations.TypeRegistrations"));
 
@@ -141,6 +142,7 @@ public final class HibernateOrmTypes {
             DotName.createSimple("org.hibernate.annotations.AnyKeyJavaType"),
             DotName.createSimple("org.hibernate.annotations.AnyKeyJdbcType"),
             DotName.createSimple("org.hibernate.annotations.AnyKeyJdbcTypeCode"),
+            DotName.createSimple("org.hibernate.annotations.Array"),
             DotName.createSimple("org.hibernate.annotations.AttributeAccessor"),
             DotName.createSimple("org.hibernate.annotations.AttributeBinderType"),
             DotName.createSimple("org.hibernate.annotations.Bag"),
@@ -149,6 +151,7 @@ public final class HibernateOrmTypes {
             DotName.createSimple("org.hibernate.annotations.Cascade"),
             DotName.createSimple("org.hibernate.annotations.Check"),
             DotName.createSimple("org.hibernate.annotations.Checks"),
+            DotName.createSimple("org.hibernate.annotations.Collate"),
             DotName.createSimple("org.hibernate.annotations.CollectionId"),
             DotName.createSimple("org.hibernate.annotations.CollectionIdJavaType"),
             DotName.createSimple("org.hibernate.annotations.CollectionIdJdbcType"),
@@ -190,6 +193,20 @@ public final class HibernateOrmTypes {
             DotName.createSimple("org.hibernate.annotations.DialectOverride$OrderBy"),
             DotName.createSimple("org.hibernate.annotations.DialectOverride$OrderBys"),
             DotName.createSimple("org.hibernate.annotations.DialectOverride$OverridesAnnotation"),
+            DotName.createSimple("org.hibernate.annotations.DialectOverride$SQLDelete"),
+            DotName.createSimple("org.hibernate.annotations.DialectOverride$SQLDeleteAll"),
+            DotName.createSimple("org.hibernate.annotations.DialectOverride$SQLDeleteAlls"),
+            DotName.createSimple("org.hibernate.annotations.DialectOverride$SQLDeletes"),
+            DotName.createSimple("org.hibernate.annotations.DialectOverride$SQLInsert"),
+            DotName.createSimple("org.hibernate.annotations.DialectOverride$SQLInserts"),
+            DotName.createSimple("org.hibernate.annotations.DialectOverride$SQLOrder"),
+            DotName.createSimple("org.hibernate.annotations.DialectOverride$SQLOrders"),
+            DotName.createSimple("org.hibernate.annotations.DialectOverride$SQLRestriction"),
+            DotName.createSimple("org.hibernate.annotations.DialectOverride$SQLRestrictions"),
+            DotName.createSimple("org.hibernate.annotations.DialectOverride$SQLSelect"),
+            DotName.createSimple("org.hibernate.annotations.DialectOverride$SQLSelects"),
+            DotName.createSimple("org.hibernate.annotations.DialectOverride$SQLUpdate"),
+            DotName.createSimple("org.hibernate.annotations.DialectOverride$SQLUpdates"),
             DotName.createSimple("org.hibernate.annotations.DialectOverride$Version"),
             DotName.createSimple("org.hibernate.annotations.DialectOverride$Where"),
             DotName.createSimple("org.hibernate.annotations.DialectOverride$Wheres"),
@@ -203,6 +220,8 @@ public final class HibernateOrmTypes {
             DotName.createSimple("org.hibernate.annotations.Fetch"),
             DotName.createSimple("org.hibernate.annotations.FetchProfile"),
             DotName.createSimple("org.hibernate.annotations.FetchProfile$FetchOverride"),
+            DotName.createSimple("org.hibernate.annotations.FetchProfileOverride"),
+            DotName.createSimple("org.hibernate.annotations.FetchProfileOverrides"),
             DotName.createSimple("org.hibernate.annotations.FetchProfiles"),
             DotName.createSimple("org.hibernate.annotations.Filter"),
             DotName.createSimple("org.hibernate.annotations.FilterDef"),
@@ -274,12 +293,16 @@ public final class HibernateOrmTypes {
             DotName.createSimple("org.hibernate.annotations.SQLDeletes"),
             DotName.createSimple("org.hibernate.annotations.SQLInsert"),
             DotName.createSimple("org.hibernate.annotations.SQLInserts"),
+            DotName.createSimple("org.hibernate.annotations.SQLJoinTableRestriction"),
+            DotName.createSimple("org.hibernate.annotations.SQLOrder"),
+            DotName.createSimple("org.hibernate.annotations.SQLRestriction"),
             DotName.createSimple("org.hibernate.annotations.SQLSelect"),
             DotName.createSimple("org.hibernate.annotations.SQLUpdate"),
             DotName.createSimple("org.hibernate.annotations.SQLUpdates"),
             DotName.createSimple("org.hibernate.annotations.SecondaryRow"),
             DotName.createSimple("org.hibernate.annotations.SecondaryRows"),
             DotName.createSimple("org.hibernate.annotations.SelectBeforeUpdate"),
+            DotName.createSimple("org.hibernate.annotations.SoftDelete"),
             DotName.createSimple("org.hibernate.annotations.SortComparator"),
             DotName.createSimple("org.hibernate.annotations.SortNatural"),
             DotName.createSimple("org.hibernate.annotations.Source"),
@@ -300,12 +323,12 @@ public final class HibernateOrmTypes {
             DotName.createSimple("org.hibernate.annotations.UpdateTimestamp"),
             DotName.createSimple("org.hibernate.annotations.UuidGenerator"),
             DotName.createSimple("org.hibernate.annotations.ValueGenerationType"),
+            DotName.createSimple("org.hibernate.annotations.View"),
             DotName.createSimple("org.hibernate.annotations.Where"),
             DotName.createSimple("org.hibernate.annotations.WhereJoinTable"));
 
     public static final List<DotName> ANNOTATED_WITH_INJECT_SERVICE = List.of(
-            DotName.createSimple("org.hibernate.engine.jdbc.connections.internal.DatasourceConnectionProviderImpl"),
-            DotName.createSimple("org.hibernate.engine.jdbc.cursor.internal.StandardRefCursorSupport"));
+            DotName.createSimple("org.hibernate.engine.jdbc.connections.internal.DatasourceConnectionProviderImpl"));
 
     public static final List<DotName> JPA_LISTENER_ANNOTATIONS = List.of(
             DotName.createSimple("jakarta.persistence.PostLoad"),
@@ -352,5 +375,6 @@ public final class HibernateOrmTypes {
             DotName.createSimple("java.util.Locale"),
             DotName.createSimple("java.util.Map$Entry"),
             DotName.createSimple("java.util.TimeZone"),
-            DotName.createSimple("java.util.UUID"));
+            DotName.createSimple("java.util.UUID"),
+            DotName.createSimple("java.lang.Void"));
 }

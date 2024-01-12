@@ -47,7 +47,6 @@ import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.wildfly.common.function.Functions;
 
@@ -136,16 +135,8 @@ public final class ExtensionLoader {
 
         final BuildTimeConfigurationReader reader = new BuildTimeConfigurationReader(classLoader);
         final SmallRyeConfig src = reader.initConfiguration(launchMode, buildSystemProps, appModel.getPlatformProperties());
-
         // install globally
         QuarkusConfigFactory.setConfig(src);
-        final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
-        try {
-            cpr.releaseConfig(cpr.getConfig());
-        } catch (IllegalStateException ignored) {
-            // just means no config was installed, which is fine
-        }
-
         final BuildTimeConfigurationReader.ReadResult readResult = reader.readConfiguration(src);
         final BooleanSupplierFactoryBuildItem bsf = new BooleanSupplierFactoryBuildItem(readResult, launchMode, devModeType);
 

@@ -27,8 +27,8 @@ public interface DataSourceReactiveRuntimeConfig {
      * The datasource URLs.
      * <p>
      * If multiple values are set, this datasource will create a pool with a list of servers instead of a single server.
-     * The pool uses a round-robin load balancing when a connection is created to select different servers.
-     * Note: some driver may not support multiple values here.
+     * The pool uses round-robin load balancing for server selection during connection establishment.
+     * Note that certain drivers might not accommodate multiple values in this context.
      */
     Optional<List<String>> url();
 

@@ -3,11 +3,13 @@ package io.quarkus.oidc.runtime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -23,7 +25,9 @@ import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.UserInfoCache;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
+import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -67,12 +71,15 @@ public class DefaultTenantConfigResolver {
 
     private final BlockingTaskRunner<OidcTenantConfig> blockingRequestContext;
 
-    private volatile boolean securityEventObserved;
+    private final boolean securityEventObserved;
 
     private ConcurrentHashMap<String, BackChannelLogoutTokenCache> backChannelLogoutTokens = new ConcurrentHashMap<>();
 
-    public DefaultTenantConfigResolver(BlockingSecurityExecutor blockingExecutor) {
+    public DefaultTenantConfigResolver(BlockingSecurityExecutor blockingExecutor, BeanManager beanManager,
+            @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
         this.blockingRequestContext = new BlockingTaskRunner<OidcTenantConfig>(blockingExecutor);
+        this.securityEventObserved = SecurityEventHelper.isEventObserved(new SecurityEvent(null, (SecurityIdentity) null),
+                beanManager, securityEventsEnabled);
     }
 
     @PostConstruct
@@ -113,31 +120,35 @@ public class DefaultTenantConfigResolver {
                 });
     }
 
+    Uni<TenantConfigContext> resolveContext(String tenantId) {
+        return initializeTenantIfContextNotReady(getStaticTenantContext(tenantId));
+    }
+
     Uni<TenantConfigContext> resolveContext(RoutingContext context) {
-        return getDynamicTenantContext(context).chain(new Function<TenantConfigContext, Uni<? extends TenantConfigContext>>() {
+        return getDynamicTenantContext(context).onItem().ifNull().switchTo(new Supplier<Uni<? extends TenantConfigContext>>() {
             @Override
-            public Uni<? extends TenantConfigContext> apply(TenantConfigContext tenantConfigContext) {
-                if (tenantConfigContext != null) {
-                    return Uni.createFrom().item(tenantConfigContext);
-                }
-                TenantConfigContext tenantContext = getStaticTenantContext(context);
-                if (tenantContext != null && !tenantContext.ready) {
-
-                    // check if the connection has already been created
-                    TenantConfigContext readyTenantContext = tenantConfigBean.getDynamicTenantsConfig()
-                            .get(tenantContext.oidcConfig.tenantId.get());
-                    if (readyTenantContext == null) {
-                        LOG.debugf("Tenant '%s' is not initialized yet, trying to create OIDC connection now",
-                                tenantContext.oidcConfig.tenantId.get());
-                        return tenantConfigBean.getTenantConfigContextFactory().apply(tenantContext.oidcConfig);
-                    } else {
-                        tenantContext = readyTenantContext;
-                    }
-                }
-
-                return Uni.createFrom().item(tenantContext);
+            public Uni<? extends TenantConfigContext> get() {
+                return initializeTenantIfContextNotReady(getStaticTenantContext(context));
             }
         });
+    }
+
+    private Uni<TenantConfigContext> initializeTenantIfContextNotReady(TenantConfigContext tenantContext) {
+        if (tenantContext != null && !tenantContext.ready) {
+
+            // check if the connection has already been created
+            TenantConfigContext readyTenantContext = tenantConfigBean.getDynamicTenantsConfig()
+                    .get(tenantContext.oidcConfig.tenantId.get());
+            if (readyTenantContext == null) {
+                LOG.debugf("Tenant '%s' is not initialized yet, trying to create OIDC connection now",
+                        tenantContext.oidcConfig.tenantId.get());
+                return tenantConfigBean.getTenantConfigContextFactory().apply(tenantContext.oidcConfig);
+            } else {
+                tenantContext = readyTenantContext;
+            }
+        }
+
+        return Uni.createFrom().item(tenantContext);
     }
 
     private TenantConfigContext getStaticTenantContext(RoutingContext context) {
@@ -147,9 +158,12 @@ public class DefaultTenantConfigResolver {
         if (tenantId == null && context.get(CURRENT_STATIC_TENANT_ID_NULL) == null) {
             if (tenantResolver.isResolvable()) {
                 tenantId = tenantResolver.get().resolve(context);
-            } else if (tenantConfigBean.getStaticTenantsConfig().size() > 0) {
+            }
+
+            if (tenantId == null && tenantConfigBean.getStaticTenantsConfig().size() > 0) {
                 tenantId = defaultStaticTenantResolver.resolve(context);
             }
+
             if (tenantId == null) {
                 tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
             }
@@ -161,6 +175,10 @@ public class DefaultTenantConfigResolver {
             context.put(CURRENT_STATIC_TENANT_ID_NULL, true);
         }
 
+        return getStaticTenantContext(tenantId);
+    }
+
+    private TenantConfigContext getStaticTenantContext(String tenantId) {
         TenantConfigContext configContext = tenantId != null ? tenantConfigBean.getStaticTenantsConfig().get(tenantId) : null;
         if (configContext == null) {
             if (tenantId != null && !tenantId.isEmpty()) {
@@ -175,10 +193,6 @@ public class DefaultTenantConfigResolver {
 
     boolean isSecurityEventObserved() {
         return securityEventObserved;
-    }
-
-    void setSecurityEventObserved(boolean securityEventObserved) {
-        this.securityEventObserved = securityEventObserved;
     }
 
     Event<SecurityEvent> getSecurityEvent() {

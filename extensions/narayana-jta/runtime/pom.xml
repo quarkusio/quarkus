@@ -73,6 +73,10 @@
                     <groupId>jakarta.enterprise</groupId>
                     <artifactId>jakarta.enterprise.lang-model</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>jakarta.ejb</groupId>
+                    <artifactId>jakarta.ejb-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

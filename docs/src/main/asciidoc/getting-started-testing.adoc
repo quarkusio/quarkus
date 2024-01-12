@@ -11,6 +11,7 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: getting-started,testing,tooling
 
 
 Learn how to test your Quarkus Application.
@@ -426,7 +427,7 @@ Alternatively or additionally to an interceptor, you can enrich *all* your `@Qua
 * `io.quarkus.test.junit.callback.QuarkusTestAfterTestExecutionCallback`
 * `io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback`
 
-Optionally, you can enable these callbacks also for the `@QuarkusIntegrationTest` tests if the property `quarkus.test.enable-callbacks-for-integration-tests` is `true`. 
+Optionally, you can enable these callbacks also for the `@QuarkusIntegrationTest` tests if the property `quarkus.test.enable-callbacks-for-integration-tests` is `true`.
 
 Such a callback implementation has to be registered as a "service provider" as defined by `java.util.ServiceLoader`.
 
@@ -502,6 +503,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import jakarta.enterprise.inject.Produces;
 
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.QuarkusTestProfile.TestResourceEntry;
@@ -600,9 +603,15 @@ public class MockGreetingProfile implements QuarkusTestProfile { <1>
     public boolean disableApplicationLifecycleObservers() {
         return false;
     }
+    
+    @Produces <2>
+    public ExternalService mockExternalService() {
+       return new ExternalService("mock");
+    }
 }
 ----
 <1> All these methods have default implementations so just override the ones you need to override.
+<2> If a test profile implementation declares a CDI bean (via producer method/field or nested static class) then this bean is only taken into account if the test profile is used, i.e. it's ignored for any other test profile.
 
 Now we have defined our profile we need to include it on our test class.
 We do this by annotating the test class with `@TestProfile(MockGreetingProfile.class)`.
@@ -1077,9 +1086,11 @@ but it is common to create custom implementations to address specific applicatio
 Common cases include starting docker containers using https://www.testcontainers.org/[Testcontainers] (an example of which can be found https://github.com/quarkusio/quarkus/blob/main/test-framework/keycloak-server/src/main/java/io/quarkus/test/keycloak/server/KeycloakTestResourceLifecycleManager.java[here]),
 or starting a mock HTTP server using https://wiremock.org/[Wiremock] (an example of which can be found https://github.com/geoand/quarkus-test-demo/blob/main/src/test/java/org/acme/getting/started/country/WiremockCountries.java[here]).
 
+NOTE: As `QuarkusTestResourceLifecycleManager` is not a CDI Bean, classes that implement it can't have fields injected with `@Inject`. You can use `String propertyName = ConfigProvider.getConfig().getValue("quarkus.my-config-group.myconfig", String.class);`
+
 
 === Altering the test class
-When creating a custom `QuarkusTestResourceLifecycleManager` that needs to inject the something into the test class, the `inject` methods can be used.
+When creating a custom `QuarkusTestResourceLifecycleManager` that needs to inject something into the test class, the `inject` methods can be used.
 If for example you have a test like the following:
 
 [source,java]
@@ -1536,8 +1547,8 @@ public class Foo {
 
     @Inject
     Charlie charlie; <2>
-    
-    @ConfigProperty(name = "bar") 
+
+    @ConfigProperty(name = "bar")
     boolean bar; <3>
 
     public String ping() {
@@ -1622,16 +1633,16 @@ public class FooTest {
 
 So what exactly does the `QuarkusComponentTest` do?
 It starts the CDI container and registers a dedicated xref:config-reference.adoc[configuration object].
-If the test instance lifecycle is `Lifecycle#PER_METHOD` (default) then the container is started during the `before each` test phase and stopped during the `after each` test phase. 
-However, if  the test instance lifecycle is `Lifecycle#PER_CLASS` then the container is started during the `before all` test phase and stopped during the `after all` test phase. 
+If the test instance lifecycle is `Lifecycle#PER_METHOD` (default) then the container is started during the `before each` test phase and stopped during the `after each` test phase.
+However, if  the test instance lifecycle is `Lifecycle#PER_CLASS` then the container is started during the `before all` test phase and stopped during the `after all` test phase.
 The fields annotated with `@Inject` and `@InjectMock` are injected after a test instance is created.
 Finally, the CDI request context is activated and terminated per each test method.
 
 === Auto Mocking Unsatisfied Dependencies
 
-Unlike in regular CDI environments the test does not fail if a component injects an unsatisfied dependency. 
+Unlike in regular CDI environments the test does not fail if a component injects an unsatisfied dependency.
 Instead, a synthetic bean is registered automatically for each combination of required type and qualifiers of an injection point that resolves to an unsatisfied dependency.
-The bean has the `@Singleton` scope so it's shared across all injection points with the same required type and qualifiers. 
+The bean has the `@Singleton` scope so it's shared across all injection points with the same required type and qualifiers.
 The injected reference is an _unconfigured_ Mockito mock.
 You can inject the mock in your test and leverage the Mockito API to configure the behavior.
 
@@ -1647,6 +1658,8 @@ If you only need to use the default values for missing config properties, then t
 
 It is also possible to set configuration properties for a test method with the `@io.quarkus.test.component.TestConfigProperty` annotation.
 However, if the test instance lifecycle is `Lifecycle#_PER_CLASS` this annotation can only be used on the test class and is ignored on test methods.
+
+CDI beans are also automatically registered for all injected https://smallrye.io/smallrye-config/Main/config/mappings/[Config Mappings]. The mappings are populated with the test configuration properties.
 
 === Mocking CDI Interceptors
 
@@ -1672,17 +1685,17 @@ public class FooTest {
     public void testPing() {
         assertEquals("OK", foo.ping());
     }
-    
+
     @ApplicationScoped
     static class Foo {
-       
+
        @SimpleBinding <1>
        String ping() {
          return "ok";
        }
-    
+
     }
-    
+
     @SimpleBinding
     @Interceptor
     static class SimpleInterceptor { <2>
@@ -1730,14 +1743,14 @@ public class FooTest {
 
     @ApplicationScoped
     static class Foo {
-       
+
        @SimpleBinding <1>
        String ping() {
          return "ok";
        }
-    
+
     }
 }
 ----
-<1> The interceptor bindings of the resulting interceptor are specified by annotating the method with the interceptor binding types. 
+<1> The interceptor bindings of the resulting interceptor are specified by annotating the method with the interceptor binding types.
 <2> Defines the interception type.

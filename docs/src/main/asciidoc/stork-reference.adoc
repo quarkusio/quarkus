@@ -5,8 +5,10 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Stork Reference Guide
 :extension-status: preview
-
 include::_attributes.adoc[]
+:categories: cloud
+:topics: service-discovery,load-balancing,stork
+:extensions: io.quarkus:quarkus-smallrye-stork
 
 This guide is the companion from the xref:stork.adoc[Stork Getting Started Guide].
 It explains the configuration and usage of SmallRye Stork integration in Quarkus.
@@ -71,6 +73,68 @@ To learn about custom service discovery and service selection, check:
 - https://smallrye.io/smallrye-stork/latest/service-discovery/custom-service-discovery/[Implement a custom service discover provider]
 - https://smallrye.io/smallrye-stork/latest/load-balancer/custom-load-balancer/[Implement a custom service selection provider]
 
+== Configure Stork observability
+
+=== Enable metrics
+
+Stork metrics are automatically enabled when the application also uses the xref:telemetry-micrometer.adoc[`quarkus-micrometer`] extension.
+
+Micrometer collects the metrics of rest/grpc clients using Stork and the client using Stork programmatically.
+
+As an example, if you export the metrics to Prometheus, you will get:
+
+[source,text]
+----
+# HELP stork_service_selection_failures_total The number of failures during service selection.
+# TYPE stork_service_selection_failures_total counter
+stork_service_selection_failures_total{service_name="hello-service",} 0.0
+# HELP stork_service_selection_duration_seconds The duration of the selection operation
+# TYPE stork_service_selection_duration_seconds summary
+stork_service_selection_duration_seconds_count{service_name="hello-service",} 13.0
+stork_service_selection_duration_seconds_sum{service_name="hello-service",} 0.001049291
+# HELP stork_service_selection_duration_seconds_max The duration of the selection operation
+# TYPE stork_service_selection_duration_seconds_max gauge
+stork_service_selection_duration_seconds_max{service_name="hello-service",} 0.0
+# HELP stork_overall_duration_seconds_max The total duration of the Stork service discovery and selection operations
+# TYPE stork_overall_duration_seconds_max gauge
+stork_overall_duration_seconds_max{service_name="hello-service",} 0.0
+# HELP stork_overall_duration_seconds The total duration of the Stork service discovery and selection operations
+# TYPE stork_overall_duration_seconds summary
+stork_overall_duration_seconds_count{service_name="hello-service",} 13.0
+stork_overall_duration_seconds_sum{service_name="hello-service",} 0.001049291
+# HELP stork_service_discovery_failures_total The number of failures during service discovery
+# TYPE stork_service_discovery_failures_total counter
+stork_service_discovery_failures_total{service_name="hello-service",} 0.0
+# HELP stork_service_discovery_duration_seconds_max The duration of the discovery operation
+# TYPE stork_service_discovery_duration_seconds_max gauge
+stork_service_discovery_duration_seconds_max{service_name="hello-service",} 0.0
+# HELP stork_service_discovery_duration_seconds The duration of the discovery operation
+# TYPE stork_service_discovery_duration_seconds summary
+stork_service_discovery_duration_seconds_count{service_name="hello-service",} 13.0
+stork_service_discovery_duration_seconds_sum{service_name="hello-service",} 6.585046209
+# HELP stork_service_discovery_instances_count_total The number of service instances discovered
+# TYPE stork_service_discovery_instances_count_total counter
+stork_service_discovery_instances_count_total{service_name="hello-service",} 26.0
+----
+
+The Stork service name can be found in the _tags_.
+
+The metrics contain both the service discovery (`stork_service_discovery_*`) and the metrics about the service selection (`stork_service_selection_*`) such as the number of service instances, failures, and durations.
+
+=== Disable metrics
+
+To disable the Stork metrics when `quarkus-micrometer` is used, add the following property to the application configuration:
+
+[source,properties]
+----
+quarkus.micrometer.binder.stork.enabled=false
+----
+
+
+[[stork-configuration-reference]]
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-stork.adoc[opts=optional, leveloffset=+1]
 
 
 

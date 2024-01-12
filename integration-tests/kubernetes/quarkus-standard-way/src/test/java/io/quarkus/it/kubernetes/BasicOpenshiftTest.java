@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.openshift.api.model.DeploymentConfig;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -39,8 +39,8 @@ public class BasicOpenshiftTest {
         List<HasMetadata> openshiftList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
-            DeploymentConfig deployment = (DeploymentConfig) h;
+        assertThat(openshiftList).filteredOn(h -> "Deployment".equals(h.getKind())).singleElement().satisfies(h -> {
+            Deployment deployment = (Deployment) h;
 
             // metadata assertions
             assertThat(deployment.getMetadata().getName()).isEqualTo("basic-openshift");
@@ -50,7 +50,8 @@ public class BasicOpenshiftTest {
 
             // spec assertions
             assertThat(deployment.getSpec().getReplicas()).isEqualTo(1);
-            assertThat(deployment.getSpec().getSelector()).containsOnly(entry("app.kubernetes.io/name", "basic-openshift"),
+            assertThat(deployment.getSpec().getSelector().getMatchLabels()).containsOnly(
+                    entry("app.kubernetes.io/name", "basic-openshift"),
                     entry("app.kubernetes.io/version", "0.1-SNAPSHOT"));
 
             // containers assertions

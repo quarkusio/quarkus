@@ -22,10 +22,19 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-scheduler</artifactId>
         </dependency>
-
+        <!-- Use the "compile" scope because we need to include the VirtualThreadsAssertions in the app -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-vertx</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus.junit5</groupId>
+            <artifactId>junit5-virtual-threads</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

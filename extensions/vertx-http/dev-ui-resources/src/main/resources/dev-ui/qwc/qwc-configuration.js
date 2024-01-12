@@ -13,6 +13,7 @@ import '@vaadin/integer-field';
 import '@vaadin/text-field';
 import '@vaadin/select';
 import '@vaadin/details';
+import '@vaadin/combo-box';
 import { notifier } from 'notifier';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
@@ -35,7 +36,7 @@ export class QwcConfiguration extends observeState(LitElement) {
         flex-direction: column;
         overflow: hidden;
       }
-    
+
       .confTopBar {
         display: flex;
         justify-content: space-between;
@@ -50,7 +51,7 @@ export class QwcConfiguration extends observeState(LitElement) {
         vertical-align: top;
         width: 100%;
       }
-      
+
       .description {
         padding: 1em;
       }
@@ -70,7 +71,7 @@ export class QwcConfiguration extends observeState(LitElement) {
         cursor: pointer;
         color: var(--lumo-primary-color);
       }
-      
+
       .lock-icon {
         color: var(--lumo-contrast-60pct);
         font-size: small;
@@ -84,6 +85,10 @@ export class QwcConfiguration extends observeState(LitElement) {
         pointer-events: none;
         opacity: 0.4;
       }
+      .config-source-dropdown {
+        padding-left: 5px;
+        width: 300px;
+      }
     `;
 
     static properties = {
@@ -93,13 +98,23 @@ export class QwcConfiguration extends observeState(LitElement) {
         _values: {state: true},
         _detailsOpenedItem: {state: true, type: Array},
         _busy: {state: true},
-        _showOnlyOwnProperties: {state: true},
-        _searchTerm: {state: true}
+        _showOnlyConfigSource: {state: true},
+        _searchTerm: {state: true},
+        _configSourceSet: {state: true}
     };
 
     constructor() {
         super();
+        this._configSourceSet = new Map();
+        this._detailsOpenedItem = [];
+        this._busy = null;
 
+        this._showOnlyConfigSource = null;
+        this._searchTerm = '';
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
         this._filteredValue = this.routerController.getQueryParameter("filter");
 
         if(this._filteredValue){
@@ -109,15 +124,37 @@ export class QwcConfiguration extends observeState(LitElement) {
             this._allConfiguration = e.result;
             this._visibleConfiguration = e.result;
             this._filtered = e.result;
-        })
+            
+            for (const configItem of this._allConfiguration) {
+                let configSourceName = this._getConfigSourceName(configItem.configValue);
+                if(configSourceName && !this._configSourceSet.has(configSourceName)){
+                    this._configSourceSet.set(configSourceName, this._createConfigSourceObject(configSourceName, configItem.configValue));
+                }
+            }
+        });
         this.jsonRpc.getAllValues().then(e => {
             this._values = e.result;
         });
-        this._detailsOpenedItem = [];
-        this._busy = null;
+    }
 
-        this._showOnlyOwnProperties = false;
-        this._searchTerm = '';
+    _getConfigSourceName(configValue){
+        if(configValue.sourceName){
+            return configValue.configSourceName;
+        }
+        return null;
+    }
+
+    _createConfigSourceObject(configSourceName,configValue){
+        
+        let displayName = configSourceName;
+        
+        if(configSourceName.startsWith("PropertiesConfigSource[source")
+                    && configSourceName.endsWith("/application.properties]")){
+            displayName = "My properties";
+        }
+        
+        let configSourceObject = {name:configSourceName, display: displayName, position:configValue.configSourcePosition, ordinal:configValue.configSourceOrdinal};
+        return configSourceObject;
     }
 
     render() {
@@ -173,25 +210,31 @@ export class QwcConfiguration extends observeState(LitElement) {
                         <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
                         <qui-badge slot="suffix"><span>${this._filtered.length}</span></qui-badge>
                     </vaadin-text-field>
-                    <vaadin-checkbox theme="small" label="Show only my properties"
-                                    @change="${(event) => {
-                                        this._toggleShowOnlyOwnProperties(event.target.checked);
-                                    }}"
-                                    .checked=${this._showOnlyOwnProperties}>
-                    </vaadin-checkbox>
+      
+                    <vaadin-combo-box class="config-source-dropdown"
+                        @change="${(event) => {
+                            this._toggleFilterByConfigSource(event);
+                        }}"
+                        placeholder="Filter by config sources"
+                        item-label-path="display"
+                        item-value-path="name"
+                        .items="${Array.from(this._configSourceSet.values())}"
+                        clear-button-visible
+                    ></vaadin-combo-box>
+    
                 </div>
                 ${this._renderGrid()}
                 </div>`;
     }
 
-    _toggleShowOnlyOwnProperties(onlyMine){
-        this._showOnlyOwnProperties = onlyMine;
-        if(this._showOnlyOwnProperties){
+    _toggleFilterByConfigSource(event){
+        if(event.target.value){
+            this._showOnlyConfigSource = event.target.value;
             this._visibleConfiguration = this._allConfiguration.filter((prop) => {
-                return (prop.configValue.sourceName && prop.configValue.sourceName.startsWith("PropertiesConfigSource[source")
-                    && prop.configValue.sourceName.endsWith("/application.properties]"));
+                return prop.configValue.sourceName && prop.configValue.sourceName === this._showOnlyConfigSource;
             });
-        }else {
+        }else{
+            this._showOnlyConfigSource = null;
             this._visibleConfiguration = this._allConfiguration;
         }
         return this._filterGrid();
@@ -219,7 +262,7 @@ export class QwcConfiguration extends observeState(LitElement) {
                         </vaadin-grid-sort-column>
 
                         <vaadin-grid-sort-column width="45%" resizable flex-grow="0"
-                                            header="Name" 
+                                            header="Name"
                                             path="name"
                                             class="cell"
                                             ${columnBodyRenderer(this._nameRenderer, [])}>
@@ -306,11 +349,11 @@ export class QwcConfiguration extends observeState(LitElement) {
                 </vaadin-integer-field>`;
         } else if (prop.typeName === "java.lang.Float" || prop.typeName === "java.lang.Double") {
             return html`
-                <vaadin-number-field class="input-column" 
-                                    theme="small" 
-                                    id="input-${prop.name}" 
-                                    placeholder="${prop.defaultValue}" 
-                                    value="${actualValue}" 
+                <vaadin-number-field class="input-column"
+                                    theme="small"
+                                    id="input-${prop.name}"
+                                    placeholder="${prop.defaultValue}"
+                                    value="${actualValue}"
                                     @keydown="${this._keydown}">
                     <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
                     <vaadin-icon slot="suffix" icon="font-awesome-solid:floppy-disk" class="save-button"
@@ -332,26 +375,26 @@ export class QwcConfiguration extends observeState(LitElement) {
                 defaultValue = prop.defaultValue;
             }
             return html`
-                <vaadin-select class="input-column" 
-                                id="select-${prop.name}" 
-                                theme="small" 
-                                .items="${items}" 
+                <vaadin-select class="input-column"
+                                id="select-${prop.name}"
+                                theme="small"
+                                .items="${items}"
                                 .value="${defaultValue}"
                                 @change="${this._selectChanged}">
                             <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
-                
+
                 </vaadin-select>
             `;
         } else {
             return html`
-                <vaadin-text-field class="input-column" 
-                                    theme="small" 
+                <vaadin-text-field class="input-column"
+                                    theme="small"
                                     value="${actualValue}"
-                                    placeholder="${prop.defaultValue}" 
-                                    id="input-${prop.name}" 
+                                    placeholder="${prop.defaultValue}"
+                                    id="input-${prop.name}"
                                     @keydown="${this._keydown}">
                         <vaadin-tooltip slot="tooltip" text="${def}"></vaadin-tooltip>
-                        <vaadin-icon slot="suffix" icon="font-awesome-solid:floppy-disk" class="save-button" 
+                        <vaadin-icon slot="suffix" icon="font-awesome-solid:floppy-disk" class="save-button"
                                     id="save-button-${prop.name}" @click="${this._saveClicked}"></vaadin-icon>
                     </vaadin-button>
                 </vaadin-text-field>
@@ -374,12 +417,16 @@ export class QwcConfiguration extends observeState(LitElement) {
             }
         }
         res = res.toUpperCase();
-        
+
         let def = "<strong>Default value: </strong> None";
         if (prop.defaultValue) {
             def = "<strong>Default value: </strong>" + prop.defaultValue;
         }
-        let src = "<strong>Config source: </strong> " + prop.configValue.sourceName;
+        let configSourceName = "Unknown";
+        if(prop.configValue.sourceName){
+            configSourceName = prop.configValue.sourceName;
+        }
+        let src = "<strong>Config source: </strong> " + configSourceName;
         return html`<div class="description">
                         <p>${unsafeHTML(prop.description)}</p>
                         <div>

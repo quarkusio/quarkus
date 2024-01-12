@@ -9,11 +9,8 @@ import java.util.Set;
 
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.lang.InvalidAlgorithmException;
 import org.jose4j.lang.JoseException;
 
-import io.quarkus.logging.Log;
 import io.quarkus.oidc.OIDCException;
 
 public class JsonWebKeySet {
@@ -28,6 +25,7 @@ public class JsonWebKeySet {
 
     private Map<String, Key> keysWithKeyId = new HashMap<>();
     private Map<String, Key> keysWithThumbprints = new HashMap<>();
+    private Map<String, Key> keysWithS256Thumbprints = new HashMap<>();
     private Map<String, List<Key>> keysWithoutKeyIdAndThumbprint = new HashMap<>();
 
     public JsonWebKeySet(String json) {
@@ -48,7 +46,12 @@ public class JsonWebKeySet {
                     if (x5t != null && jwkKey.getKey() != null) {
                         keysWithThumbprints.put(x5t, jwkKey.getKey());
                     }
-                    if (jwkKey.getKeyId() == null && x5t == null && jwkKey.getKeyType() != null) {
+                    String x5tS256 = ((PublicJsonWebKey) jwkKey)
+                            .getX509CertificateSha256Thumbprint(calculateThumbprintIfMissing);
+                    if (x5tS256 != null && jwkKey.getKey() != null) {
+                        keysWithS256Thumbprints.put(x5tS256, jwkKey.getKey());
+                    }
+                    if (jwkKey.getKeyId() == null && x5t == null && x5tS256 == null && jwkKey.getKeyType() != null) {
                         List<Key> keys = keysWithoutKeyIdAndThumbprint.get(jwkKey.getKeyType());
                         if (keys == null) {
                             keys = new ArrayList<>();
@@ -76,13 +79,12 @@ public class JsonWebKeySet {
         return keysWithThumbprints.get(x5t);
     }
 
-    public Key getKeyWithoutKeyIdAndThumbprint(JsonWebSignature jws) {
-        try {
-            List<Key> keys = keysWithoutKeyIdAndThumbprint.get(jws.getKeyType());
-            return keys == null || keys.size() != 1 ? null : keys.get(0);
-        } catch (InvalidAlgorithmException ex) {
-            Log.debug("Token 'alg'(algorithm) header value is invalid", ex);
-            return null;
-        }
+    public Key getKeyWithS256Thumbprint(String x5tS256) {
+        return keysWithS256Thumbprints.get(x5tS256);
+    }
+
+    public Key getKeyWithoutKeyIdAndThumbprint(String keyType) {
+        List<Key> keys = keysWithoutKeyIdAndThumbprint.get(keyType);
+        return keys == null || keys.size() != 1 ? null : keys.get(0);
     }
 }

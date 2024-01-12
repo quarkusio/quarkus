@@ -16,8 +16,7 @@ public interface ParserHelper {
 
     /**
      * Adds an <em>implicit</em> parameter declaration. This is an alternative approach to <em>explicit</em> parameter
-     * declarations
-     * used directly in the templates, e.g. <code>{@org.acme.Foo foo}</code>.
+     * declarations used directly in the templates, e.g. <code>{@org.acme.Foo foo}</code>.
      *
      * @param name
      * @param type

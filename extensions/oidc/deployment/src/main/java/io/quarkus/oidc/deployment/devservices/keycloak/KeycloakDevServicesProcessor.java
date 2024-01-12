@@ -37,6 +37,7 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.util.JsonSerialization;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
@@ -64,6 +65,7 @@ import io.quarkus.oidc.deployment.devservices.OidcDevServicesBuildItem;
 import io.quarkus.oidc.runtime.devui.OidcDevServicesUtils;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
@@ -107,7 +109,7 @@ public class KeycloakDevServicesProcessor {
     private static final String KEYCLOAK_QUARKUS_HOSTNAME = "KC_HOSTNAME";
     private static final String KEYCLOAK_QUARKUS_ADMIN_PROP = "KEYCLOAK_ADMIN";
     private static final String KEYCLOAK_QUARKUS_ADMIN_PASSWORD_PROP = "KEYCLOAK_ADMIN_PASSWORD";
-    private static final String KEYCLOAK_QUARKUS_START_CMD = "start --storage=chm --http-enabled=true --hostname-strict=false --hostname-strict-https=false";
+    private static final String KEYCLOAK_QUARKUS_START_CMD = "start --http-enabled=true --hostname-strict=false --hostname-strict-https=false";
 
     private static final String JAVA_OPTS = "JAVA_OPTS";
     private static final String OIDC_USERS = "oidc.users";
@@ -361,6 +363,7 @@ public class KeycloakDevServicesProcessor {
                     capturedDevServicesConfiguration.port,
                     useSharedNetwork,
                     capturedDevServicesConfiguration.realmPath.orElse(List.of()),
+                    resourcesMap(),
                     capturedDevServicesConfiguration.serviceName,
                     capturedDevServicesConfiguration.shared,
                     capturedDevServicesConfiguration.javaOpts,
@@ -398,6 +401,17 @@ public class KeycloakDevServicesProcessor {
                 .orElseGet(defaultKeycloakContainerSupplier);
     }
 
+    private Map<String, String> resourcesMap() {
+        Map<String, String> resources = new HashMap<>();
+        for (Map.Entry<String, String> aliasEntry : capturedDevServicesConfiguration.resourceAliases.entrySet()) {
+            if (capturedDevServicesConfiguration.resourceMappings.containsKey(aliasEntry.getKey())) {
+                resources.put(aliasEntry.getValue(),
+                        capturedDevServicesConfiguration.resourceMappings.get(aliasEntry.getKey()));
+            }
+        }
+        return resources;
+    }
+
     private static boolean isKeycloakX(DockerImageName dockerImageName) {
         return capturedDevServicesConfiguration.keycloakXImage.isPresent()
                 ? capturedDevServicesConfiguration.keycloakXImage.get()
@@ -413,6 +427,7 @@ public class KeycloakDevServicesProcessor {
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
         private final List<String> realmPaths;
+        private final Map<String, String> resources;
         private final String containerLabelValue;
         private final Optional<String> javaOpts;
         private final boolean sharedContainer;
@@ -424,13 +439,14 @@ public class KeycloakDevServicesProcessor {
         private final List<String> errors;
 
         public QuarkusOidcContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, boolean useSharedNetwork,
-                List<String> realmPaths, String containerLabelValue,
+                List<String> realmPaths, Map<String, String> resources, String containerLabelValue,
                 boolean sharedContainer, Optional<String> javaOpts, Optional<String> startCommand, boolean showLogs,
                 List<String> errors) {
             super(dockerImageName);
 
             this.useSharedNetwork = useSharedNetwork;
             this.realmPaths = realmPaths;
+            this.resources = resources;
             this.containerLabelValue = containerLabelValue;
             this.sharedContainer = sharedContainer;
             this.javaOpts = javaOpts;
@@ -509,6 +525,9 @@ public class KeycloakDevServicesProcessor {
                 }
 
             }
+            for (Map.Entry<String, String> resource : resources.entrySet()) {
+                mapResource(resource.getKey(), resource.getValue());
+            }
 
             if (showLogs) {
                 super.withLogConsumer(t -> {
@@ -517,6 +536,17 @@ public class KeycloakDevServicesProcessor {
             }
 
             LOG.infof("Using %s powered Keycloak distribution", keycloakX ? "Quarkus" : "WildFly");
+        }
+
+        private void mapResource(String resourcePath, String mappedResource) {
+            if (Thread.currentThread().getContextClassLoader().getResource(resourcePath) != null) {
+                withClasspathResourceMapping(resourcePath, mappedResource, BindMode.READ_ONLY);
+            } else if (Files.exists(Paths.get(resourcePath))) {
+                withFileSystemBind(resourcePath, mappedResource, BindMode.READ_ONLY);
+            } else {
+                errors.add(String.format("%s resource is not available", resourcePath));
+                LOG.errorf("Realm %s resource is not available", resourcePath);
+            }
         }
 
         private Integer findRandomPort() {
@@ -626,8 +656,11 @@ public class KeycloakDevServicesProcessor {
                     keycloakUrl + "/realms/master/protocol/openid-connect/token",
                     "admin-cli", null, "admin", "admin", null)
                     .await().atMost(oidcConfig.devui.webClientTimeout);
+        } catch (TimeoutException e) {
+            LOG.error("Admin token can not be acquired due to a client connection timeout. " +
+                    "You may try increasing the `quarkus.oidc.devui.web-client-timeout` property.");
         } catch (Throwable t) {
-            LOG.errorf("Admin token can not be acquired: %s", t.getMessage());
+            LOG.error("Admin token can not be acquired", t);
         }
         return null;
     }
@@ -673,7 +706,7 @@ public class KeycloakDevServicesProcessor {
         } catch (Throwable t) {
             errors.add(String.format("Realm %s can not be created: %s", realm.getRealm(), t.getMessage()));
 
-            LOG.errorf("Realm %s can not be created: %s", realm.getRealm(), t.getMessage());
+            LOG.errorf(t, "Realm %s can not be created", realm.getRealm());
         }
     }
 

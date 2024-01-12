@@ -72,7 +72,6 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.StreamingLogHandlerBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
-import io.quarkus.deployment.builditem.WebSocketLogHandlerBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
@@ -229,7 +228,6 @@ public final class LoggingResourceProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             LogCategoryMinLevelDefaultsBuildItem categoryMinLevelDefaults,
             Optional<StreamingLogHandlerBuildItem> streamingLogStreamHandlerBuildItem,
-            Optional<WebSocketLogHandlerBuildItem> wsLogStreamHandlerBuildItem,
             List<LogHandlerBuildItem> handlerBuildItems,
             List<NamedLogHandlersBuildItem> namedHandlerBuildItems,
             List<LogConsoleFormatBuildItem> consoleFormatItems,
@@ -257,11 +255,6 @@ public final class LoggingResourceProcessor {
             }
             if (bannerBuildItem != null) {
                 possibleSupplier = bannerBuildItem.getBannerSupplier();
-            }
-            // Old Dev UI Log Stream
-            RuntimeValue<Optional<Handler>> wsDevUiLogHandler = null;
-            if (wsLogStreamHandlerBuildItem.isPresent()) {
-                wsDevUiLogHandler = wsLogStreamHandlerBuildItem.get().getHandlerValue();
             }
 
             // New Dev UI Log Stream
@@ -297,7 +290,7 @@ public final class LoggingResourceProcessor {
             shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(
                     recorder.initializeLogging(log, buildLog, discoveredLogComponents,
                             categoryMinLevelDefaults.content, alwaysEnableLogStream,
-                            wsDevUiLogHandler, streamingDevUiLogHandler, handlers, namedHandlers,
+                            streamingDevUiLogHandler, handlers, namedHandlers,
                             possibleConsoleFormatters, possibleFileFormatters, possibleSyslogFormatters,
                             possibleSupplier, launchModeBuildItem.getLaunchMode(), true)));
             LogConfig logConfig = new LogConfig();
@@ -619,10 +612,23 @@ public final class LoggingResourceProcessor {
     }
 
     private static ResultHandle getLogManagerLevelIntValue(String levelName, BytecodeCreator method) {
-        final ResultHandle infoLevel = method.readStaticField(
-                FieldDescriptor.of(org.jboss.logmanager.Level.class, levelName, org.jboss.logmanager.Level.class));
+        FieldDescriptor fd;
+        switch (levelName) {
+            case "FATAL":
+            case "ERROR":
+            case "WARN":
+            case "INFO":
+            case "DEBUG":
+            case "TRACE":
+                fd = FieldDescriptor.of(org.jboss.logmanager.Level.class, levelName, org.jboss.logmanager.Level.class);
+                break;
+            default:
+                fd = FieldDescriptor.of(Level.class, levelName, Level.class);
+                break;
+        }
+        final ResultHandle levelVal = method.readStaticField(fd);
         return method
-                .invokeVirtualMethod(MethodDescriptor.ofMethod(Level.class, "intValue", int.class), infoLevel);
+                .invokeVirtualMethod(MethodDescriptor.ofMethod(Level.class, "intValue", int.class), levelVal);
     }
 
     private static void generateDefaultLoggingLogger(Level minLevel, ClassOutput output) {

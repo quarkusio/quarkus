@@ -154,6 +154,7 @@ public class JarResultBuildStep {
     public static final String DEFAULT_FAST_JAR_DIRECTORY_NAME = "quarkus-app";
 
     public static final String MP_CONFIG_FILE = "META-INF/microprofile-config.properties";
+    private static final String VINEFLOWER_VERSION = "1.9.3";
 
     @BuildStep
     OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst, PackageConfig packageConfig) {
@@ -176,7 +177,7 @@ public class JarResultBuildStep {
     ArtifactResultBuildItem jarOutput(JarBuildItem jarBuildItem) {
         if (jarBuildItem.getLibraryDir() != null) {
             return new ArtifactResultBuildItem(jarBuildItem.getPath(), PackageConfig.JAR,
-                    Collections.singletonMap("library-dir", jarBuildItem.getLibraryDir()));
+                    Collections.singletonMap("library-dir", jarBuildItem.getLibraryDir().toString()));
         } else {
             return new ArtifactResultBuildItem(jarBuildItem.getPath(), PackageConfig.JAR, Collections.emptyMap());
         }
@@ -328,7 +329,7 @@ public class JarResultBuildStep {
             MainClassBuildItem mainClassBuildItem,
             ClassLoadingConfig classLoadingConfig,
             Path runnerJar) throws Exception {
-        try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
+        try (FileSystem runnerZipFs = createNewZip(runnerJar, packageConfig)) {
 
             log.info("Building uber jar: " + runnerJar);
 
@@ -529,7 +530,7 @@ public class JarResultBuildStep {
         Files.deleteIfExists(runnerJar);
         IoUtils.createOrEmptyDir(libDir);
 
-        try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
+        try (FileSystem runnerZipFs = createNewZip(runnerJar, packageConfig)) {
 
             log.info("Building thin jar: " + runnerJar);
 
@@ -603,19 +604,22 @@ public class JarResultBuildStep {
         Path decompiledOutputDir = null;
         boolean wasDecompiledSuccessfully = true;
         Decompiler decompiler = null;
-        if (packageConfig.vineflower.enabled) {
+        if (packageConfig.vineflower.enabled.orElse(false) || packageConfig.decompiler.enabled.orElse(false)) {
+            Optional<String> jarDirectoryStrOpt = packageConfig.vineflower.enabled.orElse(false)
+                    ? packageConfig.vineflower.jarDirectory
+                    : packageConfig.decompiler.jarDirectory;
+            String jarDirectoryStr = jarDirectoryStrOpt.orElse(System.getProperty("user.home") + "/.quarkus");
+
             decompiledOutputDir = buildDir.getParent().resolve("decompiled");
             FileUtil.deleteDirectory(decompiledOutputDir);
             Files.createDirectory(decompiledOutputDir);
-            if (packageConfig.vineflower.enabled) {
-                decompiler = new Decompiler.VineflowerDecompiler();
-                Path jarDirectory = Paths.get(packageConfig.vineflower.jarDirectory);
-                if (!Files.exists(jarDirectory)) {
-                    Files.createDirectory(jarDirectory);
-                }
-                decompiler.init(new Decompiler.Context(packageConfig.vineflower.version, jarDirectory, decompiledOutputDir));
-                decompiler.downloadIfNecessary();
+            decompiler = new Decompiler.VineflowerDecompiler();
+            Path jarDirectory = Paths.get(jarDirectoryStr);
+            if (!Files.exists(jarDirectory)) {
+                Files.createDirectory(jarDirectory);
             }
+            decompiler.init(new Decompiler.Context(VINEFLOWER_VERSION, jarDirectory, decompiledOutputDir));
+            decompiler.downloadIfNecessary();
         }
 
         FastJarJars.FastJarJarsBuilder fastJarJarsBuilder = new FastJarJars.FastJarJarsBuilder();
@@ -625,7 +629,7 @@ public class JarResultBuildStep {
         if (!transformedClasses.getTransformedClassesByJar().isEmpty()) {
             Path transformedZip = quarkus.resolve(TRANSFORMED_BYTECODE_JAR);
             fastJarJarsBuilder.setTransformed(transformedZip);
-            try (FileSystem out = ZipUtils.newZip(transformedZip)) {
+            try (FileSystem out = createNewZip(transformedZip, packageConfig)) {
                 for (Set<TransformedClassesBuildItem.TransformedClass> transformedSet : transformedClasses
                         .getTransformedClassesByJar().values()) {
                     for (TransformedClassesBuildItem.TransformedClass transformed : transformedSet) {
@@ -646,7 +650,7 @@ public class JarResultBuildStep {
         //now generated classes and resources
         Path generatedZip = quarkus.resolve(GENERATED_BYTECODE_JAR);
         fastJarJarsBuilder.setGenerated(generatedZip);
-        try (FileSystem out = ZipUtils.newZip(generatedZip)) {
+        try (FileSystem out = createNewZip(generatedZip, packageConfig)) {
             for (GeneratedClassBuildItem i : generatedClasses) {
                 String fileName = i.getName().replace('.', '/') + ".class";
                 Path target = out.getPath(fileName);
@@ -679,7 +683,7 @@ public class JarResultBuildStep {
         if (!rebuild) {
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
 
-            try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
+            try (FileSystem runnerZipFs = createNewZip(runnerJar, packageConfig)) {
                 copyFiles(applicationArchivesBuildItem.getRootArchive(), runnerZipFs, null, ignoredEntriesPredicate);
             }
         }
@@ -691,7 +695,7 @@ public class JarResultBuildStep {
             if (!rebuild) {
                 copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, mainLib, baseLib,
                         fastJarJarsBuilder::addDep, true,
-                        classPath, appDep, transformedClasses, removed);
+                        classPath, appDep, transformedClasses, removed, packageConfig);
             } else if (includeAppDep(appDep, outputTargetBuildItem.getIncludedOptionalDependencies(), removed)) {
                 appDep.getResolvedPaths().forEach(fastJarJarsBuilder::addDep);
             }
@@ -764,7 +768,7 @@ public class JarResultBuildStep {
             }
         }
         if (!rebuild) {
-            try (FileSystem runnerZipFs = ZipUtils.newZip(initJar)) {
+            try (FileSystem runnerZipFs = createNewZip(initJar, packageConfig)) {
                 ResolvedDependency appArtifact = curateOutcomeBuildItem.getApplicationModel().getAppArtifact();
                 generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact,
                         QuarkusEntryPoint.class.getName(),
@@ -779,7 +783,7 @@ public class JarResultBuildStep {
                     copyDependency(parentFirstKeys, outputTargetBuildItem, copiedArtifacts, deploymentLib, baseLib, (p) -> {
                     },
                             false, classPath,
-                            appDep, new TransformedClassesBuildItem(Map.of()), removed); //we don't care about transformation here, so just pass in an empty item
+                            appDep, new TransformedClassesBuildItem(Map.of()), removed, packageConfig); //we don't care about transformation here, so just pass in an empty item
                 }
                 Map<ArtifactKey, List<String>> relativePaths = new HashMap<>();
                 for (Map.Entry<ArtifactKey, List<Path>> e : copiedArtifacts.entrySet()) {
@@ -880,7 +884,8 @@ public class JarResultBuildStep {
     private void copyDependency(Set<ArtifactKey> parentFirstArtifacts, OutputTargetBuildItem outputTargetBuildItem,
             Map<ArtifactKey, List<Path>> runtimeArtifacts, Path libDir, Path baseLib, Consumer<Path> targetPathConsumer,
             boolean allowParentFirst, StringBuilder classPath, ResolvedDependency appDep,
-            TransformedClassesBuildItem transformedClasses, Set<ArtifactKey> removedDeps)
+            TransformedClassesBuildItem transformedClasses, Set<ArtifactKey> removedDeps,
+            PackageConfig packageConfig)
             throws IOException {
 
         // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
@@ -908,7 +913,7 @@ public class JarResultBuildStep {
                 // This case can happen when we are building a jar from inside the Quarkus repository
                 // and Quarkus Bootstrap's localProjectDiscovery has been set to true. In such a case
                 // the non-jar dependencies are the Quarkus dependencies picked up on the file system
-                packageClasses(resolvedDep, targetPath);
+                packageClasses(resolvedDep, targetPath, packageConfig);
             } else {
                 Set<TransformedClassesBuildItem.TransformedClass> transformedFromThisArchive = transformedClasses
                         .getTransformedClassesByJar().get(resolvedDep);
@@ -930,8 +935,8 @@ public class JarResultBuildStep {
         }
     }
 
-    private void packageClasses(Path resolvedDep, final Path targetPath) throws IOException {
-        try (FileSystem runnerZipFs = ZipUtils.newZip(targetPath)) {
+    private void packageClasses(Path resolvedDep, final Path targetPath, PackageConfig packageConfig) throws IOException {
+        try (FileSystem runnerZipFs = createNewZip(targetPath, packageConfig)) {
             Files.walkFileTree(resolvedDep, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
                     new SimpleFileVisitor<Path>() {
                         @Override
@@ -1011,7 +1016,6 @@ public class JarResultBuildStep {
             removedArtifacts.add("org.graalvm.sdk:nativeimage");
             removedArtifacts.add("org.graalvm.sdk:word");
             removedArtifacts.add("org.graalvm.sdk:collections");
-            removedArtifacts.add("org.graalvm.polyglot:polyglot");
 
             doLegacyThinJarGeneration(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem, applicationInfo, packageConfig, generatedResources, libDir, allClasses,
@@ -1644,6 +1648,14 @@ public class JarResultBuildStep {
                 return true;
             }
         }
+    }
+
+    private static FileSystem createNewZip(Path runnerJar, PackageConfig config) throws IOException {
+        boolean useUncompressedJar = config.compressJar.map(o -> !o).orElse(false);
+        if (useUncompressedJar) {
+            return ZipUtils.newZip(runnerJar, Map.of("compressionMethod", "STORED"));
+        }
+        return ZipUtils.newZip(runnerJar);
     }
 
 }

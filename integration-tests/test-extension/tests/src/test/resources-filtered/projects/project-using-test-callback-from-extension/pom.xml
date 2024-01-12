@@ -9,10 +9,10 @@
     <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
     <quarkus.bom.artifact-id>quarkus-bom</quarkus.bom.artifact-id>
-    <maven.compiler.release>11</maven.compiler.release>
+    <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <surefire-plugin.version>3.1.2</surefire-plugin.version>
+    <surefire-plugin.version>3.2.3</surefire-plugin.version>
     <quarkus.version>@project.version@</quarkus.version>
   </properties>
   <dependencyManagement>

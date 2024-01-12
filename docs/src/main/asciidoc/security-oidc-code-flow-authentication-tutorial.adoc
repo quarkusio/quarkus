@@ -15,7 +15,7 @@ Discover how to secure application HTTP endpoints by using the Quarkus OpenID Co
 
 For more information, see xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications].
 
-To learn how well-known social providers such as Apple, Facebook, GitHub, Google, Mastodon, Microsoft, Twitch, Twitter (X), and Spotify can be used with Quarkus OIDC, see xref:security-openid-connect-providers.adoc[Configuring Well-Known OpenID Connect Providers].
+To learn about how well-known social providers such as Apple, Facebook, GitHub, Google, Mastodon, Microsoft, Twitch, Twitter (X), and Spotify can be used with Quarkus OIDC, see xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect providers].
 See also, xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus].
 
 If you want to protect your service applications by using OIDC Bearer token authentication, see xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication].
@@ -27,18 +27,19 @@ include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
-In this example, we build a very simple web application with a single page:
+In this example, we build a simple web application with a single page:
 
 * `/index.html`
 
-This page is protected and can only be accessed by authenticated users.
+This page is protected, and only authenticated users can access it.
 
 == Solution
 
-We recommend that you follow the instructions in the next sections and create the application step by step.
-However, you can go right to the completed example.
+Follow the instructions in the next sections and create the application step by step.
+Alternatively, you can go right to the completed example.
 
-Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+Clone the Git repository by running the `git clone {quickstarts-clone-url}` command.
+Alternatively, download an {quickstarts-archive-url}[archive].
 
 The solution is located in the `security-openid-connect-web-authentication-quickstart` link:{quickstarts-tree-url}/security-openid-connect-web-authentication-quickstart[directory].
 
@@ -48,7 +49,7 @@ The solution is located in the `security-openid-connect-web-authentication-quick
 == Create the Maven project
 
 First, we need a new project.
-Create a new project with the following command:
+Create a new project by running the following command:
 
 :create-app-artifact-id: security-openid-connect-web-authentication-quickstart
 :create-app-extensions: resteasy-reactive,oidc
@@ -99,20 +100,20 @@ import io.quarkus.oidc.RefreshToken;
 public class TokenResource {
 
    /**
-    * Injection point for the ID Token issued by the OpenID Connect Provider
+    * Injection point for the ID token issued by the OpenID Connect provider
     */
    @Inject
    @IdToken
    JsonWebToken idToken;
 
    /**
-    * Injection point for the Access Token issued by the OpenID Connect Provider
+    * Injection point for the access token issued by the OpenID Connect provider
     */
    @Inject
    JsonWebToken accessToken;
 
    /**
-    * Injection point for the Refresh Token issued by the OpenID Connect Provider
+    * Injection point for the refresh token issued by the OpenID Connect provider
     */
    @Inject
    RefreshToken refreshToken;
@@ -120,9 +121,9 @@ public class TokenResource {
    /**
     * Returns the tokens available to the application.
     * This endpoint exists only for demonstration purposes.
-    * Do not not expose these tokens in a real application.
+    * Do not expose these tokens in a real application.
     *
-    * @return an HTML page containing the tokens available to the application
+    * @return an HTML page containing the tokens available to the application.
     */
    @GET
    @Produces("text/html")
@@ -176,7 +177,7 @@ This is the simplest configuration you can have when enabling authentication to 
 
 The `quarkus.oidc.client-id` property references the `client_id` issued by the OIDC provider, and the `quarkus.oidc.credentials.secret` property sets the client secret.
 
-The `quarkus.oidc.application-type` property is set to `web-app` to tell Quarkus that you want to enable the OIDC authorization code flow so your users are redirected to the OIDC provider to authenticate.
+The `quarkus.oidc.application-type` property is set to `web-app` to tell Quarkus that you want to enable the OIDC authorization code flow so that your users are redirected to the OIDC provider to authenticate.
 
 Finally, the `quarkus.http.auth.permission.authenticated` permission is set to tell Quarkus about the paths you want to protect.
 In this case, all paths are protected by a policy that ensures only `authenticated` users can access them.
@@ -198,12 +199,12 @@ You can access your Keycloak Server at http://localhost:8180[localhost:8180].
 To access the Keycloak Administration Console, log in as the `admin` user.
 The username and password are both `admin`.
 
-Import the link:{quickstarts-tree-url}/security-openid-connect-web-authentication-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm.
+To create a new realm, import the link:{quickstarts-tree-url}/security-openid-connect-web-authentication-quickstart/config/quarkus-realm.json[realm configuration file].
 For more information, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#configuring-realms[create and configure a new realm].
 
 == Run the application in dev and JVM modes
 
-To run the application in a dev mode, use:
+To run the application in dev mode, use:
 
 include::{includes}/devtools/dev.adoc[]
 
@@ -243,25 +244,26 @@ After a while, you can run this binary directly:
 
 To test the application, open your browser and access the following URL:
 
-
 * http://localhost:8080/tokens[http://localhost:8080/tokens]
 
 If everything works as expected, you are redirected to the Keycloak server to authenticate.
 
-To authenticate to the application, enter the following credentials when at the Keycloak login page:
+To authenticate to the application, enter the following credentials at the Keycloak login page:
 
 * Username: *alice*
 * Password: *alice*
 
-After clicking the `Login` button, you are redirected back to the application, and a session cookie is created.
+After clicking the `Login` button, you are redirected back to the application, and a session cookie will be created.
 
-The session for this demo is short-lived, so you are asked to re-authenticate on every page refresh.
-For more information about increasing the session timeouts, see the link:https://www.keycloak.org/docs/latest/server_admin/#_timeouts[session timeout] section in the Keycloak documentation.
-For example, you can access the Keycloak Admin console directly from Dev UI by selecting a `Keycloak Admin` link if you use xref:security-oidc-code-flow-authentication.adoc#integration-testing-keycloak-devservices[Dev Services for Keycloak] in dev mode:
+The session for this demo is valid for a short period of time and, on every page refresh, you will be asked to re-authenticate.
+For information about how to increase the session timeouts, see the Keycloak https://www.keycloak.org/docs/latest/server_admin/#_timeouts[session timeout] documentation.
+For example, you can access the Keycloak Admin console directly from the dev UI by clicking the `Keycloak Admin` link if you use xref:security-oidc-code-flow-authentication.adoc#integration-testing-keycloak-devservices[Dev Services for Keycloak] in dev mode:
 
 image::dev-ui-oidc-keycloak-card.png[alt=Dev UI OpenID Connect Card,role="center"]
 
 For more information about writing the integration tests that depend on `Dev Services for Keycloak`, see the xref:security-oidc-code-flow-authentication.adoc#integration-testing-keycloak-devservices[Dev Services for Keycloak] section.
+
+:sectnums!:
 
 == Summary
 
@@ -271,8 +273,8 @@ After you have completed this tutorial, explore xref:security-oidc-bearer-token-
 == References
 * xref:security-overview.adoc[Quarkus Security overview]
 * xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications]
-* xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect Providers]
-* xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 Client and Filters Reference Guide]
+* xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect providers]
+* xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 Client and Filters reference guide]
 * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]
 * xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
 * xref:security-authentication-mechanisms.adoc#oidc-jwt-oauth2-comparison[Choosing between OpenID Connect, SmallRye JWT, and OAuth2 authentication mechanisms]

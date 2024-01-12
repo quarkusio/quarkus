@@ -1468,4 +1468,139 @@ public class DevMojoIT extends LaunchMojoTestBase {
                 .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/hello").contains("BONJOUR!"));
     }
+
+    @Test
+    public void testThatAptInClasspathWorks() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/apt-in-classpath", "projects/project-apt-in-classpath");
+        run(true);
+
+        // wait until app is compiled and started
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("field/myEntity.field"));
+
+        // make sure annotations go to the right place
+        File entityMetamodelSourceFile = new File(testDir, "target/generated-sources/annotations/org/acme/MyEntity_.java");
+        assertThat(entityMetamodelSourceFile).exists().content().contains("FIELD");
+        File entityQuerySourceFile = new File(testDir, "target/generated-sources/annotations/org/acme/QMyEntity.java");
+        assertThat(entityQuerySourceFile).exists().content().contains("field");
+        File entityMetamodelClassFile = new File(testDir, "target/classes/org/acme/MyEntity_.class");
+        assertThat(entityMetamodelClassFile).exists();
+        File entityQueryClassFile = new File(testDir, "target/classes/org/acme/QMyEntity.class");
+        assertThat(entityQueryClassFile).exists();
+
+        // Edit the entity to change the field name
+        File source = new File(testDir, "src/main/java/org/acme/MyEntity.java");
+        filter(source, Collections.singletonMap("String field;", "String field2;"));
+
+        // Edit the "Hello" message for the new field.
+        source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        filter(source, Collections.singletonMap("return MyEntity_.FIELD+\"/\"+QMyEntity.myEntity.field;",
+                "return MyEntity_.FIELD2+\"/\"+QMyEntity.myEntity.field2;"));
+
+        // Wait until we get "field2/field2"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("field2/myEntity.field2"));
+
+        // make sure annotations go to the right place
+        assertThat(entityMetamodelSourceFile).exists().content().contains("FIELD2");
+        assertThat(entityQuerySourceFile).exists().content().contains("field2");
+        assertThat(entityMetamodelClassFile).exists();
+        assertThat(entityQueryClassFile).exists();
+    }
+
+    @Test
+    public void testThatAptInAnnotationProcessorPathsWorks() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/apt-in-annotation-processor-paths",
+                "projects/project-apt-in-annotation-processor-paths");
+        run(true);
+
+        // same expectations as the classpath one: two APT plugins
+
+        // wait until app is compiled and started
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("field/myEntity.field"));
+
+        // make sure annotations go to the right place
+        File entityMetamodelSourceFile = new File(testDir, "target/generated-sources/annotations/org/acme/MyEntity_.java");
+        assertThat(entityMetamodelSourceFile).exists().content().contains("FIELD");
+        File entityQuerySourceFile = new File(testDir, "target/generated-sources/annotations/org/acme/QMyEntity.java");
+        assertThat(entityQuerySourceFile).exists().content().contains("field");
+        File entityMetamodelClassFile = new File(testDir, "target/classes/org/acme/MyEntity_.class");
+        assertThat(entityMetamodelClassFile).exists();
+        File entityQueryClassFile = new File(testDir, "target/classes/org/acme/QMyEntity.class");
+        assertThat(entityQueryClassFile).exists();
+
+        // Edit the entity to change the field name
+        File source = new File(testDir, "src/main/java/org/acme/MyEntity.java");
+        filter(source, Collections.singletonMap("String field;", "String field2;"));
+
+        // Edit the "Hello" message for the new field.
+        source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        filter(source, Collections.singletonMap("return MyEntity_.FIELD+\"/\"+QMyEntity.myEntity.field;",
+                "return MyEntity_.FIELD2+\"/\"+QMyEntity.myEntity.field2;"));
+
+        // Wait until we get "field2/field2"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("field2/myEntity.field2"));
+
+        // make sure annotations go to the right place
+        assertThat(entityMetamodelSourceFile).exists().content().contains("FIELD2");
+        assertThat(entityQuerySourceFile).exists().content().contains("field2");
+        assertThat(entityMetamodelClassFile).exists();
+        assertThat(entityQueryClassFile).exists();
+    }
+
+    @Test
+    public void testThatAptInAnnotationProcessorsWorks() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/apt-in-annotation-processors",
+                "projects/project-apt-in-annotation-processors");
+        run(true);
+
+        // NOT the same expectations as the classpath one: only the Hibernate APT plugin
+
+        // wait until app is compiled and started
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("field"));
+
+        // make sure annotations go to the right place
+        File entityMetamodelSourceFile = new File(testDir, "target/generated-sources/annotations/org/acme/MyEntity_.java");
+        assertThat(entityMetamodelSourceFile).exists().content().contains("FIELD");
+        File entityQuerySourceFile = new File(testDir, "target/generated-sources/annotations/org/acme/QMyEntity.java");
+        assertThat(entityQuerySourceFile).doesNotExist();
+        File entityMetamodelClassFile = new File(testDir, "target/classes/org/acme/MyEntity_.class");
+        assertThat(entityMetamodelClassFile).exists();
+        File entityQueryClassFile = new File(testDir, "target/classes/org/acme/QMyEntity.class");
+        assertThat(entityQueryClassFile).doesNotExist();
+
+        // Edit the entity to change the field name
+        File source = new File(testDir, "src/main/java/org/acme/MyEntity.java");
+        filter(source, Collections.singletonMap("String field;", "String field2;"));
+
+        // Edit the "Hello" message for the new field.
+        source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        filter(source, Collections.singletonMap("return MyEntity_.FIELD;",
+                "return MyEntity_.FIELD2;"));
+
+        // Wait until we get "field2"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("field2"));
+
+        // make sure annotations go to the right place
+        assertThat(entityMetamodelSourceFile).exists().content().contains("FIELD2");
+        assertThat(entityQuerySourceFile).doesNotExist();
+        assertThat(entityMetamodelClassFile).exists();
+        assertThat(entityQueryClassFile).doesNotExist();
+    }
 }

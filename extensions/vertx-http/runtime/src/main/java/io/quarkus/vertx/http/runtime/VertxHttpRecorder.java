@@ -1123,8 +1123,14 @@ public class VertxHttpRecorder {
 
         private void setupTcpHttpServer(HttpServer httpServer, HttpServerOptions options, boolean https,
                 Promise<Void> startFuture, AtomicInteger remainingCount, AtomicInteger currentConnectionCount) {
+
             if (quarkusConfig.limits.maxConnections.isPresent() && quarkusConfig.limits.maxConnections.getAsInt() > 0) {
+                var tracker = vertx.isMetricsEnabled()
+                        ? ((ExtendedQuarkusVertxHttpMetrics) ((VertxInternal) vertx).metricsSPI()).getHttpConnectionTracker()
+                        : ExtendedQuarkusVertxHttpMetrics.NOOP_CONNECTION_TRACKER;
+
                 final int maxConnections = quarkusConfig.limits.maxConnections.getAsInt();
+                tracker.initialize(maxConnections, currentConnectionCount);
                 httpServer.connectionHandler(new Handler<HttpConnection>() {
 
                     @Override
@@ -1135,6 +1141,7 @@ public class VertxHttpRecorder {
                             if (current == maxConnections) {
                                 //just close the connection
                                 LOGGER.debug("Rejecting connection as there are too many active connections");
+                                tracker.onConnectionRejected();
                                 event.close();
                                 return;
                             }
@@ -1143,7 +1150,7 @@ public class VertxHttpRecorder {
                             @Override
                             public void handle(Void event) {
                                 LOGGER.debug("Connection closed");
-                                connectionCount.decrementAndGet();
+                                currentConnectionCount.decrementAndGet();
                             }
                         });
                     }

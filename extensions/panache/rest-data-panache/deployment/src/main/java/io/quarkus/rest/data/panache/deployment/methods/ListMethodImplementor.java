@@ -184,7 +184,11 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         parameters.add(param("size", int.class, intType()));
         parameters.add(param("uriInfo", UriInfo.class));
         parameters.add(param("namedQuery", String.class));
-        parameters.addAll(compatibleFieldsForQuery);
+        for (SignatureMethodCreator.Parameter param : compatibleFieldsForQuery) {
+            parameters.add(param(
+                    param.getName().replace(".", "__"),
+                    param.getClazz()));
+        }
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(getMethodName(), classCreator,
                 isNotReactivePanache() ? responseType() : uniType(resourceMetadata.getEntityType()),
                 parameters.toArray(new SignatureMethodCreator.Parameter[0]));
@@ -271,7 +275,11 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         List<SignatureMethodCreator.Parameter> parameters = new ArrayList<>();
         parameters.add(param("sort", List.class, parameterizedType(classType(List.class), classType(String.class))));
         parameters.add(param("namedQuery", String.class));
-        parameters.addAll(compatibleFieldsForQuery);
+        for (SignatureMethodCreator.Parameter param : compatibleFieldsForQuery) {
+            parameters.add(param(
+                    param.getName().replace(".", "__"),
+                    param.getClazz()));
+        }
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(getMethodName(), classCreator,
                 isNotReactivePanache() ? responseType() : uniType(resourceMetadata.getEntityType()),
                 parameters.toArray(new SignatureMethodCreator.Parameter[0]));
@@ -321,13 +329,14 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         ResultHandle queryList = creator.newInstance(ofConstructor(ArrayList.class));
         for (Map.Entry<String, ResultHandle> field : fieldValues.entrySet()) {
             String fieldName = field.getKey();
+            String paramName = fieldName.replace(".", "__");
             ResultHandle fieldValueFromQuery = field.getValue();
             BytecodeCreator fieldValueFromQueryIsSet = creator.ifNotNull(fieldValueFromQuery).trueBranch();
             fieldValueFromQueryIsSet.invokeInterfaceMethod(ofMethod(List.class, "add", boolean.class, Object.class),
-                    queryList, fieldValueFromQueryIsSet.load(fieldName + "=:" + fieldName));
+                    queryList, fieldValueFromQueryIsSet.load(fieldName + "=:" + paramName));
             fieldValueFromQueryIsSet.invokeInterfaceMethod(
                     ofMethod(Map.class, "put", Object.class, Object.class, Object.class),
-                    dataParams, fieldValueFromQueryIsSet.load(fieldName), fieldValueFromQuery);
+                    dataParams, fieldValueFromQueryIsSet.load(paramName), fieldValueFromQuery);
         }
 
         /**

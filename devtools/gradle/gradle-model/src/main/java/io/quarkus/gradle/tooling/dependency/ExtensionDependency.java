@@ -8,18 +8,17 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 
-import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 
-public class ExtensionDependency {
+public abstract class ExtensionDependency<T> {
 
     private final ModuleVersionIdentifier extensionId;
-    protected final ArtifactCoords deploymentModule;
+    private final T deploymentModule;
     private final List<Dependency> conditionalDependencies;
     private final List<ArtifactKey> dependencyConditions;
     private boolean isConditional;
 
-    public ExtensionDependency(ModuleVersionIdentifier extensionId, ArtifactCoords deploymentModule,
+    public ExtensionDependency(ModuleVersionIdentifier extensionId, T deploymentModule,
             List<Dependency> conditionalDependencies,
             List<ArtifactKey> dependencyConditions) {
         this.extensionId = extensionId;
@@ -39,10 +38,6 @@ public class ExtensionDependency {
         dependencies.components(handler -> handler.withModule(toModuleName(),
                 componentMetadataDetails -> componentMetadataDetails.allVariants(variantMetadata -> variantMetadata
                         .withDependencies(d -> d.add(DependencyUtils.asDependencyNotation(dependency))))));
-    }
-
-    public String asDependencyNotation() {
-        return String.join(":", this.extensionId.getGroup(), this.extensionId.getName(), this.extensionId.getVersion());
     }
 
     private Dependency findConditionalDependency(ModuleVersionIdentifier capability) {
@@ -83,7 +78,7 @@ public class ExtensionDependency {
         return conditionalDependencies;
     }
 
-    public ArtifactCoords getDeploymentModule() {
+    public T getDeploymentModule() {
         return deploymentModule;
     }
 
@@ -101,7 +96,7 @@ public class ExtensionDependency {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        ExtensionDependency that = (ExtensionDependency) o;
+        ExtensionDependency<?> that = (ExtensionDependency<?>) o;
         return Objects.equals(extensionId, that.extensionId)
                 && Objects.equals(conditionalDependencies, that.conditionalDependencies)
                 && Objects.equals(dependencyConditions, that.dependencyConditions);

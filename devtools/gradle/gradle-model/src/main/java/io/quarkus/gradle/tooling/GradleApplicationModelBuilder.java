@@ -231,11 +231,11 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         if (a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
             ProjectComponentIdentifier projectComponentIdentifier = (ProjectComponentIdentifier) a.getId()
                     .getComponentIdentifier();
-            var includedBuild = ToolingUtils.includedBuild(project, projectComponentIdentifier);
+            var includedBuild = ToolingUtils.includedBuild(project, projectComponentIdentifier.getBuild().getName());
             final Project projectDep;
             if (includedBuild != null) {
                 projectDep = ToolingUtils.includedBuildProject((IncludedBuildInternal) includedBuild,
-                        projectComponentIdentifier);
+                        projectComponentIdentifier.getProjectPath());
             } else {
                 projectDep = project.getRootProject().findProject(projectComponentIdentifier.getProjectPath());
             }
@@ -362,13 +362,13 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 final String classifier = a.getClassifier();
                 if (classifier == null || classifier.isEmpty()) {
                     final IncludedBuild includedBuild = ToolingUtils.includedBuild(project.getRootProject(),
-                            (ProjectComponentIdentifier) a.getId().getComponentIdentifier());
+                            ((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getBuild().getName());
                     if (includedBuild != null) {
                         final PathList.Builder pathBuilder = PathList.builder();
 
                         if (includedBuild instanceof IncludedBuildInternal) {
                             projectDep = ToolingUtils.includedBuildProject((IncludedBuildInternal) includedBuild,
-                                    (ProjectComponentIdentifier) a.getId().getComponentIdentifier());
+                                    ((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getProjectPath());
                         }
                         if (projectDep != null) {
                             projectModule = initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder,

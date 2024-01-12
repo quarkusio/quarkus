@@ -1,7 +1,11 @@
 package io.quarkus.gradle;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,10 +59,17 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
     public BuildResult runGradleWrapper(boolean expectError, File projectDir, boolean skipAnalytics, String... args)
             throws IOException, InterruptedException {
+        boolean isInCiPipeline = "true".equals(System.getenv("CI"));
+
         setupTestCommand();
         List<String> command = new ArrayList<>();
         command.add(getGradleWrapperCommand());
         addSystemProperties(command);
+
+        if (!isInCiPipeline && isDebuggerConnected()) {
+            command.add("-Dorg.gradle.debug=true");
+        }
+
         command.add("-Dorg.gradle.console=plain");
         if (skipAnalytics) {
             command.add("-Dquarkus.analytics.disabled=true");
@@ -81,7 +92,6 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
                 .directory(projectDir)
                 .command(command)
                 .redirectInput(ProcessBuilder.Redirect.INHERIT)
-                .redirectOutput(logOutput)
                 // Should prevent "fragmented" output (parts of stdout and stderr interleaved)
                 .redirectErrorStream(true);
         if (System.getenv("GRADLE_JAVA_HOME") != null) {
@@ -93,20 +103,39 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         }
         Process p = pb.start();
 
-        //long timeout for native tests
-        //that may also need to download docker
-        boolean done = p.waitFor(10, TimeUnit.MINUTES);
+        Thread outputPuller = new Thread(new LogRedirectAndStopper(p, logOutput, !isInCiPipeline));
+        outputPuller.setDaemon(true);
+        outputPuller.start();
+
+        boolean done;
+
+        if (!isInCiPipeline && isDebuggerConnected()) {
+            p.waitFor();
+            done = true;
+        } else {
+            //long timeout for native tests
+            //that may also need to download docker
+            done = p.waitFor(10, TimeUnit.MINUTES);
+        }
+
         if (!done) {
             destroyProcess(p);
         }
+
+        outputPuller.interrupt();
+        outputPuller.join();
+
         final BuildResult commandResult = BuildResult.of(logOutput);
         int exitCode = p.exitValue();
 
         // The test failed, if the Gradle build exits with != 0 and the tests expects no failure, or if the test
         // expects a failure and the exit code is 0.
         if (expectError == (exitCode == 0)) {
-            // Only print the output, if the test does not expect a failure.
-            printCommandOutput(projectDir, command, commandResult, exitCode);
+            if (isInCiPipeline) {
+                // Only print the output, if the test does not expect a failure.
+                printCommandOutput(projectDir, command, commandResult, exitCode);
+            }
+
             // Fail hard, if the test does not expect a failure.
             Assertions.fail("Gradle build failed with exit code %d", exitCode);
         }
@@ -173,6 +202,46 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
         if (wrapperProcess.isAlive()) {
             wrapperProcess.destroyForcibly();
+        }
+    }
+
+    private static boolean isDebuggerConnected() {
+        return ManagementFactory.getRuntimeMXBean().getInputArguments().toString().contains("jdwp");
+    }
+
+    private record LogRedirectAndStopper(Process process, File targetFile, Boolean forwardToStdOut) implements Runnable {
+        @Override
+        public void run() {
+            try (BufferedReader stdOutReader = process.inputReader();
+                    FileWriter fw = new FileWriter(targetFile);
+                    BufferedWriter bw = new BufferedWriter(fw)) {
+                int errorCount = 0;
+
+                while (!Thread.interrupted()) {
+                    String line = stdOutReader.readLine();
+                    if (line == null) {
+                        break;
+                    }
+
+                    bw.write(line);
+                    bw.newLine();
+
+                    if (forwardToStdOut) {
+                        System.out.println(line);
+                    }
+
+                    if (line.contains("Build failure: Build failed due to errors")) {
+                        errorCount++;
+
+                        if (errorCount >= 3) {
+                            process.destroyForcibly();
+                            break;
+                        }
+                    }
+                }
+            } catch (IOException ignored) {
+                // ignored
+            }
         }
     }
 }

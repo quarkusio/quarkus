@@ -25,7 +25,7 @@
             <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-scripting-compiler-embeddable</artifactId>
-                <version>1.6.0</version>
+                <version>1.9.22</version>
             </dependency>
             <dependency>
                 <groupId>org.json</groupId>

@@ -96,6 +96,19 @@ class VertxHttpProcessor {
     }
 
     @BuildStep
+    List<RouteBuildItem> convertRoutes(
+            List<io.quarkus.vertx.http.deployment.spi.RouteBuildItem> items,
+            HttpRootPathBuildItem httpRootPathBuildItem,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+        List<RouteBuildItem> list = new ArrayList<>();
+        for (io.quarkus.vertx.http.deployment.spi.RouteBuildItem item : items) {
+            RouteBuildItem converted = RouteConverter.convert(item, httpRootPathBuildItem, nonApplicationRootPathBuildItem);
+            list.add(converted);
+        }
+        return list;
+    }
+
+    @BuildStep
     NonApplicationRootPathBuildItem frameworkRoot(HttpBuildTimeConfig httpBuildTimeConfig,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
         String mrp = null;
@@ -276,7 +289,7 @@ class VertxHttpProcessor {
             }
         }
 
-        /**
+        /*
          * To create mainrouter when `${quarkus.http.root-path}` is not {@literal /}
          * Refer https://github.com/quarkusio/quarkus/issues/34261
          */
@@ -475,7 +488,7 @@ class VertxHttpProcessor {
      * This method will return true if:
      * <1> "quarkus.http.insecure-requests" is not explicitly disabled
      * <2> any of the http SSL runtime properties are set at build time
-     *
+     * <p>
      * If any of the above rules applied, the port "https" will be generated as part of the Kubernetes resources.
      */
     private static boolean isSslConfigured() {

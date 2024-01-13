@@ -107,9 +107,9 @@ import io.quarkus.smallrye.openapi.runtime.filter.OpenIDConnectSecurityFilter;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceConfiguration;
 import io.smallrye.openapi.api.OpenApiConfig;
@@ -305,32 +305,31 @@ public class SmallRyeOpenApiProcessor {
             }
         }
 
-        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management("quarkus.smallrye-openapi.management.enabled")
-                .routeFunction(openApiConfig.path, corsFilter)
-                .routeConfigKey("quarkus.smallrye-openapi.path")
-                .handler(handler)
+        routes.produce(RouteBuildItem.newManagementRoute(openApiConfig.path, "quarkus.smallrye-openapi.management.enabled")
+                .withRouteCustomizer(corsFilter)
+                .withRoutePathConfigKey("quarkus.smallrye-openapi.path")
+                .withRequestHandler(handler)
                 .displayOnNotFoundPage("Open API Schema document")
-                .blockingRoute()
+                .asBlockingRoute()
                 .build());
 
-        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management("quarkus.smallrye-openapi.management.enabled")
-                .routeFunction(openApiConfig.path + ".json", corsFilter)
-                .handler(handler)
-                .build());
+        routes.produce(
+                RouteBuildItem.newManagementRoute(openApiConfig.path + ".json", "quarkus.smallrye-openapi.management.enabled")
+                        .withRouteCustomizer(corsFilter)
+                        .withRequestHandler(handler)
+                        .build());
 
-        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management("quarkus.smallrye-openapi.management.enabled")
-                .routeFunction(openApiConfig.path + ".yaml", corsFilter)
-                .handler(handler)
-                .build());
+        routes.produce(
+                RouteBuildItem.newManagementRoute(openApiConfig.path + ".yaml", "quarkus.smallrye-openapi.management.enabled")
+                        .withRouteCustomizer(corsFilter)
+                        .withRequestHandler(handler)
+                        .build());
 
-        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management("quarkus.smallrye-openapi.management.enabled")
-                .routeFunction(openApiConfig.path + ".yml", corsFilter)
-                .handler(handler)
-                .build());
+        routes.produce(
+                RouteBuildItem.newManagementRoute(openApiConfig.path + ".yml", "quarkus.smallrye-openapi.management.enabled")
+                        .withRouteCustomizer(corsFilter)
+                        .withRequestHandler(handler)
+                        .build());
 
         // If management is enabled and swagger-ui is part of management, we need to add CORS so that swagger can hit the endpoint
         if (isManagement(managementInterfaceBuildTimeConfig, openApiConfig, launch)) {

@@ -64,7 +64,7 @@
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <quarkus.version>3.2.999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>21</maven-model-helper.version>
-        <jandex.version>3.1.2</jandex.version>
+        <jandex.version>3.1.6</jandex.version>
         <system-stubs-jupiter.version>2.0.2</system-stubs-jupiter.version>
         <awaitility.version>4.2.0</awaitility.version>
     </properties>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>quarkus-relocations-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <version>999-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>quarkus-rest-client-jsonb</artifactId>
+
+    <distributionManagement>
+        <relocation>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-client-jsonb</artifactId>
+            <version>${project.version}</version>
+            <message>${project.groupId}:${project.artifactId}:${project.version} was relocated to io.quarkus:quarkus-resteasy-client-jsonb:${project.version}. Please update the artifactId of the dependency in your project configuration. For more information about this change, please refer to https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.7#rest-client</message>
+        </relocation>
+    </distributionManagement>
+</project>

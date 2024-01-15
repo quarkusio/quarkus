@@ -1785,13 +1785,114 @@ public class QuarkusMockTest {
 <2> note that `RestClient.LITERAL` has to be passed as the last argument of the `installMockForType` method
 
 
+[#using-a-mock-http-server-for-tests]
 == Using a Mock HTTP Server for tests
-In some cases you may want to mock the remote endpoint - the HTTP server - instead of mocking the client itself.
-This may be especially useful for native tests, or for programmatically created clients.
 
-You can easily mock an HTTP Server with Wiremock.
-The xref:rest-client.adoc#using-a-mock-http-server-for-tests[Wiremock section of the Quarkus - Using the REST Client]
-describes how to set it up in detail.
+Setting up a mock HTTP server, against which tests are run, is a common testing pattern.
+Examples of such servers are link:https://wiremock.org/[Wiremock] and link:https://docs.hoverfly.io/projects/hoverfly-java/en/latest/index.html[Hoverfly].
+In this section we'll demonstrate how Wiremock can be leveraged for testing the `ExtensionsService` which was developed above.
+
+First, Wiremock needs to be added as a test dependency. For a Maven project that would happen like so:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>org.wiremock</groupId>
+    <artifactId>wiremock</artifactId>
+    <scope>test</scope>
+    <version>${wiremock.version}</version> <1>
+</dependency>
+----
+<1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/org.wiremock/wiremock[here].
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("org.wiremock:wiremock:$wiremockVersion") <1>
+----
+<1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/org.wiremock/wiremock[here].
+
+In Quarkus tests when some service needs to be started before the Quarkus tests are ran, we utilize the `@io.quarkus.test.common.QuarkusTestResource`
+annotation to specify a `io.quarkus.test.common.QuarkusTestResourceLifecycleManager` which can start the service and supply configuration
+values that Quarkus will use.
+
+[NOTE]
+====
+For more details about `@QuarkusTestResource` refer to  xref:getting-started-testing.adoc#quarkus-test-resource[this part of the documentation].
+====
+
+Let's create an implementation of `QuarkusTestResourceLifecycleManager` called `WiremockExtensions` like so:
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import java.util.Map;
+
+import com.github.tomakehurst.wiremock.WireMockServer;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.*; // <1>
+
+public class WireMockExtensions implements QuarkusTestResourceLifecycleManager {  // <2>
+
+    private WireMockServer wireMockServer;
+
+    @Override
+    public Map<String, String> start() {
+        wireMockServer = new WireMockServer();
+        wireMockServer.start(); // <3>
+
+        wireMockServer.stubFor(get(urlEqualTo("/extensions?id=io.quarkus:quarkus-rest-client-reactive"))   // <4>
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(
+                            "[{" +
+                            "\"id\": \"io.quarkus:quarkus-rest-client-reactive\"," +
+                            "\"name\": \"REST Client\"" +
+                            "}]"
+                        )));
+
+        wireMockServer.stubFor(get(urlMatching(".*")).atPriority(10).willReturn(aResponse().proxiedFrom("https://stage.code.quarkus.io/api")));   // <5>
+
+        return Map.of("quarkus.rest-client.\"org.acme.rest.client.ExtensionsService\".url", wireMockServer.baseUrl()); // <6>
+    }
+
+    @Override
+    public void stop() {
+        if (null != wireMockServer) {
+            wireMockServer.stop();  // <7>
+        }
+    }
+}
+----
+
+<1> Statically importing the methods in the Wiremock package makes it easier to read the test.
+<2> The `start` method is invoked by Quarkus before any test is run and returns a `Map` of configuration properties that apply during the test execution.
+<3> Launch Wiremock.
+<4> Configure Wiremock to stub the calls to `/extensions?id=io.quarkus:quarkus-rest-client-reactive` by returning a specific canned response.
+<5> All HTTP calls that have not been stubbed are handled by calling the real service. This is done for demonstration purposes, as it is not something that would usually happen in a real test.
+<6> As the `start` method returns configuration that applies for tests, we set the rest-client property that controls the base URL which is used by the implementation
+of `ExtensionsService` to the base URL where Wiremock is listening for incoming requests.
+<7> When all tests have finished, shutdown Wiremock.
+
+
+The `ExtensionsResourceTest` test class needs to be annotated like so:
+
+[source,java]
+----
+@QuarkusTest
+@QuarkusTestResource(WireMockExtensions.class)
+public class ExtensionsResourceTest {
+
+}
+----
+
+[WARNING]
+====
+`@QuarkusTestResource` applies to all tests, not just `ExtensionsResourceTest`.
+====
 
 == Known limitations
 While the REST Client Reactive extension aims to be a drop-in replacement for the REST Client extension, there are some differences

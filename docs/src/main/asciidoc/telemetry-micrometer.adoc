@@ -746,7 +746,7 @@ Refer to the xref:./management-interface-reference.adoc[management interface ref
 * https://quarkus.io/guides/mongodb[`quarkus-mongodb-client`]
 * https://quarkus.io/extensions/io.quarkus/quarkus-netty[`quarkus-netty`]
 * https://quarkus.io/guides/redis[`quarkus-redis-client`]
-* https://quarkus.io/guides/rest-client[`quarkus-rest-client`]
+* https://quarkus.io/guides/resteasy-client[`quarkus-resteasy-client`]
 * https://quarkus.io/guides/resteasy[`quarkus-resteasy-jackson`]
 * https://quarkus.io/guides/resteasy-reactive[`quarkus-resteasy-reactive`]
 * https://quarkus.io/guides/scheduler[`quarkus-scheduler`]

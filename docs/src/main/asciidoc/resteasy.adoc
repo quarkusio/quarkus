@@ -19,7 +19,7 @@ For more information about RESTEasy Reactive,
 please see the xref:rest-json.adoc[introductory REST JSON guide] or the xref:resteasy-reactive.adoc[RESTEasy Reactive reference documentation].
 ====
 
-TIP: There is another guide if you need a xref:rest-client.adoc[REST client based on RESTEasy Classic] (including support for JSON).
+TIP: There is another guide if you need a xref:resteasy-client.adoc[REST client based on RESTEasy Classic] (including support for JSON).
 
 == Architecture
 
@@ -757,7 +757,7 @@ to solve this problem.
 
 == RESTEasy and REST Client interactions
 
-In Quarkus, the RESTEasy extension and xref:rest-client.adoc[the REST Client extension] share the same infrastructure.
+In Quarkus, the RESTEasy extension and xref:resteasy-client.adoc[the REST Client extension] share the same infrastructure.
 One important consequence of this consideration is that they share the same list of providers (in the Jakarta REST meaning of the word).
 
 For instance, if you declare a `WriterInterceptor`, it will, by default, intercept both the servers calls and the client calls,

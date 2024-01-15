@@ -60,7 +60,9 @@ will include:
 ==== Using a configuration file
 
 If globs are not sufficiently precise for your use case and you need to rely on regular expressions, or if you prefer relying on the GraalVM infrastructure,
-you can also create a `resource-config.json` (the most common location is within `src/main/resources`) JSON file defining which resources should be included.
+you can also create a `resource-config.json` JSON file defining which resources should be included.
+Ideally this, and other native image configuration files, should be placed under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder.
+By placing them there, there is no additional configuration parameters that need to be passed into the native build.
 
 [WARNING]
 ====
@@ -92,60 +94,6 @@ Here we include all the XML files and JSON files into the native executable.
 ====
 For more information about this topic, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/Resources/[GraalVM Accessing Resources in Native Image] guide.
 ====
-
-The final order of business is to make the configuration file known to the `native-image` executable by adding the proper configuration to `application.properties`:
-
-[source,properties]
-----
-quarkus.native.additional-build-args =\
-    -H:+UnlockExperimentalVMOptions,\
-    -H:ResourceConfigurationFiles=resource-config.json,\
-    -H:-UnlockExperimentalVMOptions
-----
-
-[NOTE]
-====
-Starting with Mandrel 23.1 and GraalVM for JDK 21, `-H:ResourceConfigurationFiles=resource-config.json` results in a warning being shown unless wrapped in `-H:+UnlockExperimentalVMOptions` and `-H:-UnlockExperimentalVMOptions`.
-The absence of these options will result in build failures in the future.
-====
-
-In the previous snippet we were able to simply use `resource-config.json` instead of specifying the entire path of the file simply because it was added to `src/main/resources`.
-If the file had been added to another directory, the proper file path would have had to be specified manually.
-
-[TIP]
-====
-Multiple options may be separated by a comma. For example, one could use:
-
-[source,properties]
-----
-quarkus.native.additional-build-args =\
-    -H:+UnlockExperimentalVMOptions,\
-    -H:ResourceConfigurationFiles=resource-config.json,\
-    -H:ReflectionConfigurationFiles=reflect-config.json,\
-    -H:-UnlockExperimentalVMOptions
-----
-
-in order to ensure that various resources are included and additional reflection is registered.
-
-====
-If for some reason adding the aforementioned configuration to `application.properties` is not desirable, it is possible to configure the build tool to effectively perform the same operation.
-
-When using Maven, we could use the following configuration:
-
-[source,xml]
-----
-<profiles>
-    <profile>
-        <id>native</id>
-        <properties>
-            <quarkus.package.type>native</quarkus.package.type>
-            <quarkus.native.additional-build-args>
-                -H:+UnlockExperimentalVMOptions,-H:ResourceConfigurationFiles=resource-config.json,-H:-UnlockExperimentalVMOptions
-            </quarkus.native.additional-build-args>
-        </properties>
-    </profile>
-</profiles>
-----
 
 === Registering for reflection
 

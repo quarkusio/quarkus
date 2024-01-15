@@ -3,6 +3,9 @@
  */
 package io.quarkus.bootstrap.resolver.maven;
 
+import static io.quarkus.bootstrap.util.DependencyUtils.getKey;
+import static io.quarkus.bootstrap.util.DependencyUtils.newDependencyBuilder;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -12,9 +15,6 @@ import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
 
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
-import io.quarkus.bootstrap.util.DependencyUtils;
-import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 
 public class BuildDependencyGraphVisitor {
@@ -132,28 +132,7 @@ public class BuildDependencyGraphVisitor {
             return;
         }
         if (currentRuntime == null && appBuilder.getDependency(getKey(node.getArtifact())) == null) {
-
-            Artifact artifact = dep.getArtifact();
-            if (artifact.getFile() == null) {
-                artifact = resolver.resolve(artifact, node.getRepositories()).getArtifact();
-            }
-
-            int flags = DependencyFlags.DEPLOYMENT_CP;
-            if (node.getDependency().isOptional()) {
-                flags |= DependencyFlags.OPTIONAL;
-            }
-            WorkspaceModule module = null;
-            if (resolver.getProjectModuleResolver() != null) {
-                module = resolver.getProjectModuleResolver().getProjectModule(artifact.getGroupId(), artifact.getArtifactId(),
-                        artifact.getVersion());
-                if (module != null) {
-                    flags |= DependencyFlags.WORKSPACE_MODULE;
-                }
-            }
-            appBuilder.addDependency(ApplicationDependencyTreeResolver.toAppArtifact(artifact, module)
-                    .setScope(node.getDependency().getScope())
-                    .setFlags(flags));
-
+            appBuilder.addDependency(newDependencyBuilder(node, resolver).setFlags(DependencyFlags.DEPLOYMENT_CP));
         } else if (currentRuntime == node) {
             currentRuntime = null;
             runtimeArtifactToFind = null;
@@ -161,9 +140,5 @@ public class BuildDependencyGraphVisitor {
         if (currentDeployment == node) {
             currentDeployment = null;
         }
-    }
-
-    private static ArtifactKey getKey(Artifact artifact) {
-        return DependencyUtils.getKey(artifact);
     }
 }

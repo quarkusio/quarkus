@@ -7,6 +7,7 @@ import java.util.Optional;
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.logging.Logger;
@@ -62,7 +63,7 @@ public class StorkClientRequestFilter implements ResteasyReactiveClientRequestFi
                             }
                             // Service instance can also contain an optional path.
                             Optional<String> path = instance.getPath();
-                            String actualPath = uri.getPath();
+                            String actualPath = uri.getRawPath();
                             if (path.isPresent()) {
                                 var p = path.get();
                                 if (!p.startsWith("/")) {
@@ -79,11 +80,12 @@ public class StorkClientRequestFilter implements ResteasyReactiveClientRequestFi
                                     }
                                 }
                             }
-
+                            //To avoid the path double encoding we create uri with path=null and set the path after
                             URI newUri = new URI(scheme,
                                     uri.getUserInfo(), host, port,
-                                    actualPath, uri.getQuery(), uri.getFragment());
-                            requestContext.setUri(newUri);
+                                    null, uri.getQuery(), uri.getFragment());
+                            URI build = UriBuilder.fromUri(newUri).path(actualPath).build();
+                            requestContext.setUri(build);
                             if (measureTime && instance.gatherStatistics()) {
                                 requestContext.setCallStatsCollector(instance);
                             }

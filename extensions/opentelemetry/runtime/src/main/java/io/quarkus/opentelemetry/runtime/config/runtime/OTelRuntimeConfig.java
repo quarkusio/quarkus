@@ -71,4 +71,9 @@ public interface OTelRuntimeConfig {
     @WithName("experimental.shutdown-wait-time")
     @WithDefault("1s")
     Duration experimentalShutdownWaitTime();
+
+    /**
+     * Enable/disable instrumentation for specific technologies.
+     */
+    InstrumentRuntimeConfig instrument();
 }

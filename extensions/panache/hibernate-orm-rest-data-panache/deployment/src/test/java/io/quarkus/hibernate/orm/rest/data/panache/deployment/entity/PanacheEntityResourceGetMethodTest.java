@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.orm.rest.data.panache.deployment.entity;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,22 @@ class PanacheEntityResourceGetMethodTest extends AbstractGetMethodTest {
                 .then().statusCode(200)
                 .and().body("id", is("full"))
                 .and().body("name", is("full collection"));
+    }
+
+    @Test
+    void shouldReturnItemsForFullCollection() {
+        given().accept("application/json")
+                .when().get("/items?collection.id=full")
+                .then().statusCode(200)
+                .body("$", hasSize(2));
+    }
+
+    @Test
+    void shouldReturnNoItemsForEmptyCollection() {
+        given().accept("application/json")
+                .when().get("/items?collection.id=empty")
+                .then().statusCode(200)
+                .body("$", hasSize(0));
     }
 
 }

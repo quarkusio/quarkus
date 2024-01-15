@@ -219,9 +219,11 @@ class ReactiveDB2ClientProcessor {
         ExtendedBeanConfigurator mutinyDB2PoolConfigurator = SyntheticBeanBuildItem
                 .configure(io.vertx.mutiny.db2client.DB2Pool.class)
                 .defaultBean()
+                .addType(io.vertx.mutiny.sqlclient.Pool.class)
                 .scope(ApplicationScoped.class)
                 .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
                 .createWith(recorder.mutinyDB2Pool(poolFunction))
+                .unremovable()
                 .setRuntimeInit();
 
         addQualifiers(mutinyDB2PoolConfigurator, dataSourceName);

@@ -39,7 +39,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <version.junit>5.10.1</version.junit>
-        <version.assertj>3.24.2</version.assertj>
+        <version.assertj>3.25.1</version.assertj>
         <version.jandex>3.1.6</version.jandex>
         <version.gizmo>1.7.0</version.gizmo>
         <version.jboss-logging>3.5.3.Final</version.jboss-logging>

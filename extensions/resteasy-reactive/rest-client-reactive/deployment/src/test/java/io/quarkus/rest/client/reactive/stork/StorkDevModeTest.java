@@ -67,4 +67,25 @@ public class StorkDevModeTest {
                 .body(equalTo(WIREMOCK_RESPONSE));
         // @formatter:on
     }
+
+    @Test
+    void shouldSayHelloNameWithSlash() {
+        when()
+                .get("/helper/v2/stork")
+                .then()
+                .statusCode(200)
+                // The response contains an encoded `/`
+                .body(equalTo("Hello, stork/stork"));
+
+    }
+
+    @Test
+    void shouldSayHelloNameWithBlank() {
+        when()
+                .get("/helper/smallrye stork")
+                .then()
+                .statusCode(200)
+                // The response contains an encoded blank espace
+                .body(equalTo("Hello, smallrye stork"));
+    }
 }

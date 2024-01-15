@@ -396,7 +396,23 @@ public class ArcProcessor {
         }
 
         builder.setBuildCompatibleExtensions(buildCompatibleExtensions.entrypoint);
-        builder.setOptimizeContexts(arcConfig.optimizeContexts);
+        builder.setOptimizeContexts(new Predicate<BeanDeployment>() {
+            @Override
+            public boolean test(BeanDeployment deployment) {
+                switch (arcConfig.optimizeContexts) {
+                    case TRUE:
+                        return true;
+                    case FALSE:
+                        return false;
+                    case AUTO:
+                        // Optimize the context if there is less than 1000 beans in the app
+                        // Note that removed beans are excluded
+                        return deployment.getBeans().size() < 1000;
+                    default:
+                        throw new IllegalArgumentException("Unexpected value: " + arcConfig.optimizeContexts);
+                }
+            }
+        });
 
         BeanProcessor beanProcessor = builder.build();
         ContextRegistrar.RegistrationContext context = beanProcessor.registerCustomContexts();
@@ -598,7 +614,7 @@ public class ArcProcessor {
             throws Exception {
         ArcContainer container = recorder.initContainer(shutdown,
                 currentContextFactory.isPresent() ? currentContextFactory.get().getFactory() : null,
-                config.strictCompatibility, config.optimizeContexts);
+                config.strictCompatibility);
         return new ArcContainerBuildItem(container);
     }
 

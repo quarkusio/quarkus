@@ -24,10 +24,9 @@ import org.hibernate.service.Service;
 import org.hibernate.service.internal.ProvidedService;
 import org.jboss.logging.Logger;
 
-import io.quarkus.agroal.DataSource.DataSourceLiteral;
+import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.runtime.UnconfiguredDataSource;
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
@@ -38,7 +37,6 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRunti
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
-import io.quarkus.runtime.configuration.ConfigurationException;
 
 /**
  * This can not inherit from HibernatePersistenceProvider as that would force
@@ -375,7 +373,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         }
     }
 
-    private static void injectDataSource(String persistenceUnitName, String dataSource,
+    private static void injectDataSource(String persistenceUnitName, String dataSourceName,
             RuntimeSettings.Builder runtimeSettingsBuilder) {
         // first convert
 
@@ -389,26 +387,16 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             return;
         }
 
-        InstanceHandle<DataSource> dataSourceHandle;
-        if (DataSourceUtil.isDefault(dataSource)) {
-            dataSourceHandle = Arc.container().instance(DataSource.class);
-        } else {
-            dataSourceHandle = Arc.container().instance(DataSource.class, new DataSourceLiteral(dataSource));
+        DataSource dataSource;
+        try {
+            dataSource = Arc.container().instance(DataSources.class).get().getDataSource(dataSourceName);
+            if (dataSource instanceof UnconfiguredDataSource) {
+                throw DataSourceUtil.dataSourceNotConfigured(dataSourceName);
+            }
+        } catch (RuntimeException e) {
+            throw PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, dataSourceName, e);
         }
-
-        if (!dataSourceHandle.isAvailable()) {
-            throw new IllegalStateException(
-                    "No datasource " + dataSource + " has been defined for persistence unit " + persistenceUnitName);
-        }
-
-        DataSource ds = dataSourceHandle.get();
-        if (ds instanceof UnconfiguredDataSource) {
-            throw new ConfigurationException(
-                    "Model classes are defined for the default persistence unit " + persistenceUnitName
-                            + " but configured datasource " + dataSource
-                            + " not found: the default EntityManagerFactory will not be created. To solve this, configure the default datasource. Refer to https://quarkus.io/guides/datasource for guidance.");
-        }
-        runtimeSettingsBuilder.put(AvailableSettings.DATASOURCE, ds);
+        runtimeSettingsBuilder.put(AvailableSettings.DATASOURCE, dataSource);
     }
 
     private static void injectRuntimeConfiguration(HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,

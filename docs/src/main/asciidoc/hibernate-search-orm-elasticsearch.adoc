@@ -1018,6 +1018,112 @@ You can enable AWS request signing in Hibernate Search by adding a dedicated ext
 See link:{hibernate-search-orm-elasticsearch-aws-guide}#aws-configuration-reference[the documentation for the Hibernate Search ORM + Elasticsearch AWS extension]
 for more information.
 
+[[management]]
+== Management endpoint
+
+[CAUTION]
+====
+Hibernate Search's management endpoint is considered preview.
+
+In _preview_, backward compatibility and presence in the ecosystem is not guaranteed.
+Specific improvements might require changing configuration or APIs, or even storage formats,
+and plans to become _stable_ are under way.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list]
+or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+====
+
+The Hibernate Search extension provides an HTTP endpoint to reindex your data through the xref:./management-interface-reference.adoc[management interface].
+By default, this endpoint is not available. It can be enabled through configuration properties as shown below.
+
+[source,properties]
+----
+quarkus.management.enabled=true <1>
+quarkus.hibernate-search-orm.management.enabled=true <2>
+----
+<1> Enable the xref:./management-interface-reference.adoc[management interface].
+<2> Enable Hibernate Search specific management endpoints.
+
+Once the management is enabled, data can be re-indexed via `/q/hibernate-search/reindex`, where `/q` is the default management root path
+and `/hibernate-search` is the default Hibernate Search root management path.
+It (`/hibernate-search`) can be changed via configuration property as shown below.
+
+[source,properties]
+----
+quarkus.hibernate-search-orm.management.root-path=custom-root-path <1>
+----
+<1> Use a custom `custom-root-path` path for Hibernate Search's management endpoint.
+If the default management root path is used then the reindex path becomes `/q/custom-root-path/reindex`.
+
+This endpoint accepts `POST` requests with `application/json` content type only.
+All indexed entities will be re-indexed if an empty request body is submitted.
+If only a subset of entities must be re-indexed or
+if there is a need to have a custom configuration of the underlying mass indexer
+then this information can be passed through the request body as shown below.
+
+[source,json]
+----
+{
+  "filter": {
+    "types": ["EntityName1", "EntityName2", "EntityName3", ...], <1>
+  },
+  "massIndexer":{
+    "typesToIndexInParallel": 1, <2>
+  }
+}
+----
+<1> An array of entity names that should be re-indexed. If unspecified or empty, all entity types will be re-indexed.
+<2> Sets the number of entity types to be indexed in parallel.
+
+The full list of possible filters and available mass indexer configurations is presented in the example below.
+
+[source,json]
+----
+{
+  "filter": { <1>
+    "types": ["EntityName1", "EntityName2", "EntityName3", ...], <2>
+    "tenants": ["tenant1", "tenant2", ...] <3>
+  },
+  "massIndexer":{ <4>
+    "typesToIndexInParallel": 1, <5>
+    "threadsToLoadObjects": 6,  <6>
+    "batchSizeToLoadObjects": 10, <7>
+    "cacheMode": "IGNORE", <8>
+    "mergeSegmentsOnFinish": false, <9>
+    "mergeSegmentsAfterPurge": true, <10>
+    "dropAndCreateSchemaOnStart": false, <11>
+    "purgeAllOnStart": true, <12>
+    "idFetchSize": 100, <13>
+    "transactionTimeout": 100000, <14>
+  }
+}
+----
+<1> Filter object that allows to limit the scope of reindexing.
+<2> An array of entity names that should be re-indexed. If unspecified or empty, all entity types will be re-indexed.
+<3> An array of tenant ids, in case of multi-tenancy. If unspecified or empty, all tenants will be re-indexed.
+<4> Mass indexer configuration object.
+<5> Sets the number of entity types to be indexed in parallel.
+<6> Sets the number of threads to be used to load the root entities.
+<7> Sets the batch size used to load the root entities.
+<8> Sets the cache interaction mode for the data loading tasks.
+<9> Whether each index is merged into a single segment after indexing.
+<10> Whether each index is merged into a single segment after the initial index purge, just before indexing.
+<11> Whether the indexes and their schema (if they exist) should be dropped and re-created before indexing.
+<12> Whether all entities are removed from the indexes before indexing.
+<13> Specifies the fetch size to be used when loading primary keys if objects to be indexed.
+<14> Specifies the timeout of transactions for loading ids and entities to be re-indexed.
++
+Note all the properties in the json are optional, and only those that are needed should be used.
+
+For more detailed information on mass indexer configuration see the
+link:{hibernate-search-docs-url}#indexing-massindexer-parameters[corresponding section of the Hibernate Search reference documentation].
+
+Submitting the reindexing request will trigger indexing in the background. Mass indexing progress will appear in the application logs.
+For testing purposes, it might be useful to know when the indexing finished. Adding `wait_for=finished` query parameter to the URL
+will result in the management endpoint returning a chunked response that will report when the indexing starts and then when it is finished.
+
+When working with multiple persistence units, the name of the persistence unit to reindex can be supplied through the
+`persistence_unit` query parameter: `/q/hibernate-search/reindex?persistence_unit=non-default-persistence-unit`.
+
 == Further reading
 
 If you are interested in learning more about Hibernate Search 6,

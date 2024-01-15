@@ -42,6 +42,8 @@ public class GelfLogHandlerTest {
                             assertEquals(200, response.statusCode());
                             assertNotNull(response.body().path("hits.hits[0]._source"));
                             assertEquals("Some useful log message", response.body().path("hits.hits[0]._source.message"));
+                            assertEquals(Integer.valueOf(98), response.body().path("hits.hits[0]._source.field4"));
+                            assertEquals("99", response.body().path("hits.hits[0]._source.field3"));
                         });
     }
 }

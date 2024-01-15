@@ -4,9 +4,13 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.is;
 
+import java.util.List;
+
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.http.Header;
 
 @QuarkusTest
 public class FilterTestCase {
@@ -19,6 +23,25 @@ public class FilterTestCase {
                 .statusCode(200)
                 .header("Cache-Control", is("max-age=31536000"))
                 .body(is("ok"));
+
+    }
+
+    @Test
+    void testCorsRequest() {
+        List<Header> corsMethods = given()
+                .header("Origin", "https://example.org/")
+                .header("Access-Control-Request-Method", "GET")
+                .get("/filter/any")
+                .then()
+                .statusCode(200)
+                .header("Cache-Control", is("max-age=31536000"))
+                .header("Access-Control-Allow-Origin",
+                        is("https://example.org/")) // this same header was added by cors but also by a property, we should only have one value
+                .body(is("ok"))
+                .extract()
+                .headers().getList("Access-Control-Allow-Methods");
+        Assertions.assertThat(corsMethods.stream().map(Header::getValue)).containsExactly("POST,GET,PUT,OPTIONS,DELETE",
+                "TEST");
 
     }
 

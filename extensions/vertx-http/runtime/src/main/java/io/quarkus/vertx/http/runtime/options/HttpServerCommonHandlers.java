@@ -3,6 +3,8 @@ package io.quarkus.vertx.http.runtime.options;
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setCurrentContextSafe;
 import static io.quarkus.vertx.http.runtime.TrustedProxyCheck.allowAll;
 
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -23,6 +25,7 @@ import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
@@ -122,9 +125,10 @@ public class HttpServerCommonHandlers {
                             .handler(new Handler<RoutingContext>() {
                                 @Override
                                 public void handle(RoutingContext event) {
-                                    event.response().headers().setAll(headers);
+                                    addFilterHeaders(event, headers);
                                     event.next();
                                 }
+
                             });
                 } else {
                     for (var method : methods.get()) {
@@ -133,11 +137,32 @@ public class HttpServerCommonHandlers {
                                 .handler(new Handler<RoutingContext>() {
                                     @Override
                                     public void handle(RoutingContext event) {
-                                        event.response().headers().setAll(headers);
+                                        addFilterHeaders(event, headers);
                                         event.next();
                                     }
                                 });
                     }
+                }
+            }
+        }
+    }
+
+    private static void addFilterHeaders(RoutingContext event, Map<String, String> headers) {
+        for (var entry : headers.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            MultiMap responseHeaders = event.response().headers();
+            List<String> oldValues = responseHeaders.getAll(key);
+            if (oldValues.isEmpty()) {
+                responseHeaders.set(key, value);
+            } else {
+                // we need to make sure the new value is not duplicated
+                var newValues = new LinkedHashSet<String>(oldValues);
+                boolean added = newValues.add(value);
+                if (added) {
+                    responseHeaders.set(key, newValues);
+                } else {
+                    // we don't need to do anything here as the value was already in the set
                 }
             }
         }

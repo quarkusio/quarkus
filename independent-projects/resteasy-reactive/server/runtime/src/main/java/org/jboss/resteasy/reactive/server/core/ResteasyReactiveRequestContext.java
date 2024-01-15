@@ -175,7 +175,7 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     public void restart(RuntimeResource target, boolean setLocatorTarget) {
-        this.handlers = target.getHandlerChain();
+        setHandlers(target.getHandlerChain());
         position = 0;
         parameters = target.getParameterTypes().length == 0 ? EMPTY_ARRAY : new Object[target.getParameterTypes().length];
         if (setLocatorTarget) {

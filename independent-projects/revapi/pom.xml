@@ -29,7 +29,7 @@
 
     <properties>
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
-        <version.surefire.plugin>3.2.3</version.surefire.plugin>
+        <version.surefire.plugin>3.2.5</version.surefire.plugin>
         <format.skip>true</format.skip>
     </properties>
 

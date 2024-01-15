@@ -184,6 +184,7 @@ keycloak-admin-client-*reactive*,*quarkus*-keycloak-admin-*rest-client*
 Positives:
 * Conveying the actual capabilities (blocking, non-blocking, Virtual Threads) of our stack should become easier.
 * the new name aligns quite nicely with Java EE's Jakarta REST
+* The 3.7 changes are just cleanup, we have time to adjust/fix things before the 3.9 changes and future LTS.
 
 Negatives:
 

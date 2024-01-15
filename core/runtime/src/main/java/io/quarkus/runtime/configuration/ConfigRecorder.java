@@ -3,6 +3,7 @@ package io.quarkus.runtime.configuration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -42,7 +43,8 @@ public class ConfigRecorder {
         for (Map.Entry<String, ConfigValue> entry : buildTimeRuntimeValues.entrySet()) {
             ConfigValue currentValue = config.getConfigValue(entry.getKey());
             // Check for changes. Also, we only have a change if the source ordinal is higher
-            if (currentValue.getValue() != null && !entry.getValue().getValue().equals(currentValue.getValue())
+            // The config value can be null (for ex. if the property uses environment variables not available at build time)
+            if (currentValue.getValue() != null && !Objects.equals(entry.getValue().getValue(), currentValue.getValue())
                     && entry.getValue().getSourceOrdinal() < currentValue.getSourceOrdinal()) {
                 mismatches.add(
                         " - " + entry.getKey() + " is set to '" + currentValue.getValue()

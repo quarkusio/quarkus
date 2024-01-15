@@ -1301,7 +1301,7 @@ public class Person {
     private final Long id;
     private final String first;
     private final String last;
-    @SecureField(rolesAllowed = ${role:admin}")                 <1>
+    @SecureField(rolesAllowed = "${role:admin}")                 <1>
     private String address;
 
     public Person(Long id, String first, String last) {

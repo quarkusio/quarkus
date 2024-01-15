@@ -72,12 +72,12 @@ The decision is that we MUST do something about removing the word "reactive" fro
 
 At a highlevel that means we will do the following:
 
-* Rename current `smallrye-messaging` to `quarkus-messaging`
-* Rename current `resteasy-reactive` to `quarkus-rest`
-* Keep `reactive-routes` as it is primarily pushing reactive.
-* Rename current `rest-client` to `quarkus-resteasy-client`
-* Rename `rest-client-reactive` to `rest-client`
-* TODO: rename all renmaing bits??
+* Rename current `quarkus-smallrye-reactive-messaging` to `quarkus-messaging`
+* Rename current `quarkus-resteasy-reactive` to `quarkus-rest`
+* Keep `quarkus-reactive-routes` as it is primarily pushing reactive.
+* Rename current `quarkus-rest-client` to `quarkus-resteasy-client`
+* Rename `quarkus-rest-client-reactive` to `quarkus-rest-client`
+* TODO: rename all remaining bits??
 
 This will cause a reuse of the `quarkus-rest-client` name where past it would be using resteasy classic but going forward it would be using resteasy reactive. As such we will need to add a relocation to warn users about this and also add a check in the buildtime phase to detect when the user is using the wrong combination of extensions.
 

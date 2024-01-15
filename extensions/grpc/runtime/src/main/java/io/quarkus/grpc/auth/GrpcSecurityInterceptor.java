@@ -1,5 +1,7 @@
 package io.quarkus.grpc.auth;
 
+import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHENTICATION_FAILURE;
+import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHENTICATION_SUCCESS;
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.isExplicitlyMarkedAsUnsafe;
 import static io.quarkus.vertx.http.runtime.security.QuarkusHttpUser.DEFERRED_IDENTITY_KEY;
 import static io.smallrye.common.vertx.VertxContext.isDuplicatedContext;
@@ -10,8 +12,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
+import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.inject.spi.Prioritized;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -29,6 +34,9 @@ import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
+import io.quarkus.security.spi.runtime.AuthenticationFailureEvent;
+import io.quarkus.security.spi.runtime.AuthenticationSuccessEvent;
+import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
@@ -55,6 +63,7 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
     private final Map<String, List<String>> serviceToBlockingMethods = new HashMap<>();
     private boolean hasBlockingMethods = false;
     private final boolean notUsingSeparateGrpcServer;
+    private final SecurityEventHelper<AuthenticationSuccessEvent, AuthenticationFailureEvent> securityEventHelper;
 
     @Inject
     public GrpcSecurityInterceptor(
@@ -62,7 +71,12 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
             IdentityProviderManager identityProviderManager,
             Instance<GrpcSecurityMechanism> securityMechanisms,
             Instance<AuthExceptionHandlerProvider> exceptionHandlers,
-            @ConfigProperty(name = "quarkus.grpc.server.use-separate-server") boolean usingSeparateGrpcServer) {
+            @ConfigProperty(name = "quarkus.grpc.server.use-separate-server") boolean usingSeparateGrpcServer,
+            @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
+            BeanManager beanManager, Event<AuthenticationFailureEvent> authFailureEvent,
+            Event<AuthenticationSuccessEvent> authSuccessEvent) {
+        this.securityEventHelper = new SecurityEventHelper<>(authSuccessEvent, authFailureEvent, AUTHENTICATION_SUCCESS,
+                AUTHENTICATION_FAILURE, beanManager, securityEventsEnabled);
         this.identityAssociation = identityAssociation;
         this.identityProviderManager = identityProviderManager;
         this.notUsingSeparateGrpcServer = !usingSeparateGrpcServer;
@@ -131,6 +145,23 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
                                             }
                                         }
                                     });
+                            if (securityEventHelper.fireEventOnSuccess()) {
+                                auth = auth.invoke(new Consumer<SecurityIdentity>() {
+                                    @Override
+                                    public void accept(SecurityIdentity securityIdentity) {
+                                        securityEventHelper
+                                                .fireSuccessEvent(new AuthenticationSuccessEvent(securityIdentity, null));
+                                    }
+                                });
+                            }
+                            if (securityEventHelper.fireEventOnFailure()) {
+                                auth = auth.onFailure().invoke(new Consumer<Throwable>() {
+                                    @Override
+                                    public void accept(Throwable throwable) {
+                                        securityEventHelper.fireFailureEvent(new AuthenticationFailureEvent(throwable, null));
+                                    }
+                                });
+                            }
                             identityAssociation.setIdentity(auth);
                             error = null;
                             identityAssociationNotSet = false;
@@ -143,8 +174,11 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
                 }
             }
             if (error != null) { // if parsing for all security mechanisms failed, let's propagate the last exception
-                identityAssociation.setIdentity(Uni.createFrom()
-                        .failure(new AuthenticationFailedException("Failed to parse authentication data", error)));
+                var authFailedEx = new AuthenticationFailedException("Failed to parse authentication data", error);
+                if (securityEventHelper.fireEventOnFailure()) {
+                    securityEventHelper.fireFailureEvent(new AuthenticationFailureEvent(authFailedEx, null));
+                }
+                identityAssociation.setIdentity(Uni.createFrom().failure(authFailedEx));
             }
         }
         if (identityAssociationNotSet && notUsingSeparateGrpcServer) {

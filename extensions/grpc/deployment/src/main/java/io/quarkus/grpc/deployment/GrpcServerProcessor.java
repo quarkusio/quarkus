@@ -45,7 +45,6 @@ import io.quarkus.arc.deployment.BeanArchivePredicateBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
-import io.quarkus.arc.deployment.SynthesisFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -53,7 +52,6 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
-import io.quarkus.arc.processor.ObserverInfo;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -69,7 +67,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -93,7 +90,6 @@ import io.quarkus.grpc.runtime.supports.exc.ExceptionInterceptor;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.security.spi.runtime.SecurityEvent;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.quarkus.vertx.http.deployment.VertxWebRouterBuildItem;
@@ -793,38 +789,6 @@ public class GrpcServerProcessor {
             if (!blocking.isEmpty()) {
                 // provide GrpcSecurityInterceptor with blocking methods
                 recorder.initGrpcSecurityInterceptor(blocking, beanContainer.getValue());
-            }
-        }
-    }
-
-    @Record(RUNTIME_INIT)
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
-    @BuildStep
-    void validateSecurityEventsNotObserved(SynthesisFinishedBuildItem synthesisFinished,
-            Capabilities capabilities,
-            GrpcSecurityRecorder recorder,
-            BeanArchiveIndexBuildItem indexBuildItem) {
-        if (!capabilities.isPresent(Capability.SECURITY)) {
-            return;
-        }
-
-        // collect all SecurityEvent classes
-        Set<DotName> knownSecurityEventClasses = new HashSet<>();
-        knownSecurityEventClasses.add(DotName.createSimple(SecurityEvent.class));
-        indexBuildItem
-                .getIndex()
-                .getAllKnownImplementors(SecurityEvent.class)
-                .stream()
-                .map(ClassInfo::name)
-                .forEach(knownSecurityEventClasses::add);
-
-        // find at least one CDI observer and validate security events are disabled
-        knownClasses: for (DotName knownSecurityEventClass : knownSecurityEventClasses) {
-            for (ObserverInfo observer : synthesisFinished.getObservers()) {
-                if (observer.getObservedType().name().equals(knownSecurityEventClass)) {
-                    recorder.validateSecurityEventsDisabled(knownSecurityEventClass.toString());
-                    break knownClasses;
-                }
             }
         }
     }

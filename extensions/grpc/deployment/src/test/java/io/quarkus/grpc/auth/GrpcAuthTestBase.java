@@ -2,8 +2,14 @@ package io.quarkus.grpc.auth;
 
 import static com.example.security.Security.ThreadInfo.newBuilder;
 import static io.quarkus.grpc.auth.BlockingHttpSecurityPolicy.BLOCK_REQUEST;
+import static io.quarkus.security.spi.runtime.AuthorizationSuccessEvent.AUTHORIZATION_CONTEXT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -12,11 +18,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.example.security.SecuredService;
@@ -26,6 +34,11 @@ import io.grpc.Metadata;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcClientUtils;
 import io.quarkus.grpc.GrpcService;
+import io.quarkus.security.UnauthorizedException;
+import io.quarkus.security.runtime.interceptor.check.RolesAllowedCheck;
+import io.quarkus.security.spi.runtime.AuthenticationSuccessEvent;
+import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
+import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
@@ -54,7 +67,7 @@ public abstract class GrpcAuthTestBase {
                         props += extraProperty;
                     }
                     var jar = ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Service.class, BlockingHttpSecurityPolicy.class)
+                            .addClasses(Service.class, BlockingHttpSecurityPolicy.class, SecurityEventObserver.class)
                             .addPackage(SecuredService.class.getPackage())
                             .add(new StringAsset(props), "application.properties");
                     return useGrpcAuthMechanism ? jar.addClass(BasicGrpcSecurityMechanism.class) : jar;
@@ -66,6 +79,14 @@ public abstract class GrpcAuthTestBase {
 
     @GrpcClient
     SecuredService securityClient;
+
+    @Inject
+    SecurityEventObserver securityEventObserver;
+
+    @BeforeEach
+    void clearEvents() {
+        securityEventObserver.getStorage().clear();
+    }
 
     @Test
     void shouldSecureUniEndpoint() {
@@ -83,6 +104,7 @@ public abstract class GrpcAuthTestBase {
 
         await().atMost(10, TimeUnit.SECONDS)
                 .until(() -> resultCount.get() == 1);
+        assertSecurityEventsFired("john");
     }
 
     @Test
@@ -101,6 +123,7 @@ public abstract class GrpcAuthTestBase {
 
         await().atMost(10, TimeUnit.SECONDS)
                 .until(() -> resultCount.get() == 1);
+        assertSecurityEventsFired("john");
     }
 
     @Test
@@ -117,6 +140,7 @@ public abstract class GrpcAuthTestBase {
                 .until(() -> results.size() == 5);
 
         assertThat(results.stream().filter(e -> !e)).isEmpty();
+        assertSecurityEventsFired("paul");
     }
 
     @Test
@@ -133,6 +157,7 @@ public abstract class GrpcAuthTestBase {
                 .until(() -> results.size() == 5);
 
         assertThat(results.stream().filter(e -> e)).isEmpty();
+        assertSecurityEventsFired("paul");
     }
 
     @Test
@@ -167,6 +192,16 @@ public abstract class GrpcAuthTestBase {
 
         await().atMost(10, TimeUnit.SECONDS)
                 .until(() -> error.get() != null);
+
+        // we don't check exact count as HTTP Security policies are not supported when gRPC is running on separate server
+        assertFalse(securityEventObserver.getStorage().isEmpty());
+        // fails RolesAllowed check as the anonymous identity has no roles
+        AuthorizationFailureEvent event = (AuthorizationFailureEvent) securityEventObserver
+                .getStorage().get(securityEventObserver.getStorage().size() - 1);
+        assertNotNull(event.getSecurityIdentity());
+        assertTrue(event.getSecurityIdentity().isAnonymous());
+        assertInstanceOf(UnauthorizedException.class, event.getAuthorizationFailure());
+        assertEquals(RolesAllowedCheck.class.getName(), event.getAuthorizationContext());
     }
 
     @Test
@@ -186,6 +221,7 @@ public abstract class GrpcAuthTestBase {
 
         await().atMost(10, TimeUnit.SECONDS)
                 .until(() -> resultCount.get() == 1);
+        assertSecurityEventsFired("john");
     }
 
     @Test
@@ -205,6 +241,7 @@ public abstract class GrpcAuthTestBase {
 
         await().atMost(10, TimeUnit.SECONDS)
                 .until(() -> resultCount.get() == 1);
+        assertSecurityEventsFired("john");
     }
 
     @Test
@@ -224,6 +261,7 @@ public abstract class GrpcAuthTestBase {
                 .until(() -> results.size() == 5);
 
         assertThat(results.stream().filter(e -> !e)).isEmpty();
+        assertSecurityEventsFired("paul");
     }
 
     @Test
@@ -241,6 +279,19 @@ public abstract class GrpcAuthTestBase {
                 .until(() -> results.size() == 5);
 
         assertThat(results.stream().filter(e -> e)).isEmpty();
+        assertSecurityEventsFired("paul");
+    }
+
+    private void assertSecurityEventsFired(String username) {
+        // expect at least authentication success and RolesAllowed security check success
+        // we don't check exact count as HTTP Security policies are not supported when gRPC is running on separate server
+        assertTrue(securityEventObserver.getStorage().size() >= 2);
+        assertTrue(securityEventObserver.getStorage().stream().anyMatch(e -> e instanceof AuthenticationSuccessEvent));
+        AuthorizationSuccessEvent event = (AuthorizationSuccessEvent) securityEventObserver.getStorage()
+                .get(securityEventObserver.getStorage().size() - 1);
+        assertNotNull(event.getSecurityIdentity());
+        assertEquals(username, event.getSecurityIdentity().getPrincipal().getName());
+        assertEquals(RolesAllowedCheck.class.getName(), event.getEventProperties().get(AUTHORIZATION_CONTEXT));
     }
 
     private static void addBlockingHeaders(Metadata headers) {

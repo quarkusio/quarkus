@@ -58,7 +58,7 @@
         <!-- TCK versions -->
         <version.arquillian>1.7.0.Final</version.arquillian>
         <version.atinject-tck>2.0.1</version.atinject-tck>
-        <version.cdi-tck>4.0.12</version.cdi-tck>
+        <version.cdi-tck>4.0.13</version.cdi-tck>
         <version.junit4>4.13.2</version.junit4>
         <!-- Maven plugin versions -->
         <version.compiler.plugin>3.12.1</version.compiler.plugin>

@@ -5034,6 +5034,14 @@
                 <artifactId>hibernate-jpamodelgen</artifactId>
                 <version>${hibernate-orm.version}</version>
             </dependency>
+            <!-- Workaround for Maven relocations not being supported for
+                 annotation processor paths in Maven Compiler Plugin
+                 See https://github.com/apache/maven-compiler-plugin/pull/180#issuecomment-1876921475 -->
+            <dependency>
+                <groupId>org.hibernate</groupId>
+                <artifactId>hibernate-jpamodelgen</artifactId>
+                <version>${hibernate-orm.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.hibernate.common</groupId>
                 <artifactId>hibernate-commons-annotations</artifactId>

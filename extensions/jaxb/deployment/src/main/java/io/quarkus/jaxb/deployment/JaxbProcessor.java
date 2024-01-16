@@ -482,7 +482,10 @@ public class JaxbProcessor {
     private static boolean isMethodIgnored(MethodInfo methodInfo) {
         // see JakartaXmlBindingAnnotationIntrospector#isVisible(AnnotatedMethod m)
         // and XmlAccessType
-        if (methodInfo.hasAnnotation(XML_TRANSIENT)) {
+        MethodInfo getterSetterCounterpart = getGetterSetterCounterPart(methodInfo);
+
+        if (methodInfo.hasAnnotation(XML_TRANSIENT) ||
+                (getterSetterCounterpart != null && getterSetterCounterpart.hasAnnotation(XML_TRANSIENT))) {
             return true;
         }
         if (Modifier.isStatic(methodInfo.flags())) {
@@ -509,6 +512,14 @@ public class JaxbProcessor {
             default:
                 return true;
         }
+    }
+
+    private static MethodInfo getGetterSetterCounterPart(MethodInfo methodInfo) {
+        if (!methodInfo.name().startsWith("get") || methodInfo.parametersCount() > 0) {
+            return null;
+        }
+
+        return methodInfo.declaringClass().method(methodInfo.name().replaceFirst("get", "set"), methodInfo.returnType());
     }
 
     private static XmlAccessType getXmlAccessType(ClassInfo classInfo) {

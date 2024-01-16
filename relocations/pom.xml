@@ -26,6 +26,16 @@
         <module>quarkus-smallrye-opentracing-deployment</module>
         <module>quarkus-hibernate-search-orm-coordination-outbox-polling</module>
         <module>quarkus-hibernate-search-orm-coordination-outbox-polling-deployment</module>
+        <module>quarkus-rest-client</module>
+        <module>quarkus-rest-client-deployment</module>
+        <module>quarkus-rest-client-jackson</module>
+        <module>quarkus-rest-client-jackson-deployment</module>
+        <module>quarkus-rest-client-jaxb</module>
+        <module>quarkus-rest-client-jaxb-deployment</module>
+        <module>quarkus-rest-client-jsonb</module>
+        <module>quarkus-rest-client-jsonb-deployment</module>
+        <module>quarkus-rest-client-mutiny</module>
+        <module>quarkus-rest-client-mutiny-deployment</module>
     </modules>
 
 </project>

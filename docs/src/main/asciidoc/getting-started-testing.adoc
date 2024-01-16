@@ -1020,7 +1020,7 @@ public class SpyGreetingServiceTest {
 
 ==== Using `@InjectMock` with `@RestClient`
 
-The `@RegisterRestClient` registers the implementation of the rest-client at runtime, and because the bean needs to be a regular scope, you have to annotate your interface with `@ApplicationScoped`.
+The `@RegisterRestClient` registers the implementation of the REST Client at runtime, and because the bean needs to be a regular scope, you have to annotate your interface with `@ApplicationScoped`.
 
 [source,java]
 ----

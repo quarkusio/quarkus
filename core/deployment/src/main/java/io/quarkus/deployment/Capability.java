@@ -54,6 +54,7 @@ public interface Capability {
 
     String RESTEASY = QUARKUS_PREFIX + ".resteasy";
     String RESTEASY_JSON = RESTEASY + ".json";
+    String RESTEASY_CLIENT = RESTEASY + ".client";
 
     String RESTEASY_JSON_JACKSON = RESTEASY_JSON + ".jackson";
     String RESTEASY_JSON_JACKSON_CLIENT = RESTEASY_JSON_JACKSON + ".client";

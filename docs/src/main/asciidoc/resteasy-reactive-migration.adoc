@@ -163,7 +163,7 @@ For more information, see the xref:security-proactive-authentication.adoc#custom
 
 == Client
 
-The Reactive REST Client (`quarkus-rest-client-reactive` and its dependencies) replace the legacy `quarkus-rest-client` but leverage Quarkus' build time processing
+The Reactive REST Client (`quarkus-rest-client-reactive` and its dependencies) replaces the legacy `quarkus-resteasy-client` and leverages Quarkus' build time processing
 and the unified I/O model provided by Vert.x.
 
 === Dependencies
@@ -173,23 +173,26 @@ The following table matches the legacy REST Client dependencies with the new Rea
 |===
 |Legacy |RESTEasy Reactive
 
-|`quarkus-rest-client`
+|`quarkus-resteasy-client`
 |`quarkus-rest-client-reactive`
 
-|`quarkus-rest-client-jackson`
+|`quarkus-resteasy-client-jackson`
 |`quarkus-rest-client-reactive-jackson`
 
-|`quarkus-rest-client-jsonb`
+|`quarkus-resteasy-client-jsonb`
 |`quarkus-rest-client-reactive-jsonb`
 
-|`quarkus-rest-client-jaxb`
+|`quarkus-resteasy-client-jaxb`
 |`quarkus-rest-client-reactive-jaxb`
+
+|`quarkus-resteasy-client-mutiny`
+|No replacement, natively supports Mutiny
 
 |===
 
 === Keycloak admin client
 
-When using `quarkus-rest-client`, users can use the `quarkus-keycloak-admin-client` to administer the target Keycloak instance
+When using `quarkus-resteasy-client`, users can use the `quarkus-keycloak-admin-client` to administer the target Keycloak instance
 by leveraging the rest client.
 
 When using `quarkus-rest-client-reactive` however, users must use `quarkus-keycloak-admin-client-reactive` to access the same functionality
@@ -197,7 +200,7 @@ and use the reactive REST Client.
 
 === OIDC
 
-When using `quarkus-rest-client`, users can use the `quarkus-oidc-client-filter` extensions to acquire and refresh access tokens from OpenID Connect and OAuth 2.0 compliant Authorization Servers.
+When using `quarkus-resteasy-client`, users can use the `quarkus-oidc-client-filter` extensions to acquire and refresh access tokens from OpenID Connect and OAuth 2.0 compliant Authorization Servers.
 
 When using `quarkus-rest-client-reactive` however, users must use `quarkus-oidc-client-filter-reactive` to access the same functionality.
 

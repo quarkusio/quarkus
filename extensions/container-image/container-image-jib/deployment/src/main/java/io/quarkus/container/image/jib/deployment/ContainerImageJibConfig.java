@@ -227,4 +227,18 @@ public class ContainerImageJibConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean useCurrentTimestampFileModification;
+
+    /**
+     * The directory to use for caching base image layers.
+     * If not specified, the Jib default directory is used.
+     */
+    @ConfigItem
+    public Optional<String> baseImageLayersCache;
+
+    /**
+     * The directory to use for caching application layers.
+     * If not specified, the Jib default directory is used.
+     */
+    public Optional<String> applicationLayersCache;
+
 }

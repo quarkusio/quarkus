@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import jakarta.enterprise.context.Dependent;
+
 import io.quarkus.scheduler.Scheduled.ConcurrentExecution;
 import io.quarkus.scheduler.Scheduled.SkipPredicate;
 import io.smallrye.mutiny.Uni;
@@ -185,13 +187,52 @@ public interface Scheduler {
         }
 
         /**
+         * The class must either represent a CDI bean or declare a public no-args constructor.
+         * <p>
+         * In case of CDI, there must be exactly one bean that has the specified class in its set of bean types. The scope of
+         * the bean must be active during execution of the job. If the scope is {@link Dependent} then the bean instance belongs
+         * exclusively to the specific job definition and is destroyed when the application is shut down. If the bean is not a
+         * dependency of any other bean it has to be marked as unremovable; for example annotated with
+         * {@link io.quarkus.arc.Unremovable}.
+         * <p>
+         * In case of a class with public no-args constructor, the constructor must be registered for reflection when an
+         * application is compiled to a native executable; for example annotate the class with
+         * {@link io.quarkus.runtime.annotations.RegisterForReflection}.
+         *
+         * @param taskClass
+         * @return self
+         */
+        default JobDefinition setTask(Class<? extends Consumer<ScheduledExecution>> taskClass) {
+            return setTask(taskClass, false);
+        }
+
+        /**
          * Configures the task to schedule.
          *
          * @param task the task, must not be {@code null}
          * @param runOnVirtualThread whether the task must be run on a virtual thread if the JVM allows it.
-         * @return self the current job definition
+         * @return self
          */
         JobDefinition setTask(Consumer<ScheduledExecution> task, boolean runOnVirtualThread);
+
+        /**
+         * The class must either represent a CDI bean or declare a public no-args constructor.
+         * <p>
+         * In case of CDI, there must be exactly one bean that has the specified class in its set of bean types. The scope of
+         * the bean must be active during execution of the job. If the scope is {@link Dependent} then the bean instance belongs
+         * exclusively to the specific job definition and is destroyed when the application is shut down. If the bean is not a
+         * dependency of any other bean it has to be marked as unremovable; for example annotated with
+         * {@link io.quarkus.arc.Unremovable}.
+         * <p>
+         * In case of a class with public no-args constructor, the constructor must be registered for reflection when an
+         * application is compiled to a native executable; for example annotate the class with
+         * {@link io.quarkus.runtime.annotations.RegisterForReflection}.
+         *
+         * @param consumerClass
+         * @param runOnVirtualThread
+         * @return self
+         */
+        JobDefinition setTask(Class<? extends Consumer<ScheduledExecution>> consumerClass, boolean runOnVirtualThread);
 
         /**
          *
@@ -199,6 +240,24 @@ public interface Scheduler {
          * @return self
          */
         JobDefinition setAsyncTask(Function<ScheduledExecution, Uni<Void>> asyncTask);
+
+        /**
+         * The class must either represent a CDI bean or declare a public no-args constructor.
+         * <p>
+         * In case of CDI, there must be exactly one bean that has the specified class in its set of bean types. The scope of
+         * the bean must be active during execution of the job. If the scope is {@link Dependent} then the bean instance belongs
+         * exclusively to the specific job definition and is destroyed when the application is shut down. If the bean is not a
+         * dependency of any other bean it has to be marked as unremovable; for example annotated with
+         * {@link io.quarkus.arc.Unremovable}.
+         * <p>
+         * In case of a class with public no-args constructor, the constructor must be registered for reflection when an
+         * application is compiled to a native executable; for example annotate the class with
+         * {@link io.quarkus.runtime.annotations.RegisterForReflection}.
+         *
+         * @param asyncTaskClass
+         * @return self
+         */
+        JobDefinition setAsyncTask(Class<? extends Function<ScheduledExecution, Uni<Void>>> asyncTaskClass);
 
         /**
          * Attempts to schedule the job.

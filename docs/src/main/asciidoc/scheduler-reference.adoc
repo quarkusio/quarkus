@@ -406,7 +406,7 @@ class MyJobs {
 
 NOTE: By default, the scheduler is not started unless a `@Scheduled` business method is found. You may need to force the start of the scheduler for "pure" programmatic scheduling via `quarkus.scheduler.start-mode=forced`.
 
-NOTE: If the xref:quartz.adoc[Quartz extension] is present then only the RAM store type is supported, i.e. `quarkus.quartz.store-type=ram` must be set. The Quartz API can be also used to schedule a job programmatically.
+NOTE: If the xref:quartz.adoc[Quartz extension] is present and the DB store type is used then it's not possible to pass a task instance to the job definition and a task class must be used instead. The Quartz API can be also used to schedule a job programmatically.
 
 == Scheduled Methods and Testing
 

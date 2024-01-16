@@ -156,7 +156,7 @@ public class SseParser implements Handler<Buffer> {
         event.setComment(commentBuffer.length() == 0 ? null : commentBuffer.toString());
         // SSE spec says empty string is the default, but JAX-RS says null if not specified
         event.setId(lastEventId);
-        event.setData(dataBuffer.length() == 0 ? null : dataBuffer.toString());
+        event.setData(dataBuffer.length() == 0 ? "" : dataBuffer.toString());
         // SSE spec says "message" is the default, but JAX-RS says null if not specified
         event.setName(eventType);
         event.setReconnectDelay(eventReconnectTime);

@@ -44,7 +44,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.RuntimeType;
@@ -284,9 +283,8 @@ public class JaxrsClientReactiveProcessor {
             scannedParameterContainers.addAll(parameterContainersBuildItem.getClassNames());
         }
         reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem
-                .builder(scannedParameterContainers.stream().map(name -> name.toString()).collect(Collectors.toSet())
-                        .toArray(new String[0]))
-                .fields().build());
+                .builder(scannedParameterContainers.stream().map(DotName::toString).distinct().toArray(String[]::new))
+                .methods().fields().build());
 
         if (resourceScanningResultBuildItem.isEmpty()
                 || resourceScanningResultBuildItem.get().getResult().getClientInterfaces().isEmpty()) {
@@ -2644,7 +2642,7 @@ public class JaxrsClientReactiveProcessor {
             if (isCollection(valueType, index)) {
                 if (valueType.kind() == PARAMETERIZED_TYPE) {
                     Type paramType = valueType.asParameterizedType().arguments().get(0);
-                    if (paramType.kind() == CLASS) {
+                    if ((paramType.kind() == CLASS) || (paramType.kind() == PARAMETERIZED_TYPE)) {
                         componentType = paramType.name().toString();
                     }
                 }
@@ -2671,7 +2669,7 @@ public class JaxrsClientReactiveProcessor {
             } else if (isCollection(type, index)) {
                 if (type.kind() == PARAMETERIZED_TYPE) {
                     Type paramType = type.asParameterizedType().arguments().get(0);
-                    if (paramType.kind() == CLASS) {
+                    if ((paramType.kind() == CLASS) || (paramType.kind() == PARAMETERIZED_TYPE)) {
                         componentType = paramType.name().toString();
                     }
                 }

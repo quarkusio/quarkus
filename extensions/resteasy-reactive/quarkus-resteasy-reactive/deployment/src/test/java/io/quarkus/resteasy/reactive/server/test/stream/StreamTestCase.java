@@ -264,7 +264,7 @@ public class StreamTestCase {
             });
             sse.open();
             Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS));
-            org.assertj.core.api.Assertions.assertThat(results).containsExactly(null, "uno", "dos", "tres");
+            org.assertj.core.api.Assertions.assertThat(results).containsExactly("", "uno", "dos", "tres");
             org.assertj.core.api.Assertions.assertThat(ids).containsExactly(null, "one", "two", "three");
             org.assertj.core.api.Assertions.assertThat(names).containsExactly(null, "eins", "zwei", "drei");
             org.assertj.core.api.Assertions.assertThat(comments).containsExactly("dummy", null, null, null);

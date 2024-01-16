@@ -3051,5 +3051,7 @@ group-id: <YOUR_EXTENSION_RUNTIME_GROUP_ID>
 artifact-id: <YOUR_EXTENSION_RUNTIME_ARTIFACT_ID>
 ----
 
+NOTE: When your repository contains multiple extensions, you need to create a separate file for each individual extension, not just one file for the entire repository.
+
 That's all. Once the pull request is merged, a scheduled job will check Maven Central for new versions and update the xref:extension-registry-user.adoc[Quarkus Extension Registry].
 

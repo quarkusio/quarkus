@@ -90,7 +90,7 @@ public class CreateExtension {
     public static final String DEFAULT_QUARKIVERSE_NAMESPACE_ID = "quarkus-";
     public static final String DEFAULT_QUARKIVERSE_GUIDE_URL = "https://quarkiverse.github.io/quarkiverse-docs/%s/dev/";
 
-    private static final String DEFAULT_SUREFIRE_PLUGIN_VERSION = "3.2.3";
+    private static final String DEFAULT_SUREFIRE_PLUGIN_VERSION = "3.2.5";
     private static final String DEFAULT_COMPILER_PLUGIN_VERSION = "3.12.1";
 
     private final QuarkusExtensionCodestartProjectInputBuilder builder = QuarkusExtensionCodestartProjectInput.builder();

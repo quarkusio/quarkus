@@ -73,6 +73,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private LoggingScope loggingScope;
     private Integer loggingBodyLimit;
 
+    private Boolean trustAll;
+
     @Override
     public RestClientBuilderImpl baseUrl(URL url) {
         try {
@@ -176,6 +178,11 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     public RestClientBuilderImpl loggingBodyLimit(Integer limit) {
         this.loggingBodyLimit = limit;
+        return this;
+    }
+
+    public RestClientBuilderImpl trustAll(boolean trustAll) {
+        this.trustAll = trustAll;
         return this;
     }
 
@@ -370,10 +377,13 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
         clientBuilder.multiQueryParamMode(toMultiQueryParamMode(queryParamStyle));
 
-        Boolean trustAll = ConfigProvider.getConfig().getOptionalValue(TLS_TRUST_ALL, Boolean.class)
-                .orElse(false);
+        Boolean effectiveTrustAll = trustAll;
+        if (effectiveTrustAll == null) {
+            effectiveTrustAll = ConfigProvider.getConfig().getOptionalValue(TLS_TRUST_ALL, Boolean.class)
+                    .orElse(false);
+        }
 
-        clientBuilder.trustAll(trustAll);
+        clientBuilder.trustAll(effectiveTrustAll);
         restClientsConfig.verifyHost.ifPresent(clientBuilder::verifyHost);
 
         String userAgent = (String) getConfiguration().getProperty(QuarkusRestClientProperties.USER_AGENT);
@@ -452,5 +462,4 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         }
         return null;
     }
-
 }

@@ -275,6 +275,11 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
     QuarkusRestClientBuilder loggingBodyLimit(Integer limit);
 
     /**
+     * Enable trusting all certificates. Disable by default.
+     */
+    QuarkusRestClientBuilder trustAll(boolean trustAll);
+
+    /**
      * Based on the configured QuarkusRestClientBuilder, creates a new instance of the given REST interface to invoke API calls
      * against.
      *

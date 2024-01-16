@@ -16,6 +16,8 @@ With Quarkus you can deploy your favorite Java HTTP frameworks as AWS Lambda's u
 or https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-rest-api.html[AWS Gateway REST API].  This means that you can deploy your microservices written with RESTEasy Reactive (our Jakarta REST implementation),
 Undertow (servlet), Reactive Routes, xref:funqy-http.adoc[Funqy HTTP] or any other Quarkus HTTP framework as an AWS Lambda.
 
+IMPORTANT: You should only use single HTTP framework together with AWS Lambda extension to avoid unexpected conflicts and errors.
+
 You can deploy your Lambda as a pure Java jar, or you can compile your project to a native image and deploy that for a smaller
 memory footprint and startup time.  Our integration also generates SAM deployment files that can be consumed by https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html[Amazon's SAM framework].
 

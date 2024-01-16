@@ -49,6 +49,7 @@ import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapters;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
@@ -204,11 +205,15 @@ public class JaxbProcessor {
         for (DotName jaxbRootAnnotation : JAXB_ROOT_ANNOTATIONS) {
             for (AnnotationInstance jaxbRootAnnotationInstance : index
                     .getAnnotations(jaxbRootAnnotation)) {
-                if (jaxbRootAnnotationInstance.target().kind() == Kind.CLASS
-                        && !JAXB_ANNOTATIONS.contains(jaxbRootAnnotationInstance.target().asClass().getClass())) {
-                    DotName targetClass = jaxbRootAnnotationInstance.target().asClass().name();
-                    addReflectiveHierarchyClass(targetClass, reflectiveHierarchies, index);
-                    classesToBeBound.add(targetClass.toString());
+                if (jaxbRootAnnotationInstance.target().kind() == Kind.CLASS) {
+                    final ClassInfo target = jaxbRootAnnotationInstance.target().asClass();
+                    reflectiveClass.produce(
+                            ReflectiveClassBuildItem
+                                    .builder(listAncestors(target, index))
+                                    .methods()
+                                    .fields()
+                                    .build());
+                    classesToBeBound.add(target.name().toString());
                     jaxbRootAnnotationsDetected = true;
                 }
             }
@@ -415,15 +420,33 @@ public class JaxbProcessor {
         }
     }
 
-    private void addReflectiveHierarchyClass(DotName className,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
-            IndexView index) {
-        Type jandexType = Type.create(className, Type.Kind.CLASS);
-        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                .type(jandexType)
-                .index(index)
-                .source(getClass().getSimpleName() + " > " + jandexType.name().toString())
-                .build());
+    private static String[] listAncestors(ClassInfo classInfo, IndexView index) {
+        final List<String> result = new ArrayList<>();
+        result.add(classInfo.name().toString());
+
+        DotName superName = null;
+        while ((superName = classInfo.superName()) != null) {
+            result.add(superName.toString());
+            classInfo = index.getClassByName(superName);
+            if (classInfo == null) {
+                /*
+                 * The given class is not available in the index
+                 * Fallback to java.lang.Class API
+                 */
+                ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+                try {
+                    Class<?> cl = tccl.loadClass(superName.toString());
+                    while ((cl = cl.getSuperclass()) != null) {
+                        result.add(cl.getName());
+                    }
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalStateException("Could not find " + superName
+                            + " in Jandex nor load it using Quarkus build time context class loader");
+                }
+                break;
+            }
+        }
+        return result.toArray(new String[0]);
     }
 
     private void addReflectiveClass(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, boolean methods, boolean fields,

@@ -50,8 +50,8 @@
         },
         {
             "category": "Amazon",
-            "timeout": 50,
-            "test-modules": "amazon-lambda, amazon-lambda-http",
+            "timeout": 80,
+            "test-modules": "amazon-lambda, amazon-lambda-http, amazon-lambda-rest-funqy, amazon-lambda-rest-servlet, amazon-lambda-rest-reactive-routes, amazon-lambda-rest-resteasy-reactive",
             "os-name": "ubuntu-latest"
         },
         {

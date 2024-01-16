@@ -172,7 +172,8 @@ class RequestContext implements ManagedContext {
     }
 
     public ContextState getStateIfActive() {
-        return currentContext.get();
+        ContextState state = currentContext.get();
+        return state != null && state.isValid() ? state : null;
     }
 
     @Override

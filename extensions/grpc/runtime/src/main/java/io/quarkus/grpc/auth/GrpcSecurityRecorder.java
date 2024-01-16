@@ -6,16 +6,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.grpc.BindableService;
 import io.grpc.ServerMethodDefinition;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.grpc.runtime.GrpcContainer;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.runtime.configuration.ConfigurationException;
 
 @Recorder
 public class GrpcSecurityRecorder {
@@ -45,19 +41,5 @@ public class GrpcSecurityRecorder {
         }
 
         container.beanInstance(GrpcSecurityInterceptor.class).init(svcToMethods);
-    }
-
-    public void validateSecurityEventsDisabled(String observedSecurityEvent) {
-        boolean securityEventsEnabled = ConfigProvider
-                .getConfig()
-                .getOptionalValue("quarkus.security.events.enabled", boolean.class)
-                .orElse(Boolean.TRUE);
-        if (securityEventsEnabled) {
-            throw new ConfigurationException("""
-                    Found observer method for event type '%s', but the gRPC extension does not support security
-                    events. Either disable security events with the 'quarkus.security.events.enabled'
-                    configuration property, or remove security event CDI observers.""".formatted(observedSecurityEvent),
-                    Set.of("quarkus.security.events.enabled"));
-        }
     }
 }

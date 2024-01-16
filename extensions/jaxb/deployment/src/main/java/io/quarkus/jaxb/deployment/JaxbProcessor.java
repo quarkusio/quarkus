@@ -70,7 +70,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -187,7 +186,6 @@ public class JaxbProcessor {
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinitions,
             CombinedIndexBuildItem combinedIndexBuildItem,
             List<JaxbFileRootBuildItem> fileRoots,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
@@ -204,11 +202,10 @@ public class JaxbProcessor {
         for (DotName jaxbRootAnnotation : JAXB_ROOT_ANNOTATIONS) {
             for (AnnotationInstance jaxbRootAnnotationInstance : index
                     .getAnnotations(jaxbRootAnnotation)) {
-                if (jaxbRootAnnotationInstance.target().kind() == Kind.CLASS
-                        && !JAXB_ANNOTATIONS.contains(jaxbRootAnnotationInstance.target().asClass().getClass())) {
-                    DotName targetClass = jaxbRootAnnotationInstance.target().asClass().name();
-                    addReflectiveHierarchyClass(targetClass, reflectiveHierarchies, index);
-                    classesToBeBound.add(targetClass.toString());
+                if (jaxbRootAnnotationInstance.target().kind() == Kind.CLASS) {
+                    String className = jaxbRootAnnotationInstance.target().asClass().name().toString();
+                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
+                    classesToBeBound.add(className);
                     jaxbRootAnnotationsDetected = true;
                 }
             }
@@ -413,17 +410,6 @@ public class JaxbProcessor {
         } catch (IOException e) {
             throw new IOError(e);
         }
-    }
-
-    private void addReflectiveHierarchyClass(DotName className,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
-            IndexView index) {
-        Type jandexType = Type.create(className, Type.Kind.CLASS);
-        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                .type(jandexType)
-                .index(index)
-                .source(getClass().getSimpleName() + " > " + jandexType.name().toString())
-                .build());
     }
 
     private void addReflectiveClass(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, boolean methods, boolean fields,

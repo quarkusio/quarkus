@@ -229,7 +229,7 @@ For more information, see the <<keycloak-dev-mode>> section.
 docker run --name keycloak -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 ====
-* Where the `keycloak.version` is set to version `23.0.0` or later.
+* Where the `keycloak.version` is set to version `17.0.0` or later.
 . You can access your Keycloak Server at http://localhost:8180[localhost:8180].
 . To access the Keycloak Administration Console, log in as the `admin` user by using the following login credentials:
 

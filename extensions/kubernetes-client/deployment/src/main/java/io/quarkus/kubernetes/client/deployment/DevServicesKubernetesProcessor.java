@@ -1,17 +1,56 @@
 package io.quarkus.kubernetes.client.deployment;
 
-import com.dajudge.kindcontainer.*;
+import static com.dajudge.kindcontainer.KubernetesVersionEnum.latest;
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.singletonList;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.Duration;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import org.jboss.logging.Logger;
+import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.ContainerState;
+
+import com.dajudge.kindcontainer.ApiServerContainer;
+import com.dajudge.kindcontainer.ApiServerContainerVersion;
+import com.dajudge.kindcontainer.K3sContainer;
+import com.dajudge.kindcontainer.K3sContainerVersion;
+import com.dajudge.kindcontainer.KindContainer;
+import com.dajudge.kindcontainer.KindContainerVersion;
+import com.dajudge.kindcontainer.KubernetesContainer;
+import com.dajudge.kindcontainer.KubernetesVersionEnum;
 import com.dajudge.kindcontainer.client.KubeConfigUtils;
-import com.dajudge.kindcontainer.client.config.*;
+import com.dajudge.kindcontainer.client.config.Cluster;
+import com.dajudge.kindcontainer.client.config.ClusterSpec;
+import com.dajudge.kindcontainer.client.config.Context;
+import com.dajudge.kindcontainer.client.config.ContextSpec;
+import com.dajudge.kindcontainer.client.config.KubeConfig;
+import com.dajudge.kindcontainer.client.config.User;
+import com.dajudge.kindcontainer.client.config.UserSpec;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectContainerResponse;
+
 import io.fabric8.kubernetes.client.Config;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.builditem.*;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
+import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.builditem.DockerStatusBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
@@ -24,24 +63,8 @@ import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
 import io.quarkus.kubernetes.client.runtime.KubernetesDevServicesBuildTimeConfig;
 import io.quarkus.kubernetes.client.runtime.KubernetesDevServicesBuildTimeConfig.Flavor;
 import io.quarkus.runtime.configuration.ConfigUtils;
-import org.jboss.logging.Logger;
-import org.testcontainers.DockerClientFactory;
-import org.testcontainers.containers.ContainerState;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.time.Duration;
-import java.util.*;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import static com.dajudge.kindcontainer.KubernetesVersionEnum.latest;
-import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.singletonList;
-
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = {GlobalDevServicesConfig.Enabled.class, NoQuarkusTestKubernetesClient.class})
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { GlobalDevServicesConfig.Enabled.class, NoQuarkusTestKubernetesClient.class })
 public class DevServicesKubernetesProcessor {
     private static final String KUBERNETES_CLIENT_DEVSERVICES_OVERRIDE_KUBECONFIG = "quarkus.kubernetes-client.devservices.override-kubeconfig";
     private static final Logger log = Logger.getLogger(DevServicesKubernetesProcessor.class);

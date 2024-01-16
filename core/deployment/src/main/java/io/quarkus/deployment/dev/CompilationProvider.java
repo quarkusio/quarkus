@@ -51,6 +51,9 @@ public interface CompilationProvider extends Closeable {
         private final List<String> compilePluginArtifacts;
         private final List<String> compilerPluginOptions;
         private final boolean ignoreModuleInfo;
+        private final File generatedSourcesDirectory;
+        private final Set<File> annotationProcessorPaths;
+        private final List<String> annotationProcessors;
 
         public Context(
                 String name,
@@ -65,7 +68,11 @@ public interface CompilationProvider extends Closeable {
                 String sourceJavaVersion,
                 String targetJvmVersion,
                 List<String> compilePluginArtifacts,
-                List<String> compilerPluginOptions, String ignoreModuleInfo) {
+                List<String> compilerPluginOptions,
+                File generatedSourcesDirectory,
+                Set<File> annotationProcessorPaths,
+                List<String> annotationProcessors,
+                String ignoreModuleInfo) {
             this.name = name;
             this.classpath = classpath;
             this.reloadableClasspath = reloadableClasspath;
@@ -80,6 +87,9 @@ public interface CompilationProvider extends Closeable {
             this.compilePluginArtifacts = compilePluginArtifacts;
             this.compilerPluginOptions = compilerPluginOptions;
             this.ignoreModuleInfo = Boolean.parseBoolean(ignoreModuleInfo);
+            this.generatedSourcesDirectory = generatedSourcesDirectory;
+            this.annotationProcessorPaths = annotationProcessorPaths;
+            this.annotationProcessors = annotationProcessors;
         }
 
         public String getName() {
@@ -92,6 +102,14 @@ public interface CompilationProvider extends Closeable {
 
         public Set<File> getReloadableClasspath() {
             return reloadableClasspath;
+        }
+
+        public Set<File> getAnnotationProcessorPaths() {
+            return annotationProcessorPaths;
+        }
+
+        public List<String> getAnnotationProcessors() {
+            return annotationProcessors;
         }
 
         public File getProjectDirectory() {
@@ -136,6 +154,10 @@ public interface CompilationProvider extends Closeable {
 
         public boolean ignoreModuleInfo() {
             return ignoreModuleInfo;
+        }
+
+        public File getGeneratedSourcesDirectory() {
+            return generatedSourcesDirectory;
         }
     }
 }

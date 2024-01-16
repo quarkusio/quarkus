@@ -30,7 +30,7 @@ public class DevModeContext implements Serializable {
 
     private static final long serialVersionUID = 4688502145533897982L;
 
-    public static final CompilationUnit EMPTY_COMPILATION_UNIT = new CompilationUnit(PathList.of(), null, null, null);
+    public static final CompilationUnit EMPTY_COMPILATION_UNIT = new CompilationUnit(PathList.of(), null, null, null, null);
 
     public static final String ENABLE_PREVIEW_FLAG = "--enable-preview";
 
@@ -63,6 +63,9 @@ public class DevModeContext implements Serializable {
     private QuarkusBootstrap.Mode mode = QuarkusBootstrap.Mode.DEV;
     private String baseName;
     private final Set<ArtifactKey> localArtifacts = new HashSet<>();
+
+    private Set<File> processorPaths;
+    private List<String> processors;
 
     public boolean isLocalProjectDiscovery() {
         return localProjectDiscovery;
@@ -239,6 +242,22 @@ public class DevModeContext implements Serializable {
         return localArtifacts;
     }
 
+    public void setAnnotationProcessorPaths(Set<File> processorPaths) {
+        this.processorPaths = processorPaths;
+    }
+
+    public Set<File> getAnnotationProcessorPaths() {
+        return processorPaths;
+    }
+
+    public void setAnnotationProcessors(List<String> processors) {
+        this.processors = processors;
+    }
+
+    public List<String> getAnnotationProcessors() {
+        return processors;
+    }
+
     public static class ModuleInfo implements Serializable {
 
         private static final long serialVersionUID = -1376678003747618410L;
@@ -259,11 +278,13 @@ public class DevModeContext implements Serializable {
             this.projectDirectory = builder.projectDirectory;
             this.main = new CompilationUnit(builder.sourcePaths, builder.classesPath,
                     builder.resourcePaths,
-                    builder.resourcesOutputPath);
+                    builder.resourcesOutputPath,
+                    builder.generatedSourcesPath);
 
             if (builder.testClassesPath != null) {
+                // FIXME: do tests have generated sources?
                 this.test = new CompilationUnit(builder.testSourcePaths,
-                        builder.testClassesPath, builder.testResourcePaths, builder.testResourcesOutputPath);
+                        builder.testClassesPath, builder.testResourcePaths, builder.testResourcesOutputPath, null);
             } else {
                 this.test = null;
             }
@@ -328,6 +349,7 @@ public class DevModeContext implements Serializable {
             private String classesPath;
             private PathCollection resourcePaths = PathList.of();
             private String resourcesOutputPath;
+            private String generatedSourcesPath;
 
             private String preBuildOutputDir;
             private PathCollection sourceParents = PathList.of();
@@ -408,6 +430,11 @@ public class DevModeContext implements Serializable {
                 return this;
             }
 
+            public Builder setGeneratedSourcesPath(String generatedSourcesPath) {
+                this.generatedSourcesPath = generatedSourcesPath;
+                return this;
+            }
+
             public ModuleInfo build() {
                 return new ModuleInfo(this);
             }
@@ -422,13 +449,15 @@ public class DevModeContext implements Serializable {
         private final String classesPath;
         private final PathCollection resourcePaths;
         private final String resourcesOutputPath;
+        private final String generatedSourcesPath;
 
         public CompilationUnit(PathCollection sourcePaths, String classesPath, PathCollection resourcePaths,
-                String resourcesOutputPath) {
+                String resourcesOutputPath, String generatedSourcesPath) {
             this.sourcePaths = sourcePaths;
             this.classesPath = classesPath;
             this.resourcePaths = resourcePaths;
             this.resourcesOutputPath = resourcesOutputPath;
+            this.generatedSourcesPath = generatedSourcesPath;
         }
 
         public PathCollection getSourcePaths() {
@@ -445,6 +474,10 @@ public class DevModeContext implements Serializable {
 
         public String getResourcesOutputPath() {
             return resourcesOutputPath;
+        }
+
+        public String getGeneratedSourcesPath() {
+            return generatedSourcesPath;
         }
     }
 

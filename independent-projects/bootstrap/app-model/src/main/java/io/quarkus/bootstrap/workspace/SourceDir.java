@@ -8,7 +8,11 @@ import io.quarkus.paths.PathTree;
 public interface SourceDir {
 
     static SourceDir of(Path src, Path dest) {
-        return new DefaultSourceDir(src, dest);
+        return of(src, dest, null);
+    }
+
+    static SourceDir of(Path src, Path dest, Path generatedSources) {
+        return new DefaultSourceDir(src, dest, generatedSources);
     }
 
     Path getDir();
@@ -21,6 +25,8 @@ public interface SourceDir {
     }
 
     Path getOutputDir();
+
+    Path getAptSourcesDir();
 
     PathTree getOutputTree();
 

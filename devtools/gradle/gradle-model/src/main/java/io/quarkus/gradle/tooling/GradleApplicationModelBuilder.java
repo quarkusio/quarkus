@@ -561,7 +561,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         }
         final List<SourceDir> resources = new ArrayList<>(resourceDirs.size());
         for (Map.Entry<File, Path> e : resourceDirs.entrySet()) {
-            resources.add(new DefaultSourceDir(e.getKey().toPath(), e.getValue()));
+            resources.add(new DefaultSourceDir(e.getKey().toPath(), e.getValue(), null));
         }
         module.addArtifactSources(new DefaultArtifactSources(classifier, sourceDirs, resources));
     }
@@ -602,7 +602,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             if (a.getRelativePath().getSegments().length == 1) {
                 final File srcDir = a.getFile().getParentFile();
                 sourceDirs
-                        .add(new DefaultSourceDir(srcDir.toPath(), destDir.toPath(), Map.of("compiler", task.getName())));
+                        .add(new DefaultSourceDir(srcDir.toPath(), destDir.toPath(), null, Map.of("compiler", task.getName())));
             }
         });
     }

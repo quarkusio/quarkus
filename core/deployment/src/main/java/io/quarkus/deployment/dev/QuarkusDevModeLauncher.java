@@ -182,6 +182,18 @@ public abstract class QuarkusDevModeLauncher {
         }
 
         @SuppressWarnings("unchecked")
+        public B annotationProcessorPaths(Set<File> processorPaths) {
+            QuarkusDevModeLauncher.this.processorPaths = processorPaths;
+            return (B) this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public B annotationProcessors(List<String> processors) {
+            QuarkusDevModeLauncher.this.processors = processors;
+            return (B) this;
+        }
+
+        @SuppressWarnings("unchecked")
         public B releaseJavaVersion(String releaseJavaVersion) {
             QuarkusDevModeLauncher.this.releaseJavaVersion = releaseJavaVersion;
             return (B) this;
@@ -317,6 +329,8 @@ public abstract class QuarkusDevModeLauncher {
     private ModuleInfo main;
     private List<ModuleInfo> dependencies = new ArrayList<>(0);
     private LinkedHashMap<ArtifactKey, File> classpath = new LinkedHashMap<>();
+    private Set<File> processorPaths;
+    private List<String> processors;
 
     protected QuarkusDevModeLauncher() {
     }
@@ -441,6 +455,12 @@ public abstract class QuarkusDevModeLauncher {
         }
         if (compilerPluginOptions != null) {
             devModeContext.setCompilerPluginsOptions(compilerPluginOptions);
+        }
+        if (processorPaths != null) {
+            devModeContext.setAnnotationProcessorPaths(processorPaths);
+        }
+        if (processors != null) {
+            devModeContext.setAnnotationProcessors(processors);
         }
 
         devModeContext.setReleaseJavaVersion(releaseJavaVersion);

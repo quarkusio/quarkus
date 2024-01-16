@@ -44,7 +44,7 @@ updates:
       # JDBC Drivers
       - dependency-name: org.postgresql:postgresql
       - dependency-name: org.mariadb.jdbc:mariadb-java-client
-      - dependency-name: mysql:mysql-connector-java
+      - dependency-name: com.mysql:mysql-connector-j
       - dependency-name: org.apache.derby:*
       - dependency-name: com.ibm.db2:jcc
       # Kafka

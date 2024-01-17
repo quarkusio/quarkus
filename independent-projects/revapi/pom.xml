@@ -7,12 +7,12 @@
         <artifactId>jboss-parent</artifactId>
         <version>39</version>
     </parent>
-    
+
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-revapi-config</artifactId>
     <name>Quarkus - Revapi Configuration</name>
-    <version>999-SNAPSHOT</version>    
-    <description>Contains the configuration of the Revapi API checker and the list of the API changes 
+    <version>999-SNAPSHOT</version>
+    <description>Contains the configuration of the Revapi API checker and the list of the API changes
         in the Quarkus APIs.
     </description>
     <url>https://github.com/quarkusio/quarkus</url>
@@ -36,7 +36,7 @@
 
     <build>
         <plugins>
-            <!-- 
+            <!--
             This is not deployed into a Maven repository. It is merely installed into the local Maven repository
             during a local build.
             -->
@@ -117,6 +117,31 @@
                                 <activeStyles>
                                     <style>io.quarkus.style.maven</style>
                                 </activeStyles>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+        <profile>
+            <id>ci</id>
+            <activation>
+                <property>
+                    <name>env.CI</name>
+                </property>
+            </activation>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-gpg-plugin</artifactId>
+                            <configuration>
+                                <!-- Prevent gpg from using pinentry programs -->
+                                <gpgArguments>
+                                    <arg>--pinentry-mode</arg>
+                                    <arg>loopback</arg>
+                                </gpgArguments>
                             </configuration>
                         </plugin>
                     </plugins>

@@ -39,7 +39,7 @@
         <maven-invoker-plugin.version>3.2.2</maven-invoker-plugin.version>
         <maven-core.version>3.8.6</maven-core.version>
 
-        <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+        <nexus-staging-maven-plugin.version>1.6.13</nexus-staging-maven-plugin.version>
         <!--
            Supported Maven versions, interpreted as a version range (Also defined in build-parent)
         -->
@@ -219,8 +219,9 @@
                         <configuration>
                             <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
                             <serverId>ossrh</serverId>
-                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
                             <keepStagingRepositoryOnCloseRuleFailure>true</keepStagingRepositoryOnCloseRuleFailure>
+                            <stagingProgressTimeoutMinutes>60</stagingProgressTimeoutMinutes>
                         </configuration>
                     </plugin>
                     <plugin>

@@ -57,7 +57,7 @@
         <maven-core.version>3.8.6</maven-core.version>
         <mockito.version>4.8.1</mockito.version>
         <version.surefire.plugin>3.0.0-M7</version.surefire.plugin>
-        <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+        <nexus-staging-maven-plugin.version>1.6.13</nexus-staging-maven-plugin.version>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
         <maven-model-helper.version>20</maven-model-helper.version>
         <commons-io.version>2.11.0</commons-io.version>
@@ -376,6 +376,7 @@
                             <serverId>ossrh</serverId>
                             <autoReleaseAfterClose>true</autoReleaseAfterClose>
                             <keepStagingRepositoryOnCloseRuleFailure>true</keepStagingRepositoryOnCloseRuleFailure>
+                            <stagingProgressTimeoutMinutes>60</stagingProgressTimeoutMinutes>
                         </configuration>
                     </plugin>
                     <plugin>

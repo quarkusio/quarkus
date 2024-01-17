@@ -64,7 +64,7 @@ Issue here is that it makes everything more complex and inconsistent.
 
 Here we rename to new names everywhere but uses relocation's to warn/inform for dependency updates and add further logic in Quarkus buildtime phase to detect incompatible combinations. 
 
-For example today we detect when extensions are incompatible (i.e. resteasy combined resteasy-reactrive) with each other and fail the build. We could extend this to also detect when extensions are incompatible with each other due to the new naming.
+For example today we detect when extensions are incompatible (i.e. resteasy combined resteasy-reactive) with each other and fail the build. We could extend this to also detect when extensions are incompatible with each other due to the new naming.
 
 == Decision
 
@@ -133,10 +133,10 @@ Old, New
 Old, New
 *smallrye-reactive*-messaging-kafka,*quarkus*-messaging-kafka
 *smallrye-reactive*-messaging-mqtt,*quarkus*-messaging-mqtt
-*smallrye-reactive*-messaging,*quarkus*-messsaging
+*smallrye-reactive*-messaging,*quarkus*-messaging
 *smallrye-reactive*-messaging-pulsar,*quarkus*-messaging-pulsar
 *smallrye-reactive*-messaging-rabbitmq,*quarkus*-messaging-rabbitmq
-*smallrye-reactive-messaging-amqp*,*quarkus*-messaging-amqp
+*smallrye-reactive*-messaging-amqp,*quarkus*-messaging-amqp
 |===
 
 == `resteasy-reactive` -> `quarkus-rest`
@@ -163,7 +163,7 @@ quarkus-*resteasy-reactive*-jackson,*quarkus-rest*-jackson
 
 *rest-client-reactive*-jsonb,*quarkus-rest-client*-jsonb (REUSE)
 *rest-client-reactive*,*quarkus-rest-client* (REUSE)
-*rest-client-reactive*-jackson,*quarkus-rest-clietn*-jackson (REUSE)
+*rest-client-reactive*-jackson,*quarkus-rest-client*-jackson (REUSE)
 *rest-client-reactive*-jaxb,*quarkus-rest-client*-jaxb (REUSE)
 |===
 
@@ -182,6 +182,7 @@ keycloak-admin-client-*reactive*,*quarkus*-keycloak-admin-*rest-client*
 == Consequences
 
 Positives:
+
 * Conveying the actual capabilities (blocking, non-blocking, Virtual Threads) of our stack should become easier.
 * the new name aligns quite nicely with Java EE's Jakarta REST
 * The 3.7 changes are just cleanup, we have time to adjust/fix things before the 3.9 changes and future LTS.

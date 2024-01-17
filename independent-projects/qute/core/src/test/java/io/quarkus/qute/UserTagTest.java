@@ -165,10 +165,12 @@ public class UserTagTest {
                 .addSectionHelper(new UserTagSectionHelper.Factory("myTag1", "my-tag-1"))
                 .addSectionHelper(new UserTagSectionHelper.Factory("myTag2", "my-tag-2"))
                 .addSectionHelper(new UserTagSectionHelper.Factory("gravatar", "gravatar-tag"))
+                .addResultMapper(new HtmlEscaper(ImmutableList.of("text/html")))
                 .strictRendering(false)
                 .build();
         Template tag1 = engine.parse(
-                "{_args.size}::{_args.empty}::{_args.get('foo').or('bar')}::{_args.asHtmlAttributes}::{_args.skip('foo','baz').size}::{#each _args.filter('foo')}{it.value}{/each}");
+                "{_args.size}::{_args.empty}::{_args.get('foo').or('bar')}::{_args.asHtmlAttributes}::{_args.skip('foo','baz').size}::{#each _args.filter('foo')}{it.value}{/each}",
+                Variant.forContentType(Variant.TEXT_HTML));
         engine.putTemplate("my-tag-1", tag1);
         Template tag2 = engine.parse(
                 "{#each _args}{it.key}=\"{it.value}\"{#if it_hasNext} {/if}{/each}");
@@ -178,7 +180,8 @@ public class UserTagTest {
 
         Template template = engine.parse("{#myTag1 /}");
         assertEquals("0::true::bar::::0::", template.render());
-        assertEquals("2::false::1::bar=\"true\" foo=\"1\"::1::1", engine.parse("{#myTag1 foo=1 bar=true /}").render());
+        assertEquals("3::false::1::bar=\"true\" baz=\"&quot;\" foo=\"1\"::1::1",
+                engine.parse("{#myTag1 foo=1 bar=true baz=quotationMark /}").data("quotationMark", "\"").render());
 
         assertEquals("baz=\"false\" foo=\"1\"", engine.parse("{#myTag2 foo=1 baz=false /}").render());
 

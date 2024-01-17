@@ -16,10 +16,13 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
 
     protected final boolean isNestedContentNeeded;
 
+    private final HtmlEscaper htmlEscaper;
+
     UserTagSectionHelper(Supplier<Template> templateSupplier, Map<String, SectionBlock> extendingBlocks,
-            Map<String, Expression> parameters, boolean isIsolated, boolean isNestedContentNeeded) {
+            Map<String, Expression> parameters, boolean isIsolated, boolean isNestedContentNeeded, HtmlEscaper htmlEscaper) {
         super(templateSupplier, extendingBlocks, parameters, isIsolated);
         this.isNestedContentNeeded = isNestedContentNeeded;
+        this.htmlEscaper = htmlEscaper;
     }
 
     @Override
@@ -29,7 +32,7 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
 
     @Override
     protected void addAdditionalEvaluatedParams(SectionResolutionContext context, Map<String, Object> evaluatedParams) {
-        evaluatedParams.put(Factory.ARGS, new Arguments(evaluatedParams));
+        evaluatedParams.put(Factory.ARGS, new Arguments(evaluatedParams, htmlEscaper));
         if (isNestedContentNeeded) {
             // If needed then add the {nested-content} to the evaluated params
             Expression nestedContent = ((TemplateImpl) template.get()).findExpression(this::isNestedContent);
@@ -56,6 +59,7 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
 
         private final String name;
         private final String templateId;
+        private final HtmlEscaper htmlEscaper;
 
         /**
          *
@@ -65,6 +69,7 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
         public Factory(String name, String templateId) {
             this.name = name;
             this.templateId = templateId;
+            this.htmlEscaper = new HtmlEscaper(List.of());
         }
 
         @Override
@@ -108,7 +113,7 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
             return new UserTagSectionHelper(template, extendingBlocks, params,
                     isolatedValue != null ? isolatedValue
                             : Boolean.parseBoolean(context.getParameterOrDefault(ISOLATED, ISOLATED_DEFAULT_VALUE)),
-                    isNestedContentNeeded);
+                    isNestedContentNeeded, htmlEscaper);
         }
 
         @Override
@@ -129,16 +134,19 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
     public static class Arguments implements Iterable<Entry<String, Object>> {
 
         private final List<Entry<String, Object>> args;
+        private final HtmlEscaper htmlEscaper;
 
-        Arguments(Map<String, Object> map) {
+        Arguments(Map<String, Object> map, HtmlEscaper htmlEscaper) {
             this.args = new ArrayList<>(Objects.requireNonNull(map).size());
             map.entrySet().forEach(args::add);
             // sort by key
             this.args.sort(Comparator.comparing(Entry::getKey));
+            this.htmlEscaper = htmlEscaper;
         }
 
-        private Arguments(List<Entry<String, Object>> args) {
+        private Arguments(List<Entry<String, Object>> args, HtmlEscaper htmlEscaper) {
             this.args = args;
+            this.htmlEscaper = htmlEscaper;
         }
 
         public boolean isEmpty() {
@@ -171,7 +179,7 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
                     newArgs.add(e);
                 }
             }
-            return new Arguments(newArgs);
+            return new Arguments(newArgs, htmlEscaper);
         }
 
         public Arguments filter(String... keys) {
@@ -182,23 +190,23 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
                     newArgs.add(e);
                 }
             }
-            return new Arguments(newArgs);
+            return new Arguments(newArgs, htmlEscaper);
         }
 
         // foo="1" bar="true"
-        public String asHtmlAttributes() {
+        public RawString asHtmlAttributes() {
             StringBuilder builder = new StringBuilder();
             for (Iterator<Entry<String, Object>> it = args.iterator(); it.hasNext();) {
                 Entry<String, Object> e = it.next();
                 builder.append(e.getKey());
                 builder.append("=\"");
-                builder.append(e.getValue());
+                builder.append(htmlEscaper.escape(String.valueOf(e.getValue())));
                 builder.append("\"");
                 if (it.hasNext()) {
                     builder.append(" ");
                 }
             }
-            return builder.toString();
+            return new RawString(builder.toString());
         }
 
     }

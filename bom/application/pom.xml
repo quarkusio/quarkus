@@ -31,7 +31,7 @@
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
-        <opentelemetry.version>1.32.0</opentelemetry.version>
+        <opentelemetry.version>1.34.1</opentelemetry.version>
         <opentelemetry-alpha.version>1.32.0-alpha</opentelemetry-alpha.version>
         <opentelemetry-semconv.version>1.21.0-alpha</opentelemetry-semconv.version> <!-- keep in sync with opentelemetry-java-instrumentation in the alpha bom-->
         <quarkus-http.version>5.1.0.Final</quarkus-http.version>

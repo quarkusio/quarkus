@@ -26,6 +26,9 @@ public class SlowWiremockServer extends WiremockBase {
         server.stubFor(WireMock.get("/hello")
                 .willReturn(aResponse().withFixedDelay(1000)
                         .withBody(SLOW_RESPONSE).withStatus(200)));
+        server.stubFor(WireMock.get("/hello/v2/quarkus%2Fquarkus")
+                .willReturn(aResponse().withFixedDelay(1000)
+                        .withBody(SLOW_RESPONSE).withStatus(200)));
         return Map.of("slow-service", "localhost:8444");
     }
 }

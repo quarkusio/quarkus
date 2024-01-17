@@ -25,6 +25,8 @@ public class FastWiremockServer extends WiremockBase {
     protected Map<String, String> initWireMock(WireMockServer server) {
         server.stubFor(WireMock.get("/hello")
                 .willReturn(aResponse().withBody(FAST_RESPONSE).withStatus(200)));
+        server.stubFor(WireMock.get("/hello/v2/quarkus%2Fquarkus")
+                .willReturn(aResponse().withBody(FAST_RESPONSE).withStatus(200)));
         return Map.of("fast-service", "localhost:8443");
     }
 }

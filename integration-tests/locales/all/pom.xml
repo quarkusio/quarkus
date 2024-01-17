@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-integration-test-locales</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>3.7.0.CR1</version>
     </parent>
     <artifactId>quarkus-integration-test-locales-all</artifactId>
     <name>Quarkus - Integration Tests - Locales - All</name>
@@ -34,7 +34,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-integration-test-locales-app</artifactId>
-            <version>999-SNAPSHOT</version>
+            <version>3.7.0.CR1</version>
             <scope>compile</scope>
         </dependency>
 

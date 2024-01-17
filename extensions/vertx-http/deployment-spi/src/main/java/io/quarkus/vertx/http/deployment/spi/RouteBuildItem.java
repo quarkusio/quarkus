@@ -70,23 +70,41 @@ public final class RouteBuildItem extends MultiBuildItem {
         ABSOLUTE_ROUTE
     }
 
-    private RouteType typeOfRoute = RouteType.APPLICATION_ROUTE;
+    private final RouteType typeOfRoute;
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private OptionalInt order = OptionalInt.empty();
+    private final OptionalInt order;
 
-    private String path;
-    private Consumer<Route> customizer;
+    private final String path;
+    private final Consumer<Route> customizer;
 
-    private boolean isManagement;
+    private final boolean isManagement;
 
-    private Handler<RoutingContext> handler;
+    private final Handler<RoutingContext> handler;
 
-    private HandlerType typeOfHandler = HandlerType.NORMAL;
+    private final HandlerType typeOfHandler = HandlerType.NORMAL;
 
-    private boolean displayOnNotFoundPage;
-    private String notFoundPageTitle;
+    private final boolean displayOnNotFoundPage;
+    private final String notFoundPageTitle;
 
-    private String routeConfigKey;
+    private final String routeConfigKey;
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    public RouteBuildItem(RouteType typeOfRoute, String path, Consumer<Route> customizer,
+            boolean isManagement,
+            Handler<RoutingContext> handler,
+            boolean displayOnNotFoundPage,
+            String notFoundPageTitle,
+            String routeConfigKey, OptionalInt order) {
+        this.order = order;
+        this.typeOfRoute = typeOfRoute;
+        this.path = path;
+        this.handler = handler;
+        this.displayOnNotFoundPage = displayOnNotFoundPage;
+        this.notFoundPageTitle = notFoundPageTitle;
+        this.routeConfigKey = routeConfigKey;
+        this.customizer = customizer;
+        this.isManagement = isManagement;
+    }
 
     public RouteType getTypeOfRoute() {
         return typeOfRoute;
@@ -246,13 +264,27 @@ public final class RouteBuildItem extends MultiBuildItem {
      */
     public static class Builder {
 
-        private final RouteBuildItem item;
+        private final RouteType typeOfRoute;
+        @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+        private OptionalInt order = OptionalInt.empty();
+
+        private final String path;
+        private final boolean isManagement;
+        private Consumer<Route> customizer;
+
+        private Handler<RoutingContext> handler;
+
+        private HandlerType typeOfHandler = HandlerType.NORMAL;
+
+        private boolean displayOnNotFoundPage;
+        private String notFoundPageTitle;
+
+        private String routeConfigKey;
 
         private Builder(RouteType type, String path, boolean isManagement) {
-            item = new RouteBuildItem();
-            item.typeOfRoute = type;
-            item.path = path;
-            item.isManagement = isManagement;
+            this.typeOfRoute = type;
+            this.path = path;
+            this.isManagement = isManagement;
         }
 
         /**
@@ -262,7 +294,7 @@ public final class RouteBuildItem extends MultiBuildItem {
          * @return the current builder
          */
         public Builder withRouteCustomizer(Consumer<Route> customizer) {
-            item.customizer = customizer;
+            this.customizer = customizer;
             return this;
         }
 
@@ -273,7 +305,7 @@ public final class RouteBuildItem extends MultiBuildItem {
          * @return the current builder
          */
         public Builder withOrder(int order) {
-            item.order = OptionalInt.of(order);
+            this.order = OptionalInt.of(order);
             return this;
         }
 
@@ -284,7 +316,7 @@ public final class RouteBuildItem extends MultiBuildItem {
          * @return the current builder
          */
         public Builder withRequestHandler(Handler<RoutingContext> handler) {
-            item.handler = handler;
+            this.handler = handler;
             return this;
         }
 
@@ -295,10 +327,10 @@ public final class RouteBuildItem extends MultiBuildItem {
          * @return the current builder
          */
         public Builder asBlockingRoute() {
-            if (item.typeOfHandler == HandlerType.FAILURE) {
+            if (this.typeOfHandler == HandlerType.FAILURE) {
                 throw new IllegalArgumentException("A failure route cannot be a blocking route");
             }
-            item.typeOfHandler = HandlerType.BLOCKING;
+            this.typeOfHandler = HandlerType.BLOCKING;
             return this;
         }
 
@@ -309,10 +341,10 @@ public final class RouteBuildItem extends MultiBuildItem {
          * @return the current builder
          */
         public Builder asFailureRoute() {
-            if (item.typeOfHandler == HandlerType.BLOCKING) {
+            if (this.typeOfHandler == HandlerType.BLOCKING) {
                 throw new IllegalArgumentException("A blocking route cannot be a failure route");
             }
-            item.typeOfHandler = HandlerType.FAILURE;
+            this.typeOfHandler = HandlerType.FAILURE;
             return this;
         }
 
@@ -322,7 +354,7 @@ public final class RouteBuildItem extends MultiBuildItem {
          * @return the current builder
          */
         public Builder displayOnNotFoundPage() {
-            item.displayOnNotFoundPage = true;
+            this.displayOnNotFoundPage = true;
             return this;
         }
 
@@ -333,8 +365,8 @@ public final class RouteBuildItem extends MultiBuildItem {
          * @return the current builder
          */
         public Builder displayOnNotFoundPage(String notFoundPageTitle) {
-            item.displayOnNotFoundPage = true;
-            item.notFoundPageTitle = notFoundPageTitle;
+            this.displayOnNotFoundPage = true;
+            this.notFoundPageTitle = notFoundPageTitle;
             return this;
         }
 
@@ -345,7 +377,7 @@ public final class RouteBuildItem extends MultiBuildItem {
          * @return the current builder
          */
         public Builder withRoutePathConfigKey(String attributeName) {
-            item.routeConfigKey = attributeName;
+            this.routeConfigKey = attributeName;
             return this;
         }
 
@@ -355,11 +387,13 @@ public final class RouteBuildItem extends MultiBuildItem {
          * @return the route build item
          */
         public RouteBuildItem build() {
-            if (item.handler == null) {
+            if (this.handler == null) {
                 throw new IllegalArgumentException("The route handler must be set");
             }
 
-            return item;
+            return new RouteBuildItem(typeOfRoute, path, customizer, isManagement, handler, displayOnNotFoundPage,
+                    notFoundPageTitle,
+                    routeConfigKey, order);
         }
     }
 

@@ -87,12 +87,26 @@ public class CsrfRequestResponseReactiveFilter {
         if (requestMethodIsSafe(requestContext)) {
             // safe HTTP method, tolerate the absence of a token
             if (isCsrfTokenRequired(routing, config)) {
-                // Set the CSRF cookie with a randomly generated value
-                byte[] tokenBytes = new byte[config.tokenSize];
-                secureRandom.nextBytes(tokenBytes);
-                routing.put(CSRF_TOKEN_BYTES_KEY, tokenBytes);
-                routing.put(CSRF_TOKEN_KEY, Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes));
-
+                if (cookieToken == null) {
+                    generateNewCsrfToken(routing, config);
+                } else {
+                    String csrfTokenHeaderParam = requestContext.getHeaderString(config.tokenHeaderName);
+                    if (csrfTokenHeaderParam != null) {
+                        LOG.debugf("CSRF token found in the token header");
+                        // Verify the header, make sure the header value, possibly signed, is returned as the next cookie value
+                        verifyCsrfToken(requestContext, routing, config, cookieToken, csrfTokenHeaderParam);
+                    } else if (!config.tokenSignatureKey.isEmpty()) {
+                        // If the signature is required, then we can not use the current cookie value
+                        // as the HTML form token key because it represents a signed value of the previous key
+                        // and it will lead to the double-signing issue if this value is reused as the key.
+                        // It should be fine for simple HTML forms anyway
+                        generateNewCsrfToken(routing, config);
+                    } else {
+                        // Make sure the same cookie value is returned
+                        routing.put(CSRF_TOKEN_KEY, cookieToken);
+                        routing.put(CSRF_TOKEN_BYTES_KEY, Base64.getUrlDecoder().decode(cookieToken));
+                    }
+                }
                 routing.put(NEW_COOKIE_REQUIRED, true);
             }
         } else if (config.verifyToken) {
@@ -139,6 +153,14 @@ public class CsrfRequestResponseReactiveFilter {
         }
     }
 
+    private void generateNewCsrfToken(RoutingContext routing, CsrfReactiveConfig config) {
+        // Set the CSRF cookie with a randomly generated value
+        byte[] tokenBytes = new byte[config.tokenSize];
+        secureRandom.nextBytes(tokenBytes);
+        routing.put(CSRF_TOKEN_BYTES_KEY, tokenBytes);
+        routing.put(CSRF_TOKEN_KEY, Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes));
+    }
+
     private void verifyCsrfToken(ResteasyReactiveContainerRequestContext requestContext, RoutingContext routing,
             CsrfReactiveConfig config, String cookieToken, String csrfToken) {
         if (cookieToken == null) {
@@ -160,6 +182,7 @@ public class CsrfRequestResponseReactiveFilter {
                 return;
             } else {
                 routing.put(CSRF_TOKEN_KEY, csrfToken);
+                routing.put(CSRF_TOKEN_BYTES_KEY, Base64.getUrlDecoder().decode(csrfToken));
                 routing.put(CSRF_TOKEN_VERIFIED, true);
                 // reset the cookie
                 routing.put(NEW_COOKIE_REQUIRED, true);

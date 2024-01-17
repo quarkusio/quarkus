@@ -47,14 +47,14 @@ For example, the presence of `src/main/jib/foo/bar` would result in  `/foo/bar` 
 
 There are cases where the built container image may need to have Java debugging conditionally enabled at runtime.
 
-When the base image has not been changed (and therefore `ubi8/openjdk-11-runtime`,  `ubi8/openjdk-17-runtime`, or `ubi8/openjdk-21-runtime` is used), then the `quarkus.jib.jvm-arguments` configuration property can be used in order to
+When the base image has not been changed (and therefore `ubi8/openjdk-11-runtime`,  `ubi8/openjdk-17-runtime`, or `ubi8/openjdk-21-runtime` is used), then the `quarkus.jib.jvm-additional-arguments` configuration property can be used in order to
 make the JVM listen on the debug port at startup.
 
 The exact configuration is:
 
 [source,properties]
 ----
-quarkus.jib.jvm-arguments=-agentlib:jdwp=transport=dt_socket\\,server=y\\,suspend=n\\,address=*:5005
+quarkus.jib.jvm-additional-arguments=-agentlib:jdwp=transport=dt_socket\\,server=y\\,suspend=n\\,address=*:5005
 ----
 
 Other base images might provide launch scripts that enable debugging when an environment variable is set, in which case you would set than environment variable when launching the container.

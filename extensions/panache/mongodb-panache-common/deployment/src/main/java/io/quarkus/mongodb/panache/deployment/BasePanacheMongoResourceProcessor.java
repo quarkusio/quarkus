@@ -1,7 +1,6 @@
 package io.quarkus.mongodb.panache.deployment;
 
 import static io.quarkus.deployment.util.JandexUtil.resolveTypeParameters;
-import static io.quarkus.panache.common.deployment.PanacheConstants.META_INF_PANACHE_ARCHIVE_MARKER;
 import static org.jboss.jandex.DotName.createSimple;
 
 import java.lang.reflect.Modifier;
@@ -31,8 +30,6 @@ import org.jboss.jandex.Type;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
-import io.quarkus.bootstrap.classloading.ClassPathElement;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -289,10 +286,11 @@ public abstract class BasePanacheMongoResourceProcessor {
             propertyMappingClass.produce(new PropertyMappingClassBuildStep(modelClass));
         }
 
-        replaceFieldAccesses(transformers, modelInfo);
+        replaceFieldAccesses(index, transformers, modelInfo);
     }
 
-    private void replaceFieldAccesses(BuildProducer<BytecodeTransformerBuildItem> transformers, MetamodelInfo modelInfo) {
+    private void replaceFieldAccesses(CombinedIndexBuildItem index, BuildProducer<BytecodeTransformerBuildItem> transformers,
+            MetamodelInfo modelInfo) {
         Set<String> entitiesWithExternallyAccessibleFields = modelInfo.getEntitiesWithExternallyAccessibleFields();
         if (entitiesWithExternallyAccessibleFields.isEmpty()) {
             // There are no fields to be accessed in the first place.
@@ -305,20 +303,18 @@ public abstract class BasePanacheMongoResourceProcessor {
         }
 
         PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
-        QuarkusClassLoader tccl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
         Set<String> produced = new HashSet<>();
 
-        for (ClassPathElement i : tccl.getElementsWithResource(META_INF_PANACHE_ARCHIVE_MARKER)) {
-            for (String res : i.getProvidedResources()) {
-                if (res.endsWith(".class")) {
-                    String cn = res.replace("/", ".").substring(0, res.length() - 6);
-                    if (produced.contains(cn)) {
-                        continue;
-                    }
-                    produced.add(cn);
-                    transformers.produce(
-                            new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, entityClassNamesInternal));
+        // transform all users of those classes
+        for (String entityClassName : entitiesWithExternallyAccessibleFields) {
+            for (ClassInfo userClass : index.getIndex().getKnownUsers(entityClassName)) {
+                String cn = userClass.name().toString('.');
+                if (produced.contains(cn)) {
+                    continue;
                 }
+                produced.add(cn);
+                transformers.produce(
+                        new BytecodeTransformerBuildItem(cn, panacheFieldAccessEnhancer, entityClassNamesInternal));
             }
         }
     }

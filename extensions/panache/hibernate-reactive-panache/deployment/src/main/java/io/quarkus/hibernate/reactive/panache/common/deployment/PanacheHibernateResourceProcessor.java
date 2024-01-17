@@ -24,7 +24,6 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
-import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -52,7 +51,6 @@ public final class PanacheHibernateResourceProcessor {
     private static final DotName DOTNAME_REACTIVE_SESSION = DotName.createSimple(Mutiny.Session.class.getName());
 
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
-    protected static final String META_INF_PANACHE_ARCHIVE_MARKER = "META-INF/panache-archive.marker";
 
     private static final DotName DOTNAME_UNI = DotName.createSimple(Uni.class.getName());
     private static final DotName DOTNAME_MULTI = DotName.createSimple(Multi.class.getName());
@@ -72,11 +70,6 @@ public final class PanacheHibernateResourceProcessor {
     @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {
         return UnremovableBeanBuildItem.beanTypes(DOTNAME_REACTIVE_SESSION);
-    }
-
-    @BuildStep
-    AdditionalApplicationArchiveMarkerBuildItem marker() {
-        return new AdditionalApplicationArchiveMarkerBuildItem(META_INF_PANACHE_ARCHIVE_MARKER);
     }
 
     @BuildStep

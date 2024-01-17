@@ -1,4 +1,4 @@
-package io.quarkus.opentelemetry.runtime.scheduler;
+package io.quarkus.opentelemetry.runtime.tracing.intrumentation.scheduler;
 
 import java.util.concurrent.CompletionStage;
 

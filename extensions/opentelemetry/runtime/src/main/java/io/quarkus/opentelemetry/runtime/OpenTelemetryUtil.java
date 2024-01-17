@@ -12,6 +12,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.trace.ReadableSpan;
+import io.quarkus.opentelemetry.runtime.config.runtime.SemconvStabilityType;
 import io.quarkus.vertx.core.runtime.VertxMDC;
 
 public final class OpenTelemetryUtil {
@@ -110,5 +111,17 @@ public final class OpenTelemetryUtil {
         vertxMDC.remove(SPAN_ID, vertxContext);
         vertxMDC.remove(PARENT_ID, vertxContext);
         vertxMDC.remove(SAMPLED, vertxContext);
+    }
+
+    public static SemconvStabilityType getSemconvStabilityOptin(String config) {
+        if (config == null || config.isBlank()) {
+            return SemconvStabilityType.HTTP_OLD;
+        }
+
+        try {
+            return SemconvStabilityType.fromValue(config);
+        } catch (IllegalArgumentException e) {
+            return SemconvStabilityType.HTTP_OLD;
+        }
     }
 }

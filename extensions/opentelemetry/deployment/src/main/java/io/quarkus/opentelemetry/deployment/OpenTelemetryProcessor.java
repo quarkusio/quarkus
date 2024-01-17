@@ -2,6 +2,7 @@ package io.quarkus.opentelemetry.deployment;
 
 import static io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem.SPI_ROOT;
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder.OPEN_TELEMETRY_DRIVER;
+import static io.quarkus.opentelemetry.runtime.OpenTelemetryUtil.*;
 import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
@@ -93,6 +94,8 @@ public class OpenTelemetryProcessor {
     private static final DotName WITH_SPAN_INTERCEPTOR = DotName.createSimple(WithSpanInterceptor.class.getName());
     private static final DotName ADD_SPAN_ATTRIBUTES_INTERCEPTOR = DotName
             .createSimple(AddingSpanAttributesInterceptor.class.getName());
+    private static final String QUARKUS_OTEL_SEMCONV_STABILITY_OPT_IN = "quarkus.otel.semconv-stability.opt-in";
+    private static final String OTEL_SEMCONV_STABILITY_OPT_IN = "otel.semconv-stability.opt-in";
 
     @BuildStep
     AdditionalBeanBuildItem ensureProducerIsRetained() {
@@ -109,6 +112,15 @@ public class OpenTelemetryProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     SyntheticBeanBuildItem openTelemetryBean(OpenTelemetryRecorder recorder, OTelRuntimeConfig oTelRuntimeConfig) {
+
+        final String semconvStability = ConfigProvider.getConfig()
+                .getConfigValue(QUARKUS_OTEL_SEMCONV_STABILITY_OPT_IN)
+                .getValue();
+        if (semconvStability != null && !semconvStability.isEmpty()) {
+            // yes, they ignore config supplier on this.
+            System.setProperty(OTEL_SEMCONV_STABILITY_OPT_IN, semconvStability);
+        }
+
         return SyntheticBeanBuildItem.configure(OpenTelemetry.class)
                 .defaultBean()
                 .setRuntimeInit()
@@ -270,7 +282,11 @@ public class OpenTelemetryProcessor {
                 || capabilities.isPresent(Capability.REACTIVE_MYSQL_CLIENT)
                 || capabilities.isPresent(Capability.REACTIVE_ORACLE_CLIENT)
                 || capabilities.isPresent(Capability.REACTIVE_PG_CLIENT);
-        recorder.setupVertxTracer(beanContainerBuildItem.getValue(), sqlClientAvailable);
+        recorder.setupVertxTracer(beanContainerBuildItem.getValue(),
+                sqlClientAvailable,
+                ConfigProvider.getConfig()
+                        .getConfigValue(QUARKUS_OTEL_SEMCONV_STABILITY_OPT_IN)
+                        .getValue());
     }
 
     @BuildStep

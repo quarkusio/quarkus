@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing;
 
+import static io.quarkus.opentelemetry.runtime.OpenTelemetryUtil.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
@@ -14,31 +15,42 @@ import io.opentelemetry.sdk.trace.data.LinkData;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.sdk.trace.samplers.SamplingResult;
 import io.opentelemetry.semconv.SemanticAttributes;
+import io.quarkus.opentelemetry.runtime.config.runtime.SemconvStabilityType;
 
 class DropTargetsSamplerTest {
 
     @Test
     void testDropTargets() {
         CountingSampler countingSampler = new CountingSampler();
-        var sut = new DropTargetsSampler(countingSampler, List.of("/q/swagger-ui", "/q/swagger-ui*"));
+        SemconvStabilityType semconvStabilityOptin = getSemconvStabilityOptin(
+                System.getProperty("quarkus.otel.semconv-stability.opt-in"));
+        var sut = new DropTargetsSampler(countingSampler, List.of("/q/swagger-ui", "/q/swagger-ui*"),
+                semconvStabilityOptin);
 
-        assertEquals(SamplingResult.recordAndSample(), getShouldSample(sut, "/other"));
+        assertEquals(SamplingResult.recordAndSample(), getShouldSample(sut, "/other", semconvStabilityOptin));
         assertEquals(1, countingSampler.count.get());
 
-        assertEquals(SamplingResult.drop(), getShouldSample(sut, "/q/swagger-ui"));
+        assertEquals(SamplingResult.drop(), getShouldSample(sut, "/q/swagger-ui", semconvStabilityOptin));
         assertEquals(1, countingSampler.count.get());
 
-        assertEquals(SamplingResult.drop(), getShouldSample(sut, "/q/swagger-ui/"));
+        assertEquals(SamplingResult.drop(), getShouldSample(sut, "/q/swagger-ui/", semconvStabilityOptin));
         assertEquals(1, countingSampler.count.get());
 
-        assertEquals(SamplingResult.drop(), getShouldSample(sut, "/q/swagger-ui/whatever"));
+        assertEquals(SamplingResult.drop(), getShouldSample(sut, "/q/swagger-ui/whatever", semconvStabilityOptin));
         assertEquals(1, countingSampler.count.get());
 
-        assertEquals(SamplingResult.recordAndSample(), getShouldSample(sut, "/q/test"));
+        assertEquals(SamplingResult.recordAndSample(), getShouldSample(sut, "/q/test", semconvStabilityOptin));
         assertEquals(2, countingSampler.count.get());
     }
 
-    private static SamplingResult getShouldSample(DropTargetsSampler sut, String target) {
+    private static SamplingResult getShouldSample(DropTargetsSampler sut,
+            String target,
+            SemconvStabilityType semconvStabilityOptin) {
+        if (SemconvStabilityType.HTTP.equals(semconvStabilityOptin) ||
+                SemconvStabilityType.HTTP_DUP.equals(semconvStabilityOptin)) {
+            return sut.shouldSample(null, null, null, SpanKind.SERVER,
+                    Attributes.of(SemanticAttributes.URL_PATH, target), null);
+        }
         return sut.shouldSample(null, null, null, SpanKind.SERVER,
                 Attributes.of(SemanticAttributes.HTTP_TARGET, target), null);
     }

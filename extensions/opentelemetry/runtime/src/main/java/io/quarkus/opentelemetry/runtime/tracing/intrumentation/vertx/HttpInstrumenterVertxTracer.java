@@ -1,6 +1,7 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx;
 
-import static io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteSource.FILTER;
+import static io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerRouteSource.SERVER_FILTER;
+import static io.opentelemetry.semconv.SemanticAttributes.CLIENT_ADDRESS;
 import static io.opentelemetry.semconv.SemanticAttributes.HTTP_CLIENT_IP;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
@@ -21,13 +22,14 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteBiGetter;
-import io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteHolder;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerAttributesGetter;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerRoute;
+import io.opentelemetry.instrumentation.api.instrumenter.http.HttpServerRouteBiGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
 import io.opentelemetry.semconv.SemanticAttributes;
+import io.quarkus.opentelemetry.runtime.config.runtime.SemconvStabilityType;
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpHeaders;
@@ -46,8 +48,8 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
     private final Instrumenter<HttpRequest, HttpResponse> serverInstrumenter;
     private final Instrumenter<HttpRequest, HttpResponse> clientInstrumenter;
 
-    public HttpInstrumenterVertxTracer(final OpenTelemetry openTelemetry) {
-        serverInstrumenter = getServerInstrumenter(openTelemetry);
+    public HttpInstrumenterVertxTracer(final OpenTelemetry openTelemetry, final SemconvStabilityType semconvStability) {
+        serverInstrumenter = getServerInstrumenter(openTelemetry, semconvStability);
         clientInstrumenter = getClientInstrumenter(openTelemetry);
     }
 
@@ -95,7 +97,7 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
             final Throwable failure,
             final TagExtractor<R> tagExtractor) {
 
-        HttpRouteHolder.updateHttpRoute(spanOperation.getSpanContext(), FILTER, RouteGetter.ROUTE_GETTER,
+        HttpServerRoute.update(spanOperation.getSpanContext(), SERVER_FILTER, RouteGetter.ROUTE_GETTER,
                 ((HttpRequestSpan) spanOperation.getRequest()), (HttpResponse) response);
         InstrumenterVertxTracer.super.sendResponse(context, response, spanOperation, failure, tagExtractor);
     }
@@ -106,7 +108,8 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         return WriteHeadersHttpRequest.request(request, headers);
     }
 
-    private static Instrumenter<HttpRequest, HttpResponse> getServerInstrumenter(final OpenTelemetry openTelemetry) {
+    private static Instrumenter<HttpRequest, HttpResponse> getServerInstrumenter(final OpenTelemetry openTelemetry,
+            final SemconvStabilityType semconvStability) {
         ServerAttributesExtractor serverAttributesExtractor = new ServerAttributesExtractor();
 
         InstrumenterBuilder<HttpRequest, HttpResponse> serverBuilder = Instrumenter.builder(
@@ -118,8 +121,8 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(serverAttributesExtractor))
                 .addAttributesExtractor(
                         HttpServerAttributesExtractor.create(serverAttributesExtractor))
-                .addAttributesExtractor(new AdditionalServerAttributesExtractor())
-                .addContextCustomizer(HttpRouteHolder.create(serverAttributesExtractor))
+                .addAttributesExtractor(new AdditionalServerAttributesExtractor(semconvStability))
+                .addContextCustomizer(HttpServerRoute.create(serverAttributesExtractor))
                 .buildServerInstrumenter(new HttpRequestTextMapGetter());
     }
 
@@ -140,7 +143,7 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
                 .buildClientInstrumenter(new HttpRequestTextMapSetter());
     }
 
-    private static class RouteGetter implements HttpRouteBiGetter<HttpRequestSpan, HttpResponse> {
+    private static class RouteGetter implements HttpServerRouteBiGetter<HttpRequestSpan, HttpResponse> {
         static final RouteGetter ROUTE_GETTER = new RouteGetter();
 
         @Override
@@ -269,6 +272,12 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
     }
 
     private static class AdditionalServerAttributesExtractor implements AttributesExtractor<HttpRequest, HttpResponse> {
+        private final SemconvStabilityType semconvStability;
+
+        public AdditionalServerAttributesExtractor(final SemconvStabilityType semconvStability) {
+            this.semconvStability = semconvStability;
+        }
+
         @Override
         public void onStart(
                 final AttributesBuilder attributes,
@@ -278,7 +287,18 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
             if (httpRequest instanceof HttpServerRequest) {
                 String clientIp = VertxUtil.extractClientIP((HttpServerRequest) httpRequest);
                 if (clientIp != null) {
-                    attributes.put(HTTP_CLIENT_IP, clientIp);
+                    switch (semconvStability) {
+                        case HTTP_OLD:
+                            attributes.put(HTTP_CLIENT_IP, clientIp);
+                            break;
+                        case HTTP_DUP:
+                            attributes.put(HTTP_CLIENT_IP, clientIp);
+                            attributes.put(CLIENT_ADDRESS, clientIp);
+                            break;
+                        case HTTP:
+                            attributes.put(CLIENT_ADDRESS, clientIp);
+                            break;
+                    }
                 }
             }
         }

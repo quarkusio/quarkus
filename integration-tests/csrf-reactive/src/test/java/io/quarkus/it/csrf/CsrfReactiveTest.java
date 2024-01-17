@@ -349,6 +349,31 @@ public class CsrfReactiveTest {
         }
     }
 
+    @Test
+    public void testGetWithCsrfToken() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+
+            assertNull(webClient.getCookieManager().getCookie("csrftoken"));
+
+            TextPage htmlPage = webClient.getPage("http://localhost:8081/service/token");
+
+            assertNotNull(webClient.getCookieManager().getCookie("csrftoken"));
+
+            // Can't check that it matches the cookie because it's signed
+            assertNotNull(htmlPage.getContent());
+
+            // get it again
+            htmlPage = webClient.getPage("http://localhost:8081/service/token");
+
+            assertNotNull(webClient.getCookieManager().getCookie("csrftoken"));
+
+            // Can't check that it matches the cookie because it's signed
+            assertNotNull(htmlPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
     private WebClient createWebClient() {
         WebClient webClient = new WebClient();
         webClient.setCssErrorHandler(new SilentCssErrorHandler());

@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -45,6 +46,7 @@ import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
+import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
@@ -76,6 +78,7 @@ public class DataSources {
     private final XAResourceRecoveryRegistry xaResourceRecoveryRegistry;
     private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;
     private final DataSourceSupport dataSourceSupport;
+    private final AgroalDataSourceSupport agroalDataSourceSupport;
     private final Instance<AgroalPoolInterceptor> agroalPoolInterceptors;
     private final Instance<AgroalOpenTelemetryWrapper> agroalOpenTelemetryWrapper;
 
@@ -89,6 +92,7 @@ public class DataSources {
             XAResourceRecoveryRegistry xaResourceRecoveryRegistry,
             TransactionSynchronizationRegistry transactionSynchronizationRegistry,
             DataSourceSupport dataSourceSupport,
+            AgroalDataSourceSupport agroalDataSourceSupport,
             @Any Instance<AgroalPoolInterceptor> agroalPoolInterceptors,
             Instance<AgroalOpenTelemetryWrapper> agroalOpenTelemetryWrapper) {
         this.dataSourcesBuildTimeConfig = dataSourcesBuildTimeConfig;
@@ -100,6 +104,7 @@ public class DataSources {
         this.xaResourceRecoveryRegistry = xaResourceRecoveryRegistry;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
         this.dataSourceSupport = dataSourceSupport;
+        this.agroalDataSourceSupport = agroalDataSourceSupport;
         this.agroalPoolInterceptors = agroalPoolInterceptors;
         this.agroalOpenTelemetryWrapper = agroalOpenTelemetryWrapper;
     }
@@ -127,25 +132,36 @@ public class DataSources {
         return dataSources.containsKey(dataSourceName);
     }
 
+    public Set<String> getActiveDataSourceNames() {
+        // Datasources are created on startup,
+        // and we only create active datasources.
+        return dataSources.keySet();
+    }
+
     public AgroalDataSource getDataSource(String dataSourceName) {
         return dataSources.computeIfAbsent(dataSourceName, new Function<String, AgroalDataSource>() {
             @Override
             public AgroalDataSource apply(String s) {
-                return doCreateDataSource(s);
+                return doCreateDataSource(s, true);
             }
         });
     }
 
     @PostConstruct
     public void start() {
-        for (String dataSourceName : dataSourceSupport.entries.keySet()) {
-            getDataSource(dataSourceName);
+        for (String dataSourceName : agroalDataSourceSupport.entries.keySet()) {
+            dataSources.computeIfAbsent(dataSourceName, new Function<String, AgroalDataSource>() {
+                @Override
+                public AgroalDataSource apply(String s) {
+                    return doCreateDataSource(s, false);
+                }
+            });
         }
     }
 
     @SuppressWarnings("resource")
-    public AgroalDataSource doCreateDataSource(String dataSourceName) {
-        if (!dataSourceSupport.entries.containsKey(dataSourceName)) {
+    public AgroalDataSource doCreateDataSource(String dataSourceName, boolean failIfInactive) {
+        if (!agroalDataSourceSupport.entries.containsKey(dataSourceName)) {
             throw new IllegalArgumentException("No datasource named '" + dataSourceName + "' exists");
         }
 
@@ -153,10 +169,18 @@ public class DataSources {
                 .dataSources().get(dataSourceName).jdbc();
         DataSourceRuntimeConfig dataSourceRuntimeConfig = dataSourcesRuntimeConfig.dataSources().get(dataSourceName);
 
+        if (dataSourceSupport.getInactiveNames().contains(dataSourceName)) {
+            if (failIfInactive) {
+                throw DataSourceUtil.dataSourceInactive(dataSourceName);
+            } else {
+                // This only happens on startup, and effectively cancels the creation
+                // so that we only throw an exception on first actual use.
+                return null;
+            }
+        }
+
         DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig
                 .getDataSourceJdbcRuntimeConfig(dataSourceName);
-
-        DataSourceSupport.Entry matchingSupportEntry = dataSourceSupport.entries.get(dataSourceName);
         if (!dataSourceJdbcRuntimeConfig.url().isPresent()) {
             //this is not an error situation, because we want to allow the situation where a JDBC extension
             //is installed but has not been configured
@@ -167,6 +191,7 @@ public class DataSources {
         // we first make sure that all available JDBC drivers are loaded in the current TCCL
         loadDriversInTCCL();
 
+        AgroalDataSourceSupport.Entry matchingSupportEntry = agroalDataSourceSupport.entries.get(dataSourceName);
         String resolvedDriverClass = matchingSupportEntry.resolvedDriverClass;
         Class<?> driver;
         try {
@@ -233,13 +258,13 @@ public class DataSources {
         AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration = poolConfiguration
                 .connectionFactoryConfiguration();
 
-        boolean mpMetricsPresent = dataSourceSupport.mpMetricsPresent;
+        boolean mpMetricsPresent = agroalDataSourceSupport.mpMetricsPresent;
         applyNewConfiguration(dataSourceName, dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration,
                 driver, jdbcUrl,
                 dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, transactionRuntimeConfig,
                 mpMetricsPresent);
 
-        if (dataSourceSupport.disableSslSupport) {
+        if (agroalDataSourceSupport.disableSslSupport) {
             agroalConnectionConfigurer.disableSslSupport(resolvedDbKind, dataSourceConfiguration);
         }
         //we use a custom cache for two reasons:

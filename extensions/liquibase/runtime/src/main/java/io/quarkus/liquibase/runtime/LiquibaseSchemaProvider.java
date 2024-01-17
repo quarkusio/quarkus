@@ -1,10 +1,7 @@
 package io.quarkus.liquibase.runtime;
 
-import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.runtime.DatabaseSchemaProvider;
 import io.quarkus.liquibase.LiquibaseFactory;
@@ -15,20 +12,11 @@ public class LiquibaseSchemaProvider implements DatabaseSchemaProvider {
     @Override
     public void resetDatabase(String dbName) {
         try {
-            InjectableInstance<LiquibaseFactory> liquibaseFactoryInstance = Arc.container()
-                    .select(LiquibaseFactory.class, Any.Literal.INSTANCE);
-            if (liquibaseFactoryInstance.isUnsatisfied()) {
-                return;
-            }
-            for (InstanceHandle<LiquibaseFactory> liquibaseFactoryHandle : liquibaseFactoryInstance.handles()) {
-                try {
-                    LiquibaseFactory liquibaseFactory = liquibaseFactoryHandle.get();
-                    if (liquibaseFactory.getDataSourceName().equals(dbName)) {
-                        doReset(liquibaseFactory);
-                    }
-                } catch (UnsatisfiedResolutionException e) {
-                    //ignore, the DS is not configured
-                }
+            try {
+                LiquibaseFactory liquibaseFactory = LiquibaseFactoryUtil.getLiquibaseFactory(dbName).get();
+                doReset(liquibaseFactory);
+            } catch (UnsatisfiedResolutionException e) {
+                //ignore, the DS is not configured
             }
         } catch (Exception e) {
             throw new IllegalStateException("Error starting Liquibase", e);
@@ -38,12 +26,7 @@ public class LiquibaseSchemaProvider implements DatabaseSchemaProvider {
     @Override
     public void resetAllDatabases() {
         try {
-            InjectableInstance<LiquibaseFactory> liquibaseFactoryInstance = Arc.container()
-                    .select(LiquibaseFactory.class, Any.Literal.INSTANCE);
-            if (liquibaseFactoryInstance.isUnsatisfied()) {
-                return;
-            }
-            for (InstanceHandle<LiquibaseFactory> liquibaseFactoryHandle : liquibaseFactoryInstance.handles()) {
+            for (InstanceHandle<LiquibaseFactory> liquibaseFactoryHandle : LiquibaseFactoryUtil.getActiveLiquibaseFactories()) {
                 try {
                     LiquibaseFactory liquibaseFactory = liquibaseFactoryHandle.get();
                     doReset(liquibaseFactory);

@@ -69,6 +69,7 @@ import io.quarkus.resteasy.reactive.spi.AdditionalResourceClassBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.GeneratedJaxRsResourceBuildItem;
+import io.quarkus.resteasy.reactive.spi.IgnoreStackMixingBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
@@ -93,7 +94,11 @@ public class ResteasyReactiveCommonProcessor {
 
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
-    void checkMixingStacks(Capabilities capabilities, CurateOutcomeBuildItem curateOutcomeBuildItem) {
+    void checkMixingStacks(Capabilities capabilities, CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<IgnoreStackMixingBuildItem> ignoreStackMixingItems) {
+        if (!ignoreStackMixingItems.isEmpty()) {
+            return;
+        }
         List<ResolvedDependency> resteasyClassicDeps = curateOutcomeBuildItem.getApplicationModel().getDependencies().stream()
                 .filter(d -> d.getGroupId().equals("org.jboss.resteasy")).collect(Collectors.toList());
         boolean hasResteasyCoreDep = resteasyClassicDeps.stream()

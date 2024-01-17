@@ -300,7 +300,10 @@
                 <module>amazon-lambda-s3event</module>
                 <module>amazon-lambda-stream-handler</module>
                 <module>amazon-lambda-http</module>
-                <module>amazon-lambda-rest</module>
+                <module>amazon-lambda-rest-resteasy-reactive</module>
+                <module>amazon-lambda-rest-reactive-routes</module>
+                <module>amazon-lambda-rest-funqy</module>
+                <module>amazon-lambda-rest-servlet</module>		
                 <module>amazon-lambda-http-resteasy</module>
                 <module>amazon-lambda-http-resteasy-reactive</module>
                 <module>container-image</module>

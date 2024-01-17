@@ -49,6 +49,7 @@ import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactiona
 import io.quarkus.hibernate.reactive.panache.common.runtime.TestReactiveTransactionalInterceptor;
 import io.quarkus.hibernate.reactive.panache.common.runtime.WithSessionInterceptor;
 import io.quarkus.hibernate.reactive.panache.common.runtime.WithSessionOnDemandInterceptor;
+import io.quarkus.hibernate.reactive.panache.common.runtime.WithTransactionInterceptor;
 
 @BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public final class PanacheJpaCommonResourceProcessor {
@@ -81,6 +82,7 @@ public final class PanacheJpaCommonResourceProcessor {
         builder.addBeanClass(WithSessionOnDemandInterceptor.class);
         builder.addBeanClass(WithSessionInterceptor.class);
         builder.addBeanClass(ReactiveTransactionalInterceptor.class);
+        builder.addBeanClass(WithTransactionInterceptor.class);
         additionalBeans.produce(builder.build());
     }
 

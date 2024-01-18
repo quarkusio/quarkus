@@ -1152,18 +1152,26 @@ In this case, just add `_isolated=false` or `_unisolated` argument to the call s
 
 ===== Arguments
 
-Named arguments can be accessed directly in a tag template.
-The first argument does not have to define a name but can be accessed using the `it` alias.
-Furthermore, arguments metadata are accessible in a tag using the `_args` alias.
+Named arguments can be accessed directly in the tag template.
+However, the first argument does not need to define a name and it can be accessed using the `it` alias.
+Furthermore, if an argument does not have a name defined and the value is a single identifier, such as `foo`, then the name is defaulted to the value identifier, e.g. `{#myTag foo /}` becomes `{#myTag foo=foo /}`.
+In other words, the argument value `foo` is resolved and can be accessed using `{foo}` in the tag template.
+
+NOTE: If an argument does not have a name and the value is a single word string literal , such as `"foo"`, then the name is defaulted and quotation marks are removed, e.g. `{#myTag "foo" /}` becomes `{#myTag foo="foo" /}`.
+
+`io.quarkus.qute.UserTagSectionHelper.Arguments` metadata are accessible in a tag using the `_args` alias.
 
 * `_args.size` - returns the actual number of arguments passed to a tag
-* `_args.empty` - returns `true` if no arguments are passed
-* `_args.get(String name)` - returns the argument value of the given name
+* `_args.empty`/`_args.isEmpty` - returns `true` if no arguments are passed
+* `_args.get(String name)` - returns the argument value of the given name or `null`
 * `_args.filter(String...)` - returns the arguments matching the given names
+* `_args.filterIdenticalKeyValue` - returns the arguments with the name equal to the value; typically `foo` from `{#test foo="foo" bar=true}` or `{#test "foo" bar=true /}`
 * `_args.skip(String...)` - returns only the arguments that do not match the given names
-* `_args.asHtmlAttributes` - renders the arguments as HTML attributes; e.g. `foo="true" bar="false"` (the arguments are sorted by name in alphabetical order)
+* `_args.skipIdenticalKeyValue` - returns only the arguments with the name not equal to the value; typically `bar` from `{#test foo="foo" bar=true /}`
+* `_args.skipIt` - returns all arguments except for the first unnamed argument; typically `bar` from `{#test foo bar=true /}`
+* `_args.asHtmlAttributes` - renders the arguments as HTML attributes; e.g. `foo="true" readonly="readonly"`; the arguments are sorted by name in alphabetical order and the `'`, `"`, `<`, `>`, `&` characters are escaped 
 
-`_args` is also iterable: `{#each _args}{it.key}={it.value}{/each}`.
+`_args` is also iterable of `java.util.Map.Entry`: `{#each _args}{it.key}={it.value}{/each}`.
 
 For example, we can call the user tag defined below with `{#test 'Martin' readonly=true /}`.
 

@@ -707,42 +707,24 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             LOGGER.debugf(builder.toString());
         }
 
+        List<String> parametersPositions = new ArrayList<>(paramValues.size());
+
         // Process named params first
-        for (Iterator<String> it = paramValues.iterator(); it.hasNext();) {
-            String param = it.next();
+        for (String param : paramValues) {
             int equalsPosition = getFirstDeterminingEqualsCharPosition(param);
             if (equalsPosition != -1) {
                 // Named param
-                params.put(param.substring(0, equalsPosition), param.substring(equalsPosition + 1,
-                        param.length()));
-                it.remove();
+                String val = param.substring(equalsPosition + 1, param.length());
+                params.put(param.substring(0, equalsPosition), val);
+                parametersPositions.add(val);
+            } else {
+                parametersPositions.add(null);
             }
         }
 
-        Predicate<String> included = params::containsKey;
         // Then process positional params
-        if (actualSize < factoryParams.size()) {
-            // The number of actual params is less than factory params
-            // We need to choose the best fit for positional params
-            for (String param : paramValues) {
-                Parameter found = findFactoryParameter(param, factoryParams, included, true);
-                if (found != null) {
-                    params.put(found.name, param);
-                }
-            }
-        } else {
-            // The number of actual params is greater or equals to factory params
-            int generatedIdx = 0;
-            for (String param : paramValues) {
-                // Positional param
-                Parameter found = findFactoryParameter(param, factoryParams, included, false);
-                if (found != null) {
-                    params.put(found.name, param);
-                } else {
-                    params.put("" + generatedIdx++, param);
-                }
-            }
-        }
+        // When the number of actual params is less than factory params then we need to choose the best fit for positional params
+        processPositionalParams(paramValues, parametersPositions, factoryParams, params, actualSize < factoryParams.size());
 
         // Use the default values if needed
         for (Parameter param : factoryParams) {
@@ -767,8 +749,26 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                     .build();
         }
 
-        for (Entry<String, String> e : params.entrySet()) {
-            block.addParameter(e.getKey(), e.getValue());
+        params.entrySet().forEach(block::addParameter);
+        block.setParametersPositions(parametersPositions);
+    }
+
+    private void processPositionalParams(List<String> paramValues, List<String> parametersPositions,
+            List<Parameter> factoryParams, Map<String, String> params, boolean noDefaultValueTakesPrecedence) {
+        int generatedIdx = 0;
+        int idx = 0;
+        Predicate<String> included = params::containsKey;
+        for (String param : paramValues) {
+            if (parametersPositions.isEmpty() || parametersPositions.get(idx) == null) {
+                Parameter found = findFactoryParameter(param, factoryParams, included, noDefaultValueTakesPrecedence);
+                if (found != null) {
+                    params.put(found.name, param);
+                } else {
+                    params.put("" + generatedIdx++, param);
+                }
+                parametersPositions.set(idx, param);
+            }
+            idx++;
         }
     }
 

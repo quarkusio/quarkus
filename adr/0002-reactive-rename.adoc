@@ -1,0 +1,193 @@
+= Rename Reactive extensions
+
+* Status: proposed
+* Date: 2023-10-17 by @geoand
+* Revised: 2024-01-12 by @gsmet, @cescoffier, @geoand, @maxandersen
+
+== Context and Problem Statement
+
+RESTEasy Reactive is the preferred REST stack in Quarkus, however in the almost 3 years since its release, we have seen
+folks of all experience misunderstand its capabilities and being led to believe that it forces reactive programming on them.
+
+With the advent of Virtual Threads in Java 19+, the problem becomes larger since in the minds of users, Reactive and Virtual Threads
+are two different worlds.
+
+The same problem applies to other extensions as well:
+
+* Reactive Messaging
+* Reactive Routes
+* REST Client Reactive
+
+The common theme here is that these extensions can work equally well with reactive and blocking code, but their name confuses users.
+
+We have tried to clarify the situation with blog posts, talks and on the various communication channels, but there seems to be
+no escaping the fact that "reactive" in the name primes people in a non-desirable way.
+
+What we would like to do is to only use of the word "reactive" in extensions that are forcing (or preferring) a reactive programming model. This does not mean that all reactive extensions is affected by this change, only the ones that are not forcing a reactive programming model.
+
+Examples of good and bad names are:
+
+[%header,format="csv"]
+|===
+Extension, Good/Bad
+quarkus-hibernate-reactive, Good
+quarkus-resteasy-reactive, Bad
+smallrye-reactive-messaging, Bad 
+reactive-mysql-client, Good
+|===
+
+For majority of the extensions we can find a good name that causes no reuse of name, but for the REST Client we have a problem since the name `quarkus-rest-client` is already taken by the legacy REST Client implemented in RESTEasy Classic. Thus the best option is if we could come up with a name base name for `quarkus-rest`, i.e. `quarkus-restless` or similar but thus far we have not been able to come up with a good name, that is better or as acceptable as `quarkus-rest`.
+
+Furthermore, we need to find a balance between the pain of renaming and the pain of keeping the status quo - while also informing/educating extension developers and users about the change in naming.
+
+== Considered options
+
+=== Do nothing
+
+We can continue with the current situation, but that feels less than ideal given the recurrence of the problem.
+
+=== Rename 
+
+We could simply rename the extensions without providing any backward compatibility with the old maven modules. This would likely cause a lot of pain - even in the presence of the Quarkus CLI update process, a lot of users won't use it.
+
+=== Rename to new name everywhere
+
+This would have the least impact on upgrading users, but it would also mean that we would have to come up with a new base-name for the REST Client. At this point no such name have been found.
+
+=== Partial rename to new new name
+
+For example, use `quarkus-rest` as base for everything, rename `quarkus-rest-client` to `quarkus-resteasy-client` and keep `quarkus-rest-client-reactive` as is. This would be a compromise between the two previous options. 
+
+Issue here is that it makes everything more complex and inconsistent.
+
+=== Rename + warn/break at build time
+
+Here we rename to new names everywhere but uses relocation's to warn/inform for dependency updates and add further logic in Quarkus buildtime phase to detect incompatible combinations. 
+
+For example today we detect when extensions are incompatible (i.e. resteasy combined resteasy-reactive) with each other and fail the build. We could extend this to also detect when extensions are incompatible with each other due to the new naming.
+
+== Decision
+
+The decision is that we MUST do something about removing the word "reactive" from the names of the extensions that are not forcing a reactive programming model. 
+
+At a highlevel that means we will do the following:
+
+* Rename current `quarkus-smallrye-reactive-messaging` to `quarkus-messaging`
+* Rename current `quarkus-resteasy-reactive` to `quarkus-rest`
+* Keep `quarkus-reactive-routes` as it is primarily pushing reactive.
+* Rename current `quarkus-rest-client` to `quarkus-resteasy-client`
+* Rename `quarkus-rest-client-reactive` to `quarkus-rest-client`
+* TODO: rename all remaining bits??
+
+This will cause a reuse of the `quarkus-rest-client` name where past it would be using resteasy classic but going forward it would be using resteasy reactive. As such we will need to add a relocation to warn users about this and also add a check in the buildtime phase to detect when the user is using the wrong combination of extensions.
+
+=== Timing
+
+We will not do this change in full for the 3.7/3.8 release as it is too close but instead split this up in two phases:
+
+In 3.7/3.8 rename extensions that has `quarkus-rest-client` or `rest-client` in the name to use `quarkus-resteasy-client`/`rest-client` + provide relocation to warn users about the change.
+
+In 3.9+ perform the full rename as described further below here.
+
+This will allow us to do the rename in a more controlled manner and also allow us to do the rename in a way that is less likely to cause issues for users, especially LTS users.
+
+=== Additional changes needed
+
+* Introduce Maven relocations to allow for users not updating their poms
+* Introduce recipe(s) that the Quarkus CLI can use during update
+* Update quickstarts
+* Update codestarts
+* Update tooling to indicate proper older / newer relationship
+* Write a new blog post explaining why we made the change
+* Update old blog posts to mention the new name
+* Update prominent Quarkus demo application and workshops
+* Update GitHub labels
+* Update bot configuration
+
+=== What this will NOT do 
+
+* No Java code changes should be made - all code continue to reside in the same packages
+
+== 3.7 renames 
+
+=== `rest-client` -> `quarkus-resteasy-client`
+
+[%header,format="csv"]
+|===
+Old, New
+*rest*-client,		*quarkus-resteasy*-client
+*rest*-client-config,		rest-client-config
+*rest*-client-jackson,		*quarkus-resteasy*-client-jackson
+*rest*-client-jaxb,		*quarkus-resteasy*-client-jaxb 
+*rest*-client-jsonb,		*quarkus-resteasy*-client-jsonb 
+*rest*-client-mutiny,		*quarkus-resteasy*-client-mutiny 
+*quarkus*-oidc-*client*,*quarkus-resteasy-client*-oidc-filter
+|===
+
+== 3.9 renames
+
+=== `smallrye-reactive-messaging` -> `quarkus-messaging`
+
+[%header,format="csv"]
+|===
+Old, New
+*smallrye-reactive*-messaging-kafka,*quarkus*-messaging-kafka
+*smallrye-reactive*-messaging-mqtt,*quarkus*-messaging-mqtt
+*smallrye-reactive*-messaging,*quarkus*-messaging
+*smallrye-reactive*-messaging-pulsar,*quarkus*-messaging-pulsar
+*smallrye-reactive*-messaging-rabbitmq,*quarkus*-messaging-rabbitmq
+*smallrye-reactive*-messaging-amqp,*quarkus*-messaging-amqp
+|===
+
+== `resteasy-reactive` -> `quarkus-rest`
+
+[%header,format="csv"]
+|===
+Old, New
+quarkus-*resteasy-reactive*,quarkus-*rest*
+quarkus-*resteasy-reactive*-kotlin-serialization-common,quarkus-*rest*-kotlin-serialization-common
+quarkus-*resteasy-reactive*-servlet,			quarkus-*rest*-servlet
+quarkus-*resteasy-reactive*-jsonb-common,*quarkus-rest*-jsonb-common
+quarkus-*resteasy-reactive*-kotlin,*quarkus-rest*-kotlin
+rest-client-reactive-kotlin-serialization,*quarkus-rest*-client-kotlin-serialization
+*resteasy-reactive*/jaxrs-client-reactive,*quarkus-rest*-client-jaxrs
+quarkus-*resteasy-reactive*-jaxb,*quarkus-rest*-jaxb
+quarkus-*resteasy-reactive*-jackson-common,*quarkus-rest*-jackson-common
+quarkus-*resteasy-reactive*-links,*quarkus-rest*-links
+quarkus-*resteasy-reactive*-qute,*quarkus-rest*-qute
+quarkus-*resteasy-reactive*-kotlin-serialization,*quarkus-rest*-kotlin-serialization
+quarkus-*resteasy-reactive*-jsonb,*quarkus-rest*-jsonb
+quarkus-*resteasy-reactive*,*quarkus-rest*
+quarkus-*resteasy-reactive*-common,*quarkus-rest*-common
+quarkus-*resteasy-reactive*-jackson,*quarkus-rest*-jackson
+
+*rest-client-reactive*-jsonb,*quarkus-rest-client*-jsonb (REUSE)
+*rest-client-reactive*,*quarkus-rest-client* (REUSE)
+*rest-client-reactive*-jackson,*quarkus-rest-client*-jackson (REUSE)
+*rest-client-reactive*-jaxb,*quarkus-rest-client*-jaxb (REUSE)
+|===
+
+== Related cleanup
+
+[%header,format="csv"]
+|===
+Old, New
+csrf-*reactive*,*quarkus-rest*-csrf
+oidc-token-propagation-*reactive*,*quarkus-rest*-oidc-token-propagation
+oidc-*client-reactive*-filter,*quarkus-rest-client*-filter-oidc
+oidc-*client-reactive*-filter,*quarkus-rest-client*-oidc-filter
+keycloak-admin-client-*reactive*,*quarkus*-keycloak-admin-*rest-client*
+|===
+
+== Consequences
+
+Positives:
+
+* Conveying the actual capabilities (blocking, non-blocking, Virtual Threads) of our stack should become easier.
+* the new name aligns quite nicely with Java EE's Jakarta REST
+* The 3.7 changes are just cleanup, we have time to adjust/fix things before the 3.9 changes and future LTS.
+
+Negatives:
+
+* renaming is always confusing for users.
+* we will have to maintain relocations

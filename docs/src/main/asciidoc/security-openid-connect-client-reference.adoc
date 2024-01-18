@@ -10,11 +10,12 @@ include::_attributes.adoc[]
 :topics: security,oidc,client
 :extensions: io.quarkus:quarkus-oidc-client
 
-You can use Quarkus extensions to acquire and refresh access tokens from OIDC and OAuth 2.0 compliant servers and propagate access tokens.
+You can use Quarkus extensions for OpenID Connect and OAuth 2.0 access token management, focusing on acquiring, refreshing, and propagating tokens.
 
-Here, you can learn how to use `quarkus-oidc-client`, `quarkus-oidc-client-reactive-filter` and `quarkus-oidc-client-filter` extensions to acquire and refresh access tokens from OpenID Connect and OAuth 2.0 compliant servers such as link:https://www.keycloak.org[Keycloak].
+This includes the following:
 
-You can also learn how to use `quarkus-oidc-token-propagation-reactive` and `quarkus-oidc-token-propagation` extensions to propagate the current `Bearer` or `Authorization Code Flow` access tokens
+ - Using `quarkus-oidc-client`, `quarkus-oidc-client-reactive-filter` and `quarkus-oidc-client-filter` extensions to acquire and refresh access tokens from OpenID Connect and OAuth 2.0 compliant Authorization Servers such as link:https://www.keycloak.org[Keycloak].
+ - Using `quarkus-oidc-token-propagation-reactive` and `quarkus-oidc-token-propagation` extensions to propagate the current `Bearer` or `Authorization Code Flow` access tokens.
 
 The access tokens managed by these extensions can be used as HTTP Authorization Bearer tokens to access the remote services.
 
@@ -970,7 +971,7 @@ quarkus.oidc-token-propagation.exchange-token=true
 
 Note `AccessTokenRequestReactiveFilter` will use `OidcClient` to exchange the current token, and you can use `quarkus.oidc-client.grant-options.exchange` to set the additional exchange properties expected by your OpenID Connect Provider.
 
-If you work with providers such as `Azure` that link:https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-on-behalf-of-flow#example[require using] link:https://www.rfc-editor.org/rfc/rfc7523#section-2.1[JWT bearer token grant] to exchange the current token then you can configure `AccessTokenRequestReactiveFilter` to exchange the token like this:
+If you work with providers such as `Azure` that link:https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-on-behalf-of-flow#example[require using] link:https://www.rfc-editor.org/rfc/rfc7523#section-2.1[JWT bearer token grant] to exchange the current token, then you can configure `AccessTokenRequestReactiveFilter` to exchange the token like this:
 
 [source,properties]
 ----
@@ -1044,7 +1045,7 @@ Alternatively, `AccessTokenRequestFilter` can be registered automatically with a
 
 ==== Exchange token before propagation
 
-If the current access token needs to be exchanged before propagation and you work with link:https://www.keycloak.org/docs/latest/securing_apps/#_token-exchange[Keycloak] or other OpenID Connect Provider which supports a link:https://tools.ietf.org/html/rfc8693[Token Exchange] token grant then you can configure `AccessTokenRequestFilter` like this:
+If the current access token needs to be exchanged before propagation and you work with link:https://www.keycloak.org/docs/latest/securing_apps/#_token-exchange[Keycloak] or other OpenID Connect Provider which supports a link:https://tools.ietf.org/html/rfc8693[Token Exchange] token grant, then you can configure `AccessTokenRequestFilter` like this:
 
 [source,properties]
 ----
@@ -1057,7 +1058,7 @@ quarkus.oidc-client.grant-options.exchange.audience=quarkus-app-exchange
 quarkus.oidc-token-propagation.exchange-token=true
 ----
 
-If you work with providers such as `Azure` that link:https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-on-behalf-of-flow#example[require using] link:https://www.rfc-editor.org/rfc/rfc7523#section-2.1[JWT bearer token grant] to exchange the current token then you can configure `AccessTokenRequestFilter` to exchange the token like this:
+If you work with providers such as `Azure` that link:https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-on-behalf-of-flow#example[require using] link:https://www.rfc-editor.org/rfc/rfc7523#section-2.1[JWT bearer token grant] to exchange the current token, then you can configure `AccessTokenRequestFilter` to exchange the token like this:
 
 [source,properties]
 ----
@@ -1134,7 +1135,7 @@ smallrye.jwt.new-token.audience=http://downstream-resource
 smallrye.jwt.new-token.override-matching-claims=true
 ----
 
-As noted above, use `AccessTokenRequestFilter` if you work with Keycloak or OpenID Connect Provider, which supports a Token Exchange protocol.
+As mentioned, use `AccessTokenRequestFilter` if you work with Keycloak or an OpenID Connect Provider that supports a Token Exchange protocol.
 
 [[integration-testing-token-propagation]]
 === Testing

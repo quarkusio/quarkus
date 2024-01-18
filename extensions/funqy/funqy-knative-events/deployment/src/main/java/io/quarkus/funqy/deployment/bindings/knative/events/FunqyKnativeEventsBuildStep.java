@@ -25,6 +25,7 @@ import io.quarkus.funqy.runtime.bindings.knative.events.FunqyKnativeEventsConfig
 import io.quarkus.funqy.runtime.bindings.knative.events.KnativeEventsBindingRecorder;
 import io.quarkus.jackson.runtime.ObjectMapperProducer;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.vertx.core.Handler;
@@ -40,6 +41,14 @@ public class FunqyKnativeEventsBuildStep {
                 new UnremovableBeanBuildItem.BeanClassNameExclusion(ObjectMapper.class.getName())));
         unremovable.produce(new UnremovableBeanBuildItem(
                 new UnremovableBeanBuildItem.BeanClassNameExclusion(ObjectMapperProducer.class.getName())));
+    }
+
+    @BuildStep
+    public RequireBodyHandlerBuildItem requireBodyHandler(List<FunctionBuildItem> functions) {
+        if (!functions.isEmpty()) {
+            return new RequireBodyHandlerBuildItem();
+        }
+        return null;
     }
 
     @BuildStep()

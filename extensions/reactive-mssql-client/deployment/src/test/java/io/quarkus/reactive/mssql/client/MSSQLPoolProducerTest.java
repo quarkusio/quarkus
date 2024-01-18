@@ -1,6 +1,5 @@
 package io.quarkus.reactive.mssql.client;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -41,10 +40,8 @@ public class MSSQLPoolProducerTest {
         @Inject
         MSSQLPool mssqlClient;
 
-        public CompletionStage<Void> verify() {
-            CompletableFuture<Void> cf = new CompletableFuture<>();
-            mssqlClient.query("SELECT 1").execute(ar -> cf.complete(null));
-            return cf;
+        public CompletionStage<?> verify() {
+            return mssqlClient.query("SELECT 1").execute().toCompletionStage();
         }
     }
 
@@ -57,7 +54,6 @@ public class MSSQLPoolProducerTest {
         public CompletionStage<Void> verify() {
             return mssqlClient.query("SELECT 1").execute()
                     .onItem().ignore().andContinueWithNull()
-                    .onFailure().recoverWithItem((Void) null)
                     .subscribeAsCompletionStage();
         }
     }

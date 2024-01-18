@@ -72,6 +72,14 @@ public final class SignatureMethodCreator {
         public String getName() {
             return name;
         }
+
+        public Type getType() {
+            return type;
+        }
+
+        public Object getClazz() {
+            return clazz;
+        }
     }
 
     public static class ReturnType {

@@ -25,12 +25,12 @@
         <module>resteasy-mutiny</module>
         <module>resteasy-qute</module>
         <module>resteasy-multipart</module>
-        <module>rest-client</module>
+        <module>resteasy-client</module>
+        <module>resteasy-client-jackson</module>
+        <module>resteasy-client-jsonb</module>
+        <module>resteasy-client-jaxb</module>
+        <module>resteasy-client-mutiny</module>
         <module>rest-client-config</module>
-        <module>rest-client-jackson</module>
-        <module>rest-client-jsonb</module>
-        <module>rest-client-jaxb</module>
-        <module>rest-client-mutiny</module>
     </modules>
 
 </project>

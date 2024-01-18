@@ -319,6 +319,9 @@ public class JibProcessor {
         containerizer.setAllowInsecureRegistries(containerImageConfig.insecure);
         containerizer.setAlwaysCacheBaseImage(jibConfig.alwaysCacheBaseImage);
         containerizer.setOfflineMode(jibConfig.offlineMode);
+        jibConfig.baseImageLayersCache.ifPresent(cacheDir -> containerizer.setBaseImageLayersCache(Paths.get(cacheDir)));
+        jibConfig.applicationLayersCache.ifPresent(cacheDir -> containerizer.setApplicationLayersCache(Paths.get(cacheDir)));
+
         return containerizer;
     }
 

@@ -65,8 +65,10 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElas
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit.ElasticsearchIndexBuildTimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRecorder;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.management.HibernateSearchManagementConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 
 @BuildSteps(onlyIf = HibernateSearchEnabled.class)
 class HibernateSearchElasticsearchProcessor {
@@ -435,4 +437,17 @@ class HibernateSearchElasticsearchProcessor {
         }
     }
 
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep(onlyIf = HibernateSearchManagementEnabled.class)
+    void createManagementRoutes(BuildProducer<RouteBuildItem> routes,
+            HibernateSearchElasticsearchRecorder recorder,
+            HibernateSearchManagementConfig managementConfig) {
+
+        routes.produce(RouteBuildItem.newManagementRoute(
+                managementConfig.rootPath() + (managementConfig.rootPath().endsWith("/") ? "" : "/") + "reindex")
+                .withRoutePathConfigKey("quarkus.hibernate-search-orm.management.root-path")
+                .withRequestHandler(recorder.managementHandler())
+                .displayOnNotFoundPage()
+                .build());
+    }
 }

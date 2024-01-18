@@ -3,6 +3,7 @@ package io.quarkus.hibernate.validator.runtime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -75,10 +76,11 @@ public class HibernateValidatorRecorder {
                     configuration.localeResolver(localeResolver);
                 }
 
-                configuration
-                        .builtinConstraints(detectedBuiltinConstraints)
+                configuration.builtinConstraints(detectedBuiltinConstraints)
                         .initializeBeanMetaData(classesToBeValidated)
-                        .locales(localesBuildTimeConfig.locales)
+                        // Locales, Locale ROOT means all locales in this setting.
+                        .locales(localesBuildTimeConfig.locales.contains(Locale.ROOT) ? Set.of(Locale.getAvailableLocales())
+                                : localesBuildTimeConfig.locales)
                         .defaultLocale(localesBuildTimeConfig.defaultLocale)
                         .beanMetaDataClassNormalizer(new ArcProxyBeanMetaDataClassNormalizer());
 

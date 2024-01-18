@@ -47,7 +47,7 @@ class NarayanaLRAProcessor {
 
         if (!capabilities.isCapabilityWithPrefixPresent(Capability.REST_CLIENT)) {
             throw new IllegalStateException(
-                    "'quarkus-narayana-lra' can only work if 'quarkus-rest-client' or 'quarkus-rest-client-reactive' is present");
+                    "'quarkus-narayana-lra' can only work if 'quarkus-resteasy-client' or 'quarkus-rest-client-reactive' is present");
         }
 
         feature.produce(new FeatureBuildItem(Feature.NARAYANA_LRA));

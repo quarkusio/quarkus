@@ -55,16 +55,16 @@
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
         <gitflow-incremental-builder.version>4.5.1</gitflow-incremental-builder.version>
-        <quarkus-platform-bom-plugin.version>0.0.101</quarkus-platform-bom-plugin.version>
+        <quarkus-platform-bom-plugin.version>0.0.102</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
 
-        <owasp-dependency-check-plugin.version>9.0.1</owasp-dependency-check-plugin.version>
+        <owasp-dependency-check-plugin.version>9.0.7</owasp-dependency-check-plugin.version>
 
         <!-- Dependency versions -->
         <jacoco.version>0.8.11</jacoco.version>
-        <kubernetes-client.version>6.9.2</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
+        <kubernetes-client.version>6.10.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.59.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
@@ -165,7 +165,7 @@
             <extension>
                 <groupId>io.quarkus.bot</groupId>
                 <artifactId>build-reporter-maven-extension</artifactId>
-                <version>3.2.2</version>
+                <version>3.3.3</version>
             </extension>
         </extensions>
     </build>

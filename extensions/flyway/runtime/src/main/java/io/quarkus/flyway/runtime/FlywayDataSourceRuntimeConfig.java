@@ -25,8 +25,8 @@ public final class FlywayDataSourceRuntimeConfig {
     /**
      * Flag to activate/deactivate Flyway for a specific datasource at runtime.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean active = true;
+    @ConfigItem(defaultValueDocumentation = "'true' if the datasource is active; 'false' otherwise")
+    public Optional<Boolean> active = Optional.empty();
 
     /**
      * The maximum number of retries when attempting to connect to the database.

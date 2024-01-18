@@ -1,18 +1,18 @@
 package io.quarkus.liquibase.runtime;
 
+import java.util.Locale;
 import java.util.function.Function;
 
 import javax.sql.DataSource;
 
-import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 
 import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.runtime.UnconfiguredDataSource;
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -32,9 +32,16 @@ public class LiquibaseRecorder {
         return new Function<SyntheticCreationalContext<LiquibaseFactory>, LiquibaseFactory>() {
             @Override
             public LiquibaseFactory apply(SyntheticCreationalContext<LiquibaseFactory> context) {
-                DataSource dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
-                if (dataSource instanceof UnconfiguredDataSource) {
-                    throw new UnsatisfiedResolutionException("No datasource has been configured");
+                DataSource dataSource;
+                try {
+                    dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
+                    if (dataSource instanceof UnconfiguredDataSource) {
+                        throw DataSourceUtil.dataSourceNotConfigured(dataSourceName);
+                    }
+                } catch (RuntimeException e) {
+                    throw new UnsatisfiedResolutionException(String.format(Locale.ROOT,
+                            "Unable to find datasource '%s' for Liquibase: %s",
+                            dataSourceName, e.getMessage()), e);
                 }
 
                 LiquibaseFactoryProducer liquibaseProducer = context.getInjectedReference(LiquibaseFactoryProducer.class);
@@ -43,49 +50,45 @@ public class LiquibaseRecorder {
         };
     }
 
-    public void doStartActions() {
+    public void doStartActions(String dataSourceName) {
         if (!config.getValue().enabled) {
             return;
         }
+        // Liquibase is active when the datasource itself is active.
+        if (!Arc.container().instance(DataSources.class).get().getActiveDataSourceNames().contains(dataSourceName)) {
+            return;
+        }
 
+        InstanceHandle<LiquibaseFactory> liquibaseFactoryHandle = LiquibaseFactoryUtil.getLiquibaseFactory(dataSourceName);
         try {
-            InjectableInstance<LiquibaseFactory> liquibaseFactoryInstance = Arc.container()
-                    .select(LiquibaseFactory.class, Any.Literal.INSTANCE);
-            if (liquibaseFactoryInstance.isUnsatisfied()) {
+            LiquibaseFactory liquibaseFactory = liquibaseFactoryHandle.get();
+            var config = liquibaseFactory.getConfiguration();
+            if (!config.cleanAtStart && !config.migrateAtStart) {
                 return;
             }
-
-            for (InstanceHandle<LiquibaseFactory> liquibaseFactoryHandle : liquibaseFactoryInstance.handles()) {
-                try {
-                    LiquibaseFactory liquibaseFactory = liquibaseFactoryHandle.get();
-                    var config = liquibaseFactory.getConfiguration();
-                    if (!config.cleanAtStart && !config.migrateAtStart) {
-                        continue;
-                    }
-                    try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
-                        if (config.cleanAtStart) {
-                            liquibase.dropAll();
+            try (Liquibase liquibase = liquibaseFactory.createLiquibase()) {
+                if (config.cleanAtStart) {
+                    liquibase.dropAll();
+                }
+                if (config.migrateAtStart) {
+                    var lockService = LockServiceFactory.getInstance()
+                            .getLockService(liquibase.getDatabase());
+                    lockService.waitForLock();
+                    try {
+                        if (config.validateOnMigrate) {
+                            liquibase.validate();
                         }
-                        if (config.migrateAtStart) {
-                            var lockService = LockServiceFactory.getInstance()
-                                    .getLockService(liquibase.getDatabase());
-                            lockService.waitForLock();
-                            try {
-                                if (config.validateOnMigrate) {
-                                    liquibase.validate();
-                                }
-                                liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
-                            } finally {
-                                lockService.releaseLock();
-                            }
-                        }
+                        liquibase.update(liquibaseFactory.createContexts(), liquibaseFactory.createLabels());
+                    } finally {
+                        lockService.releaseLock();
                     }
-                } catch (UnsatisfiedResolutionException e) {
-                    //ignore, the DS is not configured
                 }
             }
+        } catch (UnsatisfiedResolutionException e) {
+            //ignore, the DS is not configured
         } catch (Exception e) {
             throw new IllegalStateException("Error starting Liquibase", e);
         }
     }
+
 }

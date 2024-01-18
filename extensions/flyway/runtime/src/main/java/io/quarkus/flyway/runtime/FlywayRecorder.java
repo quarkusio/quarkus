@@ -1,13 +1,11 @@
 package io.quarkus.flyway.runtime;
 
-import java.lang.annotation.Annotation;
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 
 import javax.sql.DataSource;
-
-import jakarta.enterprise.inject.Default;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.FlywayExecutor;
@@ -28,9 +26,9 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.flyway.FlywayDataSource.FlywayDataSourceLiteral;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 @Recorder
 public class FlywayRecorder {
@@ -64,15 +62,24 @@ public class FlywayRecorder {
         return new Function<>() {
             @Override
             public FlywayContainer apply(SyntheticCreationalContext<FlywayContainer> context) {
-                DataSource dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
-                if (dataSource instanceof UnconfiguredDataSource) {
-                    return new UnconfiguredDataSourceFlywayContainer(dataSourceName);
+                DataSource dataSource;
+                try {
+                    dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
+                    if (dataSource instanceof UnconfiguredDataSource) {
+                        throw DataSourceUtil.dataSourceNotConfigured(dataSourceName);
+                    }
+                } catch (ConfigurationException e) {
+                    // TODO do we really want to enable retrieval of a FlywayContainer for an unconfigured/inactive datasource?
+                    //   Assigning ApplicationScoped to the FlywayContainer
+                    //   and throwing UnsatisfiedResolutionException on bean creation (first access)
+                    //   would probably make more sense.
+                    return new UnconfiguredDataSourceFlywayContainer(dataSourceName, String.format(Locale.ROOT,
+                            "Unable to find datasource '%s' for Flyway: %s",
+                            dataSourceName, e.getMessage()), e);
                 }
 
                 FlywayContainerProducer flywayProducer = context.getInjectedReference(FlywayContainerProducer.class);
-                FlywayContainer flywayContainer = flywayProducer.createFlyway(dataSource, dataSourceName, hasMigrations,
-                        createPossible);
-                return flywayContainer;
+                return flywayProducer.createFlyway(dataSource, dataSourceName, hasMigrations, createPossible);
             }
         };
     }
@@ -82,7 +89,7 @@ public class FlywayRecorder {
             @Override
             public Flyway apply(SyntheticCreationalContext<Flyway> context) {
                 FlywayContainer flywayContainer = context.getInjectedReference(FlywayContainer.class,
-                        getFlywayContainerQualifier(dataSourceName));
+                        FlywayContainerUtil.getFlywayContainerQualifier(dataSourceName));
                 return flywayContainer.getFlyway();
             }
         };
@@ -92,12 +99,15 @@ public class FlywayRecorder {
         FlywayDataSourceRuntimeConfig flywayDataSourceRuntimeConfig = config.getValue()
                 .getConfigForDataSourceName(dataSourceName);
 
-        if (!config.getValue().getConfigForDataSourceName(dataSourceName).active) {
+        if (!flywayDataSourceRuntimeConfig.active
+                // If not specified explicitly, Flyway is active when the datasource itself is active.
+                .orElseGet(() -> Arc.container().instance(DataSources.class).get().getActiveDataSourceNames()
+                        .contains(dataSourceName))) {
             return;
         }
 
         InstanceHandle<FlywayContainer> flywayContainerInstanceHandle = Arc.container().instance(FlywayContainer.class,
-                getFlywayContainerQualifier(dataSourceName));
+                FlywayContainerUtil.getFlywayContainerQualifier(dataSourceName));
 
         if (!flywayContainerInstanceHandle.isAvailable()) {
             return;
@@ -125,14 +135,6 @@ public class FlywayRecorder {
         if (flywayContainer.isMigrateAtStart()) {
             flywayContainer.getFlyway().migrate();
         }
-    }
-
-    private static Annotation getFlywayContainerQualifier(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return Default.Literal.INSTANCE;
-        }
-
-        return FlywayDataSourceLiteral.of(dataSourceName);
     }
 
     static class BaselineCommand implements FlywayExecutor.Command<BaselineResult> {

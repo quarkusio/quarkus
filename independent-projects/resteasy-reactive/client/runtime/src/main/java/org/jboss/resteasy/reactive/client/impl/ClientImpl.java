@@ -49,6 +49,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
 import io.vertx.core.TimeoutStream;
+import io.vertx.core.Timer;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -60,6 +61,7 @@ import io.vertx.core.dns.DnsClientOptions;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientBuilder;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
@@ -69,6 +71,8 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.http.WebSocket;
+import io.vertx.core.http.WebSocketClient;
+import io.vertx.core.http.WebSocketClientOptions;
 import io.vertx.core.http.WebSocketConnectOptions;
 import io.vertx.core.http.WebsocketVersion;
 import io.vertx.core.net.NetClient;
@@ -421,6 +425,16 @@ public class ClientImpl implements Client {
         }
 
         @Override
+        public WebSocketClient createWebSocketClient(WebSocketClientOptions options) {
+            return getDelegate().createWebSocketClient(options);
+        }
+
+        @Override
+        public HttpClientBuilder httpClientBuilder() {
+            return getDelegate().httpClientBuilder();
+        }
+
+        @Override
         public HttpClient createHttpClient(HttpClientOptions httpClientOptions) {
             return new LazyHttpClient(new Supplier<HttpClient>() {
                 @Override
@@ -478,6 +492,11 @@ public class ClientImpl implements Client {
         @Override
         public SharedData sharedData() {
             return getDelegate().sharedData();
+        }
+
+        @Override
+        public Timer timer(long delay, TimeUnit unit) {
+            return getDelegate().timer(delay, unit);
         }
 
         @Override
@@ -850,8 +869,23 @@ public class ClientImpl implements Client {
             }
 
             @Override
-            public Future<Void> updateSSLOptions(SSLOptions options) {
+            public Future<Boolean> updateSSLOptions(SSLOptions options) {
                 return getDelegate().updateSSLOptions(options);
+            }
+
+            @Override
+            public void updateSSLOptions(SSLOptions options, Handler<AsyncResult<Boolean>> handler) {
+                getDelegate().updateSSLOptions(options, handler);
+            }
+
+            @Override
+            public Future<Boolean> updateSSLOptions(SSLOptions options, boolean force) {
+                return getDelegate().updateSSLOptions(options, force);
+            }
+
+            @Override
+            public void updateSSLOptions(SSLOptions options, boolean force, Handler<AsyncResult<Boolean>> handler) {
+                getDelegate().updateSSLOptions(options, force, handler);
             }
 
             @Override

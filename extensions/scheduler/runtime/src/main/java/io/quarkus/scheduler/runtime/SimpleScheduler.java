@@ -23,7 +23,6 @@ import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Typed;
 import jakarta.inject.Singleton;
@@ -38,7 +37,6 @@ import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.FailedExecution;
 import io.quarkus.scheduler.Scheduled;
@@ -382,7 +380,7 @@ public class SimpleScheduler implements Scheduler {
         if (predicateClass.equals(Scheduled.Never.class)) {
             return null;
         }
-        return Arc.container().select(predicateClass, Any.Literal.INSTANCE).get();
+        return SchedulerUtils.instantiateBeanOrClass(predicateClass);
     }
 
     static class ScheduledTask {

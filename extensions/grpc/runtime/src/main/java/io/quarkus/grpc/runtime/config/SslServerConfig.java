@@ -29,21 +29,21 @@ public class SslServerConfig {
     public Optional<Path> key;
 
     /**
-     * An optional key store which holds the certificate information instead of specifying separate files.
-     * The key store can be either on classpath or an external file.
+     * An optional keystore that holds the certificate information instead of specifying separate files.
+     * The keystore can be either on classpath or an external file.
      */
     @ConfigItem
     public Optional<Path> keyStore;
 
     /**
-     * An optional parameter to specify the type of the key store file. If not given, the type is automatically detected
+     * An optional parameter to specify the type of the keystore file. If not given, the type is automatically detected
      * based on the file name.
      */
     @ConfigItem
     public Optional<String> keyStoreType;
 
     /**
-     * A parameter to specify the password of the key store file. If not given, the default ("password") is used.
+     * A parameter to specify the password of the keystore file. If not given, the default ("password") is used.
      */
     @ConfigItem
     public Optional<String> keyStorePassword;

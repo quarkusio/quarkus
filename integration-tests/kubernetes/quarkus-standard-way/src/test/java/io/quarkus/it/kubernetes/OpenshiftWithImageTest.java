@@ -30,6 +30,7 @@ public class OpenshiftWithImageTest {
             .setApplicationName(APP_NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
             .overrideConfigKey("quarkus.container-image.image", "user/app:2.0")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config")
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));
 
     @ProdBuildResults

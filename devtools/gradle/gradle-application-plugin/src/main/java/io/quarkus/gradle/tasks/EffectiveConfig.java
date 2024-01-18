@@ -1,20 +1,19 @@
 package io.quarkus.gradle.tasks;
 
+import static io.smallrye.config.SmallRyeConfigBuilder.META_INF_MICROPROFILE_CONFIG_PROPERTIES;
 import static java.util.Collections.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
@@ -23,10 +22,12 @@ import com.google.common.annotations.VisibleForTesting;
 
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSourceLoader;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.AbstractLocationConfigSourceLoader;
 import io.smallrye.config.EnvConfigSource;
 import io.smallrye.config.PropertiesConfigSource;
+import io.smallrye.config.PropertiesConfigSourceProvider;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.common.utils.ConfigSourceUtil;
 import io.smallrye.config.source.yaml.YamlConfigSource;
@@ -43,8 +44,6 @@ import io.smallrye.config.source.yaml.YamlConfigSource;
 final class EffectiveConfig {
     private final Map<String, String> fullConfig;
 
-    // URLs of all application.properties/yaml/yml files that were consulted (including those that do not exist)
-    private final List<URL> applicationPropsSources;
     private final SmallRyeConfig config;
 
     private EffectiveConfig(Builder builder) {
@@ -60,10 +59,9 @@ final class EffectiveConfig {
         // 300 -> System.getenv()
         // 290 -> quarkusBuildProperties
         // 280 -> projectProperties
-        // 250 -> application.(properties|yaml|yml) (in classpath/source)
+        // 255 -> application,(yaml|yml) (in classpath/source)
+        // 250 -> application.properties (in classpath/source)
         // 100 -> microprofile.properties (in classpath/source)
-
-        applicationPropsSources = new ArrayList<>();
 
         configSources.add(new PropertiesConfigSource(builder.forcedProperties, "forcedProperties", 600));
         configSources.add(new PropertiesConfigSource(asStringMap(builder.taskProperties), "taskProperties", 500));
@@ -74,18 +72,15 @@ final class EffectiveConfig {
         configSources.add(new PropertiesConfigSource(builder.buildProperties, "quarkusBuildProperties", 290));
         configSources.add(new PropertiesConfigSource(asStringMap(builder.projectProperties), "projectProperties", 280));
 
-        configSourcesForApplicationProperties(builder.sourceDirectories, applicationPropsSources::add, configSources::add, 250,
-                new String[] {
-                        "application.properties",
-                        "application.yaml",
-                        "application.yml"
-                });
-        configSourcesForApplicationProperties(builder.sourceDirectories, applicationPropsSources::add, configSources::add, 100,
-                new String[] {
-                        "microprofile-config.properties"
-                });
-        this.config = buildConfig(builder.profile, configSources);
+        ClassLoader classLoader = toUrlClassloader(builder.sourceDirectories);
+        ApplicationPropertiesConfigSourceLoader.InClassPath applicationProperties = new ApplicationPropertiesConfigSourceLoader.InClassPath();
+        configSources.addAll(applicationProperties.getConfigSources(classLoader));
+        ApplicationYamlConfigSourceLoader.InClassPath applicationYaml = new ApplicationYamlConfigSourceLoader.InClassPath();
+        configSources.addAll(applicationYaml.getConfigSources(classLoader));
+        configSources
+                .addAll(PropertiesConfigSourceProvider.classPathSources(META_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
 
+        this.config = buildConfig(builder.profile, configSources);
         this.fullConfig = generateFullConfigMap(config);
     }
 
@@ -135,35 +130,6 @@ final class EffectiveConfig {
         return fullConfig;
     }
 
-    List<URL> applicationPropsSources() {
-        return applicationPropsSources;
-    }
-
-    static void configSourcesForApplicationProperties(Set<File> sourceDirectories, Consumer<URL> sourceUrls,
-            Consumer<ConfigSource> configSourceConsumer, int ordinal, String[] fileExtensions) {
-        for (var sourceDir : sourceDirectories) {
-            var sourceDirPath = sourceDir.toPath();
-            var locations = new ArrayList<String>();
-            for (String file : fileExtensions) {
-                Path resolved = sourceDirPath.resolve(file);
-                if (Files.exists(resolved)) {
-                    locations.add(resolved.toUri().toString());
-                }
-            }
-            if (!locations.isEmpty()) {
-                URLClassLoader classLoader;
-                try {
-                    classLoader = new URLClassLoader(new URL[] { sourceDir.toURI().toURL() });
-                } catch (MalformedURLException e) {
-                    throw new RuntimeException(e);
-                }
-                CombinedConfigSourceProvider configSourceProvider = new CombinedConfigSourceProvider(sourceUrls, ordinal,
-                        fileExtensions, locations);
-                configSourceProvider.getConfigSources(classLoader).forEach(configSourceConsumer);
-            }
-        }
-    }
-
     static final class Builder {
         private Map<String, String> buildProperties = emptyMap();
         private Map<String, ?> projectProperties = emptyMap();
@@ -207,34 +173,46 @@ final class EffectiveConfig {
         }
     }
 
-    static final class CombinedConfigSourceProvider extends AbstractLocationConfigSourceLoader implements ConfigSourceProvider {
-        private final Consumer<URL> sourceUrls;
-        private final int ordinal;
-        private final String[] fileExtensions;
-        private final List<String> locations;
-
-        CombinedConfigSourceProvider(Consumer<URL> sourceUrls, int ordinal, String[] fileExtensions, List<String> locations) {
-            this.sourceUrls = sourceUrls;
-            this.ordinal = ordinal;
-            this.fileExtensions = fileExtensions;
-            this.locations = locations;
+    private static ClassLoader toUrlClassloader(Set<File> sourceDirectories) {
+        List<URL> urls = new ArrayList<>();
+        for (File sourceDirectory : sourceDirectories) {
+            try {
+                urls.add(sourceDirectory.toURI().toURL());
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
         }
+        return new URLClassLoader(urls.toArray(new URL[0]));
+    }
 
+    // Copied from quarkus-config-yaml. May be replaced by adding the quarkus-config-yaml dependency
+    public static class ApplicationYamlConfigSourceLoader extends AbstractLocationConfigSourceLoader {
         @Override
         protected String[] getFileExtensions() {
-            return fileExtensions;
+            return new String[] {
+                    "yaml",
+                    "yml"
+            };
         }
 
         @Override
         protected ConfigSource loadConfigSource(final URL url, final int ordinal) throws IOException {
-            sourceUrls.accept(url);
-            return url.getPath().endsWith(".properties") ? new PropertiesConfigSource(url, ordinal)
-                    : new YamlConfigSource(url, ordinal);
+            return new YamlConfigSource(url, ordinal);
         }
 
-        @Override
-        public List<ConfigSource> getConfigSources(final ClassLoader classLoader) {
-            return loadConfigSources(locations.toArray(new String[0]), ordinal, classLoader);
+        public static class InClassPath extends ApplicationYamlConfigSourceLoader implements ConfigSourceProvider {
+            @Override
+            public List<ConfigSource> getConfigSources(final ClassLoader classLoader) {
+                List<ConfigSource> configSources = new ArrayList<>();
+                configSources.addAll(loadConfigSources("application.yaml", 255, classLoader));
+                configSources.addAll(loadConfigSources("application.yml", 255, classLoader));
+                return configSources;
+            }
+
+            @Override
+            protected List<ConfigSource> tryFileSystem(final URI uri, final int ordinal) {
+                return new ArrayList<>();
+            }
         }
     }
 }

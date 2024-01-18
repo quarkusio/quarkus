@@ -14,7 +14,7 @@ If any Kafka-related extension is present (e.g. `quarkus-smallrye-reactive-messa
 So, you don't have to start a broker manually.
 The application is configured automatically.
 
-IMPORTANT: Because starting a Kafka broker can be long, Dev Services for Kafka uses https://vectorized.io/redpanda[Redpanda], a Kafka compatible broker which starts in ~1 second.
+IMPORTANT: Because starting a Kafka broker can be long, Dev Services for Kafka uses https://redpanda.com[Redpanda], a Kafka compatible broker which starts in ~1 second.
 
 == Enabling / Disabling Dev Services for Kafka
 
@@ -82,7 +82,7 @@ For Strimzi, you can select any image with a Kafka version which has Kraft suppo
 
 [source, properties]
 ----
-quarkus.kafka.devservices.image-name=quay.io/strimzi-test-container/test-container:0.100.0-kafka-3.1.0
+quarkus.kafka.devservices.image-name=quay.io/strimzi-test-container/test-container:0.105.0-kafka-3.6.0
 ----
 
 == Configuring Kafka topics
@@ -106,7 +106,7 @@ You can configure timeout for Kafka admin client calls used in topic creation us
 [[redpanda-transactions]]
 == Transactional and Idempotent producers support
 
-By default, the Red Panda broker is configured to enable transactions and idempotence features.
+By default, the Redpanda broker is configured to enable transactions and idempotence features.
 You can disable those using:
 
 [source, properties]

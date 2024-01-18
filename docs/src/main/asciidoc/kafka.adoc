@@ -492,11 +492,19 @@ image::kafka-one-app-one-consumer.png[alt=Architecture, width=60%, align=center]
 
 . *Multiple consumer threads inside a consumer group*
 +
-For a given application instance, the number of consumers inside the consumer group can be configured using `mp.messaging.incoming.$channel.partitions` property.
+For a given application instance, the number of consumers inside the consumer group can be configured using `mp.messaging.incoming.$channel.concurrency` property.
 The partitions of the subscribed topic will be divided among the consumer threads.
-Note that if the `partitions` value exceed the number of partitions of the topic, some consumer threads won't be assigned any partitions.
+Note that if the `concurrency` value exceed the number of partitions of the topic, some consumer threads won't be assigned any partitions.
 +
 image::kafka-one-app-two-consumers.png[alt=Architecture, width=60%, align=center]
++
+[NOTE]
+.Deprecation
+====
+The https://smallrye.io/smallrye-reactive-messaging/latest/concepts/incoming-concurrency/[concurrency attribute]
+provides a connector agnostic way for non-blocking concurrent channels and replaces the Kafka connector specific `partitions` attribute.
+The `partitions` attribute is therefore deprecated and will be removed in future releases.
+====
 
 . *Multiple consumer applications inside a consumer group*
 +
@@ -657,6 +665,36 @@ mp.messaging.incoming.your-channel.group.id=${quarkus.uuid}
 ----
 
 IMPORTANT: If the `group.id` attribute is not set, it defaults the `quarkus.application.name` configuration property.
+
+==== Manual topic-partition assignment
+
+The `assign-seek` channel attribute allows manually assigning topic-partitions to a Kafka incoming channel,
+and optionally seek to a specified offset in the partition to start consuming records.
+If `assign-seek` is used, the consumer will not be dynamically subscribed to topics,
+but instead will statically assign the described partitions.
+In manual topic-partition rebalancing doesn't happen and therefore rebalance listeners are never called.
+
+The attribute takes a list of triplets separated by commas: `<topic>:<partition>:<offset>`.
+
+For example, the configuration
+
+[source, properties]
+----
+mp.messaging.incoming.data.assign-seek=topic1:0:10, topic2:1:20
+----
+
+assigns the consumer to:
+
+- Partition 0 of topic 'topic1', setting the initial position at offset 10.
+- Partition 1 of topic 'topic2', setting the initial position at offset 20.
+
+The topic, partition, and offset in each triplet can have the following variations:
+
+- If the topic is omitted, the configured topic will be used.
+- If the offset is omitted, partitions are assigned to the consumer but won't be sought to offset.
+- If offset is 0, it seeks to the beginning of the topic-partition.
+- If offset is -1, it seeks to the end of the topic-partition.
+
 
 === Receiving Kafka Records in Batches
 
@@ -1112,7 +1150,7 @@ The new `Emitter.send` method returns a `CompletionStage` completed when the pro
 ====
 
 [NOTE]
-.Depreciation
+.Deprecation
 ====
 `MutinyEmitter#send(Message msg)` method is deprecated in favor of following methods receiving `Message` for emitting:
 
@@ -1376,6 +1414,55 @@ If you'd like to consume records only written and committed inside a Kafka trans
 mp.messaging.incoming.prices-in.isolation.level=read_committed
 ----
 
+== Kafka Request-Reply
+
+The Kafka Request-Reply pattern allows to publish a request record to a Kafka topic and then await for a reply record that responds to the initial request.
+The Kafka connector provides the `KafkaRequestReply` custom emitter that implements the requestor (or the client) of the request-reply pattern for Kafka outbound channels:
+
+It can be injected as a regular emitter `@Channel`:
+
+[source, java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.kafka.reply.KafkaRequestReply;
+
+@ApplicationScoped
+@Path("/kafka")
+public class KafkaRequestReplyEmitter {
+
+    @Channel("request-reply")
+    KafkaRequestReply<Integer, String> requestReply;
+
+    @POST
+    @Path("/req-rep")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Uni<String> post(Integer request) {
+        return requestReply.request(request);
+    }
+
+}
+----
+
+The request method publishes the record to the configured target topic of the outgoing channel,
+and polls a reply topic (by default, the target topic with `-replies` suffix) for a reply record.
+When the reply is received the returned `Uni` is completed with the record value.
+The request send operation generates a **correlation id** and sets a header (by default `REPLY_CORRELATION_ID`),
+which it expects to be sent back in the reply record.
+
+The replier can be implemented using a Reactive Messaging processor (see <<processing-messages>>).
+
+For more information on Kafka Request Reply feature and advanced configuration options,
+see the https://smallrye.io/smallrye-reactive-messaging/latest/kafka/request-reply/[Smallrye Reactive Messaging Documentation].
+
+[[processing-messages]]
 == Processing Messages
 
 Applications streaming data often need to consume some events from a topic, process them and publish the result to a different topic.
@@ -1794,6 +1881,10 @@ that will deserialize to a `io.vertx.core.json.JsonObject`. The corresponding se
 
 This is described in a dedicated guide: xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
 
+== JSON Schema Serialization
+
+This is described in a dedicated guide: xref:kafka-schema-registry-json-schema.adoc[Using Apache Kafka with Schema Registry and JSON Schema].
+
 [[serialization-autodetection]]
 == Serializer/deserializer autodetection
 
@@ -1886,7 +1977,9 @@ Refer to <<jackson-serialization>> to write your own serializer/deserializer for
 
 == Using Schema Registry
 
-This is described in a dedicated guide: xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
+This is described in a dedicated guide for Avro: xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
+And a different one for JSON Schema: xref:kafka-schema-registry-json-schema.adoc[Using Apache Kafka with Schema Registry and JSON Schema].
+
 
 [[kafka-health-check]]
 == Health Checks
@@ -1937,6 +2030,34 @@ and for an outgoing channel checks that the topic used by the producer exist in 
 
 Note that to achieve this, an _admin connection_ is required.
 You can adjust the timeout for topic verification calls to the broker using the `health-topic-verification-timeout` configuration.
+
+== Observability
+
+If the xref:opentelemetry.adoc[OpenTelemetry extension] is present,
+then the Kafka connector channels work out-of-the-box with the OpenTelemetry Tracing.
+Messages written to Kafka topics propagate the current tracing span.
+On incoming channels, if a consumed Kafka record contains tracing information the message processing inherits the message span as parent.
+
+Tracing can be disabled explicitly per channel:
+
+[source, properties]
+----
+mp.messaging.incoming.data.tracing-enabled=false
+----
+
+If the xref:telemetry-micrometer.adoc[Micrometer extension] is present,
+then Kafka producer and consumer clients metrics are exposed as Micrometer meters.
+
+Per channel metrics are also exposed as Micrometer meters.
+The number of messages produced or received per channel, acknowledgments and duration of processing are exposed.
+
+The messaging meters can be disabled:
+
+[source, properties]
+----
+quarkus.micrometer.binder.messaging.enabled=false
+----
+
 
 == Kafka Streams
 
@@ -2198,6 +2319,20 @@ With in-memory channels we were able to test application code processing message
 Note that different in-memory channels are independent, and switching channel connector to in-memory does not simulate message delivery between channels configured to the same Kafka topic.
 ====
 
+==== Context propagation with InMemoryConnector
+
+By default, in-memory channels dispatch messages on the caller thread, which would be the main thread in unit tests.
+
+The `quarkus-test-vertx` dependency provides the `@io.quarkus.test.vertx.RunOnVertxContext` annotation,
+which when used on a test method, executes the test on a Vert.x context.
+
+However, most of the other connectors handle context propagation dispatching messages on separate duplicated Vert.x contexts.
+
+If your tests are dependent on context propagation,
+you can configure the in-memory connector channels with the `run-on-vertx-context` attribute to dispatch events,
+including messages and acknowledgements, on a Vert.x context.
+Alternatively you can switch this behaviour using the `InMemorySource#runOnVertxContext` method.
+
 === Testing using a Kafka broker
 
 If you are using <<kafka-dev-services>>, a Kafka broker will be started and available throughout the tests, unless it is disabled in `%test` profile.
@@ -2268,7 +2403,7 @@ The configuration of the created Kafka broker can be customized using `@Resource
 [source,java]
 ----
 @QuarkusTestResource(value = KafkaCompanionResource.class, initArgs = {
-        @ResourceArg(name = "strimzi.kafka.image", value = "quay.io/strimzi/kafka:0.28.0-kafka-3.0.0"), // Image name
+        @ResourceArg(name = "strimzi.kafka.image", value = "quay.io/strimzi-test-container/test-container:0.105.0-kafka-3.6.0"), // Image name
         @ResourceArg(name = "kafka.port", value = "9092"), // Fixed port for kafka, by default it will be exposed on a random port
         @ResourceArg(name = "kraft", value = "true"), // Enable Kraft mode
         @ResourceArg(name = "num.partitions", value = "3"), // Other custom broker configurations

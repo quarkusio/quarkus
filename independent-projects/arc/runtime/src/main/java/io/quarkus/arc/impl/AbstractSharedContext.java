@@ -84,23 +84,24 @@ abstract class AbstractSharedContext implements InjectableContext, InjectableCon
 
     @Override
     public synchronized void destroy() {
-        List<ContextInstanceHandle<?>> values = new LinkedList<>();
-        instances.forEach(values::add);
+        // Note that shared contexts are usually only destroyed when the app stops
+        // I.e. we don't need to use the optimized ContextInstances methods here
+        Set<ContextInstanceHandle<?>> values = instances.getAllPresent();
         if (values.isEmpty()) {
             return;
         }
         // Destroy the producers first
-        for (Iterator<ContextInstanceHandle<?>> iterator = values.iterator(); iterator.hasNext();) {
-            ContextInstanceHandle<?> instanceHandle = iterator.next();
+        for (Iterator<ContextInstanceHandle<?>> it = values.iterator(); it.hasNext();) {
+            ContextInstanceHandle<?> instanceHandle = it.next();
             if (instanceHandle.getBean().getDeclaringBean() != null) {
                 instanceHandle.destroy();
-                iterator.remove();
+                it.remove();
             }
         }
         for (ContextInstanceHandle<?> instanceHandle : values) {
             instanceHandle.destroy();
         }
-        instances.clear();
+        instances.removeEach(null);
     }
 
     @Override

@@ -7,6 +7,6 @@ import io.quarkus.test.QuarkusUnitTest;
 public class GrpcAuthTest extends GrpcAuthTestBase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = createQuarkusUnitTest(null);
+    static final QuarkusUnitTest config = createQuarkusUnitTest(null, true);
 
 }

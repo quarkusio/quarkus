@@ -333,11 +333,15 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
     }
 
     public static String getEncryptedIdToken(String userName, Set<String> groups) {
+        return getEncryptedIdToken(userName, groups, "123456");
+    }
+
+    public static String getEncryptedIdToken(String userName, Set<String> groups, String sub) {
         return Jwt.preferredUserName(userName)
                 .groups(groups)
                 .issuer(TOKEN_ISSUER)
                 .audience(TOKEN_AUDIENCE)
-                .subject("123456")
+                .subject(sub)
                 .jws()
                 .keyId("1")
                 .innerSign("privateKey.jwk").encrypt("publicKey.jwk");
@@ -368,26 +372,23 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
     }
 
     public static String generateJwtToken(String userName, Set<String> groups) {
+        return generateJwtToken(userName, groups, "123456");
+    }
+
+    public static String generateJwtToken(String userName, Set<String> groups, String sub) {
         return Jwt.preferredUserName(userName)
                 .groups(groups)
                 .issuer(TOKEN_ISSUER)
                 .audience(TOKEN_AUDIENCE)
                 .claim("sid", "session-id")
-                .subject("123456")
+                .subject(sub)
                 .jws()
                 .keyId("1")
                 .sign("privateKey.jwk");
     }
 
     public static String getLogoutToken() {
-        return Jwt.issuer(TOKEN_ISSUER)
-                .audience(TOKEN_AUDIENCE)
-                .subject("123456")
-                .claim("events", createEventsClaim())
-                .claim("sid", "session-id")
-                .jws()
-                .keyId("1")
-                .sign("privateKey.jwk");
+        return getLogoutToken("123456");
     }
 
     public static String getLogoutToken(String sub) {

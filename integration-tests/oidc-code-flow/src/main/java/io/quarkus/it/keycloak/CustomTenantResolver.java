@@ -57,7 +57,8 @@ public class CustomTenantResolver implements TenantResolver {
         }
 
         if (path.contains("tenant-https")) {
-            if (context.getCookie("q_session_tenant-https_test") != null) {
+            if (context.getCookie("q_session_tenant-https_test_chunk_1") != null
+                    && context.getCookie("q_session_tenant-https_test_chunk_2") != null) {
                 context.put("reauthenticated", "true");
                 return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
             } else {
@@ -66,7 +67,8 @@ public class CustomTenantResolver implements TenantResolver {
         }
 
         if (path.contains("tenant-nonce")) {
-            if (context.getCookie("q_session_tenant-nonce") != null) {
+            if (context.getCookie("q_session_tenant-nonce_chunk_1") != null
+                    && context.getCookie("q_session_tenant-nonce_chunk_2") != null) {
                 context.put("reauthenticated", "true");
                 return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
             } else {

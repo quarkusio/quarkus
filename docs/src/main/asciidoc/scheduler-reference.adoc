@@ -255,7 +255,11 @@ NOTE: Note that only executions within the same application instance are conside
 === Conditional Execution
 
 You can define the logic to skip any execution of a scheduled method via `@Scheduled#skipExecutionIf()`.
-The specified bean class must implement `io.quarkus.scheduler.Scheduled.SkipPredicate` and the execution is skipped if the result of the `test()` method is `true`.
+The specified class must implement `io.quarkus.scheduler.Scheduled.SkipPredicate` and the execution is skipped if the result of the `test()` method is `true`.
+The class must either represent a CDI bean or declare a public no-args constructor. 
+In case of CDI, there must be exactly one bean that has the specified class in its set of bean types, otherwise the build fails. 
+Furthermore, the scope of the bean must be active during execution of the job. 
+If the scope is `@Dependent` then the bean instance belongs exclusively to the specific scheduled method and is destroyed when the application is shut down.
 
 [source,java]
 ----
@@ -303,6 +307,8 @@ class Jobs {
 The main idea is to keep the logic to skip the execution outside the scheduled business methods so that it can be reused and refactored easily.
 
 TIP: A CDI event of type `io.quarkus.scheduler.SkippedExecution` is fired when an execution of a scheduled method is skipped.
+
+TIP: To skip the scheduled executions while the application is starting up/shutting down, you can make use of the `io.quarkus.scheduler.Scheduled.ApplicationNotRunning` skip predicate.
 
 [[non-blocking-methods]]
 === Non-blocking Methods
@@ -400,7 +406,7 @@ class MyJobs {
 
 NOTE: By default, the scheduler is not started unless a `@Scheduled` business method is found. You may need to force the start of the scheduler for "pure" programmatic scheduling via `quarkus.scheduler.start-mode=forced`.
 
-NOTE: If the xref:quartz.adoc[Quartz extension] is present then the Quartz API can be also used to schedule a job programmatically.
+NOTE: If the xref:quartz.adoc[Quartz extension] is present and the DB store type is used then it's not possible to pass a task instance to the job definition and a task class must be used instead. The Quartz API can be also used to schedule a job programmatically.
 
 == Scheduled Methods and Testing
 

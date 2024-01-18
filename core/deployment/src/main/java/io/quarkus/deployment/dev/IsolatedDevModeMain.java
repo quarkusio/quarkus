@@ -459,8 +459,14 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             }, "Quarkus Shutdown Thread");
             Runtime.getRuntime().addShutdownHook(shutdownThread);
         } catch (Exception e) {
-            close();
-            throw (e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e));
+            RuntimeException toThrow = (e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e));
+            try {
+                close();
+            } catch (IllegalStateException x) {
+                // not sure which is the most important, but let's not silence the original exception
+                toThrow.addSuppressed(x);
+            }
+            throw toThrow;
         }
     }
 }

@@ -17,7 +17,6 @@ import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
-import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 /**
@@ -100,12 +99,13 @@ public class MediaTypeMapper implements ServerRestHandler {
 
     public MediaType selectMediaType(ResteasyReactiveRequestContext requestContext, Holder holder) {
         MediaType selected = null;
-        ServerHttpRequest httpServerRequest = requestContext.serverRequest();
-        if (httpServerRequest.containsRequestHeader(HttpHeaders.ACCEPT)) {
+        List<String> accepts = requestContext.getHttpHeaders().getRequestHeader(HttpHeaders.ACCEPT);
+        for (String accept : accepts) {
             Map.Entry<MediaType, MediaType> entry = holder.serverMediaType
-                    .negotiateProduces(requestContext.serverRequest().getRequestHeader(HttpHeaders.ACCEPT), null);
+                    .negotiateProduces(accept, null);
             if (entry.getValue() != null) {
                 selected = entry.getValue();
+                break;
             }
         }
         if (selected == null) {

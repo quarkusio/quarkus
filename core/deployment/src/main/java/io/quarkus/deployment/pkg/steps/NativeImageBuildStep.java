@@ -348,8 +348,8 @@ public class NativeImageBuildStep {
     }
 
     /**
-     * Creates a dummy runner for native-sources builds. This allows the creation of native-source jars without
-     * requiring podman/docker or a local native-image installation.
+     * Creates a dummy runner for native-sources builds. This allows the creation of native-source jars without requiring
+     * podman/docker or a local native-image installation.
      */
     @BuildStep(onlyIf = NativeSourcesBuild.class)
     public NativeImageRunnerBuildItem dummyNativeImageBuildRunner(NativeConfig nativeConfig) {
@@ -725,7 +725,14 @@ public class NativeImageBuildStep {
                 }
                 final String includeLocales = LocaleProcessor.nativeImageIncludeLocales(nativeConfig, localesBuildTimeConfig);
                 if (!includeLocales.isEmpty()) {
-                    addExperimentalVMOption(nativeImageArgs, "-H:IncludeLocales=" + includeLocales);
+                    if ("all".equals(includeLocales)) {
+                        log.warn(
+                                "Your application is setting the 'quarkus.locales' configuration key to include 'all'. " +
+                                        "All JDK locales, languages, currencies, etc. will be included, inflating the size of the executable.");
+                        addExperimentalVMOption(nativeImageArgs, "-H:+IncludeAllLocales");
+                    } else {
+                        addExperimentalVMOption(nativeImageArgs, "-H:IncludeLocales=" + includeLocales);
+                    }
                 }
 
                 nativeImageArgs.add("-J-Dfile.encoding=" + nativeConfig.fileEncoding());

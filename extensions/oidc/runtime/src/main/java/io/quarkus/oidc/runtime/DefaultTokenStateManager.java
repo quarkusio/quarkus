@@ -136,12 +136,12 @@ public class DefaultTokenStateManager implements TokenStateManager {
     }
 
     private static String getAccessTokenCookieName(OidcTenantConfig oidcConfig) {
-        String cookieSuffix = CodeAuthenticationMechanism.getCookieSuffix(oidcConfig);
+        String cookieSuffix = OidcUtils.getCookieSuffix(oidcConfig);
         return SESSION_AT_COOKIE_NAME + cookieSuffix;
     }
 
     private static String getRefreshTokenCookieName(OidcTenantConfig oidcConfig) {
-        String cookieSuffix = CodeAuthenticationMechanism.getCookieSuffix(oidcConfig);
+        String cookieSuffix = OidcUtils.getCookieSuffix(oidcConfig);
         return SESSION_RT_COOKIE_NAME + cookieSuffix;
     }
 

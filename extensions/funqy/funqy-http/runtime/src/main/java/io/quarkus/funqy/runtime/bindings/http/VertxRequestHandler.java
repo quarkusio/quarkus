@@ -98,23 +98,25 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                 dispatch(routingContext, invoker, finalInput);
             });
         } else if (routingContext.request().method() == HttpMethod.POST) {
-            routingContext.request().bodyHandler(buff -> {
-                Object input = null;
-                if (buff.length() > 0) {
-                    ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
-                    ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName());
-                    try {
-                        input = reader.readValue((InputStream) in);
-                    } catch (Exception e) {
-                        log.error("Failed to unmarshal input", e);
-                        routingContext.fail(400);
-                        return;
-                    }
+            var buff = routingContext.getBody();
+            Object input = null;
+            if (buff != null && buff.length() > 0) {
+                ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
+                ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName());
+                try {
+                    input = reader.readValue((InputStream) in);
+                } catch (Exception e) {
+                    log.error("Failed to unmarshal input", e);
+                    routingContext.fail(400);
+                    return;
                 }
-                Object finalInput = input;
-                executor.execute(() -> {
-                    dispatch(routingContext, invoker, finalInput);
-                });
+            }
+            Object finalInput = input;
+            executor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    VertxRequestHandler.this.dispatch(routingContext, invoker, finalInput);
+                }
             });
         } else {
             routingContext.fail(405);

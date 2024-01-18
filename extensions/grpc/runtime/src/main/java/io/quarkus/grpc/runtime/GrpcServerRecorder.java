@@ -41,6 +41,7 @@ import io.grpc.netty.NettyServerBuilder;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.Subclass;
+import io.quarkus.grpc.auth.GrpcSecurityInterceptor;
 import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerNettyConfig;
@@ -85,8 +86,6 @@ public class GrpcServerRecorder {
 
     private static final Pattern GRPC_CONTENT_TYPE = Pattern.compile("^application/grpc.*");
 
-    private static final Logger logger = Logger.getLogger(GrpcServerRecorder.class);
-
     public static List<GrpcServiceDefinition> getServices() {
         return services;
     }
@@ -97,7 +96,7 @@ public class GrpcServerRecorder {
             ShutdownContext shutdown,
             Map<String, List<String>> blockingMethodsPerService,
             Map<String, List<String>> virtualMethodsPerService,
-            LaunchMode launchMode) {
+            LaunchMode launchMode, boolean securityPresent) {
         GrpcContainer grpcContainer = Arc.container().instance(GrpcContainer.class).get();
         if (grpcContainer == null) {
             throw new IllegalStateException("gRPC not initialized, GrpcContainer not found");
@@ -135,8 +134,7 @@ public class GrpcServerRecorder {
             }
         } else {
             buildGrpcServer(vertx, configuration, routerSupplier, shutdown, blockingMethodsPerService, virtualMethodsPerService,
-                    grpcContainer,
-                    launchMode);
+                    grpcContainer, launchMode, securityPresent);
         }
     }
 
@@ -144,7 +142,7 @@ public class GrpcServerRecorder {
     private void buildGrpcServer(Vertx vertx, GrpcServerConfiguration configuration, RuntimeValue<Router> routerSupplier,
             ShutdownContext shutdown, Map<String, List<String>> blockingMethodsPerService,
             Map<String, List<String>> virtualMethodsPerService,
-            GrpcContainer grpcContainer, LaunchMode launchMode) {
+            GrpcContainer grpcContainer, LaunchMode launchMode, boolean securityPresent) {
 
         GrpcServer server = GrpcServer.server(vertx);
         List<ServerInterceptor> globalInterceptors = grpcContainer.getSortedGlobalInterceptors();
@@ -193,6 +191,9 @@ public class GrpcServerRecorder {
             if (!isGrpc(ctx)) {
                 ctx.next();
             } else {
+                if (securityPresent) {
+                    GrpcSecurityInterceptor.propagateSecurityIdentityWithDuplicatedCtx(ctx);
+                }
                 if (!Context.isOnEventLoopThread()) {
                     Context capturedVertxContext = Vertx.currentContext();
                     if (capturedVertxContext != null) {

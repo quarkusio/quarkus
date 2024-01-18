@@ -123,8 +123,40 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         collectDependencies(classpathConfig.getResolvedConfiguration(), workspaceDiscovery,
                 project, modelBuilder, appArtifact.getWorkspaceModule().mutable());
         collectExtensionDependencies(project, deploymentConfig, modelBuilder);
+        addCompileOnly(project, classpathBuilder, modelBuilder);
 
         return modelBuilder.build();
+    }
+
+    private static void addCompileOnly(Project project, ApplicationDeploymentClasspathBuilder classpathBuilder,
+            ApplicationModelBuilder modelBuilder) {
+        var compileOnlyConfig = classpathBuilder.getCompileOnly();
+        final List<org.gradle.api.artifacts.ResolvedDependency> queue = new ArrayList<>(
+                compileOnlyConfig.getResolvedConfiguration().getFirstLevelModuleDependencies());
+        for (int i = 0; i < queue.size(); ++i) {
+            var d = queue.get(i);
+            boolean skip = true;
+            for (var a : d.getModuleArtifacts()) {
+                if (!isDependency(a)) {
+                    continue;
+                }
+                var moduleId = a.getModuleVersion().getId();
+                var key = ArtifactKey.of(moduleId.getGroup(), moduleId.getName(), a.getClassifier(), a.getType());
+                var appDep = modelBuilder.getDependency(key);
+                if (appDep == null) {
+                    addArtifactDependency(project, modelBuilder, a);
+                    appDep = modelBuilder.getDependency(key);
+                    appDep.clearFlag(DependencyFlags.DEPLOYMENT_CP);
+                }
+                if (!appDep.isFlagSet(DependencyFlags.COMPILE_ONLY)) {
+                    skip = false;
+                    appDep.setFlags(DependencyFlags.COMPILE_ONLY);
+                }
+            }
+            if (!skip) {
+                queue.addAll(d.getChildren());
+            }
+        }
     }
 
     public static ResolvedDependency getProjectArtifact(Project project, boolean workspaceDiscovery) {
@@ -191,39 +223,44 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             ApplicationModelBuilder modelBuilder) {
         final ResolvedConfiguration rc = deploymentConfiguration.getResolvedConfiguration();
         for (ResolvedArtifact a : rc.getResolvedArtifacts()) {
-            if (a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
-                ProjectComponentIdentifier projectComponentIdentifier = (ProjectComponentIdentifier) a.getId()
-                        .getComponentIdentifier();
-                var includedBuild = ToolingUtils.includedBuild(project, projectComponentIdentifier);
-                Project projectDep = null;
-                if (includedBuild != null) {
-                    projectDep = ToolingUtils.includedBuildProject((IncludedBuildInternal) includedBuild,
-                            projectComponentIdentifier);
-                } else {
-                    projectDep = project.getRootProject().findProject(projectComponentIdentifier.getProjectPath());
-                }
-                Objects.requireNonNull(projectDep, "project " + projectComponentIdentifier.getProjectPath() + " should exist");
-                SourceSetContainer sourceSets = projectDep.getExtensions().getByType(SourceSetContainer.class);
+            addArtifactDependency(project, modelBuilder, a);
+        }
+    }
 
-                SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-                ResolvedDependencyBuilder dep = modelBuilder.getDependency(
-                        toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(), a.getClassifier()));
-                if (dep == null) {
-                    dep = toDependency(a, mainSourceSet);
-                    modelBuilder.addDependency(dep);
-                }
-                dep.setDeploymentCp();
-                dep.clearFlag(DependencyFlags.RELOADABLE);
-            } else if (isDependency(a)) {
-                ResolvedDependencyBuilder dep = modelBuilder.getDependency(
-                        toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(), a.getClassifier()));
-                if (dep == null) {
-                    dep = toDependency(a);
-                    modelBuilder.addDependency(dep);
-                }
-                dep.setDeploymentCp();
-                dep.clearFlag(DependencyFlags.RELOADABLE);
+    private static void addArtifactDependency(Project project, ApplicationModelBuilder modelBuilder, ResolvedArtifact a) {
+        if (a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
+            ProjectComponentIdentifier projectComponentIdentifier = (ProjectComponentIdentifier) a.getId()
+                    .getComponentIdentifier();
+            var includedBuild = ToolingUtils.includedBuild(project, projectComponentIdentifier.getBuild().getName());
+            final Project projectDep;
+            if (includedBuild != null) {
+                projectDep = ToolingUtils.includedBuildProject((IncludedBuildInternal) includedBuild,
+                        projectComponentIdentifier.getProjectPath());
+            } else {
+                projectDep = project.getRootProject().findProject(projectComponentIdentifier.getProjectPath());
             }
+            Objects.requireNonNull(projectDep,
+                    () -> "project " + projectComponentIdentifier.getProjectPath() + " should exist");
+            SourceSetContainer sourceSets = projectDep.getExtensions().getByType(SourceSetContainer.class);
+
+            SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+            ResolvedDependencyBuilder dep = modelBuilder.getDependency(
+                    toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(), a.getClassifier()));
+            if (dep == null) {
+                dep = toDependency(a, mainSourceSet);
+                modelBuilder.addDependency(dep);
+            }
+            dep.setDeploymentCp();
+            dep.clearFlag(DependencyFlags.RELOADABLE);
+        } else if (isDependency(a)) {
+            ResolvedDependencyBuilder dep = modelBuilder.getDependency(
+                    toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(), a.getClassifier()));
+            if (dep == null) {
+                dep = toDependency(a);
+                modelBuilder.addDependency(dep);
+            }
+            dep.setDeploymentCp();
+            dep.clearFlag(DependencyFlags.RELOADABLE);
         }
     }
 
@@ -291,11 +328,18 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         for (ResolvedArtifact a : resolvedDep.getModuleArtifacts()) {
             final ArtifactKey artifactKey = toAppDependenciesKey(a.getModuleVersion().getId().getGroup(), a.getName(),
                     a.getClassifier());
-            if (!isDependency(a) || modelBuilder.getDependency(artifactKey) != null) {
+            if (!isDependency(a)) {
+                continue;
+            }
+            var depBuilder = modelBuilder.getDependency(artifactKey);
+            if (depBuilder != null) {
+                if (isFlagOn(flags, COLLECT_DIRECT_DEPS)) {
+                    depBuilder.setDirect(true);
+                }
                 continue;
             }
             final ArtifactCoords depCoords = toArtifactCoords(a);
-            final ResolvedDependencyBuilder depBuilder = ResolvedDependencyBuilder.newInstance()
+            depBuilder = ResolvedDependencyBuilder.newInstance()
                     .setCoords(depCoords)
                     .setRuntimeCp()
                     .setDeploymentCp();
@@ -318,13 +362,13 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 final String classifier = a.getClassifier();
                 if (classifier == null || classifier.isEmpty()) {
                     final IncludedBuild includedBuild = ToolingUtils.includedBuild(project.getRootProject(),
-                            (ProjectComponentIdentifier) a.getId().getComponentIdentifier());
+                            ((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getBuild().getName());
                     if (includedBuild != null) {
                         final PathList.Builder pathBuilder = PathList.builder();
 
                         if (includedBuild instanceof IncludedBuildInternal) {
                             projectDep = ToolingUtils.includedBuildProject((IncludedBuildInternal) includedBuild,
-                                    (ProjectComponentIdentifier) a.getId().getComponentIdentifier());
+                                    ((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getProjectPath());
                         }
                         if (projectDep != null) {
                             projectModule = initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder,
@@ -517,7 +561,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         }
         final List<SourceDir> resources = new ArrayList<>(resourceDirs.size());
         for (Map.Entry<File, Path> e : resourceDirs.entrySet()) {
-            resources.add(new DefaultSourceDir(e.getKey().toPath(), e.getValue()));
+            resources.add(new DefaultSourceDir(e.getKey().toPath(), e.getValue(), null));
         }
         module.addArtifactSources(new DefaultArtifactSources(classifier, sourceDirs, resources));
     }
@@ -558,7 +602,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             if (a.getRelativePath().getSegments().length == 1) {
                 final File srcDir = a.getFile().getParentFile();
                 sourceDirs
-                        .add(new DefaultSourceDir(srcDir.toPath(), destDir.toPath(), Map.of("compiler", task.getName())));
+                        .add(new DefaultSourceDir(srcDir.toPath(), destDir.toPath(), null, Map.of("compiler", task.getName())));
             }
         });
     }

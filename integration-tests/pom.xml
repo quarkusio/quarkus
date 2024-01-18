@@ -8,6 +8,7 @@
         <version>999-SNAPSHOT</version>
         <relativePath>../build-parent/pom.xml</relativePath>
     </parent>
+
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-integration-tests-parent</artifactId>
@@ -220,6 +221,7 @@
                 <module>kafka-oauth-keycloak</module>
                 <module>kafka-snappy</module>
                 <module>kafka-avro-apicurio2</module>
+                <module>kafka-json-schema-apicurio2</module>
                 <module>kafka-streams</module>
                 <module>kafka-devservices</module>
                 <module>jpa</module>
@@ -298,7 +300,10 @@
                 <module>amazon-lambda-s3event</module>
                 <module>amazon-lambda-stream-handler</module>
                 <module>amazon-lambda-http</module>
-                <module>amazon-lambda-rest</module>
+                <module>amazon-lambda-rest-resteasy-reactive</module>
+                <module>amazon-lambda-rest-reactive-routes</module>
+                <module>amazon-lambda-rest-funqy</module>
+                <module>amazon-lambda-rest-servlet</module>		
                 <module>amazon-lambda-http-resteasy</module>
                 <module>amazon-lambda-http-resteasy-reactive</module>
                 <module>container-image</module>
@@ -357,6 +362,7 @@
                 <module>rest-client-reactive</module>
                 <module>rest-client-reactive-http2</module>
                 <module>rest-client-reactive-kotlin-serialization</module>
+                <module>rest-client-reactive-kotlin-serialization-with-validator</module>
                 <module>rest-client-reactive-multipart</module>
                 <module>rest-client-reactive-stork</module>
                 <module>packaging</module>
@@ -371,6 +377,7 @@
                 <module>micrometer-mp-metrics</module>
                 <module>micrometer-prometheus</module>
                 <module>opentelemetry</module>
+                <module>opentelemetry-quickstart</module>
                 <module>opentelemetry-spi</module>
                 <module>opentelemetry-jdbc-instrumentation</module>
                 <module>opentelemetry-quartz</module>

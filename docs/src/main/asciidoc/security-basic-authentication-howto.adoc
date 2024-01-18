@@ -67,7 +67,7 @@ For securing a production application, it is crucial to use a database to store 
 
 == Next steps
 
-For a more detailed walk-through that shows you how to configure Basic authentication together with Jakarta Persistence for storing user credentials in a database, see the xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence] guide.
+For a more detailed walk-through that shows you how to configure Basic authentication together with Jakarta Persistence for storing user credentials in a database, see the xref:security-getting-started-tutorial.adoc[Getting started with Security by using Basic authentication and Jakarta Persistence] guide.
 
 == References
 

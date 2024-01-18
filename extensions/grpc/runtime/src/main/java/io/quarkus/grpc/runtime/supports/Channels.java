@@ -254,14 +254,16 @@ public class Channels {
             options.setHttp2ClearTextUpgrade(false); // this fixes i30379
 
             if (!plainText) {
+                // always set ssl + alpn for plain-text=false
+                options.setSsl(true);
+                options.setUseAlpn(true);
+
                 if (config.ssl.trustStore.isPresent()) {
                     Optional<Path> trustStorePath = config.ssl.trustStore;
                     if (trustStorePath.isPresent()) {
                         PemTrustOptions to = new PemTrustOptions();
                         to.addCertValue(bufferFor(trustStorePath.get(), "trust store"));
                         options.setTrustOptions(to);
-                        options.setSsl(true);
-                        options.setUseAlpn(true);
                     }
                     Optional<Path> certificatePath = config.ssl.certificate;
                     Optional<Path> keyPath = config.ssl.key;
@@ -270,8 +272,6 @@ public class Channels {
                         cko.setCertValue(bufferFor(certificatePath.get(), "certificate"));
                         cko.setKeyValue(bufferFor(keyPath.get(), "key"));
                         options.setKeyCertOptions(cko);
-                        options.setSsl(true);
-                        options.setUseAlpn(true);
                     }
                 }
             }

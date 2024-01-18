@@ -120,9 +120,15 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
     public static Collection<Dependency> getDependenciesWithFlag(ApplicationModel model, int flag) {
         var set = new HashSet<Dependency>();
         for (var d : model.getDependencies(flag)) {
-            if (d.isFlagSet(flag)) {
-                set.add(new ArtifactDependency(d));
-            }
+            set.add(new ArtifactDependency(d));
+        }
+        return set;
+    }
+
+    public static Collection<Dependency> getDependenciesWithAnyFlag(ApplicationModel model, int... flags) {
+        var set = new HashSet<Dependency>();
+        for (var d : model.getDependenciesWithAnyFlag(flags)) {
+            set.add(new ArtifactDependency(d));
         }
         return set;
     }

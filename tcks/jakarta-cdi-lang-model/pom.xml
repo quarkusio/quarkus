@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - Jakarta CDI Lang Model</name>
 
     <properties>
-        <cdi-tck.version>4.0.12</cdi-tck.version>
+        <version.cdi-tck>4.0.13</version.cdi-tck>
         <junit4.version>4.13.2</junit4.version>
     </properties>
 
@@ -30,7 +30,7 @@
         <dependency>
             <groupId>jakarta.enterprise</groupId>
             <artifactId>cdi-tck-lang-model</artifactId>
-            <version>${cdi-tck.version}</version>
+            <version>${version.cdi-tck}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

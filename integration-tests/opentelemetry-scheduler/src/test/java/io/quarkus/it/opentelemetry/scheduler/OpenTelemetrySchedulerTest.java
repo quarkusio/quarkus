@@ -2,6 +2,7 @@ package io.quarkus.it.opentelemetry.scheduler;
 
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -9,8 +10,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +36,7 @@ public class OpenTelemetrySchedulerTest {
         assertCounter("/scheduler/count/job-definition", 1, Duration.ofSeconds(3));
 
         // ------- SPAN ASSERTS -------
-        List<Map<String, Object>> spans = getSpans();
+        List<Map<String, Object>> spans = getSpans("myCounter", "myJobDefinition");
 
         assertJobSpan(spans, "myCounter", DURATION_IN_NANOSECONDS); // identity
         assertJobSpan(spans, "myJobDefinition", DURATION_IN_NANOSECONDS); // identity
@@ -62,9 +65,20 @@ public class OpenTelemetrySchedulerTest {
 
     }
 
-    private List<Map<String, Object>> getSpans() {
-        return get("/export").body().as(new TypeRef<>() {
+    private List<Map<String, Object>> getSpans(String... expectedNames) {
+        AtomicReference<List<Map<String, Object>>> ret = new AtomicReference<>(Collections.emptyList());
+        await().atMost(15, SECONDS).until(() -> {
+            List<Map<String, Object>> spans = get("/export").body().as(new TypeRef<>() {
+            });
+            for (String name : expectedNames) {
+                if (spans.stream().filter(map -> map.get("name").equals(name)).findAny().isEmpty()) {
+                    return false;
+                }
+            }
+            ret.set(spans);
+            return true;
         });
+        return ret.get();
     }
 
     private void assertJobSpan(List<Map<String, Object>> spans, String expectedName, long expectedDuration) {
@@ -82,6 +96,7 @@ public class OpenTelemetrySchedulerTest {
                         "' is not longer than 100ms, actual duration: " + delta + " (ns)");
     }
 
+    @SuppressWarnings("unchecked")
     private void assertErrorJobSpan(List<Map<String, Object>> spans, String expectedName, long expectedDuration,
             String expectedErrorMessage) {
         assertJobSpan(spans, expectedName, expectedDuration);

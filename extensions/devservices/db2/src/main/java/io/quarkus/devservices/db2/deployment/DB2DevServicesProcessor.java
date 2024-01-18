@@ -51,7 +51,7 @@ public class DB2DevServicesProcessor {
                 container.withUsername(effectiveUsername)
                         .withPassword(effectivePassword)
                         .withDatabaseName(effectiveDbName)
-                        .withReuse(true);
+                        .withReuse(containerConfig.isReuse());
                 Labels.addDataSourceLabel(container, datasourceName);
                 Volumes.addVolumes(container, containerConfig.getVolumes());
 

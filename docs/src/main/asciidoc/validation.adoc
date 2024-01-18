@@ -397,6 +397,9 @@ provided the supported locales have been properly specified in the `application.
 quarkus.locales=en-US,es-ES,fr-FR
 ----
 
+Alternatively, you can use `all` to make native-image executable to include all available locales. It inflate the size of the executable
+substantially though. The difference between including just two or three locales and including all locales is at least 23 MB.
+
 A similar mechanism exists for GraphQL services based on the `quarkus-smallrye-graphql` extension.
 
 If this default mechanism is not sufficient and you need a custom locale resolution, you can add additional ``org.hibernate.validator.spi.messageinterpolation.LocaleResolver``s:

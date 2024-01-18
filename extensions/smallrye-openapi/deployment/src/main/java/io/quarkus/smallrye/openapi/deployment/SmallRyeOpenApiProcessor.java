@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -105,9 +107,9 @@ import io.quarkus.smallrye.openapi.runtime.filter.OpenIDConnectSecurityFilter;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceConfiguration;
 import io.smallrye.openapi.api.OpenApiConfig;
@@ -303,32 +305,31 @@ public class SmallRyeOpenApiProcessor {
             }
         }
 
-        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management("quarkus.smallrye-openapi.management.enabled")
-                .routeFunction(openApiConfig.path, corsFilter)
-                .routeConfigKey("quarkus.smallrye-openapi.path")
-                .handler(handler)
+        routes.produce(RouteBuildItem.newManagementRoute(openApiConfig.path, "quarkus.smallrye-openapi.management.enabled")
+                .withRouteCustomizer(corsFilter)
+                .withRoutePathConfigKey("quarkus.smallrye-openapi.path")
+                .withRequestHandler(handler)
                 .displayOnNotFoundPage("Open API Schema document")
-                .blockingRoute()
+                .asBlockingRoute()
                 .build());
 
-        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management("quarkus.smallrye-openapi.management.enabled")
-                .routeFunction(openApiConfig.path + ".json", corsFilter)
-                .handler(handler)
-                .build());
+        routes.produce(
+                RouteBuildItem.newManagementRoute(openApiConfig.path + ".json", "quarkus.smallrye-openapi.management.enabled")
+                        .withRouteCustomizer(corsFilter)
+                        .withRequestHandler(handler)
+                        .build());
 
-        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management("quarkus.smallrye-openapi.management.enabled")
-                .routeFunction(openApiConfig.path + ".yaml", corsFilter)
-                .handler(handler)
-                .build());
+        routes.produce(
+                RouteBuildItem.newManagementRoute(openApiConfig.path + ".yaml", "quarkus.smallrye-openapi.management.enabled")
+                        .withRouteCustomizer(corsFilter)
+                        .withRequestHandler(handler)
+                        .build());
 
-        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management("quarkus.smallrye-openapi.management.enabled")
-                .routeFunction(openApiConfig.path + ".yml", corsFilter)
-                .handler(handler)
-                .build());
+        routes.produce(
+                RouteBuildItem.newManagementRoute(openApiConfig.path + ".yml", "quarkus.smallrye-openapi.management.enabled")
+                        .withRouteCustomizer(corsFilter)
+                        .withRequestHandler(handler)
+                        .build());
 
         // If management is enabled and swagger-ui is part of management, we need to add CORS so that swagger can hit the endpoint
         if (isManagement(managementInterfaceBuildTimeConfig, openApiConfig, launch)) {
@@ -473,20 +474,19 @@ public class SmallRyeOpenApiProcessor {
     }
 
     private List<String> getUserDefinedFilters(OpenApiConfig openApiConfig, IndexView index, OpenApiFilter.RunStage stage) {
-        List<String> userDefinedFilters = new ArrayList<>();
-        Collection<AnnotationInstance> annotations = index.getAnnotations(DotName.createSimple(OpenApiFilter.class.getName()));
-        for (AnnotationInstance ai : annotations) {
-            AnnotationTarget annotationTarget = ai.target();
-            ClassInfo classInfo = annotationTarget.asClass();
-            if (classInfo.interfaceNames().contains(DotName.createSimple(OASFilter.class.getName()))) {
-
-                OpenApiFilter.RunStage runStage = OpenApiFilter.RunStage.valueOf(ai.value().asEnum());
-                if (runStage.equals(OpenApiFilter.RunStage.BOTH) || runStage.equals(stage)) {
-                    userDefinedFilters.add(classInfo.name().toString());
-                }
-            }
-        }
-        return userDefinedFilters;
+        EnumSet<OpenApiFilter.RunStage> stages = EnumSet.of(OpenApiFilter.RunStage.BOTH, stage);
+        Comparator<Object> comparator = Comparator
+                .comparing(x -> ((AnnotationInstance) x).valueWithDefault(index, "priority").asInt())
+                .reversed();
+        return index
+                .getAnnotations(OpenApiFilter.class)
+                .stream()
+                .filter(ai -> stages.contains(OpenApiFilter.RunStage.valueOf(ai.value().asEnum())))
+                .sorted(comparator)
+                .map(ai -> ai.target().asClass())
+                .filter(c -> c.interfaceNames().contains(DotName.createSimple(OASFilter.class.getName())))
+                .map(c -> c.name().toString())
+                .collect(Collectors.toList());
     }
 
     private boolean isManagement(ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,

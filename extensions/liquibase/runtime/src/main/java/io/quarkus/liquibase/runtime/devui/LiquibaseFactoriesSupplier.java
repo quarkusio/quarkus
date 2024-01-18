@@ -1,35 +1,25 @@
 package io.quarkus.liquibase.runtime.devui;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Supplier;
 
-import jakarta.enterprise.inject.Any;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.liquibase.LiquibaseFactory;
+import io.quarkus.liquibase.runtime.LiquibaseFactoryUtil;
 
 public class LiquibaseFactoriesSupplier implements Supplier<Collection<LiquibaseFactory>> {
 
     @Override
     public Collection<LiquibaseFactory> get() {
-        InjectableInstance<LiquibaseFactory> liquibaseFactoryInstance = Arc.container().select(LiquibaseFactory.class,
-                Any.Literal.INSTANCE);
-        if (liquibaseFactoryInstance.isUnsatisfied()) {
-            return Collections.emptySet();
+        Set<LiquibaseFactory> containers = new TreeSet<>(LiquibaseFactoryComparator.INSTANCE);
+        for (InstanceHandle<LiquibaseFactory> handle : LiquibaseFactoryUtil.getActiveLiquibaseFactories()) {
+            containers.add(handle.get());
         }
-
-        Set<LiquibaseFactory> liquibaseFactories = new TreeSet<>(LiquibaseFactoryComparator.INSTANCE);
-        for (InstanceHandle<LiquibaseFactory> liquibaseFactoryHandle : liquibaseFactoryInstance.handles()) {
-            liquibaseFactories.add(liquibaseFactoryHandle.get());
-        }
-        return liquibaseFactories;
+        return containers;
     }
 
     private static class LiquibaseFactoryComparator implements Comparator<LiquibaseFactory> {

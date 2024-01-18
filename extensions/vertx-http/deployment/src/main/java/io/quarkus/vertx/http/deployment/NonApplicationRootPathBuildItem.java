@@ -21,8 +21,6 @@ import io.vertx.ext.web.RoutingContext;
 
 public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
 
-    // TODO Should be handle the management root path?
-
     /**
      * Normalized of quarkus.http.root-path.
      * Must end in a slash

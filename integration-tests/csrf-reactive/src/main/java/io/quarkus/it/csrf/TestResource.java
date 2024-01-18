@@ -17,6 +17,7 @@ import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.resteasy.reactive.RestForm;
 
+import io.quarkus.csrf.reactive.runtime.CsrfTokenParameterProvider;
 import io.quarkus.csrf.reactive.runtime.CsrfTokenUtils;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
@@ -46,6 +47,9 @@ public class TestResource {
 
     @Inject
     RoutingContext routingContext;
+
+    @Inject
+    CsrfTokenParameterProvider parameterProvider;
 
     @GET
     @Path("/csrfTokenForm")
@@ -151,6 +155,13 @@ public class TestResource {
     @Produces(MediaType.TEXT_PLAIN)
     public String getSimpleGet() {
         return "hello";
+    }
+
+    @GET
+    @Path("/token")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getToken() {
+        return this.parameterProvider.getToken();
     }
 
     public static class MultiPart {

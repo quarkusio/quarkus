@@ -54,7 +54,7 @@ export class QwcInfo extends LitElement {
         super.connectedCallback();
         await this.load();
     }
-        
+
     async load() {
         const response = await fetch(this._infoUrl);
         const data = await response.json();
@@ -68,6 +68,7 @@ export class QwcInfo extends LitElement {
                 ${this._renderJavaInfo(this._info)}
                 ${this._renderBuildInfo(this._info)}
                 ${this._renderGitInfo(this._info)}
+                ${this._renderExternalContributedInfo(this._info)}
             `;
         }else{
             return html`
@@ -78,7 +79,7 @@ export class QwcInfo extends LitElement {
             `;
         }
     }
-    
+
     _renderOsInfo(info){
         if(info.os){
             let os = info.os;
@@ -94,7 +95,7 @@ export class QwcInfo extends LitElement {
                 </qui-card>`;
         }
     }
-    
+
     _renderJavaInfo(info){
         if(info.java){
             let java = info.java;
@@ -108,9 +109,9 @@ export class QwcInfo extends LitElement {
                 </qui-card>`;
         }
     }
-    
+
     _renderOsIcon(osname){
-        
+
         if(osname){
             if(osname.toLowerCase().startsWith("linux")){
                 return html`<vaadin-icon icon="font-awesome-brands:linux"></vaadin-icon>`;
@@ -121,7 +122,7 @@ export class QwcInfo extends LitElement {
             }
         }
     }
-    
+
     _renderGitInfo(info){
         if(info.git){
             let git = info.git;
@@ -138,7 +139,7 @@ export class QwcInfo extends LitElement {
                 </qui-card>`;
         }
     }
-    
+
     _renderCommitId(git){
         if(typeof git.commit.id === "string"){
             return html`${git.commit.id}`;
@@ -146,18 +147,18 @@ export class QwcInfo extends LitElement {
             return html`${git.commit.id.full}`;
         }
     }
-    
+
     _renderOptionalData(git){
         if(typeof git.commit.id !== "string"){
             return html`<tr><td class="row-header">Commit User</td><td>${git.commit.user.name} &lt;${git.commit.user.email}&gt;</td></tr>
                         <tr><td class="row-header">Commit Message</td><td>${unsafeHTML(this._replaceNewLine(git.commit.id.message.full))}</td></tr>`
         }
     }
-    
+
     _replaceNewLine(line){
         return line.replace(new RegExp('\r?\n','g'), '<br />');
     }
-    
+
     _renderBuildInfo(info){
         if(info.build){
             let build = info.build;
@@ -171,6 +172,33 @@ export class QwcInfo extends LitElement {
                         </table>
                     </div>
                 </qui-card>`;
+        }
+    }
+
+    _renderExternalContributedInfo(info){
+        const externalConstributors = Object.keys(info)
+            .filter(key => key !== 'build')
+            .filter(key => key !== 'os')
+            .filter(key => key !== 'git')
+            .filter(key => key !== 'java')
+        if(externalConstributors.length > 0){
+            const cards = [];
+            externalConstributors.map(key => {
+                    const extInfo = info[key];
+                    const rows = [];
+                    for (const property of Object.keys(extInfo)){
+                        rows.push(html`<tr><td class="row-header">${property}</td><td>${extInfo[property]}</td></tr>`);
+                    }
+                    cards.push(html`<qui-card title=${key}>
+                        <div class="cardContent" slot="content">
+                            <vaadin-icon icon="font-awesome-solid:circle-info"></vaadin-icon>
+                            <table class="table">
+                                ${rows}
+                            </table>
+                        </div>
+                    </qui-card>`);
+                })
+            return html`${cards}`;
         }
     }
 }

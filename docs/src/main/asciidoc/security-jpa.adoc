@@ -80,7 +80,7 @@ public class User extends PanacheEntity {
 
 The `security-jpa` extension initializes only if a single entity is annotated with `@UserDefinition`.
 
-<1> The `@UserDefinition` annotation must be present on a single entity, either a regular Hibernate ORM entity or a Hibernate ORM with a Panache entity.
+<1> The `@UserDefinition` annotation must be present on a single entity, either a regular Hibernate ORM entity or a Hibernate ORM with Panache entity.
 <2> Indicates the field used for the username.
 <3> Indicates the field used for the password.
 By default, `security-jpa` uses bcrypt-hashed passwords, or you can configure plain text or custom passwords instead.
@@ -222,6 +222,6 @@ include::{generated-dir}/config/quarkus-security-jpa.adoc[opts=optional, levelof
 
 == References
 
-* xref:security-getting-started-tutorial.adoc[Getting Started with Security by using Basic authentication and Jakarta Persistence]
+* xref:security-getting-started-tutorial.adoc[Getting started with Security by using Basic authentication and Jakarta Persistence]
 * xref:security-identity-providers.adoc[Identity providers]
 * xref:security-overview.adoc[Quarkus Security overview]

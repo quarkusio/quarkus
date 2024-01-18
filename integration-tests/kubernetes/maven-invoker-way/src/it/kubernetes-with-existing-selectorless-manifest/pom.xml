@@ -8,7 +8,7 @@
   <version>0.1-SNAPSHOT</version>
   <properties>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <surefire-plugin.version>3.2.3</surefire-plugin.version>
+    <surefire-plugin.version>3.2.5</surefire-plugin.version>
     <maven.compiler.source>17</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.target>17</maven.compiler.target>

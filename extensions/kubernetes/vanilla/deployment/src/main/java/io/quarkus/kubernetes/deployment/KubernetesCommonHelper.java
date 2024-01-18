@@ -7,6 +7,7 @@ import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_COMMIT_ID;
+import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_QUARKUS_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_VCS_URL;
 import static io.quarkus.kubernetes.deployment.Constants.SERVICE_ACCOUNT;
 
@@ -81,6 +82,7 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.PodSpecBuilder;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRuleBuilder;
+import io.quarkus.builder.Version;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
@@ -977,6 +979,8 @@ public class KubernetesCommonHelper {
             result.add(new DecoratorBuildItem(target, new RemoveAnnotationDecorator(Annotations.VCS_URL)));
             result.add(new DecoratorBuildItem(target, new RemoveAnnotationDecorator(Annotations.COMMIT_ID)));
 
+            result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
+                    new Annotation(QUARKUS_ANNOTATIONS_QUARKUS_VERSION, Version.getVersion(), new String[0]))));
             //Add quarkus vcs annotations
             if (commitId != null && !config.isIdempotent()) {
                 result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,

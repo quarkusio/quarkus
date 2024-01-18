@@ -56,6 +56,7 @@ public class LocalProject {
     private static final String PROJECT_BASEDIR = "${project.basedir}";
     private static final String PROJECT_BUILD_DIR = "${project.build.directory}";
     static final String PROJECT_OUTPUT_DIR = "${project.build.outputDirectory}";
+    static final String PROJECT_GENERATED_SOURCES_DIR = "${project.build.directory}/generated-sources/annotations";
 
     public static final String POM_XML = "pom.xml";
 
@@ -233,6 +234,10 @@ public class LocalProject {
 
     public Path getCodeGenOutputDir() {
         return getOutputDir().resolve("generated-sources");
+    }
+
+    public Path getGeneratedSourcesDir() {
+        return getOutputDir().resolve("generated-sources/annotations");
     }
 
     public Path getClassesDir() {
@@ -424,12 +429,13 @@ public class LocalProject {
 
             if (addDefaultSourceSet) {
                 moduleBuilder.addArtifactSources(new DefaultArtifactSources(ArtifactSources.MAIN,
-                        List.of(new DefaultSourceDir(getSourcesSourcesDir(), getClassesDir())),
+                        List.of(new DefaultSourceDir(getSourcesSourcesDir(), getClassesDir(), getGeneratedSourcesDir())),
                         collectMainResources(null)));
             }
             if (!moduleBuilder.hasTestSources()) {
+                // FIXME: do tests have generated sources?
                 moduleBuilder.addArtifactSources(new DefaultArtifactSources(ArtifactSources.TEST,
-                        List.of(new DefaultSourceDir(getTestSourcesSourcesDir(), getTestClassesDir())),
+                        List.of(new DefaultSourceDir(getTestSourcesSourcesDir(), getTestClassesDir(), null)),
                         collectTestResources(null)));
             }
         }
@@ -502,6 +508,8 @@ public class LocalProject {
         final Collection<SourceDir> sources = List.of(
                 new DefaultSourceDir(new DirectoryPathTree(test ? getTestSourcesSourcesDir() : getSourcesSourcesDir()),
                         new DirectoryPathTree(test ? getTestClassesDir() : getClassesDir(), filter),
+                        // FIXME: wrong for tests
+                        new DirectoryPathTree(test ? getGeneratedSourcesDir() : getGeneratedSourcesDir(), filter),
                         Map.of()));
         final Collection<SourceDir> resources = test ? collectTestResources(filter) : collectMainResources(filter);
         return new DefaultArtifactSources(classifier, sources, resources);
@@ -528,10 +536,13 @@ public class LocalProject {
         final List<Resource> resources = rawModel.getBuild() == null ? List.of()
                 : rawModel.getBuild().getResources();
         final Path classesDir = getClassesDir();
+        final Path generatedSourcesDir = getGeneratedSourcesDir();
         if (resources.isEmpty()) {
             return List.of(new DefaultSourceDir(
                     new DirectoryPathTree(resolveRelativeToBaseDir(null, SRC_MAIN_RESOURCES)),
-                    new DirectoryPathTree(classesDir, filter), Map.of()));
+                    new DirectoryPathTree(classesDir, filter),
+                    new DirectoryPathTree(generatedSourcesDir, filter),
+                    Map.of()));
         }
         final List<SourceDir> sourceDirs = new ArrayList<>(resources.size());
         for (Resource r : resources) {
@@ -540,6 +551,10 @@ public class LocalProject {
                             new DirectoryPathTree(resolveRelativeToBaseDir(r.getDirectory(), SRC_MAIN_RESOURCES)),
                             new DirectoryPathTree((r.getTargetPath() == null ? classesDir
                                     : classesDir.resolve(stripProjectBasedirPrefix(r.getTargetPath(), PROJECT_OUTPUT_DIR))),
+                                    filter),
+                            new DirectoryPathTree((r.getTargetPath() == null ? generatedSourcesDir
+                                    : generatedSourcesDir.resolve(
+                                            stripProjectBasedirPrefix(r.getTargetPath(), PROJECT_GENERATED_SOURCES_DIR))),
                                     filter),
                             Map.of()));
         }
@@ -550,10 +565,14 @@ public class LocalProject {
         final List<Resource> resources = rawModel.getBuild() == null ? List.of()
                 : rawModel.getBuild().getTestResources();
         final Path testClassesDir = getTestClassesDir();
+        final Path generatedSourcesDir = getGeneratedSourcesDir();
         if (resources.isEmpty()) {
             return List.of(new DefaultSourceDir(
                     new DirectoryPathTree(resolveRelativeToBaseDir(null, SRC_TEST_RESOURCES)),
-                    new DirectoryPathTree(testClassesDir, filter), Map.of()));
+                    new DirectoryPathTree(testClassesDir, filter),
+                    // FIXME: do tests have generated sources?
+                    null,
+                    Map.of()));
         }
         final List<SourceDir> sourceDirs = new ArrayList<>(resources.size());
         for (Resource r : resources) {
@@ -563,6 +582,8 @@ public class LocalProject {
                             new DirectoryPathTree((r.getTargetPath() == null ? testClassesDir
                                     : testClassesDir.resolve(stripProjectBasedirPrefix(r.getTargetPath(), PROJECT_OUTPUT_DIR))),
                                     filter),
+                            // FIXME: do tests have generated sources?
+                            null,
                             Map.of()));
         }
         return sourceDirs;

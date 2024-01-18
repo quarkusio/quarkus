@@ -29,7 +29,7 @@ public class KeycloakXTestResourceLifecycleManager implements QuarkusTestResourc
     private static String KEYCLOAK_SERVER_URL;
     private static final String KEYCLOAK_REALM = "quarkus";
     private static final String KEYCLOAK_SERVICE_CLIENT = "quarkus-service-app";
-    private static final String KEYCLOAK_VERSION = System.getProperty("keycloak.version");
+    private static final String KEYCLOAK_VERSION = System.getProperty("keycloak.version", "23.0.1");
 
     private static String CLIENT_KEYSTORE = "client-keystore.jks";
     private static String CLIENT_TRUSTSTORE = "client-truststore.jks";

@@ -26,6 +26,7 @@ public class OpenshiftWithLegacySidecarAndS2iTest {
             .setApplicationName("openshift-sidecar-test")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("openshift-with-legacy-sidecar-and-s2i.properties")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config")
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));
 
     @ProdBuildResults

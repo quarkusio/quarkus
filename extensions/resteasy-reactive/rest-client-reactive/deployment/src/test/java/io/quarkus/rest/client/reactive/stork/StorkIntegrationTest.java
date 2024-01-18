@@ -15,8 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.rest.client.reactive.HelloClient2;
-import io.quarkus.rest.client.reactive.HelloResource;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.stork.api.NoSuchServiceDefinitionException;
 
@@ -24,45 +22,58 @@ public class StorkIntegrationTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloClient2.class, HelloResource.class))
+                    .addClasses(HelloClient.class, HelloResource.class))
             .withConfigurationResource("stork-application.properties");
 
     @RestClient
-    HelloClient2 client;
+    HelloClient client;
 
     @Test
     void shouldDetermineUrlViaStork() {
         String greeting = RestClientBuilder.newBuilder().baseUri(URI.create("stork://hello-service/hello"))
-                .build(HelloClient2.class)
+                .build(HelloClient.class)
                 .echo("black and white bird");
         assertThat(greeting).isEqualTo("hello, black and white bird");
+
+        greeting = RestClientBuilder.newBuilder().baseUri(URI.create("stork://hello-service/hello"))
+                .build(HelloClient.class)
+                .helloWithPathParam("black and white bird");
+        assertThat(greeting).isEqualTo("Hello, black and white bird");
     }
 
     @Test
     void shouldDetermineUrlViaStorkWhenUsingTarget() throws URISyntaxException {
-        String greeting = ClientBuilder.newClient().target("stork://hello-service/hello").request().get(String.class);
-        assertThat(greeting).isEqualTo("Hello");
+        String greeting = ClientBuilder.newClient().target("stork://hello-service/hello").request()
+                .get(String.class);
+        assertThat(greeting).isEqualTo("Hello, World!");
 
         greeting = ClientBuilder.newClient().target(new URI("stork://hello-service/hello")).request().get(String.class);
-        assertThat(greeting).isEqualTo("Hello");
+        assertThat(greeting).isEqualTo("Hello, World!");
 
         greeting = ClientBuilder.newClient().target(UriBuilder.fromUri("stork://hello-service/hello")).request()
                 .get(String.class);
-        assertThat(greeting).isEqualTo("Hello");
+        assertThat(greeting).isEqualTo("Hello, World!");
+
+        greeting = ClientBuilder.newClient().target("stork://hello-service/hello").path("big bird").request()
+                .get(String.class);
+        assertThat(greeting).isEqualTo("Hello, big bird");
     }
 
     @Test
     void shouldDetermineUrlViaStorkCDI() {
         String greeting = client.echo("big bird");
         assertThat(greeting).isEqualTo("hello, big bird");
+
+        greeting = client.helloWithPathParam("big bird");
+        assertThat(greeting).isEqualTo("Hello, big bird");
     }
 
     @Test
     @Timeout(20)
     void shouldFailOnUnknownService() {
-        HelloClient2 client2 = RestClientBuilder.newBuilder()
+        HelloClient client = RestClientBuilder.newBuilder()
                 .baseUri(URI.create("stork://nonexistent-service"))
-                .build(HelloClient2.class);
-        assertThatThrownBy(() -> client2.echo("foo")).isInstanceOf(NoSuchServiceDefinitionException.class);
+                .build(HelloClient.class);
+        assertThatThrownBy(() -> client.echo("foo")).isInstanceOf(NoSuchServiceDefinitionException.class);
     }
 }

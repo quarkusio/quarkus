@@ -3,15 +3,14 @@ package io.quarkus.bootstrap.model;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
@@ -42,24 +41,20 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
 
     @Override
     public Collection<ResolvedDependency> getDependencies() {
-        var result = new ArrayList<ResolvedDependency>(dependencies.size());
-        for (var d : getDependencies(DependencyFlags.DEPLOYMENT_CP)) {
-            result.add(d);
-        }
-        return result;
+        return collectDependencies(DependencyFlags.DEPLOYMENT_CP);
     }
 
     @Override
     public Collection<ResolvedDependency> getRuntimeDependencies() {
-        var result = new ArrayList<ResolvedDependency>();
-        for (var d : getDependencies(DependencyFlags.RUNTIME_CP)) {
-            result.add(d);
-        }
-        return result;
+        return collectDependencies(DependencyFlags.RUNTIME_CP);
     }
 
     @Override
     public Iterable<ResolvedDependency> getDependencies(int flags) {
+        return new FlagDependencyIterator(new int[] { flags });
+    }
+
+    public Iterable<ResolvedDependency> getDependenciesWithAnyFlag(int... flags) {
         return new FlagDependencyIterator(flags);
     }
 
@@ -75,20 +70,17 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
 
     @Override
     public Set<ArtifactKey> getParentFirst() {
-        return getDependencies().stream().filter(Dependency::isClassLoaderParentFirst).map(Dependency::getKey)
-                .collect(Collectors.toSet());
+        return collectKeys(DependencyFlags.DEPLOYMENT_CP | DependencyFlags.CLASSLOADER_PARENT_FIRST);
     }
 
     @Override
     public Set<ArtifactKey> getRunnerParentFirst() {
-        return getDependencies().stream().filter(d -> d.isFlagSet(DependencyFlags.CLASSLOADER_RUNNER_PARENT_FIRST))
-                .map(Dependency::getKey).collect(Collectors.toSet());
+        return collectKeys(DependencyFlags.DEPLOYMENT_CP | DependencyFlags.CLASSLOADER_RUNNER_PARENT_FIRST);
     }
 
     @Override
     public Set<ArtifactKey> getLowerPriorityArtifacts() {
-        return getDependencies().stream().filter(d -> d.isFlagSet(DependencyFlags.CLASSLOADER_LESSER_PRIORITY))
-                .map(Dependency::getKey).collect(Collectors.toSet());
+        return collectKeys(DependencyFlags.DEPLOYMENT_CP | DependencyFlags.CLASSLOADER_LESSER_PRIORITY);
     }
 
     @Override
@@ -101,11 +93,27 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
         return excludedResources;
     }
 
+    private Collection<ResolvedDependency> collectDependencies(int flags) {
+        var result = new ArrayList<ResolvedDependency>();
+        for (var d : getDependencies(flags)) {
+            result.add(d);
+        }
+        return result;
+    }
+
+    private Set<ArtifactKey> collectKeys(int flags) {
+        var keys = new HashSet<ArtifactKey>();
+        for (var d : getDependencies(flags)) {
+            keys.add(d.getKey());
+        }
+        return keys;
+    }
+
     private class FlagDependencyIterator implements Iterable<ResolvedDependency> {
 
-        private final int flags;
+        private final int[] flags;
 
-        private FlagDependencyIterator(int flags) {
+        private FlagDependencyIterator(int[] flags) {
             this.flags = flags;
         }
 
@@ -139,7 +147,7 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
                     next = null;
                     while (i.hasNext()) {
                         var d = i.next();
-                        if ((d.getFlags() & flags) == flags) {
+                        if (d.hasAnyFlag(flags)) {
                             next = d;
                             break;
                         }

@@ -28,7 +28,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

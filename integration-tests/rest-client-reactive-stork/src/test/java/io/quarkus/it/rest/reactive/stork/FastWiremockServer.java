@@ -1,6 +1,7 @@
 package io.quarkus.it.rest.reactive.stork;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathTemplate;
 
 import java.util.Map;
 
@@ -24,6 +25,8 @@ public class FastWiremockServer extends WiremockBase {
     @Override
     protected Map<String, String> initWireMock(WireMockServer server) {
         server.stubFor(WireMock.get("/hello")
+                .willReturn(aResponse().withBody(FAST_RESPONSE).withStatus(200)));
+        server.stubFor(WireMock.get(urlPathTemplate("/hello/v2/{name}"))
                 .willReturn(aResponse().withBody(FAST_RESPONSE).withStatus(200)));
         return Map.of("fast-service", "localhost:8443");
     }

@@ -104,7 +104,7 @@ public class ArcContainerImpl implements ArcContainer {
 
     private final boolean strictMode;
 
-    public ArcContainerImpl(CurrentContextFactory currentContextFactory, boolean strictMode, boolean optimizeContexts) {
+    public ArcContainerImpl(CurrentContextFactory currentContextFactory, boolean strictMode) {
         this.strictMode = strictMode;
         id = String.valueOf(ID_GENERATOR.incrementAndGet());
         running = new AtomicBoolean(true);

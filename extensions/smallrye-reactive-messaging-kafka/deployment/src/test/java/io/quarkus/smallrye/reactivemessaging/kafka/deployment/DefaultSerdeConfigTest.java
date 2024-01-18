@@ -59,6 +59,7 @@ import io.smallrye.reactive.messaging.TargetedMessages;
 import io.smallrye.reactive.messaging.kafka.KafkaRecord;
 import io.smallrye.reactive.messaging.kafka.KafkaRecordBatch;
 import io.smallrye.reactive.messaging.kafka.Record;
+import io.smallrye.reactive.messaging.kafka.reply.KafkaRequestReply;
 import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -2917,6 +2918,45 @@ public class DefaultSerdeConfigTest {
         TargetedMessages method2(String msg) {
             return null;
         }
+
+    }
+
+    @Test
+    void kafkaRequestReply() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "org.apache.kafka.common.serialization.StringSerializer"),
+                tuple("mp.messaging.outgoing.channel1.reply.value.deserializer", "org.apache.kafka.common.serialization.IntegerDeserializer"),
+                tuple("mp.messaging.outgoing.channel2.key.serializer", "org.apache.kafka.common.serialization.LongSerializer"),
+                tuple("mp.messaging.outgoing.channel2.value.serializer", "org.apache.kafka.common.serialization.StringSerializer"),
+                tuple("mp.messaging.outgoing.channel2.reply.value.deserializer", "org.apache.kafka.common.serialization.IntegerDeserializer"),
+                tuple("mp.messaging.outgoing.channel3.key.serializer", "org.apache.kafka.common.serialization.LongSerializer"),
+                tuple("mp.messaging.outgoing.channel3.value.serializer", "org.apache.kafka.common.serialization.StringSerializer"),
+                tuple("mp.messaging.outgoing.channel3.reply.key.deserializer", "org.apache.kafka.common.serialization.IntegerDeserializer"),
+                tuple("mp.messaging.outgoing.channel3.reply.value.deserializer", "org.apache.kafka.common.serialization.IntegerDeserializer"),
+                tuple("mp.messaging.outgoing.channel4.value.serializer", "io.apicurio.registry.serde.avro.AvroKafkaSerializer"),
+                tuple("mp.messaging.outgoing.channel4.reply.key.deserializer", "org.apache.kafka.common.serialization.IntegerDeserializer"),
+                tuple("mp.messaging.outgoing.channel4.reply.value.deserializer", "io.quarkus.kafka.client.serialization.JsonObjectDeserializer"),
+        };
+        doTest(expectations, AvroDto.class, RequestReply.class);
+    }
+
+    private static class RequestReply {
+
+        @Inject
+        @Channel("channel1")
+        KafkaRequestReply<String, Integer> requestReply;
+
+        @Inject
+        @Channel("channel2")
+        KafkaRequestReply<ProducerRecord<Long, String>, Integer> requestReply2;
+
+        @Inject
+        @Channel("channel3")
+        KafkaRequestReply<Record<Long, String>, Record<Integer, Integer>> requestReply3;
+
+        @Inject
+        @Channel("channel4")
+        KafkaRequestReply<AvroDto, ConsumerRecord<Integer, JsonObject>> requestReply4;
 
     }
 

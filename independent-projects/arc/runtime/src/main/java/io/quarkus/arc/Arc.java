@@ -35,8 +35,7 @@ public final class Arc {
                 container = INSTANCE.get();
                 if (container == null) {
                     // Set the container instance first because Arc.container() can be used within ArcContainerImpl.init()
-                    container = new ArcContainerImpl(config.getCurrentContextFactory(),
-                            config.isStrictCompatibility(), config.isOptimizeContexts());
+                    container = new ArcContainerImpl(config.getCurrentContextFactory(), config.isStrictCompatibility());
                     INSTANCE.set(container);
                     container.init();
                 }

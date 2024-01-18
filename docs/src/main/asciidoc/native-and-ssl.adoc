@@ -30,7 +30,7 @@ This guide is based on the REST client guide, so you should get this Maven proje
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The project is located in the `rest-client-quickstart` link:{quickstarts-tree-url}/rest-client-quickstart[directory].
+The project is located in the `resteasy-client-quickstart` link:{quickstarts-tree-url}/resteasy-client-quickstart[directory].
 
 == Looks like it works out of the box?!?
 
@@ -106,7 +106,7 @@ As SSL is de facto the standard nowadays, we decided to enable its support autom
  * the Reactive client for MySQL extension (`quarkus-reactive-mysql-client`),
  * the Reactive client for Microsoft SQL Server extension (`quarkus-reactive-mssql-client`),
  * the Redis client extension (`quarkus-redis-client`),
- * the REST Client extension (`quarkus-rest-client`),
+ * the RESTEasy Classic REST Client extension (`quarkus-resteasy-client`),
  * the REST Client Reactive extension (`quarkus-rest-client-reactive`),
  * the SmallRye GraphQL Client extension (`quarkus-smallrye-graphql-client`),
  * the Spring Cloud Config client extension (`quarkus-spring-cloud-config-client`),
@@ -126,7 +126,7 @@ Now, let's just check the size of our native executable as it will be useful lat
 
 [source,shell]
 ----
-$ ls -lh target/rest-client-quickstart-1.0.0-SNAPSHOT-runner
+$ ls -lh target/resteasy-client-quickstart-1.0.0-SNAPSHOT-runner
 -rwxrwxr-x. 1 gandrian gandrian 46M Jun 11 13:01 target/rest-client-quickstart-1.0.0-SNAPSHOT-runner
 ----
 
@@ -193,8 +193,8 @@ Let's check again with SSL support entirely disabled:
 
 [source,shell]
 ----
-$ ls -lh target/rest-client-quickstart-1.0.0-SNAPSHOT-runner
--rwxrwxr-x. 1 gandrian gandrian 35M Jun 11 13:06 target/rest-client-quickstart-1.0.0-SNAPSHOT-runner
+$ ls -lh target/resteasy-client-quickstart-1.0.0-SNAPSHOT-runner
+-rwxrwxr-x. 1 gandrian gandrian 35M Jun 11 13:06 target/resteasy-client-quickstart-1.0.0-SNAPSHOT-runner
 ----
 
 Yes, it is now **35 MB** whereas it used to be **46 MB**. SSL comes with an 11 MB overhead in native executable size.

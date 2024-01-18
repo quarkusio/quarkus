@@ -1,6 +1,5 @@
 package io.quarkus.bootstrap.util;
 
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -12,9 +11,15 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
 
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
+import io.quarkus.paths.PathList;
 
 public class DependencyUtils {
 
@@ -61,16 +66,13 @@ public class DependencyUtils {
     }
 
     public static Artifact toArtifact(String str) {
-        return toArtifact(str, 0);
-    }
-
-    private static Artifact toArtifact(String str, int offset) {
-        String groupId = null;
-        String artifactId = null;
+        final String groupId;
+        final String artifactId;
         String classifier = ArtifactCoords.DEFAULT_CLASSIFIER;
         String type = ArtifactCoords.TYPE_JAR;
         String version = null;
 
+        int offset = 0;
         int colon = str.indexOf(':', offset);
         final int length = str.length();
         if (colon < offset + 1 || colon == length - 1) {
@@ -117,29 +119,37 @@ public class DependencyUtils {
                 + ", expected format is <groupId>:<artifactId>[:<extension>|[:<classifier>:<extension>]]:<version>");
     }
 
-    public static void printTree(DependencyNode node) {
-        PrintWriter out = new PrintWriter(System.out);
-        try {
-            printTree(node, out);
-        } finally {
-            out.flush();
+    public static ResolvedDependencyBuilder newDependencyBuilder(DependencyNode node, MavenArtifactResolver resolver)
+            throws BootstrapMavenException {
+        var artifact = node.getDependency().getArtifact();
+        if (artifact.getFile() == null) {
+            artifact = resolver.resolve(artifact, node.getRepositories()).getArtifact();
         }
-    }
-
-    public static void printTree(DependencyNode node, PrintWriter out) {
-        out.println("Dependency tree for " + node.getArtifact());
-        printTree(node, 0, out);
-    }
-
-    private static void printTree(DependencyNode node, int depth, PrintWriter out) {
-        if (node.getArtifact() != null) {
-            for (int i = 0; i < depth; ++i) {
-                out.append("  ");
+        int flags = 0;
+        if (node.getDependency().isOptional()) {
+            flags |= DependencyFlags.OPTIONAL;
+        }
+        WorkspaceModule module = null;
+        if (resolver.getProjectModuleResolver() != null) {
+            module = resolver.getProjectModuleResolver().getProjectModule(artifact.getGroupId(), artifact.getArtifactId(),
+                    artifact.getVersion());
+            if (module != null) {
+                flags |= DependencyFlags.WORKSPACE_MODULE;
             }
-            out.println(node.getArtifact());
         }
-        for (DependencyNode c : node.getChildren()) {
-            printTree(c, depth + 1, out);
-        }
+        return toAppArtifact(artifact, module)
+                .setScope(node.getDependency().getScope())
+                .setFlags(flags);
+    }
+
+    public static ResolvedDependencyBuilder toAppArtifact(Artifact artifact, WorkspaceModule module) {
+        return ResolvedDependencyBuilder.newInstance()
+                .setWorkspaceModule(module)
+                .setGroupId(artifact.getGroupId())
+                .setArtifactId(artifact.getArtifactId())
+                .setClassifier(artifact.getClassifier())
+                .setType(artifact.getExtension())
+                .setVersion(artifact.getVersion())
+                .setResolvedPaths(artifact.getFile() == null ? PathList.empty() : PathList.of(artifact.getFile().toPath()));
     }
 }

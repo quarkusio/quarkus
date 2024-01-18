@@ -37,6 +37,10 @@
             <groupId>org.eclipse.angus</groupId>
             <artifactId>angus-activation</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc</artifactId>
+        </dependency>
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -122,6 +126,19 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
@@ -150,6 +167,7 @@
                 <executions>
                     <execution>
                         <goals>
+                            <goal>generate-code</goal>
                             <goal>build</goal>
                         </goals>
                     </execution>
@@ -192,6 +210,7 @@
                         <executions>
                             <execution>
                                 <goals>
+                                    <goal>generate-code</goal>
                                     <goal>build</goal>
                                 </goals>
                             </execution>

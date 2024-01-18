@@ -98,6 +98,31 @@ public class ElasticsearchDevServicesBuildTimeConfig {
     @ConfigItem
     public Map<String, String> containerEnv;
 
+    /**
+     * Whether to keep Dev Service containers running *after a dev mode session or test suite execution*
+     * to reuse them in the next dev mode session or test suite execution.
+     *
+     * Within a dev mode session or test suite execution,
+     * Quarkus will always reuse Dev Services as long as their configuration
+     * (username, password, environment, port bindings, ...) did not change.
+     * This feature is specifically about keeping containers running
+     * **when Quarkus is not running** to reuse them across runs.
+     *
+     * WARNING: This feature needs to be enabled explicitly in `testcontainers.properties`,
+     * may require changes to how you configure data initialization in dev mode and tests,
+     * and may leave containers running indefinitely, forcing you to stop and remove them manually.
+     * See xref:elasticsearch-dev-services.adoc#reuse[this section of the documentation] for more information.
+     *
+     * This configuration property is set to `true` by default,
+     * so it is mostly useful to *disable* reuse,
+     * if you enabled it in `testcontainers.properties`
+     * but only want to use it for some of your Quarkus applications.
+     *
+     * @asciidoclet
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean reuse;
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -112,12 +137,13 @@ public class ElasticsearchDevServicesBuildTimeConfig {
                 && Objects.equals(imageName, that.imageName)
                 && Objects.equals(javaOpts, that.javaOpts)
                 && Objects.equals(serviceName, that.serviceName)
-                && Objects.equals(containerEnv, that.containerEnv);
+                && Objects.equals(containerEnv, that.containerEnv)
+                && Objects.equals(reuse, that.reuse);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enabled, port, distribution, imageName, javaOpts, shared, serviceName, containerEnv);
+        return Objects.hash(enabled, port, distribution, imageName, javaOpts, shared, serviceName, containerEnv, reuse);
     }
 
     public enum Distribution {

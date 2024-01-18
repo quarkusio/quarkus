@@ -19,8 +19,8 @@
         <!-- Maven plugin versions -->
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
-        <compiler-plugin.version>3.11.0</compiler-plugin.version>
-        <kotlin.version>1.9.21</kotlin.version>
+        <compiler-plugin.version>3.12.1</compiler-plugin.version>
+        <kotlin.version>1.9.22</kotlin.version>
         <dokka.version>1.9.10</dokka.version>
         <scala.version>2.13.12</scala.version>
         <scala-maven-plugin.version>4.8.1</scala-maven-plugin.version>
@@ -28,7 +28,7 @@
         <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
 
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
-        <version.surefire.plugin>3.2.3</version.surefire.plugin>
+        <version.surefire.plugin>3.2.5</version.surefire.plugin>
         <version.exec.plugin>3.0.0</version.exec.plugin>
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
@@ -36,9 +36,9 @@
         <jandex.version>3.1.6</jandex.version>
         <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
-        <asciidoctorj.version>2.5.10</asciidoctorj.version>
+        <asciidoctorj.version>2.5.11</asciidoctorj.version>
         <htmlunit.version>2.70.0</htmlunit.version>
-        <javaparser-core.version>3.25.6</javaparser-core.version>
+        <javaparser-core.version>3.25.8</javaparser-core.version>
         <jdeparser.version>2.0.3.Final</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
 
@@ -104,14 +104,14 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
-        <keycloak.version>23.0.1</keycloak.version>
+        <keycloak.version>23.0.3</keycloak.version>
         <keycloak.wildfly.version>19.0.3</keycloak.wildfly.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
 
         <unboundid-ldap.version>6.0.11</unboundid-ldap.version>
 
-        <assertj.version>3.24.2</assertj.version>
+        <assertj.version>3.25.1</assertj.version>
 
         <wiremock.version>3.3.1</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
@@ -751,6 +751,9 @@
                                     <externalRules>
                                         <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
                                     </externalRules>
+                                    <externalRules>
+                                        <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
+                                    </externalRules>
                                 </rules>
                             </configuration>
                             <goals>
@@ -914,7 +917,7 @@
                         <dependency>
                             <groupId>org.apache.groovy</groupId>
                             <artifactId>groovy</artifactId>
-                            <version>4.0.16</version>
+                            <version>4.0.17</version>
                         </dependency>
                     </dependencies>
                 </plugin>

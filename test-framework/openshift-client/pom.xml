@@ -56,4 +56,40 @@
             <artifactId>jakarta.xml.bind-api</artifactId>
         </dependency>
     </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>enforce</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <rules combine-self="override">
+                                    <dependencyConvergence />
+                                    <externalRules>
+                                        <location>
+                                            classpath:enforcer-rules/quarkus-require-java-version.xml</location>
+                                    </externalRules>
+                                    <externalRules>
+                                        <location>
+                                            classpath:enforcer-rules/quarkus-require-maven-version.xml</location>
+                                    </externalRules>
+                                    <externalRules>
+                                        <location>
+                                            classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                                    </externalRules>
+                                </rules>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>

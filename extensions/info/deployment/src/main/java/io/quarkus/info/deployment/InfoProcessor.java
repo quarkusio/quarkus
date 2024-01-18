@@ -26,6 +26,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.builder.Version;
@@ -45,7 +46,7 @@ import io.quarkus.info.runtime.InfoRecorder;
 import io.quarkus.info.runtime.spi.InfoContributor;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 
 public class InfoProcessor {
 
@@ -274,6 +275,7 @@ public class InfoProcessor {
             List<InfoBuildTimeValuesBuildItem> buildTimeValues,
             List<InfoBuildTimeContributorBuildItem> contributors,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeanBuildItemBuildProducer,
             InfoRecorder recorder) {
         Map<String, Object> buildTimeInfo = buildTimeValues.stream().collect(
                 Collectors.toMap(InfoBuildTimeValuesBuildItem::getName, InfoBuildTimeValuesBuildItem::getValue, (x, y) -> y,
@@ -281,13 +283,12 @@ public class InfoProcessor {
         List<InfoContributor> infoContributors = contributors.stream()
                 .map(InfoBuildTimeContributorBuildItem::getInfoContributor)
                 .collect(Collectors.toList());
-        return nonApplicationRootPathBuildItem.routeBuilder()
-                .management()
-                .route(buildTimeConfig.path())
-                .routeConfigKey("quarkus.info.path")
-                .handler(recorder.handler(buildTimeInfo, infoContributors))
-                .displayOnNotFoundPage()
-                .blockingRoute()
+
+        unremovableBeanBuildItemBuildProducer.produce(UnremovableBeanBuildItem.beanTypes(InfoContributor.class));
+
+        return RouteBuildItem.newManagementRoute(buildTimeConfig.path())
+                .withRoutePathConfigKey("quarkus.info.path")
+                .withRequestHandler(recorder.handler(buildTimeInfo, infoContributors))
                 .build();
     }
 }

@@ -18,6 +18,8 @@ public final class GraalVM {
         private static final String JVMCI_BUILD_PREFIX = "jvmci-";
         private static final String MANDREL_VERS_PREFIX = "Mandrel-";
 
+        private static final String LIBERICA_NIK_VERS_PREFIX = "Liberica-NIK-";
+
         // Java version info (suitable for Runtime.Version.parse()). See java.lang.VersionProps
         private static final String VNUM = "(?<VNUM>[1-9][0-9]*(?:(?:\\.0)*\\.[1-9][0-9]*)*)";
         private static final String PRE = "(?:-(?<PRE>[a-zA-Z0-9]+))?";
@@ -68,17 +70,45 @@ public final class GraalVM {
                 if (vendorVersion.contains("-dev")) {
                     graalVersion = graalVersion + "-dev";
                 }
-                String mandrelVersion = mandrelVersion(vendorVersion);
-                Distribution dist = isMandrel(vendorVersion) ? Distribution.MANDREL : Distribution.GRAALVM;
-                String versNum = (dist == Distribution.MANDREL ? mandrelVersion : graalVersion);
+                String versNum;
+                Distribution dist;
+                if (isMandrel(vendorVersion)) {
+                    dist = Distribution.MANDREL;
+                    versNum = mandrelVersion(vendorVersion);
+                } else if (isLiberica(vendorVersion)) {
+                    dist = Distribution.LIBERICA;
+                    versNum = libericaVersion(vendorVersion);
+                } else {
+                    dist = Distribution.GRAALVM;
+                    versNum = graalVersion;
+                }
                 if (versNum == null) {
                     return UNKNOWN_VERSION;
                 }
-                return new Version(lines.stream().collect(Collectors.joining("\n")),
+                return new Version(String.join("\n", lines),
                         versNum, v, dist);
             } else {
                 return UNKNOWN_VERSION;
             }
+        }
+
+        private static boolean isLiberica(String vendorVersion) {
+            if (vendorVersion == null) {
+                return false;
+            }
+            return !vendorVersion.isBlank() && vendorVersion.startsWith(LIBERICA_NIK_VERS_PREFIX);
+        }
+
+        private static String libericaVersion(String vendorVersion) {
+            if (vendorVersion == null) {
+                return null;
+            }
+            int idx = vendorVersion.indexOf(LIBERICA_NIK_VERS_PREFIX);
+            if (idx < 0) {
+                return null;
+            }
+            String version = vendorVersion.substring(idx + LIBERICA_NIK_VERS_PREFIX.length());
+            return matchVersion(version);
         }
 
         private static boolean isMandrel(String vendorVersion) {
@@ -244,7 +274,7 @@ public final class GraalVM {
             String stringOutput = output.collect(Collectors.joining("\n"));
             List<String> lines = stringOutput.lines()
                     .dropWhile(l -> !l.startsWith("GraalVM") && !l.startsWith("native-image"))
-                    .collect(Collectors.toUnmodifiableList());
+                    .toList();
 
             if (lines.size() == 3) {
                 // Attempt to parse the new 3-line version scheme first.
@@ -322,6 +352,7 @@ public final class GraalVM {
 
     enum Distribution {
         GRAALVM,
+        LIBERICA,
         MANDREL;
     }
 }

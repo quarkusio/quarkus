@@ -5,7 +5,6 @@ import static org.hamcrest.CoreMatchers.not;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Supplier;
@@ -243,10 +242,6 @@ public class MultipartInputTest extends AbstractMultipartTest {
 
     private String filePath(File file) {
         return file.toPath().toAbsolutePath().toString();
-    }
-
-    private String fileSizeAsStr(File file) throws IOException {
-        return "" + Files.readAllBytes(file.toPath()).length;
     }
 
 }

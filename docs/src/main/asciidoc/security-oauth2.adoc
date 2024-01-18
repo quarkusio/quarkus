@@ -22,8 +22,6 @@ This extension provides a light-weight support for using the opaque Bearer Token
 If the OAuth2 Authentication server provides JWT Bearer Tokens, consider using either xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication] or xref:security-jwt.adoc[SmallRye JWT] extensions instead.
 OpenID Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow. For more information, see the xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications] guide.
 
-include::{includes}/extension-status.adoc[]
-
 == Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.

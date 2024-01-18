@@ -3,6 +3,8 @@ package io.quarkus.resteasy.reactive.server.test.multipart;
 import static org.awaitility.Awaitility.await;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.Callable;
@@ -39,5 +41,9 @@ abstract class AbstractMultipartTest {
                         return isDirectoryEmpty(uploadDir);
                     }
                 });
+    }
+
+    protected String fileSizeAsStr(File file) throws IOException {
+        return "" + Files.readAllBytes(file.toPath()).length;
     }
 }

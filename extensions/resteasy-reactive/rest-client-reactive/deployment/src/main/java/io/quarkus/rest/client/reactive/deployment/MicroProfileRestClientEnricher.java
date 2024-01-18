@@ -50,6 +50,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.api.ClientMultipartForm;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
@@ -137,8 +138,8 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
     private static final MethodDescriptor MULTIVALUED_MAP_ADD_ALL_METHOD = MethodDescriptor.ofMethod(MultivaluedMap.class,
             "addAll", void.class, Object.class, List.class);
     private static final MethodDescriptor QUARKUS_MULTIPART_FORM_ATTRIBUTE_METHOD = MethodDescriptor.ofMethod(
-            QuarkusMultipartForm.class,
-            "attribute", QuarkusMultipartForm.class, String.class, String.class, String.class);
+            ClientMultipartForm.class,
+            "attribute", ClientMultipartForm.class, String.class, String.class, String.class);
 
     private static final Type STRING_TYPE = Type.create(DotName.STRING_NAME, Type.Kind.CLASS);
 

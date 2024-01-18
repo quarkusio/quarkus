@@ -41,6 +41,14 @@ public interface ApplicationModel {
     Iterable<ResolvedDependency> getDependencies(int flags);
 
     /**
+     * Returns application dependencies that have any of the flags passed in as arguments set.
+     *
+     * @param flags dependency flags to match
+     * @return application dependencies that matched the flags
+     */
+    Iterable<ResolvedDependency> getDependenciesWithAnyFlag(int... flags);
+
+    /**
      * Runtime dependencies of an application
      *
      * @return runtime dependencies of an application

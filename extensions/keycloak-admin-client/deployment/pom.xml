@@ -19,15 +19,15 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-jaxb-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-jaxb-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-jackson-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-jackson-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

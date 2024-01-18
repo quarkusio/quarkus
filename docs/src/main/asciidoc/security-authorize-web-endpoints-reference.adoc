@@ -924,5 +924,5 @@ CAUTION: Annotation-based permissions do not work with custom xref:security-cust
 * xref:security-architecture.adoc[Quarkus Security architecture]
 * xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
 * xref:security-basic-authentication.adoc[Basic authentication]
-* xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence]
+* xref:security-getting-started-tutorial.adoc[Getting started with Security by using Basic authentication and Jakarta Persistence]
 * xref:security-oidc-bearer-token-authentication.adoc#token-scopes-and-security-identity-permissions[OpenID Connect Bearer Token Scopes And SecurityIdentity Permissions]

@@ -28,6 +28,13 @@ jobs:
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
           skip-comment: true
           skip-summary: true
+      - name: Output JSON file
+        run: |
+          if [ -f "${{ steps.publish.outputs.build-metadata-file-path }}" ]; then
+            echo "```json" >> $GITHUB_STEP_SUMMARY
+            jq '.' ${{ steps.publish.outputs.build-metadata-file-path }} >> $GITHUB_STEP_SUMMARY
+            echo "\n```" >> $GITHUB_STEP_SUMMARY;
+          fi
       - name: Inject build scans in reports
         uses: quarkusio/action-helpers@main
         with:
@@ -35,7 +42,3 @@ jobs:
           action: inject-build-scans
           workflow-run-id: ${{ github.event.workflow_run.id }}
           build-metadata-file-path: ${{ steps.publish.outputs.build-metadata-file-path }}
-      - name: Output JSON file
-        run: |
-          if [ -f "${{ steps.publish.outputs.build-metadata-file-path }}" ]; then jq '.' ${{ steps.publish.outputs.build-metadata-file-path }} >> $GITHUB_STEP_SUMMARY; fi
-

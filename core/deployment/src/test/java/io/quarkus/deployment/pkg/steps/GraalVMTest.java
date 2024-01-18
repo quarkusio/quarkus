@@ -105,6 +105,18 @@ public class GraalVMTest {
     }
 
     @Test
+    public void testGraalVM21LibericaVersionParser() {
+        Version graalVM21Dev = Version.of(Stream.of(("native-image 21.0.1 2023-10-17\n"
+                + "GraalVM Runtime Environment Liberica-NIK-23.1.1-1 (build 21.0.1+12-LTS)\n"
+                + "Substrate VM Liberica-NIK-23.1.1-1 (build 21.0.1+12-LTS, serial gc)").split("\\n")));
+        assertThat(graalVM21Dev.distribution.name()).isEqualTo("LIBERICA");
+        assertThat(graalVM21Dev.getVersionAsString()).isEqualTo("23.1.1");
+        assertThat(graalVM21Dev.javaVersion.toString()).isEqualTo("21.0.1+12-LTS");
+        assertThat(graalVM21Dev.javaVersion.feature()).isEqualTo(21);
+        assertThat(graalVM21Dev.javaVersion.update()).isEqualTo(1);
+    }
+
+    @Test
     public void testGraalVM21VersionParser() {
         Version graalVM21Dev = Version.of(Stream.of(("native-image 21 2023-09-19\n"
                 + "GraalVM Runtime Environment GraalVM CE 21+35.1 (build 21+35-jvmci-23.1-b15)\n"

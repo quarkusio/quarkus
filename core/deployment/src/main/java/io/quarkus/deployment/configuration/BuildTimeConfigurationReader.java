@@ -508,9 +508,16 @@ public final class BuildTimeConfigurationReader {
                 nameBuilder.setLength(0);
             }
 
+            // Register defaults for Roots
             allBuildTimeValues.putAll(getDefaults(buildTimePatternMap));
             buildTimeRunTimeValues.putAll(getDefaults(buildTimeRunTimePatternMap));
             runTimeDefaultValues.putAll(getDefaults(runTimePatternMap));
+
+            // Register defaults for Mappings
+            // Runtime defaults are added in ConfigGenerationBuildStep.generateBuilders to include user mappings
+            for (ConfigClassWithPrefix buildTimeRunTimeMapping : buildTimeRunTimeMappings) {
+                buildTimeRunTimeValues.putAll(ConfigMappings.getDefaults(buildTimeRunTimeMapping));
+            }
 
             SmallRyeConfig runtimeDefaultsConfig = getConfigForRuntimeDefaults();
             Set<String> registeredRoots = allRoots.stream().map(RootDefinition::getName).collect(toSet());

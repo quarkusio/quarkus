@@ -33,7 +33,7 @@ public class KafkaDevServicesBuildTimeConfig {
      * Redpanda, Strimzi and kafka-native container providers are supported. Default is redpanda.
      * <p>
      * For Redpanda:
-     * See https://vectorized.io/docs/quick-start-docker/ and https://hub.docker.com/r/vectorized/redpanda
+     * See https://docs.redpanda.com/current/get-started/quick-start/ and https://hub.docker.com/r/vectorized/redpanda
      * <p>
      * For Strimzi:
      * See https://github.com/strimzi/test-container and https://quay.io/repository/strimzi-test-container/test-container
@@ -123,9 +123,9 @@ public class KafkaDevServicesBuildTimeConfig {
     public Map<String, String> containerEnv;
 
     /**
-     * Allows configuring the Red Panda broker.
+     * Allows configuring the Redpanda broker.
      */
     @ConfigItem
-    public RedPandaBuildTimeConfig redpanda;
+    public RedpandaBuildTimeConfig redpanda;
 
 }

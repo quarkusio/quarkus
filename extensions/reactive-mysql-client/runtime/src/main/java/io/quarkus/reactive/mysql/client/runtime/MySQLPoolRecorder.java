@@ -25,6 +25,7 @@ import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
+import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
 import io.quarkus.reactive.datasource.runtime.ConnectOptionsSupplier;
@@ -91,6 +92,9 @@ public class MySQLPoolRecorder {
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig,
             SyntheticCreationalContext<MySQLPool> context) {
+        if (context.getInjectedReference(DataSourceSupport.class).getInactiveNames().contains(dataSourceName)) {
+            throw DataSourceUtil.dataSourceInactive(dataSourceName);
+        }
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveMySQLConfig);
         List<MySQLConnectOptions> mySQLConnectOptions = toMySQLConnectOptions(dataSourceName, dataSourceRuntimeConfig,

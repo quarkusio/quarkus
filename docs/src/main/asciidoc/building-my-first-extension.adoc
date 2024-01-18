@@ -165,7 +165,7 @@ Your extension is a multi-module project. So let's start by checking out the par
     <module>runtime</module>
   </modules>
   <properties>
-    <compiler-plugin.version>3.11.0</compiler-plugin.version><!--2-->
+    <compiler-plugin.version>3.12.1</compiler-plugin.version><!--2-->
     <failsafe-plugin.version>${surefire-plugin.version}</failsafe-plugin.version>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -877,7 +877,7 @@ $ mvn clean compile quarkus:dev
 [INFO] Using 'UTF-8' encoding to copy filtered resources.
 [INFO] Copying 1 resource
 [INFO]
-[INFO] --- maven-compiler-plugin:3.11.0:compile (default-compile) @ greeting-app ---
+[INFO] --- maven-compiler-plugin:3.12.1:compile (default-compile) @ greeting-app ---
 [INFO] Nothing to compile - all classes are up to date
 [INFO]
 [INFO] --- quarkus-maven-plugin:{quarkus-version}:dev (default-cli) @ greeting-app ---

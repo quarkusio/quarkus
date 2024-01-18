@@ -218,7 +218,7 @@ When the first request has been submitted, you will be able to see the tracing i
 
 [source]
 ----
-10:49:02 INFO  traceId=, parentId=, spanId=, sampled= [io.quarkus] (main) Installed features: [cdi, opentelemetry, rest-client, resteasy, smallrye-context-propagation, vertx]
+10:49:02 INFO  traceId=, parentId=, spanId=, sampled= [io.quarkus] (main) Installed features: [cdi, opentelemetry, resteasy-client, resteasy, smallrye-context-propagation, vertx]
 10:49:03 INFO  traceId=17ceb8429b9f25b0b879fa1503259456, parentId=3125c8bee75b7ad6, spanId=58ce77c86dd23457, sampled=true [or.ac.op.TracedResource] (executor-thread-1) hello
 10:49:03 INFO  traceId=ad23acd6d9a4ed3d1de07866a52fa2df, parentId=, spanId=df13f5b45cf4d1e2, sampled=true [or.ac.op.TracedResource] (executor-thread-0) hello
 ----
@@ -631,7 +631,7 @@ Additional exporters will be available in the Quarkiverse https://github.com/qua
 * https://quarkus.io/extensions/io.quarkus/quarkus-jaxrs-client-reactive[`quarkus-jaxrs-client-reactive`]
 * https://quarkus.io/guides/resteasy[`quarkus-resteasy-jackson`]
 * https://quarkus.io/guides/resteasy-reactive[`quarkus-resteasy-reactive`]
-* https://quarkus.io/guides/rest-client[`quarkus-rest-client`]
+* https://quarkus.io/guides/rest-client[`quarkus-resteasy-client`]
 * https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
 * https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
 * https://quarkus.io/extensions/io.quarkus/quarkus-smallrye-reactive-messaging[`quarkus-smallrye-reactive-messaging`]

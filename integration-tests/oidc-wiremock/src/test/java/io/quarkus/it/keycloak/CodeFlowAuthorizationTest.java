@@ -2,9 +2,11 @@ package io.quarkus.it.keycloak;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.notContaining;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -85,6 +87,7 @@ public class CodeFlowAuthorizationTest {
             // Clear the post logout cookie
             webClient.getCookieManager().clearCookies();
         }
+        clearCache();
     }
 
     @Test
@@ -120,6 +123,7 @@ public class CodeFlowAuthorizationTest {
 
             webClient.getCookieManager().clearCookies();
         }
+        clearCache();
     }
 
     @Test
@@ -178,6 +182,7 @@ public class CodeFlowAuthorizationTest {
 
             webClient.getCookieManager().clearCookies();
         }
+        clearCache();
     }
 
     @Test
@@ -226,6 +231,7 @@ public class CodeFlowAuthorizationTest {
 
             webClient.getCookieManager().clearCookies();
         }
+        clearCache();
     }
 
     @Test
@@ -238,7 +244,34 @@ public class CodeFlowAuthorizationTest {
         clearCache();
         doTestCodeFlowUserInfo("code-flow-user-info-dynamic-github", 301);
         clearCache();
-        doTestCodeFlowUserInfoCashedInIdToken();
+    }
+
+    @Test
+    public void testCodeFlowUserInfoCachedInIdToken() throws Exception {
+        defineCodeFlowUserInfoCachedInIdTokenStub();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-user-info-github-cached-in-idtoken");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+
+            assertEquals("alice:alice:alice, cache size: 0", textPage.getContent());
+
+            JsonObject idTokenClaims = decryptIdToken(webClient, "code-flow-user-info-github-cached-in-idtoken");
+            assertNotNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
+
+            // refresh
+            Thread.sleep(3000);
+            textPage = webClient.getPage("http://localhost:8081/code-flow-user-info-github-cached-in-idtoken");
+            assertEquals("alice:alice:bob, cache size: 0", textPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
+        clearCache();
     }
 
     @Test
@@ -263,6 +296,7 @@ public class CodeFlowAuthorizationTest {
 
             webClient.getCookieManager().clearCookies();
         }
+        clearCache();
     }
 
     private void doTestCodeFlowUserInfo(String tenantId, long internalIdTokenLifetime) throws Exception {
@@ -316,31 +350,6 @@ public class CodeFlowAuthorizationTest {
         return OidcUtils.decodeJwtContent(encodedIdToken);
     }
 
-    private void doTestCodeFlowUserInfoCashedInIdToken() throws Exception {
-        try (final WebClient webClient = createWebClient()) {
-            webClient.getOptions().setRedirectEnabled(true);
-            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-user-info-github-cached-in-idtoken");
-
-            HtmlForm form = page.getFormByName("form");
-            form.getInputByName("username").type("alice");
-            form.getInputByName("password").type("alice");
-
-            TextPage textPage = form.getInputByValue("login").click();
-
-            assertEquals("alice:alice:alice, cache size: 0", textPage.getContent());
-
-            JsonObject idTokenClaims = decryptIdToken(webClient, "code-flow-user-info-github-cached-in-idtoken");
-            assertNotNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
-
-            // refresh
-            Thread.sleep(3000);
-            textPage = webClient.getPage("http://localhost:8081/code-flow-user-info-github-cached-in-idtoken");
-            assertEquals("alice:alice:bob, cache size: 0", textPage.getContent());
-
-            webClient.getCookieManager().clearCookies();
-        }
-    }
-
     private WebClient createWebClient() {
         WebClient webClient = new WebClient();
         webClient.setCssErrorHandler(new SilentCssErrorHandler());
@@ -350,7 +359,9 @@ public class CodeFlowAuthorizationTest {
     private void defineCodeFlowAuthorizationOauth2TokenStub() {
         wireMockServer
                 .stubFor(WireMock.post("/auth/realms/quarkus/access_token")
-                        .withHeader("X-Custom", matching("XCustomHeaderValue"))
+                        .withHeader("X-Custom", equalTo("XCustomHeaderValue"))
+                        .withBasicAuth("quarkus-web-app",
+                                "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow")
                         .withRequestBody(containing("extra-param=extra-param-value"))
                         .withRequestBody(containing("authorization_code"))
                         .willReturn(WireMock.aResponse()
@@ -362,7 +373,49 @@ public class CodeFlowAuthorizationTest {
                                         + "}")));
         wireMockServer
                 .stubFor(WireMock.post("/auth/realms/quarkus/access_token")
+                        .withBasicAuth("quarkus-web-app",
+                                "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow")
                         .withRequestBody(containing("refresh_token=refresh1234"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("bob", Set.of()) + "\""
+                                        + "}")));
+
+    }
+
+    private void defineCodeFlowUserInfoCachedInIdTokenStub() {
+        wireMockServer
+                .stubFor(WireMock.post(urlPathMatching("/auth/realms/quarkus/access_token_refreshed"))
+                        .withHeader("X-Custom", matching("XCustomHeaderValue"))
+                        .withQueryParam("extra-param", equalTo("extra-param-value"))
+                        .withQueryParam("grant_type", equalTo("authorization_code"))
+                        .withQueryParam("client_id", equalTo("quarkus-web-app"))
+                        .withQueryParam("client_secret", equalTo(
+                                "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"))
+                        .withRequestBody(notContaining("extra-param=extra-param-value"))
+                        .withRequestBody(notContaining("authorization_code"))
+                        .withRequestBody(notContaining("client_id=quarkus-web-app"))
+                        .withRequestBody(notContaining(
+                                "client_secret=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"))
+                        .willReturn(WireMock.aResponse()
+                                .withHeader("Content-Type", "application/json")
+                                .withBody("{\n" +
+                                        "  \"access_token\": \""
+                                        + OidcWiremockTestResource.getAccessToken("alice", Set.of()) + "\","
+                                        + "  \"refresh_token\": \"refresh1234\""
+                                        + "}")));
+        wireMockServer
+                .stubFor(WireMock.post(urlPathMatching("/auth/realms/quarkus/access_token_refreshed"))
+                        .withQueryParam("refresh_token", equalTo("refresh1234"))
+                        .withQueryParam("client_id", equalTo("quarkus-web-app"))
+                        .withQueryParam("client_secret", equalTo(
+                                "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"))
+                        .withRequestBody(notContaining("refresh_token=refresh1234"))
+                        .withRequestBody(notContaining("client_id=quarkus-web-app"))
+                        .withRequestBody(notContaining(
+                                "client_secret=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"))
                         .willReturn(WireMock.aResponse()
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +

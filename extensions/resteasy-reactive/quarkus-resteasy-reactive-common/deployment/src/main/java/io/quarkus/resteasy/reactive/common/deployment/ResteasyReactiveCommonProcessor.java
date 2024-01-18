@@ -69,6 +69,7 @@ import io.quarkus.resteasy.reactive.spi.AdditionalResourceClassBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerResponseFilterBuildItem;
 import io.quarkus.resteasy.reactive.spi.GeneratedJaxRsResourceBuildItem;
+import io.quarkus.resteasy.reactive.spi.IgnoreStackMixingBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
@@ -93,7 +94,11 @@ public class ResteasyReactiveCommonProcessor {
 
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
-    void checkMixingStacks(Capabilities capabilities, CurateOutcomeBuildItem curateOutcomeBuildItem) {
+    void checkMixingStacks(Capabilities capabilities, CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<IgnoreStackMixingBuildItem> ignoreStackMixingItems) {
+        if (!ignoreStackMixingItems.isEmpty()) {
+            return;
+        }
         List<ResolvedDependency> resteasyClassicDeps = curateOutcomeBuildItem.getApplicationModel().getDependencies().stream()
                 .filter(d -> d.getGroupId().equals("org.jboss.resteasy")).collect(Collectors.toList());
         boolean hasResteasyCoreDep = resteasyClassicDeps.stream()
@@ -118,7 +123,7 @@ public class ResteasyReactiveCommonProcessor {
     @BuildStep
     void searchForProviders(Capabilities capabilities,
             BuildProducer<AdditionalApplicationArchiveMarkerBuildItem> producer) {
-        if (capabilities.isPresent(Capability.RESTEASY) || capabilities.isPresent(Capability.REST_CLIENT)
+        if (capabilities.isPresent(Capability.RESTEASY) || capabilities.isPresent(Capability.RESTEASY_CLIENT)
                 || QuarkusClassLoader.isClassPresentAtRuntime(
                         "org.jboss.resteasy.plugins.providers.JaxrsServerFormUrlEncodedProvider")) { // RESTEasy Classic could be imported via non-Quarkus dependencies
             // in this weird case we don't want the providers to be registered automatically as this would lead to multiple bean definitions

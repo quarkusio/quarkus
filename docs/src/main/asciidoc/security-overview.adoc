@@ -10,18 +10,18 @@ include::_attributes.adoc[]
 :categories: security
 :topics: security
 
-Quarkus Security is a framework that provides the architecture, multiple authentication and authorization mechanisms, and other tools for you to build secure and production-quality Java applications.
+Quarkus Security is a framework that provides the architecture, multiple authentication and authorization mechanisms, and other tools to build secure and production-quality Java applications.
 
-Before building security into your Quarkus applications, learn about the xref:security-architecture.adoc[Quarkus Security architecture] and the different authentication mechanisms and features that you can use.
+Before building security into your Quarkus applications, learn about the xref:security-architecture.adoc[Quarkus Security architecture] and the different authentication mechanisms and features you can use.
 
 == Key features of Quarkus Security
 
 The Quarkus Security framework provides built-in security authentication mechanisms for Basic, Form-based, and mutual TLS (mTLS) authentication.
 You can also use other well-known xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[authentication mechanisms], such as OpenID Connect (OIDC) and WebAuthn.
 
-Authentication mechanisms depend on xref:security-identity-providers.adoc[Identity providers] to verify the authentication credentials and map them to a `SecurityIdentity` instance, which has the username, roles, original authentication credentials, and other attributes.
+Authentication mechanisms depend on xref:security-identity-providers.adoc[Identity providers] to verify the authentication credentials and map them to a `SecurityIdentity` instance with the username, roles, original authentication credentials, and other attributes.
 
-{project-name} also includes built-in security to allow for role-based access control (RBAC) based on the common security annotations @RolesAllowed, @DenyAll, @PermitAll on REST endpoints, and CDI beans.
+{project-name} also includes built-in security to allow for role-based access control (RBAC) based on the common security annotations `@RolesAllowed`, `@DenyAll`, `@PermitAll` on REST endpoints, and Contexts and Dependency Injection (CDI) beans.
 For more information, see the Quarkus xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints] guide.
 
 Quarkus Security also supports the following features:
@@ -43,13 +43,13 @@ For more information, see the Quarkus xref:security-customization.adoc[Security 
 
 To get started with security in Quarkus, consider securing your Quarkus application endpoints with the built-in Quarkus xref:security-basic-authentication.adoc[Basic authentication] and the Jakarta Persistence identity provider and enabling role-based access control.
 
-Complete the steps in the xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence] tutorial.
+Complete the steps in the xref:security-getting-started-tutorial.adoc[Getting started with Security by using Basic authentication and Jakarta Persistence] tutorial.
 
 After successfully securing your Quarkus application with Basic authentication, you can increase the security further by adding more advanced authentication mechanisms, for example, the Quarkus xref:security-oidc-code-flow-authentication.adoc[OpenID Connect (OIDC) authorization code flow mechanism] guide.
 
 == Quarkus Security testing
 
-Guidance for testing Quarkus Security features and ensuring that your Quarkus applications are securely protected is provided in the Quarkus xref:security-testing.adoc[Security testing] guide.
+For guidance on testing Quarkus Security features and ensuring that your Quarkus applications are securely protected, see the xref:security-testing.adoc[Security testing] guide.
 
 == More about security features in Quarkus
 
@@ -57,7 +57,7 @@ Guidance for testing Quarkus Security features and ensuring that your Quarkus ap
 === Cross-origin resource sharing
 
 To make your Quarkus application accessible to another application running on a different domain, you need to configure cross-origin resource sharing (CORS).
-For more information about the CORS filter that Quarkus provides, see the xref:security-cors.adoc#cors-filter[CORS filter] section of the Quarkus "Cross-origin resource sharing" guide.
+For more information about the CORS filter Quarkus provides, see the xref:security-cors.adoc#cors-filter[CORS filter] section of the Quarkus "Cross-origin resource sharing" guide.
 
 [[csrf-prevention]]
 === Cross-Site Request Forgery (CSRF) prevention
@@ -85,8 +85,8 @@ For more information, see the Quarkus xref:config.adoc#secrets-in-environment-pr
 [[secure-serialization]]
 === Secure serialization
 
-If your Quarkus Security architecture includes RESTEasy Reactive and Jackson, Quarkus can limit the fields that are included in JSON serialization based on the configured security.
-For more information, see the xref:resteasy-reactive.adoc#secure-serialization[JSON serialisation] section of the Quarkus “Writing REST services with RESTEasy Reactive” guide.
+If your Quarkus Security architecture includes RESTEasy Reactive and Jackson, Quarkus can limit the fields included in JSON serialization based on the configured security.
+For more information, see the xref:resteasy-reactive.adoc#secure-serialization[JSON serialization] section of the Quarkus “Writing REST services with RESTEasy Reactive” guide.
 
 
 [[rest-data-panache]]
@@ -103,6 +103,6 @@ For information about security vulnerabilities, see the xref:security-vulnerabil
 == References
 
 * xref:security-basic-authentication.adoc[Basic authentication]
-* xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence]
+* xref:security-getting-started-tutorial.adoc[Getting started with Security by using Basic authentication and Jakarta Persistence]
 * xref:security-oidc-code-flow-authentication-tutorial.adoc[Protect a web application by using OIDC authorization code flow]
 * xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a service application by using OIDC Bearer token authentication]

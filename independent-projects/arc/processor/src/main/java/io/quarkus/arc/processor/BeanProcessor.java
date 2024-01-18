@@ -78,7 +78,7 @@ public class BeanProcessor {
     private final boolean generateSources;
     private final boolean allowMocking;
     private final boolean transformUnproxyableClasses;
-    private final boolean optimizeContexts;
+    private final Predicate<BeanDeployment> optimizeContexts;
     private final List<Function<BeanInfo, Consumer<BytecodeCreator>>> suppressConditionGenerators;
 
     // This predicate is used to filter annotations for InjectionPoint metadata
@@ -187,6 +187,7 @@ public class BeanProcessor {
 
         ReflectionRegistration refReg = reflectionRegistration != null ? reflectionRegistration : this.reflectionRegistration;
         PrivateMembersCollector privateMembers = new PrivateMembersCollector();
+        boolean optimizeContextsValue = optimizeContexts != null ? optimizeContexts.test(beanDeployment) : false;
 
         // These maps are precomputed and then used in the ComponentsProviderGenerator which is generated first
         Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
@@ -240,7 +241,7 @@ public class BeanProcessor {
 
         ContextInstancesGenerator contextInstancesGenerator = new ContextInstancesGenerator(generateSources,
                 refReg, beanDeployment, scopeToGeneratedName);
-        if (optimizeContexts) {
+        if (optimizeContextsValue) {
             contextInstancesGenerator.precomputeGeneratedName(BuiltinScope.APPLICATION.getName());
             contextInstancesGenerator.precomputeGeneratedName(BuiltinScope.REQUEST.getName());
         }
@@ -364,7 +365,7 @@ public class BeanProcessor {
                 }));
             }
 
-            if (optimizeContexts) {
+            if (optimizeContextsValue) {
                 // Generate _ContextInstances
                 primaryTasks.add(executor.submit(new Callable<Collection<Resource>>() {
 
@@ -450,7 +451,7 @@ public class BeanProcessor {
                             observerToGeneratedName,
                             scopeToGeneratedName));
 
-            if (optimizeContexts) {
+            if (optimizeContextsValue) {
                 // Generate _ContextInstances
                 resources.addAll(contextInstancesGenerator.generate(BuiltinScope.APPLICATION.getName()));
                 resources.addAll(contextInstancesGenerator.generate(BuiltinScope.REQUEST.getName()));
@@ -564,7 +565,7 @@ public class BeanProcessor {
         boolean failOnInterceptedPrivateMethod;
         boolean allowMocking;
         boolean strictCompatibility;
-        boolean optimizeContexts;
+        Predicate<BeanDeployment> optimizeContexts;
 
         AlternativePriorities alternativePriorities;
         final List<Predicate<ClassInfo>> excludeTypes;
@@ -600,7 +601,6 @@ public class BeanProcessor {
             failOnInterceptedPrivateMethod = false;
             allowMocking = false;
             strictCompatibility = false;
-            optimizeContexts = false;
 
             excludeTypes = new ArrayList<>();
 
@@ -842,7 +842,21 @@ public class BeanProcessor {
          * @return self
          */
         public Builder setOptimizeContexts(boolean value) {
-            this.optimizeContexts = value;
+            return setOptimizeContexts(new Predicate<BeanDeployment>() {
+                @Override
+                public boolean test(BeanDeployment t) {
+                    return value;
+                }
+            });
+        }
+
+        /**
+         *
+         * @param fun
+         * @return self
+         */
+        public Builder setOptimizeContexts(Predicate<BeanDeployment> fun) {
+            this.optimizeContexts = fun;
             return this;
         }
 

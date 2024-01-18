@@ -333,9 +333,8 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return getSession(entity.getClass());
     }
 
-    ClientSession getSession(Class<?> entityClass) {
+    public ClientSession getSession(Class<?> entityClass) {
         ClientSession clientSession = null;
-        MongoEntity mongoEntity = entityClass.getAnnotation(MongoEntity.class);
         InstanceHandle<TransactionSynchronizationRegistry> instance = Arc.container()
                 .instance(TransactionSynchronizationRegistry.class);
         if (instance.isAvailable()) {
@@ -343,11 +342,16 @@ public abstract class MongoOperations<QueryType, UpdateType> {
             if (registry.getTransactionStatus() == Status.STATUS_ACTIVE) {
                 clientSession = (ClientSession) registry.getResource(SESSION_KEY);
                 if (clientSession == null) {
+                    MongoEntity mongoEntity = entityClass == null ? null : entityClass.getAnnotation(MongoEntity.class);
                     return registerClientSession(mongoEntity, registry);
                 }
             }
         }
         return clientSession;
+    }
+
+    public ClientSession getSession() {
+        return getSession(null);
     }
 
     private ClientSession registerClientSession(MongoEntity mongoEntity,

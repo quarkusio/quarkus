@@ -16,8 +16,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
-import io.quarkus.rest.client.reactive.HelloClient2;
-import io.quarkus.rest.client.reactive.HelloResource;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class StorkResponseTimeLoadBalancerTest {
@@ -28,7 +26,7 @@ public class StorkResponseTimeLoadBalancerTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloClient2.class, HelloResource.class))
+                    .addClasses(HelloClient.class, HelloResource.class))
             .withConfigurationResource("stork-stat-lb.properties");
 
     @BeforeAll
@@ -46,7 +44,7 @@ public class StorkResponseTimeLoadBalancerTest {
     }
 
     @RestClient
-    HelloClient2 client;
+    HelloClient client;
 
     @Test
     void shouldUseFasterService() {

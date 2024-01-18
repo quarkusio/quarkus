@@ -128,7 +128,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         final HttpServerResponse httpResponse = routingContext.response();
         final boolean binaryCE = httpRequest.headers().contains("ce-id");
 
-        httpRequest.bodyHandler(bodyBuff -> executor.execute(() -> {
+        final Buffer bodyBuff = routingContext.body().buffer();
+        executor.execute(() -> {
             try {
                 final String ceType;
                 final String ceSpecVersion;
@@ -409,7 +410,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             } catch (Throwable t) {
                 routingContext.fail(t);
             }
-        }));
+        });
 
     }
 
@@ -481,26 +482,25 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                 routingContext.fail(500, t);
             }
         } else if (routingContext.request().method() == HttpMethod.POST) {
-            routingContext.request().bodyHandler(buff -> {
-                try {
-                    Object input = null;
-                    if (buff.length() > 0) {
-                        ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
-                        ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(DATA_OBJECT_READER);
-                        try {
-                            input = reader.readValue((InputStream) in);
-                        } catch (JsonProcessingException e) {
-                            log.error("Failed to unmarshal input", e);
-                            routingContext.fail(400);
-                            return;
-                        }
+            Buffer buff = routingContext.body().buffer();
+            try {
+                Object input = null;
+                if (buff.length() > 0) {
+                    ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
+                    ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(DATA_OBJECT_READER);
+                    try {
+                        input = reader.readValue((InputStream) in);
+                    } catch (JsonProcessingException e) {
+                        log.error("Failed to unmarshal input", e);
+                        routingContext.fail(400);
+                        return;
                     }
-                    execute(event, routingContext, invoker, input);
-                } catch (Throwable t) {
-                    log.error(t);
-                    routingContext.fail(500, t);
                 }
-            });
+                execute(event, routingContext, invoker, input);
+            } catch (Throwable t) {
+                log.error(t);
+                routingContext.fail(500, t);
+            }
         } else {
             routingContext.fail(405);
             log.error("Must be POST or GET for: " + invoker.getName());

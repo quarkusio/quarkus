@@ -10,6 +10,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -39,7 +40,7 @@ public class QuarkusEntryPoint {
     private static void doRun(Object args) throws IOException, ClassNotFoundException, IllegalAccessException,
             InvocationTargetException, NoSuchMethodException {
         String path = QuarkusEntryPoint.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-        String decodedPath = URLDecoder.decode(path, "UTF-8");
+        String decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
         Path appRoot = new File(decodedPath).toPath().getParent().getParent().getParent();
 
         if (Boolean.parseBoolean(System.getenv("QUARKUS_LAUNCH_DEVMODE"))) {

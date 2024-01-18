@@ -23,6 +23,9 @@ public class LocalesBuildTimeConfig {
      * <p>
      * Native-image build uses it to define additional locales that are supposed
      * to be available at runtime.
+     * <p>
+     * A special string "all" is translated as ROOT Locale and then used in native-image
+     * to include all locales. Image size penalty applies.
      */
     @ConfigItem(defaultValue = DEFAULT_LANGUAGE + "-"
             + DEFAULT_COUNTRY, defaultValueDocumentation = "Set containing the build system locale")

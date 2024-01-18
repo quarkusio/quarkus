@@ -27,7 +27,7 @@ To get started with security in Quarkus, consider combining the Quarkus built-in
 For more information about Basic authentication, its mechanisms, and related identity providers, see the following resources:
 
 * xref:security-jpa.adoc[Quarkus Security with Jakarta Persistence]
-** xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence]
+** xref:security-getting-started-tutorial.adoc[Getting started with Security by using Basic authentication and Jakarta Persistence]
 * xref:security-authentication-mechanisms.adoc#form-auth[Form-based authentication]
 * xref:security-jdbc.adoc[Using security with JDBC]
 * xref:security-ldap.adoc[Using security with an LDAP realm]

@@ -184,7 +184,7 @@ public class InfinispanDevServiceProcessor {
             boolean useSharedNetwork, Optional<Duration> timeout, Map<String, String> properties) {
         if (!devServicesConfig.enabled) {
             // explicitly disabled
-            log.debug("Not starting devservices for Infinispan as it has been disabled in the config");
+            log.debug("Not starting Dev Services for Infinispan as it has been disabled in the config");
             return null;
         }
 
@@ -195,7 +195,7 @@ public class InfinispanDevServiceProcessor {
                 && !ConfigUtils.isPropertyPresent(configPrefix + "server-list");
 
         if (!needToStart) {
-            log.debug("Not starting devservices for Infinispan as 'hosts', 'uri' or 'server-list' have been provided");
+            log.debug("Not starting Dev Services for Infinispan as 'hosts', 'uri' or 'server-list' have been provided");
             return null;
         }
 

@@ -31,7 +31,7 @@ class KotlinSerializationMessageBodyWriter(private val json: Json) :
         if (o is String) { // YUK: done in order to avoid adding extra quotes...
             entityStream.write(o.toByteArray(StandardCharsets.UTF_8))
         } else {
-            json.encodeToStream(serializer(genericType), o, entityStream)
+            json.encodeToStream(json.serializersModule.serializer(genericType), o, entityStream)
         }
     }
 
@@ -42,7 +42,7 @@ class KotlinSerializationMessageBodyWriter(private val json: Json) :
         if (o is String) { // YUK: done in order to avoid adding extra quotes...
             stream.write(o.toByteArray(StandardCharsets.UTF_8))
         } else {
-            json.encodeToStream(serializer(genericType), o, stream)
+            json.encodeToStream(json.serializersModule.serializer(genericType), o, stream)
         }
         // we don't use try-with-resources because that results in writing to the http output
         // without the exception mapping coming into play

@@ -104,6 +104,13 @@ public class PackageConfig {
     public String type;
 
     /**
+     * Whether the created jar will be compressed. This setting is not used when building a native image
+     */
+    @ConfigItem
+    @ConfigDocDefault("false")
+    public Optional<Boolean> compressJar;
+
+    /**
      * Manifest configuration of the runner jar.
      */
     @ConfigItem

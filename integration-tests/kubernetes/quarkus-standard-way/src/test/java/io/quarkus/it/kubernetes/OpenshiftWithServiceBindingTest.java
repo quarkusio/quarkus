@@ -29,6 +29,7 @@ public class OpenshiftWithServiceBindingTest {
             .setApplicationName(APP_NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource(APP_NAME + ".properties")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config")
             .setLogFileName("k8s.log")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion()),

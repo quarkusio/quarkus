@@ -19,7 +19,7 @@ public class RestLinksInjectionTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(AbstractEntity.class, TestRecord.class, TestResource.class));
+                    .addClasses(AbstractId.class, AbstractEntity.class, TestRecord.class, TestResource.class));
 
     @TestHTTPResource("records")
     String recordsUrl;

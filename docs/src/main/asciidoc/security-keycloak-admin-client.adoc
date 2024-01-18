@@ -195,6 +195,23 @@ quarkus.keycloak.admin-client.grant-type=CLIENT_CREDENTIALS <1>
 
 NOTE: Note that the xref:security-openid-connect-client.adoc[OidcClient] can also be used to acquire tokens.
 
+== Testing
+
+The preferred approach for testing Keycloak Admin Client against Keycloak is xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak].
+`Dev Services for Keycloak` will start and initialize a test container.
+Then, it will create a `quarkus` realm and a `quarkus-app` client (`secret` secret) and add `alice` (`admin` and `user` roles) and `bob` (`user` role) users, where all of these properties can be customized.
+
+For example, by default, a test container will be available at a randomly allocated port but you can make both Keycloak Admin Client and the container use the same port as follows:
+
+[source,properties]
+----
+%test.quarkus.keycloak.devservices.port=${kc.admin.port.test:45180} <1>
+%test.quarkus.keycloak.admin-client.server-url=http://localhost:${kc.admin.port.test:45180}/ <2>
+----
+
+<1> Configure the Keycloak container to listen on the `45180` port by default
+<2> Configure the Keycloak Admin Client to use the same port
+
 [[keycloak-admin-client-configuration-reference]]
 == Quarkus Keycloak Admin Client Configuration Reference
 

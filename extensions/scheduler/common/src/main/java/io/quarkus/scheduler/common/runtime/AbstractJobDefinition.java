@@ -8,6 +8,7 @@ import io.quarkus.scheduler.Scheduled.ConcurrentExecution;
 import io.quarkus.scheduler.Scheduled.SkipPredicate;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Scheduler.JobDefinition;
+import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
 import io.smallrye.mutiny.Uni;
 
 public abstract class AbstractJobDefinition implements JobDefinition {
@@ -19,8 +20,11 @@ public abstract class AbstractJobDefinition implements JobDefinition {
     protected String overdueGracePeriod = "";
     protected ConcurrentExecution concurrentExecution = ConcurrentExecution.PROCEED;
     protected SkipPredicate skipPredicate = null;
+    protected Class<? extends SkipPredicate> skipPredicateClass;
     protected Consumer<ScheduledExecution> task;
+    protected Class<? extends Consumer<ScheduledExecution>> taskClass;
     protected Function<ScheduledExecution, Uni<Void>> asyncTask;
+    protected Class<? extends Function<ScheduledExecution, Uni<Void>>> asyncTaskClass;
     protected boolean scheduled = false;
     protected String timeZone = Scheduled.DEFAULT_TIMEZONE;
     protected boolean runOnVirtualThread;
@@ -65,6 +69,12 @@ public abstract class AbstractJobDefinition implements JobDefinition {
     }
 
     @Override
+    public JobDefinition setSkipPredicate(Class<? extends SkipPredicate> skipPredicateClass) {
+        this.skipPredicateClass = skipPredicateClass;
+        return setSkipPredicate(SchedulerUtils.instantiateBeanOrClass(skipPredicateClass));
+    }
+
+    @Override
     public JobDefinition setOverdueGracePeriod(String period) {
         checkScheduled();
         this.overdueGracePeriod = period;
@@ -90,6 +100,12 @@ public abstract class AbstractJobDefinition implements JobDefinition {
     }
 
     @Override
+    public JobDefinition setTask(Class<? extends Consumer<ScheduledExecution>> taskClass, boolean runOnVirtualThread) {
+        this.taskClass = taskClass;
+        return setTask(SchedulerUtils.instantiateBeanOrClass(taskClass), runOnVirtualThread);
+    }
+
+    @Override
     public JobDefinition setAsyncTask(Function<ScheduledExecution, Uni<Void>> asyncTask) {
         checkScheduled();
         if (task != null) {
@@ -97,6 +113,12 @@ public abstract class AbstractJobDefinition implements JobDefinition {
         }
         this.asyncTask = asyncTask;
         return this;
+    }
+
+    @Override
+    public JobDefinition setAsyncTask(Class<? extends Function<ScheduledExecution, Uni<Void>>> asyncTaskClass) {
+        this.asyncTaskClass = asyncTaskClass;
+        return setAsyncTask(SchedulerUtils.instantiateBeanOrClass(asyncTaskClass));
     }
 
     protected void checkScheduled() {

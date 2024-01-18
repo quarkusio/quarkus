@@ -58,27 +58,27 @@ public class CertificateConfig {
     public Optional<List<Path>> keyFiles;
 
     /**
-     * An optional key store that holds the certificate information instead of specifying separate files.
+     * An optional keystore that holds the certificate information instead of specifying separate files.
      */
     @ConfigItem
     public Optional<Path> keyStoreFile;
 
     /**
-     * An optional parameter to specify the type of the key store file.
+     * An optional parameter to specify the type of the keystore file.
      * If not given, the type is automatically detected based on the file name.
      */
     @ConfigItem
     public Optional<String> keyStoreFileType;
 
     /**
-     * An optional parameter to specify a provider of the key store file.
-     * If not given, the provider is automatically detected based on the key store file type.
+     * An optional parameter to specify a provider of the keystore file.
+     * If not given, the provider is automatically detected based on the keystore file type.
      */
     @ConfigItem
     public Optional<String> keyStoreProvider;
 
     /**
-     * A parameter to specify the password of the key store file.
+     * A parameter to specify the password of the keystore file.
      * If not given, and if it can not be retrieved from {@linkplain CredentialsProvider}.
      *
      * @see {@link #credentialsProvider}
@@ -97,8 +97,8 @@ public class CertificateConfig {
     public Optional<String> keyStorePasswordKey;
 
     /**
-     * An optional parameter to select a specific key in the key store.
-     * When SNI is disabled, and the key store contains multiple
+     * An optional parameter to select a specific key in the keystore.
+     * When SNI is disabled, and the keystore contains multiple
      * keys and no alias is specified; the behavior is undefined.
      */
     @ConfigItem

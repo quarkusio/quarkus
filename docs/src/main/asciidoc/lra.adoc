@@ -48,7 +48,7 @@ https://download.eclipse.org/microprofile/microprofile-lra-1.0/apidocs/[MicroPro
 Once you have your Quarkus Maven project configured you can add the `narayana-lra` extension
 by running the following command in your project base directory:
 
-:add-extension-extensions: narayana-lra,resteasy-jackson,rest-client-jackson
+:add-extension-extensions: narayana-lra,resteasy-jackson,resteasy-client-jackson
 include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
@@ -66,7 +66,7 @@ This will add the following to your build file:
 </dependency>
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-rest-client-jackson</artifactId>
+    <artifactId>quarkus-resteasy-client-jackson</artifactId>
 </dependency>
 ----
 
@@ -75,13 +75,13 @@ This will add the following to your build file:
 ----
 implementation("io.quarkus:quarkus-narayana-lra")
 implementation("io.quarkus:quarkus-resteasy-jackson")
-implementation("io.quarkus:quarkus-rest-client-jackson")
+implementation("io.quarkus:quarkus-resteasy-client-jackson")
 ----
 
 [IMPORTANT]
 ====
 `quarkus-narayana-lra` needs to be complemented with a server Jakarta REST implementation and a REST Client implementation in order to work.
-This means that users should also have either `quarkus-resteasy-jackson` and `quarkus-rest-client-jackson` or `quarkus-resteasy-reactive-jackson` and `quarkus-rest-client-reactive-jackson` dependencies in their application.
+This means that users should also have either `quarkus-resteasy-jackson` and `quarkus-rest-client-jackson` or `quarkus-resteasy-reactive-jackson` and `quarkus-resteasy-client-reactive-jackson` dependencies in their application.
 ====
 
 If there is a running coordinator then this is all you need in order to create

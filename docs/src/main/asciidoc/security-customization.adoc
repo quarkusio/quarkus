@@ -691,8 +691,6 @@ Depending on the application, that can be a lot of the `AuthenticationSuccessEve
 For that reason, asynchronous processing can have positive effect on performance.
 <2> Common code for all supported security event types is possible because they all implement the `io.quarkus.security.spi.runtime.SecurityEvent` interface.
 
-IMPORTANT: The gRPC extension currently does not support security events.
-
 == References
 
 * xref:security-overview.adoc[Quarkus Security overview]

@@ -61,11 +61,24 @@ import io.quarkus.vertx.http.runtime.management.ManagementInterfaceConfiguration
 import io.quarkus.vertx.http.runtime.options.HttpServerCommonHandlers;
 import io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils;
 import io.smallrye.common.vertx.VertxContext;
-import io.vertx.core.*;
-import io.vertx.core.http.*;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
+import io.vertx.core.Verticle;
+import io.vertx.core.Vertx;
+import io.vertx.core.http.Cookie;
+import io.vertx.core.http.CookieSameSite;
+import io.vertx.core.http.HttpConnection;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.Http1xServerConnection;
 import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.Utils;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.SocketAddress;
@@ -1110,8 +1123,14 @@ public class VertxHttpRecorder {
 
         private void setupTcpHttpServer(HttpServer httpServer, HttpServerOptions options, boolean https,
                 Promise<Void> startFuture, AtomicInteger remainingCount, AtomicInteger currentConnectionCount) {
+
             if (quarkusConfig.limits.maxConnections.isPresent() && quarkusConfig.limits.maxConnections.getAsInt() > 0) {
+                var tracker = vertx.isMetricsEnabled()
+                        ? ((ExtendedQuarkusVertxHttpMetrics) ((VertxInternal) vertx).metricsSPI()).getHttpConnectionTracker()
+                        : ExtendedQuarkusVertxHttpMetrics.NOOP_CONNECTION_TRACKER;
+
                 final int maxConnections = quarkusConfig.limits.maxConnections.getAsInt();
+                tracker.initialize(maxConnections, currentConnectionCount);
                 httpServer.connectionHandler(new Handler<HttpConnection>() {
 
                     @Override
@@ -1122,6 +1141,7 @@ public class VertxHttpRecorder {
                             if (current == maxConnections) {
                                 //just close the connection
                                 LOGGER.debug("Rejecting connection as there are too many active connections");
+                                tracker.onConnectionRejected();
                                 event.close();
                                 return;
                             }
@@ -1130,7 +1150,7 @@ public class VertxHttpRecorder {
                             @Override
                             public void handle(Void event) {
                                 LOGGER.debug("Connection closed");
-                                connectionCount.decrementAndGet();
+                                currentConnectionCount.decrementAndGet();
                             }
                         });
                     }
@@ -1273,20 +1293,20 @@ public class VertxHttpRecorder {
                 .childHandler(new ChannelInitializer<VirtualChannel>() {
                     @Override
                     public void initChannel(VirtualChannel ch) throws Exception {
-                        EventLoopContext context = vertx.createEventLoopContext();
+                        ContextInternal rootContext = vertx.createEventLoopContext();
                         VertxHandler<Http1xServerConnection> handler = VertxHandler.create(chctx -> {
 
                             Http1xServerConnection conn = new Http1xServerConnection(
                                     () -> {
-                                        ContextInternal internal = (ContextInternal) VertxContext
-                                                .getOrCreateDuplicatedContext(context);
-                                        setContextSafe(internal, true);
-                                        return internal;
+                                        ContextInternal duplicated = (ContextInternal) VertxContext
+                                                .getOrCreateDuplicatedContext(rootContext);
+                                        setContextSafe(duplicated, true);
+                                        return duplicated;
                                     },
                                     null,
                                     new HttpServerOptions(),
                                     chctx,
-                                    context,
+                                    rootContext,
                                     "localhost",
                                     null);
                             conn.handler(ACTUAL_ROOT);

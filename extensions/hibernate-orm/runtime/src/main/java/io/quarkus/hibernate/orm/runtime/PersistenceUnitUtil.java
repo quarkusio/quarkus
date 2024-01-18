@@ -13,6 +13,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.PersistenceUnitExtension;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 public class PersistenceUnitUtil {
     private static final Logger LOG = Logger.getLogger(PersistenceUnitUtil.class);
@@ -103,5 +104,14 @@ public class PersistenceUnitUtil {
 
     private static <T> boolean isDefaultBean(InjectableInstance<T> instance) {
         return instance.isResolvable() && instance.getHandle().getBean().isDefaultBean();
+    }
+
+    public static ConfigurationException unableToFindDataSource(String persistenceUnitName,
+            String dataSourceName,
+            Throwable cause) {
+        return new ConfigurationException(String.format(Locale.ROOT,
+                "Unable to find datasource '%s' for persistence unit '%s': %s",
+                dataSourceName, persistenceUnitName, cause.getMessage()),
+                cause);
     }
 }

@@ -63,7 +63,8 @@ public class JavaCompilationProvider implements CompilationProvider {
                     context.getCompilerOptions(PROVIDER_KEY),
                     context.getReleaseJavaVersion(),
                     context.getSourceJavaVersion(),
-                    context.getTargetJvmVersion()).toList();
+                    context.getTargetJvmVersion(),
+                    context.getAnnotationProcessors()).toList();
         }
 
         final JavaCompiler compiler = this.compiler;
@@ -74,7 +75,9 @@ public class JavaCompilationProvider implements CompilationProvider {
 
         final QuarkusFileManager.Context sourcesContext = new QuarkusFileManager.Context(
                 context.getClasspath(), context.getReloadableClasspath(),
-                context.getOutputDirectory(), context.getSourceEncoding(),
+                context.getOutputDirectory(), context.getGeneratedSourcesDirectory(),
+                context.getAnnotationProcessorPaths(),
+                context.getSourceEncoding(),
                 context.ignoreModuleInfo());
 
         if (this.fileManager == null) {

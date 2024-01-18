@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.jboss.logging.Logger;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.utility.MountableFile;
 
 import io.quarkus.it.kafka.containers.KerberosContainer;
@@ -39,9 +38,10 @@ public class KafkaSaslTestResource implements QuarkusTestResourceLifecycleManage
                         c -> String.format("SASL_PLAINTEXT://%s:%s", c.getHost(), c.getMappedPort(KAFKA_PORT)))
                 .withPort(KAFKA_PORT)
                 .withServerProperties(MountableFile.forClasspathResource("kafkaServer.properties"))
-                .withCopyFileToContainer(MountableFile.forClasspathResource("krb5KafkaBroker.conf"), "/etc/krb5.conf")
-                .withFileSystemBind("src/test/resources/kafkabroker.keytab", "/opt/kafka/config/kafkabroker.keytab",
-                        BindMode.READ_ONLY);
+                .withCopyFileToContainer(MountableFile.forClasspathResource("krb5KafkaBroker.conf"),
+                        "/etc/krb5.conf")
+                .withCopyFileToContainer(MountableFile.forHostPath("target/kafkabroker.keytab"),
+                        "/opt/kafka/config/kafkabroker.keytab");
         kafka.start();
         log.info(kafka.getLogs());
         properties.put("kafka.bootstrap.servers", kafka.getBootstrapServers());

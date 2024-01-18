@@ -18,7 +18,7 @@ public class ResponseInfoResource {
 
     @Path("/simple")
     @GET
-    public String get(@QueryParam("abs") String abs) {
+    public boolean get(@QueryParam("abs") String abs) {
         LOG.debug("abs query: " + abs);
         URI base;
         if (abs == null) {
@@ -30,6 +30,6 @@ public class ResponseInfoResource {
         URI uri = (URI) response.getMetadata().getFirst(HttpHeaders.LOCATION);
         LOG.debug("Location uri: " + uri);
         Assertions.assertEquals(base.getPath(), uri.getPath());
-        return "CONTENT";
+        return true;
     }
 }

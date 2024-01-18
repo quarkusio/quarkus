@@ -145,15 +145,17 @@ final class LinksProcessor {
         for (List<LinkInfo> linkInfos : linksContainer.getLinksMap().values()) {
             for (LinkInfo linkInfo : linkInfos) {
                 String entityType = linkInfo.getEntityType();
+                DotName className = DotName.createSimple(entityType);
+
+                validateClassHasFieldId(index, entityType);
+
                 for (String parameterName : linkInfo.getPathParameters()) {
-                    DotName className = DotName.createSimple(entityType);
                     FieldInfoSupplier byParamName = new FieldInfoSupplier(c -> c.field(parameterName), className, index);
 
                     // We implement a getter inside a class that has the required field.
                     // We later map that getter's accessor with an entity type.
                     // If a field is inside a parent class, the getter accessor will be mapped to each subclass which
                     // has REST links that need access to that field.
-
                     FieldInfo fieldInfo = byParamName.get();
                     if ((fieldInfo == null) && parameterName.equals("id")) {
                         // this is a special case where we want to go through the fields of the class
@@ -192,6 +194,56 @@ final class LinksProcessor {
         }
 
         return getterAccessorsContainer;
+    }
+
+    /**
+     * Validates if the given classname contains a field `id` or annotated with `@Id`
+     *
+     * @throws IllegalStateException if the classname does not contain any sort of field identifier
+     */
+    private void validateClassHasFieldId(IndexView index, String entityType) {
+        // create a new independent class name that we can override
+        DotName className = DotName.createSimple(entityType);
+        ClassInfo classInfo = index.getClassByName(className);
+
+        if (classInfo == null) {
+            throw new RuntimeException(String.format("Class '%s' was not found", classInfo));
+        }
+        validateRec(index, entityType, classInfo);
+    }
+
+    /**
+     * Validates if the given classname contains a field `id` or annotated with `@Id`
+     *
+     * @throws IllegalStateException if the classname does not contain any sort of field identifier
+     */
+    private void validateRec(IndexView index, String entityType, ClassInfo classInfo) {
+        List<FieldInfo> fieldsNamedId = classInfo.fields().stream()
+                .filter(f -> f.name().equals("id"))
+                .toList();
+
+        List<AnnotationInstance> fieldsAnnotatedWithId = classInfo.fields().stream()
+                .flatMap(f -> f.annotations().stream())
+                .filter(a -> a.name().toString().endsWith("persistence.Id"))
+                .toList();
+
+        // Id field found, break the loop
+        if (!fieldsNamedId.isEmpty() || !fieldsAnnotatedWithId.isEmpty())
+            return;
+
+        // Id field not found and hope is gone
+        DotName superClassName = classInfo.superName();
+        if (superClassName == null) {
+            throw new IllegalStateException("Cannot generate web links for the class " + entityType +
+                    " because is either missing an `id` field or a field with an `@Id` annotation");
+        }
+
+        // Id field not found but there's still hope
+        classInfo = index.getClassByName(superClassName);
+        if (classInfo == null) {
+            throw new RuntimeException(String.format("Class '%s' was not found", classInfo));
+        }
+        validateRec(index, entityType, classInfo);
     }
 
     /**

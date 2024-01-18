@@ -30,6 +30,7 @@ public class CsrfRequestResponseReactiveFilter {
      */
     private static final String CSRF_TOKEN_KEY = "csrf_token";
     private static final String CSRF_TOKEN_BYTES_KEY = "csrf_token_bytes";
+    private static final String NEW_COOKIE_REQUIRED = "true";
 
     /**
      * CSRF token verification status.
@@ -85,12 +86,28 @@ public class CsrfRequestResponseReactiveFilter {
 
         if (requestMethodIsSafe(requestContext)) {
             // safe HTTP method, tolerate the absence of a token
-            if (cookieToken == null && isCsrfTokenRequired(routing, config)) {
-                // Set the CSRF cookie with a randomly generated value
-                byte[] tokenBytes = new byte[config.tokenSize];
-                secureRandom.nextBytes(tokenBytes);
-                routing.put(CSRF_TOKEN_BYTES_KEY, tokenBytes);
-                routing.put(CSRF_TOKEN_KEY, Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes));
+            if (isCsrfTokenRequired(routing, config)) {
+                if (cookieToken == null) {
+                    generateNewCsrfToken(routing, config);
+                } else {
+                    String csrfTokenHeaderParam = requestContext.getHeaderString(config.tokenHeaderName);
+                    if (csrfTokenHeaderParam != null) {
+                        LOG.debugf("CSRF token found in the token header");
+                        // Verify the header, make sure the header value, possibly signed, is returned as the next cookie value
+                        verifyCsrfToken(requestContext, routing, config, cookieToken, csrfTokenHeaderParam);
+                    } else if (!config.tokenSignatureKey.isEmpty()) {
+                        // If the signature is required, then we can not use the current cookie value
+                        // as the HTML form token key because it represents a signed value of the previous key
+                        // and it will lead to the double-signing issue if this value is reused as the key.
+                        // It should be fine for simple HTML forms anyway
+                        generateNewCsrfToken(routing, config);
+                    } else {
+                        // Make sure the same cookie value is returned
+                        routing.put(CSRF_TOKEN_KEY, cookieToken);
+                        routing.put(CSRF_TOKEN_BYTES_KEY, Base64.getUrlDecoder().decode(cookieToken));
+                    }
+                }
+                routing.put(NEW_COOKIE_REQUIRED, true);
             }
         } else if (config.verifyToken) {
             // unsafe HTTP method, token is required
@@ -129,12 +146,19 @@ public class CsrfRequestResponseReactiveFilter {
             String csrfTokenFormParam = (String) rrContext.getFormParameter(config.formFieldName, true, false);
             LOG.debugf("CSRF token found in the form parameter");
             verifyCsrfToken(requestContext, routing, config, cookieToken, csrfTokenFormParam);
-            return;
 
         } else if (cookieToken == null) {
             LOG.debug("CSRF token is not found");
             requestContext.abortWith(badClientRequest());
         }
+    }
+
+    private void generateNewCsrfToken(RoutingContext routing, CsrfReactiveConfig config) {
+        // Set the CSRF cookie with a randomly generated value
+        byte[] tokenBytes = new byte[config.tokenSize];
+        secureRandom.nextBytes(tokenBytes);
+        routing.put(CSRF_TOKEN_BYTES_KEY, tokenBytes);
+        routing.put(CSRF_TOKEN_KEY, Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes));
     }
 
     private void verifyCsrfToken(ResteasyReactiveContainerRequestContext requestContext, RoutingContext routing,
@@ -158,7 +182,10 @@ public class CsrfRequestResponseReactiveFilter {
                 return;
             } else {
                 routing.put(CSRF_TOKEN_KEY, csrfToken);
+                routing.put(CSRF_TOKEN_BYTES_KEY, Base64.getUrlDecoder().decode(csrfToken));
                 routing.put(CSRF_TOKEN_VERIFIED, true);
+                // reset the cookie
+                routing.put(NEW_COOKIE_REQUIRED, true);
                 return;
             }
         }
@@ -195,9 +222,9 @@ public class CsrfRequestResponseReactiveFilter {
     @ServerResponseFilter
     public void filter(ContainerRequestContext requestContext,
             ContainerResponseContext responseContext, RoutingContext routing) {
-        final CsrfReactiveConfig config = configInstance.get();
-        if (requestContext.getMethod().equals("GET") && isCsrfTokenRequired(routing, config)
-                && getCookieToken(routing, config) == null) {
+        if (routing.get(NEW_COOKIE_REQUIRED) != null) {
+
+            final CsrfReactiveConfig config = configInstance.get();
 
             String cookieValue = null;
             if (config.tokenSignatureKey.isPresent()) {
@@ -230,7 +257,7 @@ public class CsrfRequestResponseReactiveFilter {
      *
      * @return An Optional containing the token, or an empty Optional if the token cookie is not present or is invalid
      */
-    private String getCookieToken(RoutingContext routing, CsrfReactiveConfig config) {
+    private static String getCookieToken(RoutingContext routing, CsrfReactiveConfig config) {
         Cookie cookie = routing.getCookie(config.cookieName);
 
         if (cookie == null) {
@@ -241,14 +268,14 @@ public class CsrfRequestResponseReactiveFilter {
         return cookie.getValue();
     }
 
-    private boolean isCsrfTokenRequired(RoutingContext routing, CsrfReactiveConfig config) {
+    private static boolean isCsrfTokenRequired(RoutingContext routing, CsrfReactiveConfig config) {
         return config.createTokenPath
                 .map(value -> value.contains(routing.normalizedPath())).orElse(true);
     }
 
-    private void createCookie(String csrfToken, RoutingContext routing, CsrfReactiveConfig config) {
+    private static void createCookie(String cookieTokenValue, RoutingContext routing, CsrfReactiveConfig config) {
 
-        ServerCookie cookie = new CookieImpl(config.cookieName, csrfToken);
+        ServerCookie cookie = new CookieImpl(config.cookieName, cookieTokenValue);
         cookie.setHttpOnly(config.cookieHttpOnly);
         cookie.setSecure(config.cookieForceSecure || routing.request().isSSL());
         cookie.setMaxAge(config.cookieMaxAge.toSeconds());

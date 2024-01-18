@@ -619,7 +619,7 @@ As a reference, these are the full contents of the `pom.xml`:
   <properties>
     <executable-suffix/>
     <distribution.directory>${project.build.directory}/distributions</distribution.directory>
-    <compiler-plugin.version>3.11.0</compiler-plugin.version>
+    <compiler-plugin.version>3.12.1</compiler-plugin.version>
     <maven.compiler.parameters>true</maven.compiler.parameters>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>

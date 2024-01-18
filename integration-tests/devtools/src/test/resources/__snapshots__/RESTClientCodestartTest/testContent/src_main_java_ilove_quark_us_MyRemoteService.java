@@ -17,7 +17,7 @@ import java.util.Set;
  *     MyRemoteService myRemoteService;
  *
  *     public void doSomething() {
- *         Set<MyRemoteService.Extension> restClientExtensions = myRemoteService.getExtensionsById("io.quarkus:quarkus-rest-client");
+ *         Set<MyRemoteService.Extension> restClientExtensions = myRemoteService.getExtensionsById("io.quarkus:quarkus-hibernate-validator");
  *     }
  * }
  */

@@ -19,7 +19,7 @@ import io.quarkus.grpc.spi.GrpcBuilderProvider;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.EventLoopContext;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxInternal;
 
 public class InProcessGrpcServerBuilderProvider implements GrpcBuilderProvider<InProcessServerBuilder> {
@@ -35,7 +35,7 @@ public class InProcessGrpcServerBuilderProvider implements GrpcBuilderProvider<I
         // wrap with Vert.x context, so that the context interceptors work
         VertxInternal vxi = (VertxInternal) vertx;
         Executor delegate = vertx.nettyEventLoopGroup();
-        EventLoopContext context = vxi.createEventLoopContext();
+        ContextInternal context = vxi.createEventLoopContext();
         Executor executor = command -> delegate.execute(() -> context.dispatch(command));
         builder.executor(executor);
         return builder;

@@ -96,8 +96,19 @@ TIP: If you want to test your application immediately then set the `quarkus.open
 NOTE: When using `DeploymentConfig` and xref:deploying-to-kubernetes.adoc#service_binding[Service Binding], re-deploying might remove the configuration added by OpenShift to allow service discovery. A new container image build will trigger a refresh of the Quarkus app in OpenShift: `-Dquarkus.container-image.build=true` which might be enough in most situations. If you need to update the OpenShift resources, you need to delete the binding first to create it again after new deployment.
 
 This command will build your application locally, then trigger a container image build and finally apply the generated OpenShift resources automatically.
-The generated resources use OpenShift's `DeploymentConfig` that is configured to automatically trigger a redeployment when a change in the `ImageStream` is noticed.
-In other words, any container image build after the initial deployment will automatically trigger redeployment, without the need to delete, update or re-apply the generated resources.
+The generated resources use a Kubernetes `Deployment`, but still make use of OpenShift specific resources like `Route`, `BuildConfig` etc.
+
+IMPORTANT: As of OpenShift 4.14, the https://access.redhat.com/articles/7041372[`DeploymentConfig` object has been deprecated].
+
+Since `Deployment` is a Kubernetes resource and not OpenShift specific, it can't possibly leverage `ImageStream` resources, as is the case with `DeploymentConfig`. This means that the image references need to include the container image registry that hosts the image.
+When the image is built, using OpenShift builds (s2i binary and docker strategy) the OpenShift internal image registry `image-registry.openshift-image-registry.svc:5000` will be used, unless another registry has been explicitly specified by the user. Please note, that in the internal registry the project/namespace name is added as part of the image repository: `image-registry.openshift-image-registry.svc:5000/<project name>/<name>:<tag>`, so users will need to make sure that the target project/namespace name is aligned with the `quarkus.container-image.group`.
+
+The https://access.redhat.com/articles/7041372[deprecation document] contains additional information about how to set up/use automatic rollbacks, triggers, lifecycle hooks, and custom strategies.
+
+[source,properties]
+----
+quarkus.container-image.group=<project/namespace name>
+----
 
 You can use the OpenShift web console to verify that the above command has created an image stream, a service resource and has deployed the application.
 Alternatively, you can run the following OpenShift CLI commands:
@@ -384,28 +395,11 @@ quarkus.openshift.env.fields.foo=metadata.name
 
 ==== Changing the generated deployment resource
 
-Beside generating a `DeploymentConfig` resource, you can also choose to get either a `Deployment`, `StatefulSet`, or a `Job`, or a `CronJob` resource instead via `application.properties`:
+Beside generating a `Deployment` resource, you can also choose to get either a `DeploymentConfig`, `StatefulSet`, `Job`, or a `CronJob` resource instead via `application.properties`:
 
 [source,properties]
 ----
 quarkus.openshift.deployment-kind=StatefulSet
-----
-
-===== Using Deployment instead of DeploymentConfig
-Out of the box the extension will generate a `DeploymentConfig` resource. Often users, prefer to use `Deployment` as the main deployment resource, but still make use of OpenShift specific resources like `Route`, `BuildConfig` etc.
-This feature is enabled by setting `quarkus.openshift.deployment-kind` to `Deployment`.
-
-[source,properties]
-----
-quarkus.openshift.deployment-kind=Deployment
-----
-
-Since `Deployment` is a Kubernetes resource and not OpenShift specific, it can't possibly leverage `ImageStream` resources, as is the case with `DeploymentConfig`. This means that the image references need to include the container image registry that hosts the image.
-When the image is built, using OpenShift builds (s2i binary and docker strategy) the OpenShift internal image registry `image-registry.openshift-image-registry.svc:5000` will be used, unless another registry has been explicitly specified by the user. Please note, that in the internal registry the project/namespace name is added as part of the image repository: `image-registry.openshift-image-registry.svc:5000/<project name>/<name>:<tag>`, so users will need to make sure that the target project/namespace name is aligned with the `quarkus.container-image.group`.
-
-[source,properties]
-----
-quarkus.container-image.group=<project/namespace name>
 ----
 
 ===== Generating Job resources

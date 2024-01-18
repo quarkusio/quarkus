@@ -111,6 +111,42 @@ public class Main {
 }
 ----
 
+[TIP]
+====
+`Quarkus.run` also provides a version that allows the code to handle errors.
+For example:
+
+[source,java]
+----
+package com.acme;
+
+import io.quarkus.runtime.Quarkus;
+import io.quarkus.runtime.QuarkusApplication;
+import io.quarkus.runtime.annotations.QuarkusMain;
+
+@QuarkusMain
+public class Main {
+    public static void main(String... args) {
+        Quarkus.run(MyApp.class,
+        (exitCode, exception) -> {
+            // do whatever
+        },
+        args);
+    }
+
+    public static class MyApp implements QuarkusApplication {
+
+        @Override
+        public int run(String... args) throws Exception {
+            System.out.println("Do startup logic here");
+            Quarkus.waitForExit();
+            return 0;
+        }
+    }
+}
+----
+====
+
 === Injecting the command line arguments
 
 It is possible to inject the arguments that were passed in on the command line:

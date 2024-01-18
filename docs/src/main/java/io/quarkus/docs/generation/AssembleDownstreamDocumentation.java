@@ -1,11 +1,17 @@
 package io.quarkus.docs.generation;
 
+//These are here to allow running the script directly from command line/IDE
+//The real deps and call are in the pom.xml
+//DEPS org.jboss.logging:jboss-logging:3.4.1.Final
+//DEPS com.fasterxml.jackson.core:jackson-databind:2.12.3
+//DEPS com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.8.0.rc1
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -88,7 +94,30 @@ public class AssembleDownstreamDocumentation {
             ObjectMapper yamlObjectMapper = new ObjectMapper(new YAMLFactory());
             yamlObjectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-            ConfigFile configFile = yamlObjectMapper.readValue(new File("downstreamdoc.yaml"), ConfigFile.class);
+            String configFilePath = System.getenv("DOWNSTREAM_CONFIG_FILE");
+            if (configFilePath == null) {
+                configFilePath = "downstreamdoc.yaml";
+            }
+            ConfigFile configFile = yamlObjectMapper.readValue(new File(configFilePath), ConfigFile.class);
+
+            String additionals = System.getenv("DOWNSTREAM_ADDITIONALS");
+            if (additionals != null) {
+                String[] additional_files = additionals.split(",");
+                LOG.info("Additional files: " + Arrays.toString(additional_files));
+                for (String file : additional_files) {
+                    configFile.guides.add(file);
+                }
+            }
+
+            String excludes = System.getenv("DOWNSTREAM_EXCLUDES");
+            if (excludes != null) {
+                String[] excludePatterns = excludes.split(",");
+                LOG.info("Excluding patterns: " + Arrays.toString(excludePatterns));
+                for (String pattern : excludePatterns) {
+                    Pattern regexPattern = Pattern.compile(pattern);
+                    configFile.guides.removeIf(guide -> regexPattern.matcher(guide).find());
+                }
+            }
 
             Set<Path> guides = new TreeSet<>();
             Set<Path> simpleIncludes = new TreeSet<>();

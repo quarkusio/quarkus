@@ -1,0 +1,30 @@
+plugins{
+    id "java"
+    id "io.quarkus"
+}
+
+
+
+group 'io.quarkus.test.application'
+version '1.0-SNAPSHOT'
+
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    implementation 'io.quarkus:quarkus-resteasy'
+    implementation ('org.acme.libs:libraryB')
+    implementation ('org.acme.libs:libraryA')
+    implementation ('org.acme.extensions:another-example-extension')
+
+}
+
+test {
+    useJUnitPlatform()
+}

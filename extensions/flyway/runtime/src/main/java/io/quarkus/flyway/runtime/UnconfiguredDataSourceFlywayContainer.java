@@ -4,13 +4,17 @@ import org.flywaydb.core.Flyway;
 
 public class UnconfiguredDataSourceFlywayContainer extends FlywayContainer {
 
-    public UnconfiguredDataSourceFlywayContainer(String dataSourceName) {
+    private final String message;
+    private final Throwable cause;
+
+    public UnconfiguredDataSourceFlywayContainer(String dataSourceName, String message, Throwable cause) {
         super(null, false, false, false, false, false, dataSourceName, false, false);
+        this.message = message;
+        this.cause = cause;
     }
 
     @Override
     public Flyway getFlyway() {
-        throw new UnsupportedOperationException(
-                "Cannot get a Flyway instance for unconfigured datasource " + getDataSourceName());
+        throw new UnsupportedOperationException(message, cause);
     }
 }

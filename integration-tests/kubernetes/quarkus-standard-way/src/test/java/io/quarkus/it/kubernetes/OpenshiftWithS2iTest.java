@@ -30,6 +30,7 @@ public class OpenshiftWithS2iTest {
             .setApplicationName("openshift-s2i")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("openshift-with-s2i.properties")
+            .overrideConfigKey("quarkus.openshift.deployment-kind", "deployment-config")
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));
 
     @ProdBuildResults

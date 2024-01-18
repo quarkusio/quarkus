@@ -18,7 +18,7 @@ public class RestLinksWithFailureInjectionTest {
                 assertThat(rootCause).isInstanceOf(IllegalStateException.class)
                         .hasMessageContaining("Cannot generate web links for the class " +
                                 "io.quarkus.resteasy.reactive.links.deployment.TestRecordNoId because it is " +
-                                "either missing an `id` field, a field with an `@Id` annotation or a field with an `@RestLinkId annotation");
+                                "either missing an `id` field, a field with an `@Id` annotation or a field with a `@RestLinkId annotation");
             });
 
     @Test

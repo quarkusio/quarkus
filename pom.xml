@@ -190,6 +190,7 @@
                 <jbang.skip>true</jbang.skip> <!-- jbang-maven-plugin -->
                 <forbiddenapis.skip>true</forbiddenapis.skip> <!-- forbidden-apis maven plugin -->
                 <skipCodestartValidation>true</skipCodestartValidation>
+                <truststore.skip>true</truststore.skip>
             </properties>
             <build>
                 <defaultGoal>clean install</defaultGoal>
@@ -211,6 +212,7 @@
                 <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
                 <forbiddenapis.skip>true</forbiddenapis.skip> <!-- forbidden-apis maven plugin -->
                 <skipCodestartValidation>true</skipCodestartValidation>
+                <truststore.skip>true</truststore.skip>
             </properties>
             <build>
                 <defaultGoal>clean install</defaultGoal>
@@ -235,6 +237,7 @@
                 <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
                 <jbang.skip>true</jbang.skip> <!-- jbang-maven-plugin -->
                 <forbiddenapis.skip>true</forbiddenapis.skip> <!-- forbidden-apis maven plugin -->
+                <truststore.skip>true</truststore.skip>
             </properties>
         </profile>
         <profile>

@@ -1,10 +1,10 @@
 package io.quarkus.jfr.runtime.http.rest;
 
-import io.quarkus.jfr.runtime.IdProducer;
-import io.quarkus.logging.Log;
-
 import java.time.Duration;
 import java.time.Instant;
+
+import io.quarkus.jfr.runtime.IdProducer;
+import io.quarkus.logging.Log;
 
 public class RestReactiveRecorder implements RestRecorder {
 
@@ -20,7 +20,7 @@ public class RestReactiveRecorder implements RestRecorder {
     private Instant startTime;
 
     public RestReactiveRecorder(String httpMethod, String uri, String resourceClass, String resourceMethod, String client,
-            IdProducer idProducer) {
+                                IdProducer idProducer) {
         this.httpMethod = httpMethod;
         this.uri = uri;
         this.resourceClass = resourceClass;

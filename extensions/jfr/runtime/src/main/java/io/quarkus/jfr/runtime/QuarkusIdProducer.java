@@ -1,9 +1,9 @@
 package io.quarkus.jfr.runtime;
 
-import jakarta.enterprise.context.RequestScoped;
-
 import java.security.SecureRandom;
 import java.util.HexFormat;
+
+import jakarta.enterprise.context.RequestScoped;
 
 @RequestScoped
 public class QuarkusIdProducer implements IdProducer {

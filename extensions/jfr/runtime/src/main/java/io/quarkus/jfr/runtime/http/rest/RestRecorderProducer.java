@@ -1,5 +1,7 @@
 package io.quarkus.jfr.runtime.http.rest;
 
+import io.quarkus.jfr.runtime.IdProducer;
+import io.vertx.core.http.HttpServerRequest;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Produces;
@@ -7,15 +9,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.Context;
 
-import io.quarkus.jfr.runtime.RequestIdProducer;
-import io.quarkus.jfr.runtime.http.HttpEventFactory;
-import io.vertx.core.http.HttpServerRequest;
-
 @Dependent
 public class RestRecorderProducer {
-
-    @Inject
-    RequestIdProducer requestIdProducer;
 
     @Context
     HttpServerRequest vertxRequest;
@@ -24,7 +19,7 @@ public class RestRecorderProducer {
     ResourceInfo resourceInfo;
 
     @Inject
-    HttpEventFactory httpEventFactory;
+    IdProducer idProducer;
 
     @Produces
     @RequestScoped
@@ -35,7 +30,6 @@ public class RestRecorderProducer {
         String resourceMethod = resourceInfo.getResourceMethod().toGenericString();
         String client = vertxRequest.remoteAddress().toString();
 
-        return new RestReactiveRecorder(httpMethod, uri, resourceClass, resourceMethod, client, requestIdProducer,
-                httpEventFactory);
+        return new RestReactiveRecorder(httpMethod, uri, resourceClass, resourceMethod, client, idProducer);
     }
 }

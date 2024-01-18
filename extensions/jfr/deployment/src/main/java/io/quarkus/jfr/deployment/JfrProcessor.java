@@ -7,12 +7,10 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.jfr.runtime.RequestIdProducerImpl;
-import io.quarkus.jfr.runtime.TracingRequestIdProducer;
+import io.quarkus.jfr.runtime.OTelIdProducer;
+import io.quarkus.jfr.runtime.QuarkusIdProducer;
 import io.quarkus.jfr.runtime.http.rest.JfrRestReactiveFilter;
-import io.quarkus.jfr.runtime.http.rest.RestEventFactory;
 import io.quarkus.jfr.runtime.http.rest.RestRecorderProducer;
-import io.quarkus.jfr.runtime.http.rest.tracing.TracingRestEventFactory;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 
 @BuildSteps
@@ -32,13 +30,13 @@ class JfrProcessor {
         if (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
 
             additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                    .addBeanClasses(TracingRequestIdProducer.class, TracingRestEventFactory.class)
+                    .addBeanClasses(OTelIdProducer.class)
                     .build());
 
         } else {
 
             additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                    .addBeanClasses(RequestIdProducerImpl.class, RestEventFactory.class)
+                    .addBeanClasses(QuarkusIdProducer.class)
                     .build());
         }
     }

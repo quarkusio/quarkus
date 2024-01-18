@@ -3,93 +3,91 @@ package io.quarkus.jfr.it;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.http.Header;
 import io.restassured.response.ValidatableResponse;
 
 @QuarkusTest
 public class JfrTest {
 
-    private static final String REQUEST_ID = "abc";
-
-    @AfterEach
-    public void reset() {
-        given()
-                .when().get("/jfr/reset")
-                .then()
-                .statusCode(204);
-    }
-
     @Test
     public void blockingTest() {
+        String jfrName = "blockingTest";
+
         given()
-                .when().get("/jfr/start")
+                .when().get("/jfr/start/" + jfrName)
                 .then()
                 .statusCode(204);
 
-        given()
+        IdResponse response = given()
                 .when()
-                .header(new Header("X-Request-ID", REQUEST_ID))
                 .get("/app/blocking")
                 .then()
-                .statusCode(200);
+                .statusCode(200)
+                .extract()
+                .as(IdResponse.class);
+        System.out.println(response);
 
         given()
-                .when().get("/jfr/stop")
+                .when().get("/jfr/stop/" + jfrName)
                 .then()
                 .statusCode(204);
 
         ValidatableResponse validatableResponse = given()
-                .when().get("/jfr/check")
+                .when().get("/jfr/check/" + jfrName + "/" + response.traceId)
                 .then()
                 .statusCode(200)
                 .body("start", nullValue())
                 .body("end", nullValue())
                 .body("blocking", notNullValue())
                 .body("blocking.uri", is("/app/blocking"))
-                .body("blocking.requestId", is("abc"))
+                .body("blocking.traceId", is(response.traceId))
+                .body("blocking.spanId", is(response.spanId))
                 .body("blocking.httpMethod", is("GET"))
                 .body("blocking.resourceClass", is("io.quarkus.jfr.it.AppResource"))
-                .body("blocking.resourceMethod", is("public java.lang.String io.quarkus.jfr.it.AppResource.blocking()"))
+                .body("blocking.resourceMethod",
+                        is("public io.quarkus.jfr.it.IdResponse io.quarkus.jfr.it.AppResource.blocking()"))
                 .body("blocking.client", matchesRegex("127.0.0.1:\\d{1,5}"));
     }
 
     @Test
     public void reactiveTest() {
+        String jfrName = "reactiveTest";
+
         given()
-                .when().get("/jfr/start")
+                .when().get("/jfr/start/" + jfrName)
                 .then()
                 .statusCode(204);
 
-        given()
+        IdResponse response = given()
                 .when()
-                .header(new Header("X-Request-ID", REQUEST_ID))
                 .get("/app/reactive")
                 .then()
-                .statusCode(200);
+                .statusCode(200)
+                .extract().as(IdResponse.class);
 
         given()
-                .when().get("/jfr/stop")
+                .when().get("/jfr/stop/" + jfrName)
                 .then()
                 .statusCode(204);
 
         ValidatableResponse validatableResponse = given()
-                .when().get("/jfr/check")
+                .when().get("/jfr/check/" + jfrName + "/" + response.traceId)
                 .then()
                 .statusCode(200)
                 .body("start", notNullValue())
                 .body("start.uri", is("/app/reactive"))
-                .body("start.requestId", is("abc"))
+                .body("start.traceId", is(response.traceId))
+                .body("start.spanId", is(response.spanId))
                 .body("start.httpMethod", is("GET"))
                 .body("start.resourceClass", is("io.quarkus.jfr.it.AppResource"))
                 .body("start.resourceMethod",
-                        is("public io.smallrye.mutiny.Uni<java.lang.String> io.quarkus.jfr.it.AppResource.reactive()"))
+                        is("public io.smallrye.mutiny.Uni<io.quarkus.jfr.it.IdResponse> io.quarkus.jfr.it.AppResource.reactive()"))
                 .body("start.client", matchesRegex("127.0.0.1:\\d{1,5}"))
                 .body("end", notNullValue())
-                .body("end.requestId", is("abc"))
+                .body("end.traceId", is(response.traceId))
+                .body("end.spanId", is(response.spanId))
                 .body("end.processDuration", greaterThan(0))
                 .body("blocking", nullValue());
     }

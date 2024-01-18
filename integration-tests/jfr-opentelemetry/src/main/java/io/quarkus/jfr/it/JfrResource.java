@@ -5,18 +5,21 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.List;
+import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import io.quarkus.jfr.runtime.http.rest.tracing.TracingRestBlockingEvent;
-import io.quarkus.jfr.runtime.http.rest.tracing.TracingRestReactiveEndEvent;
-import io.quarkus.jfr.runtime.http.rest.tracing.TracingRestReactiveStartEvent;
+import io.quarkus.jfr.runtime.http.rest.RestBlockingEvent;
+import io.quarkus.jfr.runtime.http.rest.RestReactiveEndEvent;
+import io.quarkus.jfr.runtime.http.rest.RestReactiveStartEvent;
 import io.quarkus.logging.Log;
 import jdk.jfr.Configuration;
+import jdk.jfr.FlightRecorder;
 import jdk.jfr.Name;
 import jdk.jfr.Recording;
 import jdk.jfr.consumer.RecordedEvent;
@@ -27,77 +30,76 @@ import jdk.jfr.consumer.RecordingFile;
 public class JfrResource {
 
     final Configuration c = Configuration.create(Paths.get("src/main/resources/quarkus-jfr.jfc"));
-    Recording recording;
-    java.nio.file.Path dumpFile;
-    RecordedEvent blockingEvent;
-    RecordedEvent startEvent;
-    RecordedEvent endEvent;
 
     public JfrResource() throws IOException, ParseException {
     }
 
     @GET
-    @Path("/start")
-    public void startJfr() {
-        recording = new Recording(c);
+    @Path("/start/{name}")
+    public void startJfr(@PathParam("name") String name) {
+        Recording recording = new Recording(c);
+        recording.setName(name);
         recording.start();
     }
 
     @GET
-    @Path("/stop")
-    public void stopJfr() throws IOException {
-        this.recording.stop();
-        dumpFile = Files.createTempFile("dump", "jfr");
-        this.recording.dump(dumpFile);
-        this.recording.close();
+    @Path("/stop/{name}")
+    public void stopJfr(@PathParam("name") String name) throws IOException {
+        Recording recording = getRecording(name);
+        recording.stop();
+    }
+
+    @GET
+    @Path("check/{name}/{traceId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public JfrEventResponse check(@PathParam("name") String name, @PathParam("traceId") String traceId) throws IOException {
+        java.nio.file.Path dumpFile = Files.createTempFile("dump", "jfr");
+        Recording recording = getRecording(name);
+        recording.dump(dumpFile);
+        recording.close();
+
         List<RecordedEvent> recordedEvents = RecordingFile.readAllEvents(dumpFile);
         if (Log.isDebugEnabled()) {
             Log.debug(recordedEvents.size() + " events were recorded");
         }
 
-        for (RecordedEvent e : recordedEvents) {
-            if (!e.hasField("requestId") || e.getString("requestId") == null) {
-                continue;
-            }
-            if (Log.isDebugEnabled()) {
-                Log.debug(e);
-            }
+        RecordedEvent blockingEvent = null;
+        RecordedEvent startEvent = null;
+        RecordedEvent endEvent = null;
 
-            if (TracingRestBlockingEvent.class.getAnnotation(Name.class).value().equals(e.getEventType().getName())) {
-                blockingEvent = e;
-            } else if (TracingRestReactiveStartEvent.class.getAnnotation(Name.class).value()
-                    .equals(e.getEventType().getName())) {
-                startEvent = e;
-            } else if (TracingRestReactiveEndEvent.class.getAnnotation(Name.class).value().equals(e.getEventType().getName())) {
-                endEvent = e;
+        for (RecordedEvent e : recordedEvents) {
+            if (Log.isDebugEnabled()) {
+                if (e.getEventType().getCategoryNames().contains("Quarkus")) {
+                    Log.debug(e);
+                }
+            }
+            if (e.hasField("traceId") && e.getString("traceId").equals(traceId)) {
+                if (RestBlockingEvent.class.getAnnotation(Name.class).value().equals(e.getEventType().getName())) {
+                    blockingEvent = e;
+                } else if (RestReactiveStartEvent.class.getAnnotation(Name.class).value().equals(e.getEventType().getName())) {
+                    startEvent = e;
+                } else if (RestReactiveEndEvent.class.getAnnotation(Name.class).value().equals(e.getEventType().getName())) {
+                    endEvent = e;
+                }
             }
         }
+
+        return new JfrEventResponse(createBlockEventResponse(blockingEvent), createStartEventResponse(startEvent),
+                createEndEventResponse(endEvent));
     }
 
-    @GET
-    @Path("/reset")
-    public void reset() {
-        blockingEvent = null;
-        startEvent = null;
-        endEvent = null;
-        recording = null;
-        dumpFile = null;
+    private Recording getRecording(String name) {
+        List<Recording> recordings = FlightRecorder.getFlightRecorder().getRecordings();
+        Optional<Recording> recording = recordings.stream().filter(r -> r.getName().equals(name)).findFirst();
+        return recording.get();
     }
 
-    @GET
-    @Path("check")
-    @Produces(MediaType.APPLICATION_JSON)
-    public JfrTracingEventResponse check() {
-        return new JfrTracingEventResponse(createBlockEventResponse(), createStartEventResponse(), createEndEventResponse());
-    }
-
-    private TracingBlockingEventResponse createBlockEventResponse() {
+    private BlockingEventResponse createBlockEventResponse(RecordedEvent blockingEvent) {
         if (blockingEvent == null) {
             return null;
         }
 
-        return new TracingBlockingEventResponse(
-                blockingEvent.getString("requestId"),
+        return new BlockingEventResponse(
                 blockingEvent.getString("traceId"),
                 blockingEvent.getString("spanId"),
                 blockingEvent.getString("httpMethod"),
@@ -107,13 +109,12 @@ public class JfrResource {
                 blockingEvent.getString("client"));
     }
 
-    private TracingStartEventResponse createStartEventResponse() {
+    private StartEventResponse createStartEventResponse(RecordedEvent startEvent) {
         if (startEvent == null) {
             return null;
         }
 
-        return new TracingStartEventResponse(
-                startEvent.getString("requestId"),
+        return new StartEventResponse(
                 startEvent.getString("traceId"),
                 startEvent.getString("spanId"),
                 startEvent.getString("httpMethod"),
@@ -123,21 +124,19 @@ public class JfrResource {
                 startEvent.getString("client"));
     }
 
-    private TracingEndEventResponse createEndEventResponse() {
+    private EndEventResponse createEndEventResponse(RecordedEvent endEvent) {
         if (endEvent == null) {
             return null;
         }
 
-        return new TracingEndEventResponse(
-                endEvent.getString("requestId"),
+        return new EndEventResponse(
                 endEvent.getString("traceId"),
                 endEvent.getString("spanId"),
                 endEvent.getLong("processDuration"));
     }
 
-    class TracingBlockingEventResponse {
+    class BlockingEventResponse {
 
-        public String requestId;
         public String traceId;
         public String spanId;
         public String httpMethod;
@@ -146,12 +145,11 @@ public class JfrResource {
         public String resourceMethod;
         public String client;
 
-        public TracingBlockingEventResponse() {
+        public BlockingEventResponse() {
         }
 
-        public TracingBlockingEventResponse(String requestId, String traceId, String spanId, String httpMethod, String uri,
+        public BlockingEventResponse(String traceId, String spanId, String httpMethod, String uri,
                 String resourceClass, String resourceMethod, String client) {
-            this.requestId = requestId;
             this.traceId = traceId;
             this.spanId = spanId;
             this.httpMethod = httpMethod;
@@ -162,9 +160,8 @@ public class JfrResource {
         }
     }
 
-    class TracingStartEventResponse {
+    class StartEventResponse {
 
-        public String requestId;
         public String traceId;
         public String spanId;
         public String httpMethod;
@@ -173,12 +170,11 @@ public class JfrResource {
         public String resourceMethod;
         public String client;
 
-        public TracingStartEventResponse() {
+        public StartEventResponse() {
         }
 
-        public TracingStartEventResponse(String requestId, String traceId, String spanId, String httpMethod, String uri,
+        public StartEventResponse(String traceId, String spanId, String httpMethod, String uri,
                 String resourceClass, String resourceMethod, String client) {
-            this.requestId = requestId;
             this.traceId = traceId;
             this.spanId = spanId;
             this.httpMethod = httpMethod;
@@ -189,35 +185,33 @@ public class JfrResource {
         }
     }
 
-    class TracingEndEventResponse {
+    class EndEventResponse {
 
-        public String requestId;
         public String traceId;
         public String spanId;
         public long processDuration;
 
-        public TracingEndEventResponse() {
+        public EndEventResponse() {
         }
 
-        public TracingEndEventResponse(String requestId, String traceId, String spanId, long processDuration) {
-            this.requestId = requestId;
+        public EndEventResponse(String traceId, String spanId, long processDuration) {
             this.traceId = traceId;
             this.spanId = spanId;
             this.processDuration = processDuration;
         }
     }
 
-    class JfrTracingEventResponse {
+    class JfrEventResponse {
 
-        public TracingBlockingEventResponse blocking;
-        public TracingStartEventResponse start;
-        public TracingEndEventResponse end;
+        public BlockingEventResponse blocking;
+        public StartEventResponse start;
+        public EndEventResponse end;
 
-        public JfrTracingEventResponse() {
+        public JfrEventResponse() {
         }
 
-        public JfrTracingEventResponse(TracingBlockingEventResponse blocking, TracingStartEventResponse start,
-                TracingEndEventResponse end) {
+        public JfrEventResponse(BlockingEventResponse blocking, StartEventResponse start,
+                EndEventResponse end) {
             this.blocking = blocking;
             this.start = start;
             this.end = end;

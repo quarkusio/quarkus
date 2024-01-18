@@ -1,6 +1,5 @@
 package io.quarkus.jfr.runtime.http;
 
-import io.quarkus.jfr.runtime.RequestId;
 import jdk.jfr.Event;
 
 public abstract class AbstractHttpEvent extends Event {
@@ -10,8 +9,6 @@ public abstract class AbstractHttpEvent extends Event {
     protected String resourceClass;
     protected String resourceMethod;
     protected String client;
-
-    abstract public void setRequestId(RequestId requestId);
 
     public void setHttpMethod(String httpMethod) {
         this.httpMethod = httpMethod;

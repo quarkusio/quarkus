@@ -1,8 +1,8 @@
 package io.quarkus.jfr.runtime.http.rest;
 
-import io.quarkus.jfr.runtime.RequestId;
-import io.quarkus.jfr.runtime.RequestIdRelational;
-import io.quarkus.jfr.runtime.http.AbstractHttpBlockingEvent;
+import io.quarkus.jfr.runtime.SpanIdRelational;
+import io.quarkus.jfr.runtime.TraceIdRelational;
+import io.quarkus.jfr.runtime.http.AbstractHttpEvent;
 import jdk.jfr.*;
 
 @Label("REST Blocking")
@@ -10,12 +10,19 @@ import jdk.jfr.*;
 @Name("io.quarkus.rest.RestBlocking")
 @Description("This event records information about the REST API executed as blocking")
 @StackTrace(false)
-public class RestBlockingEvent extends AbstractHttpBlockingEvent {
+public class RestBlockingEvent extends AbstractHttpEvent {
 
-    @RequestIdRelational
-    protected String requestId;
+    @TraceIdRelational
+    protected String traceId;
 
-    public void setRequestId(RequestId requestId) {
-        this.requestId = requestId.id;
+    @SpanIdRelational
+    protected String spanId;
+
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
+    }
+
+    public void setSpanId(String spanId) {
+        this.spanId = spanId;
     }
 }

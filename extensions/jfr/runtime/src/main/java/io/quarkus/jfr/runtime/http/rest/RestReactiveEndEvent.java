@@ -1,22 +1,34 @@
 package io.quarkus.jfr.runtime.http.rest;
 
-import io.quarkus.jfr.runtime.RequestId;
-import io.quarkus.jfr.runtime.RequestIdRelational;
-import io.quarkus.jfr.runtime.http.AbstractHttpReactiveEndEvent;
+import io.quarkus.jfr.runtime.SpanIdRelational;
+import io.quarkus.jfr.runtime.TraceIdRelational;
 import jdk.jfr.*;
 
 @Label("REST Reactive End")
-@Category({ "Quarkus", "HTTP" })
+@Category({"Quarkus", "HTTP"})
 @Name("io.quarkus.rest.RestReactiveEnd")
 @Description("This event records information at the end of the REST API executed as reactive")
 @StackTrace(false)
-public class RestReactiveEndEvent extends AbstractHttpReactiveEndEvent {
+public class RestReactiveEndEvent extends Event {
 
-    @RequestIdRelational
-    protected String requestId;
+    @TraceIdRelational
+    protected String traceId;
 
-    @Override
-    public void setRequestId(RequestId requestId) {
-        this.requestId = requestId.id;
+    @SpanIdRelational
+    protected String spanId;
+
+    @Timespan
+    protected long processDuration;
+
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
+    }
+
+    public void setSpanId(String spanId) {
+        this.spanId = spanId;
+    }
+
+    public void setProcessDuration(long processDuration) {
+        this.processDuration = processDuration;
     }
 }

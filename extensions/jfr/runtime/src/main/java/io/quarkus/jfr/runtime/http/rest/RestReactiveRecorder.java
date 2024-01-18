@@ -1,14 +1,10 @@
 package io.quarkus.jfr.runtime.http.rest;
 
+import io.quarkus.jfr.runtime.IdProducer;
+import io.quarkus.logging.Log;
+
 import java.time.Duration;
 import java.time.Instant;
-
-import io.quarkus.jfr.runtime.RequestIdProducer;
-import io.quarkus.jfr.runtime.http.AbstractHttpBlockingEvent;
-import io.quarkus.jfr.runtime.http.AbstractHttpReactiveEndEvent;
-import io.quarkus.jfr.runtime.http.AbstractHttpReactiveStartEvent;
-import io.quarkus.jfr.runtime.http.HttpEventFactory;
-import io.quarkus.logging.Log;
 
 public class RestReactiveRecorder implements RestRecorder {
 
@@ -17,34 +13,32 @@ public class RestReactiveRecorder implements RestRecorder {
     private final String resourceClass;
     private final String resourceMethod;
     private final String client;
-    private final RequestIdProducer requestIdProducer;
-    private final HttpEventFactory httpEventFactory;
-    private AbstractHttpReactiveStartEvent startEvent;
-    private AbstractHttpReactiveEndEvent endEvent;
-    private AbstractHttpBlockingEvent durationEvent;
+    private final IdProducer idProducer;
+    private RestReactiveStartEvent startEvent;
+    private RestReactiveEndEvent endEvent;
+    private RestBlockingEvent durationEvent;
     private Instant startTime;
 
     public RestReactiveRecorder(String httpMethod, String uri, String resourceClass, String resourceMethod, String client,
-            RequestIdProducer requestIdProducer, HttpEventFactory httpEventFactory) {
+                                IdProducer idProducer) {
         this.httpMethod = httpMethod;
         this.uri = uri;
         this.resourceClass = resourceClass;
         this.resourceMethod = resourceMethod;
         this.client = client;
-        this.requestIdProducer = requestIdProducer;
-        this.httpEventFactory = httpEventFactory;
+        this.idProducer = idProducer;
     }
 
     @Override
     public void recordReactiveRequest() {
-        startEvent = httpEventFactory.createReactiveStartEvent();
+        startEvent = new RestReactiveStartEvent();
         startEvent.end();
         startTime = Instant.now();
     }
 
     @Override
     public void recordBlockingRequest() {
-        durationEvent = httpEventFactory.createBlockingEvent();
+        durationEvent = new RestBlockingEvent();
         durationEvent.begin();
     }
 
@@ -58,11 +52,12 @@ public class RestReactiveRecorder implements RestRecorder {
         }
 
         Instant endTime = Instant.now();
-        endEvent = httpEventFactory.createReactiveEndEvent();
+        endEvent = new RestReactiveEndEvent();
         endEvent.end();
 
         if (startEvent.shouldCommit()) {
-            startEvent.setRequestId(requestIdProducer.create());
+            startEvent.setTraceId(idProducer.getTraceId());
+            startEvent.setSpanId(idProducer.getSpanId());
             startEvent.setHttpMethod(httpMethod);
             startEvent.setUri(uri);
             startEvent.setResourceClass(resourceClass);
@@ -71,7 +66,8 @@ public class RestReactiveRecorder implements RestRecorder {
             startEvent.commit();
         }
         if (endEvent.shouldCommit()) {
-            endEvent.setRequestId(requestIdProducer.create());
+            endEvent.setTraceId(idProducer.getTraceId());
+            endEvent.setSpanId(idProducer.getSpanId());
             endEvent.setProcessDuration(Duration.between(startTime, endTime).toNanos());
             endEvent.commit();
         }
@@ -87,7 +83,8 @@ public class RestReactiveRecorder implements RestRecorder {
         }
 
         if (durationEvent.shouldCommit()) {
-            durationEvent.setRequestId(requestIdProducer.create());
+            durationEvent.setTraceId(idProducer.getTraceId());
+            durationEvent.setSpanId(idProducer.getSpanId());
             durationEvent.setHttpMethod(httpMethod);
             durationEvent.setUri(uri);
             durationEvent.setResourceClass(resourceClass);

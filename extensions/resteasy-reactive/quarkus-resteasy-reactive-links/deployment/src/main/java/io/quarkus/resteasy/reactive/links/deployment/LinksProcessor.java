@@ -265,7 +265,7 @@ final class LinksProcessor {
         DotName superClassName = classInfo.superName();
         if (superClassName == null) {
             throw new IllegalStateException("Cannot generate web links for the class " + entityType +
-                    " because it is either missing an `id` field, a field with an `@Id` annotation or a field with an `@RestLinkId annotation");
+                    " because it is either missing an `id` field, a field with an `@Id` annotation or a field with a `@RestLinkId annotation");
         }
 
         // Id field not found but there's still hope

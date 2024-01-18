@@ -31,20 +31,18 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
     private static final Logger log = Logger.getLogger(QuarkusIdentityProviderManagerImpl.class);
 
     private final Map<Class<? extends AuthenticationRequest>, List<IdentityProvider>> providers;
-    private final List<SecurityIdentityAugmentor> augmenters;
-    private final BlockingSecurityExecutor blockingExecutor;
-
-    private final AuthenticationRequestContext blockingRequestContext = new AuthenticationRequestContext() {
-        @Override
-        public Uni<SecurityIdentity> runBlocking(Supplier<SecurityIdentity> function) {
-            return blockingExecutor.executeBlocking(function);
-        }
-    };
+    private final SecurityIdentityAugmentor[] augmenters;
+    private final AuthenticationRequestContext blockingRequestContext;
 
     QuarkusIdentityProviderManagerImpl(Builder builder) {
         this.providers = builder.providers;
-        this.augmenters = builder.augmentors;
-        this.blockingExecutor = builder.blockingExecutor;
+        this.augmenters = builder.augmentors.toArray(SecurityIdentityAugmentor[]::new);
+        this.blockingRequestContext = new AuthenticationRequestContext() {
+            @Override
+            public Uni<SecurityIdentity> runBlocking(Supplier<SecurityIdentity> function) {
+                return builder.blockingExecutor.executeBlocking(function);
+            }
+        };
     }
 
     /**
@@ -66,7 +64,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
             if (providers.size() == 1) {
                 return handleSingleProvider(providers.get(0), request);
             }
-            return handleProvider(0, (List) providers, request, blockingRequestContext);
+            return handleProvider(0, (List) providers, request);
         } catch (Throwable t) {
             return Uni.createFrom().failure(t);
         }
@@ -81,12 +79,12 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
                         return new AuthenticationFailedException();
                     }
                 });
-        if (!augmenters.isEmpty()) {
+        if (augmenters.length > 0) {
             authenticated = authenticated
                     .flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
                         @Override
                         public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {
-                            return handleIdentityFromProvider(0, securityIdentity, blockingRequestContext);
+                            return handleIdentityFromProvider(0, securityIdentity, request.getAttributes());
                         }
                     });
         }
@@ -108,47 +106,48 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
             throw new IllegalArgumentException(
                     "No IdentityProviders were registered to handle AuthenticationRequest " + request);
         }
-        return (SecurityIdentity) handleProvider(0, (List) providers, request, blockingRequestContext).await().indefinitely();
+        return (SecurityIdentity) handleProvider(0, (List) providers, request).await().indefinitely();
     }
 
     private <T extends AuthenticationRequest> Uni<SecurityIdentity> handleProvider(int pos,
-            List<IdentityProvider<T>> providers, T request, AuthenticationRequestContext context) {
+            List<IdentityProvider<T>> providers, T request) {
         if (pos == providers.size()) {
             //we failed to authentication
             log.debug("Authentication failed as providers would authenticate the request");
             return Uni.createFrom().failure(new AuthenticationFailedException());
         }
         IdentityProvider<T> current = providers.get(pos);
-        Uni<SecurityIdentity> cs = current.authenticate(request, context)
+        Uni<SecurityIdentity> cs = current.authenticate(request, blockingRequestContext)
                 .onItem().transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
                     @Override
                     public Uni<SecurityIdentity> apply(SecurityIdentity securityIdentity) {
                         if (securityIdentity != null) {
                             return Uni.createFrom().item(securityIdentity);
                         }
-                        return handleProvider(pos + 1, providers, request, context);
+                        return handleProvider(pos + 1, providers, request);
                     }
                 });
         return cs.onItem().transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
             @Override
             public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {
-                return handleIdentityFromProvider(0, securityIdentity, context);
+                return handleIdentityFromProvider(0, securityIdentity, request.getAttributes());
             }
         });
     }
 
     private Uni<SecurityIdentity> handleIdentityFromProvider(int pos, SecurityIdentity identity,
-            AuthenticationRequestContext context) {
-        if (pos == augmenters.size()) {
+            Map<String, Object> attributes) {
+        if (pos == augmenters.length) {
             return Uni.createFrom().item(identity);
         }
-        SecurityIdentityAugmentor a = augmenters.get(pos);
-        return a.augment(identity, context).flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
-            @Override
-            public Uni<SecurityIdentity> apply(SecurityIdentity securityIdentity) {
-                return handleIdentityFromProvider(pos + 1, securityIdentity, context);
-            }
-        });
+        SecurityIdentityAugmentor a = augmenters[pos];
+        return a.augment(identity, blockingRequestContext, attributes)
+                .flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+                    @Override
+                    public Uni<SecurityIdentity> apply(SecurityIdentity securityIdentity) {
+                        return handleIdentityFromProvider(pos + 1, securityIdentity, attributes);
+                    }
+                });
     }
 
     /**

@@ -20,7 +20,7 @@ public class RestReactiveRecorder implements RestRecorder {
     private Instant startTime;
 
     public RestReactiveRecorder(String httpMethod, String uri, String resourceClass, String resourceMethod, String client,
-                                IdProducer idProducer) {
+            IdProducer idProducer) {
         this.httpMethod = httpMethod;
         this.uri = uri;
         this.resourceClass = resourceClass;

@@ -5,7 +5,7 @@ import io.quarkus.jfr.runtime.TraceIdRelational;
 import jdk.jfr.*;
 
 @Label("REST Reactive End")
-@Category({"Quarkus", "HTTP"})
+@Category({ "Quarkus", "HTTP" })
 @Name("io.quarkus.rest.RestReactiveEnd")
 @Description("This event records information at the end of the REST API executed as reactive")
 @StackTrace(false)

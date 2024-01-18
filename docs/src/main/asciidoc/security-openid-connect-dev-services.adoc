@@ -258,7 +258,7 @@ For more information, see xref:security-oidc-bearer-token-authentication.adoc#in
 [[keycloak-initialization]]
 === Keycloak initialization
 
-The `quay.io/keycloak/keycloak:23.0.3` image which contains a Keycloak distribution powered by Quarkus is used to start a container by default.
+The `quay.io/keycloak/keycloak:23.0.4` image which contains a Keycloak distribution powered by Quarkus is used to start a container by default.
 `quarkus.keycloak.devservices.image-name` can be used to change the Keycloak image name.
 For example, set it to `quay.io/keycloak/keycloak:19.0.3-legacy` to use a Keycloak distribution powered by WildFly.
 Be aware that a Quarkus-based Keycloak distribution is only available starting from Keycloak `20.0.0`.

@@ -302,6 +302,47 @@ class SecurityIdentitySupplier implements Supplier<SecurityIdentity> {
 }
 ----
 
+The CDI request context activation shown in the example above does not help you to access the `RoutingContext` when the proactive authentication is enabled.
+The following example illustrates how you can access the `RoutingContext` from the `SecurityIdentityAugmentor`:
+
+[source,java]
+----
+package org.acme.security;
+
+import java.util.Map;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.security.identity.AuthenticationRequestContext;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.SecurityIdentityAugmentor;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
+
+@ApplicationScoped
+public class CustomSecurityIdentityAugmentor implements SecurityIdentityAugmentor {
+
+    @Override
+    public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context,
+            Map<String, Object> attributes) {
+        RoutingContext routingContext = HttpSecurityUtils.getRoutingContextAttribute(attributes);
+        if (routingContext != null) {
+            // Augment SecurityIdentity using RoutingContext
+        } else {
+            return augment(identity, context); <1>
+        }
+    }
+
+    ...
+}
+----
+<1> The `RoutingContext` is not be available when the `SecurityIdentity` is augmented after HTTP request has completed.
+
+NOTE: If you implemented a custom `HttpAuthenticationMechanism`, then you need to add the `RoutingContext` to the authentication
+request attributes with the `io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.setRoutingContextAttribute` method call.
+Otherwise, the `RoutingContext` will not be available during augmentation.
+
 [[jaxrs-security-context]]
 == Custom Jakarta REST SecurityContext
 

@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.setRoutingContextAttribute;
+
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
@@ -92,7 +94,10 @@ public class QuarkusHttpUser implements User {
             return deferred.await().indefinitely();
         }
         if (identityProviderManager != null) {
-            return identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE).await().indefinitely();
+            return identityProviderManager
+                    .authenticate(setRoutingContextAttribute(new AnonymousAuthenticationRequest(), routingContext))
+                    .await()
+                    .indefinitely();
         }
         return null;
     }
@@ -125,7 +130,8 @@ public class QuarkusHttpUser implements User {
             return Uni.createFrom().item(existing.getSecurityIdentity());
         }
         if (identityProviderManager != null) {
-            return identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE);
+            return identityProviderManager
+                    .authenticate(setRoutingContextAttribute(new AnonymousAuthenticationRequest(), routingContext));
         }
         return Uni.createFrom().nullItem();
     }

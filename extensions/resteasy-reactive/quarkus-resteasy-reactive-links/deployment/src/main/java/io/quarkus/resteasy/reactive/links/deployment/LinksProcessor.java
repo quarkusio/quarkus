@@ -181,12 +181,12 @@ final class LinksProcessor {
             // N.B. as this module does not depend on any other module that could supply this @Id annotation
             // (like Panache), we need this general lookup
             // the order of preference for the annotations is @RestLinkId > @persistence.Id > id
-            FieldInfoSupplier byIdAnnotation = new FieldInfoSupplier(
+            FieldInfoSupplier byAnnotation = new FieldInfoSupplier(
                     c -> {
                         FieldInfo persistenceId = null;
                         for (FieldInfo field : c.fields()) {
                             // prefer RestLinId over Id
-                            if (fieldAnnotatedWith(field, RestLinkId.class.getName())) {
+                            if (field.hasAnnotation(RestLinkId.class)) {
                                 return field;
                             }
                             // keep the first found @persistence.Id annotation in case not @RestLinkId is found
@@ -198,8 +198,9 @@ final class LinksProcessor {
                     },
                     className,
                     index);
-            if (byIdAnnotation.get() != null) {
-                fieldInfo = byIdAnnotation.get();
+            FieldInfo annotatedField = byAnnotation.get();
+            if (annotatedField != null) {
+                fieldInfo = annotatedField;
             }
         }
         return fieldInfo;

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -191,4 +192,55 @@ public class UserTagTest {
                         .render());
     }
 
+    @Test
+    public void testArgumentsAsHtmlAttributes() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addValueResolver(new ReflectionValueResolver())
+                .addSectionHelper(new UserTagSectionHelper.Factory("arg", "arg-tag"))
+                .addResultMapper(new HtmlEscaper(ImmutableList.of("text/html")))
+                .strictRendering(true)
+                .build();
+        engine.putTemplate("arg-tag", engine.parse("{_args.asHtmlAttributes}"));
+        // Assert that "it" is always skipped; ['foo'] becomes [it='foo'] and is also registered as [foo='foo']; and ['readonly'] becomes [readonly='readonly']
+        assertEquals("class=\"rounded\" foo=\"foo\" hash=\"ia3andy\" readonly=\"readonly\"",
+                engine.parse("{#arg 'foo' hash='ia3andy' class='rounded' 'readonly' /}").render());
+    }
+
+    @Test
+    public void testArgumentsIdenticalKeyValue() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addValueResolver(new ReflectionValueResolver())
+                .addSectionHelper(new UserTagSectionHelper.Factory("arg", "arg-tag"))
+                .addResultMapper(new HtmlEscaper(ImmutableList.of("text/html")))
+                .strictRendering(true)
+                .build();
+        engine.putTemplate("arg-tag", engine.parse("{_args.skipIdenticalKeyValue.size}"));
+        assertEquals("1",
+                engine.parse("{#arg 'foo' hash='ia3andy' 'readonly' /}").render());
+        engine.putTemplate("arg-tag", engine.parse("{_args.filterIdenticalKeyValue.size}"));
+        assertEquals("2",
+                engine.parse("{#arg 'foo' hash='ia3andy' 'readonly' /}").render());
+    }
+
+    @Test
+    public void testSkipIt() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addValueResolver(new ReflectionValueResolver())
+                .addSectionHelper(new UserTagSectionHelper.Factory("arg", "arg-tag"))
+                .addResultMapper(new HtmlEscaper(ImmutableList.of("text/html")))
+                .strictRendering(true)
+                .build();
+        engine.putTemplate("arg-tag", engine.parse("{_args.skipIt.asHtmlAttributes}"));
+        assertEquals("class=\"rounded\" hash=\"ia3andy\" readonly=\"readonly\"",
+                engine.parse("{#arg 'foo' hash='ia3andy' class='rounded' 'readonly' /}").render());
+        assertEquals("class=\"rounded\" hash=\"ia3andy\" readonly=\"readonly\"",
+                engine.parse("{#arg hash='ia3andy' class='rounded' 'readonly' /}").render());
+        assertEquals("",
+                engine.parse("{#arg names.size /}").data("names", List.of()).render());
+        assertEquals("foo=\"true\"",
+                engine.parse("{#arg foo=true 'foo and bar' /}").render());
+    }
 }

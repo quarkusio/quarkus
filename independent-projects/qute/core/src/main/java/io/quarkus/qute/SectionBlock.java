@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -29,6 +30,10 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
     public final String label;
     /**
      * An unmodifiable ordered map of parsed parameters.
+     * <p>
+     * Note that the order does not necessary reflect the original positions of the parameters but the parsing order.
+     *
+     * @see SectionHelperFactory#getParameters()
      */
     public final Map<String, String> parameters;
 
@@ -42,19 +47,31 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
      */
     List<TemplateNode> nodes;
 
+    private final List<String> positionalParameters;
+
     public SectionBlock(Origin origin, String id, String label, Map<String, String> parameters,
             Map<String, Expression> expressions,
-            List<TemplateNode> nodes) {
+            List<TemplateNode> nodes, List<String> positionalParameters) {
         this.origin = origin;
         this.id = id;
         this.label = label;
         this.parameters = parameters;
         this.expressions = expressions;
         this.nodes = ImmutableList.copyOf(nodes);
+        this.positionalParameters = positionalParameters;
     }
 
     public boolean isEmpty() {
         return nodes.isEmpty();
+    }
+
+    /**
+     *
+     * @param position
+     * @return the parameter for the specified position, or {@code null} if no such parameter exists
+     */
+    public String getParameter(int position) {
+        return positionalParameters.get(position);
     }
 
     List<Expression> getExpressions() {
@@ -230,6 +247,7 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
         private Origin origin;
         private String label;
         private Map<String, String> parameters;
+        private List<String> parametersPositions = List.of();
         private final List<TemplateNode> nodes;
         private Map<String, Expression> expressions;
         private final Parser parser;
@@ -257,11 +275,16 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
             return this;
         }
 
-        SectionBlock.Builder addParameter(String name, String value) {
+        SectionBlock.Builder addParameter(Entry<String, String> entry) {
             if (parameters == null) {
                 parameters = new LinkedHashMap<>();
             }
-            parameters.put(name, value);
+            parameters.put(entry.getKey(), entry.getValue());
+            return this;
+        }
+
+        SectionBlock.Builder setParametersPositions(List<String> parametersPositions) {
+            this.parametersPositions = Collections.unmodifiableList(parametersPositions);
             return this;
         }
 
@@ -277,6 +300,11 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
 
         public Map<String, String> getParameters() {
             return parameters == null ? Collections.emptyMap() : Collections.unmodifiableMap(parameters);
+        }
+
+        @Override
+        public String getParameter(int position) {
+            return parametersPositions.get(position);
         }
 
         public String getLabel() {
@@ -310,7 +338,7 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
             } else {
                 expressions = Collections.unmodifiableMap(expressions);
             }
-            return new SectionBlock(origin, id, label, parameters, expressions, nodes);
+            return new SectionBlock(origin, id, label, parameters, expressions, nodes, parametersPositions);
         }
     }
 

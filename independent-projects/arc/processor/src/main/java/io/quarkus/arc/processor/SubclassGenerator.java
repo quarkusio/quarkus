@@ -17,19 +17,18 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.spi.InterceptionType;
 import jakarta.interceptor.InvocationContext;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationInstanceEquivalenceProxy;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -247,19 +246,19 @@ public class SubclassGenerator extends AbstractGenerator {
         IntegerHolder chainIdx = new IntegerHolder();
         IntegerHolder bindingIdx = new IntegerHolder();
         Map<List<InterceptorInfo>, String> interceptorChainKeys = new HashMap<>();
-        Map<List<BindingKey>, String> bindingKeys = new HashMap<>();
+        Map<Set<AnnotationInstanceEquivalenceProxy>, String> bindingKeys = new HashMap<>();
 
         ResultHandle interceptorChainMap = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
         ResultHandle bindingsMap = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
 
         // Shared interceptor bindings literals
-        Map<BindingKey, ResultHandle> bindingsLiterals = new HashMap<>();
-        Function<BindingKey, ResultHandle> bindingsLiteralFun = new Function<SubclassGenerator.BindingKey, ResultHandle>() {
+        Map<AnnotationInstanceEquivalenceProxy, ResultHandle> bindingsLiterals = new HashMap<>();
+        Function<AnnotationInstanceEquivalenceProxy, ResultHandle> bindingsLiteralFun = new Function<AnnotationInstanceEquivalenceProxy, ResultHandle>() {
             @Override
-            public ResultHandle apply(BindingKey key) {
+            public ResultHandle apply(AnnotationInstanceEquivalenceProxy binding) {
                 // Create annotation literal if needed
-                ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(key.annotation.name());
-                return annotationLiterals.create(constructor, bindingClass, key.annotation);
+                ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.get().name());
+                return annotationLiterals.create(constructor, bindingClass, binding.get());
             }
         };
 
@@ -295,18 +294,18 @@ public class SubclassGenerator extends AbstractGenerator {
             }
         };
 
-        Function<List<BindingKey>, String> bindingsFun = new Function<List<BindingKey>, String>() {
+        Function<Set<AnnotationInstanceEquivalenceProxy>, String> bindingsFun = new Function<Set<AnnotationInstanceEquivalenceProxy>, String>() {
             @Override
-            public String apply(List<BindingKey> keys) {
+            public String apply(Set<AnnotationInstanceEquivalenceProxy> bindings) {
                 String key = "b" + bindingIdx.i++;
-                if (keys.size() == 1) {
+                if (bindings.size() == 1) {
                     constructor.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, bindingsMap, constructor.load(key),
                             constructor.invokeStaticMethod(MethodDescriptors.COLLECTIONS_SINGLETON,
-                                    bindingsLiterals.computeIfAbsent(keys.iterator().next(), bindingsLiteralFun)));
+                                    bindingsLiterals.computeIfAbsent(bindings.iterator().next(), bindingsLiteralFun)));
                 } else {
-                    ResultHandle bindingsArray = constructor.newArray(Object.class, keys.size());
+                    ResultHandle bindingsArray = constructor.newArray(Object.class, bindings.size());
                     int bindingsIndex = 0;
-                    for (BindingKey binding : keys) {
+                    for (AnnotationInstanceEquivalenceProxy binding : bindings) {
                         constructor.writeArrayValue(bindingsArray, bindingsIndex++,
                                 bindingsLiterals.computeIfAbsent(binding, bindingsLiteralFun));
                     }
@@ -325,8 +324,7 @@ public class SubclassGenerator extends AbstractGenerator {
                 subclass.getFieldCreator("arc$" + methodIdx++, InterceptedMethodMetadata.class.getName())
                         .setModifiers(ACC_PRIVATE);
                 interceptorChainKeys.computeIfAbsent(interception.interceptors, interceptorChainKeysFun);
-                bindingKeys.computeIfAbsent(interception.bindings.stream().map(BindingKey::new).collect(Collectors.toList()),
-                        bindingsFun);
+                bindingKeys.computeIfAbsent(interception.bindingsEquivalenceProxies(), bindingsFun);
             }
         }
 
@@ -412,9 +410,8 @@ public class SubclassGenerator extends AbstractGenerator {
                         paramsHandles);
 
                 // 3. Interceptor bindings
-                // Note that we use a shared list if possible
-                String bindingKey = bindingKeys.get(
-                        interception.bindings.stream().map(BindingKey::new).collect(Collectors.toList()));
+                // Note that we use a shared set if possible
+                String bindingKey = bindingKeys.get(interception.bindingsEquivalenceProxies());
                 ResultHandle bindingsHandle = bindingsHandles.computeIfAbsent(bindingKey, ignored -> {
                     return initMetadataMethodFinal.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
                             initMetadataMethodFinal.getMethodParam(1), initMetadataMethodFinal.load(bindingKey));
@@ -990,43 +987,8 @@ public class SubclassGenerator extends AbstractGenerator {
         }
     }
 
-    /**
-     * We cannot use {@link AnnotationInstance#equals(Object)} and {@link AnnotationInstance#hashCode()} because it includes the
-     * annotation target.
-     */
-    static class BindingKey {
-
-        final AnnotationInstance annotation;
-
-        public BindingKey(AnnotationInstance annotation) {
-            this.annotation = Objects.requireNonNull(annotation);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            BindingKey key = (BindingKey) o;
-            return annotation.name().equals(key.annotation.name()) && annotation.values().equals(key.annotation.values());
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + annotation.name().hashCode();
-            result = prime * result + annotation.values().hashCode();
-            return result;
-        }
-
-    }
-
     private static class IntegerHolder {
         private int i = 1;
-    };
+    }
 
 }

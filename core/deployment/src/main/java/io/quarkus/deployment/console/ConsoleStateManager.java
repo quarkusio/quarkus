@@ -71,8 +71,9 @@ public class ConsoleStateManager {
                     if (command != null) {
                         if (command.consoleCommand.getReadLineHandler() != null) {
                             if (key == 'e') {
-                                QuarkusConsole.INSTANCE.doReadLineWithPrompt("Current args: "
+                                QuarkusConsole.INSTANCE.doReadLineWithPrompt("Enter new arguments (was \""
                                         + String.join(" ", RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs())
+                                        + "\"):\n"
                                         + ">");
                             } else {
                                 QuarkusConsole.INSTANCE.doReadLine();

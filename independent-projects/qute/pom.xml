@@ -46,7 +46,7 @@
         <version.compiler.plugin>3.12.1</version.compiler.plugin>
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.2.5</version.surefire.plugin>
-        <version.smallrye-mutiny>2.5.3</version.smallrye-mutiny>
+        <version.smallrye-mutiny>2.5.4</version.smallrye-mutiny>
     </properties>
 
     <modules>

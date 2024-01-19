@@ -59,7 +59,7 @@
         <version.compiler.plugin>3.12.1</version.compiler.plugin>
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.2.5</version.surefire.plugin>
-        <mutiny.version>2.5.3</mutiny.version>
+        <mutiny.version>2.5.4</mutiny.version>
         <smallrye-common.version>2.1.2</smallrye-common.version>
         <vertx.version>4.5.1</vertx.version>
         <rest-assured.version>5.4.0</rest-assured.version>

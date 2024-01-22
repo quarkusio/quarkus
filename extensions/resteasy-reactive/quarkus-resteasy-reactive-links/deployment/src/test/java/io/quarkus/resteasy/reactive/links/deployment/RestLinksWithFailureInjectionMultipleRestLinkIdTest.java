@@ -9,16 +9,18 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.runtime.util.ExceptionUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class RestLinksWithFailureInjectionTest {
+public class RestLinksWithFailureInjectionMultipleRestLinkIdTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClasses(TestRecordNoId.class, TestResourceNoId.class)).assertException(t -> {
+            .withApplicationRoot(
+                    jar -> jar.addClasses(TestRecordMultipleRestLinkIds.class, TestResourceMultipleRestLinkIds.class))
+            .assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 assertThat(rootCause).isInstanceOf(IllegalStateException.class)
                         .hasMessageContaining("Cannot generate web links for the class " +
-                                "io.quarkus.resteasy.reactive.links.deployment.TestRecordNoId because it is " +
-                                "either missing an `id` field, a field with an `@Id` annotation or a field with a `@RestLinkId annotation");
+                                "io.quarkus.resteasy.reactive.links.deployment.TestRecordMultipleRestLinkIds" +
+                                " because it has multiple fields annotated with `@RestLinkId`, where a maximum of one is allowed");
             });
 
     @Test

@@ -1643,7 +1643,8 @@ Assuming a `Record` looks like:
 ----
 public class Record {
 
-    // the class must contain/inherit either and `id` field or an `@Id` annotated field
+    // The class must contain/inherit either and `id` field, an `@Id` or `@RestLinkId` annotated field.
+    // When resolving the id the order of preference is: `@RestLinkId` > `@Id` > `id` field.
     private int id;
 
     public Record() {

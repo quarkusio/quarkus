@@ -7,7 +7,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
 
 public final class MarshallingBuildItem extends SimpleBuildItem {
 
-    // holds protostream requierements
+    // holds protostream requirements
     private final Properties properties;
 
     // a marshaller can be defined for different client names

@@ -67,6 +67,8 @@ public class InfinispanClientProducer {
         RemoteCache<String, String> protobufMetadataCache = null;
         Properties namedProperties = properties.get(infinispanConfigName);
         Set<SerializationContextInitializer> initializers = (Set) namedProperties.remove(PROTOBUF_INITIALIZERS);
+        InfinispanClientRuntimeConfig runtimeConfig = this.infinispanClientsRuntimeConfigHandle.get()
+                .getInfinispanClientRuntimeConfig(infinispanConfigName);
         if (initializers != null) {
             for (SerializationContextInitializer initializer : initializers) {
                 if (protobufMetadataCache == null) {
@@ -75,6 +77,20 @@ public class InfinispanClientProducer {
                 }
                 protobufMetadataCache.put(initializer.getProtoFileName(), initializer.getProtoFile());
             }
+            runtimeConfig.backupCluster.entrySet().forEach(backup -> {
+                if (backup.getValue().useSchemaRegistration.orElse(true)) {
+                    cacheManager.switchToCluster(backup.getKey());
+                    for (SerializationContextInitializer initializer : initializers) {
+                        RemoteCache<String, String> backupProtobufMetadataCache = null;
+                        if (backupProtobufMetadataCache == null) {
+                            backupProtobufMetadataCache = cacheManager.getCache(
+                                    ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
+                        }
+                        backupProtobufMetadataCache.put(initializer.getProtoFileName(), initializer.getProtoFile());
+                    }
+                    cacheManager.switchToDefaultCluster();
+                }
+            });
         }
 
         for (Map.Entry<Object, Object> property : namedProperties.entrySet()) {
@@ -92,6 +108,29 @@ public class InfinispanClientProducer {
                 }
             }
         }
+
+        runtimeConfig.backupCluster.entrySet().forEach(backupConfigEntry -> {
+            if (backupConfigEntry.getValue().useSchemaRegistration.orElse(true)) {
+                cacheManager.switchToCluster(backupConfigEntry.getKey());
+                RemoteCache<String, String> backupProtobufMetadataCache = null;
+                for (Map.Entry<Object, Object> property : namedProperties.entrySet()) {
+                    Object key = property.getKey();
+                    if (key instanceof String) {
+                        String keyString = (String) key;
+                        if (keyString.startsWith(PROTOBUF_FILE_PREFIX)) {
+                            String fileName = keyString.substring(PROTOBUF_FILE_PREFIX.length());
+                            String fileContents = (String) property.getValue();
+                            if (backupProtobufMetadataCache == null) {
+                                backupProtobufMetadataCache = cacheManager.getCache(
+                                        ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
+                            }
+                            backupProtobufMetadataCache.put(fileName, fileContents);
+                        }
+                    }
+                }
+                cacheManager.switchToDefaultCluster();
+            }
+        });
     }
 
     private void initialize(String infinispanConfigName, Map<String, Properties> properties) {

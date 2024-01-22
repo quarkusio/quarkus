@@ -283,6 +283,17 @@ public class InfinispanClientRuntimeConfig {
         // @formatter:on
         @ConfigItem(defaultValue = "HASH_DISTRIBUTION_AWARE")
         Optional<String> clientIntelligence;
+
+        // @formatter:off
+        /**
+         * Enables or disables Protobuf generated schemas upload to the backup.
+         * Set it to 'false' when you need to handle the lifecycle of the Protobuf Schemas on Server side yourself.
+         * Default is 'true'.
+         * This setting will be ignored if the Global Setting is set up to false.
+         */
+        // @formatter:on
+        @ConfigItem(defaultValue = "true")
+        Optional<Boolean> useSchemaRegistration;
     }
 
     @Override

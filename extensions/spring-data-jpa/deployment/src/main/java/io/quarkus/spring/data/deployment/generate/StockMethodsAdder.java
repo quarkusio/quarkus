@@ -87,9 +87,9 @@ public class StockMethodsAdder {
         // and if so generate the implementation while also keeping the proper records
 
         generateSave(classCreator, generatedClassName, entityDotName, entityTypeStr,
-                allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, entityClassFieldDescriptor);
         generateSaveAndFlush(classCreator, generatedClassName, entityDotName, entityTypeStr,
-                allMethodsToBeImplementedToResult);
+                allMethodsToBeImplementedToResult, entityClassFieldDescriptor);
         generateSaveAll(classCreator, entityClassFieldDescriptor, generatedClassName, entityDotName, entityTypeStr,
                 allMethodsToBeImplementedToResult);
         generateFlush(classCreator, generatedClassName, allMethodsToBeImplementedToResult);
@@ -121,7 +121,8 @@ public class StockMethodsAdder {
 
     private void generateSave(ClassCreator classCreator, String generatedClassName,
             DotName entityDotName, String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult,
+            FieldDescriptor entityClassFieldDescriptor) {
 
         MethodDescriptor saveDescriptor = MethodDescriptor.ofMethod(generatedClassName, "save", entityTypeStr,
                 entityTypeStr);
@@ -144,7 +145,7 @@ public class StockMethodsAdder {
                                 entity);
                         BranchResult isNewBranch = save.ifTrue(isNew);
                         generatePersistAndReturn(entity, isNewBranch.trueBranch());
-                        generateMergeAndReturn(entity, isNewBranch.falseBranch());
+                        generateMergeAndReturn(entity, isNewBranch.falseBranch(), entityClassFieldDescriptor);
                     } else {
                         AnnotationTarget idAnnotationTarget = getIdAnnotationTarget(entityDotName, index);
                         ResultHandle idValue = generateObtainValue(save, entityDotName, entity, idAnnotationTarget);
@@ -167,7 +168,7 @@ public class StockMethodsAdder {
                                     versionValueTarget.get());
                             BranchResult versionValueIsNullBranch = save.ifNull(versionValue);
                             generatePersistAndReturn(entity, versionValueIsNullBranch.trueBranch());
-                            generateMergeAndReturn(entity, versionValueIsNullBranch.falseBranch());
+                            generateMergeAndReturn(entity, versionValueIsNullBranch.falseBranch(), entityClassFieldDescriptor);
                         }
 
                         BytecodeCreator idValueUnset;
@@ -192,7 +193,7 @@ public class StockMethodsAdder {
                             idValueUnset = idValueNullBranch.trueBranch();
                         }
                         generatePersistAndReturn(entity, idValueUnset);
-                        generateMergeAndReturn(entity, idValueSet);
+                        generateMergeAndReturn(entity, idValueSet, entityClassFieldDescriptor);
                     }
                 }
                 try (MethodCreator bridgeSave = classCreator.getMethodCreator(bridgeSaveDescriptor)) {
@@ -236,10 +237,13 @@ public class StockMethodsAdder {
         bytecodeCreator.returnValue(entity);
     }
 
-    private void generateMergeAndReturn(ResultHandle entity, BytecodeCreator bytecodeCreator) {
+    private void generateMergeAndReturn(ResultHandle entity, BytecodeCreator bytecodeCreator,
+            FieldDescriptor entityClassFieldDescriptor) {
+        ResultHandle entityClass = bytecodeCreator.readInstanceField(entityClassFieldDescriptor, bytecodeCreator.getThis());
         ResultHandle entityManager = bytecodeCreator.invokeVirtualMethod(
-                ofMethod(AbstractJpaOperations.class, "getEntityManager", EntityManager.class),
-                bytecodeCreator.readStaticField(operationsField));
+                ofMethod(AbstractJpaOperations.class, "getEntityManager", EntityManager.class, Class.class),
+                bytecodeCreator.readStaticField(operationsField),
+                entityClass);
         entity = bytecodeCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(EntityManager.class, "merge", Object.class, Object.class),
                 entityManager, entity);
@@ -280,7 +284,7 @@ public class StockMethodsAdder {
 
     private void generateSaveAndFlush(ClassCreator classCreator,
             String generatedClassName, DotName entityDotName, String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult, FieldDescriptor entityClassFieldDescriptor) {
 
         MethodDescriptor saveAndFlushDescriptor = MethodDescriptor.ofMethod(generatedClassName, "saveAndFlush", entityTypeStr,
                 entityTypeStr);
@@ -298,7 +302,7 @@ public class StockMethodsAdder {
                 // we need to force the generation of findById since this method depends on it
                 allMethodsToBeImplementedToResult.put(save, false);
                 generateSave(classCreator, generatedClassName, entityDotName, entityTypeStr,
-                        allMethodsToBeImplementedToResult);
+                        allMethodsToBeImplementedToResult, entityClassFieldDescriptor);
 
                 try (MethodCreator saveAndFlush = classCreator.getMethodCreator(saveAndFlushDescriptor)) {
                     saveAndFlush.addAnnotation(Transactional.class);

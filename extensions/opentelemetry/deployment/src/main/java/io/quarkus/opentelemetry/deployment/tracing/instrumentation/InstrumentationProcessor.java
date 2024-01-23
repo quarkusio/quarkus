@@ -24,7 +24,6 @@ import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.InstrumentationRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc.GrpcTracingClientInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc.GrpcTracingServerInterceptor;
-import io.quarkus.opentelemetry.runtime.tracing.intrumentation.reactivemessaging.ReactiveMessagingTracingEmitterDecorator;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.reactivemessaging.ReactiveMessagingTracingIncomingDecorator;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.reactivemessaging.ReactiveMessagingTracingOutgoingDecorator;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.restclient.OpenTelemetryClientFilter;
@@ -100,7 +99,6 @@ public class InstrumentationProcessor {
         if (capabilities.isPresent(Capability.SMALLRYE_REACTIVE_MESSAGING) && config.instrument().reactiveMessaging()) {
             additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingOutgoingDecorator.class));
             additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingIncomingDecorator.class));
-            additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingEmitterDecorator.class));
         }
     }
 

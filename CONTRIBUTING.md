@@ -28,6 +28,7 @@ fixes, documentation, examples... But first, read this page (including the small
     + [Workflow tips](#workflow-tips)
         - [Building all modules of an extension](#building-all-modules-of-an-extension)
         - [Building a single module of an extension](#building-a-single-module-of-an-extension)
+        - [Building with relocations](#building-with-relocations)
         - [Running a single test](#running-a-single-test)
             * [Maven Invoker tests](#maven-invoker-tests)
     + [Build with multiple threads](#build-with-multiple-threads)
@@ -418,6 +419,20 @@ or
 ```
 
 In this command we use the groupId and artifactId of the module to identify it.
+
+#### Building with relocations
+
+Let's say you want to make changes to an extension and try it with an existing application that uses older Quarkus with
+extensions that got renamed or moved recently.
+Quarkus maintains compatibility as much as possible and for most renamed or moved artifact, it provides a relocation artifact,
+allowing the build to be redirected to the new artifact.
+However, relocations are not built by default, and to build and install them, you need to enable the `relocations` Maven profile as follows:
+
+```
+./mvnw -Dquickly -Prelocations
+```
+
+Relocations are published with every Quarkus release, thus this is needed only when working with Quarkus main.
 
 #### Running a single test
 

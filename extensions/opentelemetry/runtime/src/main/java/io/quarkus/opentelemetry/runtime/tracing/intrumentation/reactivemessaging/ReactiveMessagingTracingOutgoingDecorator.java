@@ -31,20 +31,16 @@ public class ReactiveMessagingTracingOutgoingDecorator implements SubscriberDeco
         Multi<? extends Message<?>> multi = toBeSubscribed;
         if (isConnector) {
             // add TracingMetadata to the outgoing message if it doesn't exist already
-            multi = decorateOutgoing(multi);
+            multi = multi.map(m -> {
+                Message<?> message = m;
+                if (m.getMetadata(TracingMetadata.class).isEmpty()) {
+                    var otelContext = QuarkusContextStorage.INSTANCE.current();
+                    message = m.addMetadata(TracingMetadata.withCurrent(otelContext));
+                }
+                return message;
+            });
         }
         return multi;
-    }
-
-    static Multi<? extends Message<?>> decorateOutgoing(Multi<? extends Message<?>> multi) {
-        return multi.map(m -> {
-            Message<?> message = m;
-            if (m.getMetadata(TracingMetadata.class).isEmpty()) {
-                var otelContext = QuarkusContextStorage.INSTANCE.current();
-                message = m.addMetadata(TracingMetadata.withCurrent(otelContext));
-            }
-            return message;
-        });
     }
 
 }

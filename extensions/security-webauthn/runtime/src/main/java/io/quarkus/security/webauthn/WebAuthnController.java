@@ -97,7 +97,7 @@ public class WebAuthnController {
     }
 
     /**
-     * Endpoint for register
+     * Endpoint for getting a register challenge
      *
      * @param ctx the current request
      */
@@ -143,7 +143,7 @@ public class WebAuthnController {
     }
 
     /**
-     * Endpoint for login
+     * Endpoint for getting a login challenge
      *
      * @param ctx the current request
      */
@@ -189,7 +189,7 @@ public class WebAuthnController {
     }
 
     /**
-     * Endpoint for callback
+     * Endpoint for getting authenticated
      *
      * @param ctx the current request
      */

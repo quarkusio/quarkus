@@ -19,6 +19,7 @@ include::{includes}/extension-status.adoc[]
 == Prerequisites
 
 include::{includes}/prerequisites.adoc[]
+* A WebAuthn or PassKeys-capable device, or https://developer.chrome.com/docs/devtools/webauthn/[an emulator of those].
 
 == Introduction to WebAuthn
 
@@ -61,6 +62,10 @@ service: one before login or registration, before calling the hardware authentic
 login or registration.
 
 And also there are a lot more fields to store than just a public key, but we will help you with that.
+
+Just in case you get there wondering what's the relation with https://fidoalliance.org/passkeys/[PassKeys]
+and whether we support it: sure, yes, PassKeys is a way that your authenticator devices can share and sync 
+their credentials, which you can then use with our WebAuthn authentication.
 
 == Architecture
 
@@ -544,6 +549,7 @@ in `src/main/resources/META-INF/resources/index.html`:
       <li><a href="/api/users/me">User API</a></li>
       <li><a href="/api/admin">Admin API</a></li>
       <li><a href="/q/webauthn/logout">Logout</a></li>
+     </ul>
     </nav>
     <div class="container">
      <div class="item">
@@ -582,7 +588,7 @@ in `src/main/resources/META-INF/resources/index.html`:
 
       const loginButton = document.getElementById('login');
 
-      loginButton.onclick = () => {
+      loginButton.addEventListener("click", (e) => {
         var userName = document.getElementById('userNameLogin').value;
         result.replaceChildren();
         webAuthn.login({ name: userName })
@@ -593,11 +599,11 @@ in `src/main/resources/META-INF/resources/index.html`:
             result.append("Login failed: "+err);
           });
         return false;
-      };
+      });
 
       const registerButton = document.getElementById('register');
 
-      registerButton.onclick = () => {
+      registerButton.addEventListener("click", (e) => {
         var userName = document.getElementById('userNameRegister').value;
         var firstName = document.getElementById('firstName').value;
         var lastName = document.getElementById('lastName').value;
@@ -610,7 +616,7 @@ in `src/main/resources/META-INF/resources/index.html`:
             result.append("Registration failed: "+err);
           });
         return false;
-      };
+      });
     </script>
   </body>
 </html>
@@ -639,7 +645,8 @@ form on the right, then pressing the `Register` button:
 
 image::webauthn-2.png[role="thumb"]
 
-Your browser will ask you to activate your WebAuthn authenticator:
+Your browser will ask you to activate your WebAuthn authenticator (you will need a WebAuthn-capable browser
+and possibly device, or you can use https://developer.chrome.com/docs/devtools/webauthn/[an emulator of those]):
 
 image::webauthn-3.png[role="thumb"]
 
@@ -669,10 +676,13 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
 .Request
 ----
 {
- "name": "userName",
- "displayName": "Mr Nice Guy"
+ "name": "userName", <1>
+ "displayName": "Mr Nice Guy" <2>
 }
 ----
+
+<1> Required
+<2> Optional
 
 [source,json]
 .Response
@@ -717,9 +727,11 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
 .Request
 ----
 {
- "name": "userName"
+ "name": "userName" <1>
 }
 ----
+
+<1> Required
 
 [source,json]
 .Response
@@ -1257,6 +1269,10 @@ public class TestUserProvider extends MyWebAuthnSetup {
 
 [[configuration-reference]]
 == Configuration Reference
+
+The security encryption key can be set with the 
+link:all-config#quarkus-vertx-http_quarkus.http.auth.session.encryption-key[`quarkus.http.auth.session.encryption-key`]
+configuration option, as described in the link:security-authentication-mechanisms#form-auth[security guide].
 
 include::{generated-dir}/config/quarkus-security-webauthn.adoc[opts=optional, leveloffset=+1]
 

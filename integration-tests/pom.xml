@@ -396,6 +396,7 @@
                 <module>mtls-certificates</module>
                 <!-- Virtual threads test -->
                 <module>virtual-threads</module>
+                <module>mutiny-native-jctools</module>
             </modules>
         </profile>
 

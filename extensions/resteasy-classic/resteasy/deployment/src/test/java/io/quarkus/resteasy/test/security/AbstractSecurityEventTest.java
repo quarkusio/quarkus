@@ -37,7 +37,8 @@ public abstract class AbstractSecurityEventTest {
 
     protected static final Class<?>[] TEST_CLASSES = {
             RolesAllowedResource.class, TestIdentityProvider.class, TestIdentityController.class,
-            UnsecuredResource.class, UnsecuredSubResource.class, EventObserver.class
+            UnsecuredResource.class, UnsecuredSubResource.class, EventObserver.class, UnsecuredResourceInterface.class,
+            UnsecuredParentResource.class
     };
 
     @Inject

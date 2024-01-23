@@ -7,7 +7,6 @@ import static io.quarkus.security.spi.SecurityTransformerUtils.hasSecurityAnnota
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.ClassInfo;
@@ -34,6 +33,7 @@ import io.quarkus.resteasy.runtime.ForbiddenExceptionMapper;
 import io.quarkus.resteasy.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.runtime.NotFoundExceptionMapper;
 import io.quarkus.resteasy.runtime.SecurityContextFilter;
+import io.quarkus.resteasy.runtime.StandardSecurityCheckInterceptor;
 import io.quarkus.resteasy.runtime.UnauthorizedExceptionMapper;
 import io.quarkus.resteasy.runtime.vertx.JsonArrayReader;
 import io.quarkus.resteasy.runtime.vertx.JsonArrayWriter;
@@ -41,7 +41,6 @@ import io.quarkus.resteasy.runtime.vertx.JsonObjectReader;
 import io.quarkus.resteasy.runtime.vertx.JsonObjectWriter;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
-import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
@@ -91,8 +90,7 @@ public class ResteasyBuiltinsProcessor {
      */
     @BuildStep
     void setUpSecurity(BuildProducer<ResteasyJaxrsProviderBuildItem> providers,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItem, Capabilities capabilities,
-            Optional<EagerSecurityInterceptorBuildItem> eagerSecurityInterceptors) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItem, Capabilities capabilities) {
         providers.produce(new ResteasyJaxrsProviderBuildItem(UnauthorizedExceptionMapper.class.getName()));
         providers.produce(new ResteasyJaxrsProviderBuildItem(ForbiddenExceptionMapper.class.getName()));
         providers.produce(new ResteasyJaxrsProviderBuildItem(AuthenticationFailedExceptionMapper.class.getName()));
@@ -102,10 +100,16 @@ public class ResteasyBuiltinsProcessor {
         if (capabilities.isPresent(Capability.SECURITY)) {
             providers.produce(new ResteasyJaxrsProviderBuildItem(SecurityContextFilter.class.getName()));
             additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(SecurityContextFilter.class));
-            if (eagerSecurityInterceptors.isPresent()) {
-                providers.produce(new ResteasyJaxrsProviderBuildItem(EagerSecurityFilter.class.getName()));
-                additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(EagerSecurityFilter.class));
-            }
+            providers.produce(new ResteasyJaxrsProviderBuildItem(EagerSecurityFilter.class.getName()));
+            additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(EagerSecurityFilter.class));
+            additionalBeanBuildItem.produce(
+                    AdditionalBeanBuildItem.unremovableOf(StandardSecurityCheckInterceptor.RolesAllowedInterceptor.class));
+            additionalBeanBuildItem.produce(AdditionalBeanBuildItem
+                    .unremovableOf(StandardSecurityCheckInterceptor.PermissionsAllowedInterceptor.class));
+            additionalBeanBuildItem.produce(
+                    AdditionalBeanBuildItem.unremovableOf(StandardSecurityCheckInterceptor.PermitAllInterceptor.class));
+            additionalBeanBuildItem.produce(
+                    AdditionalBeanBuildItem.unremovableOf(StandardSecurityCheckInterceptor.AuthenticatedInterceptor.class));
         }
     }
 

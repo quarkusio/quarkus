@@ -75,28 +75,10 @@ public class AppCDSBuildStep {
             }
         }
 
-        boolean useArchiveClassesAtExit = compiledJavaVersion.getJavaVersion()
-                .isJava17OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE;
-
-        Path classesListPath = null;
-        if (!useArchiveClassesAtExit) {
-            classesListPath = createClassesList(jarResult, outputTarget, javaBinPath, containerImage,
-                    appCDsRequested.get().getAppCDSDir(), packageConfig.isFastJar());
-            if (classesListPath == null) {
-                return;
-            }
-            log.debugf("'%s' successfully created.", CLASSES_LIST_FILE_NAME);
-        }
-
         Path appCDSPath;
         log.info("Launching AppCDS creation process.");
-        if (useArchiveClassesAtExit) {
-            appCDSPath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
-                    packageConfig.isFastJar());
-        } else {
-            appCDSPath = createAppCDSFromClassesList(jarResult, outputTarget, javaBinPath, containerImage, classesListPath,
-                    packageConfig.isFastJar());
-        }
+        appCDSPath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
+                packageConfig.isFastJar());
 
         if (appCDSPath == null) {
             log.warn("Unable to create AppCDS.");

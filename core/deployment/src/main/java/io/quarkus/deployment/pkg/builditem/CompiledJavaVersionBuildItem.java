@@ -24,10 +24,13 @@ public final class CompiledJavaVersionBuildItem extends SimpleBuildItem {
 
     public interface JavaVersion {
 
+        @Deprecated(forRemoval = true)
         Status isExactlyJava11();
 
+        @Deprecated(forRemoval = true)
         Status isJava11OrHigher();
 
+        @Deprecated(forRemoval = true)
         Status isJava17OrHigher();
 
         Status isJava21OrHigher();

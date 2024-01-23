@@ -87,8 +87,7 @@ public class DockerProcessor {
         Optional<DockerFileBaseInformationProvider.DockerFileBaseInformation> dockerFileBaseInformation = dockerFileBaseInformationProvider
                 .determine(dockerfilePaths.getDockerfilePath());
 
-        if ((compiledJavaVersion.getJavaVersion().isJava17OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE)
-                && dockerFileBaseInformation.isPresent() && (dockerFileBaseInformation.get().getJavaVersion() < 17)) {
+        if (dockerFileBaseInformation.isPresent() && (dockerFileBaseInformation.get().getJavaVersion() < 17)) {
             throw new IllegalStateException(
                     String.format(
                             "The project is built with Java 17 or higher, but the selected Dockerfile (%s) is using a lower Java version in the base image (%s). Please ensure you are using the proper base image in the Dockerfile.",

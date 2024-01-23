@@ -21,6 +21,10 @@ public class TokensHelper {
     }
 
     public Uni<Tokens> getTokens(OidcClient oidcClient) {
+        return getTokens(oidcClient, false);
+    }
+
+    public Uni<Tokens> getTokens(OidcClient oidcClient, boolean forceNewTokens) {
         TokenRequestState currentState = null;
         TokenRequestState newState = null;
         //if the tokens are expired we refresh them in an async manner
@@ -39,9 +43,9 @@ public class TokensHelper {
                 return currentState.tokenUni;
             } else {
                 Tokens tokens = currentState.tokens;
-                if (tokens.isAccessTokenExpired() || tokens.isAccessTokenWithinRefreshInterval()) {
+                if (forceNewTokens || tokens.isAccessTokenExpired() || tokens.isAccessTokenWithinRefreshInterval()) {
                     newState = new TokenRequestState(
-                            prepareUni((tokens.getRefreshToken() != null && !tokens.isRefreshTokenExpired())
+                            prepareUni((!forceNewTokens && tokens.getRefreshToken() != null && !tokens.isRefreshTokenExpired())
                                     ? oidcClient.refreshTokens(tokens.getRefreshToken())
                                     : oidcClient.getTokens()));
                     if (tokenRequestStateUpdater.compareAndSet(this, currentState, newState)) {

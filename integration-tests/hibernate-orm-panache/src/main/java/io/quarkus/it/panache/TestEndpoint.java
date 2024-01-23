@@ -1326,7 +1326,7 @@ public class TestEndpoint {
 
         PanacheQuery<CatProjectionBean> projectionDistinctQuery = Cat
                 // The spaces at the beginning are intentional
-                .find("   SELECT   disTINct  c.name, cast(null as string), SUM(c.weight) from Cat c where name = :name group by name  ",
+                .find("   SELECT   disTINct  c.name as foo, cast(null as string) as bar, SUM(c.weight) as baz from Cat c where name = :name group by name  ",
                         Parameters.with("name", bubulle.name))
                 .project(CatProjectionBean.class);
         CatProjectionBean aggregationDistinctProjection = projectionDistinctQuery.singleResult();
@@ -1337,10 +1337,18 @@ public class TestEndpoint {
         long countDistinct = projectionDistinctQuery.count();
         Assertions.assertEquals(1L, countDistinct);
 
+        PanacheQuery<Long> projectionDistinctQueryLong = Cat
+                // The spaces at the beginning are intentional
+                .find("   SELECT   disTINct  c.name as foo, cast(null as string) as bar, SUM(c.weight) as baz from Cat c where name = :name group by name  ",
+                        Parameters.with("name", bubulle.name))
+                .project(Long.class);
+        long countDistinctProjectLong = projectionDistinctQueryLong.count();
+        Assertions.assertEquals(1L, countDistinctProjectLong);
+
         // We are checking that not everything gets lowercased
         PanacheQuery<CatProjectionBean> letterCaseQuery = Cat
                 // The spaces at the beginning are intentional
-                .find("   SELECT   disTINct  'GARFIELD', 'JoN ArBuCkLe' from Cat c where name = :NamE group by name  ",
+                .find("   SELECT   disTINct  'GARFIELD' as foo, 'JoN ArBuCkLe' as bar from Cat c where name = :NamE group by name  ",
                         Parameters.with("NamE", bubulle.name))
                 .project(CatProjectionBean.class);
 

@@ -109,16 +109,18 @@ public class CommonPanacheQueryImpl<Entity> {
             String selectClause = trimmedQuery.substring(7, endSelect).trim();
             String from = trimmedQuery.substring(endSelect);
             StringBuilder newQuery = new StringBuilder("select ");
+            String fromDistinctQuery = from;
             // Handle select-distinct. HQL example: select distinct new org.acme.ProjectionClass...
             boolean distinctQuery = selectClause.toLowerCase().startsWith("distinct ");
             if (distinctQuery) {
                 // 9 is the length of "distinct "
                 selectClause = selectClause.substring(9).trim();
                 newQuery.append("distinct ");
+                fromDistinctQuery = "from (select distinct " + selectClause + " " + from + ")";
             }
 
             newQuery.append("new ").append(type.getName()).append("(").append(selectClause).append(")").append(from);
-            return new CommonPanacheQueryImpl<>(this, newQuery.toString(), "select count(*) " + from);
+            return new CommonPanacheQueryImpl<>(this, newQuery.toString(), "select count(*) " + fromDistinctQuery);
         }
 
         // We use the first constructor that we found and use the parameter names,

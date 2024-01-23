@@ -10,11 +10,16 @@ import jakarta.ws.rs.PathParam;
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
  */
 @Path("/unsecured")
-public class UnsecuredResource {
+public class UnsecuredResource extends UnsecuredParentResource implements UnsecuredResourceInterface {
     @Path("/defaultSecurity")
     @GET
     public String defaultSecurity() {
         return "defaultSecurity";
+    }
+
+    @Override
+    public String defaultSecurityInterface() {
+        return UnsecuredResourceInterface.super.defaultSecurityInterface();
     }
 
     @Path("/permitAllPathParam/{index}")

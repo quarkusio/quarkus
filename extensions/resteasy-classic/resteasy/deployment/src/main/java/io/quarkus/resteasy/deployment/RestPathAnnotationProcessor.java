@@ -182,7 +182,7 @@ public class RestPathAnnotationProcessor {
      * @param resultAcc accumulator for tail-recursion
      * @return Collection of all interfaces und their parents. Never null.
      */
-    private static Collection<ClassInfo> getAllClassInterfaces(
+    static Collection<ClassInfo> getAllClassInterfaces(
             CombinedIndexBuildItem index,
             Collection<ClassInfo> classInfos,
             List<ClassInfo> resultAcc) {

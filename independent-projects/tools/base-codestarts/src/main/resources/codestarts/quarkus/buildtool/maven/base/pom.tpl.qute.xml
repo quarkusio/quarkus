@@ -206,6 +206,19 @@
                 <skipITs>false</skipITs>
             </properties>
         </profile>
+        <!-- Activate this profile to build against the Quarkus Snapshot artifacts -->
+        <profile>
+            <id>quarkus-snapshot</id>
+            <activation>
+                <property>
+                    <name>quarkus-snapshot</name>
+                </property>
+            </activation>
+            <properties>
+                <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
+                <quarkus.platform.version>999-SNAPSHOT</quarkus.platform.version>
+            </properties>
+        </profile>
     </profiles>
     {/if}
 </project>

@@ -423,9 +423,10 @@ In this command we use the groupId and artifactId of the module to identify it.
 #### Building with relocations
 
 Let's say you want to make changes to an extension and try it with an existing application that uses older Quarkus with
-extensions that got renamed or moved recently. Quarkus maintains compatibility as much as possible and thus there is
-`relocations` profile to provide mapping to new extension coordinates. This can be achieved by executing the following
-command:
+extensions that got renamed or moved recently.
+Quarkus maintains compatibility as much as possible and for most renamed or moved artifact, it provides a relocation artifact,
+allowing the build to be redirected to the new artifact.
+However, relocations are not built by default, and to build and install them, you need to enable the `relocations` Maven profile as follows:
 
 ```
 ./mvnw -Dquickly -Prelocations

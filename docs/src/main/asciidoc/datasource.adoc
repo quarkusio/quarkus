@@ -253,7 +253,12 @@ Without an extension, the driver will work correctly in any Quarkus app running 
 However, the driver is unlikely to work when compiling your application to a native executable.
 If you plan to make a native executable, use the existing JDBC Quarkus extensions, or contribute one for your driver.
 
-.An example with the OpenTracing driver:
+[WARNING]
+====
+OpenTracing has been deprecated in favor of OpenTelemetry. For tracing information, please check the related section about <<datasource-tracing>>, bellow.
+====
+
+.A custom driver definition example with the legacy OpenTracing driver:
 
 [source, properties]
 ----
@@ -533,6 +538,20 @@ This can be useful if you need to access the collected metrics programmatically.
 They are available after calling `dataSource.getMetrics()` on an injected `AgroalDataSource` instance.
 
 If the metrics collection for this datasource is disabled, all values result in zero.
+
+[[datasource-tracing]]
+=== Datasource tracing
+
+To use tracing with a datasource, you need to add the xref:opentelemetry.adoc[`quarkus-opentelemetry`] extension to your project.
+
+You don't need to declare a different driver because you need tracing. If you use a JDBC driver, you need to follow the instructions in the OpenTelemetry extension xref:opentelemetry.adoc#jdbc[here].
+
+Even with all the tracing infrastructure in place the datasource tracing is not enabled by default, and you need to enable it by setting this property:
+[source, properties]
+----
+# enable tracing
+quarkus.datasource.jdbc.telemetry=true
+----
 
 === Narayana transaction manager integration
 

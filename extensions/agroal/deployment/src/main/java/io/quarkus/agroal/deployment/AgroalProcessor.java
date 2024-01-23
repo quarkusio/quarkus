@@ -58,6 +58,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -407,5 +408,10 @@ class AgroalProcessor {
                     new RemovedResourceBuildItem(ArtifactKey.fromString("io.opentelemetry.instrumentation:opentelemetry-jdbc"),
                             Set.of("io/opentelemetry/instrumentation.jdbc/internal/JdbcSingletons")));
         }
+    }
+
+    @BuildStep
+    NativeImageResourceBundleBuildItem registerRowSetResourceBundle() {
+        return new NativeImageResourceBundleBuildItem("com.sun.rowset.RowSetResourceBundle");
     }
 }

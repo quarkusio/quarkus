@@ -11,6 +11,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -74,7 +75,15 @@ public class InstrumentationProcessor {
     @BuildStep(onlyIf = GrpcExtensionAvailable.class)
     void grpcTracers(BuildProducer<AdditionalBeanBuildItem> additionalBeans, OTelBuildConfig config) {
         if (config.instrument().grpc()) {
-            additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingServerInterceptor.class));
+            if (ConfigProvider.getConfig()
+                    // FIXME this property, from quarkus-grpc should be a build time one.
+                    .getOptionalValue("quarkus.grpc.server.use-separate-server", Boolean.class)
+                    .orElse(true)) {
+                // separated server requires the server interceptor, otherwise the vert.x instrumentation will be used.
+                additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingServerInterceptor.class));
+            } else {
+                // TODO add grpc related attributes to existing vert.x span.
+            }
             additionalBeans.produce(new AdditionalBeanBuildItem(GrpcTracingClientInterceptor.class));
         }
     }
@@ -117,6 +126,18 @@ public class InstrumentationProcessor {
         Consumer<VertxOptions> vertxTracingOptions;
         vertxTracingOptions = recorder.getVertxTracingOptions();
         return new VertxOptionsConsumerBuildItem(vertxTracingOptions, LIBRARY_AFTER);
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void setupVertx(InstrumentationRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
+            Capabilities capabilities) {
+        boolean sqlClientAvailable = capabilities.isPresent(Capability.REACTIVE_DB2_CLIENT)
+                || capabilities.isPresent(Capability.REACTIVE_MSSQL_CLIENT)
+                || capabilities.isPresent(Capability.REACTIVE_MYSQL_CLIENT)
+                || capabilities.isPresent(Capability.REACTIVE_ORACLE_CLIENT)
+                || capabilities.isPresent(Capability.REACTIVE_PG_CLIENT);
+        recorder.setupVertxTracer(beanContainerBuildItem.getValue(), sqlClientAvailable);
     }
 
     // RESTEasy and Vert.x web

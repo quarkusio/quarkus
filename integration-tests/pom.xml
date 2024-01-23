@@ -385,6 +385,8 @@
                 <module>opentelemetry-vertx</module>
                 <module>opentelemetry-reactive</module>
                 <module>opentelemetry-grpc</module>
+                <module>opentelemetry-grpc-only</module>
+                <module>opentelemetry-grpc-multiplex</module>
                 <module>opentelemetry-vertx-exporter</module>
                 <module>opentelemetry-reactive-messaging</module>
                 <module>logging-json</module>
@@ -418,6 +420,7 @@
                 <module>grpc-stork-simple</module>
                 <module>grpc-exceptions</module>
                 <module>grpc-test-random-port</module>
+                <module>grpc-multiplex</module>
                 <module>google-cloud-functions-http</module>
                 <module>google-cloud-functions</module>
                 <module>istio</module>

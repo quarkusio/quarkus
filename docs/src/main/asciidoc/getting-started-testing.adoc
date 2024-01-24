@@ -1596,8 +1596,35 @@ public class FooTest {
 <4> The test also injects `Charlie`, a dependency for which a synthetic `@Singleton` bean is registered automatically. The injected reference is an "unconfigured" Mockito mock.
 <5> We can leverage the Mockito API in a test method to configure the behavior.
 
-If you need the full control over the `QuarkusComponentTestExtension` configuration then you can use the `@RegisterExtension` annotation and configure the extension programatically.
-The test above could be rewritten like:
+`QuarkusComponentTestExtension` also resolves parameters of test methods and injects matching beans.
+So the code snippet above can be rewritten as: 
+
+[source, java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
+import io.quarkus.test.InjectMock;
+import io.quarkus.test.component.TestConfigProperty;
+import io.quarkus.test.component.QuarkusComponentTest;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+@QuarkusComponentTest
+@TestConfigProperty(key = "bar", value = "true")
+public class FooTest {
+
+    @Test
+    public void testPing(Foo foo, @InjectMock Charlie charlieMock) { <1>
+        Mockito.when(charlieMock.ping()).thenReturn("OK");
+        assertEquals("OK", foo.ping());
+    }
+}
+----
+<1> Parameters annotated with `@io.quarkus.test.component.SkipInject` are never resolved by this extension.
+
+Furthermore, if you need the full control over the `QuarkusComponentTestExtension` configuration then you can use the `@RegisterExtension` annotation and configure the extension programatically.
+The original test could be rewritten like:
 
 [source, java]
 ----
@@ -1638,13 +1665,19 @@ However, if  the test instance lifecycle is `Lifecycle#PER_CLASS` then the conta
 The fields annotated with `@Inject` and `@InjectMock` are injected after a test instance is created.
 Finally, the CDI request context is activated and terminated per each test method.
 
+=== Injection
+Test class fields annotated with `@jakarta.inject.Inject` and `@io.quarkus.test.InjectMock` are injected after a test instance is created.
+Dependent beans injected into these fields are correctly destroyed before a test instance is destroyed.
+Parameters of a test method for which a matching bean exists are resolved unless annotated with `@io.quarkus.test.component.SkipInject`.
+Dependent beans injected into the test method arguments are correctly destroyed after the test method completes.
+
 === Auto Mocking Unsatisfied Dependencies
 
 Unlike in regular CDI environments the test does not fail if a component injects an unsatisfied dependency.
 Instead, a synthetic bean is registered automatically for each combination of required type and qualifiers of an injection point that resolves to an unsatisfied dependency.
 The bean has the `@Singleton` scope so it's shared across all injection points with the same required type and qualifiers.
 The injected reference is an _unconfigured_ Mockito mock.
-You can inject the mock in your test and leverage the Mockito API to configure the behavior.
+You can inject the mock in your test using the `io.quarkus.test.InjectMock` annotation and leverage the Mockito API to configure the behavior.
 
 === Custom Mocks For Unsatisfied Dependencies
 

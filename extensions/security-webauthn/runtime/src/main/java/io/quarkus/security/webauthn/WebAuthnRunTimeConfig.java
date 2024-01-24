@@ -232,6 +232,18 @@ public interface WebAuthnRunTimeConfig {
     String cookieName();
 
     /**
+     * The cookie that is used to store the challenge data during login/registration
+     */
+    @ConfigItem(defaultValue = "_quarkus_webauthn_challenge")
+    public String challengeCookieName;
+
+    /**
+     * The cookie that is used to store the username data during login/registration
+     */
+    @ConfigItem(defaultValue = "_quarkus_webauthn_username")
+    public String challengeUsernameCookieName;
+
+    /**
      * SameSite attribute for the session cookie.
      */
     @WithDefault("strict")

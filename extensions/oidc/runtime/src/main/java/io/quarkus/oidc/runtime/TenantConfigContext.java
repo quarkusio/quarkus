@@ -9,6 +9,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.OIDCException;
+import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -156,6 +157,10 @@ public class TenantConfigContext {
 
     public OidcTenantConfig getOidcTenantConfig() {
         return oidcConfig;
+    }
+
+    public OidcConfigurationMetadata getOidcMetadata() {
+        return provider != null ? provider.getMetadata() : null;
     }
 
     public SecretKey getStateEncryptionKey() {

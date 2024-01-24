@@ -50,13 +50,12 @@ public enum BuiltinBean {
             BuiltinBean::validateInjectionPoint, DotNames.INJECTION_POINT),
     BEAN(BuiltinBean::generateBeanBytecode,
             (ip, names) -> cdiAndRawTypeMatches(ip, DotNames.BEAN, DotNames.INJECTABLE_BEAN) && ip.hasDefaultedQualifier(),
-            DotNames.BEAN),
-
+            BuiltinBean::validateBean, DotNames.BEAN),
     INTERCEPTED_BEAN(BuiltinBean::generateInterceptedBeanBytecode,
             (ip, names) -> cdiAndRawTypeMatches(ip, DotNames.BEAN, DotNames.INJECTABLE_BEAN) && !ip.hasDefaultedQualifier()
                     && ip.getRequiredQualifiers().size() == 1
                     && ip.getRequiredQualifiers().iterator().next().name().equals(DotNames.INTERCEPTED),
-            DotNames.BEAN),
+            BuiltinBean::validateInterceptedBean, DotNames.BEAN),
     BEAN_MANAGER(BuiltinBean::generateBeanManagerBytecode, DotNames.BEAN_MANAGER, DotNames.BEAN_CONTAINER),
     EVENT(BuiltinBean::generateEventBytecode, DotNames.EVENT),
     RESOURCE(BuiltinBean::generateResourceBytecode, (ip, names) -> ip.getKind() == InjectionPointKind.RESOURCE,
@@ -297,9 +296,6 @@ public enum BuiltinBean {
 
     private static void generateBeanBytecode(GeneratorContext ctx) {
         // this.beanProvider1 = () -> new BeanMetadataProvider<>();
-        if (ctx.targetInfo.kind() != InjectionTargetInfo.TargetKind.BEAN) {
-            throw new IllegalStateException("Invalid injection target info: " + ctx.targetInfo);
-        }
         ResultHandle beanProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(BeanMetadataProvider.class, String.class),
                 ctx.constructor.load(ctx.targetInfo.asBean().getIdentifier()));
@@ -313,9 +309,6 @@ public enum BuiltinBean {
     }
 
     private static void generateInterceptedBeanBytecode(GeneratorContext ctx) {
-        if (!(ctx.targetInfo instanceof InterceptorInfo)) {
-            throw new IllegalStateException("Invalid injection target info: " + ctx.targetInfo);
-        }
         ResultHandle interceptedBeanMetadataProvider = ctx.constructor
                 .newInstance(MethodDescriptor.ofConstructor(InterceptedBeanMetadataProvider.class));
 
@@ -485,6 +478,20 @@ public enum BuiltinBean {
             }
             errors.accept(new DefinitionException("Only @Dependent beans can access metadata about an injection point: "
                     + msg));
+        }
+    }
+
+    private static void validateBean(InjectionTargetInfo injectionTarget, InjectionPointInfo injectionPoint,
+            Consumer<Throwable> errors) {
+        if (injectionTarget.kind() != InjectionTargetInfo.TargetKind.BEAN) {
+            errors.accept(new DefinitionException("Only beans can access bean metadata"));
+        }
+    }
+
+    private static void validateInterceptedBean(InjectionTargetInfo injectionTarget, InjectionPointInfo injectionPoint,
+            Consumer<Throwable> errors) {
+        if (injectionTarget.kind() != InjectionTargetInfo.TargetKind.BEAN || !injectionTarget.asBean().isInterceptor()) {
+            errors.accept(new DefinitionException("Only interceptors can access intercepted bean metadata"));
         }
     }
 

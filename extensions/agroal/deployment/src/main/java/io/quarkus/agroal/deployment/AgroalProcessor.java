@@ -413,7 +413,14 @@ class AgroalProcessor {
     }
 
     @BuildStep
-    NativeImageResourceBundleBuildItem registerRowSetResourceBundle() {
-        return new NativeImageResourceBundleBuildItem("com.sun.rowset.RowSetResourceBundle");
+    void registerRowSetSupport(
+            BuildProducer<NativeImageResourceBundleBuildItem> resourceBundleProducer,
+            BuildProducer<NativeImageResourceBuildItem> nativeResourceProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
+        resourceBundleProducer.produce(new NativeImageResourceBundleBuildItem("com.sun.rowset.RowSetResourceBundle"));
+        nativeResourceProducer.produce(new NativeImageResourceBuildItem("javax/sql/rowset/rowset.properties"));
+        reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(
+                "com.sun.rowset.providers.RIOptimisticProvider",
+                "com.sun.rowset.providers.RIXMLProvider").build());
     }
 }

@@ -17,6 +17,8 @@ public class HibernateOrmRuntimeConfigPersistenceUnit {
     /**
      * Whether this persistence unit should be active at runtime.
      *
+     * See xref:hibernate-orm.adoc#persistence-unit-active[this section of the documentation].
+     *
      * If the persistence unit is not active, it won't start with the application,
      * and accessing the corresponding EntityManagerFactory/EntityManager or SessionFactory/Session
      * will not be possible.

@@ -50,6 +50,16 @@ public final class DataSourceUtil {
                         dataSourcePropertyKey(dataSourceName, "jdbc.url")));
     }
 
+    public static ConfigurationException dataSourceInactive(String dataSourceName) {
+        return new ConfigurationException(String.format(Locale.ROOT,
+                "Datasource '%s' was deactivated through configuration properties."
+                        + " To solve this, avoid accessing this datasource at runtime, for instance by deactivating consumers (persistence units, ...)."
+                        + " Alternatively, activate the datasource by setting configuration property '%s' to 'true' and configure datasource '%s'."
+                        + " Refer to https://quarkus.io/guides/datasource for guidance.",
+                dataSourceName, dataSourcePropertyKey(dataSourceName, "active"), dataSourceName),
+                Set.of(dataSourcePropertyKey(dataSourceName, "active")));
+    }
+
     private DataSourceUtil() {
     }
 

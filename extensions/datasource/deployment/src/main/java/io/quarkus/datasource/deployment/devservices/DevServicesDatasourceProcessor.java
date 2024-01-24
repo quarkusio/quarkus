@@ -198,11 +198,17 @@ public class DevServicesDatasourceProcessor {
             DockerStatusBuildItem dockerStatusBuildItem,
             LaunchMode launchMode, Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig globalDevServicesConfig) {
-        boolean explicitlyDisabled = !(dataSourceBuildTimeConfig.devservices().enabled().orElse(true));
         String dataSourcePrettyName = DataSourceUtil.isDefault(dbName) ? "default datasource" : "datasource " + dbName;
 
-        if (explicitlyDisabled) {
-            //explicitly disabled
+        if (!ConfigUtils.getFirstOptionalValue(
+                DataSourceUtil.dataSourcePropertyKeys(dbName, "active"), Boolean.class)
+                .orElse(true)) {
+            log.debug("Not starting Dev Services for " + dataSourcePrettyName
+                    + " as the datasource has been deactivated in the configuration");
+            return null;
+        }
+
+        if (!(dataSourceBuildTimeConfig.devservices().enabled().orElse(true))) {
             log.debug("Not starting Dev Services for " + dataSourcePrettyName
                     + " as it has been disabled in the configuration");
             return null;

@@ -253,7 +253,7 @@ Client proxies allow for:
 * Circular dependencies in the dependency graph. Having circular dependencies is often an indication that a redesign should be considered, but sometimes it's inevitable.
 * In rare cases it's practical to destroy the beans manually. A direct injected reference would lead to a stale bean instance.
 
-
+[[ok-you-said-that-there-are-several-kinds-of-beans]]
 == OK. You said that there are several kinds of beans?
 
 Yes. In general, we distinguish:

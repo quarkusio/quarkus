@@ -71,8 +71,14 @@ public interface BuildSystemRunner {
 
     default void paramsToQuarkusArgs(List<String> params, ArrayDeque<String> args) {
         if (!params.isEmpty()) {
-            args.add("-Dquarkus.args='" + String.join(" ", params) + "'");
+            args.add("-Dquarkus.args=" + String.join(" ", wrapWithDoubleQuotes(params)));
         }
+    }
+
+    default List<String> wrapWithDoubleQuotes(List<String> stringsToWrap) {
+        return stringsToWrap.stream()
+                .map("\"%s\""::formatted)
+                .toList();
     }
 
     default List<String> flattenMappedProperties(Map<String, String> props) {

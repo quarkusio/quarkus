@@ -329,6 +329,7 @@ By default, Quarkus provides three profiles, that activate automatically in cert
 * *test* - Activated when running tests
 * *prod* - The default profile when not running in development or test mode
 
+[[custom-profiles]]
 === Custom Profiles
 
 It is also possible to create additional profiles and activate them with the `quarkus.profile` configuration property. A

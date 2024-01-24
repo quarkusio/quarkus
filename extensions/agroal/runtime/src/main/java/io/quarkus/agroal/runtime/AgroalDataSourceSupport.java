@@ -3,13 +3,13 @@ package io.quarkus.agroal.runtime;
 import java.util.Map;
 import java.util.Optional;
 
-public class DataSourceSupport {
+public class AgroalDataSourceSupport {
 
     public final boolean disableSslSupport;
     public final boolean mpMetricsPresent;
     public final Map<String, Entry> entries;
 
-    public DataSourceSupport(boolean disableSslSupport, boolean mpMetricsPresent, Map<String, Entry> entries) {
+    public AgroalDataSourceSupport(boolean disableSslSupport, boolean mpMetricsPresent, Map<String, Entry> entries) {
         this.disableSslSupport = disableSslSupport;
         this.mpMetricsPresent = mpMetricsPresent;
         this.entries = entries;

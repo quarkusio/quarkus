@@ -23,8 +23,7 @@ class LiteralSupport {
         if (literal == null || literal.isEmpty()) {
             return value;
         }
-        char firstChar = literal.charAt(0);
-        if (isStringLiteralSeparator(firstChar) && literal.charAt(literal.length() - 1) == firstChar) {
+        if (isStringLiteral(literal)) {
             value = literal.substring(1, literal.length() - 1);
         } else if (literal.equals("true")) {
             value = Boolean.TRUE;
@@ -33,6 +32,7 @@ class LiteralSupport {
         } else if (literal.equals("null")) {
             value = null;
         } else {
+            char firstChar = literal.charAt(0);
             if (Character.isDigit(firstChar) || firstChar == '-' || firstChar == '+') {
                 if (INTEGER_LITERAL_PATTERN.matcher(literal).matches()) {
                     try {
@@ -75,6 +75,14 @@ class LiteralSupport {
      */
     static boolean isStringLiteralSeparator(char character) {
         return character == '"' || character == '\'';
+    }
+
+    static boolean isStringLiteral(String value) {
+        if (value == null || value.isEmpty()) {
+            return false;
+        }
+        char firstChar = value.charAt(0);
+        return isStringLiteralSeparator(firstChar) && value.charAt(value.length() - 1) == firstChar;
     }
 
 }

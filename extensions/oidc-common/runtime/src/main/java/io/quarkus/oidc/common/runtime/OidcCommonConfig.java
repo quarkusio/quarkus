@@ -14,83 +14,80 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class OidcCommonConfig {
     /**
      * The base URL of the OpenID Connect (OIDC) server, for example, `https://host:port/auth`.
-     * OIDC discovery endpoint will be called by default by appending a '.well-known/openid-configuration' path to this URL.
-     * Note if you work with Keycloak OIDC server, make sure the base URL is in the following format:
-     * `https://host:port/realms/{realm}` where `{realm}` has to be replaced by the name of the Keycloak realm.
+     * Do not set this property if the public key verification ({@link #publicKey}) or certificate chain verification only
+     * ({@link #certificateChain}) is required.
+     * The OIDC discovery endpoint is called by default by appending a `.well-known/openid-configuration` path to this URL.
+     * For Keycloak, use `https://host:port/realms/{realm}`, replacing `{realm}` with the Keycloak realm name.
      */
     @ConfigItem
     public Optional<String> authServerUrl = Optional.empty();
 
     /**
-     * Enables OIDC discovery.
-     * If the discovery is disabled then the OIDC endpoint URLs must be configured individually.
+     * Discovery of the OIDC endpoints.
+     * If not enabled, you must configure the OIDC endpoint URLs individually.
      */
     @ConfigItem(defaultValueDocumentation = "true")
     public Optional<Boolean> discoveryEnabled = Optional.empty();
 
     /**
-     * Relative path or absolute URL of the OIDC token endpoint which issues access and refresh tokens.
+     * The OIDC token endpoint that issues access and refresh tokens;
+     * specified as a relative path or absolute URL.
+     * Set if {@link #discoveryEnabled} is `false` or a discovered token endpoint path must be customized.
      */
     @ConfigItem
     public Optional<String> tokenPath = Optional.empty();
 
     /**
-     * Relative path or absolute URL of the OIDC token revocation endpoint.
+     * The relative path or absolute URL of the OIDC token revocation endpoint.
      */
     @ConfigItem
     public Optional<String> revokePath = Optional.empty();
 
     /**
-     * The client-id of the application. Each application has a client-id that is used to identify the application
+     * The client id of the application. Each application has a client id that is used to identify the application.
+     * Setting the client id is not required if {@link #applicationType} is `service` and no token introspection is required.
      */
     @ConfigItem
     public Optional<String> clientId = Optional.empty();
 
     /**
-     * The maximum amount of time connecting to the currently unavailable OIDC server will be attempted for.
-     * The number of times the connection request will be repeated is calculated by dividing the value of this property by 2.
-     * For example, setting it to `20S` will allow for requesting the connection up to 10 times with a 2 seconds delay between
-     * the retries.
-     * Note this property is only effective when the initial OIDC connection is created,
-     * for example, when requesting a well-known OIDC configuration.
-     * Use the 'connection-retry-count' property to support trying to re-establish an already available connection which may
-     * have been
-     * dropped.
+     * The duration to attempt the initial connection to an OIDC server.
+     * For example, setting the duration to `20S` allows 10 retries, each 2 seconds apart.
+     * This property is only effective when the initial OIDC connection is created.
+     * For dropped connections, use the `connection-retry-count` property instead.
      */
     @ConfigItem
     public Optional<Duration> connectionDelay = Optional.empty();
 
     /**
-     * The number of times an attempt to re-establish an already available connection will be repeated.
-     * Note this property is different from the `connection-delay` property, which is only effective during the initial OIDC
-     * connection creation.
-     * This property is used to try to recover an existing connection that may have been temporarily lost.
-     * For example, if a request to the OIDC token endpoint fails due to a connection exception, then the request will be
-     * retried the number of times configured by this property.
+     * The number of times to retry re-establishing an existing OIDC connection if it is temporarily lost.
+     * Different from `connection-delay`, which applies only to initial connection attempts.
+     * For instance, if a request to the OIDC token endpoint fails due to a connection issue, it will be retried as per this
+     * setting.
      */
     @ConfigItem(defaultValue = "3")
     public int connectionRetryCount = 3;
 
     /**
-     * The amount of time after which the current OIDC connection request will time out.
+     * The number of seconds after which the current OIDC connection request times out.
      */
     @ConfigItem(defaultValue = "10s")
     public Duration connectionTimeout = Duration.ofSeconds(10);
 
     /**
-     * The maximum size of the connection pool used by the WebClient
+     * The maximum size of the connection pool used by the WebClient.
      */
     @ConfigItem
     public OptionalInt maxPoolSize = OptionalInt.empty();
 
     /**
-     * Credentials which the OIDC adapter will use to authenticate to the OIDC server.
+     * Credentials the OIDC adapter uses to authenticate to the OIDC server.
      */
     @ConfigItem
     public Credentials credentials = new Credentials();
 
     /**
-     * Options to configure a proxy that OIDC adapter will use for talking with OIDC server.
+     * Options to configure the proxy the OIDC adapter uses to talk with the OIDC server.
      */
     @ConfigItem
     public Proxy proxy = new Proxy();
@@ -105,15 +102,16 @@ public class OidcCommonConfig {
     public static class Credentials {
 
         /**
-         * Client secret which is used for a `client_secret_basic` authentication method.
-         * Note that a 'client-secret.value' can be used instead but both properties are mutually exclusive.
+         * The client secret used by the `client_secret_basic` authentication method.
+         * Must be set unless a secret is set in {@link #clientSecret} or {@link #jwt} client authentication is required.
+         * You can use `client-secret.value` instead, but both properties are mutually exclusive.
          */
         @ConfigItem
         public Optional<String> secret = Optional.empty();
 
         /**
-         * Client secret which can be used for the `client_secret_basic` (default) and `client_secret_post`
-         * and 'client_secret_jwt' authentication methods.
+         * The client secret used by the `client_secret_basic` (default), `client_secret_post`, or `client_secret_jwt`
+         * authentication methods.
          * Note that a `secret.value` property can be used instead to support the `client_secret_basic` method
          * but both properties are mutually exclusive.
          */
@@ -121,7 +119,7 @@ public class OidcCommonConfig {
         public Secret clientSecret = new Secret();
 
         /**
-         * Client JWT authentication methods
+         * Client JSON Web Token (JWT) authentication methods
          */
         @ConfigItem
         public Jwt jwt = new Jwt();
@@ -151,7 +149,7 @@ public class OidcCommonConfig {
         }
 
         /**
-         * Supports the client authentication methods which involve sending a client secret.
+         * Supports the client authentication methods that involve sending a client secret.
          *
          * @see <a href=
          *      "https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication">https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication</a>
@@ -161,20 +159,21 @@ public class OidcCommonConfig {
 
             public static enum Method {
                 /**
-                 * client_secret_basic (default): client id and secret are submitted with the HTTP Authorization Basic scheme
+                 * `client_secret_basic` (default): The client id and secret are submitted with the HTTP Authorization Basic
+                 * scheme.
                  */
                 BASIC,
 
                 /**
-                 * client_secret_post: client id and secret are submitted as the `client_id` and `client_secret` form
-                 * parameters.
+                 * `client_secret_post`: The client id and secret are submitted as the `client_id` and `client_secret`
+                 * form parameters.
                  */
                 POST,
 
                 /**
-                 * client_secret_jwt: client id and generated JWT secret are submitted as the `client_id` and `client_secret`
-                 * form
-                 * parameters.
+                 * `client_secret_jwt`: The client id and generated JWT secret are submitted as the `client_id` and
+                 * `client_secret`
+                 * form parameters.
                  */
                 POST_JWT,
 
@@ -186,19 +185,21 @@ public class OidcCommonConfig {
             }
 
             /**
-             * The client secret value - it will be ignored if 'credentials.secret' is set
+             * The client secret value. This value is ignored if `credentials.secret` is set.
+             * Must be set unless a secret is set in {@link #clientSecret} or {@link #jwt} client authentication is required.
              */
             @ConfigItem
             public Optional<String> value = Optional.empty();
 
             /**
-             * The Secret CredentialsProvider
+             * The Secret CredentialsProvider.
              */
             @ConfigItem
             public Provider provider = new Provider();
 
             /**
-             * Authentication method.
+             * The authentication method.
+             * If the `clientSecret.value` secret is set, this method is `basic` by default.
              */
             @ConfigItem
             public Optional<Method> method = Optional.empty();
@@ -229,9 +230,8 @@ public class OidcCommonConfig {
         }
 
         /**
-         * Supports the client authentication 'client_secret_jwt' and `private_key_jwt` methods which involve sending a JWT
-         * token
-         * assertion signed with either a client secret or private key.
+         * Supports the client authentication `client_secret_jwt` and `private_key_jwt` methods, which involves sending a JWT
+         * token assertion signed with a client secret or private key.
          *
          * @see <a href=
          *      "https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication">https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication</a>
@@ -239,20 +239,20 @@ public class OidcCommonConfig {
         @ConfigGroup
         public static class Jwt {
             /**
-             * If provided, indicates that JWT is signed using a secret key
+             * If provided, indicates that JWT is signed using a secret key.
              */
             @ConfigItem
             public Optional<String> secret = Optional.empty();
 
             /**
-             * If provided, indicates that JWT is signed using a secret key provided by Secret CredentialsProvider
+             * If provided, indicates that JWT is signed using a secret key provided by Secret CredentialsProvider.
              */
             @ConfigItem
             public Provider secretProvider = new Provider();
 
             /**
-             * If provided, indicates that JWT is signed using a private key in PEM or JWK format. You can use the
-             * {@link #signatureAlgorithm} property to specify the key algorithm.
+             * If provided, indicates that JWT is signed using a private key in PEM or JWK format.
+             * You can use the {@link #signatureAlgorithm} property to override the default key algorithm, `RS256`.
              */
             @ConfigItem
             public Optional<String> keyFile = Optional.empty();
@@ -270,38 +270,38 @@ public class OidcCommonConfig {
             public Optional<String> keyStorePassword;
 
             /**
-             * The private key id/alias
+             * The private key id or alias.
              */
             @ConfigItem
             public Optional<String> keyId = Optional.empty();
 
             /**
-             * The private key password
+             * The private key password.
              */
             @ConfigItem
             public Optional<String> keyPassword;
 
             /**
-             * JWT audience ('aud') claim value.
+             * The JWT audience (`aud`) claim value.
              * By default, the audience is set to the address of the OpenId Connect Provider's token endpoint.
              */
             @ConfigItem
             public Optional<String> audience = Optional.empty();
 
             /**
-             * Key identifier of the signing key added as a JWT 'kid' header
+             * The key identifier of the signing key added as a JWT `kid` header.
              */
             @ConfigItem
             public Optional<String> tokenKeyId = Optional.empty();
 
             /**
-             * Issuer of the signing key added as a JWT `iss` claim (default: client id)
+             * The issuer of the signing key added as a JWT `iss` claim. The default value is the client id.
              */
             @ConfigItem
             public Optional<String> issuer = Optional.empty();
 
             /**
-             * Subject of the signing key added as a JWT 'sub' claim (default: client id)
+             * Subject of the signing key added as a JWT `sub` claim The default value is the client id.
              */
             @ConfigItem
             public Optional<String> subject = Optional.empty();
@@ -313,14 +313,16 @@ public class OidcCommonConfig {
             public Map<String, String> claims = new HashMap<>();
 
             /**
-             * Signature algorithm, also used for the {@link #keyFile} property.
-             * Supported values: RS256, RS384, RS512, PS256, PS384, PS512, ES256, ES384, ES512, HS256, HS384, HS512.
+             * The signature algorithm used for the {@link #keyFile} property.
+             * Supported values: `RS256` (default), `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`, `ES512`,
+             * `HS256`, `HS384`, `HS512`.
              */
             @ConfigItem
             public Optional<String> signatureAlgorithm = Optional.empty();
 
             /**
-             * JWT life-span in seconds. It will be added to the time it was issued at to calculate the expiration time.
+             * The JWT lifespan in seconds. This value is added to the time at which the JWT was issued to calculate the
+             * expiration time.
              */
             @ConfigItem(defaultValue = "10")
             public int lifespan = 10;
@@ -392,13 +394,14 @@ public class OidcCommonConfig {
         }
 
         /**
-         * CredentialsProvider which provides a client secret
+         * CredentialsProvider, which provides a client secret.
          */
         @ConfigGroup
         public static class Provider {
 
             /**
-             * The CredentialsProvider name which should only be set if more than one CredentialsProvider is registered
+             * The CredentialsProvider name, which should only be set if more than one CredentialsProvider is
+             * registered
              */
             @ConfigItem
             public Optional<String> name = Optional.empty();
@@ -441,14 +444,15 @@ public class OidcCommonConfig {
             CERTIFICATE_VALIDATION,
 
             /**
-             * All certificated are trusted and hostname verification is disabled.
+             * All certificates are trusted and hostname verification is disabled.
              */
             NONE
         }
 
         /**
-         * Certificate validation and hostname verification, which can be one of the following {@link Verification} values.
-         * Default is required.
+         * Certificate validation and hostname verification, which can be one of the following {@link Verification}
+         * values.
+         * Default is `required`.
          */
         @ConfigItem
         public Optional<Verification> verification = Optional.empty();
@@ -460,68 +464,67 @@ public class OidcCommonConfig {
         public Optional<Path> keyStoreFile = Optional.empty();
 
         /**
-         * An optional parameter to specify type of the keystore file. If not given, the type is automatically detected
-         * based on the file name.
+         * The type of the keystore file. If not given, the type is automatically detected based on the file name.
          */
         @ConfigItem
         public Optional<String> keyStoreFileType = Optional.empty();
 
         /**
-         * An optional parameter to specify a provider of the keystore file. If not given, the provider is automatically
-         * detected
-         * based on the keystore file type.
+         * The provider of the keystore file. If not given, the provider is automatically detected based on the
+         * keystore file type.
          */
         @ConfigItem
         public Optional<String> keyStoreProvider;
 
         /**
-         * A parameter to specify the password of the keystore file. If not given, the default ("password") is used.
+         * The password of the keystore file. If not given, the default value, `password`, is used.
          */
         @ConfigItem
         public Optional<String> keyStorePassword;
 
         /**
-         * An optional parameter to select a specific key in the keystore. When SNI is disabled, if the keystore contains
-         * multiple
+         * The alias of a specific key in the keystore.
+         * When SNI is disabled, if the keystore contains multiple
          * keys and no alias is specified, the behavior is undefined.
          */
         @ConfigItem
         public Optional<String> keyStoreKeyAlias = Optional.empty();
 
         /**
-         * An optional parameter to define the password for the key, in case it's different from {@link #keyStorePassword}.
+         * The password of the key, if it is different from the {@link #keyStorePassword}.
          */
         @ConfigItem
         public Optional<String> keyStoreKeyPassword = Optional.empty();
 
         /**
-         * An optional truststore which holds the certificate information of the certificates to trust
+         * The truststore that holds the certificate information of the certificates to trust.
          */
         @ConfigItem
         public Optional<Path> trustStoreFile = Optional.empty();
 
         /**
-         * A parameter to specify the password of the truststore file.
+         * The password of the truststore file.
          */
         @ConfigItem
         public Optional<String> trustStorePassword = Optional.empty();
 
         /**
-         * A parameter to specify the alias of the truststore certificate.
+         * The alias of the truststore certificate.
          */
         @ConfigItem
         public Optional<String> trustStoreCertAlias = Optional.empty();
 
         /**
-         * An optional parameter to specify type of the truststore file. If not given, the type is automatically detected
+         * The type of the truststore file.
+         * If not given, the type is automatically detected
          * based on the file name.
          */
         @ConfigItem
         public Optional<String> trustStoreFileType = Optional.empty();
 
         /**
-         * An optional parameter to specify a provider of the truststore file. If not given, the provider is automatically
-         * detected
+         * The provider of the truststore file.
+         * If not given, the provider is automatically detected
          * based on the truststore file type.
          */
         @ConfigItem
@@ -581,27 +584,27 @@ public class OidcCommonConfig {
     public static class Proxy {
 
         /**
-         * The host (name or IP address) of the Proxy.<br/>
-         * Note: If OIDC adapter needs to use a Proxy to talk with OIDC server (Provider),
-         * then at least the "host" config item must be configured to enable the usage of a Proxy.
+         * The host name or IP address of the Proxy.<br/>
+         * Note: If the OIDC adapter requires a Proxy to talk with the OIDC server (Provider),
+         * set this value to enable the usage of a Proxy.
          */
         @ConfigItem
         public Optional<String> host = Optional.empty();
 
         /**
-         * The port number of the Proxy. Default value is 80.
+         * The port number of the Proxy. The default value is `80`.
          */
         @ConfigItem(defaultValue = "80")
         public int port = 80;
 
         /**
-         * The username, if Proxy needs authentication.
+         * The username, if the Proxy needs authentication.
          */
         @ConfigItem
         public Optional<String> username = Optional.empty();
 
         /**
-         * The password, if Proxy needs authentication.
+         * The password, if the Proxy needs authentication.
          */
         @ConfigItem
         public Optional<String> password = Optional.empty();

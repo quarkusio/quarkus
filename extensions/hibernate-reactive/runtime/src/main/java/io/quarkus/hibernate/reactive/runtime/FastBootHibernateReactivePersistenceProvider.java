@@ -28,11 +28,14 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfigPersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitsHolder;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings.Builder;
@@ -76,31 +79,25 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
     public EntityManagerFactory createEntityManagerFactory(String emName, Map properties) {
         if (properties == null)
             properties = new HashMap<Object, Object>();
-        try {
-            // These are pre-parsed during image generation:
-            final List<RuntimePersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
+        // These are pre-parsed during image generation:
+        final List<RuntimePersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
 
-            for (PersistenceUnitDescriptor unit : units) {
-                //if the provider is not set, don't use it as people might want to use Hibernate ORM
-                if (IMPLEMENTATION_NAME.equalsIgnoreCase(unit.getProviderClassName()) ||
-                        unit.getProviderClassName() == null) {
-                    EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilderOrNull(emName, properties);
-                    if (builder == null) {
-                        log.trace("Could not obtain matching EntityManagerFactoryBuilder, returning null");
-                        return null;
-                    } else {
-                        return builder.build();
-                    }
+        for (PersistenceUnitDescriptor unit : units) {
+            //if the provider is not set, don't use it as people might want to use Hibernate ORM
+            if (IMPLEMENTATION_NAME.equalsIgnoreCase(unit.getProviderClassName()) ||
+                    unit.getProviderClassName() == null) {
+                EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilderOrNull(emName, properties);
+                if (builder == null) {
+                    log.trace("Could not obtain matching EntityManagerFactoryBuilder, returning null");
+                    return null;
+                } else {
+                    return builder.build();
                 }
             }
-
-            //not the right provider
-            return null;
-        } catch (PersistenceException pe) {
-            throw pe;
-        } catch (Exception e) {
-            throw new PersistenceException("Unable to build EntityManagerFactory", e);
         }
+
+        //not the right provider
+        return null;
     }
 
     private EntityManagerFactoryBuilder getEntityManagerFactoryBuilderOrNull(String persistenceUnitName,
@@ -286,12 +283,22 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         }
 
         // for now, we only support one pool but this will change
-        InstanceHandle<Pool> poolHandle = Arc.container().instance(Pool.class);
-        if (!poolHandle.isAvailable()) {
-            throw new IllegalStateException("No pool has been defined for persistence unit " + persistenceUnitName);
+        String datasourceName = DataSourceUtil.DEFAULT_DATASOURCE_NAME;
+        Pool pool;
+        try {
+            if (Arc.container().instance(DataSourceSupport.class).get().getInactiveNames().contains(datasourceName)) {
+                throw DataSourceUtil.dataSourceInactive(datasourceName);
+            }
+            InstanceHandle<Pool> poolHandle = Arc.container().instance(Pool.class);
+            if (!poolHandle.isAvailable()) {
+                throw new IllegalStateException("No pool has been defined for persistence unit " + persistenceUnitName);
+            }
+            pool = poolHandle.get();
+        } catch (RuntimeException e) {
+            throw PersistenceUnitUtil.unableToFindDataSource(persistenceUnitName, datasourceName, e);
         }
 
-        serviceRegistry.addInitiator(new QuarkusReactiveConnectionPoolInitiator(poolHandle.get()));
+        serviceRegistry.addInitiator(new QuarkusReactiveConnectionPoolInitiator(pool));
 
         InstanceHandle<Vertx> vertxHandle = Arc.container().instance(Vertx.class);
         if (!vertxHandle.isAvailable()) {

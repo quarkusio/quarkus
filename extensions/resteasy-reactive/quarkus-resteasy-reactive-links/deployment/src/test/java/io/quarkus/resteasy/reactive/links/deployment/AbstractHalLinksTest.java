@@ -28,4 +28,66 @@ public abstract class AbstractHalLinksTest {
 
         assertThat(response.body().jsonPath().getString("_links.list.href")).endsWith("/records");
     }
+
+    @Test
+    void shouldGetHalLinksForIdAndPersistenceIdAndRestLinkId() {
+        Response response = given().accept(RestMediaType.APPLICATION_HAL_JSON)
+                .get("/records/with-id-and-persistence-id-and-rest-link-id/100")
+                .thenReturn();
+
+        assertThat(response.body()
+                .jsonPath()
+                .getString("_links.self.href")).endsWith("/records/with-id-and-persistence-id-and-rest-link-id/100");
+    }
+
+    @Test
+    void shouldGetHalLinksForIdAndPersistenceId() {
+        Response response = given().accept(RestMediaType.APPLICATION_HAL_JSON)
+                .get("/records/with-id-and-persistence-id/10")
+                .thenReturn();
+
+        assertThat(response.body()
+                .jsonPath()
+                .getString("_links.self.href")).endsWith("/records/with-id-and-persistence-id/10");
+    }
+
+    @Test
+    void shouldGetHalLinksForIdAndRestLinkId() {
+        Response response = given().accept(RestMediaType.APPLICATION_HAL_JSON)
+                .get("/records/with-id-and-rest-link-id/100")
+                .thenReturn();
+
+        assertThat(response.body()
+                .jsonPath()
+                .getString("_links.self.href")).endsWith("/records/with-id-and-rest-link-id/100");
+    }
+
+    @Test
+    void shouldGetHalLinksForPersistenceIdAndRestLinkId() {
+        Response response = given().accept(RestMediaType.APPLICATION_HAL_JSON)
+                .get("/records/with-persistence-id-and-rest-link-id/100")
+                .thenReturn();
+
+        assertThat(response.body()
+                .jsonPath()
+                .getString("_links.self.href")).endsWith("/records/with-persistence-id-and-rest-link-id/100");
+    }
+
+    @Test
+    void shouldGetHalLinksForPersistenceId() {
+        Response response = given().accept(RestMediaType.APPLICATION_HAL_JSON)
+                .get("/records/with-persistence-id/10")
+                .thenReturn();
+
+        assertThat(response.body().jsonPath().getString("_links.self.href")).endsWith("/records/with-persistence-id/10");
+    }
+
+    @Test
+    void shouldGetHalLinksForRestLinkId() {
+        Response response = given().accept(RestMediaType.APPLICATION_HAL_JSON)
+                .get("/records/with-rest-link-id/100")
+                .thenReturn();
+
+        assertThat(response.body().jsonPath().getString("_links.self.href")).endsWith("/records/with-rest-link-id/100");
+    }
 }

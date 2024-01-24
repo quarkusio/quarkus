@@ -1024,6 +1024,15 @@ data access with your `WebAuthnUserProvider`.
 You will have to add the `@Blocking` annotation on your `WebAuthnUserProvider` class in order to tell the
 Quarkus WebAuthn endpoints to defer those calls to the worker pool.
 
+== Virtual-Threads version
+
+If you're using a blocking data access to the database, you can safely block on the `WebAuthnSecurity` methods,
+with `.await().indefinitely()`, because nothing is async in the `register` and `login` methods, besides the
+data access with your `WebAuthnUserProvider`.
+
+You will have to add the `@RunOnVirtualThread` annotation on your `WebAuthnUserProvider` class in order to tell the
+Quarkus WebAuthn endpoints to defer those calls to virtual threads.
+
 == Testing WebAuthn
 
 Testing WebAuthn can be complicated because normally you need a hardware token, which is why we've made the

@@ -262,10 +262,10 @@ public class TestConfig {
     public static class Profile {
 
         /**
-         * The profile (dev, test or prod) to use when testing using @QuarkusTest
+         * A comma separated list of profiles (dev, test, prod or custom profiles) to use when testing using @QuarkusTest
          */
         @ConfigItem(name = ConfigItem.PARENT, defaultValue = "test")
-        String profile;
+        List<String> profile;
 
         /**
          * The tags this profile is associated with.

@@ -14,7 +14,13 @@ import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.ext.Provider;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.security.UnauthorizedException;
+import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.MethodDescription;
+import io.quarkus.security.spi.runtime.SecurityCheck;
+import io.quarkus.security.spi.runtime.SecurityCheckStorage;
 import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.vertx.ext.web.RoutingContext;
 
@@ -29,33 +35,72 @@ public class EagerSecurityFilter implements ContainerRequestFilter {
         }
     };
     private final Map<MethodDescription, Consumer<RoutingContext>> cache = new HashMap<>();
+    private final EagerSecurityInterceptorStorage interceptorStorage;
 
     @Context
     ResourceInfo resourceInfo;
 
     @Inject
-    EagerSecurityInterceptorStorage interceptorStorage;
+    RoutingContext routingContext;
 
     @Inject
-    RoutingContext routingContext;
+    SecurityCheckStorage securityCheckStorage;
+
+    @Inject
+    CurrentIdentityAssociation identityAssociation;
+
+    @Inject
+    AuthorizationController authorizationController;
+
+    public EagerSecurityFilter() {
+        var interceptorStorageHandle = Arc.container().instance(EagerSecurityInterceptorStorage.class);
+        this.interceptorStorage = interceptorStorageHandle.isAvailable() ? interceptorStorageHandle.get() : null;
+    }
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-        var description = MethodDescription.ofMethod(resourceInfo.getResourceMethod());
-        var interceptor = cache.get(description);
-
-        if (interceptor == NULL_SENTINEL) {
-            return;
-        } else if (interceptor != null) {
-            interceptor.accept(routingContext);
+        if (authorizationController.isAuthorizationEnabled()) {
+            var description = MethodDescription.ofMethod(resourceInfo.getResourceMethod());
+            if (interceptorStorage != null) {
+                applyEagerSecurityInterceptors(description);
+            }
+            applySecurityChecks(description);
         }
+    }
 
-        interceptor = interceptorStorage.getInterceptor(description);
-        if (interceptor == null) {
-            cache.put(description, NULL_SENTINEL);
-        } else {
-            cache.put(description, interceptor);
-            interceptor.accept(routingContext);
+    private void applySecurityChecks(MethodDescription description) {
+        SecurityCheck check = securityCheckStorage.getSecurityCheck(description);
+        if (check != null) {
+            if (!check.isPermitAll()) {
+                if (check.requiresMethodArguments()) {
+                    if (identityAssociation.getIdentity().isAnonymous()) {
+                        var exception = new UnauthorizedException();
+                        throw exception;
+                    }
+                    // security check will be performed by CDI interceptor
+                    return;
+                }
+                check.apply(identityAssociation.getIdentity(), description, null);
+            }
+            // prevent repeated security checks
+            routingContext.put(EagerSecurityFilter.class.getName(), resourceInfo.getResourceMethod());
+        }
+    }
+
+    private void applyEagerSecurityInterceptors(MethodDescription description) {
+        var interceptor = cache.get(description);
+        if (interceptor != NULL_SENTINEL) {
+            if (interceptor != null) {
+                interceptor.accept(routingContext);
+            } else {
+                interceptor = interceptorStorage.getInterceptor(description);
+                if (interceptor == null) {
+                    cache.put(description, NULL_SENTINEL);
+                } else {
+                    cache.put(description, interceptor);
+                    interceptor.accept(routingContext);
+                }
+            }
         }
     }
 }

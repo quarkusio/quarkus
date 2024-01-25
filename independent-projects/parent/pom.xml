@@ -405,6 +405,10 @@
                     <artifactId>gradle-enterprise-maven-extension</artifactId>
                     <configuration>
                         <!-- You can debug caching by adding -Dorg.slf4j.simpleLogger.log.gradle.goal.cache=debug to the command line -->
+                        <!-- More information about this configuration:
+                        https://docs.gradle.com/enterprise/maven-extension/api/com/gradle/maven/extension/api/cache/MojoMetadataProvider.Context.html
+                        https://www.gradle.com/schema/gradle-enterprise-maven-project.xsd
+                        -->
                         <gradleEnterprise xmlns="https://www.gradle.com/gradle-enterprise-maven-project">
                             <normalization>
                                 <systemProperties>
@@ -884,6 +888,14 @@
                                         </ignoredProperties>
                                     </inputs>
                                     <outputs>
+                                        <!-- For now we don't want to output the cachedir as it contains absolute paths
+                                        See https://github.com/revelc/impsort-maven-plugin/pull/87
+                                        <directories>
+                                            <directory>
+                                                <name>cachedir</name>
+                                            </directory>
+                                        </directories>
+                                        -->
                                         <cacheableBecause>check should only run when inputs change
                                         </cacheableBecause>
                                     </outputs>

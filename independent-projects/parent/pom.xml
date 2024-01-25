@@ -125,7 +125,7 @@
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>enforce-java-version</id>
+                        <id>enforce-java-maven-prerequisites</id>
                         <goals>
                             <goal>enforce</goal>
                         </goals>
@@ -150,16 +150,6 @@
                                     </message>
                                     <version>${jdk.min.version}</version>
                                 </requireJavaVersion>
-                            </rules>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>enforce-maven-version</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
                                 <requireMavenVersion>
                                     <message>To build this project Maven ${maven.min.version} (or greater) is required.
                                         Please install it.
@@ -414,6 +404,7 @@
                     <groupId>com.gradle</groupId>
                     <artifactId>gradle-enterprise-maven-extension</artifactId>
                     <configuration>
+                        <!-- You can debug caching by adding -Dorg.slf4j.simpleLogger.log.gradle.goal.cache=debug to the command line -->
                         <gradleEnterprise xmlns="https://www.gradle.com/gradle-enterprise-maven-project">
                             <normalization>
                                 <systemProperties>

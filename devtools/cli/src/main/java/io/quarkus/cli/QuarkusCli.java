@@ -46,7 +46,15 @@ import picocli.CommandLine.ScopeType;
 import picocli.CommandLine.UnmatchedArgumentException;
 
 @CommandLine.Command(name = "quarkus", subcommands = {
-        Create.class, Build.class, Dev.class, Run.class, Test.class, ProjectExtensions.class, Image.class, Deploy.class,
+        Create.class,
+        Build.class,
+        Dev.class,
+        Run.class,
+        Test.class,
+        Config.class,
+        ProjectExtensions.class,
+        Image.class,
+        Deploy.class,
         Registry.class,
         Info.class,
         Update.class,

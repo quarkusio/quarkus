@@ -40,7 +40,7 @@
         <jandex.version>3.1.6</jandex.version>
 
         <!-- Dependency versions -->
-        <assertj.version>3.25.1</assertj.version>
+        <assertj.version>3.25.2</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
         <junit.jupiter.version>5.10.1</junit.jupiter.version>

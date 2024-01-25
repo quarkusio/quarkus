@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 
 import org.apache.maven.plugin.descriptor.MojoDescriptor;
 import org.apache.maven.plugin.descriptor.Parameter;
@@ -82,7 +83,11 @@ public class QuarkusMavenPluginDocsGenerator {
             final GoalParamsBuilder goalParamsBuilder = goalsConfigDocBuilder.newGoalParamsBuilder();
             if (mojo.getParameters() != null) {
                 for (Parameter parameter : mojo.getParameters()) {
-                    goalParamsBuilder.addParam(parameter.getType(), parameter.getName(), parameter.getDefaultValue(),
+                    String property = getPropertyFromExpression(parameter.getExpression());
+
+                    String name = Optional.ofNullable(property).orElseGet(parameter::getName);
+
+                    goalParamsBuilder.addParam(parameter.getType(), name, parameter.getDefaultValue(),
                             parameter.isRequired(), parameter.getDescription());
                 }
             }
@@ -101,6 +106,18 @@ public class QuarkusMavenPluginDocsGenerator {
         if (goalsConfigDocBuilder.hasWriteItems()) {
             new ConfigDocWriter().generateDocumentation(GOALS_OUTPUT_FILE_NAME, goalsConfigDocBuilder);
         }
+    }
+
+    private static String getPropertyFromExpression(String expression) {
+        if ((expression != null && !expression.isEmpty())
+                && expression.startsWith("${")
+                && expression.endsWith("}")
+                && !expression.substring(2).contains("${")) {
+            // expression="${xxx}" -> property="xxx"
+            return expression.substring(2, expression.length() - 1);
+        }
+        // no property can be extracted
+        return null;
     }
 
 }

@@ -50,7 +50,8 @@ public class QuarkusTestFilter implements PostDiscoveryFilter, TestExecutionList
                         + testDescriptor.isTest());
                 quarktestNames.add(testDescriptor.getDisplayName());
                 System.out.println("HOLLY registered " + testDescriptor.getDisplayName());
-                // TODO how do we loop round for the test classes but not the methods?
+                // TODO how do we loop round for the test classes but not the methods? is itContainer? or isTest?
+                // TODO but why did we want to do that?
                 return FilterResult.excluded("QuarkusTest");
                 // TODO divide these into batches and profiles and also check the new resource thing
             } else {

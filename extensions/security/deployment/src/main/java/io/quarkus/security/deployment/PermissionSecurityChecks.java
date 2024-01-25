@@ -229,6 +229,7 @@ interface PermissionSecurityChecks {
                         // we also need to check string as long as duplicate "PermissionsAllowedInterceptor" exists
                         // in RESTEasy Reactive, however this workaround should be removed when the interceptor is dropped
                         if (PERMISSIONS_ALLOWED_INTERCEPTOR.equals(clazz.name())
+                                || clazz.name().toString().endsWith("PreventRepeatedSecurityChecksInterceptor")
                                 || clazz.name().toString().endsWith("PermissionsAllowedInterceptor")) {
                             continue;
                         }

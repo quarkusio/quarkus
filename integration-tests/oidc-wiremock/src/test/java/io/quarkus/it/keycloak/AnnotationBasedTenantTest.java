@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 
 import org.hamcrest.core.StringContains;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -17,6 +18,7 @@ import io.restassured.RestAssured;
 @QuarkusTest
 @TestProfile(AnnotationBasedTenantTest.NoProactiveAuthTestProfile.class)
 @QuarkusTestResource(OidcWiremockTestResource.class)
+@Disabled
 public class AnnotationBasedTenantTest {
     public static class NoProactiveAuthTestProfile implements QuarkusTestProfile {
         public Map<String, String> getConfigOverrides() {

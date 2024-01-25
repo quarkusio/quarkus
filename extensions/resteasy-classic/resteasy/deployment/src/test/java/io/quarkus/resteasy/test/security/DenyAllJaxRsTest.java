@@ -26,8 +26,8 @@ public class DenyAllJaxRsTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(PermitAllResource.class, UnsecuredResource.class,
-                            TestIdentityProvider.class,
-                            TestIdentityController.class,
+                            TestIdentityProvider.class, UnsecuredParentResource.class,
+                            TestIdentityController.class, UnsecuredResourceInterface.class,
                             UnsecuredSubResource.class, HelloResource.class)
                     .addAsResource(new StringAsset("quarkus.security.jaxrs.deny-unannotated-endpoints = true\n"),
                             "application.properties"));
@@ -55,6 +55,18 @@ public class DenyAllJaxRsTest {
     @Test
     public void shouldDenyUnannotated() {
         String path = "/unsecured/defaultSecurity";
+        assertStatus(path, 403, 401);
+    }
+
+    @Test
+    public void shouldDenyUnannotatedOnParentClass() {
+        String path = "/unsecured/defaultSecurityParent";
+        assertStatus(path, 403, 401);
+    }
+
+    @Test
+    public void shouldDenyUnannotatedOnInterface() {
+        String path = "/unsecured/defaultSecurityInterface";
         assertStatus(path, 403, 401);
     }
 

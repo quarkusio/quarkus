@@ -1,5 +1,6 @@
 package io.quarkus.security.deployment;
 
+import static io.quarkus.arc.processor.DotNames.INTERCEPTOR;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 import static io.quarkus.security.deployment.DotNames.DENY_ALL;
 import static io.quarkus.security.deployment.DotNames.PERMISSIONS_ALLOWED;
@@ -92,6 +93,7 @@ import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.SecurityHandler;
 import io.quarkus.security.spi.AdditionalSecuredClassesBuildItem;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
+import io.quarkus.security.spi.DefaultSecurityCheckBuildItem;
 import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.DevModeDisabledAuthorizationController;
 import io.quarkus.security.spi.runtime.MethodDescription;
@@ -511,6 +513,7 @@ public class SecurityProcessor {
             BuildProducer<RunTimeConfigBuilderBuildItem> configBuilderProducer,
             List<AdditionalSecuredMethodsBuildItem> additionalSecuredMethods,
             SecurityCheckRecorder recorder,
+            Optional<DefaultSecurityCheckBuildItem> defaultSecurityCheckBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config) {
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorageAppPredicate()));
@@ -542,6 +545,15 @@ public class SecurityProcessor {
             }
             recorder.addMethod(builder, method.declaringClass().name().toString(), method.name(), params,
                     methodEntry.getValue());
+        }
+
+        if (defaultSecurityCheckBuildItem.isPresent()) {
+            var roles = defaultSecurityCheckBuildItem.get().getRolesAllowed();
+            if (roles == null) {
+                recorder.registerDefaultSecurityCheck(builder, recorder.denyAll());
+            } else {
+                recorder.registerDefaultSecurityCheck(builder, recorder.rolesAllowed(roles.toArray(new String[0])));
+            }
         }
         recorder.create(builder);
 
@@ -768,6 +780,9 @@ public class SecurityProcessor {
         for (AnnotationInstance instance : instances) {
             AnnotationTarget target = instance.target();
             if (target.kind() == AnnotationTarget.Kind.CLASS) {
+                if (target.asClass().hasDeclaredAnnotation(INTERCEPTOR)) {
+                    continue;
+                }
                 List<MethodInfo> methods = target.asClass().methods();
                 AnnotationInstance existingClassInstance = classLevelAnnotations.get(target.asClass());
                 if (existingClassInstance == null) {

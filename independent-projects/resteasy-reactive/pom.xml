@@ -53,7 +53,7 @@
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
         <jboss-logmanager.version>3.0.4.Final</jboss-logmanager.version>
         <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
-        <gizmo.version>1.7.0</gizmo.version>
+        <gizmo.version>1.8.0</gizmo.version>
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
 
         <version.compiler.plugin>3.12.1</version.compiler.plugin>

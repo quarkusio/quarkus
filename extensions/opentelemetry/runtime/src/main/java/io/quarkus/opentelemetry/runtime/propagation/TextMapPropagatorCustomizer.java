@@ -1,4 +1,4 @@
-package io.quarkus.opentelemetry;
+package io.quarkus.opentelemetry.runtime.propagation;
 
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;

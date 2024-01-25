@@ -21,6 +21,7 @@ https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/au
 with the `quarkus.*` prefix.
 - Extensions and the libraries they provide, are directly instrumented in Quarkus. The *use of the https://opentelemetry.io/docs/instrumentation/java/automatic/[OpenTelemetry Agent] is not needed nor recommended* due to context propagation issues between imperative and reactive libraries.
 - If you come from the legacy OpenTracing extension, there is a xref:telemetry-opentracing-to-otel-tutorial.adoc[guide to help with the migration].
+- Current Semantic Conventions for HTTP will soon change and the current conventions are deprecated for removal soon. Please move to the new conventions by seetinh the new property `quarkus.otel.semconv-stability.opt-in` to `http`, for the new conventions or `http/dup` to produce duplicated old and new conventions.  Please check the <<configuration-reference>> for more details and full set of changes at the https://github.com/open-telemetry/semantic-conventions/blob/main/docs/http/migration-guide.md#summary-of-changes[HTTP semantic convention stability migration guide].
 ====
 
 == Prerequisites

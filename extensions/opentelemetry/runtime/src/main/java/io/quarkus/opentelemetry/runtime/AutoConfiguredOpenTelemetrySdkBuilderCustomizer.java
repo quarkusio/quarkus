@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.runtime;
 
+import static io.quarkus.opentelemetry.runtime.OpenTelemetryUtil.getSemconvStabilityOptin;
 import static java.lang.Boolean.TRUE;
 import static java.util.Collections.emptyList;
 
@@ -22,10 +23,10 @@ import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.All;
-import io.quarkus.opentelemetry.TextMapPropagatorCustomizer;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.RemoveableLateBoundBatchSpanProcessor;
+import io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer;
 import io.quarkus.opentelemetry.runtime.tracing.DelayedAttributes;
 import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
@@ -99,6 +100,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
     @Singleton
     final class SamplerCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+        private static final String OTEL_SEMCONV_STABILITY_OPT_IN = "otel.semconv-stability.opt-in";
 
         private final OTelBuildConfig oTelBuildConfig;
         private final OTelRuntimeConfig oTelRuntimeConfig;
@@ -133,7 +135,10 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
                         // make sure dropped targets are not sampled
                         if (!dropTargets.isEmpty()) {
-                            return new DropTargetsSampler(effectiveSampler, dropTargets);
+                            return new DropTargetsSampler(effectiveSampler,
+                                    dropTargets,
+                                    getSemconvStabilityOptin(
+                                            configProperties.getString(OTEL_SEMCONV_STABILITY_OPT_IN)));
                         } else {
                             return effectiveSampler;
                         }

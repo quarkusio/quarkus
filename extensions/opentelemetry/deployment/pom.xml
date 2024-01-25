@@ -144,6 +144,38 @@
 
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <executions>
+                    <!-- Default test with legacy http semantic conventions plus and
+                    execution with the new ones. We can have 1 execution again, after otel instrumentaion 2.x
+                    Run tests: mvn surefire:test@arquillian -Dtest=MyTest -Dmaven.surefire.debug -->
+                    <execution>
+                        <id>new-http-semconv</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <quarkus.otel.semconv-stability.opt-in>http</quarkus.otel.semconv-stability.opt-in>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>http-dup-semconv</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <quarkus.otel.semconv-stability.opt-in>http/dup</quarkus.otel.semconv-stability.opt-in>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <groupId>org.xolstice.maven.plugins</groupId>
                 <artifactId>protobuf-maven-plugin</artifactId>
                 <version>0.6.1</version>

@@ -6,7 +6,7 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.opentelemetry.deployment.OpenTelemetryEnabled;
-import io.quarkus.opentelemetry.runtime.scheduler.OpenTelemetryJobInstrumenter;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.scheduler.OpenTelemetryJobInstrumenter;
 
 public class OpenTelemetrySchedulerProcessor {
 

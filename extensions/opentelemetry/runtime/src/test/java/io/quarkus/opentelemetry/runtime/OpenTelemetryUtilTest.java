@@ -17,6 +17,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SpanProcessor;
+import io.quarkus.opentelemetry.runtime.config.runtime.SemconvStabilityType;
 
 public class OpenTelemetryUtilTest {
 
@@ -117,5 +118,17 @@ public class OpenTelemetryUtilTest {
     public void testGetSpanData_nullValue() {
         Map<String, String> actual = OpenTelemetryUtil.getSpanData(null);
         assertEquals(0, actual.size());
+    }
+
+    @Test
+    public void testSemconvOptin() {
+        assertEquals(SemconvStabilityType.HTTP_OLD,
+                OpenTelemetryUtil.getSemconvStabilityOptin(null));
+        assertEquals(SemconvStabilityType.HTTP_OLD,
+                OpenTelemetryUtil.getSemconvStabilityOptin(SemconvStabilityType.HTTP_OLD.getValue()));
+        assertEquals(SemconvStabilityType.HTTP,
+                OpenTelemetryUtil.getSemconvStabilityOptin(SemconvStabilityType.HTTP.getValue()));
+        assertEquals(SemconvStabilityType.HTTP_DUP,
+                OpenTelemetryUtil.getSemconvStabilityOptin(SemconvStabilityType.HTTP_DUP.getValue()));
     }
 }

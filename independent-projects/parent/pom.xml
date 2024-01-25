@@ -888,6 +888,58 @@
                                         </cacheableBecause>
                                     </outputs>
                                 </plugin>
+                                <plugin>
+                                    <groupId>org.apache.maven.plugins</groupId>
+                                    <artifactId>maven-enforcer-plugin</artifactId>
+                                    <inputs>
+                                        <fileSets>
+                                            <fileSet>
+                                                <name>foo</name>
+                                                <paths>
+                                                    <path>${project.basedir}/pom.xml</path>
+                                                </paths>
+                                                <normalization>RELATIVE_PATH</normalization>
+                                            </fileSet>
+                                        </fileSets>
+                                        <properties>
+                                            <property>
+                                                <name>skip</name>
+                                            </property>
+                                            <property>
+                                                <name>fail</name>
+                                            </property>
+                                            <property>
+                                                <name>failFast</name>
+                                            </property>
+                                            <property>
+                                                <name>failIfNoRules</name>
+                                            </property>
+                                            <property>
+                                                <name>rules</name>
+                                            </property>
+                                            <property>
+                                                <name>rules</name>
+                                            </property>
+                                            <property>
+                                                <name>rulesToExecute</name>
+                                            </property>
+                                            <property>
+                                                <name>rulesToSkip</name>
+                                            </property>
+                                            <property>
+                                                <name>ignoreCache</name>
+                                            </property>
+                                        </properties>
+                                        <ignoredProperties>
+                                            <ignore>mojoExecution</ignore>
+                                            <ignore>session</ignore>
+                                            <ignore>project</ignore>
+                                        </ignoredProperties>
+                                    </inputs>
+                                    <outputs>
+                                        <cacheableBecause>check should only run when inputs change</cacheableBecause>
+                                    </outputs>
+                                </plugin>
                             </plugins>
                         </gradleEnterprise>
                     </configuration>

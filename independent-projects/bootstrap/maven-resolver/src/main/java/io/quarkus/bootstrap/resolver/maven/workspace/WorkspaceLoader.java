@@ -166,7 +166,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     private void loadModule(RawModule rawModule, List<RawModule> newModules) {
         var moduleDir = rawModule.pom.getParent();
         if (moduleDir == null) {
-            moduleDir = Path.of("/");
+            moduleDir = getFsRootDir();
         }
         if (loadedPoms.containsKey(moduleDir)) {
             return;
@@ -190,22 +190,36 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
             return;
         }
         for (var module : rawModule.model.getModules()) {
-            moduleQueue.add(
-                    new RawModule(rawModule, rawModule.model.getProjectDirectory().toPath().resolve(module).resolve(POM_XML)));
+            queueModule(rawModule.model.getProjectDirectory().toPath().resolve(module));
         }
         for (var profile : rawModule.model.getProfiles()) {
             for (var module : profile.getModules()) {
-                moduleQueue.add(new RawModule(rawModule,
-                        rawModule.model.getProjectDirectory().toPath().resolve(module).resolve(POM_XML)));
+                queueModule(rawModule.model.getProjectDirectory().toPath().resolve(module));
             }
         }
         if (rawModule.parent == null) {
             final Path parentPom = rawModule.getParentPom();
             if (parentPom != null) {
-                var parent = new RawModule(parentPom);
-                rawModule.parent = parent;
-                moduleQueue.add(parent);
+                var parentDir = parentPom.getParent();
+                if (parentDir == null) {
+                    parentDir = getFsRootDir();
+                }
+                if (!loadedPoms.containsKey(parentDir)) {
+                    var parent = new RawModule(parentPom);
+                    rawModule.parent = parent;
+                    moduleQueue.add(parent);
+                }
             }
+        }
+    }
+
+    private static Path getFsRootDir() {
+        return Path.of("/");
+    }
+
+    private void queueModule(Path dir) {
+        if (!loadedPoms.containsKey(dir)) {
+            moduleQueue.add(new RawModule(dir.resolve(POM_XML)));
         }
     }
 

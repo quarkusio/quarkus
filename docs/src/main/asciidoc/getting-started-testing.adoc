@@ -640,14 +640,14 @@ public class Profiles {
     public static class SingleTag implements QuarkusTestProfile {
         @Override
         public Set<String> tags() {
-            return Collections.singleton("test1");
+            return List.of("test1");
         }
     }
 
     public static class MultipleTags implements QuarkusTestProfile {
         @Override
         public Set<String> tags() {
-            return new HashSet<>(Arrays.asList("test1", "test2"));
+            return Set.of("test1", "test2");
         }
     }
 }

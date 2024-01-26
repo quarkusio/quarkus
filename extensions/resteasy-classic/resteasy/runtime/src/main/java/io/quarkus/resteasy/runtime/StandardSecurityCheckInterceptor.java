@@ -17,7 +17,7 @@ import jakarta.interceptor.InvocationContext;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.spi.runtime.AuthorizationController;
-import io.vertx.ext.web.RoutingContext;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 
 /**
  * Security checks for RBAC annotations on endpoints are done by the {@link EagerSecurityFilter}, this interceptor
@@ -30,12 +30,14 @@ public abstract class StandardSecurityCheckInterceptor {
     AuthorizationController controller;
 
     @Inject
-    RoutingContext routingContext;
+    CurrentVertxRequest currentVertxRequest;
 
     @AroundInvoke
     public Object intercept(InvocationContext ic) throws Exception {
-        if (controller.isAuthorizationEnabled()) {
-            Method method = routingContext.get(EagerSecurityFilter.class.getName());
+        // RoutingContext can be null if RESTEasy is used together with other stacks that do not rely on it (e.g. gRPC)
+        // and this is not invoked from RESTEasy route handler
+        if (controller.isAuthorizationEnabled() && currentVertxRequest.getCurrent() != null) {
+            Method method = currentVertxRequest.getCurrent().get(EagerSecurityFilter.class.getName());
             if (method != null && method.equals(ic.getMethod())) {
                 ic.getContextData().put(SECURITY_HANDLER, EXECUTED);
             }

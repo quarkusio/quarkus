@@ -921,7 +921,13 @@ to the server to your custom login or registration endpoints.
 
 If you are storing them in form input elements, you can then use the `WebAuthnLoginResponse` and
 `WebAuthnRegistrationResponse` classes, mark them as `@BeanParam` and then use the `WebAuthnSecurity.login`
-and `WebAuthnSecurity.register` methods. For example, here's how you can handle a custom login and register:
+and `WebAuthnSecurity.register` methods to replace the `/q/webauthn/callback` endpoint. This even
+allows you to create two separate endpoints for handling login and registration at different endpoints.
+
+In most cases you can keep using the `/q/webauthn/login` and `/q/webauthn/register` challenge-initiating
+endpoints, because this is not where custom logic is required.
+
+For example, here's how you can handle a custom login and register action:
 
 [source,java]
 ----
@@ -949,6 +955,7 @@ public class LoginResource {
     @Inject
     WebAuthnSecurity webAuthnSecurity;
 
+    // Provide an alternative implementation of the /q/webauthn/callback endpoint, only for login
     @Path("/login")
     @POST
     @Transactional
@@ -978,12 +985,13 @@ public class LoginResource {
         }
     }
 
+    // Provide an alternative implementation of the /q/webauthn/callback endpoint, only for registration
     @Path("/register")
     @POST
     @Transactional
     public Response register(@RestForm String userName,
-                                  @BeanParam WebAuthnRegisterResponse webAuthnResponse,
-                                  RoutingContext ctx) {
+                             @BeanParam WebAuthnRegisterResponse webAuthnResponse,
+                             RoutingContext ctx) {
         // Input validation
         if(userName == null || userName.isEmpty() || !webAuthnResponse.isSet() || !webAuthnResponse.isValid()) {
             return Response.status(Status.BAD_REQUEST).build();

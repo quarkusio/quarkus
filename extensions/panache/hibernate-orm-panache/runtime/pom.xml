@@ -59,7 +59,6 @@
                         <annotationProcessorPath>
                             <groupId>org.hibernate.orm</groupId>
                             <artifactId>hibernate-jpamodelgen</artifactId>
-                            <version>${hibernate-orm.version}</version>
                         </annotationProcessorPath>
                     </annotationProcessorPaths>
                     <annotationProcessors>

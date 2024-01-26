@@ -163,6 +163,10 @@ public class TenantConfigContext {
         return provider != null ? provider.getMetadata() : null;
     }
 
+    public OidcProviderClient getOidcProviderClient() {
+        return provider != null ? provider.client : null;
+    }
+
     public SecretKey getStateEncryptionKey() {
         return stateSecretKey;
     }

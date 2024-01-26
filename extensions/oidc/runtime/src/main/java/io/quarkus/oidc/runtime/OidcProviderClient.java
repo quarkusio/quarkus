@@ -266,4 +266,8 @@ public class OidcProviderClient implements Closeable {
     public Vertx getVertx() {
         return vertx;
     }
+
+    public WebClient getWebClient() {
+        return client;
+    }
 }

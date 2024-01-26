@@ -390,9 +390,13 @@ public class CachedService {
 You may want to include more than the arguments of a method into a cache key.
 This can be done by implementing the `io.quarkus.cache.CacheKeyGenerator` interface and declaring that implementation in the `keyGenerator` field of a `@CacheResult` or `@CacheInvalidate` annotation.
 
-If a CDI scope is declared on a key generator class and if that class has a default qualifier (no qualifier annotation or `@jakarta.enterprise.inject.Default`), then the key generator will be injected as a CDI bean during the cache key computation.
-Otherwise, the key generator will be instantiated using its default constructor.
-All CDI scopes supported by Quarkus can be used on a key generator.
+The class must either represent a CDI bean or declare a public no-args constructor.
+If it represents a CDI bean, then the key generator will be injected during the cache key computation.
+Otherwise, a new instance of the key generator will be created using its default constructor for each cache key computation.
+
+In case of CDI, there must be exactly one bean that has the class in its set of bean types, otherwise the build fails. 
+The context associated with the scope of the bean must be active when the `CacheKeyGenerator#generate()` method is invoked.
+If the scope is `@Dependent` then the bean instance is destroyed when the `CacheKeyGenerator#generate()` method completes.
 
 The following key generator will be injected as a CDI bean:
 

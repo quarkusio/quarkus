@@ -104,7 +104,7 @@ public interface WebAuthnRunTimeConfig {
      * <li>{@code DISCOURAGED} - User should avoid interact with the browser</li>
      * </ul>
      */
-    @ConfigDocDefault("REQUIRED")
+    @ConfigDocDefault("DISCOURAGED")
     Optional<UserVerification> userVerification();
 
     /**
@@ -234,14 +234,14 @@ public interface WebAuthnRunTimeConfig {
     /**
      * The cookie that is used to store the challenge data during login/registration
      */
-    @ConfigItem(defaultValue = "_quarkus_webauthn_challenge")
-    public String challengeCookieName;
+    @WithDefault("_quarkus_webauthn_challenge")
+    public String challengeCookieName();
 
     /**
      * The cookie that is used to store the username data during login/registration
      */
-    @ConfigItem(defaultValue = "_quarkus_webauthn_username")
-    public String challengeUsernameCookieName;
+    @WithDefault("_quarkus_webauthn_username")
+    public String challengeUsernameCookieName();
 
     /**
      * SameSite attribute for the session cookie.

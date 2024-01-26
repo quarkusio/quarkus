@@ -77,8 +77,8 @@ public class WebAuthnSecurity {
             Origin o = Origin.parse(origin);
             domain = o.host();
         }
-        this.challengeCookie = config.challengeCookieName;
-        this.challengeUsernameCookie = config.challengeUsernameCookieName;
+        this.challengeCookie = config.challengeCookieName();
+        this.challengeUsernameCookie = config.challengeUsernameCookieName();
     }
 
     /**

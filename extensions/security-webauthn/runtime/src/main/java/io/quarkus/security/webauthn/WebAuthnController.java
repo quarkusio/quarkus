@@ -48,8 +48,8 @@ public class WebAuthnController {
         this.security = security;
         this.identityProviderManager = identityProviderManager;
         this.authMech = authMech;
-        this.challengeCookie = config.challengeCookieName;
-        this.challengeUsernameCookie = config.challengeUsernameCookieName;
+        this.challengeCookie = config.challengeCookieName();
+        this.challengeUsernameCookie = config.challengeUsernameCookieName();
     }
 
     private static boolean containsRequiredString(JsonObject json, String key) {

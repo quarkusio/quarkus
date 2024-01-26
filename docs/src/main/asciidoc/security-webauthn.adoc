@@ -723,6 +723,26 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
  }
 ----
 
+=== Trigger a registration
+
+`POST /q/webauthn/callback`: Trigger a registration
+
+[source,json]
+.Request
+----
+{
+ "id": "boMwU-QwZ_RsToPTG3iC50g8-yiKbLc3A53tgWMhzbNEQAJIlbWgchmwbt5m0ssqQNR0IM_WxCmcfKWlEao7Fg",
+ "rawId": "boMwU-QwZ_RsToPTG3iC50g8-yiKbLc3A53tgWMhzbNEQAJIlbWgchmwbt5m0ssqQNR0IM_WxCmcfKWlEao7Fg",
+ "response": {
+  "attestationObject": "<DATA>",
+  "clientDataJSON":"<DATA>"
+ },
+ "type": "public-key"
+}
+----
+
+This returns a 204 with no body.
+
 === Obtain a login challenge
 
 `POST /q/webauthn/login`: Set up and obtain a login challenge
@@ -761,26 +781,6 @@ The Quarkus WebAuthn extension comes out of the box with these REST endpoints pr
  ]
 }
 ----
-
-=== Trigger a registration
-
-`POST /q/webauthn/callback`: Trigger a registration
-
-[source,json]
-.Request
-----
-{
- "id": "boMwU-QwZ_RsToPTG3iC50g8-yiKbLc3A53tgWMhzbNEQAJIlbWgchmwbt5m0ssqQNR0IM_WxCmcfKWlEao7Fg",
- "rawId": "boMwU-QwZ_RsToPTG3iC50g8-yiKbLc3A53tgWMhzbNEQAJIlbWgchmwbt5m0ssqQNR0IM_WxCmcfKWlEao7Fg",
- "response": {
-  "attestationObject": "<DATA>",
-  "clientDataJSON":"<DATA>"
- },
- "type": "public-key"
-}
-----
-
-This returns a 204 with no body.
 
 === Trigger a login
 

@@ -529,7 +529,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                     rbn,
                     clazz);
             try (Writer writer = file.openWriter()) {
-                javadocProps.store(writer, Constants.EMPTY);
+                PropertyUtils.store(javadocProps, writer);
             }
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to persist resource " + rbn + ": " + e);

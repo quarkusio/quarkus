@@ -11,7 +11,11 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Instance.Handle;
+import jakarta.enterprise.inject.spi.Bean;
 import jakarta.inject.Inject;
 import jakarta.interceptor.Interceptor.Priority;
 import jakarta.interceptor.InvocationContext;
@@ -40,6 +44,7 @@ public abstract class CacheInterceptor {
     CacheManager cacheManager;
 
     @Inject
+    @Any // this means that qualifiers defined on a CacheKeyGenerator are effectively ignored
     Instance<CacheKeyGenerator> keyGenerator;
 
     /*
@@ -119,11 +124,6 @@ public abstract class CacheInterceptor {
         return new CacheInterceptionContext<>(interceptorBindings, cacheKeyParameterPositions);
     }
 
-    @SuppressWarnings("unchecked")
-    private <T extends Annotation> T cast(Annotation annotation, Class<T> interceptorBindingClass) {
-        return (T) annotation;
-    }
-
     protected Object getCacheKey(Cache cache, Class<? extends CacheKeyGenerator> keyGeneratorClass,
             List<Short> cacheKeyParameterPositions, Method method, Object[] methodParameterValues) {
         if (keyGeneratorClass != UndefinedCacheKeyGenerator.class) {
@@ -158,11 +158,15 @@ public abstract class CacheInterceptor {
         Instance<T> keyGenInstance = keyGenerator.select(keyGeneratorClass);
         if (keyGenInstance.isResolvable()) {
             LOGGER.tracef("Using cache key generator bean from Arc [class=%s]", keyGeneratorClass.getName());
-            T keyGen = keyGenInstance.get();
+            Handle<T> keyGen = keyGenInstance.getHandle();
             try {
-                return keyGen.generate(method, methodParameterValues);
+                return keyGen.get().generate(method, methodParameterValues);
             } finally {
-                keyGenerator.destroy(keyGen);
+                Bean<T> bean = keyGen.getBean();
+                if (bean != null && Dependent.class.equals(bean.getScope())) {
+                    // Destroy @Dependent beans afterwards
+                    keyGen.destroy();
+                }
             }
         } else {
             try {

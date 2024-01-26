@@ -374,7 +374,7 @@ The check interval represents the period at which the traffic is computed, and a
 Despite 0 being accepted (no accounting), it is recommended to set a positive value for the check interval, even if it is high since the precision of the traffic shaping depends on the period where the traffic is computed.
 In this case, a suggested value is something close to 5 or 10 minutes.
 
- The `outbound-global-bandwidth` and `inbound-global-bandwidth` parameters represent the maximum number of bytes per second for write and read operations, respectively.
+The `outbound-global-bandwidth` and `inbound-global-bandwidth` parameters represent the maximum number of bytes per second for write and read operations, respectively.
 You shall also consider to have object size in read or write operations relatively adapted to the bandwidth you required.
 For instance having 10 MB objects for 10KB/s will lead to burst effect, while having 100 KB objects for 1 MB/s should be smoothly handle by the traffic shaping.
 

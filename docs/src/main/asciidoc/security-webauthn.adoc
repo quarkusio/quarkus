@@ -67,6 +67,10 @@ Just in case you get there wondering what's the relation with https://fidoallian
 and whether we support it: sure, yes, PassKeys is a way that your authenticator devices can share and sync 
 their credentials, which you can then use with our WebAuthn authentication.
 
+NOTE: The WebAuthn specification requires `https` to be used for communication with the server, though
+some browsers allow `localhost`. If you must use `https` in `DEV` mode, you can always use the
+https://docs.quarkiverse.io/quarkus-ngrok/dev/index.html[quarkus-ngrok] extension.
+
 == Architecture
 
 In this example, we build a very simple microservice which offers four endpoints:

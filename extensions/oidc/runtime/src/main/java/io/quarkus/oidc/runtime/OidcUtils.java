@@ -45,6 +45,8 @@ import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.StringPermission;
@@ -81,6 +83,7 @@ public final class OidcUtils {
     public static final Integer MAX_COOKIE_VALUE_LENGTH = 4096;
     public static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
     static final String UNDERSCORE = "_";
+    static final String COMMA = ",";
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
     static final BlockingTaskRunner<Void> deleteTokensRequestContext = new BlockingTaskRunner<Void>();
 
@@ -650,5 +653,29 @@ public final class OidcUtils {
                 context.request().resume();
             }
         });
+    }
+
+    public static String encodeScopes(OidcTenantConfig oidcConfig) {
+        return OidcCommonUtils.urlEncode(String.join(" ", getAllScopes(oidcConfig)));
+    }
+
+    public static List<String> getAllScopes(OidcTenantConfig oidcConfig) {
+        List<String> oidcConfigScopes = oidcConfig.getAuthentication().scopes.isPresent()
+                ? oidcConfig.getAuthentication().scopes.get()
+                : Collections.emptyList();
+        List<String> scopes = new ArrayList<>(oidcConfigScopes.size() + 1);
+        if (oidcConfig.getAuthentication().addOpenidScope.orElse(true)) {
+            scopes.add(OidcConstants.OPENID_SCOPE);
+        }
+        scopes.addAll(oidcConfigScopes);
+        // Extra scopes if any
+        String extraScopeValue = oidcConfig.getAuthentication().getExtraParams()
+                .get(OidcConstants.TOKEN_SCOPE);
+        if (extraScopeValue != null) {
+            String[] extraScopes = extraScopeValue.split(COMMA);
+            scopes.addAll(List.of(extraScopes));
+        }
+
+        return scopes;
     }
 }

@@ -101,7 +101,7 @@ The `{devRootAppend}` variable can also be used in templates to construct URLs f
 <img src="{devRootAppend}/resources/images/quarkus_icon_rgb_reverse.svg" width="40" height="30" class="d-inline-block align-middle" alt="Quarkus"/>
 ----
 
-Refer to the xref:all-config.adoc#quarkus-vertx-http_quarkus.http.non-application-root-path[Quarkus Vertx HTTP configuration reference]
+Refer to the xref:all-config.adoc#quarkus-vertx-http_quarkus-http-non-application-root-path[Quarkus Vertx HTTP configuration reference]
 for details on how the non-application root path is configured.
 
 == Template and styling support

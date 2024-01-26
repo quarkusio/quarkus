@@ -125,7 +125,7 @@
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>enforce-java-version</id>
+                        <id>enforce-java-maven-prerequisites</id>
                         <goals>
                             <goal>enforce</goal>
                         </goals>
@@ -150,16 +150,6 @@
                                     </message>
                                     <version>${jdk.min.version}</version>
                                 </requireJavaVersion>
-                            </rules>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>enforce-maven-version</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
                                 <requireMavenVersion>
                                     <message>To build this project Maven ${maven.min.version} (or greater) is required.
                                         Please install it.
@@ -414,6 +404,11 @@
                     <groupId>com.gradle</groupId>
                     <artifactId>gradle-enterprise-maven-extension</artifactId>
                     <configuration>
+                        <!-- You can debug caching by adding -Dorg.slf4j.simpleLogger.log.gradle.goal.cache=debug to the command line -->
+                        <!-- More information about this configuration:
+                        https://docs.gradle.com/enterprise/maven-extension/api/com/gradle/maven/extension/api/cache/MojoMetadataProvider.Context.html
+                        https://www.gradle.com/schema/gradle-enterprise-maven-project.xsd
+                        -->
                         <gradleEnterprise xmlns="https://www.gradle.com/gradle-enterprise-maven-project">
                             <normalization>
                                 <systemProperties>
@@ -692,6 +687,215 @@
                                                 <name>buildDir</name>
                                             </directory>
                                         </directories>
+                                        <cacheableBecause>check should only run when inputs change
+                                        </cacheableBecause>
+                                    </outputs>
+                                </plugin>
+                                <plugin>
+                                    <groupId>net.revelc.code.formatter</groupId>
+                                    <artifactId>formatter-maven-plugin</artifactId>
+                                    <inputs>
+                                        <fileSets>
+                                            <fileSet>
+                                                <name>sourceDirectory</name>
+                                                <normalization>
+                                                    <ignoreEmptyDirectories>true</ignoreEmptyDirectories>
+                                                </normalization>
+                                            </fileSet>
+                                            <fileSet>
+                                                <name>testSourceDirectory</name>
+                                                <normalization>
+                                                    <ignoreEmptyDirectories>true</ignoreEmptyDirectories>
+                                                </normalization>
+                                            </fileSet>
+                                            <fileSet>
+                                                <name>directories</name>
+                                                <normalization>
+                                                    <ignoreEmptyDirectories>true</ignoreEmptyDirectories>
+                                                </normalization>
+                                            </fileSet>
+                                        </fileSets>
+                                        <properties>
+                                            <property>
+                                                <name>includes</name>
+                                            </property>
+                                            <property>
+                                                <name>excludes</name>
+                                            </property>
+                                            <property>
+                                                <name>compilerSource</name>
+                                            </property>
+                                            <property>
+                                                <name>compilerCompliance</name>
+                                            </property>
+                                            <property>
+                                                <name>compilerTargetPlatform</name>
+                                            </property>
+                                            <property>
+                                                <name>lineEnding</name>
+                                            </property>
+                                            <property>
+                                                <name>configFile</name>
+                                            </property>
+                                            <property>
+                                                <name>configJsFile</name>
+                                            </property>
+                                            <property>
+                                                <name>configHtmlFile</name>
+                                            </property>
+                                            <property>
+                                                <name>configXmlFile</name>
+                                            </property>
+                                            <property>
+                                                <name>configJsonFile</name>
+                                            </property>
+                                            <property>
+                                                <name>configCssFile</name>
+                                            </property>
+                                            <property>
+                                                <name>skipFormattingCache</name>
+                                            </property>
+                                            <property>
+                                                <name>skipJavaFormatting</name>
+                                            </property>
+                                            <property>
+                                                <name>skipJsFormatting</name>
+                                            </property>
+                                            <property>
+                                                <name>skipHtmlFormatting</name>
+                                            </property>
+                                            <property>
+                                                <name>skipXmlFormatting</name>
+                                            </property>
+                                            <property>
+                                                <name>skipJsonFormatting</name>
+                                            </property>
+                                            <property>
+                                                <name>skipCssFormatting</name>
+                                            </property>
+                                            <property>
+                                                <name>skipFormatting</name>
+                                            </property>
+                                            <property>
+                                                <name>useEclipseDefaults</name>
+                                            </property>
+                                            <property>
+                                                <name>javaExclusionPattern</name>
+                                            </property>
+                                            <property>
+                                                <name>removeTrailingWhitespace</name>
+                                            </property>
+                                            <property>
+                                                <name>includeResources</name>
+                                            </property>
+                                        </properties>
+                                        <ignoredProperties>
+                                            <ignore>project</ignore>
+                                            <ignore>targetDirectory</ignore>
+                                            <ignore>basedir</ignore>
+                                        </ignoredProperties>
+                                    </inputs>
+                                    <nestedProperties>
+                                        <property>
+                                            <name>encoding</name>
+                                            <inputs>
+                                                <properties>
+                                                    <property>
+                                                        <name>displayName</name>
+                                                    </property>
+                                                </properties>
+                                            </inputs>
+                                        </property>
+                                    </nestedProperties>
+                                    <outputs>
+                                        <directories>
+                                            <directory>
+                                                <name>cachedir</name>
+                                            </directory>
+                                        </directories>
+                                        <cacheableBecause>check should only run when inputs change
+                                        </cacheableBecause>
+                                    </outputs>
+                                </plugin>
+                                <plugin>
+                                    <groupId>net.revelc.code</groupId>
+                                    <artifactId>impsort-maven-plugin</artifactId>
+                                    <inputs>
+                                        <fileSets>
+                                            <fileSet>
+                                                <name>sourceDirectory</name>
+                                                <normalization>
+                                                    <ignoreEmptyDirectories>true</ignoreEmptyDirectories>
+                                                </normalization>
+                                            </fileSet>
+                                            <fileSet>
+                                                <name>testSourceDirectory</name>
+                                                <normalization>
+                                                    <ignoreEmptyDirectories>true</ignoreEmptyDirectories>
+                                                </normalization>
+                                            </fileSet>
+                                            <fileSet>
+                                                <name>directories</name>
+                                                <normalization>
+                                                    <ignoreEmptyDirectories>true</ignoreEmptyDirectories>
+                                                </normalization>
+                                            </fileSet>
+                                        </fileSets>
+                                        <properties>
+                                            <property>
+                                                <name>sourceEncoding</name>
+                                            </property>
+                                            <property>
+                                                <name>skip</name>
+                                            </property>
+                                            <property>
+                                                <name>staticGroups</name>
+                                            </property>
+                                            <property>
+                                                <name>groups</name>
+                                            </property>
+                                            <property>
+                                                <name>staticAfter</name>
+                                            </property>
+                                            <property>
+                                                <name>joinStaticWithNonStatic</name>
+                                            </property>
+                                            <property>
+                                                <name>includes</name>
+                                            </property>
+                                            <property>
+                                                <name>excludes</name>
+                                            </property>
+                                            <property>
+                                                <name>removeUnused</name>
+                                            </property>
+                                            <property>
+                                                <name>treatSamePackageAsUnused</name>
+                                            </property>
+                                            <property>
+                                                <name>breadthFirstComparator</name>
+                                            </property>
+                                            <property>
+                                                <name>lineEnding</name>
+                                            </property>
+                                            <property>
+                                                <name>compliance</name>
+                                            </property>
+                                        </properties>
+                                        <ignoredProperties>
+                                            <ignore>project</ignore>
+                                            <ignore>plugin</ignore>
+                                        </ignoredProperties>
+                                    </inputs>
+                                    <outputs>
+                                        <!-- For now we don't want to output the cachedir as it contains absolute paths
+                                        See https://github.com/revelc/impsort-maven-plugin/pull/87
+                                        <directories>
+                                            <directory>
+                                                <name>cachedir</name>
+                                            </directory>
+                                        </directories>
+                                        -->
                                         <cacheableBecause>check should only run when inputs change
                                         </cacheableBecause>
                                     </outputs>

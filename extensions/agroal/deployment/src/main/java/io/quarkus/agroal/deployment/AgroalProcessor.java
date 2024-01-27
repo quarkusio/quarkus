@@ -58,6 +58,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -407,5 +408,17 @@ class AgroalProcessor {
                     new RemovedResourceBuildItem(ArtifactKey.fromString("io.opentelemetry.instrumentation:opentelemetry-jdbc"),
                             Set.of("io/opentelemetry/instrumentation.jdbc/internal/JdbcSingletons")));
         }
+    }
+
+    @BuildStep
+    void registerRowSetSupport(
+            BuildProducer<NativeImageResourceBundleBuildItem> resourceBundleProducer,
+            BuildProducer<NativeImageResourceBuildItem> nativeResourceProducer,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
+        resourceBundleProducer.produce(new NativeImageResourceBundleBuildItem("com.sun.rowset.RowSetResourceBundle"));
+        nativeResourceProducer.produce(new NativeImageResourceBuildItem("javax/sql/rowset/rowset.properties"));
+        reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(
+                "com.sun.rowset.providers.RIOptimisticProvider",
+                "com.sun.rowset.providers.RIXMLProvider").build());
     }
 }

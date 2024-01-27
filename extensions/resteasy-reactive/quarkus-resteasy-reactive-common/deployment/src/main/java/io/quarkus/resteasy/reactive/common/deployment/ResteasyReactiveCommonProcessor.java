@@ -1,13 +1,9 @@
 package io.quarkus.resteasy.reactive.common.deployment;
 
-import static io.quarkus.security.spi.SecurityTransformerUtils.hasSecurityAnnotation;
 import static org.jboss.resteasy.reactive.common.model.ResourceInterceptor.FILTER_SOURCE_METHOD_METADATA_KEY;
-import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.collectClassEndpoints;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -76,7 +72,7 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.ReaderInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.WriterInterceptorBuildItem;
-import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
+import io.quarkus.security.spi.DefaultSecurityCheckBuildItem;
 
 public class ResteasyReactiveCommonProcessor {
 
@@ -134,46 +130,13 @@ public class ResteasyReactiveCommonProcessor {
     }
 
     @BuildStep
-    void setUpDenyAllJaxRs(
-            CombinedIndexBuildItem index,
-            JaxRsSecurityConfig securityConfig,
-            Optional<ResourceScanningResultBuildItem> resteasyDeployment,
-            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
-            BuildProducer<AdditionalSecuredMethodsBuildItem> additionalSecuredClasses) {
-
-        if (resteasyDeployment.isPresent()
-                && (securityConfig.denyJaxRs() || securityConfig.defaultRolesAllowed().isPresent())) {
-            final List<MethodInfo> methods = new ArrayList<>();
-            Map<DotName, String> httpAnnotationToMethod = resteasyDeployment.get().getResult().getHttpAnnotationToMethod();
-            Set<DotName> resourceClasses = resteasyDeployment.get().getResult().getScannedResourcePaths().keySet();
-
-            for (DotName className : resourceClasses) {
-                ClassInfo classInfo = index.getIndex().getClassByName(className);
-                if (classInfo == null)
-                    throw new IllegalStateException("Unable to find class info for " + className);
-                if (!hasSecurityAnnotation(classInfo)) {
-                    // collect class endpoints
-                    Collection<MethodInfo> classEndpoints = collectClassEndpoints(classInfo, httpAnnotationToMethod,
-                            beanArchiveIndexBuildItem.getIndex(), applicationResultBuildItem.getResult());
-
-                    // add endpoints
-                    for (MethodInfo classEndpoint : classEndpoints) {
-                        if (!hasSecurityAnnotation(classEndpoint)) {
-                            methods.add(classEndpoint);
-                        }
-                    }
-                }
-            }
-
-            if (!methods.isEmpty()) {
-                if (securityConfig.denyJaxRs()) {
-                    additionalSecuredClasses.produce(new AdditionalSecuredMethodsBuildItem(methods));
-                } else {
-                    additionalSecuredClasses
-                            .produce(new AdditionalSecuredMethodsBuildItem(methods, securityConfig.defaultRolesAllowed()));
-                }
-            }
+    void setUpDenyAllJaxRs(JaxRsSecurityConfig securityConfig,
+            BuildProducer<DefaultSecurityCheckBuildItem> defaultSecurityCheckProducer) {
+        if (securityConfig.denyJaxRs()) {
+            defaultSecurityCheckProducer.produce(DefaultSecurityCheckBuildItem.denyAll());
+        } else if (securityConfig.defaultRolesAllowed().isPresent()) {
+            defaultSecurityCheckProducer
+                    .produce(DefaultSecurityCheckBuildItem.rolesAllowed(securityConfig.defaultRolesAllowed().get()));
         }
     }
 

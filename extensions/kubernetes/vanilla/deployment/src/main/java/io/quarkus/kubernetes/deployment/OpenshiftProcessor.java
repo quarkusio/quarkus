@@ -236,6 +236,8 @@ public class OpenshiftProcessor {
             result.add(new DecoratorBuildItem(new RemoveOptionalFromConfigMapKeySelectorDecorator()));
         }
 
+        result.add(new DecoratorBuildItem(new ApplyResolveNamesImagePolicyDecorator()));
+
         DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
         switch (deploymentKind) {
             case Deployment:

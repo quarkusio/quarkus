@@ -8,8 +8,6 @@ import jakarta.ws.rs.Path;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
-import io.quarkus.security.identity.CurrentIdentityAssociation;
-
 @Path("/frontend")
 public class FrontendResource {
     @Inject
@@ -18,9 +16,6 @@ public class FrontendResource {
 
     @Inject
     JsonWebToken jwt;
-
-    @Inject
-    CurrentIdentityAssociation identityAssociation;
 
     @GET
     @Path("token-propagation")
@@ -31,7 +26,7 @@ public class FrontendResource {
 
     @GET
     @Path("token-propagation-with-augmentor")
-    @RolesAllowed("tester") // tester role is granted by SecurityIdentityAugmentor
+    @RolesAllowed("Bearertester") // Bearertester role is granted by SecurityIdentityAugmentor
     public String userNameTokenPropagationWithSecIdentityAugmentor() {
         return getResponseWithExchangedUsername();
     }

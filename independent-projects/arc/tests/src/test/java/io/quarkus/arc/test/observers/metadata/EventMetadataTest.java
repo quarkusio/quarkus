@@ -38,8 +38,10 @@ public class EventMetadataTest {
         Arc.container().beanManager().getEvent().fire(BigDecimal.ONE);
         EventMetadata metadata = BigObserver.METADATA.get();
         assertNotNull(metadata);
-        assertEquals(1, metadata.getQualifiers().size());
-        assertEquals(Any.class, metadata.getQualifiers().iterator().next().annotationType());
+        assertEquals(2, metadata.getQualifiers().size());
+        for (Annotation qualifier : metadata.getQualifiers()) {
+            assertTrue(qualifier.annotationType().equals(Any.class) || qualifier.annotationType().equals(Default.class));
+        }
         assertEquals(BigDecimal.class, metadata.getType());
         assertNull(metadata.getInjectionPoint());
 

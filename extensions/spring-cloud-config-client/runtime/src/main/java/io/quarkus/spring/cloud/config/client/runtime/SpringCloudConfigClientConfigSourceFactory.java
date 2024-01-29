@@ -53,7 +53,9 @@ public class SpringCloudConfigClientConfigSourceFactory
         VertxSpringCloudConfigGateway client = new VertxSpringCloudConfigGateway(config);
         try {
             List<Response> responses = new ArrayList<>();
-            for (String profile : determineProfiles(context, config)) {
+            List<String> profiles = determineProfiles(context, config);
+            log.debug("The following profiles will be used to look up properties: " + profiles);
+            for (String profile : profiles) {
                 Response response;
                 if (connectionTimeoutIsGreaterThanZero || readTimeoutIsGreaterThanZero) {
                     response = client.exchange(applicationName.getValue(), profile).await()
@@ -64,8 +66,12 @@ public class SpringCloudConfigClientConfigSourceFactory
 
                 if (response.getProfiles().contains(profile)) {
                     responses.add(response);
+                } else {
+                    log.debug("Response did not contain profile " + profile);
                 }
             }
+
+            log.debug("Obtained " + responses.size() + " from the config server");
 
             int ordinal = 450;
             // Profiles are looked from the highest ordinal to lowest, so we reverse the collection to build the source list
@@ -76,7 +82,14 @@ public class SpringCloudConfigClientConfigSourceFactory
                 Collections.reverse(propertySources);
 
                 for (PropertySource propertySource : propertySources) {
-                    sources.add(SpringCloudPropertySource.from(propertySource, response.getProfiles(), ordinal++));
+                    int ord = ordinal++;
+                    if (log.isDebugEnabled()) {
+                        log.debug("Adding PropertySource named '" + propertySource.getName() + "', with and ordinal of '" + ord
+                                + "' that contains the following keys: "
+                                + String.join(",", propertySource.getSource().keySet()));
+                    }
+
+                    sources.add(SpringCloudPropertySource.from(propertySource, response.getProfiles(), ord));
                 }
             }
 

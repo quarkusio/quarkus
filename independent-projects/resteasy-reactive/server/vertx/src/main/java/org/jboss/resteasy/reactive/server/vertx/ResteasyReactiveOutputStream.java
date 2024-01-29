@@ -57,6 +57,9 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                 }
             }
         });
+        Handler<Void> handler = new DrainHandler(this);
+        request.response().drainHandler(handler);
+        request.response().closeHandler(handler);
 
         context.getContext().addEndHandler(new Handler<AsyncResult<Void>>() {
             @Override
@@ -90,7 +93,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                 boolean bufferRequired = awaitWriteable() || (overflow != null && overflow.size() > 0);
                 if (bufferRequired) {
                     //just buffer everything
-                    registerDrainHandler();
+                    //                    registerDrainHandler();
                     if (overflow == null) {
                         overflow = new ByteArrayOutputStream();
                     }
@@ -135,7 +138,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
             if (request.response().closed()) {
                 throw new IOException("Connection has been closed");
             }
-            registerDrainHandler();
+            //            registerDrainHandler();
             try {
                 waitingForDrain = true;
                 request.connection().wait();
@@ -148,33 +151,14 @@ public class ResteasyReactiveOutputStream extends OutputStream {
         return false;
     }
 
-    private void registerDrainHandler() {
-        if (!drainHandlerRegistered) {
-            drainHandlerRegistered = true;
-            Handler<Void> handler = new Handler<Void>() {
-                @Override
-                public void handle(Void event) {
-                    synchronized (request.connection()) {
-                        if (waitingForDrain) {
-                            request.connection().notifyAll();
-                        }
-                        if (overflow != null) {
-                            if (overflow.size() > 0) {
-                                if (closed) {
-                                    request.response().end(Buffer.buffer(overflow.toByteArray()), null);
-                                } else {
-                                    request.response().write(Buffer.buffer(overflow.toByteArray()), null);
-                                }
-                                overflow.reset();
-                            }
-                        }
-                    }
-                }
-            };
-            request.response().drainHandler(handler);
-            request.response().closeHandler(handler);
-        }
-    }
+    //    private void registerDrainHandler() {
+    //        if (!drainHandlerRegistered) {
+    //            drainHandlerRegistered = true;
+    //            Handler<Void> handler = new DrainHandler(this);
+    //            request.response().drainHandler(handler);
+    //            request.response().closeHandler(handler);
+    //        }
+    //    }
 
     /**
      * {@inheritDoc}
@@ -299,4 +283,30 @@ public class ResteasyReactiveOutputStream extends OutputStream {
         }
     }
 
+    private static class DrainHandler implements Handler<Void> {
+        private final ResteasyReactiveOutputStream out;
+
+        public DrainHandler(ResteasyReactiveOutputStream out) {
+            this.out = out;
+        }
+
+        @Override
+        public void handle(Void event) {
+            synchronized (out.request.connection()) {
+                if (out.waitingForDrain) {
+                    out.request.connection().notifyAll();
+                }
+                if (out.overflow != null) {
+                    if (out.overflow.size() > 0) {
+                        if (out.closed) {
+                            out.request.response().end(Buffer.buffer(out.overflow.toByteArray()), null);
+                        } else {
+                            out.request.response().write(Buffer.buffer(out.overflow.toByteArray()), null);
+                        }
+                        out.overflow.reset();
+                    }
+                }
+            }
+        }
+    }
 }

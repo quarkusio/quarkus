@@ -462,7 +462,7 @@ public class HibernateSearchElasticsearchRecorder {
                 addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.THREAD_POOL_SIZE,
                         elasticsearchBackendConfig.threadPool().size());
                 addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION_CHECK_ENABLED,
-                        elasticsearchBackendConfig.versionCheck());
+                        elasticsearchBackendConfig.versionCheck().enabled());
                 addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.QUERY_SHARD_FAILURE_IGNORE,
                         elasticsearchBackendConfig.query().shardFailure().ignore());
 

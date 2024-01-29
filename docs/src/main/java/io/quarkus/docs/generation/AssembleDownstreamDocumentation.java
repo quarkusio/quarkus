@@ -11,8 +11,10 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -27,6 +29,9 @@ import org.jboss.logging.Logger;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
+
+import io.quarkus.docs.generation.ReferenceIndexGenerator.Index;
 
 public class AssembleDownstreamDocumentation {
 
@@ -46,7 +51,12 @@ public class AssembleDownstreamDocumentation {
             DOC_PATH.resolve("_attributes-local.adoc"));
 
     private static final String ADOC_SUFFIX = ".adoc";
-    private static final Pattern XREF_PATTERN = Pattern.compile("xref:([^\\.#\\[ ]+)\\" + ADOC_SUFFIX);
+    private static final Pattern XREF_GUIDE_PATTERN = Pattern.compile("xref:([^\\.#\\[ ]+)\\" + ADOC_SUFFIX);
+    private static final Pattern XREF_PATTERN = Pattern.compile("xref:([^\\[]+)\\[]");
+    private static final Pattern ANGLE_BRACKETS_WITHOUT_DESCRIPTION_PATTERN = Pattern.compile("<<([a-z0-9_\\-#\\.]+?)>>",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern ANGLE_BRACKETS_WITH_DESCRIPTION_PATTERN = Pattern.compile("<<([a-z0-9_\\-#\\.]+?),([^>]+?)>>",
+            Pattern.CASE_INSENSITIVE);
     private static final String SOURCE_BLOCK_PREFIX = "[source";
     private static final String SOURCE_BLOCK_DELIMITER = "--";
 
@@ -89,6 +99,17 @@ public class AssembleDownstreamDocumentation {
         if (!Files.isDirectory(GENERATED_FILES_PATH)) {
             throw new IllegalStateException("Generated files directory does not exist. Have you built the documentation?");
         }
+        Path referenceIndexPath = Path.of(args[0]);
+        if (!Files.isReadable(Path.of(args[0]))) {
+            throw new IllegalStateException("Reference index does not exist? Have you built the documentation?");
+        }
+
+        ObjectMapper om = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
+        Index referenceIndex = om.readValue(referenceIndexPath.toFile(), Index.class);
+
+        Map<String, List<String>> linkRewritingErrors = new LinkedHashMap<>();
+        Map<String, String> titlesByReference = referenceIndex.getReferences().stream()
+                .collect(Collectors.toMap(s -> s.getReference(), s -> s.getTitle()));
 
         try {
             deleteDirectory(TARGET_ROOT_DIRECTORY);
@@ -157,7 +178,8 @@ public class AssembleDownstreamDocumentation {
 
             for (Path guide : guides) {
                 System.out.println("[INFO] Processing guide " + guide.getFileName());
-                copyAsciidoc(guide, TARGET_ROOT_DIRECTORY.resolve(guide.getFileName()), downstreamGuides);
+                copyAsciidoc(guide, TARGET_ROOT_DIRECTORY.resolve(guide.getFileName()), downstreamGuides, titlesByReference,
+                        linkRewritingErrors);
             }
             for (Path simpleInclude : simpleIncludes) {
                 Path sourceFile = DOC_PATH.resolve(simpleInclude);
@@ -171,7 +193,7 @@ public class AssembleDownstreamDocumentation {
                 allResolvedPaths.add(sourceFile);
                 Path targetFile = TARGET_ROOT_DIRECTORY.resolve(simpleInclude);
                 Files.createDirectories(targetFile.getParent());
-                copyAsciidoc(sourceFile, targetFile, downstreamGuides);
+                copyAsciidoc(sourceFile, targetFile, downstreamGuides, titlesByReference, linkRewritingErrors);
             }
             for (Path include : includes) {
                 Path sourceFile = INCLUDES_PATH.resolve(include);
@@ -184,7 +206,7 @@ public class AssembleDownstreamDocumentation {
                 allResolvedPaths.add(sourceFile);
                 Path targetFile = TARGET_INCLUDES_DIRECTORY.resolve(include);
                 Files.createDirectories(targetFile.getParent());
-                copyAsciidoc(sourceFile, targetFile, downstreamGuides);
+                copyAsciidoc(sourceFile, targetFile, downstreamGuides, titlesByReference, linkRewritingErrors);
             }
             for (Path generatedFile : generatedFiles) {
                 Path sourceFile = GENERATED_FILES_PATH.resolve(generatedFile);
@@ -197,7 +219,7 @@ public class AssembleDownstreamDocumentation {
                 allResolvedPaths.add(sourceFile);
                 Path targetFile = TARGET_GENERATED_DIRECTORY.resolve(generatedFile);
                 Files.createDirectories(targetFile.getParent());
-                copyAsciidoc(sourceFile, targetFile, downstreamGuides);
+                copyAsciidoc(sourceFile, targetFile, downstreamGuides, titlesByReference, linkRewritingErrors);
             }
             for (Path image : images) {
                 Path sourceFile = IMAGES_PATH.resolve(image);
@@ -215,6 +237,24 @@ public class AssembleDownstreamDocumentation {
 
             Files.writeString(TARGET_LISTING,
                     allResolvedPaths.stream().map(p -> p.toString()).collect(Collectors.joining("\n")));
+
+            if (!linkRewritingErrors.isEmpty()) {
+                System.out.println();
+                System.out.println("################################################");
+                System.out.println("# Errors occurred while transforming references");
+                System.out.println("################################################");
+                System.out.println();
+
+                for (Entry<String, List<String>> errorEntry : linkRewritingErrors.entrySet()) {
+                    System.out.println("- " + errorEntry.getKey());
+                    for (String error : errorEntry.getValue()) {
+                        System.out.println("    . " + error);
+                    }
+                }
+
+                System.out.println();
+                System.exit(1);
+            }
 
             LOG.info("Downstream documentation tree is available in: " + TARGET_ROOT_DIRECTORY);
             LOG.info("Downstream documentation listing is available in: " + TARGET_LISTING);
@@ -295,7 +335,9 @@ public class AssembleDownstreamDocumentation {
                 .forEach(File::delete);
     }
 
-    private static void copyAsciidoc(Path sourceFile, Path targetFile, Set<String> downstreamGuides) throws IOException {
+    private static void copyAsciidoc(Path sourceFile, Path targetFile, Set<String> downstreamGuides,
+            Map<String, String> titlesByReference,
+            Map<String, List<String>> linkRewritingErrors) throws IOException {
         List<String> guideLines = Files.readAllLines(sourceFile);
 
         StringBuilder rewrittenGuide = new StringBuilder();
@@ -342,7 +384,8 @@ public class AssembleDownstreamDocumentation {
 
                 if (currentBuffer.length() > 0) {
                     rewrittenGuide.append(
-                            rewriteLinks(currentBuffer.toString(), downstreamGuides));
+                            rewriteLinks(sourceFile.getFileName().toString(), currentBuffer.toString(), downstreamGuides,
+                                    titlesByReference, linkRewritingErrors));
                     currentBuffer.setLength(0);
                 }
                 rewrittenGuide.append(line + "\n");
@@ -353,8 +396,9 @@ public class AssembleDownstreamDocumentation {
         }
 
         if (currentBuffer.length() > 0) {
-            rewrittenGuide
-                    .append(rewriteLinks(currentBuffer.toString(), downstreamGuides));
+            rewrittenGuide.append(
+                    rewriteLinks(sourceFile.getFileName().toString(), currentBuffer.toString(), downstreamGuides,
+                            titlesByReference, linkRewritingErrors));
         }
 
         String rewrittenGuideWithoutTabs = rewrittenGuide.toString().trim();
@@ -367,8 +411,36 @@ public class AssembleDownstreamDocumentation {
         Files.writeString(targetFile, rewrittenGuideWithoutTabs.trim());
     }
 
-    private static String rewriteLinks(String content, Set<String> downstreamGuides) {
+    private static String rewriteLinks(String fileName,
+            String content,
+            Set<String> downstreamGuides,
+            Map<String, String> titlesByReference,
+            Map<String, List<String>> errors) {
         content = XREF_PATTERN.matcher(content).replaceAll(mr -> {
+            String reference = getQualifiedReference(fileName, mr.group(1));
+            String title = titlesByReference.get(reference);
+            if (title == null || title.isBlank()) {
+                addError(errors, fileName, "Unable to find title for: " + mr.group() + " [" + reference + "]");
+                title = "~~ unknown title ~~";
+            }
+            return "xref:" + trimReference(mr.group(1)) + "[" + title.trim() + "]";
+        });
+
+        content = ANGLE_BRACKETS_WITHOUT_DESCRIPTION_PATTERN.matcher(content).replaceAll(mr -> {
+            String reference = getQualifiedReference(fileName, mr.group(1));
+            String title = titlesByReference.get(reference);
+            if (title == null || title.isBlank()) {
+                addError(errors, fileName, "Unable to find title for: " + mr.group() + " [" + reference + "]");
+                title = "~~ unknown title ~~";
+            }
+            return "xref:" + trimReference(mr.group(1)) + "[" + title.trim() + "]";
+        });
+
+        content = ANGLE_BRACKETS_WITH_DESCRIPTION_PATTERN.matcher(content).replaceAll(mr -> {
+            return "xref:" + trimReference(mr.group(1)) + "[" + mr.group(2).trim() + "]";
+        });
+
+        content = XREF_GUIDE_PATTERN.matcher(content).replaceAll(mr -> {
             if (downstreamGuides.contains(mr.group(1) + ADOC_SUFFIX)) {
                 return mr.group(0);
             }
@@ -377,6 +449,57 @@ public class AssembleDownstreamDocumentation {
         });
 
         return content;
+    }
+
+    private static String trimReference(String reference) {
+        reference = normalizeAdoc(reference);
+
+        if (reference.startsWith("#")) {
+            return reference.substring(1);
+        }
+
+        if (reference.contains(".adoc")) {
+            return reference;
+        }
+
+        if (reference.contains("#")) {
+            int hashIndex = reference.indexOf('#');
+            return reference.substring(0, hashIndex) + ".adoc" + reference.substring(hashIndex);
+        }
+
+        return reference;
+    }
+
+    private static String getQualifiedReference(String fileName, String reference) {
+        reference = normalizeAdoc(reference);
+
+        if (reference.startsWith("#")) {
+            return fileName + reference;
+        }
+
+        if (reference.contains(".adoc")) {
+            return reference;
+        }
+
+        if (reference.contains("#")) {
+            int hashIndex = reference.indexOf('#');
+            return reference.substring(0, hashIndex) + ".adoc" + reference.substring(hashIndex);
+        }
+
+        return fileName + "#" + reference;
+    }
+
+    private static String normalizeAdoc(String adoc) {
+        if (adoc.startsWith("./")) {
+            return adoc.substring(2);
+        }
+
+        return adoc;
+    }
+
+    private static void addError(Map<String, List<String>> errors, String fileName, String error) {
+        errors.computeIfAbsent(fileName, f -> new ArrayList<>())
+                .add(error);
     }
 
     public static class GuideContent {

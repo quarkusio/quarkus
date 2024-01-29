@@ -18,7 +18,9 @@ import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.Options;
 import org.asciidoctor.SafeMode;
 import org.asciidoctor.ast.Block;
+import org.asciidoctor.ast.Cell;
 import org.asciidoctor.ast.Document;
+import org.asciidoctor.ast.Row;
 import org.asciidoctor.ast.Section;
 import org.asciidoctor.ast.StructuralNode;
 import org.asciidoctor.ast.Table;
@@ -35,13 +37,10 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 public class ReferenceIndexGenerator {
 
     private static final String YAML_FRONTMATTER = "---\n";
-    private static final Pattern XREF_PATTERN = Pattern.compile("xref:([^\\[]+)\\[]");
-    private static final Pattern ANGLE_BRACKETS_WITHOUT_DESCRIPTION_PATTERN = Pattern.compile("<<([a-z0-9_\\-#\\.]+?)>>",
-            Pattern.CASE_INSENSITIVE);
-    private static final Pattern ANGLE_BRACKETS_WITH_DESCRIPTION_PATTERN = Pattern.compile("<<([a-z0-9_\\-#\\.]+?),([^>]+?)>>",
-            Pattern.CASE_INSENSITIVE);
     private static final String SOURCE_BLOCK_PREFIX = "[source";
     private static final String SOURCE_BLOCK_DELIMITER = "--";
+
+    private static final Pattern ICON_PATTERN = Pattern.compile("icon:[^\\[]+\\[[^\\]]*\\] ");
 
     private final Path srcDir;
     private final Path targetDir;
@@ -158,11 +157,11 @@ public class ReferenceIndexGenerator {
     private void addBlocks(Index index, String fileName, List<StructuralNode> blocks) {
         for (StructuralNode block : blocks) {
             if (block instanceof Section || block instanceof Table || block instanceof Block) {
-                if (block.getId() != null && block.getTitle() != null) {
+                if (block.getId() != null) {
                     // unfortunately, AsciiDoc already formats the title in the AST
                     // and I couldn't find a way to get the original one
                     IndexReference reference = new IndexReference(fileName, block.getId(),
-                            block.getTitle().replace("<code>", "`")
+                            block.getTitle() != null ? block.getTitle().replace("<code>", "`")
                                     .replace("</code>", "`")
                                     .replace('\n', ' ')
                                     .replace("&#8217;", "'")
@@ -174,9 +173,26 @@ public class ReferenceIndexGenerator {
                                     .replace("</b>", "*")
                                     .replace("<strong>", "*")
                                     .replace("</strong>", "*")
-                                    .replaceAll("<a.*</a> ", ""));
+                                    .replaceAll("<a.*</a> ", "") : "~~ unknown title ~~");
 
                     index.add(reference);
+                }
+            }
+            // we go into the content of the tables to add references for the configuration properties
+            if (block instanceof Table) {
+                for (Row row : ((Table) block).getBody()) {
+                    for (Cell cell : row.getCells()) {
+                        String cellContent = ICON_PATTERN.matcher(cell.getSource()).replaceAll("").trim();
+
+                        if (!cellContent.startsWith("[[") || !cellContent.contains("]]")) {
+                            continue;
+                        }
+
+                        IndexReference reference = new IndexReference(fileName,
+                                cellContent.substring(2, cellContent.indexOf("]]")),
+                                "Configuration property documentation");
+                        index.add(reference);
+                    }
                 }
             }
             addBlocks(index, fileName, block.getBlocks());
@@ -267,70 +283,9 @@ public class ReferenceIndexGenerator {
             Map<String, List<String>> errors,
             String fileName,
             String content) {
-        content = XREF_PATTERN.matcher(content).replaceAll(mr -> {
-            String reference = getQualifiedReference(fileName, mr.group(1));
-            String title = titlesByReference.get(reference);
-            if (title == null || title.isBlank()) {
-                addError(errors, fileName, "Unable to find title for: " + mr.group() + " [" + reference + "]");
-                title = "~~ unknown title ~~";
-            }
-            return "xref:" + trimReference(mr.group(1)) + "[" + title.trim() + "]";
-        });
-
-        content = ANGLE_BRACKETS_WITHOUT_DESCRIPTION_PATTERN.matcher(content).replaceAll(mr -> {
-            String reference = getQualifiedReference(fileName, mr.group(1));
-            String title = titlesByReference.get(reference);
-            if (title == null || title.isBlank()) {
-                addError(errors, fileName, "Unable to find title for: " + mr.group() + " [" + reference + "]");
-                title = "~~ unknown title ~~";
-            }
-            return "xref:" + trimReference(mr.group(1)) + "[" + title.trim() + "]";
-        });
-
-        content = ANGLE_BRACKETS_WITH_DESCRIPTION_PATTERN.matcher(content).replaceAll(mr -> {
-            return "xref:" + trimReference(mr.group(1)) + "[" + mr.group(2).trim() + "]";
-        });
+        // we don't do anything here from now, this code was moved to AssembleDownstreamDocumentation
 
         return content;
-    }
-
-    private String trimReference(String reference) {
-        if (reference.startsWith("#")) {
-            return reference.substring(1);
-        }
-
-        if (reference.contains(".adoc")) {
-            return reference;
-        }
-
-        if (reference.contains("#")) {
-            int hashIndex = reference.indexOf('#');
-            return reference.substring(0, hashIndex) + ".adoc" + reference.substring(hashIndex);
-        }
-
-        return reference;
-    }
-
-    private String getQualifiedReference(String fileName, String reference) {
-        if (reference.startsWith("#")) {
-            return fileName + reference;
-        }
-
-        if (reference.contains(".adoc")) {
-            return reference;
-        }
-
-        if (reference.contains("#")) {
-            int hashIndex = reference.indexOf('#');
-            return reference.substring(0, hashIndex) + ".adoc" + reference.substring(hashIndex);
-        }
-
-        return fileName + "#" + reference;
-    }
-
-    private void addError(Map<String, List<String>> errors, String fileName, String error) {
-        errors.computeIfAbsent(fileName, f -> new ArrayList<>())
-                .add(error);
     }
 
     private boolean includeFile(String fileName) {

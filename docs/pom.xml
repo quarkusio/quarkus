@@ -3082,6 +3082,26 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>check-cross-references</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                            <mainClass>io.quarkus.docs.generation.CheckCrossReferences</mainClass>
+                            <arguments>
+                                <argument>${project.basedir}/target/asciidoc/sources</argument>
+                                <argument>${project.basedir}/target/referenceIndex.yaml</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>assemble-downstream-doc</id>
                         <phase>prepare-package</phase>
                         <goals>
@@ -3096,6 +3116,7 @@
                                 <argument>-classpath</argument>
                                 <classpath />
                                 <argument>io.quarkus.docs.generation.AssembleDownstreamDocumentation</argument>
+                                <argument>${project.basedir}/target/referenceIndex.yaml</argument>
                             </arguments>
                             <workingDirectory>${project.basedir}</workingDirectory>
                         </configuration>

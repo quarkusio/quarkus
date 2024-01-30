@@ -1236,7 +1236,7 @@ Authentication that requires a dynamic tenant will fail.
 == OIDC request filters
 
 You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFilter` implementations, which can update or add new request headers, and log requests.
-For more information, see xref:security-code-flow-authentication#oidc-request-filters[OIDC request filters].
+For more information, see xref:security-oidc-code-flow-authentication#oidc-request-filters[OIDC request filters].
 
 == References
 

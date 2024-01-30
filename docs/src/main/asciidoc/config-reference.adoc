@@ -169,8 +169,8 @@ is to use Quarkus `application.properties`.
 Quarkus provides additional extensions which cover other configuration formats and stores:
 
 * xref:config-yaml.adoc[YAML]
-* xref:vault.adoc[HashiCorp Vault]
-* xref:consul-config.adoc[Consul]
+* https://github.com/quarkiverse/quarkus-vault[HashiCorp Vault]
+* https://github.com/quarkiverse/quarkus-config-extensions[Consul]
 * xref:spring-cloud-config-client.adoc[Spring Cloud]
 
 TIP: It is also possible to create a xref:config-extending-support.adoc#custom-config-source[Custom Config Source].
@@ -788,10 +788,8 @@ public class MyBeanNoFailure {
 == Additional Information
 
 * xref:config-yaml.adoc[YAML ConfigSource Extension]
-// Moved to Quarkiverse. There is a redirect to resolve the link
-* xref:vault.adoc[HashiCorp Vault ConfigSource Extension]
-// Moved to Quarkiverse. There is a redirect to resolve the link
-* xref:consul-config.adoc[Consul ConfigSource Extension]
+* https://github.com/quarkiverse/quarkus-vault[HashiCorp Vault ConfigSource Extension]
+* https://github.com/quarkiverse/quarkus-config-extensions[Consul ConfigSource Extension]
 * xref:spring-cloud-config-client.adoc[Spring Cloud ConfigSource Extension]
 * xref:config-mappings.adoc[Mapping configuration to objects]
 * xref:config-extending-support.adoc[Extending configuration support]

@@ -645,7 +645,7 @@ implementation("io.quarkus:quarkus-smallrye-health")
 ----
 
 The values of the generated probes will be determined by the configured health properties: `quarkus.smallrye-health.root-path`, `quarkus.smallrye-health.liveness-path` and `quarkus.smallrye-health.readiness-path`.
-More information about the health extension can be found in the relevant xref:microprofile-health.adoc[guide].
+More information about the health extension can be found in the relevant xref:smallrye-health.adoc[guide].
 
 === Customizing the readiness probe
 To set the initial delay of the probe to 20 seconds and the period to 45:

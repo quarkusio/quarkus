@@ -32,7 +32,7 @@ Attributes of these components are fully controlled by the extensions, i.e. are 
 Finally, the _deployment is validated_.
 For example, the container validates every injection point in the application and fails the build if there is no bean that satisfies the given required type and qualifiers.
 
-TIP: You can see more information about the bootstrap by enabling additional logging. Simply run the Maven build with `-X` or `--debug` and grep the lines that contain `io.quarkus.arc`. In the <<cdi-reference.adoc#dev-mode,development mode>>, you can use `quarkus.log.category."io.quarkus.arc.processor".level=DEBUG` and two special endpoints are also registered automatically to provide some basic debug info in the JSON format.
+TIP: You can see more information about the bootstrap by enabling additional logging. Simply run the Maven build with `-X` or `--debug` and grep the lines that contain `io.quarkus.arc`. In <<cdi-reference.adoc#dev_mode,dev mode>>, you can use `quarkus.log.category."io.quarkus.arc.processor".level=DEBUG` and two special endpoints are also registered automatically to provide some basic debug info in the JSON format.
 
 Quarkus build steps can produce and consume various build items and hook into each phase.
 In the following sections we will describe all the relevant build items and common scenarios.

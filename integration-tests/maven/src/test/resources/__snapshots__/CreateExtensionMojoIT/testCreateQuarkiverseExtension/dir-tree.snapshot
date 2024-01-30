@@ -6,6 +6,7 @@ quarkus-my-quarkiverse-ext/.github/dependabot.yml
 quarkus-my-quarkiverse-ext/.github/project.yml
 quarkus-my-quarkiverse-ext/.github/workflows/
 quarkus-my-quarkiverse-ext/.github/workflows/build.yml
+quarkus-my-quarkiverse-ext/.github/workflows/deploy-snapshots.yml.disabled
 quarkus-my-quarkiverse-ext/.github/workflows/pre-release.yml
 quarkus-my-quarkiverse-ext/.github/workflows/quarkus-snapshot.yaml
 quarkus-my-quarkiverse-ext/.github/workflows/release.yml

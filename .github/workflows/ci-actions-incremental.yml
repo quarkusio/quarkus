@@ -203,7 +203,7 @@ jobs:
         run: find ~/.m2 -name \*-SNAPSHOT -type d -exec rm -rf {} +
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-Initial JDK 17 Build"
           path: |
@@ -383,7 +383,7 @@ jobs:
           retention-days: 7
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-JVM Tests - JDK ${{matrix.java.name}}"
           path: |
@@ -487,7 +487,7 @@ jobs:
           if [ -d 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' 'integration-tests/maven/target/test-classes/projects/qit--uber--jar'; fi
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-Maven Tests - JDK ${{matrix.java.name}}"
           path: |
@@ -566,7 +566,7 @@ jobs:
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl integration-tests/gradle
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-Gradle Tests - JDK ${{matrix.java.name}}"
           path: |
@@ -653,7 +653,7 @@ jobs:
           retention-days: 7
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-Devtools Tests - JDK ${{matrix.java.name}}"
           path: |
@@ -739,7 +739,7 @@ jobs:
           retention-days: 7
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-Kubernetes Tests - JDK ${{matrix.java.name}}"
           path: |
@@ -804,7 +804,7 @@ jobs:
           export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-Quickstarts Compilation - JDK ${{matrix.java.name}}"
           path: |
@@ -870,7 +870,7 @@ jobs:
           export LANG=en_US && ./mvnw $COMMON_MAVEN_ARGS -f integration-tests/virtual-threads -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dextra-args=--enable-preview -Dquarkus.native.container-build=true
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-Virtual Thread Support Tests Native - ${{matrix.category}}"
           path: |
@@ -944,7 +944,7 @@ jobs:
           retention-days: 7
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-MicroProfile TCKs Tests"
           path: |
@@ -1044,7 +1044,7 @@ jobs:
           retention-days: 7
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-Native Tests - ${{matrix.category}}"
           path: |

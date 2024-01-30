@@ -355,9 +355,20 @@ Consider using the `quarkus.oidc.token.audience` property to verify the token `a
 [[single-page-applications]]
 === Single-page applications
 
-A single-page application (SPA) typically uses `XMLHttpRequest`(XHR) and the JavaScript utility code provided by the OIDC provider to acquire a bearer token to access Quarkus `service` applications.
+A single-page application (SPA) typically uses an authorization code flow to authenticate users and acquire ID and access tokens.
+It sends access tokens as bearer tokens to access Quarkus `service` applications.
 
-For example, if you work with Keycloak, you can use `keycloak.js` to authenticate users and refresh the expired tokens from the SPA:
+SPA can support an authorization code flow by using OIDC provider scripts or implement it directly.
+If SPA chooses to implement an authorization code flow directly then it can use an experimental OIDC proxy feature.
+
+Both options are described below.
+
+[[single-page-application-scripts]]
+==== Use OIDC provider scripts
+
+Using OIDC provider scripts is an easiest option to support an authorization code flow but SPA can only work with a single OIDC provider in this case.
+
+For example, if you work with Keycloak, you can use `keycloak.js` to authenticate users with an authorization code flow and refresh the expired tokens from the SPA:
 
 [source,html]
 ----
@@ -398,6 +409,70 @@ For example, if you work with Keycloak, you can use `keycloak.js` to authenticat
 </body>
 </html>
 ----
+
+[[single-page-application-oidc-proxy]]
+==== Use OIDC proxy
+
+Instead of tying your SPA to a specific OIDC provider by depending on this OIDC provider's script, you may want to consider implementing an authorization code flow directly in the SPA.
+
+SPA redirects users to a configurable OIDC authorization endpoint, accepts the OIDC provider's redirect and acquires tokens by sending the authorization code to a standard OIDC token endpoint.
+
+Quarkus introduces an experimental `quarkus-oidc-proxy` OIDC proxy extension which provides an authorization code flow support for Quarkus OIDC `service` applications. It can help to encapsule all the OIDC provider specific configuration details.
+
+To use OIDC proxy, all you need to do is to add the `quarkus-oidc-proxy` dependency to your Quarkus OIDC `service` application:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc-proxy</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-oidc-proxy")
+----
+
+Now, the SPA can use the OIDC proxy endpoints to authenticate users with an authorization code flow and send the acquired access tokens to the Quarkus OIDC `service` application.
+
+For example, if the endpoint is listening at `http://localhost:8080`, then, after adding this dependency, the OIDC authorization endpoint is available at `http://localhost:8080/q/oidc/authorize` , the OIDC token endpoint is available at `http://localhost:8080/q/oidc/token`, the OIDC JWKS endpoint is available at `http://localhost:8080/q/oidc/jwks` and finally, the OIDC well known configuration endpoint which supports the discovery is available at `http://localhost:8080/q/oidc/.well-known/openid-configuration`.
+
+For example, the following configuration is enabling an OIDC proxy over a Quarkus OIDC Auth0 `service` application, without having to configure your Auth0 application to allow redirects to the SPA page:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=https://${auth0-dev}.us.auth0.com <1>
+quarkus.oidc.client-id=${auth0-client-id}
+quarkus.oidc.credentials.secret=${auth0-client-secret}
+
+quarkus.oidc.authentication.redirect-path=/q/oidc/callback <2>
+quarkus.oidc-proxy.external-redirect-uri=${external-spa-redirect-url}
+----
+<1> OIDC `service` application which can only accept and verify the bearer access tokens.
+<2> Let OIDC proxy accept callbacks at the `/q/oidc/callback` path and redirect to the actual SPA redirect path. The Auth0 application will only need to allow a redirect to `http://localhost:8080/q/oidc/callback`.
+
+OIDC proxy root and individual endpoint paths can be customized.
+You can customize the `/q/oidc` OIDC proxy root path with a `quarkus.oidc-proxy.root-path` property. Each individual endpoint can also be customized.
+
+For example, if you set `quarkus.oidc-proxy.root-path` to `openid-connect` and `quarkus.oidc-proxy.authorization-path` to `/authorization`, then you will get the OIDC authorization endpoint available at `http://localhost:8080/openid-connect/authorization`, etc.
+
+OIDC proxy endpoints are public because they have to delegate to the real OIDC provider.
+
+If you use a wildcard authentication or role-based access control HTTP policy, make sure to permit access to the OIDC proxy endpoints, for example:
+
+[source,properties]
+----
+quarkus.http.auth.permission.service.paths=/* <1>
+quarkus.http.auth.permission.service.policy=authenticated
+
+quarkus.http.auth.permission.oidcproxy.paths=/q/oidc/* <2>
+quarkus.http.auth.permission.oidcproxy.policy=permit
+----
+<1> Requests to all service endpoints and resources must be authenticated
+<2> Permit access to the OIDC proxy endpoints only
 
 === Cross-origin resource sharing
 

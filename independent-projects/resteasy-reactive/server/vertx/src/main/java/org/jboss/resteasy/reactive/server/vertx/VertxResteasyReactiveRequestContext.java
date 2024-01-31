@@ -39,6 +39,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.impl.Http1xServerResponse;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
 
@@ -454,6 +455,10 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public OutputStream createResponseOutputStream() {
+        Context ctxt = Vertx.currentContext();
+        if (ctxt == ((HttpServerRequestInternal) request).context()) {
+            return new ResteasyReactiveOutputStreamOnSameContext(this, ctxt);
+        }
         return new ResteasyReactiveOutputStream(this);
     }
 

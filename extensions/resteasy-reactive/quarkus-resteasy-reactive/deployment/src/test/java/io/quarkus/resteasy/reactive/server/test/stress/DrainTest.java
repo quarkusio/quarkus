@@ -1,32 +1,5 @@
 package io.quarkus.resteasy.reactive.server.test.stress;
 
-import io.quarkus.test.QuarkusUnitTest;
-import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.infrastructure.Infrastructure;
-import io.vertx.core.Vertx;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.MultivaluedMap;
-import jakarta.ws.rs.ext.MessageBodyWriter;
-import jakarta.ws.rs.ext.Provider;
-import org.assertj.core.api.Assertions;
-import org.jboss.resteasy.reactive.server.vertx.ResteasyReactiveOutputStream;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
@@ -40,8 +13,31 @@ import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.stream.IntStream;
 
-public class DrainTest {
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+import jakarta.ws.rs.ext.Provider;
+
+import org.assertj.core.api.Assertions;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.mutiny.Uni;
+
+public class DrainTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
@@ -50,7 +46,6 @@ public class DrainTest {
                     .addAsResource("server-keystore.jks"))
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-file", "server-keystore.jks")
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-password", "secret");
-
 
     HttpClient client;
 
@@ -126,14 +121,14 @@ public class DrainTest {
     public static class MyEndpoint {
         @GET
         @Path("bytesAsync")
-        @Produces({"application/json", "application/cbor"}) // Not really what is produced...
+        @Produces({ "application/json", "application/cbor" }) // Not really what is produced...
         public Uni<Data> getBytesAsync() {
             return Uni.createFrom().item(DATA);
         }
 
         @GET
         @Path("bytesSync")
-        @Produces({"application/json", "application/cbor"}) // Not really what is produced...
+        @Produces({ "application/json", "application/cbor" }) // Not really what is produced...
         public Data getBytesSync() {
             return DATA;
         }
@@ -141,7 +136,7 @@ public class DrainTest {
 
     @Provider
     @ApplicationScoped
-    @Produces({"application/json", "application/cbor"})
+    @Produces({ "application/json", "application/cbor" })
     public static class DataBodyWriter implements MessageBodyWriter<Data> {
 
         @Override
@@ -151,7 +146,7 @@ public class DrainTest {
 
         @Override
         public void writeTo(Data data, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-                            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+                MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
                 throws IOException, WebApplicationException {
             entityStream.write(data.bytes());
         }
@@ -167,7 +162,7 @@ public class DrainTest {
     private static HttpClient createJavaHttpClient() {
         try {
             var sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, new TrustManager[]{AllowAllTrustManager.INSTANCE}, SecureRandom.getInstanceStrong());
+            sslContext.init(null, new TrustManager[] { AllowAllTrustManager.INSTANCE }, SecureRandom.getInstanceStrong());
             return HttpClient.newBuilder().sslContext(sslContext).build();
         } catch (Throwable t) {
             throw new RuntimeException("Unable to create HTTP client");
@@ -177,7 +172,7 @@ public class DrainTest {
     private static HttpClient createJavaHttp2Client() {
         try {
             var sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, new TrustManager[]{AllowAllTrustManager.INSTANCE}, SecureRandom.getInstanceStrong());
+            sslContext.init(null, new TrustManager[] { AllowAllTrustManager.INSTANCE }, SecureRandom.getInstanceStrong());
             return HttpClient.newBuilder().sslContext(sslContext).version(HttpClient.Version.HTTP_2).build();
         } catch (Throwable t) {
             throw new RuntimeException("Unable to create HTTP client");

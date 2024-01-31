@@ -233,7 +233,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
     private String getFinalURI(String applicationName, String profile) {
         String finalURI = baseURI.toString() + "/" + applicationName + "/" + profile;
         if (config.label().isPresent()) {
-            finalURI = "/" + config.label().get();
+            finalURI += "/" + config.label().get();
         }
         return finalURI;
     }

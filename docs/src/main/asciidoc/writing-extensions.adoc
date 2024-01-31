@@ -1641,7 +1641,7 @@ Given a default non-application endpoint root of `/q`, this will create an endpo
 Absolute paths also have an impact on nested endpoints. If the above called `nestedRoute("custom-endpoint", "/deep")`,
 the resulting endpoint will be found at `/deep`.
 
-Refer to the xref:all-config.adoc#quarkus-vertx-http_quarkus.http.non-application-root-path[Quarkus Vertx HTTP configuration reference]
+Refer to the xref:all-config.adoc#quarkus-vertx-http_quarkus-http-non-application-root-path[Quarkus Vertx HTTP configuration reference]
 for details on how the non-application root path is configured.
 
 === Extension Health Check

@@ -238,7 +238,7 @@ Quarkus will automatically stop the container when your application stops.
 If you play with your code some more, you may notice that sometimes, after making an application change, http://localhost:8080/hello/names doesn't list any names.
 What's going on? By default, in dev mode, with a Dev Services database,
  Quarkus configures Hibernate ORM database generation to be `drop-and-create`.
- See the xref:hibernate-orm.adoc#quarkus-hibernate-orm_quarkus.hibernate-orm.database-database-related-configuration[Hibernate configuration reference] for more details.
+ See the xref:hibernate-orm.adoc#quarkus-hibernate-orm_quarkus-hibernate-orm-database-database-related-configuration[Hibernate configuration reference] for more details.
  If a code change triggers an application restart, the database tables
  will be dropped (deleted) and then re-created.
 

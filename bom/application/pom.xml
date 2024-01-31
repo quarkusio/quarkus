@@ -25,7 +25,7 @@
         <javax.inject.version>1</javax.inject.version>
         <parsson.version>1.1.5</parsson.version>
         <resteasy-microprofile.version>2.1.5.Final</resteasy-microprofile.version>
-        <resteasy-spring-web.version>3.1.0.Final</resteasy-spring-web.version>
+        <resteasy-spring-web.version>3.1.1.Final</resteasy-spring-web.version>
         <resteasy.version>6.2.7.Final</resteasy.version>
         <opentracing.version>0.33.0</opentracing.version>
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
@@ -130,7 +130,7 @@
         <h2.version>2.2.224</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions -->
         <postgresql-jdbc.version>42.7.1</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.3.2</mariadb-jdbc.version>
-        <mysql-jdbc.version>8.0.33</mysql-jdbc.version>
+        <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
         <mssql-jdbc.version>12.4.2.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.3.0.23.09</oracle-jdbc.version>
@@ -148,7 +148,7 @@
         <brotli4j.version>1.12.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
-        <mutiny.version>2.5.5</mutiny.version>
+        <mutiny.version>2.5.6</mutiny.version>
         <kafka3.version>3.6.1</kafka3.version>
         <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
         <snappy.version>1.1.10.5</snappy.version>
@@ -207,7 +207,7 @@
         <avro.version>1.11.3</avro.version>
         <apicurio-registry.version>2.5.8.Final</apicurio-registry.version>
         <apicurio-common-rest-client.version>0.1.18.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
-        <testcontainers.version>1.19.3</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
+        <testcontainers.version>1.19.4</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
         <docker-java.version>3.3.4</docker-java.version> <!-- must be the version Testcontainers use -->
         <!-- Check the compatibility matrix (https://github.com/opensearch-project/opensearch-testcontainers) before upgrading: -->
         <opensearch-testcontainers.version>2.0.0</opensearch-testcontainers.version>

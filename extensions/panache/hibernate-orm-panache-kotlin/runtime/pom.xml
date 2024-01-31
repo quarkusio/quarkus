@@ -110,7 +110,7 @@
                                 <annotationProcessorPath>
                                     <groupId>org.hibernate.orm</groupId>
                                     <artifactId>hibernate-jpamodelgen</artifactId>
-                                    <version>${hibernate-orm.version}</version>
+                                    <version>${hibernate-orm.jpamodelgen.for-panache.version}</version>
                                 </annotationProcessorPath>
                             </annotationProcessorPaths>
                             <annotationProcessors>

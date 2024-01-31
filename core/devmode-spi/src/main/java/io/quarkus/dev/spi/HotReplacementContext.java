@@ -68,4 +68,9 @@ public interface HotReplacementContext {
      * @return A set of changed files
      */
     Set<String> syncState(Map<String, String> fileHashes);
+
+    /**
+     * Adds a task that is run after the restart is performed.
+     */
+    void addPostRestartStep(Runnable runnable);
 }

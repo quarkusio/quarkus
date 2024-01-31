@@ -101,7 +101,7 @@ public class VertxCoreRecorder {
             LaunchMode launchMode, ShutdownContext shutdown, List<Consumer<VertxOptions>> customizers,
             ExecutorService executorProxy) {
         if (launchMode == LaunchMode.NORMAL) {
-            // In the prod mode we wrap the ExecutorService and the shutdown() and shutdownNow() are deliberately not delegated
+            // In prod mode, we wrap the ExecutorService and the shutdown() and shutdownNow() are deliberately not delegated
             // This is a workaround to solve the problem described in https://github.com/quarkusio/quarkus/issues/16833#issuecomment-1917042589
             // The Vertx instance is closed before io.quarkus.runtime.ExecutorRecorder.createShutdownTask() is used
             // And when it's closed the underlying worker thread pool (which is in the prod mode backed by the ExecutorBuildItem) is closed as well

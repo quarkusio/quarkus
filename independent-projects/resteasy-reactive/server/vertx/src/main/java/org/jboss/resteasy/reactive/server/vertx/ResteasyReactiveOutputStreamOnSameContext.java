@@ -3,6 +3,9 @@ package org.jboss.resteasy.reactive.server.vertx;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import jakarta.ws.rs.core.HttpHeaders;
+
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -12,11 +15,13 @@ import io.vertx.core.http.HttpServerResponse;
 public class ResteasyReactiveOutputStreamOnSameContext extends OutputStream {
     private final Context context;
     private final HttpServerResponse response;
+    private final VertxResteasyReactiveRequestContext resteasyContext;
 
-    public ResteasyReactiveOutputStreamOnSameContext(VertxResteasyReactiveRequestContext vertxResteasyReactiveRequestContext,
+    public ResteasyReactiveOutputStreamOnSameContext(VertxResteasyReactiveRequestContext resteasyContext,
             Context ctxt) {
         this.context = ctxt;
-        this.response = vertxResteasyReactiveRequestContext.context.response();
+        this.resteasyContext = resteasyContext;
+        this.response = resteasyContext.context.response();
     }
 
     private void runOnContext(Runnable runnable) {
@@ -53,6 +58,8 @@ public class ResteasyReactiveOutputStreamOnSameContext extends OutputStream {
         runOnContext(new Runnable() {
             @Override
             public void run() {
+                prepareResponse();
+
                 if (len < 1) {
                     if (!response.ended()) {
                         response.end();
@@ -63,6 +70,24 @@ public class ResteasyReactiveOutputStreamOnSameContext extends OutputStream {
                 }
             }
         });
+    }
+
+    private void prepareResponse() {
+        if (!response.headWritten()) {
+            var contentLengthSet = ResteasyReactiveOutputStream.contentLengthSet(
+                    resteasyContext.request,
+                    resteasyContext.getResponse());
+            if (contentLengthSet == ResteasyReactiveOutputStream.ContentLengthSetResult.NOT_SET) {
+                response.setChunked(true);
+            } else if (contentLengthSet == ResteasyReactiveOutputStream.ContentLengthSetResult.IN_JAX_RS_HEADER) {
+                // we need to make sure the content-length header is copied to Vert.x headers
+                // otherwise we could run into a race condition: see https://github.com/quarkusio/quarkus/issues/26599
+                Object contentLength = resteasyContext.getResponse().get().getHeaders()
+                        .getFirst(HttpHeaders.CONTENT_LENGTH);
+                resteasyContext.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH,
+                        contentLength.toString());
+            }
+        }
     }
 
     @Override

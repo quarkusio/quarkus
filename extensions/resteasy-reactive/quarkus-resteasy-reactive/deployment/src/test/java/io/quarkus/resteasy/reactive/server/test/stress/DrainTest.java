@@ -57,7 +57,6 @@ public class DrainTest {
         var sum = IntStream.range(0, 10000)
                 .parallel()
                 .map(i -> get("https://localhost:8444/test/bytesAsync"))
-                .peek(i -> System.out.println(Instant.now() + " Got response: " + i))
                 .sum();
         System.out.println("Request completed in " + (System.currentTimeMillis() - before) + " ms");
         Assertions.assertThat(sum).isEqualTo(1000000000);
@@ -71,7 +70,6 @@ public class DrainTest {
         var sum = IntStream.range(0, 10000)
                 .parallel()
                 .map(i -> get("https://localhost:8444/test/bytesSync"))
-                .peek(i -> System.out.println(Instant.now() + " Got response: " + i))
                 .sum();
         System.out.println("Request completed in " + (System.currentTimeMillis() - before) + " ms");
         Assertions.assertThat(sum).isEqualTo(1000000000);
@@ -99,7 +97,6 @@ public class DrainTest {
         var sum = IntStream.range(0, 10000)
                 .parallel()
                 .map(i -> get("https://localhost:8444/test/bytesSync"))
-                .peek(i -> System.out.println(Instant.now() + " Got response: " + i))
                 .sum();
         System.out.println("Request completed in " + (System.currentTimeMillis() - before) + " ms");
         Assertions.assertThat(sum).isEqualTo(1000000000);

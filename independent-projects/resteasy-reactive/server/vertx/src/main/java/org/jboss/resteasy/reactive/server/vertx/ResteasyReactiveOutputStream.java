@@ -16,10 +16,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
 
 public class ResteasyReactiveOutputStream extends OutputStream {
 
@@ -123,8 +124,8 @@ public class ResteasyReactiveOutputStream extends OutputStream {
     }
 
     private boolean awaitWriteable() throws IOException {
-        if (Context.isOnEventLoopThread()) {
-            return request.response().writeQueueFull();
+        if (Vertx.currentContext() == ((HttpServerRequestInternal) request).context()) {
+            return false; // we are on the (right) event loop, so we can write - Netty will do the right thing.
         }
         if (first) {
             first = false;

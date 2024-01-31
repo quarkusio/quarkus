@@ -6,7 +6,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation that can be used to force a class to be registered for reflection in native image mode
+ * Annotation that can be used to force a class to be registered for reflection in native image mode.
+ * Note that by default nested classes and interfaces are not registered, unless {@link #ignoreNested()} is set to false.
+ * Similarly, by default only the class itself is registered, not the full class hierarchy. This can be changed by setting
+ * {@link #registerFullHierarchy()} to true.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

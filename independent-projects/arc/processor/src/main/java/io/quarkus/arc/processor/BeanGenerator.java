@@ -727,8 +727,9 @@ public class BeanGenerator extends AbstractGenerator {
                 } else {
                     // Not a built-in bean
                     if (injectionPoint.isCurrentInjectionPointWrapperNeeded()) {
-                        ResultHandle wrapHandle = wrapCurrentInjectionPoint(bean, constructor,
-                                injectionPoint, paramIdx++, tccl, reflectionRegistration);
+                        ResultHandle wrapHandle = wrapCurrentInjectionPoint(bean, constructor, injectionPoint,
+                                constructor.getThis(), constructor.getMethodParam(paramIdx++), tccl,
+                                annotationLiterals, reflectionRegistration, injectionPointAnnotationsPredicate);
                         ResultHandle wrapSupplierHandle = constructor.newInstance(
                                 MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, wrapHandle);
                         constructor.writeInstanceField(
@@ -2228,9 +2229,10 @@ public class BeanGenerator extends AbstractGenerator {
         return proxyTypeName.toString();
     }
 
-    private ResultHandle wrapCurrentInjectionPoint(BeanInfo bean,
-            MethodCreator constructor, InjectionPointInfo injectionPoint, int paramIdx, ResultHandle tccl,
-            ReflectionRegistration reflectionRegistration) {
+    static ResultHandle wrapCurrentInjectionPoint(BeanInfo bean, MethodCreator constructor,
+            InjectionPointInfo injectionPoint, ResultHandle beanHandle, ResultHandle delegateSupplierHandle,
+            ResultHandle tcclHandle, AnnotationLiteralProcessor annotationLiterals,
+            ReflectionRegistration reflectionRegistration, Predicate<DotName> injectionPointAnnotationsPredicate) {
         ResultHandle requiredQualifiersHandle = collectInjectionPointQualifiers(bean.getDeployment(),
                 constructor, injectionPoint, annotationLiterals);
         ResultHandle annotationsHandle = collectInjectionPointAnnotations(bean.getDeployment(),
@@ -2243,8 +2245,8 @@ public class BeanGenerator extends AbstractGenerator {
                 MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableBean.class,
                         Supplier.class, java.lang.reflect.Type.class,
                         Set.class, Set.class, Member.class, int.class, boolean.class),
-                constructor.getThis(), constructor.getMethodParam(paramIdx),
-                Types.getTypeHandle(constructor, injectionPoint.getType(), tccl),
+                beanHandle, delegateSupplierHandle,
+                Types.getTypeHandle(constructor, injectionPoint.getType(), tcclHandle),
                 requiredQualifiersHandle, annotationsHandle, javaMemberHandle,
                 constructor.load(injectionPoint.getPosition()),
                 constructor.load(injectionPoint.isTransient()));

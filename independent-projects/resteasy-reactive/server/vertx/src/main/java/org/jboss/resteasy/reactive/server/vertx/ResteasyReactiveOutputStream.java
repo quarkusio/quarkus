@@ -218,7 +218,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                     }
                 }
             } else {
-                var contentLengthSet = contentLengthSet();
+                var contentLengthSet = contentLengthSet(request, context.getResponse());
                 if (contentLengthSet == ContentLengthSetResult.NOT_SET) {
                     request.response().setChunked(true);
                 } else if (contentLengthSet == ContentLengthSetResult.IN_JAX_RS_HEADER) {
@@ -231,11 +231,10 @@ public class ResteasyReactiveOutputStream extends OutputStream {
         }
     }
 
-    private ContentLengthSetResult contentLengthSet() {
+    public static ContentLengthSetResult contentLengthSet(HttpServerRequest request, LazyResponse lazyResponse) {
         if (request.response().headers().contains(HttpHeaderNames.CONTENT_LENGTH)) {
             return ContentLengthSetResult.IN_VERTX_HEADER;
         }
-        LazyResponse lazyResponse = context.getResponse();
         if (!lazyResponse.isCreated()) {
             return ContentLengthSetResult.NOT_SET;
         }
@@ -245,7 +244,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                 : ContentLengthSetResult.NOT_SET;
     }
 
-    private enum ContentLengthSetResult {
+    public enum ContentLengthSetResult {
         NOT_SET,
         IN_VERTX_HEADER,
         IN_JAX_RS_HEADER

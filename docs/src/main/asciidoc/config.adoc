@@ -242,8 +242,8 @@ application behaviour at runtime.
 
 * xref:config-reference.adoc[Configuration Reference Guide]
 * xref:config-yaml.adoc[YAML ConfigSource Extension]
-* xref:vault.adoc[HashiCorp Vault ConfigSource Extension]
-* xref:consul-config.adoc[Consul ConfigSource Extension]
+* https://github.com/quarkiverse/quarkus-vault[HashiCorp Vault ConfigSource Extension]
+* https://github.com/quarkiverse/quarkus-config-extensions[Consul ConfigSource Extension]
 * xref:spring-cloud-config-client.adoc[Spring Cloud ConfigSource Extension]
 * xref:config-mappings.adoc[Mapping configuration to objects]
 * xref:config-extending-support.adoc[Extending configuration support]

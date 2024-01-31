@@ -394,9 +394,8 @@ public class Endpoint {
 ----
 <1> `BeanParam` is required to comply with the Jakarta REST specification so that libraries like OpenAPI can introspect the parameters.
 
-=== Declaring URI parameters
-
 [[uri-parameters]]
+=== [[declaring-uri-parameters]] Declaring URI parameters
 
 You can declare URI parameters and use regular expressions in your path, so for instance
 the following endpoint will serve requests for `/hello/stef/23` and `/hello` but not
@@ -435,7 +434,6 @@ its HTTP representation to the Java type of the parameter.
 The following parameter types will be supported out of the box:
 
 [[resource-types]]
-
 .Request body parameter types
 |===
 |Type|Usage

@@ -208,6 +208,7 @@
                     <runnerParentFirstArtifacts>
                         <runnerParentFirstArtifact>org.graalvm.sdk:graal-sdk</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.graalvm.js:js</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.regex:regex</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.graalvm.truffle:truffle-api</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>com.ibm.icu:icu4j</runnerParentFirstArtifact> <!-- dependency of org.graalvm.js:js -->
                         <runnerParentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</runnerParentFirstArtifact>

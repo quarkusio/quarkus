@@ -204,7 +204,7 @@ jobs:
       - name: Prepare build reports archive
         if: always()
         run: |
-          zip -R build-reports.zip \
+          7z a -tzip build-reports.zip -r \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
               LICENSE.txt
@@ -389,7 +389,7 @@ jobs:
       - name: Prepare build reports archive
         if: always()
         run: |
-          zip -R build-reports.zip \
+          7z a -tzip build-reports.zip -r \
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
@@ -498,7 +498,7 @@ jobs:
       - name: Prepare build reports archive
         if: always()
         run: |
-          zip -R build-reports.zip \
+          7z a -tzip build-reports.zip -r \
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
@@ -582,7 +582,7 @@ jobs:
       - name: Prepare build reports archive
         if: always()
         run: |
-          zip -R build-reports.zip \
+          7z a -tzip build-reports.zip -r \
               '**/build/test-results/test/TEST-*.xml' \
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
@@ -674,7 +674,7 @@ jobs:
       - name: Prepare build reports archive
         if: always()
         run: |
-          zip -R build-reports.zip \
+          7z a -tzip build-reports.zip -r \
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
@@ -765,7 +765,7 @@ jobs:
       - name: Prepare build reports archive
         if: always()
         run: |
-          zip -R build-reports.zip \
+          7z a -tzip build-reports.zip -r \
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
@@ -835,7 +835,7 @@ jobs:
       - name: Prepare build reports archive
         if: always()
         run: |
-          zip -R build-reports.zip \
+          7z a -tzip build-reports.zip -r \
               'quarkus-quickstarts/**/target/*-reports/TEST-*.xml' \
               'quarkus-quickstarts/target/build-report.json' \
               'quarkus-quickstarts/LICENSE' \
@@ -906,7 +906,7 @@ jobs:
       - name: Prepare build reports archive
         if: always()
         run: |
-          zip -R build-reports.zip \
+          7z a -tzip build-reports.zip -r \
               'integration-tests/virtual-threads/**/target/*-reports/TEST-*.xml' \
               'integration-tests/virtual-threads/target/build-report.json' \
               'integration-tests/virtual-threads/target/gradle-build-scan-url.txt' \
@@ -986,7 +986,7 @@ jobs:
       - name: Prepare build reports archive
         if: always()
         run: |
-          zip -R build-reports.zip \
+          7z a -tzip build-reports.zip -r \
               '**/target/*-reports/TEST-*.xml' \
               'target/build-report.json' \
               'target/gradle-build-scan-url.txt' \
@@ -1091,7 +1091,7 @@ jobs:
       - name: Prepare build reports archive
         if: always()
         run: |
-          zip -R build-reports.zip \
+          7z a -tzip build-reports.zip -r \
               '**/target/*-reports/TEST-*.xml' \
               '**/build/test-results/test/TEST-*.xml' \
               'target/build-report.json' \

@@ -201,15 +201,20 @@ jobs:
           retention-days: 7
       - name: Delete snapshots artifacts from cache
         run: find ~/.m2 -name \*-SNAPSHOT -type d -exec rm -rf {} +
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          zip -R build-reports.zip \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: "build-reports-Initial JDK 17 Build"
           path: |
-            target/build-report.json
-            target/gradle-build-scan-url.txt
-            LICENSE.txt
+            build-reports.zip
           retention-days: 7
 
   calculate-test-jobs:
@@ -381,16 +386,21 @@ jobs:
           name: test-reports-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 7
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          zip -R build-reports.zip \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: "build-reports-JVM Tests - JDK ${{matrix.java.name}}"
           path: |
-            **/target/*-reports/TEST-*.xml
-            target/build-report.json
-            target/gradle-build-scan-url.txt
-            LICENSE.txt
+            build-reports.zip
           retention-days: 7
       - name: Upload build.log (if build failed)
         uses: actions/upload-artifact@v3
@@ -485,16 +495,21 @@ jobs:
           if [ -d 'integration-tests/maven/target/test-classes/projects/qit?fast?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?fast?jar' 'integration-tests/maven/target/test-classes/projects/qit--fast--jar'; fi
           if [ -d 'integration-tests/maven/target/test-classes/projects/qit?legacy?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?legacy?jar' 'integration-tests/maven/target/test-classes/projects/qit--legacy--jar'; fi
           if [ -d 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' 'integration-tests/maven/target/test-classes/projects/qit--uber--jar'; fi
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          zip -R build-reports.zip \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: "build-reports-Maven Tests - JDK ${{matrix.java.name}}"
           path: |
-            **/target/*-reports/TEST-*.xml
-            target/build-report.json
-            target/gradle-build-scan-url.txt
-            LICENSE.txt
+            build-reports.zip
           retention-days: 7
 
   gradle-tests:
@@ -564,17 +579,22 @@ jobs:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl integration-tests/gradle
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          zip -R build-reports.zip \
+              '**/build/test-results/test/TEST-*.xml' \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: "build-reports-Gradle Tests - JDK ${{matrix.java.name}}"
           path: |
-            **/build/test-results/test/TEST-*.xml
-            **/target/*-reports/TEST-*.xml
-            target/build-report.json
-            target/gradle-build-scan-url.txt
-            LICENSE.txt
+            build-reports.zip
           retention-days: 7
 
   devtools-tests:
@@ -651,16 +671,21 @@ jobs:
           name: test-reports-devtools-java${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 7
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          zip -R build-reports.zip \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: "build-reports-Devtools Tests - JDK ${{matrix.java.name}}"
           path: |
-            **/target/*-reports/TEST-*.xml
-            target/build-report.json
-            target/gradle-build-scan-url.txt
-            LICENSE.txt
+            build-reports.zip
           retention-days: 7
 
   kubernetes-tests:
@@ -737,16 +762,21 @@ jobs:
           name: test-reports-kubernetes-java${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 7
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          zip -R build-reports.zip \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: "build-reports-Kubernetes Tests - JDK ${{matrix.java.name}}"
           path: |
-            **/target/*-reports/TEST-*.xml
-            target/build-report.json
-            **/target/gradle-build-scan-url.txt
-            LICENSE.txt
+            build-reports.zip
           retention-days: 7
 
   quickstarts-tests:
@@ -802,15 +832,20 @@ jobs:
           git clone https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
           git checkout development
           export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          zip -R build-reports.zip \
+              'quarkus-quickstarts/**/target/*-reports/TEST-*.xml' \
+              'quarkus-quickstarts/target/build-report.json' \
+              'quarkus-quickstarts/LICENSE' \
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: "build-reports-Quickstarts Compilation - JDK ${{matrix.java.name}}"
           path: |
-            quarkus-quickstarts/**/target/*-reports/TEST-*.xml
-            quarkus-quickstarts/target/build-report.json
-            quarkus-quickstarts/LICENSE
+            build-reports.zip
           retention-days: 7
 
   virtual-thread-native-tests:
@@ -868,15 +903,21 @@ jobs:
           CAPTURE_BUILD_SCAN: true
         run: |
           export LANG=en_US && ./mvnw $COMMON_MAVEN_ARGS -f integration-tests/virtual-threads -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dextra-args=--enable-preview -Dquarkus.native.container-build=true
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          zip -R build-reports.zip \
+              'integration-tests/virtual-threads/**/target/*-reports/TEST-*.xml' \
+              'integration-tests/virtual-threads/target/build-report.json' \
+              'integration-tests/virtual-threads/target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: "build-reports-Virtual Thread Support Tests Native - ${{matrix.category}}"
           path: |
-            integration-tests/virtual-threads/**/target/*-reports/TEST-*.xml
-            integration-tests/virtual-threads/target/build-report.json
-            integration-tests/virtual-threads/target/gradle-build-scan-url.txt
+            build-reports.zip
           retention-days: 7
 
   tcks-test:
@@ -942,16 +983,21 @@ jobs:
           name: test-reports-tcks
           path: 'test-reports.tgz'
           retention-days: 7
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          zip -R build-reports.zip \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: "build-reports-MicroProfile TCKs Tests"
           path: |
-            **/target/*-reports/TEST-*.xml
-            target/build-report.json
-            **/target/gradle-build-scan-url.txt
-            LICENSE.txt
+            build-reports.zip
           retention-days: 7
 
   native-tests:
@@ -1042,17 +1088,22 @@ jobs:
           name: test-reports-native-${{matrix.category}}
           path: 'test-reports.tgz'
           retention-days: 7
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          zip -R build-reports.zip \
+              '**/target/*-reports/TEST-*.xml' \
+              '**/build/test-results/test/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: "build-reports-Native Tests - ${{matrix.category}}"
           path: |
-            **/target/*-reports/TEST-*.xml
-            **/build/test-results/test/TEST-*.xml
-            target/build-report.json
-            **/target/gradle-build-scan-url.txt
-            LICENSE.txt
+            build-reports.zip
           retention-days: 7
 
   build-report:

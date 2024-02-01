@@ -3,7 +3,7 @@ package io.quarkus.it.panache.reactive;
 import io.quarkus.hibernate.reactive.panache.common.NestedProjectedClass;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
-@RegisterForReflection(ignoreNested = false)
+@RegisterForReflection
 public class DogDto {
     public String name;
     public PersonDto owner;

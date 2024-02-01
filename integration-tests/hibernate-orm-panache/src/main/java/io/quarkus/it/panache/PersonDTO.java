@@ -4,7 +4,7 @@ import io.quarkus.hibernate.orm.panache.common.NestedProjectedClass;
 import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
-@RegisterForReflection(ignoreNested = false)
+@RegisterForReflection
 public class PersonDTO extends PersonName {
 
     public final AddressDTO address;

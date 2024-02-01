@@ -151,9 +151,14 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
             if (dumpDependencies) {
                 final List<String> deps = new ArrayList<>();
                 for (var d : curatedApplication.getApplicationModel().getDependencies(DependencyFlags.DEPLOYMENT_CP)) {
-                    var adler32 = new Adler32();
-                    updateChecksum(adler32, d.getResolvedPaths());
-                    deps.add(d.toGACTVString() + " " + adler32.getValue());
+                    StringBuilder entry = new StringBuilder(d.toGACTVString());
+                    if (d.isSnapshot()) {
+                        var adler32 = new Adler32();
+                        updateChecksum(adler32, d.getResolvedPaths());
+                        entry.append(" ").append(adler32.getValue());
+                    }
+
+                    deps.add(entry.toString());
                 }
                 Collections.sort(deps);
                 final Path targetFile = getOutputFile(dependenciesFile, launchMode.getDefaultProfile(),

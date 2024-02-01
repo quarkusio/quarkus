@@ -1,5 +1,6 @@
 package io.quarkus.oidc.client.runtime;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiConsumer;
 
@@ -16,15 +17,20 @@ public class TokensHelper {
             .newUpdater(TokensHelper.class, TokenRequestState.class, "tokenRequestState");
 
     public void initTokens(OidcClient oidcClient) {
+        initTokens(oidcClient, Map.of());
+    }
+
+    public void initTokens(OidcClient oidcClient, Map<String, String> additionalParameters) {
         //init the tokens, this just happens in a blocking manner for now
-        tokenRequestStateUpdater.set(this, new TokenRequestState(oidcClient.getTokens().await().indefinitely()));
+        tokenRequestStateUpdater.set(this,
+                new TokenRequestState(oidcClient.getTokens(additionalParameters).await().indefinitely()));
     }
 
     public Uni<Tokens> getTokens(OidcClient oidcClient) {
-        return getTokens(oidcClient, false);
+        return getTokens(oidcClient, Map.of(), false);
     }
 
-    public Uni<Tokens> getTokens(OidcClient oidcClient, boolean forceNewTokens) {
+    public Uni<Tokens> getTokens(OidcClient oidcClient, Map<String, String> additionalParameters, boolean forceNewTokens) {
         TokenRequestState currentState = null;
         TokenRequestState newState = null;
         //if the tokens are expired we refresh them in an async manner
@@ -34,7 +40,7 @@ public class TokensHelper {
             if (currentState == null) {
                 //init the initial state
                 //note that this can still happen at runtime as if there is an error then the state will be null
-                newState = new TokenRequestState(prepareUni(oidcClient.getTokens()));
+                newState = new TokenRequestState(prepareUni(oidcClient.getTokens(additionalParameters)));
                 if (tokenRequestStateUpdater.compareAndSet(this, currentState, newState)) {
                     return newState.tokenUni;
                 }
@@ -46,8 +52,8 @@ public class TokensHelper {
                 if (forceNewTokens || tokens.isAccessTokenExpired() || tokens.isAccessTokenWithinRefreshInterval()) {
                     newState = new TokenRequestState(
                             prepareUni((!forceNewTokens && tokens.getRefreshToken() != null && !tokens.isRefreshTokenExpired())
-                                    ? oidcClient.refreshTokens(tokens.getRefreshToken())
-                                    : oidcClient.getTokens()));
+                                    ? oidcClient.refreshTokens(tokens.getRefreshToken(), additionalParameters)
+                                    : oidcClient.getTokens(additionalParameters)));
                     if (tokenRequestStateUpdater.compareAndSet(this, currentState, newState)) {
                         return newState.tokenUni;
                     }

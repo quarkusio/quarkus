@@ -126,9 +126,8 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
             curatedApplication = bootstrapApplication(launchMode);
             if (prevConfigExists || dumpCurrentWhenRecordedUnavailable) {
                 final Path targetFile = getOutputFile(outputFile, launchMode.getDefaultProfile(), "-config-check");
-                Properties compareProps = null;
+                Properties compareProps = new Properties();
                 if (prevConfigExists) {
-                    compareProps = new Properties();
                     try (BufferedReader reader = Files.newBufferedReader(compareFile)) {
                         compareProps.load(reader);
                     } catch (IOException e) {

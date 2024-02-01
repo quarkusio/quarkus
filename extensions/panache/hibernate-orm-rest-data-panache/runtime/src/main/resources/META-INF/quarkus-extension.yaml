@@ -16,3 +16,7 @@ metadata:
   - "data"
   - "web"
   status: "stable"
+  codestart:
+    name: "hibernate-orm-rest-data"
+    languages: [ "java" ]
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

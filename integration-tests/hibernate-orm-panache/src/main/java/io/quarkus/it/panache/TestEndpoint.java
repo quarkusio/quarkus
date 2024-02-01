@@ -1356,6 +1356,64 @@ public class TestEndpoint {
     }
 
     @GET
+    @Path("projection-nested")
+    @Transactional
+    public String testNestedProjection() {
+        Person person = new Person();
+        person.name = "2n";
+        person.uniqueName = "2n";
+        person.address = new Address("street 2");
+        person.persist();
+        PersonDTO personDTO = Person.find(
+                "select uniqueName, name, " +
+                        " new io.quarkus.it.panache.PersonDTO$AddressDTO(address.street)," +
+                        " new io.quarkus.it.panache.PersonDTO$DescriptionDTO(description.size, description.weight)," +
+                        " description.size" +
+                        " from Person2 where name = ?1",
+                "2n")
+                .project(PersonDTO.class)
+                .firstResult();
+        person.delete();
+        Assertions.assertEquals("2n", personDTO.name);
+        Assertions.assertEquals("street 2", personDTO.address.street);
+
+        person = new Person();
+        person.name = "3";
+        person.uniqueName = "3";
+        person.address = new Address("street 3");
+        person.address.persist();
+        person.description = new PersonDescription();
+        person.description.weight = 75;
+        person.description.size = 170;
+        person.persist();
+        personDTO = Person.find(" name = ?1", "3")
+                .project(PersonDTO.class)
+                .firstResult();
+        person.delete();
+        Assertions.assertEquals("3", personDTO.name);
+        Assertions.assertEquals("street 3", personDTO.address.street);
+        Assertions.assertEquals(170, personDTO.directHeight);
+        Assertions.assertEquals(170, personDTO.description.height);
+        Assertions.assertEquals("Height: 170, weight: 75", personDTO.description.getDescription());
+
+        Person hum = new Person();
+        hum.name = "hum";
+        hum.uniqueName = "hum";
+        Dog kit = new Dog("kit", "bulldog");
+        hum.dogs.add(kit);
+        kit.owner = hum;
+        hum.persist();
+        DogDto2 dogDto2 = Dog.find(" name = ?1", "kit")
+                .project(DogDto2.class)
+                .firstResult();
+        hum.delete();
+        Assertions.assertEquals("kit", dogDto2.name);
+        Assertions.assertEquals("hum", dogDto2.owner.name);
+
+        return "OK";
+    }
+
+    @GET
     @Path("model3")
     @Transactional
     public String testModel3() {

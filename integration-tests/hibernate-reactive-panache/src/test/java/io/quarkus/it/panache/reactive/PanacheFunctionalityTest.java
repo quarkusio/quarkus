@@ -55,6 +55,7 @@ public class PanacheFunctionalityTest {
         RestAssured.when().get("/test/model2").then().body(is("OK"));
         RestAssured.when().get("/test/projection1").then().body(is("OK"));
         RestAssured.when().get("/test/projection2").then().body(is("OK"));
+        RestAssured.when().get("/test/projection-nested").then().body(is("OK"));
         RestAssured.when().get("/test/model3").then().body(is("OK"));
     }
 
@@ -104,7 +105,7 @@ public class PanacheFunctionalityTest {
         // check
         // hence no 'persistence'-attribute
         assertEquals(
-                "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
+                "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"description\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
                 personAsString);
     }
 
@@ -303,4 +304,5 @@ public class PanacheFunctionalityTest {
     public void testBeerRepository() {
         RestAssured.when().get("/test-repo/beers").then().body(is("OK"));
     }
+
 }

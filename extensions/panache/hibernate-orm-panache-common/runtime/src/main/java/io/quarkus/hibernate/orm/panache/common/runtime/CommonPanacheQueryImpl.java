@@ -1,13 +1,12 @@
 package io.quarkus.hibernate.orm.panache.common.runtime;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import jakarta.persistence.EntityManager;
@@ -18,6 +17,7 @@ import jakarta.persistence.Query;
 import org.hibernate.Filter;
 import org.hibernate.Session;
 
+import io.quarkus.hibernate.orm.panache.common.NestedProjectedClass;
 import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
@@ -121,39 +121,71 @@ public class CommonPanacheQueryImpl<Entity> {
             return new CommonPanacheQueryImpl<>(this, newQuery.toString(), "select count(*) " + from);
         }
 
+        // build select clause with a constructor expression
+        String selectClause = "SELECT " + getParametersFromClass(type, null);
+        return new CommonPanacheQueryImpl<>(this, selectClause + selectQuery,
+                "select count(*) " + selectQuery);
+    }
+
+    private StringBuilder getParametersFromClass(Class<?> type, String parentParameter) {
+        StringBuilder selectClause = new StringBuilder();
         // We use the first constructor that we found and use the parameter names,
         // so the projection class must have only one constructor,
         // and the application must be built with parameter names.
-        // Maybe this should be improved some days ...
-        Constructor<?> constructor = type.getDeclaredConstructors()[0];
+        // TODO: Maybe this should be improved some days ...
+        Constructor<?> constructor = getConstructor(type); //type.getDeclaredConstructors()[0];
+        selectClause.append("new ").append(type.getName()).append(" (");
+        String parametersListStr = Stream.of(constructor.getParameters())
+                .map(parameter -> getParameterName(type, parentParameter, parameter))
+                .collect(Collectors.joining(","));
+        selectClause.append(parametersListStr);
+        selectClause.append(") ");
+        return selectClause;
+    }
 
-        // build select clause with a constructor expression
-        StringBuilder select = new StringBuilder("SELECT new ").append(type.getName()).append(" (");
-        int selectInitialLength = select.length();
-        for (Parameter parameter : constructor.getParameters()) {
-            String parameterName;
-            if (parameter.isAnnotationPresent(ProjectedFieldName.class)) {
-                final String name = parameter.getAnnotation(ProjectedFieldName.class).value();
-                if (name.isEmpty()) {
-                    throw new PanacheQueryException("The annotation ProjectedFieldName must have a non-empty value.");
-                }
-                parameterName = name;
-            } else if (!parameter.isNamePresent()) {
-                throw new PanacheQueryException(
-                        "Your application must be built with parameter names, this should be the default if" +
-                                " using Quarkus project generation. Check the Maven or Gradle compiler configuration to include '-parameters'.");
-            } else {
+    private Constructor<?> getConstructor(Class<?> type) {
+        return type.getDeclaredConstructors()[0];
+    }
+
+    private String getParameterName(Class<?> parentType, String parentParameter, Parameter parameter) {
+        String parameterName;
+        // Check if constructor param is annotated with ProjectedFieldName
+        if (hasProjectedFieldName(parameter)) {
+            parameterName = getNameFromProjectedFieldName(parameter);
+        } else if (!parameter.isNamePresent()) {
+            throw new PanacheQueryException(
+                    "Your application must be built with parameter names, this should be the default if" +
+                            " using Quarkus project generation. Check the Maven or Gradle compiler configuration to include '-parameters'.");
+        } else {
+            // Check if class field with same parameter name exists and contains @ProjectFieldName annotation
+            try {
+                Field field = parentType.getDeclaredField(parameter.getName());
+                parameterName = hasProjectedFieldName(field) ? getNameFromProjectedFieldName(field) : parameter.getName();
+            } catch (NoSuchFieldException e) {
                 parameterName = parameter.getName();
             }
-
-            if (select.length() > selectInitialLength) {
-                select.append(", ");
-            }
-            select.append(parameterName);
         }
-        select.append(") ");
+        // For nested classes, add parent parameter in parameterName
+        parameterName = (parentParameter == null) ? parameterName : parentParameter.concat(".").concat(parameterName);
+        // Test if the parameter is a nested Class that should be projected too.
+        if (parameter.getType().isAnnotationPresent(NestedProjectedClass.class)) {
+            Class<?> nestedType = parameter.getType();
+            return getParametersFromClass(nestedType, parameterName).toString();
+        } else {
+            return parameterName;
+        }
+    }
 
-        return new CommonPanacheQueryImpl<>(this, select.toString() + selectQuery, "select count(*) " + selectQuery);
+    private boolean hasProjectedFieldName(AnnotatedElement annotatedElement) {
+        return annotatedElement.isAnnotationPresent(ProjectedFieldName.class);
+    }
+
+    private String getNameFromProjectedFieldName(AnnotatedElement annotatedElement) {
+        final String name = annotatedElement.getAnnotation(ProjectedFieldName.class).value();
+        if (name.isEmpty()) {
+            throw new PanacheQueryException("The annotation ProjectedFieldName must have a non-empty value.");
+        }
+        return name;
     }
 
     public void filter(String filterName, Map<String, Object> parameters) {

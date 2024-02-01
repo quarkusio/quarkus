@@ -48,6 +48,7 @@ public class PanacheFunctionalityTest {
         RestAssured.when().get("/test/model1").then().body(is("OK"));
         RestAssured.when().get("/test/model2").then().body(is("OK"));
         RestAssured.when().get("/test/projection").then().body(is("OK"));
+        RestAssured.when().get("/test/projection-nested").then().body(is("OK"));
         RestAssured.when().get("/test/model3").then().body(is("OK"));
     }
 
@@ -118,7 +119,7 @@ public class PanacheFunctionalityTest {
         // check
         // hence no 'persistence'-attribute
         assertEquals(
-                "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
+                "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"description\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
                 personAsString);
     }
 
@@ -235,7 +236,7 @@ public class PanacheFunctionalityTest {
     }
 
     @Test
-    public void testEnhancement27184DeleteDetached() {
+    void testEnhancement27184DeleteDetached() {
         RestAssured.when().get("/test/testEnhancement27184DeleteDetached").then().body(is("OK"));
     }
 }

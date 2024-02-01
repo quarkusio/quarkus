@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  * the name is composed of the property name for the relationship, followed by a dot ("."), followed by the name of the field.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.PARAMETER)
+@Target({ ElementType.PARAMETER, ElementType.FIELD })
 public @interface ProjectedFieldName {
     String value();
 }

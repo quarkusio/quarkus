@@ -17,9 +17,11 @@ import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.HotReplacementSetup;
+import io.quarkus.vertx.core.runtime.QuarkusExecutorFactory;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerResponse;
@@ -48,6 +50,15 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
             @Override
             public void run() {
                 RemoteSyncHandler.doPreScan();
+            }
+        });
+        hotReplacementContext.addPostRestartStep(new Runnable() {
+            @Override
+            public void run() {
+                // If not on a worker thread then attempt to re-initialize the dev mode executor
+                if (!Context.isOnWorkerThread()) {
+                    QuarkusExecutorFactory.reinitializeDevModeExecutor();
+                }
             }
         });
     }
@@ -186,6 +197,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                 } else {
                     boolean restart = event.result();
                     if (restart) {
+                        QuarkusExecutorFactory.reinitializeDevModeExecutor();
                         routingContext.request().headers().set(HEADER_NAME, "true");
                         VertxHttpRecorder.getRootHandler().handle(routingContext.request());
                     } else {

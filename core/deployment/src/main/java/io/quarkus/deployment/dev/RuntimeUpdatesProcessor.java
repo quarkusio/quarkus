@@ -103,6 +103,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     final Map<Path, Long> sourceFileTimestamps = new ConcurrentHashMap<>();
 
     private final List<Runnable> preScanSteps = new CopyOnWriteArrayList<>();
+    private final List<Runnable> postRestartSteps = new CopyOnWriteArrayList<>();
     private final List<Consumer<Set<String>>> noRestartChangesConsumers = new CopyOnWriteArrayList<>();
     private final List<HotReplacementSetup> hotReplacementSetup = new ArrayList<>();
     private final List<Runnable> deploymentFailedStartHandlers = new ArrayList<>();
@@ -541,6 +542,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 restartCallback.accept(filesChanged, changedClassResults);
                 long timeNanoSeconds = System.nanoTime() - startNanoseconds;
                 log.infof("Live reload total time: %ss ", Timing.convertToBigDecimalSeconds(timeNanoSeconds));
+                for (Runnable step : postRestartSteps) {
+                    try {
+                        step.run();
+                    } catch (Throwable t) {
+                        log.error("Post Restart step failed", t);
+                    }
+                }
                 if (TimeUnit.SECONDS.convert(timeNanoSeconds, TimeUnit.NANOSECONDS) >= 4 && !instrumentationEnabled()) {
                     if (!instrumentationLogPrinted) {
                         instrumentationLogPrinted = true;
@@ -591,6 +599,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     @Override
     public void addPreScanStep(Runnable runnable) {
         preScanSteps.add(runnable);
+    }
+
+    @Override
+    public void addPostRestartStep(Runnable runnable) {
+        postRestartSteps.add(runnable);
     }
 
     @Override

@@ -425,6 +425,63 @@
                             </normalization>
                             <plugins>
                                 <plugin>
+                                    <artifactId>maven-surefire-plugin</artifactId>
+                                    <inputs>
+                                        <fileSets>
+                                            <fileSet>
+                                                <name>dependency-checksums</name>
+                                                <paths>
+                                                    <path>${project.build.directory}</path>
+                                                </paths>
+                                                <includes>
+                                                    <include>quarkus-*-dependency-checksums.txt</include>
+                                                </includes>
+                                                <normalization>RELATIVE_PATH</normalization>
+                                            </fileSet>
+                                        </fileSets>
+                                    </inputs>
+                                </plugin>
+                                <plugin>
+                                    <artifactId>maven-failsafe-plugin</artifactId>
+                                    <inputs>
+                                        <fileSets>
+                                            <fileSet>
+                                                <name>dependency-checksums</name>
+                                                <paths>
+                                                    <path>${project.build.directory}</path>
+                                                </paths>
+                                                <includes>
+                                                    <include>quarkus-*-dependency-checksums.txt</include>
+                                                </includes>
+                                                <normalization>RELATIVE_PATH</normalization>
+                                            </fileSet>
+                                        </fileSets>
+                                    </inputs>
+                                </plugin>
+                                <plugin>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-maven-plugin</artifactId>
+                                    <executions>
+                                        <execution>
+                                            <id>default</id>
+                                            <inputs>
+                                                <fileSets>
+                                                    <fileSet>
+                                                        <name>dependency-checksums</name>
+                                                        <paths>
+                                                            <path>${project.build.directory}</path>
+                                                        </paths>
+                                                        <includes>
+                                                            <include>quarkus-*-dependency-checksums.txt</include>
+                                                        </includes>
+                                                        <normalization>RELATIVE_PATH</normalization>
+                                                    </fileSet>
+                                                </fileSets>
+                                            </inputs>
+                                        </execution>
+                                    </executions>
+                                </plugin>
+                                <plugin>
                                     <groupId>org.jetbrains.kotlin</groupId>
                                     <artifactId>kotlin-maven-plugin</artifactId>
                                     <executions>

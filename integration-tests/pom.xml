@@ -22,6 +22,9 @@
         <quarkus.build.skip>${skipTests}</quarkus.build.skip>
         <native.surefire.skip>${skipTests}</native.surefire.skip>
         <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
+
+        <quarkus.config-tracking.enabled>true</quarkus.config-tracking.enabled>
+        <quarkus.native.container-build>true</quarkus.native.container-build>
     </properties>
 
     <!-- modules are in profile test-modules -->
@@ -71,14 +74,18 @@
                     <artifactId>quarkus-maven-plugin</artifactId>
                     <version>${project.version}</version>
                     <executions>
-                      <execution>
-                        <!-- for now this execution will only dump Quarkus application dependency checksums that could indicate build time classpath changes -->
-                        <id>track-config-changes</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                          <goal>track-config-changes</goal>
-                        </goals>
-                      </execution>
+                        <!-- Track config changes and dump dependencies
+                        Useful as build cache inputs -->
+                        <execution>
+                            <id>track-config-changes</id>
+                            <phase>process-resources</phase>
+                            <goals>
+                                <goal>track-config-changes</goal>
+                            </goals>
+                            <configuration>
+                                <dumpCurrentWhenRecordedUnavailable>true</dumpCurrentWhenRecordedUnavailable>
+                            </configuration>
+                        </execution>
                     </executions>
                     <configuration>
                         <noDeps>true</noDeps>

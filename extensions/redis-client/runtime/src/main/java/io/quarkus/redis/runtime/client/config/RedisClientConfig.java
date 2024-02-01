@@ -132,7 +132,7 @@ public interface RedisClientConfig {
     Duration reconnectInterval();
 
     /**
-     * Should the client perform {@code RESP protocol negotiation during the connection handshake.
+     * Should the client perform {@code RESP} protocol negotiation during the connection handshake.
      */
     @WithDefault("true")
     boolean protocolNegotiation();

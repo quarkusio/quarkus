@@ -75,7 +75,7 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
     /**
      * Dependency dump file
      */
-    @Parameter(property = "quarkus.track-config-changes.dependenciesFile")
+    @Parameter(property = "quarkus.track-config-changes.dependencies-file")
     File dependenciesFile;
 
     @Override

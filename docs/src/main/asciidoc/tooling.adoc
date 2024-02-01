@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Using our Tooling
+= How to use Quarkus tooling
 include::_attributes.adoc[]
 :categories: getting-started
 :summary: Explore the Quarkus developer toolchain which makes Quarkus development so fast and enjoyable.
@@ -11,7 +11,7 @@ include::_attributes.adoc[]
 
 Quarkus comes with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application. In addition, there are plugins and extensions to all major IDEs.
 
-In this guide, we will explore:
+This guide shows you how to get started with Quarkus tooling. In this guide, we will explore:
 
 * how to use xref:maven-tooling.adoc[Maven] as a build tool
 * how to use xref:gradle-tooling.adoc[Gradle] as a build tool
@@ -19,18 +19,54 @@ In this guide, we will explore:
 * how to create and scaffold a new project
 * how to deal with extensions
 * how to enable live reload
-* how to develop your application in your IDE
+// * how to develop your application in your IDE
 * how to compile your application natively
-* how to set up Quarkus tools in xref:ide-tooling.adoc[Visual Studio Code, Eclipse IDE, Eclipse Che and IntelliJ IDEA]
+// * how to set up Quarkus tools in xref:ide-tooling.adoc[Visual Studio Code, Eclipse IDE, Eclipse Che and IntelliJ IDEA]
 
 [[build-tool]]
 == Choosing your build tool
 
 Quarkus comes with a toolchain to help you at all development stages.
 You can use Maven or Gradle as build tool.
-And we offer a CLI that is convenient to use.
 
 * xref:maven-tooling.adoc[Maven]
 * xref:gradle-tooling.adoc[Gradle]
 * xref:cli-tooling.adoc[CLI]
 * xref:ide-tooling.adoc[IDE]
+
+[[prerequisites]]
+== 1. Prerequisites
+* Roughly 15 minutes
+* Optionally the xref:cli-tooling.adoc[Quarkus CLI]
+* JDK 17+ installed with `JAVA_HOME` configured appropriately
+* An IDE
+* Apache Maven {maven-version}
+* Gradle {gradle-version} if you want to use it
+
+[[creating-a-new-project]]
+== 2. Creating a new project
+
+You can scaffold a new Quarkus project with Maven or Quarkus CLI, in this guide we will use Quarkus CLI for everything.
+
+[role="primary asciidoc-tabs-sync-maven"]
+.Creating Maven project
+****
+[source,bash,subs=attributes+]
+----
+quarkus create app org.acme:code-with-quarkus-tooling --extension='resteasy-reactive'
+----
+****
+
+[role="secondary asciidoc-tabs-sync-gradle"]
+.Crete Gradle project
+****
+[source,bash,subs=attributes+]
+----
+quarkus create app org.acme:code-with-quarkus-tooling --gradle --extension='resteasy-reactive'
+----
+To create a Gradle project with Kotlin DSL use `--gradle-kotlin-dsl` instead `--gradle`.
+****
+
+This command generates a Quarkus project, that uses `resteasy-reactive` extension as dependency. Some Quarkus extension provides a Codestart to get a quickstart code for the extension.
+
+NOTE: You can see all Quarkus extensions https://quarkus.io/extensions/[here].

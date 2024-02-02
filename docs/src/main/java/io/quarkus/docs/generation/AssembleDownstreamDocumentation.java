@@ -50,6 +50,9 @@ public class AssembleDownstreamDocumentation {
     private static final String SOURCE_BLOCK_PREFIX = "[source";
     private static final String SOURCE_BLOCK_DELIMITER = "--";
 
+    private static final String PROJECT_NAME_ATTRIBUTE = "{project-name}";
+    private static final String RED_HAT_BUILD_OF_QUARKUS = "Red Hat build of Quarkus";
+
     private static final String QUARKUS_IO_GUIDES_ATTRIBUTE = "{quarkusio-guides}";
 
     private static final Map<Pattern, String> TABS_REPLACEMENTS = Map.of(
@@ -301,10 +304,17 @@ public class AssembleDownstreamDocumentation {
         boolean findDelimiter = false;
         String currentSourceBlockDelimiter = "----";
         int lineNumber = 0;
+        boolean documentTitleFound = false;
 
         for (String line : guideLines) {
             lineNumber++;
 
+            if (!documentTitleFound && line.startsWith("= ")) {
+                // this is the document title
+                rewrittenGuide.append(line.replace(PROJECT_NAME_ATTRIBUTE, RED_HAT_BUILD_OF_QUARKUS) + "\n");
+                documentTitleFound = true;
+                continue;
+            }
             if (inSourceBlock) {
                 if (findDelimiter) {
                     rewrittenGuide.append(line + "\n");

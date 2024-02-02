@@ -31,7 +31,7 @@ The default behavior can change by setting the following property to `false`:
 quarkus.kubernetes.init-task-defaults.enabled=false
 ----
 
-or on Openshift:
+or on OpenShift:
 
 [source,properties]
 ----

@@ -1474,7 +1474,7 @@ The provided replicas <1>, labels <2> and environment variables <3>  were retain
 
 === Using common resources
 
-When generating the manifests for multiple deployment targets like Kubernetes, OpenShift or Knative, we can place the common resources in `src/main/kubernetes/common.yml`, so these resources will be integrated into the generated `kubernetes.json`/`kubernetes.yml`, and `openshift.json`/`openshift.yml` files (if you configure the Kubernetes and Openshift extensions at the same time).
+When generating the manifests for multiple deployment targets like Kubernetes, OpenShift or Knative, we can place the common resources in `src/main/kubernetes/common.yml`, so these resources will be integrated into the generated `kubernetes.json`/`kubernetes.yml`, and `openshift.json`/`openshift.yml` files (if you configure the Kubernetes and OpenShift extensions at the same time).
 
 For example, we can write a ConfigMap resource only once in the file `src/main/kubernetes/common.yml`:
 

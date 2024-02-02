@@ -275,7 +275,7 @@ public class OpenshiftProcessor {
 
         if (openshiftYml.isEmpty()) {
             LOG.warn(
-                    "No Openshift manifests were generated so no openshift build process will be taking place");
+                    "No OpenShift manifests were generated so no OpenShift build process will be taking place");
             return;
         }
 
@@ -351,7 +351,7 @@ public class OpenshiftProcessor {
 
             if (openshiftYml.isEmpty()) {
                 LOG.warn(
-                        "No Openshift manifests were generated so no openshift build process will be taking place");
+                        "No OpenShift manifests were generated so no OpenShift build process will be taking place");
                 return;
             }
             //The contextRoot is where inside the tarball we will add the jars. A null value means everything will be added under '/' while "target" means everything will be added under '/target'.

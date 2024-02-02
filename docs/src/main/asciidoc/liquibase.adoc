@@ -264,7 +264,7 @@ To change the `wait-for` image which by default is `groundnuty/k8s-wait-for:no-r
 quarkus.kubernetes.init-task-defaults.wait-for-container.image=my/wait-for-image:1.0
 ----
 
-or on Openshift:
+or on OpenShift:
 
 
 [source,properties]

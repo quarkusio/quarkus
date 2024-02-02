@@ -11,7 +11,7 @@ workflows:
           - "**/*.md"
           - "**/*.adoc"
 workflowRunAnalysis:
-  workflows: ["Quarkus CI"]
+  workflows: ["Quarkus CI", "Quarkus Documentation CI"]
 projectsClassic:
   rules:
     - labels: [area/documentation]

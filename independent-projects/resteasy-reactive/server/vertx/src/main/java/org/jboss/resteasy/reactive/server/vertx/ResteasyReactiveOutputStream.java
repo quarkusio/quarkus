@@ -16,10 +16,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
 
 public class ResteasyReactiveOutputStream extends OutputStream {
 
@@ -57,6 +58,9 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                 }
             }
         });
+        Handler<Void> handler = new DrainHandler(this);
+        request.response().drainHandler(handler);
+        request.response().closeHandler(handler);
 
         context.getContext().addEndHandler(new Handler<AsyncResult<Void>>() {
             @Override
@@ -90,7 +94,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                 boolean bufferRequired = awaitWriteable() || (overflow != null && overflow.size() > 0);
                 if (bufferRequired) {
                     //just buffer everything
-                    registerDrainHandler();
+                    //                    registerDrainHandler();
                     if (overflow == null) {
                         overflow = new ByteArrayOutputStream();
                     }
@@ -120,8 +124,8 @@ public class ResteasyReactiveOutputStream extends OutputStream {
     }
 
     private boolean awaitWriteable() throws IOException {
-        if (Context.isOnEventLoopThread()) {
-            return request.response().writeQueueFull();
+        if (Vertx.currentContext() == ((HttpServerRequestInternal) request).context()) {
+            return false; // we are on the (right) event loop, so we can write - Netty will do the right thing.
         }
         if (first) {
             first = false;
@@ -135,7 +139,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
             if (request.response().closed()) {
                 throw new IOException("Connection has been closed");
             }
-            registerDrainHandler();
+            //            registerDrainHandler();
             try {
                 waitingForDrain = true;
                 request.connection().wait();
@@ -148,33 +152,14 @@ public class ResteasyReactiveOutputStream extends OutputStream {
         return false;
     }
 
-    private void registerDrainHandler() {
-        if (!drainHandlerRegistered) {
-            drainHandlerRegistered = true;
-            Handler<Void> handler = new Handler<Void>() {
-                @Override
-                public void handle(Void event) {
-                    synchronized (request.connection()) {
-                        if (waitingForDrain) {
-                            request.connection().notifyAll();
-                        }
-                        if (overflow != null) {
-                            if (overflow.size() > 0) {
-                                if (closed) {
-                                    request.response().end(Buffer.buffer(overflow.toByteArray()), null);
-                                } else {
-                                    request.response().write(Buffer.buffer(overflow.toByteArray()), null);
-                                }
-                                overflow.reset();
-                            }
-                        }
-                    }
-                }
-            };
-            request.response().drainHandler(handler);
-            request.response().closeHandler(handler);
-        }
-    }
+    //    private void registerDrainHandler() {
+    //        if (!drainHandlerRegistered) {
+    //            drainHandlerRegistered = true;
+    //            Handler<Void> handler = new DrainHandler(this);
+    //            request.response().drainHandler(handler);
+    //            request.response().closeHandler(handler);
+    //        }
+    //    }
 
     /**
      * {@inheritDoc}
@@ -234,7 +219,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                     }
                 }
             } else {
-                var contentLengthSet = contentLengthSet();
+                var contentLengthSet = contentLengthSet(request, context.getResponse());
                 if (contentLengthSet == ContentLengthSetResult.NOT_SET) {
                     request.response().setChunked(true);
                 } else if (contentLengthSet == ContentLengthSetResult.IN_JAX_RS_HEADER) {
@@ -247,11 +232,10 @@ public class ResteasyReactiveOutputStream extends OutputStream {
         }
     }
 
-    private ContentLengthSetResult contentLengthSet() {
+    public static ContentLengthSetResult contentLengthSet(HttpServerRequest request, LazyResponse lazyResponse) {
         if (request.response().headers().contains(HttpHeaderNames.CONTENT_LENGTH)) {
             return ContentLengthSetResult.IN_VERTX_HEADER;
         }
-        LazyResponse lazyResponse = context.getResponse();
         if (!lazyResponse.isCreated()) {
             return ContentLengthSetResult.NOT_SET;
         }
@@ -261,7 +245,7 @@ public class ResteasyReactiveOutputStream extends OutputStream {
                 : ContentLengthSetResult.NOT_SET;
     }
 
-    private enum ContentLengthSetResult {
+    public enum ContentLengthSetResult {
         NOT_SET,
         IN_VERTX_HEADER,
         IN_JAX_RS_HEADER
@@ -299,4 +283,30 @@ public class ResteasyReactiveOutputStream extends OutputStream {
         }
     }
 
+    private static class DrainHandler implements Handler<Void> {
+        private final ResteasyReactiveOutputStream out;
+
+        public DrainHandler(ResteasyReactiveOutputStream out) {
+            this.out = out;
+        }
+
+        @Override
+        public void handle(Void event) {
+            synchronized (out.request.connection()) {
+                if (out.waitingForDrain) {
+                    out.request.connection().notifyAll();
+                }
+                if (out.overflow != null) {
+                    if (out.overflow.size() > 0) {
+                        if (out.closed) {
+                            out.request.response().end(Buffer.buffer(out.overflow.toByteArray()), null);
+                        } else {
+                            out.request.response().write(Buffer.buffer(out.overflow.toByteArray()), null);
+                        }
+                        out.overflow.reset();
+                    }
+                }
+            }
+        }
+    }
 }

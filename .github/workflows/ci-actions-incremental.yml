@@ -1036,7 +1036,7 @@ jobs:
       - name: Install cl.exe
         if: startsWith(matrix.os-name, 'windows')
         uses: ilammy/msvc-dev-cmd@v1
-      - uses: microsoft/setup-msbuild@v1
+      - uses: microsoft/setup-msbuild@v2
         if: startsWith(matrix.os-name, 'windows')
       - name: Setup GraalVM
         id: setup-graalvm

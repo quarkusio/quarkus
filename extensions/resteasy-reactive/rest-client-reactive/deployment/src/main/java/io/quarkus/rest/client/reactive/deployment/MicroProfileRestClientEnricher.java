@@ -2,6 +2,7 @@ package io.quarkus.rest.client.reactive.deployment;
 
 import static io.quarkus.arc.processor.DotNames.STRING;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_BASIC_AUTH;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_FORM_PARAM;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_FORM_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAM;
@@ -28,6 +29,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -81,6 +83,7 @@ import io.quarkus.rest.client.reactive.ClientQueryParam;
 import io.quarkus.rest.client.reactive.ComputedParamContext;
 import io.quarkus.rest.client.reactive.HeaderFiller;
 import io.quarkus.rest.client.reactive.deployment.MicroProfileRestClientEnricher.RestClientAnnotationExpressionParser.Node;
+import io.quarkus.rest.client.reactive.runtime.BasicAuthUtil;
 import io.quarkus.rest.client.reactive.runtime.ClientQueryParamSupport;
 import io.quarkus.rest.client.reactive.runtime.ComputedParamContextImpl;
 import io.quarkus.rest.client.reactive.runtime.ConfigUtils;
@@ -142,6 +145,8 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             "attribute", ClientMultipartForm.class, String.class, String.class, String.class);
 
     private static final Type STRING_TYPE = Type.create(DotName.STRING_NAME, Type.Kind.CLASS);
+    private static final MethodDescriptor CONFIG_UTILS_INTERPOLATE = MethodDescriptor.ofMethod(ConfigUtils.class, "interpolate",
+            String.class, String.class, boolean.class);
 
     private final Map<ClassInfo, String> interfaceMocks = new HashMap<>();
 
@@ -385,8 +390,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             for (String value : values) {
                 if (value.contains("${")) {
                     ResultHandle paramValueFromConfig = creator.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(ConfigUtils.class, "interpolate", String.class, String.class,
-                                    boolean.class),
+                            CONFIG_UTILS_INTERPOLATE,
                             creator.load(value), creator.load(required));
                     creator.ifNotNull(paramValueFromConfig)
                             .trueBranch().invokeInterfaceMethod(LIST_ADD_METHOD, valuesList, paramValueFromConfig);
@@ -506,7 +510,8 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         String subHeaderFillerName = subInterfaceClass.name().toString() + sha1(rootInterfaceClass.name().toString()) +
                 "$$" + methodIndex + "$$" + subMethodIndex;
         createAndReturnHeaderFiller(subClassCreator, subConstructor, subMethodCreator, subMethod,
-                invocationBuilder, index, generatedClasses, subMethodIndex, subHeaderFillerName, headerFillersByName);
+                invocationBuilder, index, generatedClasses, subMethodIndex, subHeaderFillerName, headerFillersByName,
+                Collections.emptyList());
     }
 
     @Override
@@ -523,22 +528,83 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
 
         collectHeaderFillers(interfaceClass, method, headerFillersByName);
 
+        AnnotationInstance clientBasicAuth = interfaceClass.declaredAnnotation(CLIENT_BASIC_AUTH);
+        List<AddHeadersEnhancer> enhancers = new ArrayList<>();
+        if (clientBasicAuth != null) {
+            enhancers.add(new BasicAuthAddHeadersEnhancer(clientBasicAuth.value("username").asString(),
+                    clientBasicAuth.value("password").asString()));
+        }
+
         createAndReturnHeaderFiller(classCreator, constructor, methodCreator, method,
                 invocationBuilder, index, generatedClasses, methodIndex,
-                interfaceClass + "$$" + method.name() + "$$" + methodIndex, headerFillersByName);
+                interfaceClass + "$$" + method.name() + "$$" + methodIndex, headerFillersByName, enhancers);
+    }
+
+    private interface AddHeadersEnhancer extends Consumer<AddHeadersEnhancer.Context> {
+
+        interface Context {
+            MethodCreator addHeadersMethodCreator();
+
+            ResultHandle headersMapHandle();
+
+            ResultHandle requestContextHandle();
+        }
+    }
+
+    private static class BasicAuthAddHeadersEnhancer implements AddHeadersEnhancer {
+
+        public static final MethodDescriptor BASIC_AUTH_UTIL_CREATE = MethodDescriptor.ofMethod(BasicAuthUtil.class,
+                "headerValue", String.class, String.class, String.class);
+        private final String username;
+        private final String password;
+
+        public BasicAuthAddHeadersEnhancer(String username, String password) {
+            this.username = username;
+            this.password = password;
+        }
+
+        @Override
+        public void accept(AddHeadersEnhancer.Context context) {
+            MethodCreator mc = context.addHeadersMethodCreator();
+
+            ResultHandle authHeaderHandle = mc.load("Authorization");
+            BytecodeCreator shouldAddMc = mc
+                    .ifTrue(mc.invokeStaticMethod(HEADER_FILLER_UTIL_SHOULD_ADD_HEADER,
+                            authHeaderHandle, context.headersMapHandle(), context.requestContextHandle()))
+                    .trueBranch();
+
+            ResultHandle usernameHandle = shouldAddMc.load(username);
+            if (username.contains("${")) {
+                usernameHandle = shouldAddMc.invokeStaticMethod(CONFIG_UTILS_INTERPOLATE, usernameHandle,
+                        shouldAddMc.load(true));
+            }
+
+            ResultHandle passwordHandle = shouldAddMc.load(password);
+            if (password.contains("${")) {
+                passwordHandle = shouldAddMc.invokeStaticMethod(CONFIG_UTILS_INTERPOLATE, passwordHandle,
+                        shouldAddMc.load(true));
+            }
+
+            ResultHandle headerValueHandle = shouldAddMc.invokeStaticMethod(BASIC_AUTH_UTIL_CREATE, usernameHandle,
+                    passwordHandle);
+            ResultHandle headerListHandler = Gizmo.newArrayList(shouldAddMc, 1);
+            shouldAddMc.invokeInterfaceMethod(LIST_ADD_METHOD, headerListHandler, headerValueHandle);
+            shouldAddMc.invokeInterfaceMethod(MAP_PUT_METHOD, context.headersMapHandle(), authHeaderHandle, headerListHandler);
+        }
     }
 
     private void createAndReturnHeaderFiller(ClassCreator classCreator, MethodCreator constructor,
             MethodCreator methodCreator, MethodInfo method,
             AssignableResultHandle invocationBuilder, IndexView index,
             BuildProducer<GeneratedClassBuildItem> generatedClasses, int methodIndex, String fillerClassName,
-            Map<String, ParamData> headerFillersByName) {
+            Map<String, ParamData> headerFillersByName,
+            List<AddHeadersEnhancer> addHeadersEnhancers) {
         FieldDescriptor headerFillerField = FieldDescriptor.of(classCreator.getClassName(),
                 "headerFiller" + methodIndex, HeaderFiller.class);
         classCreator.getFieldCreator(headerFillerField).setModifiers(Modifier.PRIVATE | Modifier.FINAL);
         ResultHandle headerFiller;
         // create header filler for this method if headerFillersByName is not empty
-        if (!headerFillersByName.isEmpty()) {
+        if (!headerFillersByName.isEmpty() || !addHeadersEnhancers.isEmpty()) {
             GeneratedClassGizmoAdaptor classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
             try (ClassCreator headerFillerClass = ClassCreator.builder().className(fillerClassName)
                     .interfaces(ExtendedHeaderFiller.class)
@@ -555,16 +621,38 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                 staticConstructor.writeStaticField(logField.getFieldDescriptor(), log);
                 staticConstructor.returnValue(null);
 
-                MethodCreator fillHeaders = headerFillerClass
+                MethodCreator addHeaders = headerFillerClass
                         .getMethodCreator(
                                 MethodDescriptor.ofMethod(HeaderFiller.class, "addHeaders", void.class,
                                         MultivaluedMap.class, ResteasyReactiveClientRequestContext.class));
 
                 for (Map.Entry<String, ParamData> headerEntry : headerFillersByName.entrySet()) {
-                    addHeaderParam(method, fillHeaders, headerEntry.getValue(), generatedClasses,
+                    addHeaderParam(method, addHeaders, headerEntry.getValue(), generatedClasses,
                             fillerClassName, index);
                 }
-                fillHeaders.returnValue(null);
+                if (!addHeadersEnhancers.isEmpty()) {
+                    var context = new AddHeadersEnhancer.Context() {
+                        @Override
+                        public MethodCreator addHeadersMethodCreator() {
+                            return addHeaders;
+                        }
+
+                        @Override
+                        public ResultHandle headersMapHandle() {
+                            return addHeaders.getMethodParam(0);
+                        }
+
+                        @Override
+                        public ResultHandle requestContextHandle() {
+                            return addHeaders.getMethodParam(1);
+                        }
+                    };
+                    for (AddHeadersEnhancer enhancer : addHeadersEnhancers) {
+                        enhancer.accept(context);
+                    }
+                }
+
+                addHeaders.returnValue(null);
 
                 headerFiller = constructor.newInstance(MethodDescriptor.ofConstructor(fillerClassName));
             }
@@ -619,6 +707,14 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                 extractAnnotations(method.annotation(CLIENT_HEADER_PARAMS)));
 
         headerFillersByName.putAll(methodLevelHeadersByName);
+    }
+
+    private String basicAuthImplClassName(ClassInfo interfaceClass) {
+        return interfaceClass.name().toString() + "BasicAuthImpl";
+    }
+
+    private String basicAuthImplMethodName() {
+        return "create";
     }
 
     /**
@@ -686,8 +782,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             for (String value : values) {
                 if (value.contains("${")) {
                     ResultHandle headerValueFromConfig = fillHeaders.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(ConfigUtils.class, "interpolate", String.class, String.class,
-                                    boolean.class),
+                            CONFIG_UTILS_INTERPOLATE,
                             fillHeaders.load(value), fillHeaders.load(required));
                     fillHeaders.ifNotNull(headerValueFromConfig)
                             .trueBranch().invokeInterfaceMethod(LIST_ADD_METHOD, headerList, headerValueFromConfig);

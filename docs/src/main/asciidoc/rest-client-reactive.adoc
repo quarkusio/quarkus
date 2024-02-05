@@ -1199,6 +1199,25 @@ public class GetTokenReactiveClientHeadersFactory extends ReactiveClientHeadersF
 }
 ----
 
+[TIP]
+====
+When using HTTP Basic Auth, the `@io.quarkus.rest.client.reactive.ClientBasicAuth` annotation provides a much simpler way of configuring
+the necessary `Authorization` header.
+
+A very simple example is:
+
+[source, java]
+----
+@ClientBasicAuth(username = "${service.username}", password = "${service.password}")
+public interface SomeClient {
+
+}
+----
+
+where `service.username` and `service.password` are configuration properties that must be set at runtime to the username and password that allow access to the service being called.
+
+====
+
 === Default header factory
 
 The `@RegisterClientHeaders` annotation can also be used without any custom factory specified. In that case the `DefaultClientHeadersFactoryImpl` factory will be used.

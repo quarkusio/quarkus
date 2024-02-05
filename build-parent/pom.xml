@@ -177,7 +177,7 @@
 
         <!-- Dev UI -->
         <vaadin.version>24.3.0</vaadin.version>
-        <lit.version>3.1.0</lit.version>
+        <lit.version>3.1.2</lit.version>
         <lit-element.version>4.0.4</lit-element.version>
         <lit-html.version>3.1.0</lit-html.version>
         <ssr-dom-shim.version>1.1.2</ssr-dom-shim.version>

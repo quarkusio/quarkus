@@ -140,7 +140,6 @@
                             <goal>build</goal>
                             <goal>generate-code</goal>
                             <goal>generate-code-tests</goal>
-                            <goal>generate-filters</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -220,6 +219,31 @@
             </properties>
             <build>
                 <plugins>
+                    <!-- Quarkus build plugin - also provides the quarkus:dev live-reload feature -->
+                    <plugin>
+                        {#if quarkus.maven-plugin.version != quarkus.platform.version || quarkus.maven-plugin.group-id != quarkus.platform.group-id}
+                        <groupId>{quarkus.maven-plugin.group-id}</groupId>
+                        {#else}
+                        <groupId>$\{quarkus.platform.group-id}</groupId>
+                        {/if}
+                        <artifactId>{quarkus.maven-plugin.artifact-id}</artifactId>
+                        {#if quarkus.maven-plugin.version != quarkus.platform.version || quarkus.maven-plugin.group-id != quarkus.platform.group-id}
+                        <version>$\{quarkus-plugin.version}</version>
+                        {#else}
+                        <version>$\{quarkus.platform.version}</version>
+                        {/if}
+                        <extensions>true</extensions>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>build</goal>
+                                    <goal>generate-code</goal>
+                                    <goal>generate-code-tests</goal>
+                                    <goal>generate-filters</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
                     <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <version>$\{surefire-plugin.version}</version>

@@ -63,7 +63,8 @@
           <execution>
             <goals>
               <goal>build</goal>
-              <goal>generate-filters</goal>
+              <goal>generate-native-image-agent-filters</goal>
+              <goal>transform-native-image-agent-config</goal>
             </goals>
           </execution>
         </executions>
@@ -116,7 +117,7 @@
           <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-                <argLine>-agentlib:native-image-agent=access-filter-file=target/quarkus-access-filter.json,caller-filter-file=target/quarkus-caller-filter.json,config-output-dir=target/native-agent-base-config</argLine>
+                <argLine>-agentlib:native-image-agent=access-filter-file=target/quarkus-access-filter.json,caller-filter-file=target/quarkus-caller-filter.json,config-output-dir=target/native-image-agent-base-config</argLine>
             </configuration>
           </plugin>
         </plugins>

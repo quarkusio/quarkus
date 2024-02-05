@@ -35,5 +35,5 @@ compileTestJava {
 
 test {
     systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
-    jvmArgs '-agentlib:native-image-agent=config-output-dir=build/native-agent-base-config'
+    jvmArgs '-agentlib:native-image-agent=config-output-dir=build/native-image-agent-base-config'
 }

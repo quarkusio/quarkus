@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -21,7 +22,7 @@ import io.quarkus.builder.Json;
 import io.quarkus.builder.JsonReader;
 import io.quarkus.builder.JsonTransform;
 
-@Mojo(name = "transform-native-image-agent-config", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
+@Mojo(name = "transform-native-image-agent-config", defaultPhase = LifecyclePhase.TEST, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class TransformNativeImageAgentConfigMojo extends QuarkusBootstrapMojo {
 
     private final Pattern resourceSkipPattern;
@@ -47,10 +48,14 @@ public class TransformNativeImageAgentConfigMojo extends QuarkusBootstrapMojo {
                 if (!targetPath.toFile().exists()) {
                     targetPath.toFile().mkdirs();
                 }
-                Files.copy(basePath.resolve("reflect-config.json"), targetPath.resolve("reflect-config.json"));
-                Files.copy(basePath.resolve("serialization-config.json"), targetPath.resolve("serialization-config.json"));
-                Files.copy(basePath.resolve("jni-config.json"), targetPath.resolve("jni-config.json"));
-                Files.copy(basePath.resolve("proxy-config.json"), targetPath.resolve("proxy-config.json"));
+                Files.copy(basePath.resolve("reflect-config.json"), targetPath.resolve("reflect-config.json"),
+                        StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(basePath.resolve("serialization-config.json"), targetPath.resolve("serialization-config.json"),
+                        StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(basePath.resolve("jni-config.json"), targetPath.resolve("jni-config.json"),
+                        StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(basePath.resolve("proxy-config.json"), targetPath.resolve("proxy-config.json"),
+                        StandardCopyOption.REPLACE_EXISTING);
                 transformJsonObject(basePath, "resource-config.json", targetPath,
                         JsonTransform.dropping(this::discardResource));
 

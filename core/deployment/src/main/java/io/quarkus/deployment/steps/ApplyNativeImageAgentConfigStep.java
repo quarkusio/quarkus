@@ -3,6 +3,7 @@ package io.quarkus.deployment.steps;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 import org.jboss.logging.Logger;
 
@@ -31,11 +32,16 @@ public class ApplyNativeImageAgentConfigStep {
             if (!targetPath.toFile().exists()) {
                 targetPath.toFile().mkdirs();
             }
-            Files.copy(basePath.resolve("reflect-config.json"), targetPath.resolve("reflect-config.json"));
-            Files.copy(basePath.resolve("serialization-config.json"), targetPath.resolve("serialization-config.json"));
-            Files.copy(basePath.resolve("jni-config.json"), targetPath.resolve("jni-config.json"));
-            Files.copy(basePath.resolve("proxy-config.json"), targetPath.resolve("proxy-config.json"));
-            Files.copy(basePath.resolve("resource-config.json"), targetPath.resolve("resource-config.json"));
+            Files.copy(basePath.resolve("reflect-config.json"), targetPath.resolve("reflect-config.json"),
+                    StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(basePath.resolve("serialization-config.json"), targetPath.resolve("serialization-config.json"),
+                    StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(basePath.resolve("jni-config.json"), targetPath.resolve("jni-config.json"),
+                    StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(basePath.resolve("proxy-config.json"), targetPath.resolve("proxy-config.json"),
+                    StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(basePath.resolve("resource-config.json"), targetPath.resolve("resource-config.json"),
+                    StandardCopyOption.REPLACE_EXISTING);
 
             log.info("Applying native image agent generated files to current native executable build");
             nativeImageAgentConfigDirectoryProducer.produce(new NativeImageAgentConfigDirectoryBuildItem(targetDirName));

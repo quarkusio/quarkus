@@ -329,30 +329,31 @@ class SmallRyeHealthProcessor {
 
     @BuildStep
     public void kubernetes(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            HealthBuildTimeConfig healthBuildTimeConfig,
             SmallRyeHealthConfig healthConfig,
             ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
             BuildProducer<KubernetesHealthLivenessPathBuildItem> livenessPathItemProducer,
             BuildProducer<KubernetesHealthReadinessPathBuildItem> readinessPathItemProducer,
             BuildProducer<KubernetesHealthStartupPathBuildItem> startupPathItemProducer,
             BuildProducer<KubernetesProbePortNameBuildItem> port) {
-
-        if (managementInterfaceBuildTimeConfig.enabled) {
-            // Switch to the "management" port
-            port.produce(new KubernetesProbePortNameBuildItem("management", selectSchemeForManagement()));
+        if (healthBuildTimeConfig.extensionsEnabled) {
+            if (managementInterfaceBuildTimeConfig.enabled) {
+                // Switch to the "management" port
+                port.produce(new KubernetesProbePortNameBuildItem("management", selectSchemeForManagement()));
+            }
+            livenessPathItemProducer.produce(
+                    new KubernetesHealthLivenessPathBuildItem(
+                            nonApplicationRootPathBuildItem.resolveManagementNestedPath(healthConfig.rootPath,
+                                    healthConfig.livenessPath)));
+            readinessPathItemProducer.produce(
+                    new KubernetesHealthReadinessPathBuildItem(
+                            nonApplicationRootPathBuildItem.resolveManagementNestedPath(healthConfig.rootPath,
+                                    healthConfig.readinessPath)));
+            startupPathItemProducer.produce(
+                    new KubernetesHealthStartupPathBuildItem(
+                            nonApplicationRootPathBuildItem.resolveManagementNestedPath(healthConfig.rootPath,
+                                    healthConfig.startupPath)));
         }
-
-        livenessPathItemProducer.produce(
-                new KubernetesHealthLivenessPathBuildItem(
-                        nonApplicationRootPathBuildItem.resolveManagementNestedPath(healthConfig.rootPath,
-                                healthConfig.livenessPath)));
-        readinessPathItemProducer.produce(
-                new KubernetesHealthReadinessPathBuildItem(
-                        nonApplicationRootPathBuildItem.resolveManagementNestedPath(healthConfig.rootPath,
-                                healthConfig.readinessPath)));
-        startupPathItemProducer.produce(
-                new KubernetesHealthStartupPathBuildItem(
-                        nonApplicationRootPathBuildItem.resolveManagementNestedPath(healthConfig.rootPath,
-                                healthConfig.startupPath)));
     }
 
     @BuildStep

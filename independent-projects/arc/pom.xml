@@ -51,7 +51,7 @@
         <version.bridger>1.6.Final</version.bridger>
         <!-- test versions -->
         <version.assertj>3.25.3</version.assertj>
-        <version.junit5>5.10.1</version.junit5>
+        <version.junit5>5.10.2</version.junit5>
         <version.kotlin>1.9.22</version.kotlin>
         <version.kotlin-coroutines>1.7.3</version.kotlin-coroutines>
         <version.mockito>5.10.0</version.mockito>

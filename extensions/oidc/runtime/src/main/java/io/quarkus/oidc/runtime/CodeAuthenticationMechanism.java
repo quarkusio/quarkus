@@ -941,7 +941,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                 configContext.oidcConfig.tenantId.get(), cookieValue.length());
                                         if (cookieValue.length() > OidcUtils.MAX_COOKIE_VALUE_LENGTH) {
                                             LOG.debugf(
-                                                    "Session cookie length is greater than %d bytes."
+                                                    "Session cookie length for the tenant %s is greater than %d bytes."
                                                             + " The cookie will be split to chunks to avoid browsers ignoring it."
                                                             + " Alternative recommendations: 1. Set 'quarkus.oidc.token-state-manager.split-tokens=true'"
                                                             + " to have the ID, access and refresh tokens stored in separate cookies."

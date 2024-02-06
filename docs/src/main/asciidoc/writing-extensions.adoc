@@ -1596,6 +1596,23 @@ Instead, Quarkus extensions can make use of various xref:cdi-reference.adoc[Buil
 
 You can make your extension support the xref:dev-ui.adoc[Quarkus Dev UI] for a greater developer experience.
 
+[IMPORTANT]
+====
+If your extension is NOT part of Quarkus core, you can add this BOM in the dependency management of your extension parent pom to lock the javascript versions:
+
+[source%nowrap,xml]
+----
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-bom-dev-ui</artifactId>
+        <version>${quarkus.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+    </dependency>
+----
+
+====
+
 === Extension-defined endpoints
 
 Your extension can add additional, non-application endpoints to be served alongside endpoints

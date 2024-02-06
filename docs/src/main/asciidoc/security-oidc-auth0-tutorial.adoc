@@ -804,6 +804,12 @@ public class GreetingResource {
 
 Open a browser, access http://localhost:8080/hello and get your name displayed in the browser.
 
+Lets go to http://localhost:8080/q/dev, select the `OpenId Connect` card, login to Auth0, and check the Access token content:
+
+image::auth0-devui-jwt-accesstoken.png[Auth0 DevUI JWT Access Token]
+
+As you can see, the access token is no longer encrypted as shown in the <<opaque-access-tokens>> section and indeed it is in the JWT format now.
+
 [[permission-based-access-control]]
 === Permission Based Access Control
 

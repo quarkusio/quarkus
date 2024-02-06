@@ -1117,7 +1117,7 @@ public class SmallRyeOpenApiProcessor {
 
     private OpenApiDocument loadDocument(OpenAPI staticModel, OpenAPI annotationModel,
             List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems, IndexView index) {
-        OpenApiDocument document = prepareOpenApiDocument(staticModel, annotationModel, openAPIBuildItems, index);
+        OpenApiDocument document = prepareOpenApiDocument(staticModel, annotationModel, openAPIBuildItems, index, true);
 
         Config c = ConfigProvider.getConfig();
         String title = c.getOptionalValue("quarkus.application.name", String.class).orElse("Generated");
@@ -1146,7 +1146,7 @@ public class SmallRyeOpenApiProcessor {
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
 
-        OpenApiDocument document = prepareOpenApiDocument(loadedModel, null, Collections.emptyList(), index);
+        OpenApiDocument document = prepareOpenApiDocument(loadedModel, null, Collections.emptyList(), index, false);
 
         if (includeRuntimeFilters) {
             List<String> userDefinedRuntimeFilters = getUserDefinedRuntimeFilters(openApiConfig, index);
@@ -1186,7 +1186,8 @@ public class SmallRyeOpenApiProcessor {
     private OpenApiDocument prepareOpenApiDocument(OpenAPI staticModel,
             OpenAPI annotationModel,
             List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems,
-            IndexView index) {
+            IndexView index,
+            boolean executeBuildFilters) {
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
 
@@ -1203,10 +1204,12 @@ public class SmallRyeOpenApiProcessor {
             OASFilter otherExtensionFilter = openAPIBuildItem.getOASFilter();
             document.filter(otherExtensionFilter);
         }
-        // Add user defined Build time filters
-        List<String> userDefinedFilters = getUserDefinedBuildtimeFilters(index);
-        for (String filter : userDefinedFilters) {
-            document.filter(filter(filter, index));
+        // Add user defined Build time filters if necessary
+        if (executeBuildFilters) {
+            List<String> userDefinedFilters = getUserDefinedBuildtimeFilters(index);
+            for (String filter : userDefinedFilters) {
+                document.filter(filter(filter, index));
+            }
         }
         return document;
     }

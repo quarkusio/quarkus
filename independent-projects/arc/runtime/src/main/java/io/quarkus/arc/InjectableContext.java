@@ -11,13 +11,13 @@ import jakarta.enterprise.context.spi.CreationalContext;
 
 /**
  * A context implementing this interface makes it possible to capture and view its state via the {@link ContextState}.
- *
+ * <p>
  * It also allows users to destroy all contextual instances within this context.
  */
 public interface InjectableContext extends AlterableContext {
 
     /**
-     * Destroy all existing contextual instances.
+     * Destroys the current context and all existing contextual instances.
      */
     void destroy();
 

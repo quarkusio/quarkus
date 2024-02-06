@@ -476,6 +476,12 @@ quarkus ext add kubernetes health
 [SUCCESS] ✅ Extension io.quarkus:quarkus-smallrye-health has been installed
 ----
 
+You can install all extensions which match a glob pattern:
+[source,shell]
+----
+quarkus ext add smallrye-*
+----
+
 ==== Removing extensions
 
 The Quarkus CLI can remove one or more extensions from your project with the `remove`/`rm`

@@ -19,7 +19,8 @@ public class RolesResource {
     @GET
     public String get() {
         if ("bob".equals(jwt.getName())) {
-            return "tester";
+            String tokenType = jwt.getClaim("typ");
+            return tokenType + "tester";
         }
         throw new ForbiddenException("Only user 'bob' is allowed to request roles");
     }

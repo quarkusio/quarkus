@@ -1,5 +1,8 @@
 package io.quarkus.oidc.runtime;
 
+import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.IdTokenCredential;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -42,7 +45,12 @@ abstract class AbstractOidcAuthenticationMechanism {
             // during authentication TokenCredential is not accessible via CDI, thus we put it to the duplicated context
             VertxContextSafetyToggle.validateContextIfExists(ERROR_MSG, ERROR_MSG);
             final var ctx = Vertx.currentContext();
-            ctx.putLocal(TokenCredential.class.getName(), token);
+            // If the primary token is ID token then the code flow access token is available as
+            // a RoutingContext `access_token` property.
+            final var tokenCredential = (token instanceof IdTokenCredential)
+                    ? new AccessTokenCredential(context.get(OidcConstants.ACCESS_TOKEN_VALUE))
+                    : token;
+            ctx.putLocal(TokenCredential.class.getName(), tokenCredential);
             return identityProviderManager
                     .authenticate(HttpSecurityUtils.setRoutingContextAttribute(new TokenAuthenticationRequest(token), context))
                     .invoke(new Runnable() {

@@ -255,7 +255,16 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
+            
+             <!-- Dev UI -->
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bom-dev-ui</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            
             <!-- External BOMs -->
 
             <!-- Netty dependencies, imported as a BOM -->

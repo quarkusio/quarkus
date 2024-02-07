@@ -9,6 +9,19 @@ import io.quarkus.annotation.processor.Constants;
 
 final public class ConfigDocWriter {
 
+    private final boolean showEnvVars;
+    private final boolean replaceDotsInAnchors;
+
+    public ConfigDocWriter() {
+        this.showEnvVars = true;
+        this.replaceDotsInAnchors = false;
+    }
+
+    public ConfigDocWriter(boolean showEnvVars, boolean replaceDotsInAnchors) {
+        this.showEnvVars = showEnvVars;
+        this.replaceDotsInAnchors = replaceDotsInAnchors;
+    }
+
     /**
      * Write all extension configuration in AsciiDoc format in `{root}/target/asciidoc/generated/config/` directory
      */
@@ -20,8 +33,9 @@ final public class ConfigDocWriter {
         }
 
         // Create single summary table
-        final var configDocBuilder = new ConfigDocBuilder().addSummaryTable(output.getAnchorPrefix(), output.isSearchable(),
-                output.getConfigDocItems(), output.getFileName(), true);
+        final var configDocBuilder = new ConfigDocBuilder(showEnvVars, replaceDotsInAnchors)
+                .addSummaryTable(output.getAnchorPrefix(), output.isSearchable(),
+                        output.getConfigDocItems(), output.getFileName(), true);
 
         generateDocumentation(output.getFileName(), configDocBuilder);
     }

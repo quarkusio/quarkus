@@ -201,7 +201,7 @@
                     <testSource>${maven.compiler.argument.testSource}</testSource>
                     <testTarget>${maven.compiler.argument.testTarget}</testTarget>
                     <parameters>true</parameters>
-                    <compilerArgs>
+                    <compilerArgs combine.children="append">
                         <arg>-Xlint:unchecked</arg>
                     </compilerArgs>
                 </configuration>

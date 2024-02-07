@@ -12,7 +12,7 @@ import io.quarkus.annotation.processor.Constants;
 public final class MavenConfigDocBuilder extends ConfigDocBuilder {
 
     public MavenConfigDocBuilder() {
-        super(false);
+        super(false, true);
     }
 
     private final JavaDocParser javaDocParser = new JavaDocParser();

@@ -61,7 +61,7 @@ The `quarkus.security.users.file.users` configuration property specifies a class
 
 The following <<test-users-example>> illustrates the format:
 
-[#test-users-example]
+[[test-users-example]]
 .Example of `test-users.properties`
 [source,properties]
 ----
@@ -121,7 +121,7 @@ This can be generated for the first example above by running the command `echo -
 The user to password mappings are specified in the `application.properties` file by properties keys of the form `quarkus.security.users.embedded.users.<user>=<password>`.
 The following <<password-example>> illustrates the syntax with 4 user-to-password mappings:
 
-[#password-example]
+[[password-example]]
 .Example of passwords
 [source,properties,linenums]
 ----
@@ -138,7 +138,7 @@ quarkus.security.users.embedded.users.noadmin=n0Adm1n
 The user to role mappings are specified in the `application.properties` file by properties keys of the form `quarkus.security.users.embedded.roles.<user>=role1[,role2[,role3[,...]]]`.
 The following <<roles-example>> illustrates the syntax with 4 user-to-role mappings:
 
-[#roles-example]
+[[roles-example]]
 .Example of roles
 [source,properties,linenums]
 ----

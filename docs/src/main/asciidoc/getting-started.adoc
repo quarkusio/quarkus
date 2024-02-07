@@ -456,7 +456,7 @@ NOTE: If you want to deploy your application somewhere (typically in a container
 
 NOTE: Before running the application, don't forget to stop the hot reload mode (hit `CTRL+C`), or you will have a port conflict.
 
-[#banner]
+[[banner]]
 == Configuring the banner
 
 By default, when a Quarkus application starts (in regular or dev mode), it will display an ASCII art banner. The banner can be disabled by setting `quarkus.banner.enabled=false` in `application.properties`,

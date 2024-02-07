@@ -120,10 +120,10 @@ public class MvnpmHandler implements Handler<RoutingContext> {
 
     private static final String CONTENT_TYPE_JAVASCRIPT = "application/javascript";
     private static final String CONTENT_TYPE_JSON = "application/json";
-    private static final String CONTENT_TYPE_HTML = "text/html";
-    private static final String CONTENT_TYPE_XHTML = "application/xhtml+xml";
-    private static final String CONTENT_TYPE_XML = "application/xml";
-    private static final String CONTENT_TYPE_CSS = "text/css";
-    private static final String CONTENT_TYPE_TEXT = "text/plain";
+    private static final String CONTENT_TYPE_HTML = "text/html; charset=utf-8";
+    private static final String CONTENT_TYPE_XHTML = "application/xhtml+xml; charset=utf-8";
+    private static final String CONTENT_TYPE_XML = "application/xml; charset=utf-8";
+    private static final String CONTENT_TYPE_CSS = "text/css; charset=utf-8";
+    private static final String CONTENT_TYPE_TEXT = "text/plain; charset=utf-8";
 
 }

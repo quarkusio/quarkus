@@ -14,6 +14,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
@@ -122,19 +123,22 @@ public class KubernetesClientProcessor {
 
         // register fully (and not weakly) for reflection watchers, informers and custom resources
         final Set<DotName> watchedClasses = new HashSet<>();
-        findWatchedClasses(WATCHER, applicationIndex, combinedIndexBuildItem, watchedClasses, 1,
-                true);
-        findWatchedClasses(RESOURCE_EVENT_HANDLER, applicationIndex, combinedIndexBuildItem, watchedClasses, 1,
-                true);
-        findWatchedClasses(CUSTOM_RESOURCE, applicationIndex, combinedIndexBuildItem, watchedClasses, 2,
-                false);
+        final var appIndex = applicationIndex.getIndex();
+        final var fullIndex = combinedIndexBuildItem.getIndex();
+        findWatchedClasses(WATCHER, watchedClasses, 1, true, appIndex, fullIndex);
+        findWatchedClasses(RESOURCE_EVENT_HANDLER, watchedClasses, 1, true, appIndex, fullIndex);
+        // in the case of CustomResources, we want to search the full index to also take into account additional
+        // dependencies that might not be in the application index, the most common use case being the model classes
+        // being defined in a separate module for reuse and indexed separately, which would cause the CustomResource
+        // implementations to not appear in the application index
+        findWatchedClasses(CUSTOM_RESOURCE, watchedClasses, 2, false, fullIndex, fullIndex);
 
         Predicate<DotName> reflectionIgnorePredicate = ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE;
         for (DotName className : watchedClasses) {
             if (reflectionIgnorePredicate.test(className)) {
                 continue;
             }
-            final ClassInfo watchedClass = combinedIndexBuildItem.getIndex().getClassByName(className);
+            final ClassInfo watchedClass = fullIndex.getClassByName(className);
             if (watchedClass == null) {
                 log.warnv("Unable to lookup class: {0}", className);
             } else {
@@ -147,12 +151,9 @@ public class KubernetesClientProcessor {
             }
         }
 
-        Collection<ClassInfo> kubernetesResourceImpls = combinedIndexBuildItem.getIndex()
-                .getAllKnownImplementors(KUBERNETES_RESOURCE);
-        Collection<ClassInfo> kubernetesResourceListImpls = combinedIndexBuildItem.getIndex()
-                .getAllKnownImplementors(KUBERNETES_RESOURCE_LIST);
-        Collection<ClassInfo> visitableBuilderImpls = combinedIndexBuildItem.getIndex()
-                .getAllKnownImplementors(VISITABLE_BUILDER);
+        Collection<ClassInfo> kubernetesResourceImpls = fullIndex.getAllKnownImplementors(KUBERNETES_RESOURCE);
+        Collection<ClassInfo> kubernetesResourceListImpls = fullIndex.getAllKnownImplementors(KUBERNETES_RESOURCE_LIST);
+        Collection<ClassInfo> visitableBuilderImpls = fullIndex.getAllKnownImplementors(VISITABLE_BUILDER);
 
         // default sizes determined experimentally - these are only set in order to prevent continuous expansion of the array list
         List<String> withoutFieldsRegistration = new ArrayList<>(
@@ -185,13 +186,11 @@ public class KubernetesClientProcessor {
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(ignoreJsonDeserialization));
 
         // we also ignore some classes that are annotated with @JsonDeserialize that would force the registration of the entire model
-        ignoredJsonDeserializationClasses.produce(
-                new IgnoreJsonDeserializeClassBuildItem(KUBE_SCHEMA));
-        ignoredJsonDeserializationClasses.produce(
-                new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE_LIST));
+        ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBE_SCHEMA));
+        ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE_LIST));
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE));
 
-        final String[] deserializerClasses = combinedIndexBuildItem.getIndex()
+        final String[] deserializerClasses = fullIndex
                 .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonDeserializer"))
                 .stream()
                 .map(c -> c.name().toString())
@@ -199,7 +198,7 @@ public class KubernetesClientProcessor {
                 .toArray(String[]::new);
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(deserializerClasses).methods().build());
 
-        final String[] serializerClasses = combinedIndexBuildItem.getIndex()
+        final String[] serializerClasses = fullIndex
                 .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonSerializer"))
                 .stream()
                 .map(c -> c.name().toString())
@@ -277,16 +276,17 @@ public class KubernetesClientProcessor {
                 });
     }
 
-    private void findWatchedClasses(final DotName implementedOrExtendedClass, final ApplicationIndexBuildItem applicationIndex,
-            final CombinedIndexBuildItem combinedIndexBuildItem, final Set<DotName> watchedClasses,
-            final int expectedGenericTypeCardinality, boolean isTargetClassAnInterface) {
-        final var index = applicationIndex.getIndex();
-        final var implementors = isTargetClassAnInterface ? index
-                .getAllKnownImplementors(implementedOrExtendedClass) : index.getAllKnownSubclasses(implementedOrExtendedClass);
+    private void findWatchedClasses(final DotName implementedOrExtendedClass,
+            final Set<DotName> watchedClasses, final int expectedGenericTypeCardinality, boolean isTargetClassAnInterface,
+            IndexView targetIndex,
+            IndexView fullIndex) {
+
+        final var implementors = isTargetClassAnInterface ? targetIndex.getAllKnownImplementors(implementedOrExtendedClass)
+                : targetIndex.getAllKnownSubclasses(implementedOrExtendedClass);
         implementors.forEach(c -> {
             try {
-                final List<Type> watcherGenericTypes = JandexUtil.resolveTypeParameters(c.name(),
-                        implementedOrExtendedClass, combinedIndexBuildItem.getIndex());
+                final List<Type> watcherGenericTypes = JandexUtil.resolveTypeParameters(c.name(), implementedOrExtendedClass,
+                        fullIndex);
                 if (!isTargetClassAnInterface) {
                     // add the class itself: for example, in the case of CustomResource, we want to
                     // register the class that extends CustomResource in addition to its type parameters
@@ -298,7 +298,7 @@ public class KubernetesClientProcessor {
             } catch (IllegalArgumentException ignored) {
                 // when the class has no subclasses and we were not able to determine the generic types,
                 // it's likely that the class might be able to get deserialized
-                if (index.getAllKnownSubclasses(c.name()).isEmpty()) {
+                if (targetIndex.getAllKnownSubclasses(c.name()).isEmpty()) {
                     log.warnv("{0} '{1}' will most likely not work correctly in native mode. " +
                             "Consider specifying the generic type of '{2}' that this class handles. "
                             +

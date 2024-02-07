@@ -92,7 +92,7 @@ final public class Constants {
     public static final String DURATION_NOTE_ANCHOR = String.format("duration-note-anchor-{%s}",
             SUMMARY_TABLE_ID_VARIABLE);
     public static final String MEMORY_SIZE_NOTE_ANCHOR = "memory-size-note-anchor";
-    public static final String MORE_INFO_ABOUT_TYPE_FORMAT = " link:#%s[icon:question-circle[], title=More information about the %s format]";
+    public static final String MORE_INFO_ABOUT_TYPE_FORMAT = " link:#%s[icon:question-circle[title=More information about the %s format]]";
     public static final String DURATION_INFORMATION = String.format(Constants.MORE_INFO_ABOUT_TYPE_FORMAT,
             Constants.DURATION_NOTE_ANCHOR, Duration.class.getSimpleName());
     public static final String MEMORY_SIZE_INFORMATION = String.format(Constants.MORE_INFO_ABOUT_TYPE_FORMAT,

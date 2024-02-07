@@ -189,7 +189,7 @@ An even nastier possible outcome could be for no exception to be thrown, but ins
 
 There are two different ways to fix this type of issues.
 
-[#registerForReflection]
+[[registerForReflection]]
 ==== Using the @RegisterForReflection annotation
 
 The easiest way to register a class for reflection is to use the `@RegisterForReflection` annotation:

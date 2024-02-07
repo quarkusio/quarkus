@@ -120,7 +120,7 @@ This option is useful when you are also supporting authentication methods other 
 
 When the incoming request matches a valid certificate in the truststore, your application can obtain the subject by injecting a `SecurityIdentity` as follows:
 
-[#x509-subject-example]
+[[x509-subject-example]]
 .Obtaining the subject
 [source,java]
 ----
@@ -135,7 +135,7 @@ public String hello() {
 ----
 
 You can also get the certificate by using the code outlined in the following example:
-[#x509-credential-example]
+[[x509-credential-example]]
 .Obtaining the certificate
 [source,java]
 ----

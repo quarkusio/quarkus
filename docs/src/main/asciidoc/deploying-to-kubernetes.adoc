@@ -20,7 +20,7 @@ Finally, when either one of container image extensions is present (see the xref:
 include::{includes}/prerequisites.adoc[]
 * Access to a Kubernetes cluster (Minikube is a viable option)
 
-[#kubernetes]
+[[kubernetes]]
 == Kubernetes
 
 Let's create a new project that contains both the Kubernetes and Jib extensions:
@@ -363,7 +363,7 @@ quarkus.kubernetes.annotations.foo=bar
 quarkus.kubernetes.annotations."app.quarkus/id"=42
 ----
 
-[#env-vars]
+[[env-vars]]
 ==== Environment variables
 
 Kubernetes provides multiple ways of defining environment variables:
@@ -501,7 +501,7 @@ A conflict between two definitions, e.g. mistakenly assigning both a value and s
 
 Similarly, two redundant definitions, e.g. defining an injection from the same secret twice, will not cause an issue but will indeed report a warning to let you know that you might not have intended to duplicate that definition.
 
-[#env-vars-backwards]
+[[env-vars-backwards]]
 ===== Backwards compatibility
 
 Previous versions of the Kubernetes extension supported a different syntax to add environment variables. The older syntax is still supported but is deprecated, and it's advised that you migrate to the new syntax.
@@ -1029,7 +1029,7 @@ The full list of the Kubernetes client configuration properties is provided belo
 :no-duration-note: true
 include::{generated-dir}/config/quarkus-kubernetes-client.adoc[opts=optional, leveloffset=+1]
 
-[#openshift]
+[[openshift]]
 === OpenShift
 
 One way to deploy an application to OpenShift is to use s2i (source to image) to create an image stream from the source and then deploy the image stream:
@@ -1140,7 +1140,7 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 :no-duration-note: true
 include::{generated-dir}/config/quarkus-openshift-openshift-config.adoc[opts=optional, leveloffset=+1]
 
-[#knative]
+[[knative]]
 === Knative
 
 To enable the generation of Knative resources, you need to include Knative in the target platforms:

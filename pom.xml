@@ -95,6 +95,7 @@
         <!-- BOMs and parent POM -->
         <module>bom/application</module>
         <module>bom/test</module>
+        <module>bom/dev-ui</module>
         <module>build-parent</module>
 
         <!-- Core components -->

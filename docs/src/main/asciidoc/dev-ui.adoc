@@ -841,7 +841,7 @@ The router is mostly used internally. This uses https://github.com/vaadin/router
 
 See the https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/controller/router-controller.js[controller] for some methods that might be useful.
 
-[#JsonRPC]
+[[JsonRPC]]
 ====== JsonRPC
 
 This controller allows you to fetch or stream runtime data. (vs. <<Build time data>> discussed earlier). There are two parts to getting data during runtime. The Java side in the runtime module, and then the usage in the web component.

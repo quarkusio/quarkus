@@ -461,7 +461,7 @@ Use `MailTemplate` injection for the named mailer configurations.
 
 This section provides the configurations to use with popular mail services.
 
-[#gmail-specific-configuration]
+[[gmail-specific-configuration]]
 === Gmail specific configuration
 
 If you want to use the Gmail SMTP server, first create a dedicated password in `Google Account > Security > App passwords` or go to https://myaccount.google.com/apppasswords.

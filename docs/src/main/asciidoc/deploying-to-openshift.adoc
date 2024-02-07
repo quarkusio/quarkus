@@ -92,7 +92,7 @@ include::{includes}/devtools/build.adoc[]
 
 TIP: If you want to test your application immediately then set the `quarkus.openshift.route.expose` config property to `true` to <<exposing_routes,expose the service automatically>>, e.g. add `-Dquarkus.openshift.route.expose=true` to the command above.
 
-[#re-deploy-with-service-binding]
+[[re-deploy-with-service-binding]]
 NOTE: When using `DeploymentConfig` and xref:deploying-to-kubernetes.adoc#service_binding[Service Binding], re-deploying might remove the configuration added by OpenShift to allow service discovery. A new container image build will trigger a refresh of the Quarkus app in OpenShift: `-Dquarkus.container-image.build=true` which might be enough in most situations. If you need to update the OpenShift resources, you need to delete the binding first to create it again after new deployment.
 
 This command will build your application locally, then trigger a container image build and finally apply the generated OpenShift resources automatically.
@@ -273,7 +273,7 @@ To add an annotation in the generated resources:
 quarkus.openshift.annotations.foo=bar
 ----
 
-[#env-vars]
+[[env-vars]]
 === Environment variables
 
 OpenShift provides multiple ways of defining environment variables:
@@ -440,7 +440,7 @@ A conflict between two definitions, e.g. mistakenly assigning both a value and s
 
 Similarly, two redundant definitions, e.g. defining an injection from the same secret twice, will not cause an issue but will indeed report a warning to let you know that you might not have intended to duplicate that definition.
 
-[#env-vars-backwards]
+[[env-vars-backwards]]
 ===== Backwards compatibility
 
 Previous versions of the OpenShift extension supported a different syntax to add environment variables. The older syntax is still supported but is deprecated, and it's advised that you migrate to the new syntax.

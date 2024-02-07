@@ -273,7 +273,7 @@ Congratulations! You just added application data caching to your Quarkus applica
 Do you want to learn more about the Quarkus application data caching abilities?
 The following sections will show you everything there is to know about it.
 
-[#annotations-api]
+[[annotations-api]]
 == Caching using annotations
 
 Quarkus offers a set of annotations that can be used in a CDI managed bean to enable caching abilities.
@@ -327,7 +327,7 @@ method annotated with `@CacheResult` or `@CacheInvalidate`.
 
 This annotation is optional and should only be used when some method arguments are NOT part of the cache key.
 
-[#cache-keys-building-logic]
+[[cache-keys-building-logic]]
 === Cache keys building logic
 
 Cache keys are built by the annotations API using the following logic:
@@ -489,7 +489,7 @@ public class CachedService {
 <3> This key generator is not a CDI bean.
 <4> The `@CacheKey` annotation will be ignored when the `foo` cache data is invalidated, but `param1` will be the cache key when the `bar` cache data is invalidated.
 
-[#programmatic-api]
+[[programmatic-api]]
 == Caching using the programmatic API
 
 Quarkus also offers a programmatic API which can be used to store, retrieve or delete values from any cache declared using the annotations API.
@@ -966,7 +966,7 @@ public class CacheClearer {
 }
 ----
 
-[#negative-cache]
+[[negative-cache]]
 == Negative caching and nulls
 
 Sometimes one wants to cache the result of an (expensive) remote call.

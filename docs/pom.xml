@@ -23,7 +23,7 @@
         <mandrel.image-tag-for-documentation>jdk-21</mandrel.image-tag-for-documentation>
 
         <assembly-maven-plugin.version>3.5.0</assembly-maven-plugin.version>
-        <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
+        <asciidoctor-maven-plugin.version>2.2.5</asciidoctor-maven-plugin.version>
         <asciidoctorj-pdf.version>1.5.0-beta.8</asciidoctorj-pdf.version>
         <asciidoctor.fail-if>WARN</asciidoctor.fail-if>
         <roaster-jdt.version>2.26.0.Final</roaster-jdt.version>
@@ -3082,6 +3082,26 @@
                         </configuration>
                     </execution>
                     <execution>
+                        <id>check-cross-references</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipDocs}</skip>
+                            <!-- Don't wait for unkillable reference reaper threads -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                            <mainClass>io.quarkus.docs.generation.CheckCrossReferences</mainClass>
+                            <arguments>
+                                <argument>${project.basedir}/target/asciidoc/sources</argument>
+                                <argument>${project.basedir}/target/referenceIndex.yaml</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <MAVEN_CMD_LINE_ARGS>${env.MAVEN_CMD_LINE_ARGS}</MAVEN_CMD_LINE_ARGS>
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+                    <execution>
                         <id>assemble-downstream-doc</id>
                         <phase>prepare-package</phase>
                         <goals>
@@ -3096,6 +3116,7 @@
                                 <argument>-classpath</argument>
                                 <classpath />
                                 <argument>io.quarkus.docs.generation.AssembleDownstreamDocumentation</argument>
+                                <argument>${project.basedir}/target/referenceIndex.yaml</argument>
                             </arguments>
                             <workingDirectory>${project.basedir}</workingDirectory>
                         </configuration>

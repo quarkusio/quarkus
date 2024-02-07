@@ -166,7 +166,7 @@ To learn more about why this behavior occurs, you can use OIDC Dev UI as explain
 
 == Looking at Auth0 tokens in the OIDC Dev UI
 
-Quarkus provides a great xref:dev-ui-v2.adoc[Dev UI] experience.
+Quarkus provides a great xref:dev-ui.adoc[Dev UI] experience.
 Specifically, Quarkus offers built-in support for developing and testing OIDC endpoints with a Keycloak container.
 xref:security-openid-connect-dev-services.adoc#dev-services-for-keycloak[DevService for Keycloak] is automatically started and used if the address of the OIDC provider is not specified for the Quarkus `quarkus.oidc.auth-server-url` configuration property.
 

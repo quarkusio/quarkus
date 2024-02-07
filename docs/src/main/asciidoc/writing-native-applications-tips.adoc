@@ -734,4 +734,4 @@ For more information about Proxy Classes, see the link:https://www.graalvm.org/{
 
 If you are using dependencies that require logging components such as Apache Commons Logging or Log4j and are experiencing a `ClassNotFoundException` when building the native executable, you can resolve this by excluding the logging library and adding the corresponding JBoss Logging adapter.
 
-For more details please refer to the xref:logging.adoc#logging-adapters[Logging guide].
+For more details please refer to the xref:logging.adoc#logging-apis[Logging guide].

@@ -177,7 +177,7 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
 }
 ----
 
-Here is another example showing how to use the client certificate available in the current xref:security-authentication-mechanisms.adoc#mutual-TLS-authentication[mutual TLS (mTLS) authentication] request to add more roles:
+Here is another example showing how to use the client certificate available in the current xref:security-authentication-mechanisms.adoc#mutual-tls[mutual TLS (mTLS) authentication] request to add more roles:
 
 [source,java]
 ----

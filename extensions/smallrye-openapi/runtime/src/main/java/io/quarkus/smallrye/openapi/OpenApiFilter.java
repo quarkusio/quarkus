@@ -26,7 +26,7 @@ public @interface OpenApiFilter {
      */
     int priority() default 1;
 
-    static enum RunStage {
+    enum RunStage {
         BUILD,
         RUN,
         BOTH

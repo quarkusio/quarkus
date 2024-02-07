@@ -54,7 +54,7 @@
         <smallrye-config.version>3.5.2</smallrye-config.version>
         <smallrye-health.version>4.1.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
-        <smallrye-open-api.version>3.8.0</smallrye-open-api.version>
+        <smallrye-open-api.version>3.9.0</smallrye-open-api.version>
         <smallrye-graphql.version>2.7.0</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.2.6</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.4.0</smallrye-jwt.version>
@@ -100,7 +100,7 @@
              bytebuddy.version (just below), hibernate-orm.version-for-documentation (in docs/pom.xml)
              and both hibernate-orm.version and antlr.version in build-parent/pom.xml
              WARNING again for diffs that don't provide enough context: when updating, see above -->
-        <hibernate-orm.version>6.4.2.Final</hibernate-orm.version>
+        <hibernate-orm.version>6.4.3.Final</hibernate-orm.version>
         <bytebuddy.version>1.14.7</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-commons-annotations.version>6.0.6.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM -->
         <hibernate-reactive.version>2.2.2.Final</hibernate-reactive.version>
@@ -121,7 +121,7 @@
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>2.2.3.Final</wildfly-elytron.version>
         <jboss-threads.version>3.5.1.Final</jboss-threads.version>
-        <vertx.version>4.5.1</vertx.version>
+        <vertx.version>4.5.2</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -6248,6 +6248,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-rest-client-mutiny-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-search-orm-coordination-outbox-polling</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-search-orm-coordination-outbox-polling-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- End of Relocations, please put new extensions above this list -->

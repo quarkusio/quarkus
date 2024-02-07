@@ -82,7 +82,7 @@ By default, the Kubernetes resources do not contain readiness and liveness probe
 implementation("io.quarkus:quarkus-smallrye-health")
 ----
 
-TIP: More information about the health extension can be found in xref:microprofile-health.adoc[the Microprofile Health guide].
+TIP: More information about the health extension can be found in xref:smallrye-health.adoc[the SmallRye Health guide].
 
 By the default, this extension will configure the probes to use the HTTP server (which is provided by some extensions like the Quarkus RESTEasy reactive extension). Internally, this probe will also use xref:grpc-service-implementation.adoc#health[the generated gRPC Health services].
 

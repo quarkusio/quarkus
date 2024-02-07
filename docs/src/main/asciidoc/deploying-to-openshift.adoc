@@ -31,8 +31,8 @@ First, we need a new project that contains the OpenShift extension. This can be 
 include::{includes}/devtools/create-app.adoc[]
 
 Quarkus offers the ability to automatically generate OpenShift resources based on sane defaults and user supplied configuration.
-The OpenShift extension is actually a wrapper extension that brings together the xref:deploying-to-kubernetes.adoc[kubernetes] and xref:container-image.adoc#s2i[container-image-s2i]
-extensions with sensible defaults so that it's easier for the user to get started with Quarkus on OpenShift.
+The OpenShift extension is actually a wrapper extension that brings configures the xref:deploying-to-kubernetes.adoc[Kubernetes]
+extension with sensible defaults so that it's easier for the user to get started with Quarkus on OpenShift.
 
 When we added the OpenShift extension to the command line invocation above, the following dependency was added to the `pom.xml`
 

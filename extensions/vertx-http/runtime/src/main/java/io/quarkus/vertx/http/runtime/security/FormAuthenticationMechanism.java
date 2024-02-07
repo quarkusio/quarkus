@@ -36,6 +36,7 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.RoutingContext;
 
 public class FormAuthenticationMechanism implements HttpAuthenticationMechanism {
+    public static final String FORM_AUTHENTICATION_PARAMETERS = "form_authentication_parameters";
     private static final String FORM = "form";
 
     private static final Logger log = Logger.getLogger(FormAuthenticationMechanism.class);
@@ -134,6 +135,8 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                                 uniEmitter.complete(null);
                                 return;
                             }
+                            exchange.put(FORM_AUTHENTICATION_PARAMETERS, res);
+
                             securityContext
                                     .authenticate(HttpSecurityUtils
                                             .setRoutingContextAttribute(new UsernamePasswordAuthenticationRequest(jUsername,

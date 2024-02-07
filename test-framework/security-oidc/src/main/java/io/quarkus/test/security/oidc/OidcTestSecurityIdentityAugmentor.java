@@ -38,16 +38,19 @@ public class OidcTestSecurityIdentityAugmentor implements TestSecurityIdentityAu
             Claims.auth_time.name(), ClaimType.LONG,
             Claims.email_verified.name(), ClaimType.BOOLEAN);
 
+    private static final PrivateKey privateKey;
     private Optional<String> issuer;
-    private PrivateKey privateKey;
 
-    public OidcTestSecurityIdentityAugmentor(Optional<String> issuer) {
-        this.issuer = issuer;
+    static {
         try {
             privateKey = KeyUtils.generateKeyPair(2048).getPrivate();
         } catch (NoSuchAlgorithmException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    public OidcTestSecurityIdentityAugmentor(Optional<String> issuer) {
+        this.issuer = issuer;
     }
 
     @Override

@@ -476,6 +476,24 @@ public class ServerSerialisers extends Serialisers {
 
     public static void encodeResponseHeaders(ResteasyReactiveRequestContext requestContext) {
         ServerHttpResponse vertxResponse = requestContext.serverResponse();
+        boolean ouch = false;
+        for (java.util.Map.Entry<String, String> entry : vertxResponse.getAllResponseHeaders()) {
+            // allow content headers, since those are set before (not sure by whom, though)
+            if (entry.getKey().equalsIgnoreCase(CONTENT_TYPE)
+                    || entry.getKey().equalsIgnoreCase("Content-Length")
+                    || entry.getKey().equalsIgnoreCase("Transfer-Encoding")
+                    // JAX-RS Request.selectVariant has this side-effect
+                    || entry.getKey().equalsIgnoreCase("Vary")
+                    || (entry.getKey().equalsIgnoreCase("Operation")
+                            && entry.getValue().equalsIgnoreCase("PROCEEDTHROWSWEBAPPEXCEPTION"))) {
+                continue;
+            }
+            System.err.println("Found header: " + entry.getKey() + ": " + entry.getValue());
+            ouch = true;
+        }
+        if (ouch) {
+            throw new RuntimeException("Assertion failed: found vert.x headers before setting response");
+        }
         LazyResponse lazyResponse = requestContext.getResponse();
         if (!lazyResponse.isCreated() && lazyResponse.isPredetermined()) {
             //fast path

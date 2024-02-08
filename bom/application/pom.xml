@@ -38,7 +38,7 @@
         <micrometer.version>1.12.3</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
-        <graphql-java.version>21.1</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
+        <graphql-java.version>21.3</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
         <microprofile-config-api.version>3.0.3</microprofile-config-api.version>
         <microprofile-health-api.version>4.0.1</microprofile-health-api.version>
         <microprofile-metrics-api.version>4.0.1</microprofile-metrics-api.version>

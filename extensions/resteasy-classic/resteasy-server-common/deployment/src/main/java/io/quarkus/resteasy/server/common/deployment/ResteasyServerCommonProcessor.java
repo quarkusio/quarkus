@@ -913,8 +913,8 @@ public class ResteasyServerCommonProcessor {
             String source = ResteasyServerCommonProcessor.class.getSimpleName() + " > " + method.declaringClass() + "[" + method
                     + "]";
 
-            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                    .type(method.returnType())
+            reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
+                    .builder(method.returnType())
                     .index(index)
                     .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
                     .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
@@ -925,8 +925,8 @@ public class ResteasyServerCommonProcessor {
             for (short i = 0; i < method.parametersCount(); i++) {
                 Type parameterType = method.parameterType(i);
                 if (!hasAnnotation(method, i, CONTEXT)) {
-                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                            .type(parameterType)
+                    reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
+                            .builder(parameterType)
                             .index(index)
                             .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
                             .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)

@@ -20,7 +20,7 @@ public class EndUserEnabledTest extends AbstractEndUserTest {
 
     @Override
     protected void evaluateAttributes(Attributes attributes) {
-        assertEquals(attributes.get(SemanticAttributes.ENDUSER_ID), "testUser");
-        assertEquals(attributes.get(SemanticAttributes.ENDUSER_ROLE), "[admin, user]");
+        assertEquals("testUser", attributes.get(SemanticAttributes.ENDUSER_ID), attributes.toString());
+        assertEquals("[admin, user]", attributes.get(SemanticAttributes.ENDUSER_ROLE), attributes.toString());
     }
 }

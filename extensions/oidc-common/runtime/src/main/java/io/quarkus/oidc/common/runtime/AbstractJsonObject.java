@@ -1,7 +1,9 @@
-package io.quarkus.oidc.runtime;
+package io.quarkus.oidc.common.runtime;
 
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -10,21 +12,23 @@ import jakarta.json.JsonArray;
 import jakarta.json.JsonNumber;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
+import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 
-public class AbstractJsonObjectResponse {
+public abstract class AbstractJsonObject {
     private String jsonString;
     private JsonObject json;
 
-    public AbstractJsonObjectResponse() {
+    protected AbstractJsonObject() {
+        json = Json.createObjectBuilder().build();
     }
 
-    public AbstractJsonObjectResponse(String jsonString) {
+    protected AbstractJsonObject(String jsonString) {
         this(toJsonObject(jsonString));
         this.jsonString = jsonString;
     }
 
-    public AbstractJsonObjectResponse(JsonObject json) {
+    protected AbstractJsonObject(JsonObject json) {
         this.json = json;
     }
 
@@ -50,7 +54,7 @@ public class AbstractJsonObjectResponse {
     }
 
     public JsonObject getJsonObject() {
-        return json;
+        return Json.createObjectBuilder(json).build();
     }
 
     public Object get(String name) {
@@ -69,11 +73,24 @@ public class AbstractJsonObjectResponse {
         return Collections.unmodifiableSet(json.entrySet());
     }
 
-    protected String getNonNullJsonString() {
+    protected String getJsonString() {
         return jsonString == null ? json.toString() : jsonString;
     }
 
-    static JsonObject toJsonObject(String json) {
+    protected List<String> getListOfStrings(String prop) {
+        JsonArray array = getArray(prop);
+        if (array == null) {
+            return null;
+        }
+        List<String> list = new ArrayList<String>();
+        for (JsonValue value : array) {
+            list.add(((JsonString) value).getString());
+        }
+
+        return list;
+    }
+
+    public static JsonObject toJsonObject(String json) {
         try (JsonReader jsonReader = Json.createReader(new StringReader(json))) {
             return jsonReader.readObject();
         }

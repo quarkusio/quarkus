@@ -15,6 +15,7 @@ public class OidcConfigurationMetadata {
     public static final String JWKS_ENDPOINT = "jwks_uri";
     public static final String USERINFO_ENDPOINT = "userinfo_endpoint";
     public static final String END_SESSION_ENDPOINT = "end_session_endpoint";
+    private static final String REGISTRATION_ENDPOINT = "registration_endpoint";
     public static final String SCOPES_SUPPORTED = "scopes_supported";
 
     private final String discoveryUri;
@@ -24,6 +25,7 @@ public class OidcConfigurationMetadata {
     private final String jsonWebKeySetUri;
     private final String userInfoUri;
     private final String endSessionUri;
+    private final String registrationUri;
     private final String issuer;
     private final JsonObject json;
 
@@ -33,6 +35,7 @@ public class OidcConfigurationMetadata {
             String jsonWebKeySetUri,
             String userInfoUri,
             String endSessionUri,
+            String registrationUri,
             String issuer) {
         this.discoveryUri = null;
         this.tokenUri = tokenUri;
@@ -41,6 +44,7 @@ public class OidcConfigurationMetadata {
         this.jsonWebKeySetUri = jsonWebKeySetUri;
         this.userInfoUri = userInfoUri;
         this.endSessionUri = endSessionUri;
+        this.registrationUri = registrationUri;
         this.issuer = issuer;
         this.json = null;
     }
@@ -64,6 +68,8 @@ public class OidcConfigurationMetadata {
                 localMetadataConfig == null ? null : localMetadataConfig.userInfoUri);
         this.endSessionUri = getMetadataValue(wellKnownConfig, END_SESSION_ENDPOINT,
                 localMetadataConfig == null ? null : localMetadataConfig.endSessionUri);
+        this.registrationUri = getMetadataValue(wellKnownConfig, REGISTRATION_ENDPOINT,
+                localMetadataConfig == null ? null : localMetadataConfig.registrationUri);
         this.issuer = getMetadataValue(wellKnownConfig, ISSUER,
                 localMetadataConfig == null ? null : localMetadataConfig.issuer);
         this.json = wellKnownConfig;

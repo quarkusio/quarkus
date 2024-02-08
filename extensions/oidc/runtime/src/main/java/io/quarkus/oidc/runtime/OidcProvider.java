@@ -39,6 +39,7 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenCustomizer;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.common.runtime.AbstractJsonObject;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcProviderClient.UserInfoResponse;
@@ -277,7 +278,7 @@ public class OidcProvider implements Closeable {
 
     private String customizeJwtToken(String token) {
         if (tokenCustomizer != null) {
-            JsonObject headers = AbstractJsonObjectResponse.toJsonObject(
+            JsonObject headers = AbstractJsonObject.toJsonObject(
                     OidcUtils.decodeJwtHeadersAsString(token));
             headers = tokenCustomizer.customizeHeaders(headers);
             if (headers != null) {

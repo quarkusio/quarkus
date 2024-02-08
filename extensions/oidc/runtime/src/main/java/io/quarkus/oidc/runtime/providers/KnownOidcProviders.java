@@ -4,7 +4,7 @@ import java.util.List;
 
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Authentication.ResponseMode;
-import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret.Method;
+import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret.Method;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 public class KnownOidcProviders {

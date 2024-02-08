@@ -253,6 +253,7 @@
                 <module>observability-lgtm</module>
                 <module>oidc</module>
                 <module>oidc-client</module>
+                <module>oidc-client-registration</module>
                 <module>oidc-client-reactive</module>
                 <module>oidc-client-wiremock</module>
                 <module>oidc-token-propagation</module>

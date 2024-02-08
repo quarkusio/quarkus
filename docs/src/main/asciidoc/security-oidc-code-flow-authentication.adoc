@@ -298,7 +298,7 @@ quarkus.oidc.introspection-credentials.secret=introspection-user-secret
 [[oidc-request-filters]]
 ==== OIDC request filters
 
-You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFiler` implementations, which can update or add new request headers and can also log requests.
+You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFilter` implementations, which can update or add new request headers and can also log requests.
 
 For example:
 

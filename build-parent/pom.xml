@@ -75,7 +75,7 @@
              and unfortunately annotation processors are not covered by dependency management
              in kotlin-maven-plugin; see https://github.com/quarkusio/quarkus/issues/37477#issuecomment-1923662964
          -->
-        <hibernate-orm.version>6.4.3.Final</hibernate-orm.version>
+        <hibernate-orm.version>6.4.4.Final</hibernate-orm.version>
         <!-- Antlr 4 is used by the PanacheQL parser but also needs to match the requirements of Hibernate ORM 6.x-->
         <antlr.version>4.13.0</antlr.version>
 

@@ -153,7 +153,7 @@ Quarkus is pragmatic and versatile.
 You decide how to develop and execute your application.
 You can use the imperative way, the reactive way, or mix them, using reactive on the parts of the application under high concurrency.
 
-[#quarkus-extensions-enabling-reactive]
+[[quarkus-extensions-enabling-reactive]]
 == Quarkus Extensions enabling Reactive
 
 Quarkus offers a large set of reactive APIs and features.
@@ -193,7 +193,7 @@ Offer reactive and imperative programming interfaces.
 * GraphQL: implement and query (client) data store using GraphQL. Offers Mutiny APIs and subscriptions as event streams.
 * Fault Tolerance: provide retry, fallback, circuit breakers abilities to your application.It can be used with Mutiny types.
 
-[#engine]
+[[engine]]
 === Engine
 
 * Vert.x : the underlying reactive engine of Quarkus.

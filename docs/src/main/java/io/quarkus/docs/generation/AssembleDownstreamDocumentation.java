@@ -57,6 +57,8 @@ public class AssembleDownstreamDocumentation {
             Pattern.CASE_INSENSITIVE);
     private static final Pattern ANGLE_BRACKETS_WITH_DESCRIPTION_PATTERN = Pattern.compile("<<([a-z0-9_\\-#\\.]+?),([^>]+?)>>",
             Pattern.CASE_INSENSITIVE);
+    private static final Pattern ANCHOR_PATTERN = Pattern.compile("^\\[#([a-z0-9_-]+)]$",
+            Pattern.CASE_INSENSITIVE + Pattern.MULTILINE);
     private static final String SOURCE_BLOCK_PREFIX = "[source";
     private static final String SOURCE_BLOCK_DELIMITER = "--";
 
@@ -446,6 +448,10 @@ public class AssembleDownstreamDocumentation {
             }
 
             return "link:" + QUARKUS_IO_GUIDES_ATTRIBUTE + "/" + mr.group(1);
+        });
+
+        content = ANCHOR_PATTERN.matcher(content).replaceAll(mr -> {
+            return "[[" + mr.group(1) + "]]";
         });
 
         return content;

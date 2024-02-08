@@ -1869,7 +1869,7 @@ When we call a resource `/records/1` that returns only one instance, then the ou
 }
 ----
 
-Finally, you can also provide additional HAL links programmatically in your resource just by returning either `HalCollectionWrapper` (to return a list of entities) or `HalEntityWrapper` (to return a single object) as described in the following example:
+Finally, you can also provide additional HAL links programmatically in your resource just by returning either `HalCollectionWrapper<T>` (to return a list of entities) or `HalEntityWrapper<T>` (to return a single object) as described in the following example:
 
 [source,java]
 ----
@@ -1877,14 +1877,14 @@ Finally, you can also provide additional HAL links programmatically in your reso
 public class RecordsResource {
 
     @Inject
-    RestLinksProvider linksProvider;
+    HalService halService;
 
     @GET
     @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
     @RestLink(rel = "list")
-    public HalCollectionWrapper getAll() {
+    public HalCollectionWrapper<Record> getAll() {
         List<Record> list = // ...
-        HalCollectionWrapper halCollection = new HalCollectionWrapper(list, "collectionName", linksProvider.getTypeLinks(Record.class));
+        HalCollectionWrapper<Record> halCollection = halService.toHalCollectionWrapper( list, "collectionName", Record.class);
         halCollection.addLinks(Link.fromPath("/records/1").rel("first-record").build());
         return halCollection;
     }
@@ -1894,9 +1894,9 @@ public class RecordsResource {
     @Path("/{id}")
     @RestLink(rel = "self")
     @InjectRestLinks(RestLinkType.INSTANCE)
-    public HalEntityWrapper get(@PathParam("id") int id) {
+    public HalEntityWrapper<Record> get(@PathParam("id") int id) {
         Record entity = // ...
-        HalEntityWrapper halEntity = new HalEntityWrapper(entity, linksProvider.getInstanceLinks(entity));
+        HalEntityWrapper<Record> halEntity = halService.toHalWrapper(entity);
         halEntity.addLinks(Link.fromPath("/records/1/parent").rel("parent-record").build());
         return halEntity;
     }
@@ -1917,7 +1917,7 @@ For more information about the CORS filters and their usage, see the xref:securi
 Here are some more advanced topics that you may not need to know about initially, but
 could prove useful for more complex use cases.
 
-[#execution-model-blocking-non-blocking]
+[[execution-model-blocking-non-blocking]]
 === Execution model, blocking, non-blocking
 
 [[execution-model]]

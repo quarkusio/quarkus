@@ -105,6 +105,16 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- this is needed because we use a static initializer in io.smallrye.graphql.schema.model.Scalars
+                        that acts upon the value of `smallrye.graphql.federation.enabled` during build, but some tests have that as
+                        true, some as false, so we need to create a separate JVM per test to run the initializer each time separately.
+                        This is reported as https://github.com/smallrye/smallrye-graphql/issues/2039 -->
+                    <reuseForks>false</reuseForks>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

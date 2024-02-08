@@ -5,14 +5,14 @@ import java.util.Set;
 
 import jakarta.json.JsonObject;
 
+import io.quarkus.oidc.common.runtime.AbstractJsonObject;
 import io.quarkus.oidc.common.runtime.OidcConstants;
-import io.quarkus.oidc.runtime.AbstractJsonObjectResponse;
 
 /**
  * Represents a token introspection result
  *
  */
-public class TokenIntrospection extends AbstractJsonObjectResponse {
+public class TokenIntrospection extends AbstractJsonObject {
 
     public TokenIntrospection() {
     }
@@ -64,6 +64,6 @@ public class TokenIntrospection extends AbstractJsonObjectResponse {
     }
 
     public String getIntrospectionString() {
-        return getNonNullJsonString();
+        return getJsonString();
     }
 }

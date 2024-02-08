@@ -5,14 +5,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import io.quarkus.oidc.common.runtime.OidcCommonConfig;
+import io.quarkus.oidc.common.runtime.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class OidcClientConfig extends OidcCommonConfig {
+public class OidcClientConfig extends OidcClientCommonConfig {
 
     /**
      * A unique OIDC client identifier. It must be set when OIDC clients are created dynamically

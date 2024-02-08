@@ -11,7 +11,7 @@ import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.ServerSslConfig;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -29,12 +29,12 @@ import io.vertx.core.net.SSLOptions;
 public class TlsCertificateReloadUtils {
 
     public static long handleCertificateReloading(Vertx vertx, HttpServer server,
-            HttpServerOptions options, HttpConfiguration configuration) {
+            HttpServerOptions options, ServerSslConfig configuration) {
         // Validation
-        if (configuration.ssl.certificate.reloadPeriod.isEmpty()) {
+        if (configuration.certificate.reloadPeriod.isEmpty()) {
             return -1;
         }
-        if (configuration.ssl.certificate.reloadPeriod.get().toMillis() < 30_000) {
+        if (configuration.certificate.reloadPeriod.get().toMillis() < 30_000) {
             throw new IllegalArgumentException(
                     "Unable to configure TLS reloading - The reload period cannot be less than 30 seconds");
         }
@@ -47,7 +47,7 @@ public class TlsCertificateReloadUtils {
         }
 
         Logger log = Logger.getLogger(TlsCertificateReloadUtils.class);
-        return vertx.setPeriodic(configuration.ssl.certificate.reloadPeriod.get().toMillis(), new Handler<Long>() {
+        return vertx.setPeriodic(configuration.certificate.reloadPeriod.get().toMillis(), new Handler<Long>() {
             @Override
             public void handle(Long id) {
 
@@ -89,17 +89,17 @@ public class TlsCertificateReloadUtils {
         });
     }
 
-    private static SSLOptions reloadFileContent(SSLOptions ssl, HttpConfiguration configuration) throws IOException {
+    private static SSLOptions reloadFileContent(SSLOptions ssl, ServerSslConfig configuration) throws IOException {
         var copy = new SSLOptions(ssl);
 
         final List<Path> keys = new ArrayList<>();
         final List<Path> certificates = new ArrayList<>();
 
-        if (configuration.ssl.certificate.keyFiles.isPresent()) {
-            keys.addAll(configuration.ssl.certificate.keyFiles.get());
+        if (configuration.certificate.keyFiles.isPresent()) {
+            keys.addAll(configuration.certificate.keyFiles.get());
         }
-        if (configuration.ssl.certificate.files.isPresent()) {
-            certificates.addAll(configuration.ssl.certificate.files.get());
+        if (configuration.certificate.files.isPresent()) {
+            certificates.addAll(configuration.certificate.files.get());
         }
 
         if (!certificates.isEmpty() && !keys.isEmpty()) {
@@ -119,15 +119,15 @@ public class TlsCertificateReloadUtils {
                     .setCertValues(certBuffer)
                     .setKeyValues(keysBuffer);
             copy.setKeyCertOptions(opts);
-        } else if (configuration.ssl.certificate.keyStoreFile.isPresent()) {
+        } else if (configuration.certificate.keyStoreFile.isPresent()) {
             var opts = ((KeyStoreOptions) copy.getKeyCertOptions());
-            opts.setValue(Buffer.buffer(getFileContent(configuration.ssl.certificate.keyStoreFile.get())));
+            opts.setValue(Buffer.buffer(getFileContent(configuration.certificate.keyStoreFile.get())));
             copy.setKeyCertOptions(opts);
         }
 
-        if (configuration.ssl.certificate.trustStoreFile.isPresent()) {
+        if (configuration.certificate.trustStoreFile.isPresent()) {
             var opts = ((KeyStoreOptions) copy.getKeyCertOptions());
-            opts.setValue(Buffer.buffer(getFileContent(configuration.ssl.certificate.trustStoreFile.get())));
+            opts.setValue(Buffer.buffer(getFileContent(configuration.certificate.trustStoreFile.get())));
             copy.setTrustOptions(opts);
         }
 

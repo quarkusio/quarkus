@@ -170,6 +170,8 @@ public class VertxHttpRecorder {
     private static HttpServerOptions httpMainServerOptions;
     private static HttpServerOptions httpMainDomainSocketOptions;
     private static HttpServerOptions httpManagementServerOptions;
+
+    private static final List<Long> taskIds = new CopyOnWriteArrayList<>();
     final HttpBuildTimeConfig httpBuildTimeConfig;
     final ManagementInterfaceBuildTimeConfig managementBuildTimeConfig;
     final RuntimeValue<HttpConfiguration> httpConfiguration;
@@ -308,7 +310,8 @@ public class VertxHttpRecorder {
         ManagementInterfaceConfiguration managementConfig = this.managementConfiguration == null ? null
                 : this.managementConfiguration.getValue();
         if (startSocket && (httpConfiguration.hostEnabled || httpConfiguration.domainSocketEnabled
-                || managementConfig.hostEnabled || managementConfig.domainSocketEnabled)) {
+                || (managementConfig != null && managementConfig.hostEnabled)
+                || (managementConfig != null && managementConfig.domainSocketEnabled))) {
             // Start the server
             if (closeTask == null) {
                 var insecureRequestStrategy = getInsecureRequestStrategy(httpBuildTimeConfig,
@@ -622,6 +625,7 @@ public class VertxHttpRecorder {
         }
 
         if (httpManagementServerOptions != null) {
+
             vertx.createHttpServer(httpManagementServerOptions)
                     .requestHandler(managementRouter)
                     .listen(ar -> {
@@ -629,6 +633,15 @@ public class VertxHttpRecorder {
                             managementInterfaceFuture.completeExceptionally(
                                     new IllegalStateException("Unable to start the management interface", ar.cause()));
                         } else {
+                            if (httpManagementServerOptions.isSsl()
+                                    && managementConfig.ssl.certificate.reloadPeriod.isPresent()) {
+                                long l = TlsCertificateReloadUtils.handleCertificateReloading(
+                                        vertx, ar.result(), httpManagementServerOptions, managementConfig.ssl);
+                                if (l != -1) {
+                                    taskIds.add(l);
+                                }
+                            }
+
                             actualManagementPort = ar.result().actualPort();
                             managementInterfaceFuture.complete(ar.result());
                         }
@@ -809,6 +822,9 @@ public class VertxHttpRecorder {
 
                         // shutdown the management interface
                         try {
+                            for (Long id : taskIds) {
+                                vertx.cancelTimer(id);
+                            }
                             if (managementServer != null && !isVertxClose) {
                                 managementServer.close(handler);
                             }
@@ -1190,7 +1206,7 @@ public class VertxHttpRecorder {
 
                         if (https && quarkusConfig.ssl.certificate.reloadPeriod.isPresent()) {
                             long l = TlsCertificateReloadUtils.handleCertificateReloading(
-                                    vertx, httpsServer, httpsOptions, quarkusConfig);
+                                    vertx, httpsServer, httpsOptions, quarkusConfig.ssl);
                             if (l != -1) {
                                 reloadingTasks.add(l);
                             }

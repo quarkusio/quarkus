@@ -164,6 +164,26 @@ quarkus.http.port=9090 <2>
 TIP: It works in the exact same way as Quarkus Application configuration file `application.properties`. Recommendation
 is to use Quarkus `application.properties`.
 
+=== Locations
+
+Additionally to the default config locations, Quarkus provides a way to scan additional locations for configuration
+properties files.
+
+The `quarkus.config.locations` configuration property accepts multiple locations separated by a comma `,` and each
+must represent a valid `URI`. The supported `URI` schemes are:
+
+- file or directory (`file:`)
+- classpath resource
+- jar resource (`jar:`)
+- http resource (`http:`)
+
+All loaded sources use the same ordinal of the source that found the `quarkus.config.locations` configuration
+property. For instance, if `quarkus.config.locations` is set as a system property, then all loaded sources have their
+ordinals set to `400` (system properties use `400` as their ordinal). The ordinal may be overridden directly for each
+config source by setting the `config_ordinal` property and the ordinal value. The `config_ordinal` property only
+affects the ordinal of the source in which is being set. Sources are sorted first by their ordinal, then by location
+order, and finally by loading order.
+
 === Additional Config Sources
 
 Quarkus provides additional extensions which cover other configuration formats and stores:
@@ -377,7 +397,9 @@ Properties in the profile aware file have priority over profile aware properties
 
 [WARNING]
 ====
-The profile aware file must be present in the exact same location as the main `application.properties` file.
+A profile aware file is only loaded if the unprofiled `application.properties` is also available in the same location
+and the file extension matches between the files. This is required to keep a consistent loading order and pair all the
+resources together.
 ====
 
 === Parent Profile
@@ -460,6 +482,12 @@ Then
 
 * `my.prop` value is 5678.
 * `another.prop` value is 1234.
+
+[WARNING]
+====
+Multiple profiles priority work in reverse order. With `quarkus.profile=common,dev`, Quarkus first checks the `dev`
+profile and then the `common` profile.
+====
 
 === Default Runtime Profile
 

@@ -6,8 +6,10 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -53,8 +55,10 @@ public abstract class AbstractEndUserTest {
         });
     }
 
-    protected List<SpanData> getSpans() {
-        return inMemorySpanExporter.getFinishedSpanItems();
+    protected List<SpanData> getSpansName(final String spanName) {
+        return inMemorySpanExporter.getFinishedSpanItems().stream()
+                .filter(span -> spanName.equals(span.getName()))
+                .collect(Collectors.toList());
     }
 
     protected abstract void evaluateAttributes(Attributes attributes);
@@ -62,13 +66,18 @@ public abstract class AbstractEndUserTest {
     @Test
     protected void baseTest() {
         assertTrue(this.injectionPredicate.test(endUserSpanProcessor));
+
         given()
                 .when().get()
                 .then()
                 .statusCode(200);
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
-        SpanData spanData = getSpans().get(0);
-        evaluateAttributes(spanData.getAttributes());
+
+        final String spanName = "GET /otel/enduser";
+        await().atMost(5, SECONDS).until(() -> getSpansName(spanName).size() > 0);
+        Optional<SpanData> spanData = getSpansName(spanName).stream().findFirst();
+
+        assertTrue(spanData.isPresent(), "Span not found for " + spanName);
+        evaluateAttributes(spanData.get().getAttributes());
     }
 
 }

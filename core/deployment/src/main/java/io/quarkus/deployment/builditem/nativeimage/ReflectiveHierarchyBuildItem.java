@@ -205,6 +205,10 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         private String source = UNKNOWN_SOURCE;
         private boolean serialization;
 
+        /**
+         * @deprecated use {@link ReflectiveHierarchyBuildItem#builder(Type)} instead
+         */
+        @Deprecated
         public Builder type(Type type) {
             this.type = type;
             return this;

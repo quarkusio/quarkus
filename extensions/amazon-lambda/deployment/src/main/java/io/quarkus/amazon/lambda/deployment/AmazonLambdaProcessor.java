@@ -122,12 +122,12 @@ public final class AmazonLambdaProcessor {
                                 && !method.parameterType(0).name().equals(DotName.createSimple(Object.class.getName()))) {
                             String source = getClass().getSimpleName() + " > " + method.declaringClass() + "[" + method + "]";
 
-                            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                    .type(method.parameterType(0))
+                            reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
+                                    .builder(method.parameterType(0))
                                     .source(source)
                                     .build());
-                            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                    .type(method.returnType())
+                            reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
+                                    .builder(method.returnType())
                                     .source(source)
                                     .build());
                             done = true;

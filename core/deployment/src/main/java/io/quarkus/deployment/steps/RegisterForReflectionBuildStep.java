@@ -155,9 +155,7 @@ public class RegisterForReflectionBuildStep {
                 processedReflectiveHierarchies.add(dotName);
                 Index indexView = Index.of(classLoader.loadClass(className));
                 reflectiveClassHierarchy.produce(builder
-                        .type(org.jboss.jandex.Type
-                                .create(dotName,
-                                        org.jboss.jandex.Type.Kind.CLASS))
+                        .className(dotName)
                         .index(indexView)
                         .build());
 

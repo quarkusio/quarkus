@@ -940,8 +940,8 @@ class ReactiveRoutesProcessor {
         if (TYPES_IGNORED_FOR_REFLECTION.contains(contentType.name())) {
             return;
         }
-        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                .type(contentType)
+        reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
+                .builder(contentType)
                 .ignoreTypePredicate(ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE
                         .or(TYPES_IGNORED_FOR_REFLECTION::contains))
                 .source(ReactiveRoutesProcessor.class.getSimpleName() + " > " + contentType)

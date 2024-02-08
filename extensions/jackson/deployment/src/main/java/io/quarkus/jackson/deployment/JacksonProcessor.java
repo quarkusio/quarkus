@@ -304,10 +304,8 @@ public class JacksonProcessor {
 
     private void addReflectiveHierarchyClass(DotName className,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass) {
-        Type jandexType = Type.create(className, Type.Kind.CLASS);
-        reflectiveHierarchyClass.produce(new ReflectiveHierarchyBuildItem.Builder()
-                .type(jandexType)
-                .source(getClass().getSimpleName() + " > " + jandexType.name().toString())
+        reflectiveHierarchyClass.produce(ReflectiveHierarchyBuildItem.builder(className)
+                .source(getClass().getSimpleName() + " > " + className)
                 .build());
     }
 

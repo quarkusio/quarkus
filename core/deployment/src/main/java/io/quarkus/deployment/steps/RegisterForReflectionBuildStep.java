@@ -50,7 +50,7 @@ public class RegisterForReflectionBuildStep {
 
             boolean methods = getBooleanValue(i, "methods");
             boolean fields = getBooleanValue(i, "fields");
-            boolean ignoreNested = getBooleanValue(i, "ignoreNested");
+            boolean ignoreNested = i.value("ignoreNested") != null && i.value("ignoreNested").asBoolean();
             boolean serialization = i.value("serialization") != null && i.value("serialization").asBoolean();
             boolean unsafeAllocated = i.value("unsafeAllocated") != null && i.value("unsafeAllocated").asBoolean();
 

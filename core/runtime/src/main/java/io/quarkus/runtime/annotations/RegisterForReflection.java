@@ -7,9 +7,12 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation that can be used to force a class to be registered for reflection in native image mode.
- * Note that by default nested classes and interfaces are not registered, unless {@link #ignoreNested()} is set to false.
- * Similarly, by default only the class itself is registered, not the full class hierarchy. This can be changed by setting
- * {@link #registerFullHierarchy()} to true.
+ * Note that by default the class itself is registered including nested classes and interfaces,
+ * but not the full class hierarchy. This can be changed by setting:
+ * <ul>
+ * <li>{@link #ignoreNested()} to true, to ignore nested classes.</li>
+ * <li>{@link #registerFullHierarchy()} to true, to register the full hierarchy.</li>
+ * </ul>
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
@@ -26,11 +29,10 @@ public @interface RegisterForReflection {
     boolean fields() default true;
 
     /**
-     * If nested classes/interfaces should be ignored/registered
-     *
-     * This is useful when it's necessary to register inner (especially private) classes for Reflection.
+     * If nested classes/interfaces should be ignored.
+     * By default, nested classes are registered. To ignore them set it to true.
      */
-    boolean ignoreNested() default true;
+    boolean ignoreNested() default false;
 
     /**
      * Alternative classes that should actually be registered for reflection instead of the current class.

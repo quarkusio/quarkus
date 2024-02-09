@@ -5,8 +5,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.List;
 
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.UriInfo;
 
@@ -18,13 +20,21 @@ public class ResourceLocatorBaseResource {
 
     private static final Logger LOG = Logger.getLogger(ResourceLocatorBaseResource.class);
 
+    @GET
+    @Produces("*/*")
+    public String getDefault(@Context UriInfo uri) {
+        LOG.debug("Here in BaseResource");
+        List<String> matchedURIs = uri.getMatchedURIs();
+        return matchedURIs.toString();
+    }
+
     @Path("base/{param}/resources")
     public Object getSubresource(@PathParam("param") String param, @Context UriInfo uri) {
         LOG.debug("Here in BaseResource");
         Assertions.assertEquals("1", param);
         List<String> matchedURIs = uri.getMatchedURIs();
         Assertions.assertEquals(2, matchedURIs.size());
-        Assertions.assertEquals("base/1/resources", matchedURIs.get(0));
+        Assertions.assertEquals("app/base/1/resources", matchedURIs.get(0));
         Assertions.assertEquals("", matchedURIs.get(1));
         for (String ancestor : matchedURIs)
             LOG.debug("   " + ancestor);

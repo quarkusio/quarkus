@@ -62,7 +62,7 @@ will include:
 If globs are not sufficiently precise for your use case and you need to rely on regular expressions, or if you prefer relying on the GraalVM infrastructure,
 you can also create a `resource-config.json` JSON file defining which resources should be included.
 Ideally this, and other native image configuration files, should be placed under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder.
-By placing them there, there is no additional configuration parameters that need to be passed into the native build.
+This way they will be automatically parsed by the native build, without additional configuration.
 
 [WARNING]
 ====

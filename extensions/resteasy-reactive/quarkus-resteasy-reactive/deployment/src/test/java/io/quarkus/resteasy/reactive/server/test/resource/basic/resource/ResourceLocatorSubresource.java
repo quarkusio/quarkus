@@ -22,7 +22,7 @@ public class ResourceLocatorSubresource {
         LOG.info("Uri Ancestors for Subresource.doGet():");
         List<String> matchedURIs = uri.getMatchedURIs();
         Assertions.assertEquals(2, matchedURIs.size());
-        Assertions.assertEquals("base/1/resources", matchedURIs.get(0));
+        Assertions.assertEquals("app/base/1/resources", matchedURIs.get(0));
         Assertions.assertEquals("", matchedURIs.get(1));
         for (String ancestor : matchedURIs)
             LOG.debug("   " + ancestor);
@@ -41,8 +41,8 @@ public class ResourceLocatorSubresource {
         LOG.info("Uri Ancestors for Subresource.getSubresource2():");
         List<String> matchedURIs = uri.getMatchedURIs();
         Assertions.assertEquals(3, matchedURIs.size());
-        Assertions.assertEquals("base/1/resources/subresource2", matchedURIs.get(0));
-        Assertions.assertEquals("base/1/resources", matchedURIs.get(1));
+        Assertions.assertEquals("app/base/1/resources/subresource2", matchedURIs.get(0));
+        Assertions.assertEquals("app/base/1/resources", matchedURIs.get(1));
         Assertions.assertEquals("", matchedURIs.get(2));
         for (String ancestor : matchedURIs)
             LOG.debug("   " + ancestor);

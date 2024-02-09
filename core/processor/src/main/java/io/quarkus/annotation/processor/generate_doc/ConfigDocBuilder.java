@@ -28,6 +28,10 @@ class ConfigDocBuilder {
         summaryTableDocFormatter = new SummaryTableDocFormatter(showEnvVars);
     }
 
+    protected ConfigDocBuilder(boolean showEnvVars, boolean replaceDotsInAnchors) {
+        summaryTableDocFormatter = new SummaryTableDocFormatter(showEnvVars, replaceDotsInAnchors);
+    }
+
     /**
      * Add documentation in a summary table and descriptive format
      */

@@ -19,16 +19,23 @@ final class SummaryTableDocFormatter implements DocFormatter {
     private static final String SECTION_TITLE = "[[%s]]link:#%s[%s]";
     private static final String TABLE_HEADER_FORMAT = "[%s, cols=\"80,.^10,.^10\"]\n|===";
     private static final String TABLE_SECTION_ROW_FORMAT = "\n\nh|%s\n%s\nh|Type\nh|Default";
+
     private final boolean showEnvVars;
+    private final boolean replaceDotsInAnchors;
 
     private String anchorPrefix = "";
 
-    public SummaryTableDocFormatter(boolean showEnvVars) {
+    public SummaryTableDocFormatter(boolean showEnvVars, boolean replaceDotsInAnchors) {
         this.showEnvVars = showEnvVars;
+        this.replaceDotsInAnchors = replaceDotsInAnchors;
+    }
+
+    public SummaryTableDocFormatter(boolean showEnvVars) {
+        this(showEnvVars, false);
     }
 
     public SummaryTableDocFormatter() {
-        this(true);
+        this(true, false);
     }
 
     /**
@@ -49,7 +56,7 @@ final class SummaryTableDocFormatter implements DocFormatter {
 
         // make sure that section-less configs get a legend
         if (configDocItems.isEmpty() || configDocItems.get(0).isConfigKey()) {
-            String anchor = anchorPrefix + getAnchor("configuration");
+            String anchor = anchorPrefix + getAnchor("configuration", replaceDotsInAnchors);
             writer.append(String.format(TABLE_SECTION_ROW_FORMAT,
                     String.format(SECTION_TITLE, anchor, anchor, "Configuration property"),
                     Constants.EMPTY));
@@ -111,8 +118,9 @@ final class SummaryTableDocFormatter implements DocFormatter {
         String required = configDocKey.isOptional() || !defaultValue.isEmpty() ? ""
                 : "required icon:exclamation-circle[title=Configuration property is required]";
         String key = configDocKey.getKey();
-        String configKeyAnchor = configDocKey.isPassThroughMap() ? getAnchor(key + Constants.DASH + configDocKey.getDocMapKey())
-                : getAnchor(key);
+        String configKeyAnchor = configDocKey.isPassThroughMap()
+                ? getAnchor(key + Constants.DASH + configDocKey.getDocMapKey(), replaceDotsInAnchors)
+                : getAnchor(key, replaceDotsInAnchors);
         String anchor = anchorPrefix + configKeyAnchor;
 
         StringBuilder keys = new StringBuilder();
@@ -141,7 +149,8 @@ final class SummaryTableDocFormatter implements DocFormatter {
     public void format(Writer writer, ConfigDocSection configDocSection) throws IOException {
         if (configDocSection.isShowSection()) {
             String anchor = anchorPrefix
-                    + getAnchor(configDocSection.getName() + Constants.DASH + configDocSection.getSectionDetailsTitle());
+                    + getAnchor(configDocSection.getName() + Constants.DASH + configDocSection.getSectionDetailsTitle(),
+                            replaceDotsInAnchors);
             String sectionTitle = String.format(SECTION_TITLE, anchor, anchor, configDocSection.getSectionDetailsTitle());
             final String sectionRow = String.format(TABLE_SECTION_ROW_FORMAT, sectionTitle,
                     configDocSection.isOptional() ? "This configuration section is optional" : Constants.EMPTY);

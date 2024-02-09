@@ -6,7 +6,12 @@ import java.text.Normalizer;
 import java.util.List;
 
 interface DocFormatter {
+
     default String getAnchor(String string) {
+        return getAnchor(string, false);
+    }
+
+    default String getAnchor(String string, boolean replaceDotsInAnchors) {
         // remove accents
         string = Normalizer.normalize(string, Normalizer.Form.NFKC)
                 .replaceAll("[àáâãäåāąă]", "a")
@@ -53,8 +58,15 @@ interface DocFormatter {
 
         // Apostrophes.
         string = string.replaceAll("([a-z])'s([^a-z])", "$1s$2");
-        // Allow only letters, -, _
-        string = string.replaceAll("[^\\w-_]", "-").replaceAll("-{2,}", "-");
+
+        if (replaceDotsInAnchors) {
+            // Allow only letters, -, _
+            string = string.replaceAll("[^\\w-_]", "-").replaceAll("-{2,}", "-");
+        } else {
+            // Allow only letters, -, _, .
+            string = string.replaceAll("[^\\w-_\\.]", "-").replaceAll("-{2,}", "-");
+        }
+
         // Get rid of any - at the start and end.
         string = string.replaceAll("-+$", "").replaceAll("^-+", "");
 

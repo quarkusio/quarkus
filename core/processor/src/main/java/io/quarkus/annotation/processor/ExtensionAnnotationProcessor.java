@@ -39,6 +39,7 @@ import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Completion;
 import javax.annotation.processing.Filer;
 import javax.annotation.processing.RoundEnvironment;
+import javax.annotation.processing.SupportedOptions;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -77,11 +78,13 @@ import io.quarkus.annotation.processor.generate_doc.ConfigDocItemScanner;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocWriter;
 import io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil;
 
+@SupportedOptions({ ExtensionAnnotationProcessor.REPLACE_DOTS_IN_ANCHORS })
 public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     private static final Pattern REMOVE_LEADING_SPACE = Pattern.compile("^ ", Pattern.MULTILINE);
 
-    private final ConfigDocWriter configDocWriter = new ConfigDocWriter();
+    public static final String REPLACE_DOTS_IN_ANCHORS = "quarkusConfigDoc.replaceDotsInAnchors";
+
     private final ConfigDocItemScanner configDocItemScanner = new ConfigDocItemScanner();
     private final Set<String> generatedAccessors = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
     private final Set<String> generatedJavaDocs = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
@@ -90,11 +93,6 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     private final Map<String, Boolean> ANNOTATION_USAGE_TRACKER = new ConcurrentHashMap<>();
 
     public ExtensionAnnotationProcessor() {
-    }
-
-    @Override
-    public Set<String> getSupportedOptions() {
-        return Collections.emptySet();
     }
 
     @Override
@@ -259,6 +257,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
         try {
             if (generateDocs) {
+                ConfigDocWriter configDocWriter = new ConfigDocWriter(true, shouldReplaceDotsInAnchors());
                 final Set<ConfigDocGeneratedOutput> outputs = configDocItemScanner
                         .scanExtensionsConfigurationItems(javaDocProperties, isAnnotationUsed(ANNOTATION_CONFIG_MAPPING));
                 for (ConfigDocGeneratedOutput output : outputs) {
@@ -399,6 +398,10 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                         + "' which is annotated with '@Record' does not contain a method parameter whose type is annotated with '@Recorder'.");
             }
         }
+    }
+
+    private boolean shouldReplaceDotsInAnchors() {
+        return "true".equals(processingEnv.getOptions().get(REPLACE_DOTS_IN_ANCHORS));
     }
 
     private Name getPackageName(TypeElement clazz) {

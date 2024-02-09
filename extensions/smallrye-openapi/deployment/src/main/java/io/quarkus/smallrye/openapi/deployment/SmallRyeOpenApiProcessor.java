@@ -428,8 +428,6 @@ public class SmallRyeOpenApiProcessor {
             LaunchModeBuildItem launchModeBuildItem,
             ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig) {
 
-        OASFilter autoRolesAllowedFilter = getAutoRolesAllowedFilter(apiFilteredIndexViewBuildItem, config);
-
         // Add a security scheme from config
         if (config.securityScheme.isPresent()) {
             addToOpenAPIDefinitionProducer
@@ -437,12 +435,11 @@ public class SmallRyeOpenApiProcessor {
                             new SecurityConfigFilter(config)));
         } else if (config.autoAddSecurity) {
             getAutoSecurityFilter(securityInformationBuildItems, config)
-                    // Only run the filter at build time if it will not be run at runtime
-                    .filter(securityFilter -> !autoSecurityRuntimeEnabled(securityFilter, () -> autoRolesAllowedFilter))
                     .map(AddToOpenAPIDefinitionBuildItem::new)
                     .ifPresent(addToOpenAPIDefinitionProducer::produce);
         }
 
+        OASFilter autoRolesAllowedFilter = getAutoRolesAllowedFilter(apiFilteredIndexViewBuildItem, config);
         // Add Auto roles allowed
         if (autoRolesAllowedFilter != null) {
             addToOpenAPIDefinitionProducer.produce(new AddToOpenAPIDefinitionBuildItem(autoRolesAllowedFilter));

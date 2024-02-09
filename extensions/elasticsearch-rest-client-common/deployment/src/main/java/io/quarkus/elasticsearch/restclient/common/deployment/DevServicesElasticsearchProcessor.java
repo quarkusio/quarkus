@@ -214,8 +214,8 @@ public class DevServicesElasticsearchProcessor {
         final Supplier<DevServicesResultBuildItem.RunningDevService> defaultElasticsearchSupplier = () -> {
 
             GenericContainer<?> container = resolvedDistribution.equals(Distribution.ELASTIC)
-                    ? createElasticsearchContainer(config, resolvedImageName)
-                    : createOpensearchContainer(config, resolvedImageName);
+                    ? createElasticsearchContainer(config, resolvedImageName, useSharedNetwork)
+                    : createOpensearchContainer(config, resolvedImageName, useSharedNetwork);
 
             if (config.serviceName != null) {
                 container.withLabel(DEV_SERVICE_LABEL, config.serviceName);
@@ -247,10 +247,12 @@ public class DevServicesElasticsearchProcessor {
     }
 
     private GenericContainer<?> createElasticsearchContainer(ElasticsearchDevServicesBuildTimeConfig config,
-            DockerImageName resolvedImageName) {
+            DockerImageName resolvedImageName, boolean useSharedNetwork) {
         ElasticsearchContainer container = new ElasticsearchContainer(
                 resolvedImageName.asCompatibleSubstituteFor("docker.elastic.co/elasticsearch/elasticsearch"));
-        ConfigureUtil.configureSharedNetwork(container, DEV_SERVICE_ELASTICSEARCH);
+        if (useSharedNetwork) {
+            ConfigureUtil.configureSharedNetwork(container, DEV_SERVICE_ELASTICSEARCH);
+        }
 
         // Disable security as else we would need to configure it correctly to avoid tons of WARNING in the log
         container.addEnv("xpack.security.enabled", "false");
@@ -264,10 +266,12 @@ public class DevServicesElasticsearchProcessor {
     }
 
     private GenericContainer<?> createOpensearchContainer(ElasticsearchDevServicesBuildTimeConfig config,
-            DockerImageName resolvedImageName) {
+            DockerImageName resolvedImageName, boolean useSharedNetwork) {
         OpensearchContainer container = new OpensearchContainer(
                 resolvedImageName.asCompatibleSubstituteFor("opensearchproject/opensearch"));
-        ConfigureUtil.configureSharedNetwork(container, DEV_SERVICE_OPENSEARCH);
+        if (useSharedNetwork) {
+            ConfigureUtil.configureSharedNetwork(container, DEV_SERVICE_OPENSEARCH);
+        }
 
         container.addEnv("bootstrap.memory_lock", "true");
         container.addEnv("plugins.index_state_management.enabled", "false");

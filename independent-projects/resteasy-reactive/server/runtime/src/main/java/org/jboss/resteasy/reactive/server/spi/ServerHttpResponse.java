@@ -23,6 +23,8 @@ public interface ServerHttpResponse extends StreamingResponse<ServerHttpResponse
 
     ServerHttpResponse setResponseHeader(CharSequence name, CharSequence value);
 
+    ServerHttpResponse setResponseContentType(boolean capitalLettersHeaderName, CharSequence value);
+
     ServerHttpResponse setResponseHeader(CharSequence name, Iterable<CharSequence> values);
 
     Iterable<Map.Entry<String, String>> getAllResponseHeaders();

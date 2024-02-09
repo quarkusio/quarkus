@@ -24,6 +24,7 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.SecurityContext;
 
 import org.jboss.resteasy.reactive.server.core.Deployment;
@@ -167,6 +168,26 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     @Override
     public boolean resumeExternalProcessing() {
         return false;
+    }
+
+    @Override
+    public String getRequestAccept() {
+        return getRequestHeader(HttpHeaders.ACCEPT);
+    }
+
+    @Override
+    public List<String> getAllRequestAccepts() {
+        return getAllRequestHeaders(HttpHeaders.ACCEPT);
+    }
+
+    @Override
+    public String getRequestContentType() {
+        return getRequestHeader(HttpHeaders.CONTENT_TYPE);
+    }
+
+    @Override
+    public List<String> getAllRequestContentTypes() {
+        return getAllRequestHeaders(HttpHeaders.CONTENT_TYPE);
     }
 
     @Override
@@ -400,6 +421,11 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     public ServerHttpResponse setResponseHeader(CharSequence name, CharSequence value) {
         response.setHeader(name.toString(), value != null ? value.toString() : null);
         return this;
+    }
+
+    @Override
+    public ServerHttpResponse setResponseContentType(final boolean capitalLettersHeaderName, final CharSequence value) {
+        return setResponseHeader(capitalLettersHeaderName ? "Content-Type" : "content-type", value);
     }
 
     @Override

@@ -13,7 +13,6 @@ import jakarta.ws.rs.NotAcceptableException;
 import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.NotSupportedException;
-import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -106,12 +105,12 @@ public class ClassRoutingHandler implements ServerRestHandler {
 
         // according to the spec we need to return HTTP 415 when content-type header doesn't match what is specified in @Consumes
         if (!target.value.getConsumes().isEmpty()) {
-            String contentType = (String) requestContext.getHeader(HttpHeaders.CONTENT_TYPE, true);
-            if (contentType != null) {
+            var contentTypes = requestContext.getContentType(true);
+            if (contentTypes != null) {
                 try {
                     if (MediaTypeHelper.getFirstMatch(
                             target.value.getConsumes(),
-                            Collections.singletonList(MediaType.valueOf(contentType))) == null) {
+                            Collections.singletonList(MediaType.valueOf(contentTypes.get(0)))) == null) {
                         throw new NotSupportedException("The content-type header value did not match the value in @Consumes");
                     }
                 } catch (IllegalArgumentException e) {
@@ -123,7 +122,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
         if (target.value.getProduces() != null) {
             // there could potentially be multiple Accept headers and we need to response with 406
             // if none match the method's @Produces
-            List<String> accepts = (List<String>) requestContext.getHeader(HttpHeaders.ACCEPT, false);
+            List<String> accepts = requestContext.getAccept(false);
             if (!accepts.isEmpty()) {
                 boolean hasAtLeastOneMatch = false;
                 for (int i = 0; i < accepts.size(); i++) {

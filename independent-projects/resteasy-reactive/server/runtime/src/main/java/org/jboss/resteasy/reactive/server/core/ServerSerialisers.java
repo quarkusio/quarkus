@@ -29,7 +29,6 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.StreamingOutput;
 import jakarta.ws.rs.core.Variant;
-import jakarta.ws.rs.ext.MessageBodyReader;
 import jakarta.ws.rs.ext.MessageBodyWriter;
 import jakarta.ws.rs.ext.WriterInterceptor;
 
@@ -80,11 +79,8 @@ public class ServerSerialisers extends Serialisers {
 
     private static final String CONTENT = "Content";
     private static final String CONTENT_LOWER = "content";
-    private static final String TYPE = "Type";
     private static final String TYPE_LOWER = "type";
-    private static final String LENGTH = "Length";
     private static final String LENGTH_LOWER = "length";
-    private static final String CONTENT_TYPE = CONTENT + "-" + TYPE; // use this instead of the Vert.x constant because the TCK expects upper case
 
     public final static List<Serialisers.BuiltinReader> BUILTIN_READERS = List.of(
             new Serialisers.BuiltinReader(String.class, ServerStringMessageBodyHandler.class,
@@ -137,8 +133,6 @@ public class ServerSerialisers extends Serialisers {
                     MediaType.WILDCARD));
 
     public static final MessageBodyWriter<?>[] NO_WRITER = new MessageBodyWriter[0];
-    public static final MessageBodyReader<?>[] NO_READER = new MessageBodyReader[0];
-
     private final ConcurrentMap<Class<?>, List<ResourceWriter>> noMediaTypeClassCache = new ConcurrentHashMap<>();
     private final Function<Class<?>, List<ResourceWriter>> mappingFunction = new Function<Class<?>, List<ResourceWriter>>() {
         @Override
@@ -485,10 +479,15 @@ public class ServerSerialisers extends Serialisers {
             }
             EncodedMediaType contentType = requestContext.getResponseContentType();
             if (contentType != null) {
-                vertxResponse.setResponseHeader(CONTENT_TYPE, contentType.toString());
+                vertxResponse.setResponseContentType(true, contentType.toString());
             }
             return;
         }
+        encodeExistingResponseHeaders(requestContext, vertxResponse);
+    }
+
+    private static void encodeExistingResponseHeaders(ResteasyReactiveRequestContext requestContext,
+            ServerHttpResponse vertxResponse) {
         Response response = requestContext.getResponse().get();
         vertxResponse.setStatusCode(response.getStatus());
 

@@ -10,6 +10,14 @@ import org.jboss.resteasy.reactive.server.core.multipart.FormData;
 
 public interface ServerHttpRequest {
 
+    String getRequestAccept();
+
+    List<String> getAllRequestAccepts();
+
+    String getRequestContentType();
+
+    List<String> getAllRequestContentTypes();
+
     String getRequestHeader(CharSequence name);
 
     Iterable<Map.Entry<String, String>> getAllRequestHeaders();

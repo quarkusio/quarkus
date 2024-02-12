@@ -249,8 +249,9 @@ public class KafkaTopicClient {
     }
 
     public void createMessage(KafkaMessageCreateRequest request) {
-        var record = new ProducerRecord<>(request.getTopic(), request.getPartition(), Bytes.wrap(request.getKey().getBytes()),
-                Bytes.wrap(request.getValue().getBytes()));
+        var record = new ProducerRecord<>(request.getTopic(), request.getPartition(),
+                Bytes.wrap(request.getKey().getBytes(StandardCharsets.UTF_8)),
+                Bytes.wrap(request.getValue().getBytes(StandardCharsets.UTF_8)));
 
         Optional.ofNullable(request.getHeaders())
                 .orElseGet(Collections::emptyMap)

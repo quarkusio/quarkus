@@ -22,6 +22,7 @@ import org.jboss.jandex.DotName;
 import io.quarkus.arc.ContextInstanceHandle;
 import io.quarkus.arc.impl.ContextInstances;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
+import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -92,8 +93,16 @@ public class ContextInstancesGenerator extends AbstractGenerator {
         implementGetIfPresent(contextInstances, beans, idToFields);
         implementRemove(contextInstances, beans, idToFields);
         implementGetAllPresent(contextInstances, idToFields);
-        implementRemoveEach(contextInstances, idToFields);
-
+        // we have to choose between two implementations of removeEach:
+        // - one with a bulk lock/unlock for all fields
+        // - one with an unguarded check for null and lock/unlock for each field
+        // The first one has a smaller stack map table, while the second one has a faster path in case
+        // not all instances are being computed, yet.
+        if (idToFields.size() > 16) {
+            implementRemoveEach(contextInstances, idToFields);
+        } else {
+            implementCheckFirstRemoveEach(contextInstances, idToFields);
+        }
         // These methods are needed to significantly reduce the size of the stack map table for getAllPresent() and removeEach()
         implementLockAll(contextInstances, idToFields);
         implementUnlockAll(contextInstances, idToFields);
@@ -147,6 +156,42 @@ public class ContextInstancesGenerator extends AbstractGenerator {
             unlockAll.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
         }
         unlockAll.returnVoid();
+    }
+
+    private void implementCheckFirstRemoveEach(ClassCreator contextInstances, Map<String, InstanceAndLock> idToFields) {
+        MethodCreator removeEach = contextInstances.getMethodCreator("removeEach", void.class, Consumer.class)
+                .setModifiers(ACC_PUBLIC);
+        // ContextInstanceHandle<?> copy1 = this.1;
+        // if (copy1 != null) {
+        //    this.1l.lock();
+        //    // we don't really trust that things haven't changed
+        //    copy1 = this.1;
+        //    this.1 = null;
+        //    this.1l.unlock();
+        //  }
+        //  if (action != null)
+        //    if (copy1 != null) {
+        //       consumer.accept(copy1);
+        //    }
+        // }
+        List<ResultHandle> results = new ArrayList<>(idToFields.size());
+        for (InstanceAndLock fields : idToFields.values()) {
+            AssignableResultHandle copy = removeEach.createVariable(ContextInstanceHandle.class);
+            removeEach.assign(copy, removeEach.readInstanceField(fields.instance, removeEach.getThis()));
+            results.add(copy);
+            BytecodeCreator isNotNull = removeEach.ifNotNull(copy).trueBranch();
+            ResultHandle lock = isNotNull.readInstanceField(fields.lock, isNotNull.getThis());
+            isNotNull.invokeInterfaceMethod(MethodDescriptors.LOCK_LOCK, lock);
+            isNotNull.assign(copy, isNotNull.readInstanceField(fields.instance, isNotNull.getThis()));
+            isNotNull.writeInstanceField(fields.instance, isNotNull.getThis(), isNotNull.loadNull());
+            isNotNull.invokeInterfaceMethod(MethodDescriptors.LOCK_UNLOCK, lock);
+        }
+        BytecodeCreator consumerIsNotNull = removeEach.ifNotNull(removeEach.getMethodParam(0)).trueBranch();
+        for (ResultHandle result : results) {
+            consumerIsNotNull.ifNotNull(result).trueBranch().invokeInterfaceMethod(MethodDescriptors.CONSUMER_ACCEPT,
+                    consumerIsNotNull.getMethodParam(0), result);
+        }
+        removeEach.returnVoid();
     }
 
     private void implementRemoveEach(ClassCreator contextInstances, Map<String, InstanceAndLock> idToFields) {

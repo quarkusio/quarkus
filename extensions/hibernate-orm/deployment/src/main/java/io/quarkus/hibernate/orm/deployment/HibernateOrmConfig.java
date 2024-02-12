@@ -16,6 +16,7 @@ import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithDefaults;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
 @ConfigMapping(prefix = "quarkus.hibernate-orm")
 @ConfigRoot
@@ -40,19 +41,24 @@ public interface HibernateOrmConfig {
     HibernateOrmConfigDatabase database();
 
     /**
-     * Configuration for the default persistence unit.
+     * Configuration for persistence units.
      */
     @WithParentName
-    HibernateOrmConfigPersistenceUnit defaultPersistenceUnit();
-
-    /**
-     * Additional named persistence units.
-     */
-    @ConfigDocSection
-    @WithParentName
+    @WithUnnamedKey(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)
     @WithDefaults
     @ConfigDocMapKey("persistence-unit-name")
-    Map<String, HibernateOrmConfigPersistenceUnit> namedPersistenceUnits();
+    Map<String, HibernateOrmConfigPersistenceUnit> persistenceUnits();
+
+    default HibernateOrmConfigPersistenceUnit defaultPersistenceUnit() {
+        return persistenceUnits().get(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+    }
+
+    default Map<String, HibernateOrmConfigPersistenceUnit> namedPersistenceUnits() {
+        Map<String, HibernateOrmConfigPersistenceUnit> map = new TreeMap<>();
+        map.putAll(persistenceUnits());
+        map.remove(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+        return map;
+    }
 
     /**
      * Configuration for the {@code persistence.xml} handling.
@@ -92,13 +98,6 @@ public interface HibernateOrmConfig {
                 statistics().isPresent() ||
                 logSessionMetrics().isPresent() ||
                 metrics().isAnyPropertySet();
-    }
-
-    default Map<String, HibernateOrmConfigPersistenceUnit> getAllPersistenceUnitConfigsAsMap() {
-        Map<String, HibernateOrmConfigPersistenceUnit> map = new TreeMap<>();
-        map.put(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, defaultPersistenceUnit());
-        map.putAll(namedPersistenceUnits());
-        return map;
     }
 
     @ConfigGroup

@@ -37,7 +37,7 @@ public final class HibernateEnversDisabledProcessor {
     // TODO move this to runtime init once we implement in Hibernate ORM a way
     //  to remove entity types from the metamodel on runtime init
     public void checkNoExplicitActiveTrue(HibernateEnversBuildTimeConfig buildTimeConfig) {
-        for (var entry : buildTimeConfig.getAllPersistenceUnitConfigsAsMap().entrySet()) {
+        for (var entry : buildTimeConfig.persistenceUnits().entrySet()) {
             var config = entry.getValue();
             if (config.active().isPresent() && config.active().get()) {
                 var puName = entry.getKey();

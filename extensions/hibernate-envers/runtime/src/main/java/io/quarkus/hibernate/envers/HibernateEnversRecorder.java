@@ -31,7 +31,7 @@ public class HibernateEnversRecorder {
 
         @Override
         public void contributeBootProperties(BiConsumer<String, Object> propertyCollector) {
-            var puConfig = buildTimeConfig.getAllPersistenceUnitConfigsAsMap().get(puName);
+            var puConfig = buildTimeConfig.persistenceUnits().get(puName);
             if (puConfig == null) {
                 // Leave Envers unconfigured, but still activate it.
                 return;

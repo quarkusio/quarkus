@@ -172,7 +172,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                         "Attempting to boot a blocking Hibernate ORM instance on a reactive RecordedState");
             }
             final PrevalidatedQuarkusMetadata metadata = recordedState.getMetadata();
-            var puConfig = hibernateOrmRuntimeConfig.getPersistenceUnitOrDefault(persistenceUnit.getConfigurationName());
+            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(persistenceUnit.getConfigurationName());
             if (puConfig.active().isPresent() && !puConfig.active().get()) {
                 throw new IllegalStateException(
                         "Attempting to boot a deactivated Hibernate ORM persistence unit");

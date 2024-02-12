@@ -9,7 +9,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 public class HibernateOrmDisabledRecorder {
 
     public void checkNoExplicitActiveTrue(HibernateOrmRuntimeConfig runtimeConfig) {
-        for (var entry : runtimeConfig.getAllPersistenceUnitConfigsAsMap().entrySet()) {
+        for (var entry : runtimeConfig.persistenceUnits().entrySet()) {
             var config = entry.getValue();
             if (config.active().isPresent() && config.active().get()) {
                 var puName = entry.getKey();

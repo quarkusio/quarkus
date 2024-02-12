@@ -40,7 +40,7 @@ public final class HibernateEnversProcessor {
                 .produce(ReflectiveClassBuildItem.builder("org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity")
                         .methods().build());
 
-        for (HibernateEnversBuildTimeConfigPersistenceUnit pu : buildTimeConfig.getAllPersistenceUnitConfigsAsMap().values()) {
+        for (HibernateEnversBuildTimeConfigPersistenceUnit pu : buildTimeConfig.persistenceUnits().values()) {
             pu.revisionListener().ifPresent(
                     s -> reflectiveClass.produce(ReflectiveClassBuildItem.builder(s).methods().fields().build()));
             pu.auditStrategy().ifPresent(

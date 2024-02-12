@@ -36,7 +36,7 @@ public class HibernateOrmDevServicesProcessor {
         Set<String> managedSources = schemaReadyBuildItems.stream().map(JdbcDataSourceSchemaReadyBuildItem::getDatasourceNames)
                 .collect(HashSet::new, Collection::addAll, Collection::addAll);
 
-        for (Map.Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.getAllPersistenceUnitConfigsAsMap()
+        for (Map.Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.persistenceUnits()
                 .entrySet()) {
             Optional<String> dataSourceName = entry.getValue().datasource();
             List<String> propertyKeysIndicatingDataSourceConfigured = DataSourceUtil

@@ -202,7 +202,7 @@ public final class HibernateOrmProcessor {
     @BuildStep
     void includeArchivesHostingEntityPackagesInIndex(HibernateOrmConfig hibernateOrmConfig,
             BuildProducer<AdditionalApplicationArchiveMarkerBuildItem> additionalApplicationArchiveMarkers) {
-        for (HibernateOrmConfigPersistenceUnit persistenceUnit : hibernateOrmConfig.getAllPersistenceUnitConfigsAsMap()
+        for (HibernateOrmConfigPersistenceUnit persistenceUnit : hibernateOrmConfig.persistenceUnits()
                 .values()) {
             if (persistenceUnit.packages().isPresent()) {
                 for (String pakkage : persistenceUnit.packages().get()) {
@@ -217,7 +217,7 @@ public final class HibernateOrmProcessor {
     @Consume(ServiceStartBuildItem.class)
     @BuildStep(onlyIf = IsDevelopment.class)
     void warnOfSchemaProblems(HibernateOrmConfig config, HibernateOrmRecorder recorder) {
-        for (var e : config.getAllPersistenceUnitConfigsAsMap().entrySet()) {
+        for (var e : config.persistenceUnits().entrySet()) {
             if (e.getValue().validateInDevMode()) {
                 recorder.doValidation(e.getKey());
             }
@@ -377,7 +377,7 @@ public final class HibernateOrmProcessor {
     public void contributeQuarkusConfigToJpaModel(
             BuildProducer<JpaModelPersistenceUnitContributionBuildItem> jpaModelPuContributions,
             HibernateOrmConfig hibernateOrmConfig) {
-        for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : hibernateOrmConfig.getAllPersistenceUnitConfigsAsMap()
+        for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : hibernateOrmConfig.persistenceUnits()
                 .entrySet()) {
             String name = entry.getKey();
             HibernateOrmConfigPersistenceUnit config = entry.getValue();
@@ -1441,7 +1441,7 @@ public final class HibernateOrmProcessor {
     }
 
     private static boolean hasPackagesInQuarkusConfig(HibernateOrmConfig hibernateOrmConfig) {
-        for (HibernateOrmConfigPersistenceUnit persistenceUnitConfig : hibernateOrmConfig.getAllPersistenceUnitConfigsAsMap()
+        for (HibernateOrmConfigPersistenceUnit persistenceUnitConfig : hibernateOrmConfig.persistenceUnits()
                 .values()) {
             if (persistenceUnitConfig.packages().isPresent()) {
                 return true;

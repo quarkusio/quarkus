@@ -34,6 +34,14 @@ public class OidcClientTest {
     WireMockServer server;
 
     @Test
+    public void testEchoTokensJwtBearerAuthentication() {
+        RestAssured.when().get("/frontend/echoTokenJwtBearerAuthentication")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_jwt_bearer"));
+    }
+
+    @Test
     public void testEchoAndRefreshTokens() {
         // access_token_1 and refresh_token_1 are acquired using a password grant request.
         // access_token_1 expires in 4 seconds, refresh_token_1 has no lifespan limit as no `refresh_expires_in` property is returned.

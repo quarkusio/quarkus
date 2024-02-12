@@ -20,6 +20,7 @@ import io.quarkus.oidc.client.Tokens;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
+import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Jwt.Source;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.smallrye.mutiny.Uni;
@@ -47,6 +48,7 @@ public class OidcClientImpl implements OidcClient {
     private final String grantType;
     private final String clientSecretBasicAuthScheme;
     private final Key clientJwtKey;
+    private final boolean jwtBearerAuthentication;
     private final OidcClientConfig oidcConfig;
     private final Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters;
     private volatile boolean closed;
@@ -63,7 +65,8 @@ public class OidcClientImpl implements OidcClient {
         this.oidcConfig = oidcClientConfig;
         this.filters = filters;
         this.clientSecretBasicAuthScheme = OidcCommonUtils.initClientSecretBasicAuth(oidcClientConfig);
-        this.clientJwtKey = OidcCommonUtils.initClientJwtKey(oidcClientConfig);
+        this.jwtBearerAuthentication = oidcClientConfig.credentials.jwt.source == Source.BEARER;
+        this.clientJwtKey = jwtBearerAuthentication ? null : OidcCommonUtils.initClientJwtKey(oidcClientConfig);
     }
 
     @Override
@@ -143,6 +146,15 @@ public class OidcClientImpl implements OidcClient {
         }
         if (clientSecretBasicAuthScheme != null) {
             request.putHeader(AUTHORIZATION_HEADER, clientSecretBasicAuthScheme);
+        } else if (jwtBearerAuthentication) {
+            if (!additionalGrantParameters.containsKey(OidcConstants.CLIENT_ASSERTION)) {
+                String errorMessage = String.format(
+                        "%s OidcClient can not complete the %s grant request because a JWT bearer client_assertion is missing",
+                        oidcConfig.getId().get(), (refresh ? OidcConstants.REFRESH_TOKEN_GRANT : grantType));
+                LOG.error(errorMessage);
+                throw new OidcClientException(errorMessage);
+            }
+            body.add(OidcConstants.CLIENT_ASSERTION_TYPE, OidcConstants.JWT_BEARER_CLIENT_ASSERTION_TYPE);
         } else if (clientJwtKey != null) {
             // if it is a refresh then a map has already been copied
             body = !refresh ? copyMultiMap(body) : body;

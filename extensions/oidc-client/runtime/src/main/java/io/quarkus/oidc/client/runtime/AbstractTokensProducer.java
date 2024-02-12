@@ -1,5 +1,6 @@
 package io.quarkus.oidc.client.runtime;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -45,7 +46,7 @@ public abstract class AbstractTokensProducer {
 
     protected void initTokens() {
         if (earlyTokenAcquisition) {
-            tokensHelper.initTokens(oidcClient);
+            tokensHelper.initTokens(oidcClient, additionalParameters());
         }
     }
 
@@ -56,7 +57,7 @@ public abstract class AbstractTokensProducer {
             LOG.debugf("%s OidcClient will discard the current access and refresh tokens",
                     clientId.orElse(DEFAULT_OIDC_CLIENT_ID));
         }
-        return tokensHelper.getTokens(oidcClient, forceNewTokens);
+        return tokensHelper.getTokens(oidcClient, additionalParameters(), forceNewTokens);
     }
 
     public Tokens awaitTokens() {
@@ -77,5 +78,12 @@ public abstract class AbstractTokensProducer {
      */
     protected boolean isForceNewTokens() {
         return false;
+    }
+
+    /**
+     * @return Additional parameters which will be used during the token acquisition or refresh methods.
+     */
+    protected Map<String, String> additionalParameters() {
+        return Map.of();
     }
 }

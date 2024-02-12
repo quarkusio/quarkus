@@ -2,6 +2,7 @@ package io.quarkus.annotation.processor.generate_doc;
 
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_DEFAULT;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_ENUM_VALUE;
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_IGNORE;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_MAP_KEY;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_SECTION;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_ITEM;
@@ -246,6 +247,8 @@ class ConfigDocItemFinder {
                             : annotationMirror.getElementValues().values().iterator().next().getValue().toString();
                 } else if (annotationName.equals(ANNOTATION_CONFIG_WITH_UNNAMED_KEY)) {
                     unnamedMapKey = true;
+                } else if (annotationName.equals(ANNOTATION_CONFIG_DOC_IGNORE)) {
+                    generateDocumentation = false;
                 }
             }
 

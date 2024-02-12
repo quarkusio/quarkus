@@ -43,7 +43,7 @@
         <assertj.version>3.25.1</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
-        <junit.jupiter.version>5.10.1</junit.jupiter.version>
+        <junit.jupiter.version>5.10.2</junit.jupiter.version>
         <maven-core.version>3.9.6</maven-core.version><!-- Keep in sync with sisu.version -->
         <sisu.version>0.9.0.M2</sisu.version><!-- Keep in sync with maven-core.version -->
         <maven-plugin-annotations.version>3.10.2</maven-plugin-annotations.version>
@@ -57,7 +57,7 @@
         <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
         <jakarta.enterprise.cdi-api.version>4.0.1</jakarta.enterprise.cdi-api.version>
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
-        <commons-codec.version>1.16.0</commons-codec.version>
+        <commons-codec.version>1.16.1</commons-codec.version>
         <commons-io.version>2.15.1</commons-io.version>
         <commons-lang.version>3.14.0</commons-lang.version>
         <guava.version>33.0.0-jre</guava.version>

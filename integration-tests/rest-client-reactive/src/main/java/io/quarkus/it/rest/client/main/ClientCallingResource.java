@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
+import io.quarkus.arc.Arc;
 import io.quarkus.it.rest.client.main.MyResponseExceptionMapper.MyException;
 import io.quarkus.it.rest.client.main.selfsigned.ExternalSelfSignedClient;
 import io.quarkus.it.rest.client.main.wronghost.WrongHostClient;
@@ -62,9 +63,6 @@ public class ClientCallingResource {
     @Inject
     InMemorySpanExporter inMemorySpanExporter;
 
-    @Inject
-    MyClientLogger globalClientLogger;
-
     void init(@Observes Router router) {
         router.post().handler(BodyHandler.create());
 
@@ -82,9 +80,9 @@ public class ClientCallingResource {
             String url = rc.body().asString();
             ClientWithClientLogger client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .build(ClientWithClientLogger.class);
-            globalClientLogger.reset();
+            Arc.container().instance(MyClientLogger.class).get().reset();
             client.call();
-            if (globalClientLogger.wasUsed()) {
+            if (Arc.container().instance(MyClientLogger.class).get().wasUsed()) {
                 success(rc, "global client logger was used");
             } else {
                 fail(rc, "global client logger was not used");
@@ -106,9 +104,9 @@ public class ClientCallingResource {
         });
 
         router.post("/call-cdi-client-with-global-client-logger").blockingHandler(rc -> {
-            globalClientLogger.reset();
+            Arc.container().instance(MyClientLogger.class).get().reset();
             clientWithClientLogger.call();
-            if (globalClientLogger.wasUsed()) {
+            if (Arc.container().instance(MyClientLogger.class).get().wasUsed()) {
                 success(rc, "global client logger was used");
             } else {
                 fail(rc, "global client logger was not used");

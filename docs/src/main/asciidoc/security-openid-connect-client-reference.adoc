@@ -879,7 +879,7 @@ quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".min-lev
 [[oidc-request-filters]]
 == OIDC request filters
 
-You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFiler` implementations, which can update or add new request headers. For example, a filter can analyze the request body and add its digest as a new header value:
+You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFilter` implementations, which can update or add new request headers. For example, a filter can analyze the request body and add its digest as a new header value:
 
 [source,java]
 ----

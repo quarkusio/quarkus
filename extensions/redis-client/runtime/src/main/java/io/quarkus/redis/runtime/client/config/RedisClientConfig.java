@@ -56,7 +56,7 @@ public interface RedisClientConfig {
     /**
      * The master name (only considered in HA mode).
      */
-    @ConfigDocDefault("my-master")
+    @ConfigDocDefault("mymaster")
     Optional<String> masterName();
 
     /**

@@ -435,6 +435,9 @@ public abstract class ResteasyReactiveRequestContext
             if (!prefix.isEmpty()) {
                 // FIXME: can we really have paths that don't start with the prefix if there's a prefix?
                 if (path.startsWith(prefix)) {
+                    if (path.length() == prefix.length()) {
+                        return "/";
+                    }
                     return path.substring(prefix.length());
                 }
             }

@@ -19,8 +19,12 @@ public class KafkaModelConverter {
                 message.partition(),
                 message.offset(),
                 message.timestamp(),
-                Optional.ofNullable(message.key()).map(Bytes::toString).orElse(null),
-                Optional.ofNullable(message.value()).map(Bytes::toString).orElse(null),
+                Optional.ofNullable(message.key()).map((t) -> {
+                    return new String(t.get(), StandardCharsets.UTF_8);
+                }).orElse(null),
+                Optional.ofNullable(message.value()).map((t) -> {
+                    return new String(t.get(), StandardCharsets.UTF_8);
+                }).orElse(null),
                 headers(message));
     }
 

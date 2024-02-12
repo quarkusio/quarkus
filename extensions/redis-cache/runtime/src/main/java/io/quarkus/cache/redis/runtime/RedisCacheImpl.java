@@ -146,24 +146,40 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
         // With optimistic locking:
         // WATCH K
         // val = deserialize(GET K)
-        // If val == null
-        // MULTI
-        //    SET K computation.apply(K)
-        // EXEC
+        // if val == null
+        //   MULTI
+        //      SET K computation.apply(K)
+        //   EXEC
+        // else
+        //   UNWATCH K
+        //   return val
         // Without:
         // val = deserialize(GET K)
         // if (val == null) => SET K computation.apply(K)
+        // else => return val
         byte[] encodedKey = marshaller.encode(computeActualKey(encodeKey(key)));
         boolean isWorkerThread = blockingAllowedSupplier.get();
         return withConnection(new Function<RedisConnection, Uni<V>>() {
             @Override
             public Uni<V> apply(RedisConnection connection) {
-                return watch(connection, encodedKey)
-                        .chain(new GetFromConnectionSupplier<>(connection, clazz, encodedKey, marshaller))
+                Uni<V> startingPoint;
+                if (cacheInfo.useOptimisticLocking) {
+                    startingPoint = watch(connection, encodedKey)
+                            .chain(new GetFromConnectionSupplier<>(connection, clazz, encodedKey, marshaller));
+                } else {
+                    startingPoint = new GetFromConnectionSupplier<>(connection, clazz, encodedKey, marshaller).get();
+                }
+
+                return startingPoint
                         .chain(Unchecked.function(new UncheckedFunction<>() {
                             @Override
                             public Uni<V> apply(V cached) throws Exception {
                                 if (cached != null) {
+                                    // Unwatch if optimistic locking
+                                    if (cacheInfo.useOptimisticLocking) {
+                                        return connection.send(Request.cmd(Command.UNWATCH))
+                                                .replaceWith(cached);
+                                    }
                                     return Uni.createFrom().item(new StaticSupplier<>(cached));
                                 } else {
                                     Uni<V> uni = computeValue(key, valueLoader, isWorkerThread);
@@ -210,10 +226,22 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
         return withConnection(new Function<RedisConnection, Uni<V>>() {
             @Override
             public Uni<V> apply(RedisConnection connection) {
-                return watch(connection, encodedKey)
-                        .chain(new GetFromConnectionSupplier<>(connection, clazz, encodedKey, marshaller))
+                Uni<V> startingPoint;
+                if (cacheInfo.useOptimisticLocking) {
+                    startingPoint = watch(connection, encodedKey)
+                            .chain(new GetFromConnectionSupplier<>(connection, clazz, encodedKey, marshaller));
+                } else {
+                    startingPoint = new GetFromConnectionSupplier<>(connection, clazz, encodedKey, marshaller).get();
+                }
+
+                return startingPoint
                         .chain(cached -> {
                             if (cached != null) {
+                                // Unwatch if optimistic locking
+                                if (cacheInfo.useOptimisticLocking) {
+                                    return connection.send(Request.cmd(Command.UNWATCH))
+                                            .replaceWith(cached);
+                                }
                                 return Uni.createFrom().item(new StaticSupplier<>(cached));
                             } else {
                                 Uni<V> getter = valueLoader.apply(key);

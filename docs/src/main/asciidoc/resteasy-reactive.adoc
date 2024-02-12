@@ -1842,6 +1842,7 @@ how to use it.
 Here are some more advanced topics that you may not need to know about initially, but
 could prove useful for more complex use cases.
 
+[[execution-model-blocking-non-blocking]]
 === Execution model, blocking, non-blocking
 
 [[execution-model]]

@@ -44,6 +44,7 @@ public class EagerSecurityFilter implements ContainerRequestFilter {
 
         }
     };
+    static final String SKIP_DEFAULT_CHECK = "io.quarkus.resteasy.runtime.EagerSecurityFilter#SKIP_DEFAULT_CHECK";
     private final Map<MethodDescription, Consumer<RoutingContext>> cache = new HashMap<>();
     private final EagerSecurityInterceptorStorage interceptorStorage;
     private final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> eventHelper;
@@ -86,6 +87,11 @@ public class EagerSecurityFilter implements ContainerRequestFilter {
 
     private void applySecurityChecks(MethodDescription description) {
         SecurityCheck check = securityCheckStorage.getSecurityCheck(description);
+        if (check == null && securityCheckStorage.getDefaultSecurityCheck() != null
+                && routingContext.get(EagerSecurityFilter.class.getName()) == null
+                && routingContext.get(SKIP_DEFAULT_CHECK) == null) {
+            check = securityCheckStorage.getDefaultSecurityCheck();
+        }
         if (check != null) {
             if (check.isPermitAll()) {
                 fireEventOnAuthZSuccess(check, null);

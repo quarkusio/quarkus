@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.runtime;
 
+import static io.quarkus.resteasy.runtime.EagerSecurityFilter.SKIP_DEFAULT_CHECK;
 import static io.quarkus.security.spi.runtime.SecurityHandlerConstants.EXECUTED;
 import static io.quarkus.security.spi.runtime.SecurityHandlerConstants.SECURITY_HANDLER;
 
@@ -18,6 +19,7 @@ import io.quarkus.security.Authenticated;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * Security checks for RBAC annotations on endpoints are done by the {@link EagerSecurityFilter}, this interceptor
@@ -36,9 +38,15 @@ public abstract class StandardSecurityCheckInterceptor {
     public Object intercept(InvocationContext ic) throws Exception {
         // RoutingContext can be null if RESTEasy is used together with other stacks that do not rely on it (e.g. gRPC)
         // and this is not invoked from RESTEasy route handler
-        if (controller.isAuthorizationEnabled() && currentVertxRequest.getCurrent() != null) {
-            Method method = currentVertxRequest.getCurrent().get(EagerSecurityFilter.class.getName());
-            if (method != null && method.equals(ic.getMethod())) {
+        RoutingContext routingContext = currentVertxRequest.getCurrent();
+        if (controller.isAuthorizationEnabled() && routingContext != null) {
+            Method method = routingContext.get(EagerSecurityFilter.class.getName());
+            if (method == null) {
+                // if this interceptor is run on resource method it means this is parent method for subresource
+                // otherwise it would already be secured, therefore security check is applied and default JAX-RS
+                // security needs to be skipped (for default security is only applied on unsecured requests)
+                routingContext.put(SKIP_DEFAULT_CHECK, true);
+            } else if (method.equals(ic.getMethod())) {
                 ic.getContextData().put(SECURITY_HANDLER, EXECUTED);
             }
         }

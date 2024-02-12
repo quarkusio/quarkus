@@ -126,8 +126,9 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
         super.setHandlers(newHandlerChain);
         // recompute the known handler type map, trying to avoid reallocating it if possible
         var handlers = this.handlers;
-        var handlerTypePerPosition = (knownHandlerTypeMap == null || handlers.length != knownHandlerTypeMap.length) ?
-                new int[newHandlerChain.length] : knownHandlerTypeMap;
+        var handlerTypePerPosition = (knownHandlerTypeMap == null || handlers.length != knownHandlerTypeMap.length)
+                ? new int[newHandlerChain.length]
+                : knownHandlerTypeMap;
         for (int position = 0; position < handlers.length; position++) {
             handlerTypePerPosition[position] = knownTypeIdFor(handlers[position]);
         }
@@ -145,6 +146,7 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
     protected void invokeHandler(int pos) throws Exception {
         var handler = handlers[pos];
         var handlerType = knownHandlerTypeMap[pos];
+        // The reason why this switch is splitted in two is due to -XX:MinJumpTableSize which is set to 10 by default
         switch (handlerType) {
             case MATRIX_PARAM_HANDLER:
                 handler.handle(this);
@@ -170,33 +172,36 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
             case RESOURCE_REQUEST_FILTER_HANDLER:
                 handler.handle(this);
                 break;
-            case INPUT_HANDLER:
-                handler.handle(this);
-                break;
-            case REQUEST_DESERIALIZE_HANDLER:
-                handler.handle(this);
-                break;
-            case PARAMETER_HANDLER:
-                handler.handle(this);
-                break;
-            case INSTANCE_HANDLER:
-                handler.handle(this);
-                break;
-            case INVOCATION_HANDLER:
-                handler.handle(this);
-                break;
-            case FIXED_PRODUCES_HANDLER:
-                handler.handle(this);
-                break;
-            case RESPONSE_HANDLER:
-                handler.handle(this);
-                break;
-            case RESPONSE_WRITER_HANDLER:
-                handler.handle(this);
-                break;
             default:
-                // megamorphic call for other handlers
-                handler.handle(this);
+                switch (handlerType) {
+                    case INPUT_HANDLER:
+                        handler.handle(this);
+                        break;
+                    case REQUEST_DESERIALIZE_HANDLER:
+                        handler.handle(this);
+                        break;
+                    case PARAMETER_HANDLER:
+                        handler.handle(this);
+                        break;
+                    case INSTANCE_HANDLER:
+                        handler.handle(this);
+                        break;
+                    case INVOCATION_HANDLER:
+                        handler.handle(this);
+                        break;
+                    case FIXED_PRODUCES_HANDLER:
+                        handler.handle(this);
+                        break;
+                    case RESPONSE_HANDLER:
+                        handler.handle(this);
+                        break;
+                    case RESPONSE_WRITER_HANDLER:
+                        handler.handle(this);
+                        break;
+                    default:
+                        // megamorphic call for other handlers
+                        handler.handle(this);
+                }
         }
     }
 

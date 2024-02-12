@@ -24,7 +24,6 @@ public interface DataSourcesJdbcRuntimeConfig {
     /**
      * Additional named datasources.
      */
-    @ConfigDocSection
     @ConfigDocMapKey("datasource-name")
     @WithParentName
     @WithDefaults

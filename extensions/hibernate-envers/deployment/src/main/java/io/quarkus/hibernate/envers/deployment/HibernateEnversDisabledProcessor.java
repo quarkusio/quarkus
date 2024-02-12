@@ -39,7 +39,7 @@ public final class HibernateEnversDisabledProcessor {
     public void checkNoExplicitActiveTrue(HibernateEnversBuildTimeConfig buildTimeConfig) {
         for (var entry : buildTimeConfig.getAllPersistenceUnitConfigsAsMap().entrySet()) {
             var config = entry.getValue();
-            if (config.active.isPresent() && config.active.get()) {
+            if (config.active().isPresent() && config.active().get()) {
                 var puName = entry.getKey();
                 String enabledPropertyKey = HibernateEnversBuildTimeConfig.extensionPropertyKey("enabled");
                 String activePropertyKey = HibernateEnversBuildTimeConfig.persistenceUnitPropertyKey(puName, "active");

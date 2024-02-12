@@ -41,9 +41,9 @@ public final class HibernateEnversProcessor {
                         .methods().build());
 
         for (HibernateEnversBuildTimeConfigPersistenceUnit pu : buildTimeConfig.getAllPersistenceUnitConfigsAsMap().values()) {
-            pu.revisionListener.ifPresent(
+            pu.revisionListener().ifPresent(
                     s -> reflectiveClass.produce(ReflectiveClassBuildItem.builder(s).methods().fields().build()));
-            pu.auditStrategy.ifPresent(
+            pu.auditStrategy().ifPresent(
                     s -> reflectiveClass.produce(ReflectiveClassBuildItem.builder(s).methods().fields().build()));
         }
     }

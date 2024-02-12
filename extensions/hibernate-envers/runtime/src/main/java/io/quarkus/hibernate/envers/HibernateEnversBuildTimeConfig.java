@@ -6,12 +6,15 @@ import java.util.TreeMap;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithParentName;
 
+@ConfigMapping(prefix = "quarkus.hibernate-envers")
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public class HibernateEnversBuildTimeConfig {
+public interface HibernateEnversBuildTimeConfig {
     /**
      * Whether Hibernate Envers is enabled <strong>during the build</strong>.
      *
@@ -23,37 +26,35 @@ public class HibernateEnversBuildTimeConfig {
      *
      * @asciidoclet
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled;
+    @WithDefault("true")
+    boolean enabled();
 
     /**
      * Configuration for the default persistence unit.
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public HibernateEnversBuildTimeConfigPersistenceUnit defaultPersistenceUnit;
+    @WithParentName
+    HibernateEnversBuildTimeConfigPersistenceUnit defaultPersistenceUnit();
 
     /**
      * Configuration for additional named persistence units.
      */
     @ConfigDocSection
+    @WithParentName
     @ConfigDocMapKey("persistence-unit-name")
-    @ConfigItem(name = ConfigItem.PARENT)
-    public Map<String, HibernateEnversBuildTimeConfigPersistenceUnit> persistenceUnits;
+    Map<String, HibernateEnversBuildTimeConfigPersistenceUnit> namedPersistenceUnits();
 
-    public Map<String, HibernateEnversBuildTimeConfigPersistenceUnit> getAllPersistenceUnitConfigsAsMap() {
+    default Map<String, HibernateEnversBuildTimeConfigPersistenceUnit> getAllPersistenceUnitConfigsAsMap() {
         Map<String, HibernateEnversBuildTimeConfigPersistenceUnit> map = new TreeMap<>();
-        if (defaultPersistenceUnit != null) {
-            map.put(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, defaultPersistenceUnit);
-        }
-        map.putAll(persistenceUnits);
+        map.put(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, defaultPersistenceUnit());
+        map.putAll(namedPersistenceUnits());
         return map;
     }
 
-    public static String extensionPropertyKey(String radical) {
+    static String extensionPropertyKey(String radical) {
         return "quarkus.hibernate-envers." + radical;
     }
 
-    public static String persistenceUnitPropertyKey(String persistenceUnitName, String radical) {
+    static String persistenceUnitPropertyKey(String persistenceUnitName, String radical) {
         StringBuilder keyBuilder = new StringBuilder("quarkus.hibernate-envers.");
         if (!PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
             keyBuilder.append("\"").append(persistenceUnitName).append("\".");

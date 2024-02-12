@@ -38,7 +38,7 @@ public class HibernateOrmDevServicesProcessor {
 
         for (Map.Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.getAllPersistenceUnitConfigsAsMap()
                 .entrySet()) {
-            Optional<String> dataSourceName = entry.getValue().datasource;
+            Optional<String> dataSourceName = entry.getValue().datasource();
             List<String> propertyKeysIndicatingDataSourceConfigured = DataSourceUtil
                     .dataSourcePropertyKeys(dataSourceName.orElse(null), "username");
 

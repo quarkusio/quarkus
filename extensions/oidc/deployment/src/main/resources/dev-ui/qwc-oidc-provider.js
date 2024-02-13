@@ -42,6 +42,7 @@ class OidcPropertiesState extends LitState {
             logoutUrl: null,
             postLogoutUriParam: null,
             scopes: null,
+            authExtraParams: null,
             httpPort: 0,
             accessToken: null,
             idToken: null,
@@ -73,6 +74,7 @@ class OidcPropertiesState extends LitState {
             propertiesState.logoutUrl = response.result.logoutUrl;
             propertiesState.postLogoutUriParam = response.result.postLogoutUriParam;
             propertiesState.scopes = response.result.scopes;
+            propertiesState.authExtraParams = response.result.authExtraParams;
             propertiesState.httpPort = response.result.httpPort;
             propertiesState.oidcProviderName = response.result.oidcProviderName;
             propertiesState.oidcApplicationType = response.result.oidcApplicationType;
@@ -857,6 +859,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     _signInToOidcProviderAndGetTokens() {
         const clientId = this._getClientId();
         const scopes = propertiesState.scopes ?? '';
+        const authExtraParams = propertiesState.authExtraParams ?? '';
 
         let address;
         let state;
@@ -880,7 +883,8 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             + "&redirect_uri=" + this._getEncodedPath()
             + "&scope=" + scopes + "&response_type=" + responseType
             + "&response_mode=query&prompt=login&nonce=" + QwcOidcProvider._makeId()
-            + "&state=" + state;
+            + "&state=" + state
+            + authExtraParams;
     }
 
     _getEncodedPath() {

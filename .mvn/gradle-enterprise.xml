@@ -26,7 +26,7 @@
     </buildScan>
     <buildCache>
         <local>
-            <enabled>#{env['GRADLE_LOCAL_BUILD_CACHE'] != null and env['RELEASE_GITHUB_TOKEN'] == null and properties['no-build-cache'] == null}</enabled>
+            <enabled>#{env['RELEASE_GITHUB_TOKEN'] == null and properties['no-build-cache'] == null}</enabled>
         </local>
         <remote>
             <enabled>#{env['CI'] != null and env['RELEASE_GITHUB_TOKEN'] == null and properties['no-build-cache'] == null}</enabled>

@@ -108,10 +108,16 @@ public class ToolingUtils {
             }
         }
 
-        final Gradle parentGradle = project.getRootProject().getGradle().getParent();
-        if (parentGradle != null) {
-            return findIncludedProject(parentGradle.getRootProject(), dependency);
-        } else {
+        try {
+            final Gradle parentGradle = project.getRootProject().getGradle().getParent();
+            if (parentGradle != null) {
+                return findIncludedProject(parentGradle.getRootProject(), dependency);
+            } else {
+                return null;
+            }
+        } catch (IllegalStateException ise) {
+            // This can happen if the project itself is in an included build, which means that the root-project
+            // is not yet known, so `DefaultGradle.getRootProject()` throws an ISE.
             return null;
         }
     }
@@ -134,9 +140,15 @@ public class ToolingUtils {
         }
 
         final DefaultIncludedBuild.IncludedBuildImpl dib = (DefaultIncludedBuild.IncludedBuildImpl) ib;
-        final Project rootProject = dib.getTarget().getMutableModel().getRootProject();
+        try {
+            final Project rootProject = dib.getTarget().getMutableModel().getRootProject();
 
-        return findLocalProject(rootProject, dependency);
+            return findLocalProject(rootProject, dependency);
+        } catch (IllegalStateException ise) {
+            // This can happen if the project itself is in an included build, which means that the root-project
+            // is not yet known, so `DefaultGradle.getRootProject()` throws an ISE.
+            return null;
+        }
     }
 
     public static Path serializeAppModel(ApplicationModel appModel, Task context, boolean test) throws IOException {

@@ -4,6 +4,9 @@ plugins {
 
 dependencies {
     implementation project(':common')
+    implementation("io.quarkus:quarkus-bootstrap-maven-resolver:${quarkusPlatformVersion}") {
+        exclude group: '*'
+    }
 }
 
 group 'org.acme'

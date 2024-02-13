@@ -117,7 +117,8 @@ public class PanacheJpaUtil {
                 || trimmedLc.startsWith("with ")) {
             return query;
         }
-        if (trimmedLc.startsWith("order by ")) {
+        if (trimmedLc.startsWith("order by ")
+                || trimmedLc.startsWith("where ")) {
             return "FROM " + getEntityName(entityClass) + " " + query;
         }
         if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
@@ -149,6 +150,9 @@ public class PanacheJpaUtil {
         }
         if (trimmedLc.startsWith("from ")) {
             return "SELECT COUNT(*) " + query;
+        }
+        if (trimmedLc.startsWith("where ")) {
+            return "SELECT COUNT(*) FROM " + getEntityName(entityClass) + " " + query;
         }
         if (trimmedLc.startsWith("order by ")) {
             // ignore it

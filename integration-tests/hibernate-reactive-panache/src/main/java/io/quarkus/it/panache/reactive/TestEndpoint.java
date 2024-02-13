@@ -75,6 +75,15 @@ public class TestEndpoint {
                                 return Person.count("name", "stef");
                             }).flatMap(count -> {
                                 Assertions.assertEquals(1, count);
+                                return Person.count("from Person2 where name = ?1", "stef");
+                            }).flatMap(count -> {
+                                Assertions.assertEquals(1, count);
+                                return Person.count("where name = ?1", "stef");
+                            }).flatMap(count -> {
+                                Assertions.assertEquals(1, count);
+                                return Person.count("order by name");
+                            }).flatMap(count -> {
+                                Assertions.assertEquals(1, count);
                                 return Dog.count();
                             }).flatMap(count -> {
                                 Assertions.assertEquals(1, count);
@@ -100,6 +109,11 @@ public class TestEndpoint {
                                 Assertions.assertEquals(person, personResult);
 
                                 return Person.find("name = ?1", "stef").list();
+                            }).flatMap(persons -> {
+                                Assertions.assertEquals(1, persons.size());
+                                Assertions.assertEquals(person, persons.get(0));
+
+                                return Person.find("WHERE name = ?1", "stef").list();
                             }).flatMap(persons -> {
                                 Assertions.assertEquals(1, persons.size());
                                 Assertions.assertEquals(person, persons.get(0));

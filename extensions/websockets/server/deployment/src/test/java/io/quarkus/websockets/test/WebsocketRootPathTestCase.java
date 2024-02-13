@@ -1,6 +1,9 @@
 package io.quarkus.websockets.test;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -9,6 +12,7 @@ import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.MessageHandler;
+import jakarta.websocket.PongMessage;
 import jakarta.websocket.Session;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -38,6 +42,7 @@ public class WebsocketRootPathTestCase {
     public void testHttpRootPath() throws Exception {
 
         LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
+        LinkedBlockingDeque<String> pongMessages = new LinkedBlockingDeque<>();
         Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
             @Override
             public void onOpen(Session session, EndpointConfig endpointConfig) {
@@ -47,12 +52,28 @@ public class WebsocketRootPathTestCase {
                         message.add(s);
                     }
                 });
+                session.addMessageHandler(new MessageHandler.Whole<PongMessage>() {
+                    @Override
+                    public void onMessage(PongMessage s) {
+                        ByteBuffer data = s.getApplicationData();
+                        byte[] copy = new byte[data.remaining()];
+                        data.get(copy);
+                        pongMessages.add(new String(copy, StandardCharsets.UTF_8));
+                    }
+                });
                 session.getAsyncRemote().sendText("hello");
+                try {
+                    session.getAsyncRemote().sendPing(ByteBuffer.wrap("PING".getBytes(StandardCharsets.UTF_8)));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }, ClientEndpointConfig.Builder.create().build(), echoUri);
 
         try {
             Assertions.assertEquals("hello", message.poll(20, TimeUnit.SECONDS));
+
+            Assertions.assertEquals("PING", pongMessages.poll(20, TimeUnit.SECONDS));
         } finally {
             session.close();
         }

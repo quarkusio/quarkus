@@ -19,11 +19,11 @@ public class DevUIHibernateSearchActiveFalseAndNamedPuActiveTrueTest extends Abs
                             + "quarkus.hibernate-orm.datasource=<default>\n"
                             + "quarkus.hibernate-orm.packages=io.quarkus.test.devui\n"
                             + "quarkus.hibernate-search-orm.active=false\n"
-                            + "quarkus.hibernate-search-orm.elasticsearch.version=8.9\n"
+                            + "quarkus.hibernate-search-orm.elasticsearch.version=8.12\n"
                             // ... but it's (implicitly) active for a named PU
                             + "quarkus.hibernate-orm.\"namedpu\".datasource=nameddatasource\n"
                             + "quarkus.hibernate-orm.\"namedpu\".packages=io.quarkus.test.devui.namedpu\n"
-                            + "quarkus.hibernate-search-orm.\"namedpu\".elasticsearch.version=8.9\n"
+                            + "quarkus.hibernate-search-orm.\"namedpu\".elasticsearch.version=8.12\n"
                             // Start Hibernate Search offline for the named PU,
                             // because we don't have dev services except for the default PU
                             + "quarkus.hibernate-search-orm.\"namedpu\".schema-management.strategy=none\n"

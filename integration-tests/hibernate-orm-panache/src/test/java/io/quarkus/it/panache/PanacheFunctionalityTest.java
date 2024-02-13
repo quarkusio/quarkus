@@ -244,4 +244,9 @@ public class PanacheFunctionalityTest {
     void testEnhancement27184DeleteDetached() {
         RestAssured.when().get("/test/testEnhancement27184DeleteDetached").then().body(is("OK"));
     }
+
+    @Test
+    public void testNewLineStrip() {
+        RestAssured.when().get("/test/testStripNewLine").then().body(is("OK"));
+    }
 }

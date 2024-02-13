@@ -90,7 +90,7 @@ public class PanacheJpaUtil {
         if (query == null)
             return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
 
-        String trimmed = query.trim();
+        String trimmed = query.replace('\n', ' ').replace('\r', ' ').trim();
         if (trimmed.isEmpty())
             return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
 
@@ -113,7 +113,7 @@ public class PanacheJpaUtil {
             throw new PanacheQueryException("Query string cannot be null");
         }
 
-        String trimmed = query.trim();
+        String trimmed = query.replace('\n', ' ').replace('\r', ' ').trim();
         if (trimmed.isEmpty()) {
             throw new PanacheQueryException("Query string cannot be empty");
         }
@@ -142,7 +142,7 @@ public class PanacheJpaUtil {
         if (query == null)
             return "DELETE FROM " + getEntityName(entityClass);
 
-        String trimmed = query.trim();
+        String trimmed = query.replace('\n', ' ').replace('\r', ' ').trim();
         if (trimmed.isEmpty())
             return "DELETE FROM " + getEntityName(entityClass);
 

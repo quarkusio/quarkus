@@ -28,7 +28,9 @@ public class CompileOnlyDependencyFlagsTest {
 
         final String componly = ArtifactCoords.jar("org.acme", "componly", "1.0.0-SNAPSHOT").toCompactCoords();
         final String common = ArtifactCoords.jar("org.acme", "common", "1.0.0-SNAPSHOT").toCompactCoords();
-        var expectedCompileOnly = Set.of(componly, common);
+        final String bootstrapResolver = ArtifactCoords
+                .jar("io.quarkus", "quarkus-bootstrap-maven-resolver", System.getProperty("project.version")).toCompactCoords();
+        var expectedCompileOnly = Set.of(componly, common, bootstrapResolver);
 
         final Map<String, Map<String, Integer>> compileOnlyDeps;
         try (ProjectConnection connection = GradleConnector.newConnector()
@@ -65,6 +67,11 @@ public class CompileOnlyDependencyFlagsTest {
                 DependencyFlags.RELOADABLE,
                 DependencyFlags.WORKSPACE_MODULE,
                 DependencyFlags.DIRECT);
+        assertOnlyFlagsSet(bootstrapResolver, compileOnly.get(bootstrapResolver),
+                DependencyFlags.COMPILE_ONLY,
+                DependencyFlags.RUNTIME_CP,
+                DependencyFlags.DEPLOYMENT_CP,
+                DependencyFlags.CLASSLOADER_PARENT_FIRST);
 
         compileOnly = compileOnlyDeps.get(LaunchMode.TEST.name());
         assertEqual(compileOnly, expectedCompileOnly);
@@ -77,6 +84,9 @@ public class CompileOnlyDependencyFlagsTest {
                 DependencyFlags.DIRECT);
         assertOnlyFlagsSet(componly, compileOnly.get(componly),
                 DependencyFlags.COMPILE_ONLY);
+        assertOnlyFlagsSet(bootstrapResolver, compileOnly.get(bootstrapResolver),
+                DependencyFlags.COMPILE_ONLY,
+                DependencyFlags.CLASSLOADER_PARENT_FIRST);
 
         compileOnly = compileOnlyDeps.get(LaunchMode.NORMAL.name());
         assertEqual(compileOnly, expectedCompileOnly);
@@ -87,6 +97,9 @@ public class CompileOnlyDependencyFlagsTest {
                 DependencyFlags.DIRECT);
         assertOnlyFlagsSet(componly, compileOnly.get(componly),
                 DependencyFlags.COMPILE_ONLY);
+        assertOnlyFlagsSet(bootstrapResolver, compileOnly.get(bootstrapResolver),
+                DependencyFlags.COMPILE_ONLY,
+                DependencyFlags.CLASSLOADER_PARENT_FIRST);
     }
 
     private static void assertOnlyFlagsSet(String coords, int flags, int... expectedFlags) {

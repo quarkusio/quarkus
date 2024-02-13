@@ -2080,4 +2080,22 @@ public class TestEndpoint {
                     return null;
                 });
     }
+
+    @GET
+    @Path("36496")
+    @WithTransaction
+    public Uni<String> testBug36496() {
+        PanacheQuery<Person> query = Person.find("WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT p FROM Person2 p");
+        return query.list()
+                .flatMap(list -> {
+                    Assertions.assertEquals(0, list.size());
+                    return query.count();
+                }).flatMap(count -> {
+                    Assertions.assertEquals(0, count);
+                    return Person.count("WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT count(*) FROM Person2 p");
+                }).map(count -> {
+                    Assertions.assertEquals(0, count);
+                    return "OK";
+                });
+    }
 }

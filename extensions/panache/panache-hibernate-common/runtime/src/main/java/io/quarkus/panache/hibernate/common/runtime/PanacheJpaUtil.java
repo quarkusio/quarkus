@@ -31,6 +31,10 @@ public class PanacheJpaUtil {
     static final Pattern LONE_SELECT_PATTERN = Pattern.compile(".*SELECT\\s+.*",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
+    // match a leading WITH
+    static final Pattern WITH_PATTERN = Pattern.compile("^\\s*WITH\\s+.*",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+
     /**
      * This turns an HQL (already expanded from Panache-QL) query into a count query, using text manipulation
      * if we can, because it's faster, or fall back to using the ORM HQL parser in {@link #getCountQueryUsingParser(String)}
@@ -38,8 +42,9 @@ public class PanacheJpaUtil {
     public static String getFastCountQuery(String query) {
         // try to generate a good count query from the existing query
         String countQuery;
-        // there are no fast ways to get rid of fetches
-        if (FETCH_PATTERN.matcher(query).matches()) {
+        // there are no fast ways to get rid of fetches, or WITH
+        if (FETCH_PATTERN.matcher(query).matches()
+                || WITH_PATTERN.matcher(query).matches()) {
             return getCountQueryUsingParser(query);
         }
         // if it starts with select, we can optimise
@@ -107,7 +112,9 @@ public class PanacheJpaUtil {
         }
 
         String trimmedLc = trimmed.toLowerCase();
-        if (trimmedLc.startsWith("from ") || trimmedLc.startsWith("select ")) {
+        if (trimmedLc.startsWith("from ")
+                || trimmedLc.startsWith("select ")
+                || trimmedLc.startsWith("with ")) {
             return query;
         }
         if (trimmedLc.startsWith("order by ")) {
@@ -135,6 +142,11 @@ public class PanacheJpaUtil {
             return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
 
         String trimmedLc = trimmed.toLowerCase();
+        // assume these have valid select clauses and let them through
+        if (trimmedLc.startsWith("select ")
+                || trimmedLc.startsWith("with ")) {
+            return query;
+        }
         if (trimmedLc.startsWith("from ")) {
             return "SELECT COUNT(*) " + query;
         }

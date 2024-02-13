@@ -1824,4 +1824,16 @@ public class TestEndpoint {
         Assertions.assertEquals(0, query.list().size());
         Assertions.assertEquals(0, query.count());
     }
+
+    @GET
+    @Path("36496")
+    @Transactional
+    public String testBug36496() {
+        PanacheQuery<Person> query = Person.find("WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT p FROM Person2 p");
+        Assertions.assertEquals(0, query.list().size());
+        Assertions.assertEquals(0, query.count());
+        Assertions.assertEquals(0,
+                Person.count("WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT count(*) FROM Person2 p"));
+        return "OK";
+    }
 }

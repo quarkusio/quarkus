@@ -31,6 +31,10 @@ public class CountTest {
         assertCountQueryUsingParser("from bar select count( * )", "from bar select foo");
         // from without select
         assertCountQueryUsingParser("from bar select count( * )", "from bar");
+
+        // CTE
+        assertFastCountQuery("WITH id AS ( SELECT p.id AS pid FROM Person2 AS p ) SELECT count( * ) FROM Person2 p",
+                "WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT p FROM Person2 p");
     }
 
     @Test
@@ -58,6 +62,10 @@ public class CountTest {
         assertFastCountQuery("from bar select count( * )", "from bar select foo");
         // from without select
         assertFastCountQuery("SELECT COUNT(*) from bar", "from bar");
+
+        // CTE
+        assertFastCountQuery("WITH id AS ( SELECT p.id AS pid FROM Person2 AS p ) SELECT count( * ) FROM Person2 p",
+                "WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT p FROM Person2 p");
     }
 
     private void assertCountQueryUsingParser(String expected, String selectQuery) {

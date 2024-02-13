@@ -299,7 +299,7 @@ public class CommonPanacheQueryImpl<Entity> {
         if (countQuery != null) {
             return countQuery;
         }
-        return PanacheJpaUtil.getCountQuery(selectQuery);
+        return PanacheJpaUtil.getFastCountQuery(selectQuery);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })

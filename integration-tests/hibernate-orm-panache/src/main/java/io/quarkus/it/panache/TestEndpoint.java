@@ -1804,4 +1804,24 @@ public class TestEndpoint {
 
         return "OK";
     }
+
+    @GET
+    @Path("26308")
+    @Transactional
+    public String testBug26308() {
+        testBug26308Query("from Person2 p left join fetch p.address");
+        testBug26308Query("from Person2 p left join p.address");
+        testBug26308Query("select p from Person2 p left join fetch p.address");
+        testBug26308Query("select p from Person2 p left join p.address");
+        testBug26308Query("from Person2 p left join fetch p.address select p");
+        testBug26308Query("from Person2 p left join p.address select p");
+
+        return "OK";
+    }
+
+    private void testBug26308Query(String hql) {
+        PanacheQuery<Person> query = Person.find(hql);
+        Assertions.assertEquals(0, query.list().size());
+        Assertions.assertEquals(0, query.count());
+    }
 }

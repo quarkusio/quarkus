@@ -2054,4 +2054,30 @@ public class TestEndpoint {
                     return Person.deleteAll();
                 }).map(v -> "OK");
     }
+
+    @GET
+    @Path("26308")
+    @WithTransaction
+    public Uni<String> testBug26308() {
+        return testBug26308Query("from Person2 p left join fetch p.address")
+                .flatMap(p -> testBug26308Query("from Person2 p left join p.address"))
+                .flatMap(p -> testBug26308Query("select p from Person2 p left join fetch p.address"))
+                .flatMap(p -> testBug26308Query("select p from Person2 p left join p.address"))
+                .flatMap(p -> testBug26308Query("from Person2 p left join fetch p.address select p"))
+                .flatMap(p -> testBug26308Query("from Person2 p left join p.address select p"))
+                .map(p -> "OK");
+    }
+
+    private Uni<Void> testBug26308Query(String hql) {
+        PanacheQuery<Person> query = Person.find(hql);
+        return query.list()
+                .flatMap(list -> {
+                    Assertions.assertEquals(0, list.size());
+                    return query.count();
+                })
+                .map(count -> {
+                    Assertions.assertEquals(0, count);
+                    return null;
+                });
+    }
 }

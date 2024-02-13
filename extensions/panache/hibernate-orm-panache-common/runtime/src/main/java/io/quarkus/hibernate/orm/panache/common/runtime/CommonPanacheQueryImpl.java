@@ -302,7 +302,7 @@ public class CommonPanacheQueryImpl<Entity> {
             return countQuery;
         }
 
-        return PanacheJpaUtil.getCountQuery(selectQuery);
+        return PanacheJpaUtil.getFastCountQuery(selectQuery);
     }
 
     @SuppressWarnings("unchecked")

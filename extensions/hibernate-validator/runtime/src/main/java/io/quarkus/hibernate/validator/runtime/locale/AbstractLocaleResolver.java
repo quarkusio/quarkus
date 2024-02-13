@@ -8,12 +8,17 @@ import java.util.Optional;
 import org.hibernate.validator.spi.messageinterpolation.LocaleResolver;
 import org.hibernate.validator.spi.messageinterpolation.LocaleResolverContext;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 
 abstract class AbstractLocaleResolver implements LocaleResolver {
 
     private static final Logger log = Logger.getLogger(AbstractLocaleResolver.class);
     private static final String ACCEPT_HEADER = "Accept-Language";
 
+    /**
+     * @return case-insensitive map
+     * @see CaseInsensitiveMap
+     */
     protected abstract Map<String, List<String>> getHeaders();
 
     @Override

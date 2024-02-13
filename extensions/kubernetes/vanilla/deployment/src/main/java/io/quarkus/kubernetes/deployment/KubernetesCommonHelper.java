@@ -75,6 +75,7 @@ import io.dekorate.project.FileProjectFactory;
 import io.dekorate.project.Project;
 import io.dekorate.project.ScmInfo;
 import io.dekorate.utils.Annotations;
+import io.dekorate.utils.Git;
 import io.dekorate.utils.Labels;
 import io.dekorate.utils.Strings;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
@@ -989,7 +990,7 @@ public class KubernetesCommonHelper {
             if (vcsUrl != null) {
                 result.add(new DecoratorBuildItem(target,
                         new AddAnnotationDecorator(name,
-                                new Annotation(QUARKUS_ANNOTATIONS_VCS_URL, vcsUrl, new String[0]))));
+                                new Annotation(QUARKUS_ANNOTATIONS_VCS_URL, Git.sanitizeRemoteUrl(vcsUrl), new String[0]))));
             }
 
         });

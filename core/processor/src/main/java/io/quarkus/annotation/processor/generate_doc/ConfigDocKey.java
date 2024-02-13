@@ -27,6 +27,8 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
     // if a key is "quarkus.kubernetes.part-of", then the value of this would be "kubernetes"
     private String topLevelGrouping;
     private boolean isEnum;
+    private String since;
+    private String environmentVariable;
 
     public ConfigDocKey() {
     }
@@ -130,7 +132,7 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
         return withinAMap;
     }
 
-    String computeTypeSimpleName() {
+    public String computeTypeSimpleName() {
         String unwrappedType = DocGeneratorUtil.unbox(type);
 
         Matcher matcher = Constants.CLASS_NAME_PATTERN.matcher(unwrappedType);
@@ -191,6 +193,22 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
 
     public void setEnum(boolean anEnum) {
         isEnum = anEnum;
+    }
+
+    public String getSince() {
+        return since;
+    }
+
+    public void setSince(String since) {
+        this.since = since;
+    }
+
+    public String getEnvironmentVariable() {
+        return environmentVariable;
+    }
+
+    public void setEnvironmentVariable(String environmentVariable) {
+        this.environmentVariable = environmentVariable;
     }
 
     @Override

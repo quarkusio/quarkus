@@ -180,7 +180,7 @@ public class DataSources {
         }
 
         DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig
-                .getDataSourceJdbcRuntimeConfig(dataSourceName);
+                .dataSources().get(dataSourceName).jdbc();
         if (!dataSourceJdbcRuntimeConfig.url().isPresent()) {
             //this is not an error situation, because we want to allow the situation where a JDBC extension
             //is installed but has not been configured

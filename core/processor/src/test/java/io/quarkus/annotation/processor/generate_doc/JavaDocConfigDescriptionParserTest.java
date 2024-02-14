@@ -3,6 +3,7 @@ package io.quarkus.annotation.processor.generate_doc;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.asciidoctor.Asciidoctor.Factory;
 import org.junit.jupiter.api.BeforeEach;
@@ -250,6 +251,15 @@ public class JavaDocConfigDescriptionParserTest {
         // TODO
         // assertEquals("Example:\n\n```\nfoo\nbar\n```",
         // parser.parseConfigDescription("Example:\n\n<pre>{@code\nfoo\nbar\n}</pre>"));
+    }
+
+    @Test
+    public void since() {
+        AtomicReference<String> javadoc = new AtomicReference<>();
+        AtomicReference<String> since = new AtomicReference<>();
+        parser.parseConfigDescription("Javadoc text\n\n@since 1.2.3", javadoc::set, since::set);
+        assertEquals("Javadoc text", javadoc.get());
+        assertEquals("1.2.3", since.get());
     }
 
     @Test

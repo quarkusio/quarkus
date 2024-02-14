@@ -79,11 +79,8 @@ public final class MavenConfigDocBuilder extends ConfigDocBuilder {
             configDocKey.setAdditionalKeys(List.of(name));
             configDocKey.setConfigPhase(ConfigPhase.RUN_TIME);
             configDocKey.setDefaultValue(defaultValue == null ? Constants.EMPTY : defaultValue);
-            if (description != null && !description.isBlank()) {
-                configDocKey.setConfigDoc(javaDocParser.parseConfigDescription(description));
-            } else {
-                configDocKey.setConfigDoc(EMPTY);
-            }
+            javaDocParser.parseConfigDescription(description, configDocKey::setConfigDoc, configDocKey::setSince);
+            configDocKey.setEnvironmentVariable(DocGeneratorUtil.toEnvVarName(name));
             configDocKey.setOptional(!required);
             final ConfigDocItem configDocItem = new ConfigDocItem();
             configDocItem.setConfigDocKey(configDocKey);

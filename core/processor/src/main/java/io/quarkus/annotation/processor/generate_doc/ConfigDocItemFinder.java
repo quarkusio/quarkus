@@ -390,7 +390,8 @@ class ConfigDocItemFinder {
                 configDocKey.setConfigPhase(configPhase);
                 configDocKey.setDefaultValue(defaultValue);
                 configDocKey.setDocMapKey(configDocMapKey);
-                configDocKey.setConfigDoc(javaDocParser.parseConfigDescription(rawJavaDoc));
+                javaDocParser.parseConfigDescription(rawJavaDoc, configDocKey::setConfigDoc, configDocKey::setSince);
+                configDocKey.setEnvironmentVariable(DocGeneratorUtil.toEnvVarName(name));
                 configDocKey.setAcceptedValues(acceptedValues);
                 configDocKey.setJavaDocSiteLink(getJavaDocSiteLink(type));
                 ConfigDocItem configDocItem = new ConfigDocItem();
@@ -628,6 +629,8 @@ class ConfigDocItemFinder {
                 additionalKeys.addAll(additionalNames.stream().map(k -> k + configDocKey.getKey()).collect(toList()));
                 configDocKey.setAdditionalKeys(additionalKeys);
                 configDocKey.setKey(parentName + configDocKey.getKey());
+                configDocKey.setEnvironmentVariable(
+                        DocGeneratorUtil.toEnvVarName(parentName) + configDocKey.getEnvironmentVariable());
                 decoratedItems.add(configDocItem);
             } else {
                 ConfigDocSection section = configDocItem.getConfigDocSection();

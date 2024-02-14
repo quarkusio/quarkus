@@ -1,6 +1,7 @@
 package io.quarkus.oidc.runtime;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -13,6 +14,7 @@ import io.quarkus.oidc.OidcTenantConfig.Provider;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
+import io.smallrye.config.SmallRyeConfig;
 
 public class OidcConfigPropertySupplier implements Supplier<String> {
     private static final String AUTH_SERVER_URL_CONFIG_KEY = "quarkus.oidc.auth-server-url";
@@ -23,6 +25,7 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
             TOKEN_PATH_CONFIG_KEY, AUTH_PATH_CONFIG_KEY);
     private static final String OIDC_PROVIDER_CONFIG_KEY = "quarkus.oidc.provider";
     private static final String SCOPES_KEY = "quarkus.oidc.authentication.scopes";
+    private static final String AUTH_EXTRA_PARAMS_KEY = "quarkus.oidc.authentication.extra-params";
     private String oidcConfigProperty;
     private String defaultValue;
     private boolean urlProperty;
@@ -119,6 +122,22 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
             } else {
                 return OidcConstants.OPENID_SCOPE;
             }
+        } else if (AUTH_EXTRA_PARAMS_KEY.equals(oidcConfigProperty)) {
+            StringBuilder sb = new StringBuilder();
+            if (config instanceof SmallRyeConfig) {
+                Optional<Map<String, String>> extraParams = ((SmallRyeConfig) config).getOptionalValues(oidcConfigProperty,
+                        String.class,
+                        String.class);
+                if (extraParams.isPresent()) {
+                    for (Map.Entry<String, String> entry : extraParams.get().entrySet()) {
+                        if (entry.getKey().equals(OidcConstants.TOKEN_SCOPE)) {
+                            continue;
+                        }
+                        sb.append("&").append(entry.getKey()).append("=").append(OidcCommonUtils.urlEncode(entry.getValue()));
+                    }
+                }
+            }
+            return sb.toString();
         } else {
             return checkUrlProperty(config.getOptionalValue(oidcConfigProperty, String.class),
                     providerConfig, config);

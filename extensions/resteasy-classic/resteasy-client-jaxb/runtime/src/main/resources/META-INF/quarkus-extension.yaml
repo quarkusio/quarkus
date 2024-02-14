@@ -8,6 +8,7 @@ metadata:
   - "web-client"
   - "microprofile-rest-client"
   - "jaxb"
+  guide: "https://quarkus.io/guides/resteasy-client"
   categories:
   - "web"
   - "serialization"

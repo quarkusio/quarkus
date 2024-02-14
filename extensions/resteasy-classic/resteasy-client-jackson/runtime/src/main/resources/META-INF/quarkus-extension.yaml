@@ -9,6 +9,7 @@ metadata:
   - "microprofile-rest-client"
   - "json"
   - "jackson"
+  guide: "https://quarkus.io/guides/resteasy-client"
   categories:
   - "web"
   - "serialization"

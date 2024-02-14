@@ -3,6 +3,7 @@ package io.quarkus.it.keycloak;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
@@ -17,6 +18,9 @@ public class OidcDiscoveryRequestCustomizer implements OidcRequestFilter {
 
     @Override
     public void filter(HttpRequest<Buffer> request, Buffer buffer, OidcRequestContextProperties contextProps) {
+        if (!request.uri().endsWith(".well-known/openid-configuration")) {
+            throw new OIDCException("Filter is applied to the wrong endpoint: " + request.uri());
+        }
         request.putHeader("Discovery", "OK");
     }
 }

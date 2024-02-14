@@ -85,6 +85,9 @@ public class TestEndpoint {
         Assertions.assertEquals(1, Person.count("name = :name", Parameters.with("name", "stef").map()));
         Assertions.assertEquals(1, Person.count("name = :name", Parameters.with("name", "stef")));
         Assertions.assertEquals(1, Person.count("name", "stef"));
+        Assertions.assertEquals(1, Person.count("from Person2 where name = ?1", "stef"));
+        Assertions.assertEquals(1, Person.count("where name = ?1", "stef"));
+        Assertions.assertEquals(1, Person.count("order by name"));
 
         Assertions.assertEquals(1, Dog.count());
         Assertions.assertEquals(1, person.dogs.size());
@@ -107,6 +110,10 @@ public class TestEndpoint {
         Assertions.assertEquals(person, Person.findAll().singleResult());
 
         persons = Person.find("name = ?1", "stef").list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
+        persons = Person.find("where name = ?1", "stef").list();
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
 
@@ -1823,5 +1830,17 @@ public class TestEndpoint {
         PanacheQuery<Person> query = Person.find(hql);
         Assertions.assertEquals(0, query.list().size());
         Assertions.assertEquals(0, query.count());
+    }
+
+    @GET
+    @Path("36496")
+    @Transactional
+    public String testBug36496() {
+        PanacheQuery<Person> query = Person.find("WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT p FROM Person2 p");
+        Assertions.assertEquals(0, query.list().size());
+        Assertions.assertEquals(0, query.count());
+        Assertions.assertEquals(0,
+                Person.count("WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT count(*) FROM Person2 p"));
+        return "OK";
     }
 }

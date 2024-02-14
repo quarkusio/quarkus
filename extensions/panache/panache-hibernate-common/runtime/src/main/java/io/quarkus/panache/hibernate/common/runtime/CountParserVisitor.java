@@ -35,20 +35,24 @@ public class CountParserVisitor extends HqlParserBaseVisitor<String> {
 
     @Override
     public String visitSelectClause(SelectClauseContext ctx) {
-        if (ctx.SELECT() != null) {
-            ctx.SELECT().accept(this);
-        }
-        if (ctx.DISTINCT() != null) {
-            sb.append(" count(");
-            ctx.DISTINCT().accept(this);
-            if (ctx.selectionList().children.size() != 1) {
-                // FIXME: error message should include query
-                throw new RuntimeException("Cannot count on more than one column");
+        if (inSimpleQueryGroup == 1) {
+            if (ctx.SELECT() != null) {
+                ctx.SELECT().accept(this);
             }
-            ctx.selectionList().children.get(0).accept(this);
-            sb.append(" )");
+            if (ctx.DISTINCT() != null) {
+                sb.append(" count(");
+                ctx.DISTINCT().accept(this);
+                if (ctx.selectionList().children.size() != 1) {
+                    // FIXME: error message should include query
+                    throw new RuntimeException("Cannot count on more than one column");
+                }
+                ctx.selectionList().children.get(0).accept(this);
+                sb.append(" )");
+            } else {
+                sb.append(" count( * )");
+            }
         } else {
-            sb.append(" count( * )");
+            super.visitSelectClause(ctx);
         }
         return null;
     }

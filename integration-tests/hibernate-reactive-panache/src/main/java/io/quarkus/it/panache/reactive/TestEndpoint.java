@@ -75,6 +75,15 @@ public class TestEndpoint {
                                 return Person.count("name", "stef");
                             }).flatMap(count -> {
                                 Assertions.assertEquals(1, count);
+                                return Person.count("from Person2 where name = ?1", "stef");
+                            }).flatMap(count -> {
+                                Assertions.assertEquals(1, count);
+                                return Person.count("where name = ?1", "stef");
+                            }).flatMap(count -> {
+                                Assertions.assertEquals(1, count);
+                                return Person.count("order by name");
+                            }).flatMap(count -> {
+                                Assertions.assertEquals(1, count);
                                 return Dog.count();
                             }).flatMap(count -> {
                                 Assertions.assertEquals(1, count);
@@ -100,6 +109,11 @@ public class TestEndpoint {
                                 Assertions.assertEquals(person, personResult);
 
                                 return Person.find("name = ?1", "stef").list();
+                            }).flatMap(persons -> {
+                                Assertions.assertEquals(1, persons.size());
+                                Assertions.assertEquals(person, persons.get(0));
+
+                                return Person.find("WHERE name = ?1", "stef").list();
                             }).flatMap(persons -> {
                                 Assertions.assertEquals(1, persons.size());
                                 Assertions.assertEquals(person, persons.get(0));
@@ -2078,6 +2092,24 @@ public class TestEndpoint {
                 .map(count -> {
                     Assertions.assertEquals(0, count);
                     return null;
+                });
+    }
+
+    @GET
+    @Path("36496")
+    @WithTransaction
+    public Uni<String> testBug36496() {
+        PanacheQuery<Person> query = Person.find("WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT p FROM Person2 p");
+        return query.list()
+                .flatMap(list -> {
+                    Assertions.assertEquals(0, list.size());
+                    return query.count();
+                }).flatMap(count -> {
+                    Assertions.assertEquals(0, count);
+                    return Person.count("WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT count(*) FROM Person2 p");
+                }).map(count -> {
+                    Assertions.assertEquals(0, count);
+                    return "OK";
                 });
     }
 }

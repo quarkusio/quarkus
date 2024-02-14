@@ -518,22 +518,23 @@ The `Sort` class has plenty of methods for adding columns and specifying sort di
 Normally, HQL queries are of this form: `from EntityName [where ...] [order by ...]`, with optional elements
 at the end.
 
-If your select query does not start with `from`, we support the following additional forms:
+If your select query does not start with `from`, `select` or `with`, we support the following additional forms:
 
 - `order by ...` which will expand to `from EntityName order by ...`
-- `<singleColumnName>` (and single parameter) which will expand to `from EntityName where <singleColumnName> = ?`
+- `<singleAttribute>` (and single parameter) which will expand to `from EntityName where <singleAttribute> = ?`
+- `where <query>` will expand to `from EntityName where <query>`
 - `<query>` will expand to `from EntityName where <query>`
 
 If your update query does not start with `update`, we support the following additional forms:
 
-- `from EntityName ...` which will expand to `update from EntityName ...`
-- `set? <singleColumnName>` (and single parameter) which will expand to `update from EntityName set <singleColumnName> = ?`
-- `set? <update-query>` will expand to `update from EntityName set <update-query>`
+- `from EntityName ...` which will expand to `update EntityName ...`
+- `set? <singleAttribute>` (and single parameter) which will expand to `update EntityName set <singleAttribute> = ?`
+- `set? <update-query>` will expand to `update EntityName set <update-query>`
 
 If your delete query does not start with `delete`, we support the following additional forms:
 
 - `from EntityName ...` which will expand to `delete from EntityName ...`
-- `<singleColumnName>` (and single parameter) which will expand to `delete from EntityName where <singleColumnName> = ?`
+- `<singleAttribute>` (and single parameter) which will expand to `delete from EntityName where <singleAttribute> = ?`
 - `<query>` will expand to `delete from EntityName where <query>`
 
 NOTE: You can also write your queries in plain

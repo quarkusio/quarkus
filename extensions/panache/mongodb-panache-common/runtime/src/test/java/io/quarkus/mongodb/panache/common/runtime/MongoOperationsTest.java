@@ -95,6 +95,14 @@ class MongoOperationsTest {
         //test field replacement
         query = operations.bindFilter(DemoObj.class, "property", new Object[] { "a value" });
         assertEquals("{'value':'a value'}", query);
+
+        // keywords (quoted)
+        query = operations.bindFilter(Object.class, "`instant` = ?1", new Object[] { "a value" });
+        assertEquals("{'instant':'a value'}", query);
+
+        // keywords (unquoted)
+        query = operations.bindFilter(Object.class, "instant = ?1", new Object[] { "a value" });
+        assertEquals("{'instant':'a value'}", query);
     }
 
     private Object toDate(LocalDateTime of) {
@@ -285,12 +293,12 @@ class MongoOperationsTest {
         assertEquals("{'field':{'$in':['f1', 'f2']},'isOk':true}", query);
 
         query = operations.bindFilter(DemoObj.class,
-                "field in ?1 and property = ?2 or property = ?3",
+                "field in ?1 and (property = ?2 or property = ?3)",
                 new Object[] { list, "jpg", "gif" });
         assertEquals("{'field':{'$in':['f1', 'f2']},'$or':[{'value':'jpg'},{'value':'gif'}]}", query);
 
         query = operations.bindFilter(DemoObj.class,
-                "field in ?1 and isOk = ?2 and property = ?3 or property = ?4",
+                "field in ?1 and isOk = ?2 and (property = ?3 or property = ?4)",
                 new Object[] { list, true, "jpg", "gif" });
         assertEquals("{'field':{'$in':['f1', 'f2']},'isOk':true,'$or':[{'value':'jpg'},{'value':'gif'}]}", query);
     }
@@ -361,12 +369,12 @@ class MongoOperationsTest {
         assertEquals("{'field':{'$in':['f1', 'f2']},'isOk':true}", query);
 
         query = operations.bindFilter(DemoObj.class,
-                "field in :fields and property = :p1 or property = :p2",
+                "field in :fields and (property = :p1 or property = :p2)",
                 Parameters.with("fields", list).and("p1", "jpg").and("p2", "gif").map());
         assertEquals("{'field':{'$in':['f1', 'f2']},'$or':[{'value':'jpg'},{'value':'gif'}]}", query);
 
         query = operations.bindFilter(DemoObj.class,
-                "field in :fields and isOk = :isOk and property = :p1 or property = :p2",
+                "field in :fields and isOk = :isOk and (property = :p1 or property = :p2)",
                 Parameters.with("fields", list)
                         .and("isOk", true)
                         .and("p1", "jpg")

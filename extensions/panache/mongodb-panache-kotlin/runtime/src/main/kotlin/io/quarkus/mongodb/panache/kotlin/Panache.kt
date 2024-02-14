@@ -1,6 +1,6 @@
 package io.quarkus.mongodb.panache.kotlin
 
-import com.mongodb.session.ClientSession
+import com.mongodb.client.ClientSession
 import io.quarkus.mongodb.panache.kotlin.runtime.KotlinMongoOperations
 
 object Panache {

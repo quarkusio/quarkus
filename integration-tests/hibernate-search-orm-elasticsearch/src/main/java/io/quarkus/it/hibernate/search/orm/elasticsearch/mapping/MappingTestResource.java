@@ -44,7 +44,7 @@ public class MappingTestResource {
         // since the property overrides this mapper from the extension:
         assertThatThrownBy(() -> assertSearch(searchSession, MappingTestingSearchExtensionEntity.class))
                 .isInstanceOf(SearchException.class)
-                .hasMessageContainingAll("No matching indexed entity types for types",
+                .hasMessageContainingAll("No matching indexed entity types for classes",
                         MappingTestingSearchExtensionEntity.class.getName());
         return "OK";
     }
@@ -58,15 +58,15 @@ public class MappingTestResource {
 
         assertThatThrownBy(() -> assertSearch(searchSession, MappingTestingApplicationBeanEntity.class))
                 .isInstanceOf(SearchException.class)
-                .hasMessageContainingAll("No matching indexed entity types for types",
+                .hasMessageContainingAll("No matching indexed entity types for classes",
                         MappingTestingApplicationBeanEntity.class.getName());
         assertThatThrownBy(() -> assertSearch(searchSession, MappingTestingDependentBeanEntity.class))
                 .isInstanceOf(SearchException.class)
-                .hasMessageContainingAll("No matching indexed entity types for types",
+                .hasMessageContainingAll("No matching indexed entity types for classes",
                         MappingTestingDependentBeanEntity.class.getName());
         assertThatThrownBy(() -> assertSearch(searchSession, MappingTestingClassEntity.class))
                 .isInstanceOf(SearchException.class)
-                .hasMessageContainingAll("No matching indexed entity types for types",
+                .hasMessageContainingAll("No matching indexed entity types for classes",
                         MappingTestingClassEntity.class.getName());
 
         assertSearch(searchSession, MappingTestingSearchExtensionEntity.class);

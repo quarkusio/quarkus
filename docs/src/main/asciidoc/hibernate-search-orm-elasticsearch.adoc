@@ -16,6 +16,12 @@ You have a Hibernate ORM-based application? You want to provide a full-featured 
 With this guide, you'll learn how to synchronize your entities to an Elasticsearch or OpenSearch cluster in a heartbeat with Hibernate Search.
 We will also explore how you can query your Elasticsearch or OpenSearch cluster using the Hibernate Search API.
 
+[IMPORTANT]
+====
+If you want to index entities that are not Hibernate ORM entities,
+see xref:hibernate-search-standalone-elasticsearch.adoc[this dedicated guide] instead.
+====
+
 == Prerequisites
 
 :prerequisites-time: 20 minutes

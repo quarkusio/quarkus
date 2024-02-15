@@ -20,6 +20,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuil
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
@@ -176,29 +177,50 @@ public class NativeImageFeatureStep {
         // hack in reinitialization of process info classes
         if (!runtimeReinitializedClassBuildItems.isEmpty()) {
             MethodCreator runtimeReinitializedClasses = file
-                    .getMethodCreator("runtimeReinitializedClasses", void.class)
+                    .getMethodCreator("runtimeReinitializedClasses", Class[].class)
                     .setModifiers(Modifier.PRIVATE | Modifier.STATIC);
 
             ResultHandle thisClass = runtimeReinitializedClasses.loadClassFromTCCL(GRAAL_FEATURE);
             ResultHandle cl = runtimeReinitializedClasses.invokeVirtualMethod(
                     ofMethod(Class.class, "getClassLoader", ClassLoader.class),
                     thisClass);
-            ResultHandle quarkus = runtimeReinitializedClasses.load("Quarkus");
-            ResultHandle imageSingleton = runtimeReinitializedClasses.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
-                    runtimeReinitializedClasses.loadClassFromTCCL(RUNTIME_CLASS_INITIALIZATION_SUPPORT));
-            for (RuntimeReinitializedClassBuildItem runtimeReinitializedClass : runtimeReinitializedClassBuildItems) {
+            ResultHandle classesArray = runtimeReinitializedClasses.newArray(Class.class,
+                    runtimeReinitializedClasses.load(runtimeReinitializedClassBuildItems.size()));
+            for (int i = 0; i < runtimeReinitializedClassBuildItems.size(); i++) {
                 TryBlock tc = runtimeReinitializedClasses.tryBlock();
                 ResultHandle clazz = tc.invokeStaticMethod(
                         ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
-                        tc.load(runtimeReinitializedClass.getClassName()), tc.load(false), cl);
-                tc.invokeInterfaceMethod(RERUN_INITIALIZATION, imageSingleton, clazz, quarkus);
-
+                        tc.load(runtimeReinitializedClassBuildItems.get(i).getClassName()), tc.load(false), cl);
+                tc.writeArrayValue(classesArray, i, clazz);
                 CatchBlockCreator cc = tc.addCatch(Throwable.class);
                 cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
             }
-            runtimeReinitializedClasses.returnVoid();
+            runtimeReinitializedClasses.returnValue(classesArray);
 
-            overallCatch.invokeStaticMethod(runtimeReinitializedClasses.getMethodDescriptor());
+            ResultHandle classes = overallCatch.invokeStaticMethod(runtimeReinitializedClasses.getMethodDescriptor());
+
+            ResultHandle graalVMVersion = overallCatch.invokeStaticMethod(GRAALVM_VERSION_GET_CURRENT);
+            BranchResult graalVm23_1Test = overallCatch
+                    .ifGreaterEqualZero(overallCatch.invokeVirtualMethod(GRAALVM_VERSION_COMPARE_TO, graalVMVersion,
+                            overallCatch.marshalAsArray(int.class, overallCatch.load(23), overallCatch.load(1))));
+            /* GraalVM >= 23.1 */
+            try (BytecodeCreator greaterEqual23_1 = graalVm23_1Test.trueBranch()) {
+                greaterEqual23_1.invokeStaticMethod(INITIALIZE_CLASSES_AT_RUN_TIME, classes);
+            }
+            /* GraalVM < 23.1 */
+            try (BytecodeCreator less23_1 = graalVm23_1Test.falseBranch()) {
+                ResultHandle quarkus = less23_1.load("Quarkus");
+                ResultHandle imageSingleton = less23_1.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
+                        less23_1.loadClassFromTCCL(RUNTIME_CLASS_INITIALIZATION_SUPPORT));
+                ResultHandle arraySize = less23_1.arrayLength(classes);
+                AssignableResultHandle index = less23_1.createVariable(int.class);
+                less23_1.assign(index, less23_1.load(0));
+                try (BytecodeCreator loop = less23_1.whileLoop(c -> c.ifIntegerLessThan(index, arraySize)).block()) {
+                    loop.invokeInterfaceMethod(RERUN_INITIALIZATION, imageSingleton, loop.readArrayValue(classes, index),
+                            quarkus);
+                    loop.assign(index, loop.increment(index));
+                }
+            }
         }
 
         // Ensure registration of fields being accessed through unsafe is done last to ensure that the class

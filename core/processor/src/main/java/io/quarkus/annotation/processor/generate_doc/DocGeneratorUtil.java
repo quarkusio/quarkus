@@ -16,8 +16,6 @@ import java.util.stream.Collectors;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 
-import io.quarkus.annotation.processor.Constants;
-
 public class DocGeneratorUtil {
     private static final String NEW_LINE = "\n";
     private static final String CORE = "core";

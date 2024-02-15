@@ -1,0 +1,101 @@
+package io.quarkus.annotation.processor.documentation.config;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.Set;
+
+import javax.annotation.processing.RoundEnvironment;
+import javax.lang.model.element.TypeElement;
+import javax.tools.Diagnostic.Kind;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+
+import io.quarkus.annotation.processor.ExtensionProcessor;
+import io.quarkus.annotation.processor.Outputs;
+import io.quarkus.annotation.processor.documentation.config.model.ResolvedModel;
+import io.quarkus.annotation.processor.documentation.config.resolver.ConfigResolver;
+import io.quarkus.annotation.processor.documentation.config.scanner.ConfigAnnotationScanner;
+import io.quarkus.annotation.processor.documentation.config.scanner.ConfigCollector;
+import io.quarkus.annotation.processor.documentation.config.util.Types;
+import io.quarkus.annotation.processor.util.Config;
+import io.quarkus.annotation.processor.util.Utils;
+
+public class ConfigDocExtensionProcessor implements ExtensionProcessor {
+
+    private static final ObjectMapper YAML_OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
+
+    static {
+        YAML_OBJECT_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_DEFAULT);
+    }
+
+    private Config config;
+    private Utils utils;
+    private ConfigAnnotationScanner configAnnotationScanner;
+
+    @Override
+    public void init(Config config, Utils utils) {
+        this.config = config;
+        this.utils = utils;
+        this.configAnnotationScanner = new ConfigAnnotationScanner(config, utils);
+    }
+
+    @Override
+    public void process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+        Optional<TypeElement> configGroup = findAnnotation(annotations, Types.ANNOTATION_CONFIG_GROUP);
+        Optional<TypeElement> configRoot = findAnnotation(annotations, Types.ANNOTATION_CONFIG_ROOT);
+
+        // make sure we scan the groups before the root
+        if (configGroup.isPresent()) {
+            configAnnotationScanner.scanConfigGroups(roundEnv, configGroup.get());
+        }
+        if (configRoot.isPresent()) {
+            configAnnotationScanner.scanConfigRoots(roundEnv, configRoot.get());
+        }
+    }
+
+    private Optional<TypeElement> findAnnotation(Set<? extends TypeElement> annotations, String annotationName) {
+        for (TypeElement annotation : annotations) {
+            if (annotationName.equals(annotation.getQualifiedName().toString())) {
+                return Optional.of(annotation);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    @Override
+    public void finalizeProcessing() {
+        ConfigCollector configCollector = configAnnotationScanner.finalizeProcessing();
+
+        utils.filer().write(Outputs.META_INF_QUARKUS_JAVADOC, configCollector.getJavadocProperties());
+
+        ConfigResolver configResolver = new ConfigResolver(utils, configCollector);
+        ResolvedModel resolvedModel = configResolver.resolveModel();
+
+        // we don't want to write this file in the jar
+        Path quarkusConfigDocPath = utils.filer().getTargetPath().resolve(Outputs.QUARKUS_CONFIG_DOC);
+        Path yamlModelPath = quarkusConfigDocPath.resolve("resolved-model-" + config.getExtension().artifactId() + ".yaml");
+        try {
+            Files.createDirectories(quarkusConfigDocPath);
+            YAML_OBJECT_MAPPER.writeValue(yamlModelPath.toFile(), resolvedModel);
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to write the resolved model to: " + yamlModelPath, e);
+        }
+
+        if (config.isDebug()) {
+            utils.processingEnv().getMessager().printMessage(Kind.NOTE,
+                    "Result of config scanning:\n\n" + configCollector.toString());
+
+            try {
+                utils.processingEnv().getMessager().printMessage(Kind.NOTE,
+                        "Resolved model:\n\n" + Files.readString(yamlModelPath));
+            } catch (IOException e) {
+                throw new IllegalStateException("Unable to read the resolved model from: " + yamlModelPath, e);
+            }
+        }
+    }
+}

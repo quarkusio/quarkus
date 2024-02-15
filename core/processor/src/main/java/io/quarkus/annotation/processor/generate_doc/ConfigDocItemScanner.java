@@ -22,8 +22,6 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 
-import io.quarkus.annotation.processor.Constants;
-
 final public class ConfigDocItemScanner {
     private static final String IO_QUARKUS_TEST_EXTENSION_PACKAGE = "io.quarkus.extest.";
 

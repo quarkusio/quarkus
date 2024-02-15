@@ -1,12 +1,12 @@
-package io.quarkus.annotation.processor.generate_doc;
+package io.quarkus.annotation.processor.documentation.config.model;
 
 import java.util.Comparator;
 
 public enum ConfigPhase implements Comparable<ConfigPhase> {
-    RUN_TIME("The configuration is overridable at runtime", "", "RunTime"),
-    BUILD_TIME("The configuration is not overridable at runtime", Constants.CONFIG_PHASE_BUILD_TIME_ILLUSTRATION, "BuildTime"),
-    BUILD_AND_RUN_TIME_FIXED("The configuration is not overridable at runtime", Constants.CONFIG_PHASE_BUILD_TIME_ILLUSTRATION,
-            "BuildTime");
+
+    RUN_TIME("RunTime"),
+    BUILD_TIME("BuildTime"),
+    BUILD_AND_RUN_TIME_FIXED("BuildTime");
 
     static final Comparator<ConfigPhase> COMPARATOR = new Comparator<ConfigPhase>() {
         /**
@@ -49,27 +49,10 @@ public enum ConfigPhase implements Comparable<ConfigPhase> {
         }
     };
 
-    private String description;
-    private String illustration;
     private String configSuffix;
 
-    ConfigPhase(String description, String illustration, String configSuffix) {
-        this.description = description;
-        this.illustration = illustration;
+    ConfigPhase(String configSuffix) {
         this.configSuffix = configSuffix;
-    }
-
-    @Override
-    public String toString() {
-        return "ConfigPhase{" +
-                "description='" + description + '\'' +
-                ", illustration='" + illustration + '\'' +
-                ", configSuffix='" + configSuffix + '\'' +
-                '}';
-    }
-
-    public String getIllustration() {
-        return illustration;
     }
 
     public String getConfigSuffix() {

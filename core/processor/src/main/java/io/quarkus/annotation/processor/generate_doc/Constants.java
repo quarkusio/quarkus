@@ -1,4 +1,4 @@
-package io.quarkus.annotation.processor;
+package io.quarkus.annotation.processor.generate_doc;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -14,8 +14,6 @@ import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.quarkus.annotation.processor.generate_doc.ConfigDocItem;
 
 final public class Constants {
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();

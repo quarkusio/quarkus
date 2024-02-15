@@ -13,8 +13,8 @@ import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.apache.maven.plugin.descriptor.PluginDescriptorBuilder;
 import org.codehaus.plexus.util.xml.XmlStreamReader;
 
-import io.quarkus.annotation.processor.Constants;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocWriter;
+import io.quarkus.annotation.processor.generate_doc.Constants;
 import io.quarkus.annotation.processor.generate_doc.MavenConfigDocBuilder;
 import io.quarkus.annotation.processor.generate_doc.MavenConfigDocBuilder.GoalParamsBuilder;
 

@@ -25,8 +25,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.annotation.processor.Constants;
-
 public class DocGeneratorUtilTest {
     @Test
     public void shouldReturnEmptyListForPrimitiveValue() {

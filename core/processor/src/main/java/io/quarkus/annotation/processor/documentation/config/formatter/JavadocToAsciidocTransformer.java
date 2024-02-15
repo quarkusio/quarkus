@@ -1,12 +1,7 @@
-package io.quarkus.annotation.processor.generate_doc;
+package io.quarkus.annotation.processor.documentation.config.formatter;
 
-import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.hyphenate;
-
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
+import java.util.Optional;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Node;
@@ -20,12 +15,23 @@ import com.github.javaparser.javadoc.description.JavadocDescription;
 import com.github.javaparser.javadoc.description.JavadocDescriptionElement;
 import com.github.javaparser.javadoc.description.JavadocInlineTag;
 
-final class JavaDocParser {
+import io.quarkus.annotation.processor.documentation.config.discovery.JavadocFormat;
+import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadoc;
+import io.quarkus.annotation.processor.documentation.config.discovery.ParsedJavadocSection;
+import io.quarkus.annotation.processor.documentation.config.util.ConfigNamingUtil;
+
+public final class JavadocToAsciidocTransformer {
+
+    public static final JavadocToAsciidocTransformer INSTANCE = new JavadocToAsciidocTransformer();
+    public static final JavadocToAsciidocTransformer INLINE_MACRO_INSTANCE = new JavadocToAsciidocTransformer(true);
 
     private static final Pattern START_OF_LINE = Pattern.compile("^", Pattern.MULTILINE);
     private static final Pattern REPLACE_WINDOWS_EOL = Pattern.compile("\r\n");
     private static final Pattern REPLACE_MACOS_EOL = Pattern.compile("\r");
     private static final Pattern STARTING_SPACE = Pattern.compile("^ +");
+
+    private static final String EMPTY = "";
+    private static final String DOT = ".";
 
     private static final String BACKTICK = "`";
     private static final String HASH = "#";
@@ -72,52 +78,46 @@ final class JavaDocParser {
 
     private final boolean inlineMacroMode;
 
-    public JavaDocParser(boolean inlineMacroMode) {
+    private JavadocToAsciidocTransformer(boolean inlineMacroMode) {
         this.inlineMacroMode = inlineMacroMode;
     }
 
-    public JavaDocParser() {
+    private JavadocToAsciidocTransformer() {
         this(false);
     }
 
-    public String parseConfigDescription(String javadocComment) {
-        final AtomicReference<String> ref = new AtomicReference<>();
-        parseConfigDescription(javadocComment, ref::set, s -> {
-        });
-        return ref.get();
-    }
-
-    public void parseConfigDescription(
-            String javadocComment,
-            Consumer<String> javadocTextConsumer,
-            Consumer<String> sinceConsumer) {
-
-        if (javadocComment == null || javadocComment.trim().isEmpty()) {
-            javadocTextConsumer.accept(Constants.EMPTY);
-            return;
+    public ParsedJavadoc parseConfigItemJavadoc(String rawJavadoc) {
+        if (rawJavadoc == null || rawJavadoc.isBlank()) {
+            return ParsedJavadoc.empty();
         }
 
         // the parser expects all the lines to start with "* "
         // we add it as it has been previously removed
-        javadocComment = START_OF_LINE.matcher(javadocComment).replaceAll("* ");
-        Javadoc javadoc = StaticJavaParser.parseJavadoc(javadocComment);
+        Javadoc javadoc = StaticJavaParser.parseJavadoc(START_OF_LINE.matcher(rawJavadoc).replaceAll("* "));
+
+        String description;
+        JavadocFormat originalFormat;
 
         if (isAsciidoc(javadoc)) {
-            javadocTextConsumer.accept(handleEolInAsciidoc(javadoc));
+            description = handleEolInAsciidoc(javadoc);
+            originalFormat = JavadocFormat.ASCIIDOC;
         } else {
-            javadocTextConsumer.accept(htmlJavadocToAsciidoc(javadoc.getDescription()));
+            description = htmlJavadocToAsciidoc(javadoc.getDescription());
+            originalFormat = JavadocFormat.JAVADOC;
         }
-        javadoc.getBlockTags().stream()
+
+        Optional<String> since = javadoc.getBlockTags().stream()
                 .filter(t -> t.getType() == Type.SINCE)
                 .map(JavadocBlockTag::getContent)
                 .map(JavadocDescription::toText)
-                .findFirst()
-                .ifPresent(sinceConsumer::accept);
+                .findFirst();
+
+        return new ParsedJavadoc(description, since.isPresent() ? since.get() : null, originalFormat);
     }
 
-    public SectionHolder parseConfigSection(String javadocComment, int sectionLevel) {
+    public ParsedJavadocSection parseConfigSectionJavadoc(String javadocComment) {
         if (javadocComment == null || javadocComment.trim().isEmpty()) {
-            return new SectionHolder(Constants.EMPTY, Constants.EMPTY);
+            return new ParsedJavadocSection(EMPTY, EMPTY);
         }
 
         // the parser expects all the lines to start with "* "
@@ -125,36 +125,27 @@ final class JavaDocParser {
         javadocComment = START_OF_LINE.matcher(javadocComment).replaceAll("* ");
         Javadoc javadoc = StaticJavaParser.parseJavadoc(javadocComment);
 
+        String asciidoc;
         if (isAsciidoc(javadoc)) {
-            final String details = handleEolInAsciidoc(javadoc);
-            final int endOfTitleIndex = details.indexOf(Constants.DOT);
-            final String title = details.substring(0, endOfTitleIndex).replaceAll("^([^\\w])+", Constants.EMPTY).trim();
-            return new SectionHolder(title, details);
-        }
-
-        return generateConfigSection(javadoc, sectionLevel);
-    }
-
-    private SectionHolder generateConfigSection(Javadoc javadoc, int sectionLevel) {
-        final String generatedAsciiDoc = htmlJavadocToAsciidoc(javadoc.getDescription());
-        if (generatedAsciiDoc.isEmpty()) {
-            return new SectionHolder(Constants.EMPTY, Constants.EMPTY);
-        }
-
-        final String beginSectionDetails = IntStream
-                .rangeClosed(0, Math.max(0, sectionLevel))
-                .mapToObj(x -> "=").collect(Collectors.joining())
-                + " ";
-
-        final int endOfTitleIndex = generatedAsciiDoc.indexOf(Constants.DOT);
-        if (endOfTitleIndex == -1) {
-            return new SectionHolder(generatedAsciiDoc.trim(), beginSectionDetails + generatedAsciiDoc);
+            asciidoc = handleEolInAsciidoc(javadoc);
         } else {
-            final String title = generatedAsciiDoc.substring(0, endOfTitleIndex).trim();
-            final String introduction = generatedAsciiDoc.substring(endOfTitleIndex + 1).trim();
-            final String details = beginSectionDetails + title + "\n\n" + introduction;
+            asciidoc = htmlJavadocToAsciidoc(javadoc.getDescription());
+        }
 
-            return new SectionHolder(title, details.trim());
+        if (asciidoc == null || asciidoc.isBlank()) {
+            return new ParsedJavadocSection(EMPTY, EMPTY);
+        }
+
+        final int endOfTitleIndex = asciidoc.indexOf(DOT);
+        if (endOfTitleIndex == -1) {
+            final String title = asciidoc.replaceAll("^([^\\w])+", EMPTY).trim();
+
+            return new ParsedJavadocSection(title, EMPTY);
+        } else {
+            final String title = asciidoc.substring(0, endOfTitleIndex).replaceAll("^([^\\w])+", EMPTY).trim();
+            final String details = asciidoc.substring(endOfTitleIndex + 1).trim();
+
+            return new ParsedJavadocSection(title, details);
         }
     }
 
@@ -195,7 +186,7 @@ final class JavaDocParser {
                     case LINK:
                     case LINKPLAIN:
                         if (content.startsWith(HASH)) {
-                            content = hyphenate(content.substring(1));
+                            content = ConfigNamingUtil.hyphenate(content.substring(1));
                         }
                         sb.append('`');
                         appendEscapedAsciiDoc(sb, content);
@@ -530,15 +521,5 @@ final class JavaDocParser {
             sb.append("++");
         }
         return sb;
-    }
-
-    static class SectionHolder {
-        final String title;
-        final String details;
-
-        public SectionHolder(String title, String details) {
-            this.title = title;
-            this.details = details;
-        }
     }
 }

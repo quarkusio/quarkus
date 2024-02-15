@@ -1,25 +1,25 @@
 package io.quarkus.annotation.processor.generate_doc;
 
-import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_DEFAULT;
-import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_ENUM_VALUE;
-import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_IGNORE;
-import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_MAP_KEY;
-import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_SECTION;
-import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_ITEM;
-import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_WITH_DEFAULT;
-import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_WITH_NAME;
-import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_WITH_PARENT_NAME;
-import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_WITH_UNNAMED_KEY;
-import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONVERT_WITH;
-import static io.quarkus.annotation.processor.Constants.ANNOTATION_DEFAULT_CONVERTER;
-import static io.quarkus.annotation.processor.Constants.DOT;
-import static io.quarkus.annotation.processor.Constants.EMPTY;
-import static io.quarkus.annotation.processor.Constants.HYPHENATED_ELEMENT_NAME;
-import static io.quarkus.annotation.processor.Constants.LIST_OF_CONFIG_ITEMS_TYPE_REF;
-import static io.quarkus.annotation.processor.Constants.NEW_LINE;
-import static io.quarkus.annotation.processor.Constants.NO_DEFAULT;
-import static io.quarkus.annotation.processor.Constants.OBJECT_MAPPER;
-import static io.quarkus.annotation.processor.Constants.PARENT;
+import static io.quarkus.annotation.processor.generate_doc.Constants.ANNOTATION_CONFIG_DOC_DEFAULT;
+import static io.quarkus.annotation.processor.generate_doc.Constants.ANNOTATION_CONFIG_DOC_ENUM_VALUE;
+import static io.quarkus.annotation.processor.generate_doc.Constants.ANNOTATION_CONFIG_DOC_IGNORE;
+import static io.quarkus.annotation.processor.generate_doc.Constants.ANNOTATION_CONFIG_DOC_MAP_KEY;
+import static io.quarkus.annotation.processor.generate_doc.Constants.ANNOTATION_CONFIG_DOC_SECTION;
+import static io.quarkus.annotation.processor.generate_doc.Constants.ANNOTATION_CONFIG_ITEM;
+import static io.quarkus.annotation.processor.generate_doc.Constants.ANNOTATION_CONFIG_WITH_DEFAULT;
+import static io.quarkus.annotation.processor.generate_doc.Constants.ANNOTATION_CONFIG_WITH_NAME;
+import static io.quarkus.annotation.processor.generate_doc.Constants.ANNOTATION_CONFIG_WITH_PARENT_NAME;
+import static io.quarkus.annotation.processor.generate_doc.Constants.ANNOTATION_CONFIG_WITH_UNNAMED_KEY;
+import static io.quarkus.annotation.processor.generate_doc.Constants.ANNOTATION_CONVERT_WITH;
+import static io.quarkus.annotation.processor.generate_doc.Constants.ANNOTATION_DEFAULT_CONVERTER;
+import static io.quarkus.annotation.processor.generate_doc.Constants.DOT;
+import static io.quarkus.annotation.processor.generate_doc.Constants.EMPTY;
+import static io.quarkus.annotation.processor.generate_doc.Constants.HYPHENATED_ELEMENT_NAME;
+import static io.quarkus.annotation.processor.generate_doc.Constants.LIST_OF_CONFIG_ITEMS_TYPE_REF;
+import static io.quarkus.annotation.processor.generate_doc.Constants.NEW_LINE;
+import static io.quarkus.annotation.processor.generate_doc.Constants.NO_DEFAULT;
+import static io.quarkus.annotation.processor.generate_doc.Constants.OBJECT_MAPPER;
+import static io.quarkus.annotation.processor.generate_doc.Constants.PARENT;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getJavaDocSiteLink;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getKnownGenericType;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.hyphenate;
@@ -56,7 +56,6 @@ import javax.lang.model.type.TypeMirror;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import io.quarkus.annotation.processor.Constants;
 import io.quarkus.annotation.processor.generate_doc.JavaDocParser.SectionHolder;
 
 class ConfigDocItemFinder {

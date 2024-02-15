@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 
-import io.quarkus.annotation.processor.Constants;
-
 final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDocElement> {
     private String type;
     private String key;

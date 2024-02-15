@@ -1,14 +1,12 @@
 package io.quarkus.annotation.processor.generate_doc;
 
-import static io.quarkus.annotation.processor.Constants.CONFIG_PHASE_LEGEND;
-import static io.quarkus.annotation.processor.Constants.NEW_LINE;
+import static io.quarkus.annotation.processor.generate_doc.Constants.CONFIG_PHASE_LEGEND;
+import static io.quarkus.annotation.processor.generate_doc.Constants.NEW_LINE;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.toEnvVarName;
 
 import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
-
-import io.quarkus.annotation.processor.Constants;
 
 final class SummaryTableDocFormatter implements DocFormatter {
     private static final String TWO_NEW_LINES = "\n\n";

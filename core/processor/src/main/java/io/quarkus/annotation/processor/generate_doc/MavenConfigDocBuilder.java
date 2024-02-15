@@ -1,13 +1,10 @@
 package io.quarkus.annotation.processor.generate_doc;
 
-import static io.quarkus.annotation.processor.Constants.EMPTY;
-import static io.quarkus.annotation.processor.Constants.NEW_LINE;
-import static io.quarkus.annotation.processor.Constants.SECTION_TITLE_L1;
+import static io.quarkus.annotation.processor.generate_doc.Constants.NEW_LINE;
+import static io.quarkus.annotation.processor.generate_doc.Constants.SECTION_TITLE_L1;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import io.quarkus.annotation.processor.Constants;
 
 public final class MavenConfigDocBuilder extends ConfigDocBuilder {
 

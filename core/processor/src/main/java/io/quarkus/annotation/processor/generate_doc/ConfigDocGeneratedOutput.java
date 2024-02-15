@@ -3,8 +3,6 @@ package io.quarkus.annotation.processor.generate_doc;
 import java.util.List;
 import java.util.Objects;
 
-import io.quarkus.annotation.processor.Constants;
-
 public class ConfigDocGeneratedOutput {
     private final String fileName;
     private final boolean searchable;

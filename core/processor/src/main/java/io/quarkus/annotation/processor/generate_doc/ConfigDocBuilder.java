@@ -1,12 +1,10 @@
 package io.quarkus.annotation.processor.generate_doc;
 
-import static io.quarkus.annotation.processor.Constants.SUMMARY_TABLE_ID_VARIABLE;
+import static io.quarkus.annotation.processor.generate_doc.Constants.SUMMARY_TABLE_ID_VARIABLE;
 import static java.util.Objects.requireNonNull;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import io.quarkus.annotation.processor.Constants;
 
 /**
  * {@link ConfigDoc} builder

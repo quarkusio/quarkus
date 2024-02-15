@@ -511,7 +511,7 @@
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>track-prod-config-changes</id>
+                        <id>track-config-changes</id>
                         <phase>process-resources</phase>
                         <goals>
                             <goal>track-config-changes</goal>

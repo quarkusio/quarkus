@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.OpenTelemetry;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.LateBoundBatchSpanProcessor;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundBatchSpanProcessor;
 import io.quarkus.test.QuarkusUnitTest;
 
 @Disabled("Not implemented")

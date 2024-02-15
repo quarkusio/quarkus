@@ -31,7 +31,6 @@ class OpenTelemetryLegacyConfigurationTest {
             .overrideConfigKey("quarkus.opentelemetry.tracer.sampler", "off")
             .overrideConfigKey("quarkus.opentelemetry.tracer.sampler.ratio", "2.0d")
             .overrideConfigKey("quarkus.opentelemetry.tracer.exporter.otlp.headers", "header=value")
-            .overrideConfigKey("quarkus.opentelemetry.tracer.exporter.otlp.enabled", "false")
             .overrideConfigKey("quarkus.opentelemetry.tracer.exporter.otlp.endpoint", "http://localhost:4318/");
 
     @Inject
@@ -58,7 +57,6 @@ class OpenTelemetryLegacyConfigurationTest {
         assertEquals("always_off", oTelBuildConfig.traces().sampler());
         assertTrue(oTelRuntimeConfig.traces().samplerArg().isPresent());
         assertEquals("2.0d", oTelRuntimeConfig.traces().samplerArg().get());
-        assertEquals(FALSE, otlpExporterBuildConfig.enabled());
         assertTrue(otlpExporterRuntimeConfig.traces().legacyEndpoint().isPresent());
         assertTrue(otlpExporterRuntimeConfig.traces().headers().isPresent());
         assertEquals("header=value", otlpExporterRuntimeConfig.traces().headers().get().get(0));

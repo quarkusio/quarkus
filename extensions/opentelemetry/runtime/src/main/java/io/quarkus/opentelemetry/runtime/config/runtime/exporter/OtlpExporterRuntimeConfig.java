@@ -31,7 +31,11 @@ public interface OtlpExporterRuntimeConfig {
      * OTLP traces exporter configuration.
      */
     OtlpExporterTracesConfig traces();
-    // TODO metrics();
+
+    /**
+     * OTLP metrics exporter configuration.
+     */
+    OtlpExporterMetricsConfig metrics();
     // TODO logs();
     // TODO additional global exporter configuration
 

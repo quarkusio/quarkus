@@ -30,7 +30,6 @@ public class OTelFallbackConfigSourceInterceptor extends FallbackConfigSourceInt
         FALLBACKS.put("quarkus.otel.traces.include-static-resources", "quarkus.opentelemetry.tracer.include-static-resources");
         FALLBACKS.put("quarkus.otel.traces.sampler", "quarkus.opentelemetry.tracer.sampler");
         FALLBACKS.put("quarkus.otel.traces.sampler.arg", "quarkus.opentelemetry.tracer.sampler.ratio");
-        FALLBACKS.put("quarkus.otel.exporter.otlp.enabled", "quarkus.opentelemetry.tracer.exporter.otlp.enabled");
         FALLBACKS.put("quarkus.otel.exporter.otlp.traces.legacy-endpoint",
                 "quarkus.opentelemetry.tracer.exporter.otlp.endpoint");
         FALLBACKS.put("quarkus.otel.exporter.otlp.traces.headers", "quarkus.opentelemetry.tracer.exporter.otlp.headers");

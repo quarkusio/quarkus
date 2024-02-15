@@ -13,6 +13,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -26,16 +27,16 @@ import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.exporter.OtlpExporterBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.EndUserSpanProcessor;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.LateBoundBatchSpanProcessor;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OTelExporterRecorder;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.EndUserSpanProcessor;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundBatchSpanProcessor;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
-@BuildSteps(onlyIf = OtlpExporterProcessor.OtlpExporterEnabled.class)
+@BuildSteps
 public class OtlpExporterProcessor {
 
-    static class OtlpExporterEnabled implements BooleanSupplier {
+    static class OtlpTracingExporterEnabled implements BooleanSupplier {
         OtlpExporterBuildConfig exportBuildConfig;
         OTelBuildConfig otelBuildConfig;
 
@@ -47,7 +48,19 @@ public class OtlpExporterProcessor {
         }
     }
 
-    @BuildStep
+    static class OtlpMetricsExporterEnabled implements BooleanSupplier {
+        OtlpExporterBuildConfig exportBuildConfig;
+        OTelBuildConfig otelBuildConfig;
+
+        public boolean getAsBoolean() {
+            return otelBuildConfig.enabled() &&
+                    otelBuildConfig.metrics().enabled().orElse(Boolean.TRUE) &&
+                    otelBuildConfig.metrics().exporter().contains(CDI_VALUE) &&
+                    exportBuildConfig.enabled();
+        }
+    }
+
+    @BuildStep(onlyIf = OtlpExporterProcessor.OtlpTracingExporterEnabled.class)
     void createEndUserSpanProcessor(
             BuildProducer<AdditionalBeanBuildItem> buildProducer,
             OTelBuildConfig otelBuildConfig) {
@@ -59,7 +72,7 @@ public class OtlpExporterProcessor {
     }
 
     @SuppressWarnings("deprecation")
-    @BuildStep
+    @BuildStep(onlyIf = OtlpExporterProcessor.OtlpTracingExporterEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void createBatchSpanProcessor(OTelExporterRecorder recorder,
             OTelRuntimeConfig otelRuntimeConfig,
@@ -81,6 +94,34 @@ public class OtlpExporterProcessor {
                 .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
                         new Type[] { ClassType.create(DotName.createSimple(SpanExporter.class.getName())) }, null))
                 .createWith(recorder.batchSpanProcessorForOtlp(otelRuntimeConfig, exporterRuntimeConfig, tlsConfig,
+                        vertxBuildItem.getVertx()))
+                .done());
+    }
+
+    @BuildStep(onlyIf = OtlpMetricsExporterEnabled.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void createMetricsExporterProcessor(
+            OTelExporterRecorder recorder,
+            List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
+            OTelRuntimeConfig otelRuntimeConfig,
+            OtlpExporterRuntimeConfig exporterRuntimeConfig,
+            TlsConfig tlsConfig,
+            CoreVertxBuildItem vertxBuildItem,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
+        if (!externalOtelExporterBuildItem.isEmpty()) {
+            // if there is an external exporter, we don't want to create the default one
+            return;
+        }
+
+        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
+                .configure(MetricExporter.class)// FIXME concrete class? No, PeriodicMetricReader is final
+                .types(MetricExporter.class)
+                .setRuntimeInit()
+                .scope(Singleton.class)
+                .unremovable()
+                .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
+                        new Type[] { ClassType.create(DotName.createSimple(MetricExporter.class.getName())) }, null))
+                .createWith(recorder.createMetricExporter(otelRuntimeConfig, exporterRuntimeConfig, tlsConfig,
                         vertxBuildItem.getVertx()))
                 .done());
     }

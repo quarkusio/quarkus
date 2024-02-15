@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Flow;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -22,6 +23,9 @@ import org.jboss.resteasy.reactive.common.util.RestMediaType;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.helpers.StrictMultiSubscriber;
+import io.smallrye.mutiny.operators.multi.AbstractMultiOperator;
+import io.smallrye.mutiny.operators.multi.MultiOperatorProcessor;
 
 @Path("streams")
 public class StreamResource {
@@ -102,6 +106,68 @@ public class StreamResource {
     @RestStreamElementType(MediaType.APPLICATION_JSON)
     public Multi<Message> multiJson() {
         return RestMulti.fromMultiData(Multi.createFrom().items(new Message("hello"), new Message("stef")))
+                .header("foo", "bar").build();
+    }
+
+    @Path("json/multi-alt")
+    @GET
+    @RestStreamElementType(MediaType.APPLICATION_JSON)
+    public Multi<Message> multiJsonAlt() {
+        return RestMulti.fromMultiData(Multi.createFrom().items(new Message("hello"), new Message("stef")))
+                .header("foo", "bar").encodeAsJsonArray(true).build();
+    }
+
+    @Path("json/multi-docs")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Multi<Message> multiJsonMultiDocs() {
+        return RestMulti.fromMultiData(Multi.createFrom().items(new Message("hello"), new Message("stef")))
+                .header("foo", "bar").encodeAsJsonArray(false).build();
+    }
+
+    @Path("json/multi-docs-huge-demand")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Multi<Object> multiJsonMultiDocsHigherDemand() {
+        List<Long> demands = new ArrayList<>();
+
+        Multi<Object> inner = Multi.createBy().merging()
+                // Add some messages
+                .streams(Multi.createFrom().items(
+                        new Message("hello"),
+                        new Message("stef"),
+                        new Message("snazy"),
+                        new Message("stef"),
+                        new Message("elani"),
+                        new Message("foo"),
+                        new Message("bar"),
+                        new Message("baz")));
+
+        Multi<Object> items = Multi.createBy().concatenating().streams(
+                inner,
+                // Add "collected" demand values as the last JSON object, produce "lazily" to
+                // make sure that we "see" the demands signaled via Publisher.request(long).
+                Multi.createFrom().item(() -> new Demands(demands)));
+
+        Multi<Object> outer = new AbstractMultiOperator<>(items) {
+            @Override
+            public void subscribe(Flow.Subscriber<? super Object> subscriber) {
+                this.upstream.subscribe()
+                        .withSubscriber(new MultiOperatorProcessor<Object, Object>(new StrictMultiSubscriber<>(subscriber)) {
+                            @Override
+                            public void request(long numberOfItems) {
+                                // Collect the "demands" to return to the test case
+                                demands.add(numberOfItems);
+                                super.request(numberOfItems);
+                            }
+                        });
+            }
+        }.log("outer");
+
+        return RestMulti.fromMultiData(
+                Multi.createBy().concatenating().streams(outer).log())
+                .withDemand(5)
+                .encodeAsJsonArray(false)
                 .header("foo", "bar").build();
     }
 

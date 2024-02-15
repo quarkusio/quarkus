@@ -28,6 +28,8 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.arc.Unremovable;
+import io.quarkus.opentelemetry.deployment.common.InMemoryMetricExporter;
+import io.quarkus.opentelemetry.deployment.common.InMemoryMetricExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
@@ -40,9 +42,12 @@ public class OpenTelemetryMDCTest {
                     .addClass(MdcEntry.class)
                     .addClass(TestMdcCapturer.class)
                     .addClass(TestResource.class)
-                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class,
+                            InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+                    .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
+                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider"))
             .withConfigurationResource("application-default.properties");
 
     @Inject

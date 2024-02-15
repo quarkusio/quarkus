@@ -35,7 +35,6 @@ public interface OTelBuildConfig {
      * <p>
      * Defaults to <code>true</code>.
      */
-    @Deprecated // TODO only use runtime (soon)
     @WithDefault("true")
     boolean enabled();
 
@@ -45,11 +44,9 @@ public interface OTelBuildConfig {
     TracesBuildConfig traces();
 
     /**
-     * No Metrics exporter for now
+     * Metrics exporter configurations.
      */
-    @WithName("metrics.exporter")
-    @WithDefault("none")
-    List<String> metricsExporter();
+    MetricsBuildConfig metrics();
 
     /**
      * No Log exporter for now.

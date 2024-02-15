@@ -3,12 +3,12 @@ package io.quarkus.opentelemetry.runtime.exporter.otlp;
 import java.net.URI;
 import java.util.Locale;
 
-final class OTelExporterUtil {
+public final class OTelExporterUtil {
 
     private OTelExporterUtil() {
     }
 
-    static int getPort(URI uri) {
+    public static int getPort(URI uri) {
         int originalPort = uri.getPort();
         if (originalPort > -1) {
             return originalPort;
@@ -20,7 +20,7 @@ final class OTelExporterUtil {
         return 80;
     }
 
-    static boolean isHttps(URI uri) {
+    public static boolean isHttps(URI uri) {
         return "https".equals(uri.getScheme().toLowerCase(Locale.ROOT));
     }
 }

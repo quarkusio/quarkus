@@ -1,0 +1,1 @@
+io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.OpenTelemetryClassicThreadContext

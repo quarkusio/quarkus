@@ -1,5 +1,6 @@
 package io.quarkus.arc.test.validation;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -7,7 +8,6 @@ import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.spi.DefinitionException;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,10 +24,11 @@ public class InvalidPreDestroyTest {
     public void testFailure() {
         Throwable error = container.getFailure();
         assertNotNull(error);
-        assertTrue(error instanceof DefinitionException);
-        Assertions.assertTrue(error.getMessage().contains("invalid()"));
-        Assertions.assertTrue(error.getMessage().contains("$InvalidBean"));
-        Assertions.assertTrue(error.getMessage().contains("PreDestroy"));
+        assertInstanceOf(DefinitionException.class, error);
+        assertTrue(error.getMessage().contains(
+                "@PreDestroy lifecycle callback method declared in a target class must have a return type of void"));
+        assertTrue(error.getMessage().contains("invalid()"));
+        assertTrue(error.getMessage().contains("InvalidPreDestroyTest$InvalidBean"));
     }
 
     @ApplicationScoped

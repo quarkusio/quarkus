@@ -21,6 +21,7 @@ import jakarta.enterprise.inject.AmbiguousResolutionException;
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 import jakarta.enterprise.inject.spi.DefinitionException;
 import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.inject.spi.InterceptionType;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -710,8 +711,17 @@ public final class Beans {
     }
 
     static List<MethodInfo> getCallbacks(ClassInfo beanClass, DotName annotation, IndexView index) {
+        InterceptionType interceptionType = null;
+        if (DotNames.POST_CONSTRUCT.equals(annotation)) {
+            interceptionType = InterceptionType.POST_CONSTRUCT;
+        } else if (DotNames.PRE_DESTROY.equals(annotation)) {
+            interceptionType = InterceptionType.PRE_DESTROY;
+        } else {
+            throw new IllegalArgumentException("Unexpected callback annotation: " + annotation);
+        }
+
         List<MethodInfo> callbacks = new ArrayList<>();
-        collectCallbacks(beanClass, callbacks, annotation, index, new HashSet<>());
+        collectCallbacks(beanClass, callbacks, annotation, index, new HashSet<>(), interceptionType);
         Collections.reverse(callbacks);
         return callbacks;
     }
@@ -729,7 +739,8 @@ public final class Beans {
                     continue;
                 }
                 if (store.hasAnnotation(method, DotNames.AROUND_INVOKE)) {
-                    InterceptorInfo.addInterceptorMethod(allMethods, methods, method);
+                    InterceptorInfo.addInterceptorMethod(allMethods, methods, method, InterceptionType.AROUND_INVOKE,
+                            InterceptorPlacement.TARGET_CLASS);
                     if (++aroundInvokesFound > 1) {
                         throw new DefinitionException(
                                 "Multiple @AroundInvoke interceptor methods declared on class: " + aClass);
@@ -1042,24 +1053,18 @@ public final class Beans {
     }
 
     private static void collectCallbacks(ClassInfo clazz, List<MethodInfo> callbacks, DotName annotation, IndexView index,
-            Set<String> knownMethods) {
+            Set<String> knownMethods, InterceptionType interceptionType) {
         for (MethodInfo method : clazz.methods()) {
             if (method.hasAnnotation(annotation) && !knownMethods.contains(method.name())) {
-                if (method.returnType().kind() == Kind.VOID && method.parameterTypes().isEmpty()) {
-                    callbacks.add(method);
-                } else {
-                    // invalid signature - build a meaningful message.
-                    throw new DefinitionException("Invalid signature for the method `" + method + "` from class `"
-                            + method.declaringClass() + "`. Methods annotated with `" + annotation + "` must return" +
-                            " `void` and cannot have parameters.");
-                }
+                InterceptorInfo.validateSignature(method, interceptionType, InterceptorPlacement.TARGET_CLASS);
+                callbacks.add(method);
             }
             knownMethods.add(method.name());
         }
         if (clazz.superName() != null) {
             ClassInfo superClass = getClassByName(index, clazz.superName());
             if (superClass != null) {
-                collectCallbacks(superClass, callbacks, annotation, index, knownMethods);
+                collectCallbacks(superClass, callbacks, annotation, index, knownMethods, interceptionType);
             }
         }
     }

@@ -14,7 +14,7 @@ import io.vertx.core.json.JsonObject;
  * <p>
  * A binary message is always represented as a {@link Buffer}. Therefore, the following conversion rules apply. The types listed
  * below are handled specifically. For all other types a {@link BinaryMessageCodec} is used to encode and decode input and
- * output messages. By default, the first input codec that can handle the message type is used; codecs with higher priority go
+ * output messages. By default, the first input codec that supports the message type is used; codecs with higher priority go
  * first. However, a specific codec can be selected with {@link #inputCodec()} and {@link #outputCodec()}.
  *
  * <ul>
@@ -34,7 +34,10 @@ public @interface BinaryMessage {
     /**
      * The codec used for input messages.
      * <p>
-     * By default, the first codec that can handle the message type is used; codecs with higher priority go first.
+     * By default, the first codec that supports the message type is used; codecs with higher priority go first.
+     * <p>
+     * Note that, if specified, the codec is also used for output messages unless {@link #outputCodec()} returns a non-default
+     * value.
      */
     @SuppressWarnings("rawtypes")
     Class<? extends BinaryMessageCodec> inputCodec() default BinaryMessageCodec.class;

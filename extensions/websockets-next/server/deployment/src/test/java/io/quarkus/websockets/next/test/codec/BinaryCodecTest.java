@@ -12,20 +12,22 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-public class CodecWebSocketTest {
+public class BinaryCodecTest {
 
-    @TestHTTPResource("find")
-    URI findUri;
+    @TestHTTPResource("find-binary")
+    URI findBinaryUri;
 
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot(root -> {
-                root.addClasses(Find.class, AbstractFind.class, Item.class);
+                root.addClasses(FindBinary.class, AbstractFind.class, Item.class, FindBinary.ItemBinaryMessageCodec.class,
+                        FindBinary.ListItemBinaryMessageCodec.class);
             });
 
     @Test
@@ -34,24 +36,24 @@ public class CodecWebSocketTest {
         items.add(new JsonObject().put("name", "foo").put("count", 10));
         items.add(new JsonObject().put("name", "bar").put("count", 1));
         items.add(new JsonObject().put("name", "baz").put("count", 100));
-        assertCodec(findUri, items.encode(), new JsonObject().put("name", "bar").put("count", 1).encode());
+        assertCodec(findBinaryUri, items.toBuffer(), Buffer.buffer("Item [count=2]"));
     }
 
-    public void assertCodec(URI testUri, String payload, String expected)
+    public void assertCodec(URI testUri, Buffer payload, Buffer expected)
             throws Exception {
         Vertx vertx = Vertx.vertx();
         WebSocketClient client = vertx.createWebSocketClient();
         try {
-            LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
+            LinkedBlockingDeque<Buffer> message = new LinkedBlockingDeque<>();
             client
                     .connect(testUri.getPort(), testUri.getHost(), testUri.getPath())
                     .onComplete(r -> {
                         if (r.succeeded()) {
                             WebSocket ws = r.result();
-                            ws.textMessageHandler(msg -> {
+                            ws.binaryMessageHandler(msg -> {
                                 message.add(msg);
                             });
-                            ws.writeTextMessage(payload);
+                            ws.writeBinaryMessage(payload);
                         } else {
                             throw new IllegalStateException(r.cause());
                         }

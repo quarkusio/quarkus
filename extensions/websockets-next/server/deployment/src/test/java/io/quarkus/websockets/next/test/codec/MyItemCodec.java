@@ -14,11 +14,12 @@ public class MyItemCodec implements TextMessageCodec<Item> {
 
     @Override
     public boolean supports(Type type) {
-        return type == Item.class;
+        return type.equals(Item.class);
     }
 
     @Override
     public String encode(Item value) {
+        // Intentionally skip the name
         return new JsonObject().put("count", value.getCount()).encode();
     }
 

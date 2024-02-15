@@ -18,7 +18,7 @@ import io.vertx.core.json.JsonObject;
 public class FindInputCodec extends AbstractFind {
 
     // The codec is used for both input/output
-    @TextMessage(inputCodec = MyForcedCodec.class)
+    @TextMessage(inputCodec = MyInputCodec.class)
     @OnMessage
     Item find(List<Item> items) {
         return super.find(items);
@@ -26,7 +26,7 @@ public class FindInputCodec extends AbstractFind {
 
     @Singleton
     @Priority(-10)
-    public static class MyForcedCodec implements TextMessageCodec<Object> {
+    public static class MyInputCodec implements TextMessageCodec<Object> {
 
         @Override
         public boolean supports(Type type) {

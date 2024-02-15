@@ -18,6 +18,8 @@ import io.vertx.core.json.JsonObject;
 @WebSocket("/find-binary")
 public class FindBinary extends AbstractFind {
 
+    // Force binary message format
+    // There's no binary codec available out of the box so the codecs below are needed
     @BinaryMessage
     @OnMessage
     Item find(List<Item> items) {

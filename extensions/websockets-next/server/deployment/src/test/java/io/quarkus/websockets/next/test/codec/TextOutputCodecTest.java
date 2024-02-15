@@ -17,15 +17,15 @@ import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-public class InputCodecWebSocketTest {
+public class TextOutputCodecTest {
 
-    @TestHTTPResource("find-input-codec")
+    @TestHTTPResource("find-output-codec")
     URI itemCodecUri;
 
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot(root -> {
-                root.addClasses(FindInputCodec.class, FindInputCodec.MyForcedCodec.class, AbstractFind.class, Item.class);
+                root.addClasses(FindOutputCodec.class, FindOutputCodec.MyOutputCodec.class, AbstractFind.class, Item.class);
             });
 
     @Test
@@ -34,7 +34,7 @@ public class InputCodecWebSocketTest {
         items.add(new JsonObject().put("name", "foo").put("count", 10));
         items.add(new JsonObject().put("name", "bar").put("count", 1));
         items.add(new JsonObject().put("name", "baz").put("count", 100));
-        assertCodec(itemCodecUri, items.encode(), "Item [count=2]");
+        assertCodec(itemCodecUri, items.encode(), "{\"name\":\"bar\"}");
     }
 
     public void assertCodec(URI testUri, String payload, String expected)

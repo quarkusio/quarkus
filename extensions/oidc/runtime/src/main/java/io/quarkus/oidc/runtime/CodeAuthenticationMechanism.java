@@ -6,10 +6,8 @@ import static io.quarkus.oidc.runtime.OidcIdentityProvider.REFRESH_TOKEN_GRANT_R
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Base64.Encoder;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -64,7 +62,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     public static final String SESSION_MAX_AGE_PARAM = "session-max-age";
     static final String AMP = "&";
     static final String EQ = "=";
-    static final String COMMA = ",";
     static final String COOKIE_DELIM = "|";
     static final Pattern COOKIE_PATTERN = Pattern.compile("\\" + COOKIE_DELIM);
     static final String STATE_COOKIE_RESTORE_PATH = "restore-path";
@@ -602,23 +599,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 .append(OidcCommonUtils.urlEncode(configContext.oidcConfig.clientId.get()));
 
                         // scope
-                        List<String> oidcConfigScopes = configContext.oidcConfig.getAuthentication().scopes.isPresent()
-                                ? configContext.oidcConfig.getAuthentication().scopes.get()
-                                : Collections.emptyList();
-                        List<String> scopes = new ArrayList<>(oidcConfigScopes.size() + 1);
-                        if (configContext.oidcConfig.getAuthentication().addOpenidScope.orElse(true)) {
-                            scopes.add(OidcConstants.OPENID_SCOPE);
-                        }
-                        scopes.addAll(oidcConfigScopes);
-                        // Extra scopes if any
-                        String extraScopeValue = configContext.oidcConfig.getAuthentication().getExtraParams()
-                                .get(OidcConstants.TOKEN_SCOPE);
-                        if (extraScopeValue != null) {
-                            String[] extraScopes = extraScopeValue.split(COMMA);
-                            scopes.addAll(List.of(extraScopes));
-                        }
                         codeFlowParams.append(AMP).append(OidcConstants.TOKEN_SCOPE).append(EQ)
-                                .append(OidcCommonUtils.urlEncode(String.join(" ", scopes)));
+                                .append(OidcUtils.encodeScopes(configContext.oidcConfig));
 
                         MultiMap requestQueryParams = null;
                         if (!configContext.oidcConfig.getAuthentication().forwardParams.isEmpty()) {
@@ -959,7 +941,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                 configContext.oidcConfig.tenantId.get(), cookieValue.length());
                                         if (cookieValue.length() > OidcUtils.MAX_COOKIE_VALUE_LENGTH) {
                                             LOG.debugf(
-                                                    "Session cookie length is greater than %d bytes."
+                                                    "Session cookie length for the tenant %s is greater than %d bytes."
                                                             + " The cookie will be split to chunks to avoid browsers ignoring it."
                                                             + " Alternative recommendations: 1. Set 'quarkus.oidc.token-state-manager.split-tokens=true'"
                                                             + " to have the ID, access and refresh tokens stored in separate cookies."

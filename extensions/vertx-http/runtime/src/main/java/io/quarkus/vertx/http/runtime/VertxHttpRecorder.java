@@ -60,6 +60,7 @@ import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConf
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceConfiguration;
 import io.quarkus.vertx.http.runtime.options.HttpServerCommonHandlers;
 import io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils;
+import io.quarkus.vertx.http.runtime.options.TlsCertificateReloadUtils;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
@@ -169,6 +170,8 @@ public class VertxHttpRecorder {
     private static HttpServerOptions httpMainServerOptions;
     private static HttpServerOptions httpMainDomainSocketOptions;
     private static HttpServerOptions httpManagementServerOptions;
+
+    private static final List<Long> taskIds = new CopyOnWriteArrayList<>();
     final HttpBuildTimeConfig httpBuildTimeConfig;
     final ManagementInterfaceBuildTimeConfig managementBuildTimeConfig;
     final RuntimeValue<HttpConfiguration> httpConfiguration;
@@ -307,7 +310,8 @@ public class VertxHttpRecorder {
         ManagementInterfaceConfiguration managementConfig = this.managementConfiguration == null ? null
                 : this.managementConfiguration.getValue();
         if (startSocket && (httpConfiguration.hostEnabled || httpConfiguration.domainSocketEnabled
-                || managementConfig.hostEnabled || managementConfig.domainSocketEnabled)) {
+                || (managementConfig != null && managementConfig.hostEnabled)
+                || (managementConfig != null && managementConfig.domainSocketEnabled))) {
             // Start the server
             if (closeTask == null) {
                 var insecureRequestStrategy = getInsecureRequestStrategy(httpBuildTimeConfig,
@@ -621,6 +625,7 @@ public class VertxHttpRecorder {
         }
 
         if (httpManagementServerOptions != null) {
+
             vertx.createHttpServer(httpManagementServerOptions)
                     .requestHandler(managementRouter)
                     .listen(ar -> {
@@ -628,6 +633,15 @@ public class VertxHttpRecorder {
                             managementInterfaceFuture.completeExceptionally(
                                     new IllegalStateException("Unable to start the management interface", ar.cause()));
                         } else {
+                            if (httpManagementServerOptions.isSsl()
+                                    && managementConfig.ssl.certificate.reloadPeriod.isPresent()) {
+                                long l = TlsCertificateReloadUtils.handleCertificateReloading(
+                                        vertx, ar.result(), httpManagementServerOptions, managementConfig.ssl);
+                                if (l != -1) {
+                                    taskIds.add(l);
+                                }
+                            }
+
                             actualManagementPort = ar.result().actualPort();
                             managementInterfaceFuture.complete(ar.result());
                         }
@@ -765,6 +779,7 @@ public class VertxHttpRecorder {
             if (deploymentIdIfAny != null) {
                 VertxCoreRecorder.setWebDeploymentId(deploymentIdIfAny);
             }
+
             closeTask = new Runnable() {
                 @Override
                 public synchronized void run() {
@@ -807,6 +822,9 @@ public class VertxHttpRecorder {
 
                         // shutdown the management interface
                         try {
+                            for (Long id : taskIds) {
+                                vertx.cancelTimer(id);
+                            }
                             if (managementServer != null && !isVertxClose) {
                                 managementServer.close(handler);
                             }
@@ -1013,6 +1031,7 @@ public class VertxHttpRecorder {
         private final HttpConfiguration.InsecureRequests insecureRequests;
         private final HttpConfiguration quarkusConfig;
         private final AtomicInteger connectionCount;
+        private final List<Long> reloadingTasks = new CopyOnWriteArrayList<>();
 
         public WebDeploymentVerticle(HttpServerOptions httpOptions, HttpServerOptions httpsOptions,
                 HttpServerOptions domainSocketOptions, LaunchMode launchMode,
@@ -1185,6 +1204,14 @@ public class VertxHttpRecorder {
                             portSystemProperties.set(schema, actualPort, launchMode);
                         }
 
+                        if (https && quarkusConfig.ssl.certificate.reloadPeriod.isPresent()) {
+                            long l = TlsCertificateReloadUtils.handleCertificateReloading(
+                                    vertx, httpsServer, httpsOptions, quarkusConfig.ssl);
+                            if (l != -1) {
+                                reloadingTasks.add(l);
+                            }
+                        }
+
                         if (remainingCount.decrementAndGet() == 0) {
                             //make sure we only complete once
                             startFuture.complete(null);
@@ -1197,6 +1224,10 @@ public class VertxHttpRecorder {
 
         @Override
         public void stop(Promise<Void> stopFuture) {
+
+            for (Long id : reloadingTasks) {
+                vertx.cancelTimer(id);
+            }
 
             final AtomicInteger remainingCount = new AtomicInteger(0);
             if (httpServer != null) {

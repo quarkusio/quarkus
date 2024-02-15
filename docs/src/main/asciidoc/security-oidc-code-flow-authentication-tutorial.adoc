@@ -157,7 +157,7 @@ It returns a `preferred_username` claim from the ID token, a `scope` claim from 
 
 You only need to inject the tokens if the endpoint needs to use the ID token to interact with the currently authenticated user or use the access token to access a downstream service on behalf of this user.
 
-// SJ: TO DO - update link to point to new reference guide. For more information, see <<access_id_and_access_tokens,Access ID and Access Tokens>> section.
+For more information, see the xref:security-oidc-code-flow-authentication.adoc#access_id_and_access_tokens[Access ID and Access Tokens] section of the reference guide.
 
 == Configure the application
 

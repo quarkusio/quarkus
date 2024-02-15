@@ -20,9 +20,9 @@ import io.smallrye.config.WithName;
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface ConfigConfig {
     /**
-     * Profile that will be active when Quarkus launches.
+     * A comma separated list of profiles that will be active when Quarkus launches.
      */
-    Optional<String> profile();
+    Optional<List<String>> profile();
 
     /**
      * Accepts a single configuration profile name. If a configuration property cannot be found in the current active

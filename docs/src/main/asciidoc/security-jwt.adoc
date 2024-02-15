@@ -817,7 +817,7 @@ To prevent it, set `quarkus.smallrye-jwt.blocking-authentication=true`.
 
 === Token Propagation
 
-Please see the xref:security-openid-connect-client.adoc#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
+Please see the xref:security-openid-connect-client-reference.adoc#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
 
 [[integration-testing]]
 === Testing

@@ -35,7 +35,7 @@ public class AmqpDevServicesBuildTimeConfig {
      * page</a>
      * to find the available versions.
      */
-    @ConfigItem(defaultValue = "quay.io/artemiscloud/activemq-artemis-broker:1.0.22")
+    @ConfigItem(defaultValue = "quay.io/artemiscloud/activemq-artemis-broker:1.0.25")
     public String imageName;
 
     /**

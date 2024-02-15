@@ -54,7 +54,7 @@ quarkus.kubernetes-client.trust-certs=false
 quarkus.kubernetes-client.namespace=default
 ----
 
-Note that the full list of properties is available in the link:#quarkus-kubernetes-client_quarkus.kubernetes-client.devservices-dev-services[Dev Services section of the configuration reference].
+Note that the full list of properties is available in the <<quarkus-kubernetes-client_quarkus-kubernetes-client-devservices-dev-services,Dev Services section of the configuration reference>>.
 
 In dev mode and when running tests, xref:kubernetes-dev-services.adoc[Dev Services for Kubernetes] automatically starts a Kubernetes API server.
 
@@ -286,7 +286,7 @@ public class KubernetesClientTest {
 }
 ----
 
-[#note-on-generic-types]
+[[note-on-generic-types]]
 == Note on implementing or extending generic types
 
 Due to the restrictions imposed by GraalVM, extra care needs to be taken when implementing or extending generic types provided by the client if the application is intended to work in native mode.
@@ -369,7 +369,7 @@ public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
 client.pods().watch(new ResourceWatcher<Pod>());
 ----
 
-[#note-on-ec-keys]
+[[note-on-ec-keys]]
 == Note on using Elliptic Curve keys
 
 Please note that if you would like to use Elliptic Curve keys with Kubernetes Client then adding a BouncyCastle PKIX dependency is required:

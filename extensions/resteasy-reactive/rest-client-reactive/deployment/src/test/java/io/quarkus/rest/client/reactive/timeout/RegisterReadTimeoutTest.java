@@ -15,7 +15,6 @@ import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -28,11 +27,10 @@ public class RegisterReadTimeoutTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class, Resource.class)
-                    .addAsResource(new StringAsset(
-                            "client/mp-rest/readTimeout=1000\nclient/mp-rest/url=http://${quarkus.http.host}:${quarkus.http.test-port}"),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(Client.class, Resource.class))
+            .overrideRuntimeConfigKey("quarkus.rest-client.client.read-timeout", "1000")
+            .overrideRuntimeConfigKey("quarkus.rest-client.client.url",
+                    "http://${quarkus.http.host}:${quarkus.http.test-port}");
 
     @Test
     void shouldTimeoutIfReadTimeoutSetShort() {

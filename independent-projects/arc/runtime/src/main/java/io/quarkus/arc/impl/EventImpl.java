@@ -27,6 +27,7 @@ import jakarta.enterprise.event.NotificationOptions;
 import jakarta.enterprise.event.ObserverException;
 import jakarta.enterprise.event.TransactionPhase;
 import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.spi.EventContext;
 import jakarta.enterprise.inject.spi.EventMetadata;
 import jakarta.enterprise.inject.spi.InjectionPoint;
@@ -68,10 +69,7 @@ class EventImpl<T> implements Event<T> {
     EventImpl(Type eventType, Set<Annotation> qualifiers, InjectionPoint injectionPoint) {
         this.eventType = initEventType(eventType);
         this.injectionPointTypeHierarchy = new HierarchyDiscovery(this.eventType);
-        Set<Annotation> eventQualifiers = new HashSet<>();
-        eventQualifiers.addAll(qualifiers);
-        eventQualifiers.add(Any.Literal.INSTANCE);
-        this.qualifiers = Set.copyOf(eventQualifiers);
+        this.qualifiers = Set.copyOf(qualifiers);
         this.notifiers = new ConcurrentHashMap<>(DEFAULT_CACHE_CAPACITY);
         this.injectionPoint = injectionPoint;
     }
@@ -172,9 +170,16 @@ class EventImpl<T> implements Event<T> {
 
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
             ArcContainerImpl container, boolean activateRequestContext, InjectionPoint injectionPoint) {
-        EventMetadata metadata = new EventMetadataImpl(qualifiers, eventType, injectionPoint);
+        // all events should have `@Any` qualifiers
+        // if there was no other explicit qualifier added, also add @Default
+        Set<Annotation> normalizedQualifiers = new HashSet<>(qualifiers);
+        if (normalizedQualifiers.isEmpty()) {
+            normalizedQualifiers.add(Default.Literal.INSTANCE);
+        }
+        normalizedQualifiers.add(Any.Literal.INSTANCE);
+        EventMetadata metadata = new EventMetadataImpl(normalizedQualifiers, eventType, injectionPoint);
         List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>(
-                container.resolveObservers(eventType, qualifiers));
+                container.resolveObservers(eventType, normalizedQualifiers));
         return new Notifier<>(runtimeType, notifierObserverMethods, metadata, activateRequestContext);
     }
 

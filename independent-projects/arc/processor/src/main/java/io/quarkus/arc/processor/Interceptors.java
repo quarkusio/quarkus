@@ -85,12 +85,6 @@ final class Interceptors {
             }
 
             bindings.addAll(beanDeployment.extractInterceptorBindings(annotation));
-            // can also be a transitive binding
-            Set<AnnotationInstance> transitiveInterceptorBindings = beanDeployment
-                    .getTransitiveInterceptorBindings(annotation.name());
-            if (transitiveInterceptorBindings != null) {
-                bindings.addAll(transitiveInterceptorBindings);
-            }
         }
 
         if (classInfo.superName() != null && !classInfo.superName().equals(DotNames.OBJECT)) {
@@ -102,22 +96,13 @@ final class Interceptors {
     }
 
     // similar logic already exists in InterceptorResolver, but it doesn't validate
+    // when called, `bindings` always include transitive bindings
     static void checkClassLevelInterceptorBindings(Collection<AnnotationInstance> bindings, ClassInfo targetClass,
             BeanDeployment beanDeployment) {
-        // when called from `createInterceptor` above, `bindings` already include transitive bindings,
-        // but when called from outside, that isn't guaranteed
-        Set<AnnotationInstance> allBindings = new HashSet<>(bindings);
-        for (AnnotationInstance binding : bindings) {
-            Set<AnnotationInstance> transitive = beanDeployment.getTransitiveInterceptorBindings(binding.name());
-            if (transitive != null) {
-                allBindings.addAll(transitive);
-            }
-        }
-
         IndexView index = beanDeployment.getBeanArchiveIndex();
 
         Map<DotName, List<AnnotationValue>> seenBindings = new HashMap<>();
-        for (AnnotationInstance binding : allBindings) {
+        for (AnnotationInstance binding : bindings) {
             DotName name = binding.name();
             if (beanDeployment.hasAnnotation(index.getClassByName(name), DotNames.REPEATABLE)) {
                 // don't validate @Repeatable interceptor bindings, repeatability is their entire point

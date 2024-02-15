@@ -1,6 +1,6 @@
 package io.quarkus.mongodb.panache;
 
-import com.mongodb.session.ClientSession;
+import com.mongodb.client.ClientSession;
 
 import io.quarkus.mongodb.panache.runtime.JavaMongoOperations;
 

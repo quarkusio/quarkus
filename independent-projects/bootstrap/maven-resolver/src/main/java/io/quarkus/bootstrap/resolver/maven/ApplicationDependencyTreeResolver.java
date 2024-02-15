@@ -281,15 +281,19 @@ public class ApplicationDependencyTreeResolver {
         int flags = DependencyFlags.DIRECT | DependencyFlags.COMPILE_ONLY;
         while (children != null) {
             for (DependencyNode node : children) {
-                if (appBuilder.getDependency(getKey(node.getArtifact())) == null) {
-                    var dep = newDependencyBuilder(node, resolver).setFlags(flags);
-                    if (getExtensionInfoOrNull(node.getArtifact(), node.getRepositories()) != null) {
+                var extInfo = getExtensionInfoOrNull(node.getArtifact(), node.getRepositories());
+                var dep = appBuilder.getDependency(getKey(node.getArtifact()));
+                if (dep == null) {
+                    dep = newDependencyBuilder(node, resolver).setFlags(flags);
+                    if (extInfo != null) {
                         dep.setFlags(DependencyFlags.RUNTIME_EXTENSION_ARTIFACT);
                         if (dep.isFlagSet(DependencyFlags.DIRECT)) {
                             dep.setFlags(DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
                         }
                     }
                     appBuilder.addDependency(dep);
+                } else {
+                    dep.setFlags(DependencyFlags.COMPILE_ONLY);
                 }
                 if (!node.getChildren().isEmpty()) {
                     depStack.add(node.getChildren());

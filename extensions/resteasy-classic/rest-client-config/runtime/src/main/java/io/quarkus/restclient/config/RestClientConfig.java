@@ -310,6 +310,7 @@ public class RestClientConfig {
         instance.userAgent = getConfigValue(configKey, "user-agent", String.class);
         instance.http2 = getConfigValue(configKey, "http2", Boolean.class);
         instance.maxChunkSize = getConfigValue(configKey, "max-chunk-size", MemorySize.class);
+        instance.alpn = getConfigValue(configKey, "alpn", Boolean.class);
         instance.captureStacktrace = getConfigValue(configKey, "capture-stacktrace", Boolean.class);
 
         instance.multipart = new RestClientMultipartConfig();

@@ -1254,13 +1254,13 @@ That's all there is to it: with Panache, MongoDB has never looked so trim and ne
 
 == Defining entities in external projects or jars
 
-MongoDB with Panache relies on compile-time bytecode enhancements to your entities.
+MongoDB with Panache relies on compile-time bytecode enhancements to your entities. If you define your entities in the
+same project where you build your Quarkus application, everything will work fine.
 
-It attempts to identity archives with Panache entities (and consumers of Panache entities)
-by the presence of the marker file `META-INF/panache-archive.marker`. Panache includes an
-annotation processor that will automatically create this file in archives that depend on
-Panache (even indirectly). If you have disabled annotation processors you may need to create
-this file manually in some cases.
+If the entities come from external projects
+or jars, you can make sure that your jar is treated like a Quarkus application library by adding an empty `META-INF/beans.xml` file.
+
+This will allow Quarkus to index and enhance your entities as if they were inside the current project.
 
 == Multitenancy
 

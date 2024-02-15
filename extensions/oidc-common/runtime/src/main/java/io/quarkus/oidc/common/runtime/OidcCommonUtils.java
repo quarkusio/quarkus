@@ -30,6 +30,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.oidc.common.OidcEndpoint;
@@ -496,7 +497,7 @@ public class OidcCommonUtils {
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> map = new HashMap<>();
             for (OidcRequestFilter filter : container.listAll(OidcRequestFilter.class).stream().map(handle -> handle.get())
                     .collect(Collectors.toList())) {
-                OidcEndpoint endpoint = filter.getClass().getAnnotation(OidcEndpoint.class);
+                OidcEndpoint endpoint = ClientProxy.unwrap(filter).getClass().getAnnotation(OidcEndpoint.class);
                 OidcEndpoint.Type type = endpoint != null ? endpoint.value() : OidcEndpoint.Type.ALL;
                 map.computeIfAbsent(type, k -> new ArrayList<OidcRequestFilter>()).add(filter);
             }

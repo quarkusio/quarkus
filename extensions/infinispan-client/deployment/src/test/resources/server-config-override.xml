@@ -1,0 +1,8 @@
+<infinispan>
+    <cache-container>
+        <metrics accurate-size="true"/>
+        <local-cache name="my-local-cache">
+            <encoding media-type="application/x-protostream" />
+        </local-cache>
+    </cache-container>
+</infinispan>

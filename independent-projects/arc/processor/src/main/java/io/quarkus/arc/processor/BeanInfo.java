@@ -25,6 +25,7 @@ import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.enterprise.inject.spi.InterceptionType;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationInstanceEquivalenceProxy;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
@@ -857,7 +858,7 @@ public class BeanInfo implements InjectionTargetInfo {
     private void doAddClassLevelBindings(ClassInfo classInfo, Collection<AnnotationInstance> bindings, Set<DotName> skip,
             boolean onlyInherited) {
         beanDeployment.getAnnotations(classInfo).stream()
-                .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null)
+                .flatMap(a -> beanDeployment.extractInterceptorBindings(a).stream())
                 .filter(a -> !skip.contains(a.name()))
                 .filter(a -> !onlyInherited
                         || beanDeployment.hasAnnotation(beanDeployment.getInterceptorBinding(a.name()), DotNames.INHERITED))
@@ -977,6 +978,13 @@ public class BeanInfo implements InjectionTargetInfo {
             return interceptors.isEmpty();
         }
 
+        Set<AnnotationInstanceEquivalenceProxy> bindingsEquivalenceProxies() {
+            Set<AnnotationInstanceEquivalenceProxy> result = new HashSet<>();
+            for (AnnotationInstance binding : bindings) {
+                result.add(binding.createEquivalenceProxy());
+            }
+            return result;
+        }
     }
 
     static class DecorationInfo {

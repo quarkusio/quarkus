@@ -26,7 +26,8 @@ public class PropertyUtil {
             return;
         }
 
-        String platformCapitalized = platform.substring(0, 1).toUpperCase() + platform.substring(1);
+        String platformCapitalized = platform.replace("openshift", "OpenShift");
+        platformCapitalized = platformCapitalized.substring(0, 1).toUpperCase() + platformCapitalized.substring(1);
         T kubernetesValue = kubernetesProperty.getValue().orElse(null);
         if (kubernetesValue == null) {
             // If no kubernetes property is provided, this will be used instead.

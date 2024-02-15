@@ -365,6 +365,15 @@ public class JibProcessor {
         }
     }
 
+    private JibContainerBuilder toJibContainerBuilder(String baseImage, ContainerImageJibConfig jibConfig)
+            throws InvalidImageReferenceException {
+        if (baseImage.startsWith(Jib.TAR_IMAGE_PREFIX) || baseImage.startsWith(Jib.DOCKER_DAEMON_IMAGE_PREFIX)) {
+            return Jib.from(baseImage);
+        }
+        return Jib.from(toRegistryImage(ImageReference.parse(baseImage), jibConfig.baseRegistryUsername,
+                jibConfig.baseRegistryPassword));
+    }
+
     private RegistryImage toRegistryImage(ImageReference imageReference, Optional<String> username, Optional<String> password) {
         CredentialRetrieverFactory credentialRetrieverFactory = CredentialRetrieverFactory.forImage(imageReference,
                 log::info);
@@ -519,9 +528,7 @@ public class JibProcessor {
             Instant now = Instant.now();
             Instant modificationTime = jibConfig.useCurrentTimestampFileModification ? now : Instant.EPOCH;
 
-            JibContainerBuilder jibContainerBuilder = Jib
-                    .from(toRegistryImage(ImageReference.parse(baseJvmImage), jibConfig.baseRegistryUsername,
-                            jibConfig.baseRegistryPassword));
+            JibContainerBuilder jibContainerBuilder = toJibContainerBuilder(baseJvmImage, jibConfig);
             if (fastChangingLibPaths.isEmpty()) {
                 // just create a layer with the entire lib structure intact
                 addLayer(jibContainerBuilder, Collections.singletonList(componentsPath.resolve(JarResultBuildStep.LIB)),
@@ -718,9 +725,17 @@ public class JibProcessor {
             // not ideal since this has been previously zipped - we would like to just reuse it
             Path classesDir = outputTargetBuildItem.getOutputDirectory().resolve("jib");
             ZipUtils.unzip(sourceJarBuildItem.getPath(), classesDir);
-            JavaContainerBuilder javaContainerBuilder = JavaContainerBuilder
-                    .from(toRegistryImage(ImageReference.parse(baseJvmImage), jibConfig.baseRegistryUsername,
-                            jibConfig.baseRegistryPassword))
+
+            JavaContainerBuilder javaContainerBuilder;
+            if (baseJvmImage.startsWith(Jib.TAR_IMAGE_PREFIX) || baseJvmImage.startsWith(Jib.DOCKER_DAEMON_IMAGE_PREFIX)) {
+                javaContainerBuilder = JavaContainerBuilder.from(baseJvmImage);
+            } else {
+                javaContainerBuilder = JavaContainerBuilder
+                        .from(toRegistryImage(ImageReference.parse(baseJvmImage), jibConfig.baseRegistryUsername,
+                                jibConfig.baseRegistryPassword));
+            }
+
+            javaContainerBuilder = javaContainerBuilder
                     .addResources(classesDir, IS_CLASS_PREDICATE.negate())
                     .addClasses(classesDir, IS_CLASS_PREDICATE);
 
@@ -778,9 +793,7 @@ public class JibProcessor {
         }
         try {
             AbsoluteUnixPath workDirInContainer = AbsoluteUnixPath.get("/work");
-            JibContainerBuilder jibContainerBuilder = Jib
-                    .from(toRegistryImage(ImageReference.parse(jibConfig.baseNativeImage), jibConfig.baseRegistryUsername,
-                            jibConfig.baseRegistryPassword))
+            JibContainerBuilder jibContainerBuilder = toJibContainerBuilder(jibConfig.baseNativeImage, jibConfig)
                     .addFileEntriesLayer(FileEntriesLayer.builder()
                             .addEntry(nativeImageBuildItem.getPath(), workDirInContainer.resolve(BINARY_NAME_IN_CONTAINER),
                                     FilePermissions.fromOctalString("775"))

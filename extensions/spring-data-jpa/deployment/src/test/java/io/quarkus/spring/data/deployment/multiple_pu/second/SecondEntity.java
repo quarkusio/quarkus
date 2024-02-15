@@ -1,8 +1,6 @@
 package io.quarkus.spring.data.deployment.multiple_pu.second;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 @Entity
 public class SecondEntity {
@@ -12,4 +10,7 @@ public class SecondEntity {
     public Long id;
 
     public String name;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    public SecondEntity child;
 }

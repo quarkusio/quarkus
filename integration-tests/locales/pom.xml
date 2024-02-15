@@ -8,8 +8,8 @@
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
-    <artifactId>quarkus-integration-test-locales</artifactId>
-    <name>Quarkus - Integration Tests - Locales</name>
+    <artifactId>quarkus-integration-test-locales-parent</artifactId>
+    <name>Quarkus - Integration Tests - Locales - Parent</name>
     <packaging>pom</packaging>
     <modules>
         <module>app</module>

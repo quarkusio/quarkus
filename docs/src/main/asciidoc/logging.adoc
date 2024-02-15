@@ -434,7 +434,7 @@ quarkus.log.category."com.example".handlers=my-console-handler
 quarkus.log.category."com.example".use-parent-handlers=false
 ----
 
-For details about its configuration, see the xref:#quarkus-log-logging-log-config_quarkus.log.console-console-logging[console logging configuration] reference.
+For details about its configuration, see the xref:#quarkus-log-logging-log-config_quarkus-log-console-console-logging[console logging configuration] reference.
 
 
 === File log handler
@@ -468,7 +468,7 @@ quarkus.log.category."com.example".handlers=my-file-handler
 quarkus.log.category."com.example".use-parent-handlers=false
 ----
 
-For details about its configuration, see the xref:#quarkus-log-logging-log-config_quarkus.log.file-file-logging[file logging configuration] reference.
+For details about its configuration, see the xref:#quarkus-log-logging-log-config_quarkus-log-file-file-logging[file logging configuration] reference.
 
 
 === Syslog log handler
@@ -500,7 +500,7 @@ quarkus.log.category."com.example".handlers=my-syslog-handler
 quarkus.log.category."com.example".use-parent-handlers=false
 ----
 
-For details about its configuration, see the xref:#quarkus-log-logging-log-config_quarkus.log.syslog-syslog-logging[Syslog logging configuration] reference.
+For details about its configuration, see the xref:#quarkus-log-logging-log-config_quarkus-log-syslog-syslog-logging[Syslog logging configuration] reference.
 
 
 == Add a logging filter to your log handler
@@ -585,7 +585,7 @@ quarkus.log.category."io.undertow.request.security".level=TRACE
 
 NOTE: As we don't change the root logger, the console log will only contain `INFO` or higher level logs.
 
-[#category-named-handlers-example]
+[[category-named-handlers-example]]
 .Named handlers attached to a category
 [source, properties]
 ----
@@ -602,7 +602,7 @@ quarkus.log.category."io.quarkus.category".level=INFO
 quarkus.log.category."io.quarkus.category".handlers=STRUCTURED_LOGGING,STRUCTURED_LOGGING_FILE
 ----
 
-[#root-category-named-handlers-example]
+[[root-category-named-handlers-example]]
 .Named handlers attached to the root logger
 [source, properties]
 ----

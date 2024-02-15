@@ -375,15 +375,32 @@ public class LocalWorkspaceDiscoveryTest {
         assertParents(project, "acme-parent", "acme-dependencies");
     }
 
+    @Test
+    public void loadWorkspaceFromModuleDirWithParentInSiblingDir() throws Exception {
+        final URL projectUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("workspace-parent-is-not-root-dir/acme-backend/acme-backend-lib");
+        assertNotNull(projectUrl);
+        final Path projectDir = Paths.get(projectUrl.toURI());
+        assertTrue(Files.exists(projectDir));
+        final LocalProject project = LocalProject.loadWorkspace(projectDir);
+
+        assertEquals("acme-backend-lib", project.getArtifactId());
+        assertWorkspaceWithParentInChildDir(project);
+
+        assertParents(project, "acme-backend", "acme-backend-parent", "acme-parent", "acme-dependencies");
+    }
+
     private void assertWorkspaceWithParentInChildDir(final LocalProject project) {
         final LocalWorkspace workspace = project.getWorkspace();
         assertNotNull(workspace.getProject("org.acme", "acme"));
         assertNotNull(workspace.getProject("org.acme", "acme-parent"));
         assertNotNull(workspace.getProject("org.acme", "acme-dependencies"));
         assertNotNull(workspace.getProject("org.acme", "acme-backend"));
+        assertNotNull(workspace.getProject("org.acme", "acme-backend-parent"));
+        assertNotNull(workspace.getProject("org.acme", "acme-backend-lib"));
         assertNotNull(workspace.getProject("org.acme", "acme-backend-rest-api"));
         assertNotNull(workspace.getProject("org.acme", "acme-application"));
-        assertEquals(6, workspace.getProjects().size());
+        assertEquals(8, workspace.getProjects().size());
     }
 
     @Test

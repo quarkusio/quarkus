@@ -283,13 +283,13 @@ Commands:
       docker              Build a container image using Docker.
       buildpack           Build a container image using Buildpack.
       jib                 Build a container image using Jib.
-      openshift           Build a container image using Openshift.
+      openshift           Build a container image using OpenShift.
     push                  Push a container image.
   deploy                  Deploy application.
-    kubernetes            Perform the deploy action on kubernetes.
-    openshift             Perform the deploy action on openshift.
-    knative               Perform the deploy action on knative.
-    kind                  Perform the deploy action on minikube.
+    kubernetes            Perform the deploy action on Kubernetes.
+    openshift             Perform the deploy action on OpenShift.
+    knative               Perform the deploy action on Knative.
+    kind                  Perform the deploy action on Kind.
     minikube              Perform the deploy action on minikube.
   registry                Configure Quarkus registry client
     list                  List enabled Quarkus registries
@@ -474,6 +474,12 @@ subcommand:
 quarkus ext add kubernetes health
 [SUCCESS] ✅ Extension io.quarkus:quarkus-kubernetes has been installed
 [SUCCESS] ✅ Extension io.quarkus:quarkus-smallrye-health has been installed
+----
+
+You can install all extensions which match a glob pattern:
+[source,shell]
+----
+quarkus ext add smallrye-*
 ----
 
 ==== Removing extensions

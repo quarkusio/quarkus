@@ -39,7 +39,12 @@ public final class QuarkusUpdates {
         }
         switch (request.buildTool) {
             case MAVEN:
-                recipe.addOperation(new UpdatePropertyOperation("quarkus.platform.version", request.targetVersion))
+                recipe.addOperation(
+                        new UpdateDependencyVersionOperation("io.quarkus.platform", "quarkus-bom", request.targetVersion))
+                        .addOperation(new UpdateDependencyVersionOperation("io.quarkus", "quarkus-bom", request.targetVersion))
+                        .addOperation(new UpdateDependencyVersionOperation("io.quarkus", "quarkus-universe-bom",
+                                request.targetVersion))
+                        .addOperation(new UpdatePropertyOperation("quarkus.platform.version", request.targetVersion))
                         .addOperation(new UpdatePropertyOperation("quarkus.version", request.targetVersion))
                         .addOperation(new UpdatePropertyOperation("quarkus-plugin.version", request.targetVersion));
                 if (request.kotlinVersion != null) {

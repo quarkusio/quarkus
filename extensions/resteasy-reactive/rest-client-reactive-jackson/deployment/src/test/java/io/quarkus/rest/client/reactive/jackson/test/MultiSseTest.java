@@ -8,20 +8,26 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.sse.OutboundSseEvent;
 import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseEventSink;
 
+import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.reactive.RestHeader;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.jboss.resteasy.reactive.client.SseEvent;
 import org.jboss.resteasy.reactive.client.SseEventFilter;
@@ -31,6 +37,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
@@ -53,6 +60,29 @@ public class MultiSseTest {
         await().atMost(5, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> assertThat(resultList).containsExactly("foo", "bar"));
+
+    }
+
+    @Test
+    void shouldReadBodyFromFailedResponse() {
+        var errorBody = new AtomicReference<String>();
+        createClient()
+                .fail()
+                .subscribe().with(new Consumer<Object>() {
+                    @Override
+                    public void accept(Object o) {
+
+                    }
+                }, new Consumer<>() {
+                    @Override
+                    public void accept(Throwable t) {
+                        errorBody.set(t.getMessage());
+                    }
+                });
+
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> assertThat(errorBody.get()).isEqualTo("invalid input provided"));
     }
 
     @Test
@@ -210,6 +240,11 @@ public class MultiSseTest {
         Multi<String> get();
 
         @GET
+        @Produces(MediaType.SERVER_SENT_EVENTS)
+        @ClientHeaderParam(name = "fail", value = "true")
+        Multi<String> fail();
+
+        @GET
         @Path("/json")
         @Produces(MediaType.SERVER_SENT_EVENTS)
         Multi<Dto> getJson();
@@ -239,6 +274,14 @@ public class MultiSseTest {
         @Produces(MediaType.SERVER_SENT_EVENTS)
         @SseEventFilter(CustomFilter.class)
         Multi<SseEvent<Dto>> eventWithFilter();
+
+        @ClientExceptionMapper
+        static RuntimeException toException(Response response) {
+            if (response.getStatusInfo().getStatusCode() == 400) {
+                return new IllegalArgumentException(response.readEntity(String.class));
+            }
+            return null;
+        }
     }
 
     public static class CustomFilter implements Predicate<SseEvent<String>> {
@@ -260,7 +303,10 @@ public class MultiSseTest {
 
         @GET
         @Produces(MediaType.SERVER_SENT_EVENTS)
-        public Multi<String> get() {
+        public Multi<String> get(@DefaultValue("false") @RestHeader boolean fail) {
+            if (fail) {
+                throw new WebApplicationException(Response.status(400).entity("invalid input provided").build());
+            }
             return Multi.createFrom().items("foo", "bar");
         }
 

@@ -66,9 +66,14 @@ public class EagerSecurityHandler implements ServerRestHandler {
         ResteasyReactiveResourceInfo lazyMethod = requestContext.getTarget().getLazyMethod();
         MethodDescription methodDescription = lazyMethodToMethodDescription(lazyMethod);
         if (check == null) {
-            check = Arc.container().instance(SecurityCheckStorage.class).get().getSecurityCheck(methodDescription);
+            SecurityCheckStorage storage = Arc.container().instance(SecurityCheckStorage.class).get();
+            check = storage.getSecurityCheck(methodDescription);
             if (check == null) {
-                check = NULL_SENTINEL;
+                if (storage.getDefaultSecurityCheck() == null || isRequestAlreadyChecked(requestContext)) {
+                    check = NULL_SENTINEL;
+                } else {
+                    check = storage.getDefaultSecurityCheck();
+                }
             }
             this.check = check;
         }
@@ -191,6 +196,13 @@ public class EagerSecurityHandler implements ServerRestHandler {
         // propagate information that security check has been performed on this method to the SecurityHandler
         // via io.quarkus.resteasy.reactive.server.runtime.StandardSecurityCheckInterceptor
         requestContext.setProperty(STANDARD_SECURITY_CHECK_INTERCEPTOR, methodDescription);
+    }
+
+    private boolean isRequestAlreadyChecked(ResteasyReactiveRequestContext requestContext) {
+        // when request has already been checked at least once (by another instance of this handler)
+        // then default security checks, like denied access to all JAX-RS resources by default
+        // shouldn't be applied; this doesn't mean security checks registered for methods shouldn't be applied
+        return requestContext.getProperty(STANDARD_SECURITY_CHECK_INTERCEPTOR) != null;
     }
 
     private InjectableInstance<CurrentIdentityAssociation> getCurrentIdentityAssociation() {

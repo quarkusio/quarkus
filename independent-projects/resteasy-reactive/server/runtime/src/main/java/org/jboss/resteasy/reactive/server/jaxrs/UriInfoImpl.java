@@ -55,6 +55,9 @@ public class UriInfoImpl implements UriInfo {
         if (prefix.isEmpty())
             return path;
         // else skip the prefix
+        if (path.length() == prefix.length()) {
+            return "/";
+        }
         return path.substring(prefix.length());
     }
 

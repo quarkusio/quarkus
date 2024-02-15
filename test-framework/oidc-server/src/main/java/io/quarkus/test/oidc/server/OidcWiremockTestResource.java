@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableSet;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.build.JwtClaimsBuilder;
 
 /**
  * Provides a mock OIDC server to tests.
@@ -42,6 +43,10 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
             "https://server.example.com");
     private static final String TOKEN_AUDIENCE = System.getProperty("quarkus.test.oidc.token.audience",
             "https://server.example.com");
+    private static final String TOKEN_SUBJECT = "123456";
+    private static final String BEARER_TOKEN_TYPE = "Bearer";
+    private static final String ID_TOKEN_TYPE = "ID";
+
     private static final String TOKEN_USER_ROLES = System.getProperty("quarkus.test.oidc.token.user-roles", "user");
     private static final String TOKEN_ADMIN_ROLES = System.getProperty("quarkus.test.oidc.token.admin-roles", "user,admin");
     private static final String ENCODED_X5C = "MIIC+zCCAeOgAwIBAgIGAXx/E9rgMA0GCSqGSIb3DQEBCwUAMBQxEjAQBgNVBAMMCWxvY2FsaG9zdDAeFw0yMTEwMTQxMzUzMDBaFw0yMjEwMTQxMzUzMDBaMBQxEjAQBgNVBAMMCWxvY2FsaG9zdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAIicN95dXlQLBqEZUsqPhQopnjnPgGmW80NohEgNzZLqN0xW9cyJJrdJM5Z1lRrePHZGiJdd1XXn4fYasP6/cjRfMWal9X6dD5wlnOTP01/4beX5vctE6W4lZrI3kTFmZ+I69w7BaLsUPWgV1CYrtuldL3dr6xAnngK3hU+JraB2Ndw9llXib26HOZhCXKedCTYcUQieVJGPI0f8H1JNk88+PnwI+cUGgXHF56iTLv9QujI6AhIgextXdd21T0XiHgBkSlSSBeqIKAjfCW6zoXP+PJU+Lso24J3duG3mrbilqHZlmIWnLRaG0RmKOeedXIDHvAaMaVUOLaN9HBgNKo0CAwEAAaNTMFEwHQYDVR0OBBYEFMYGoBNHBTMvMT4DwClVHVVwn+5VMB8GA1UdIwQYMBaAFMYGoBNHBTMvMT4DwClVHVVwn+5VMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAFulB0DKhykXGbGPIBPcj63ItLNilgl1i8i43my8fYdV6OBWLIhZ4InhpX1+XmYCNPNtu94Jy1csS00K2/Hhn4ByBd+6nd5DSr0W0VdVQyhLz3GW1nf0J3X2N+tD818O0KtKKPTq4p9reg/XtV+DNv7DeDAGzlfgRL4E4fQx6OYeuu35kGrPvAddIA70leJMELJRylCLfEcl2ne/Bht8cZVp7ZCxnfXnsc+7hCW84mhzGjJycA3E6TnZPD3pD+q9FoIAQMxMQqUCH71u9vTvz1Q5JdokuJJY2eTHSUKyHA9MwSFq8DFDICJFBoQuFyDlK5yxSUcQpR3mBwKdimj6oA0=";
@@ -364,24 +369,33 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
     }
 
     public static String getAccessToken(String userName, Set<String> groups) {
-        return generateJwtToken(userName, groups);
+        return generateJwtToken(userName, groups, TOKEN_SUBJECT, BEARER_TOKEN_TYPE);
     }
 
     public static String getIdToken(String userName, Set<String> groups) {
-        return generateJwtToken(userName, groups);
+        return generateJwtToken(userName, groups, TOKEN_SUBJECT, ID_TOKEN_TYPE);
     }
 
     public static String generateJwtToken(String userName, Set<String> groups) {
-        return generateJwtToken(userName, groups, "123456");
+        return generateJwtToken(userName, groups, TOKEN_SUBJECT);
     }
 
     public static String generateJwtToken(String userName, Set<String> groups, String sub) {
-        return Jwt.preferredUserName(userName)
+        return generateJwtToken(userName, groups, sub, null);
+    }
+
+    public static String generateJwtToken(String userName, Set<String> groups, String sub, String type) {
+        JwtClaimsBuilder builder = Jwt.preferredUserName(userName)
                 .groups(groups)
                 .issuer(TOKEN_ISSUER)
                 .audience(TOKEN_AUDIENCE)
                 .claim("sid", "session-id")
-                .subject(sub)
+                .subject(sub);
+        if (type != null) {
+            builder.claim("typ", type);
+        }
+
+        return builder
                 .jws()
                 .keyId("1")
                 .sign("privateKey.jwk");

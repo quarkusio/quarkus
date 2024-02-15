@@ -630,7 +630,7 @@ You can add mapping files following
 the https://jakarta.ee/specifications/persistence/3.0/jakarta-persistence-spec-3.0.html#a16944[`orm.xml` format (Jakarta Persistence)]
 or the http://hibernate.org/dtd/hibernate-mapping-3.0.dtd[`hbm.xml` format (specific to Hibernate ORM, deprecated)]:
 
-* in `application.properties` through the (build-time) link:#quarkus-hibernate-orm_quarkus.hibernate-orm.mapping-files[`quarkus.hibernate-orm.mapping-files`] property.
+* in `application.properties` through the (build-time) link:#quarkus-hibernate-orm_quarkus-hibernate-orm-mapping-files[`quarkus.hibernate-orm.mapping-files`] property.
 * in <<persistence-xml,`persistence.xml`>> through the `<mapping-file>` element.
 
 XML mapping files are parsed at build time.
@@ -907,10 +907,10 @@ For more information about Hibernate Envers, see link:https://hibernate.org/orm/
 
 [[metrics]]
 == Metrics
-Either xref:telemetry-micrometer.adoc[Micrometer] or xref:microprofile-metrics.adoc[SmallRye Metrics] are
+Either xref:telemetry-micrometer.adoc[Micrometer] or xref:smallrye-metrics.adoc[SmallRye Metrics] are
 capable of exposing metrics that Hibernate ORM collects at runtime. To enable exposure of Hibernate metrics
 on the `/q/metrics` endpoint, make sure your project depends on a metrics extension and set the configuration property `quarkus.hibernate-orm.metrics.enabled` to `true`.
-When using link:microprofile-metrics[SmallRye Metrics], metrics will be available under the `vendor` scope.
+When using xref:smallrye-metrics.adoc[SmallRye Metrics], metrics will be available under the `vendor` scope.
 
 == Limitations and other things you should know
 

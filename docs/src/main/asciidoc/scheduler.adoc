@@ -74,7 +74,7 @@ This will add the following to your build file:
 implementation("io.quarkus:quarkus-scheduler")
 ----
 
-[#standard-scheduling]
+[[standard-scheduling]]
 == Creating a scheduled job
 
 In the `org.acme.scheduler` package, create the `CounterBean` class, with the following content:

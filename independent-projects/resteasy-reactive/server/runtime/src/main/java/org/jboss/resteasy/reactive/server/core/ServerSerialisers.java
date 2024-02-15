@@ -80,6 +80,7 @@ public class ServerSerialisers extends Serialisers {
 
     private static final String CONTENT = "Content";
     private static final String CONTENT_LOWER = "content";
+    private static final String LOCATION = "Location";
     private static final String TYPE = "Type";
     private static final String TYPE_LOWER = "type";
     private static final String LENGTH = "Length";
@@ -532,7 +533,7 @@ public class ServerSerialisers extends Serialisers {
     }
 
     private static boolean requireSingleHeader(String header) {
-        if (!(header.startsWith(CONTENT) || header.startsWith(CONTENT_LOWER))) {
+        if (!(header.startsWith(CONTENT) || header.startsWith(CONTENT_LOWER) || header.startsWith(LOCATION))) {
             return false;
         }
         if (header.length() < CONTENT.length() + 2) {

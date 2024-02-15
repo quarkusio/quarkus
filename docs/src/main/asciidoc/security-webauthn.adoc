@@ -90,7 +90,7 @@ The solution is located in the `security-webauthn-quickstart` link:{quickstarts-
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-webauthn-quickstart
-:create-app-extensions: security-webauthn,reactive-pg-client,resteasy-reactive,hibernate-reactive-panache
+:create-app-extensions: security-webauthn,jdbc-postgresql,resteasy-reactive,hibernate-orm-panache
 include::{includes}/devtools/create-app.adoc[]
 
 [NOTE]
@@ -229,8 +229,7 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
-import io.quarkus.hibernate.reactive.panache.PanacheEntity;
-import io.smallrye.mutiny.Uni;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import io.vertx.ext.auth.webauthn.Authenticator;
 import io.vertx.ext.auth.webauthn.PublicKeyCredential;
 
@@ -319,16 +318,12 @@ public class WebAuthnCredential extends PanacheEntity {
         user.webAuthnCredential = this;
     }
 
-    public static Uni<List<WebAuthnCredential>> findByUserName(String userName) {
+    public static List<WebAuthnCredential> findByUserName(String userName) {
         return list("userName", userName);
     }
 
-    public static Uni<List<WebAuthnCredential>> findByCredID(String credID) {
+    public static List<WebAuthnCredential> findByCredID(String credID) {
         return list("credID", credID);
-    }
-
-    public <T> Uni<T> fetch(T association) {
-        return getSession().flatMap(session -> session.fetch(association));
     }
 }
 ----
@@ -339,10 +334,9 @@ We also need a second entity for the credentials:
 ----
 package org.acme.security.webauthn;
 
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;
-
-import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 
 
 @Entity
@@ -364,13 +358,11 @@ And last but not least, our user entity:
 ----
 package org.acme.security.webauthn;
 
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-
-import io.quarkus.hibernate.reactive.panache.PanacheEntity;
-import io.smallrye.mutiny.Uni;
 
 @Table(name = "user_table")
 @Entity
@@ -383,8 +375,8 @@ public class User extends PanacheEntity {
     @OneToOne(mappedBy = "user")
     public WebAuthnCredential webAuthnCredential;
 
-    public static Uni<User> findByUserName(String userName) {
-        return find("userName", userName).firstResult();
+    public static User findByUserName(String userName) {
+        return User.find("userName", userName).firstResult();
     }
 }
 ----
@@ -412,98 +404,83 @@ WebAuthn security model:
 ----
 package org.acme.security.webauthn;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import io.smallrye.common.annotation.Blocking;
 import jakarta.enterprise.context.ApplicationScoped;
 
-import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
 import io.quarkus.security.webauthn.WebAuthnUserProvider;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.auth.webauthn.AttestationCertificates;
 import io.vertx.ext.auth.webauthn.Authenticator;
+import jakarta.transaction.Transactional;
 
+import static org.acme.security.webauthn.WebAuthnCredential.findByCredID;
+import static org.acme.security.webauthn.WebAuthnCredential.findByUserName;
+
+@Blocking
 @ApplicationScoped
 public class MyWebAuthnSetup implements WebAuthnUserProvider {
 
-    @ReactiveTransactional
+    @Transactional
     @Override
     public Uni<List<Authenticator>> findWebAuthnCredentialsByUserName(String userName) {
-        return WebAuthnCredential.findByUserName(userName)
-                .flatMap(MyWebAuthnSetup::toAuthenticators);
+        return Uni.createFrom().item(toAuthenticators(findByUserName(userName)));
     }
 
-    @ReactiveTransactional
+    @Transactional
     @Override
     public Uni<List<Authenticator>> findWebAuthnCredentialsByCredID(String credID) {
-        return WebAuthnCredential.findByCredID(credID)
-                .flatMap(MyWebAuthnSetup::toAuthenticators);
+        return Uni.createFrom().item(toAuthenticators(findByCredID(credID)));
     }
 
-    @ReactiveTransactional
+    @Transactional
     @Override
     public Uni<Void> updateOrStoreWebAuthnCredentials(Authenticator authenticator) {
-        return User.findByUserName(authenticator.getUserName())
-            .flatMap(user -> {
+        // leave the scooby user to the manual endpoint, because if we do it here it will be created/updated twice
+        if(!authenticator.getUserName().equals("scooby")) {
+            User user = User.findByUserName(authenticator.getUserName());
+            if(user == null) {
                 // new user
-                if(user == null) {
-                    User newUser = new User();
-                    newUser.userName = authenticator.getUserName();
-                    WebAuthnCredential credential = new WebAuthnCredential(authenticator, newUser);
-                    return credential.persist()
-                            .flatMap(c -> newUser.persist())
-                            .onItem().ignore().andContinueWithNull();
-                } else {
-                    // existing user
-                    user.webAuthnCredential.counter = authenticator.getCounter();
-                    return Uni.createFrom().nullItem();
-                }
-            });
-    }
-
-    private static Uni<List<Authenticator>> toAuthenticators(List<WebAuthnCredential> dbs) {
-        // can't call combine/uni on empty list
-        if(dbs.isEmpty())
-            return Uni.createFrom().item(Collections.emptyList());
-        List<Uni<Authenticator>> ret = new ArrayList<>(dbs.size());
-        for (WebAuthnCredential db : dbs) {
-            ret.add(toAuthenticator(db));
+                User newUser = new User();
+                newUser.userName = authenticator.getUserName();
+                WebAuthnCredential credential = new WebAuthnCredential(authenticator, newUser);
+                credential.persist();
+                newUser.persist();
+            } else {
+                // existing user
+                user.webAuthnCredential.counter = authenticator.getCounter();
+            }
         }
-        return Uni.combine().all().unis(ret).combinedWith(f -> (List)f);
+        return Uni.createFrom().nullItem();
     }
 
-    private static Uni<Authenticator> toAuthenticator(WebAuthnCredential credential) {
-        return credential.fetch(credential.x5c)
-                .map(x5c -> {
-                    Authenticator ret = new Authenticator();
-                    ret.setAaguid(credential.aaguid);
-                    AttestationCertificates attestationCertificates = new AttestationCertificates();
-                    attestationCertificates.setAlg(credential.alg);
-                    List<String> x5cs = new ArrayList<>(x5c.size());
-                    for (WebAuthnCertificate webAuthnCertificate : x5c) {
-                        x5cs.add(webAuthnCertificate.x5c);
-                    }
-                    ret.setAttestationCertificates(attestationCertificates);
-                    ret.setCounter(credential.counter);
-                    ret.setCredID(credential.credID);
-                    ret.setFmt(credential.fmt);
-                    ret.setPublicKey(credential.publicKey);
-                    ret.setType(credential.type);
-                    ret.setUserName(credential.userName);
-                    return ret;
-                });
+    private static List<Authenticator> toAuthenticators(List<WebAuthnCredential> dbs) {
+        return dbs.stream().map(MyWebAuthnSetup::toAuthenticator).collect(Collectors.toList());
+    }
+
+    private static Authenticator toAuthenticator(WebAuthnCredential credential) {
+        Authenticator ret = new Authenticator();
+        ret.setAaguid(credential.aaguid);
+        AttestationCertificates attestationCertificates = new AttestationCertificates();
+        attestationCertificates.setAlg(credential.alg);
+        ret.setAttestationCertificates(attestationCertificates);
+        ret.setCounter(credential.counter);
+        ret.setCredID(credential.credID);
+        ret.setFmt(credential.fmt);
+        ret.setPublicKey(credential.publicKey);
+        ret.setType(credential.type);
+        ret.setUserName(credential.userName);
+        return ret;
     }
 
     @Override
     public Set<String> getRoles(String userId) {
         if(userId.equals("admin")) {
-            Set<String> ret = new HashSet<>();
-            ret.add("user");
-            ret.add("admin");
-            return ret;
+            return Set.of("user", "admin");
         }
         return Collections.singleton("user");
     }
@@ -934,23 +911,19 @@ and `WebAuthnSecurity.register` methods. For example, here's how you can handle 
 ----
 package org.acme.security.webauthn;
 
-import java.net.URI;
-
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 
 import org.jboss.resteasy.reactive.RestForm;
 
-import io.quarkus.hibernate.reactive.panache.common.runtime.ReactiveTransactional;
 import io.quarkus.security.webauthn.WebAuthnLoginResponse;
 import io.quarkus.security.webauthn.WebAuthnRegisterResponse;
 import io.quarkus.security.webauthn.WebAuthnSecurity;
-import io.smallrye.mutiny.Uni;
 import io.vertx.ext.auth.webauthn.Authenticator;
 import io.vertx.ext.web.RoutingContext;
 
@@ -962,85 +935,65 @@ public class LoginResource {
 
     @Path("/login")
     @POST
-    @ReactiveTransactional
-    public Uni<Response> login(@RestForm String userName,
-                               @BeanParam WebAuthnLoginResponse webAuthnResponse,
-                               RoutingContext ctx) {
+    @Transactional
+    public Response login(@RestForm String userName,
+                          @BeanParam WebAuthnLoginResponse webAuthnResponse,
+                          RoutingContext ctx) {
         // Input validation
-        if(userName == null || userName.isEmpty()
-                || !webAuthnResponse.isSet()
-                || !webAuthnResponse.isValid()) {
-            return Uni.createFrom().item(Response.status(Status.BAD_REQUEST).build());
+        if(userName == null || userName.isEmpty() || !webAuthnResponse.isSet() || !webAuthnResponse.isValid()) {
+            return Response.status(Status.BAD_REQUEST).build();
         }
 
-        Uni<User> userUni = User.findByUserName(userName);
-        return userUni.flatMap(user -> {
-            if(user == null) {
-                // Invalid user
-                return Uni.createFrom().item(Response.status(Status.BAD_REQUEST).build());
-            }
-            Uni<Authenticator> authenticator = this.webAuthnSecurity.login(webAuthnResponse, ctx);
-
-            return authenticator
-                    // bump the auth counter
-                    .invoke(auth -> user.webAuthnCredential.counter = auth.getCounter())
-                    .map(auth -> {
-                        // make a login JWT cookie
-                        NewCookie cookie = null;
-                        return Response.seeOther(URI.create("/")).cookie(cookie).build();
-                    })
-                    // handle login failure
-                    .onFailure().recoverWithItem(x -> {
-                        // make a proper error response
-                        return Response.status(Status.BAD_REQUEST).build();
-                    });
-
-        });
+        User user = User.findByUserName(userName);
+        if(user == null) {
+            // Invalid user
+            return Response.status(Status.BAD_REQUEST).build();
+        }
+        try {
+            Authenticator authenticator = this.webAuthnSecurity.login(webAuthnResponse, ctx).await().indefinitely();
+            // bump the auth counter
+            user.webAuthnCredential.counter = authenticator.getCounter();
+            // make a login cookie
+            this.webAuthnSecurity.rememberUser(authenticator.getUserName(), ctx);
+            return Response.ok().build();
+        } catch (Exception exception) {
+            // handle login failure - make a proper error response
+            return Response.status(Status.BAD_REQUEST).build();
+        }
     }
 
     @Path("/register")
     @POST
-    @ReactiveTransactional
-    public Uni<Response> register(@RestForm String userName,
+    @Transactional
+    public Response register(@RestForm String userName,
                                   @BeanParam WebAuthnRegisterResponse webAuthnResponse,
                                   RoutingContext ctx) {
         // Input validation
-        if(userName == null || userName.isEmpty()
-                || !webAuthnResponse.isSet()
-                || !webAuthnResponse.isValid()) {
-            return Uni.createFrom().item(Response.status(Status.BAD_REQUEST).build());
+        if(userName == null || userName.isEmpty() || !webAuthnResponse.isSet() || !webAuthnResponse.isValid()) {
+            return Response.status(Status.BAD_REQUEST).build();
         }
 
-        Uni<User> userUni = User.findByUserName(userName);
-        return userUni.flatMap(user -> {
-            if(user != null) {
-                // Duplicate user
-                return Uni.createFrom().item(Response.status(Status.BAD_REQUEST).build());
-            }
-            Uni<Authenticator> authenticator = this.webAuthnSecurity.register(webAuthnResponse, ctx);
-
-            return authenticator
-                    // store the user
-                    .flatMap(auth -> {
-                        User newUser = new User();
-                        newUser.userName = auth.getUserName();
-                        WebAuthnCredential credential = new WebAuthnCredential(auth, newUser);
-                        return credential.persist()
-                                .flatMap(c -> newUser.persist());
-
-                    })
-                    .map(newUser -> {
-                        // make a login JWT cookie
-                        NewCookie cookie = null;
-                        return Response.seeOther(URI.create("/")).cookie(cookie).build();
-                    })
-                    // handle login failure
-                    .onFailure().recoverWithItem(x -> {
-                        // make a proper error response
-                        return Response.status(Status.BAD_REQUEST).build();
-                    });
-
-        });
+        User user = User.findByUserName(userName);
+        if(user != null) {
+            // Duplicate user
+            return Response.status(Status.BAD_REQUEST).build();
+        }
+        try {
+            // store the user
+            Authenticator authenticator = this.webAuthnSecurity.register(webAuthnResponse, ctx).await().indefinitely();
+            User newUser = new User();
+            newUser.userName = authenticator.getUserName();
+            WebAuthnCredential credential = new WebAuthnCredential(authenticator, newUser);
+            credential.persist();
+            newUser.persist();
+            // make a login cookie
+            this.webAuthnSecurity.rememberUser(newUser.userName, ctx);
+            return Response.ok().build();
+        } catch (Exception ignored) {
+            // handle login failure
+            // make a proper error response
+            return Response.status(Status.BAD_REQUEST).build();
+        }
     }
 }
 ----
@@ -1070,13 +1023,14 @@ Testing WebAuthn can be complicated because normally you need a hardware token, 
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-test-security-webauthn</artifactId>
+    <scope>test</scope>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-test-security-webauthn")
+testImplementation("io.quarkus:quarkus-test-security-webauthn")
 ----
 
 With this, you can use `WebAuthnHardware` to emulate an authenticator token, as well as the

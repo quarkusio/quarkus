@@ -5,7 +5,6 @@ import java.util.Optional;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -22,7 +21,6 @@ public interface DataSourcesBuildTimeConfig {
     /**
      * Datasources.
      */
-    @ConfigDocSection
     @ConfigDocMapKey("datasource-name")
     @WithParentName
     @WithDefaults

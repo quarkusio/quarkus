@@ -1,7 +1,7 @@
 package io.quarkus.resteasy.reactive.links.deployment;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -17,13 +17,13 @@ public class RestLinksWithFailureInjectionTest {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 assertThat(rootCause).isInstanceOf(IllegalStateException.class)
                         .hasMessageContaining("Cannot generate web links for the class " +
-                                "io.quarkus.resteasy.reactive.links.deployment.TestRecordNoId because is either " +
-                                "missing an `id` field or a field with an `@Id` annotation");
+                                "io.quarkus.resteasy.reactive.links.deployment.TestRecordNoId because it is " +
+                                "either missing an `id` field, a field with an `@Id` annotation or a field with a `@RestLinkId annotation");
             });
 
     @Test
     void validationFailed() {
         // Should not be reached: verify
-        assertTrue(false);
+        fail();
     }
 }

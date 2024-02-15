@@ -273,8 +273,8 @@ public class CliProjectMavenTest {
         Assertions.assertFalse(result.stdout.contains("-Dsuspend"),
                 "mvn command should not specify '-Dsuspend'\n" + result);
 
-        Assertions.assertTrue(result.stdout.contains("-Dquarkus.args='arg1 arg2'"),
-                "mvn command should not specify -Dquarkus.args='arg1 arg2'\n" + result);
+        Assertions.assertTrue(result.stdout.contains("-Dquarkus.args=\"arg1\" \"arg2\""),
+                "mvn command should not specify -Dquarkus.args=\"arg1\" \"arg2\"\n" + result);
 
         // 4 TEST MODE: test --clean --debug --suspend --offline
         result = CliDriver.execute(project, "test", "-e", "--dry-run",
@@ -291,6 +291,13 @@ public class CliProjectMavenTest {
                 "Expected OK return code. Result:\n" + result);
         Assertions.assertTrue(result.stdout.contains("Run current project in test mode"), result.toString());
         Assertions.assertTrue(result.stdout.contains("-Dtest=FooTest"), result.toString());
+
+        // 6 TEST MODE: Two word argument
+        result = CliDriver.execute(project, "dev", "-e", "--dry-run",
+                "--no-suspend", "--debug-host=0.0.0.0", "--debug-port=8008", "--debug-mode=connect", "--", "arg1 arg2");
+
+        Assertions.assertTrue(result.stdout.contains("-Dquarkus.args=\"arg1 arg2\""),
+                "mvn command should not specify -Dquarkus.args=\"arg1 arg2\"\n" + result);
     }
 
     @Test

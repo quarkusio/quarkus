@@ -1,18 +1,11 @@
 package io.quarkus.resteasy.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-import static io.quarkus.resteasy.deployment.RestPathAnnotationProcessor.isRestEndpointMethod;
-import static io.quarkus.security.spi.SecurityTransformerUtils.hasSecurityAnnotation;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
-
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -22,7 +15,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.runtime.AuthenticationCompletionExceptionMapper;
 import io.quarkus.resteasy.runtime.AuthenticationFailedExceptionMapper;
@@ -34,14 +26,13 @@ import io.quarkus.resteasy.runtime.ForbiddenExceptionMapper;
 import io.quarkus.resteasy.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.runtime.NotFoundExceptionMapper;
 import io.quarkus.resteasy.runtime.SecurityContextFilter;
+import io.quarkus.resteasy.runtime.StandardSecurityCheckInterceptor;
 import io.quarkus.resteasy.runtime.UnauthorizedExceptionMapper;
 import io.quarkus.resteasy.runtime.vertx.JsonArrayReader;
 import io.quarkus.resteasy.runtime.vertx.JsonArrayWriter;
 import io.quarkus.resteasy.runtime.vertx.JsonObjectReader;
 import io.quarkus.resteasy.runtime.vertx.JsonObjectWriter;
-import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
-import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
-import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBuildItem;
+import io.quarkus.security.spi.DefaultSecurityCheckBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
@@ -53,36 +44,13 @@ public class ResteasyBuiltinsProcessor {
     protected static final String META_INF_RESOURCES = "META-INF/resources";
 
     @BuildStep
-    void setUpDenyAllJaxRs(CombinedIndexBuildItem index,
-            JaxRsSecurityConfig config,
-            ResteasyDeploymentBuildItem resteasyDeployment,
-            BuildProducer<AdditionalSecuredMethodsBuildItem> additionalSecuredClasses) {
-        if (resteasyDeployment != null && (config.denyJaxRs || config.defaultRolesAllowed.isPresent())) {
-            final List<MethodInfo> methods = new ArrayList<>();
-
-            // add endpoints
-            List<String> resourceClasses = resteasyDeployment.getDeployment().getScannedResourceClasses();
-            for (String className : resourceClasses) {
-                ClassInfo classInfo = index.getIndex().getClassByName(DotName.createSimple(className));
-                if (classInfo == null)
-                    throw new IllegalStateException("Unable to find class info for " + className);
-                if (!hasSecurityAnnotation(classInfo)) {
-                    for (MethodInfo methodInfo : classInfo.methods()) {
-                        if (isRestEndpointMethod(index, methodInfo) && !hasSecurityAnnotation(methodInfo)) {
-                            methods.add(methodInfo);
-                        }
-                    }
-                }
-            }
-
-            if (!methods.isEmpty()) {
-                if (config.denyJaxRs) {
-                    additionalSecuredClasses.produce(new AdditionalSecuredMethodsBuildItem(methods));
-                } else {
-                    additionalSecuredClasses
-                            .produce(new AdditionalSecuredMethodsBuildItem(methods, config.defaultRolesAllowed));
-                }
-            }
+    void setUpDenyAllJaxRs(JaxRsSecurityConfig securityConfig,
+            BuildProducer<DefaultSecurityCheckBuildItem> defaultSecurityCheckProducer) {
+        if (securityConfig.denyJaxRs) {
+            defaultSecurityCheckProducer.produce(DefaultSecurityCheckBuildItem.denyAll());
+        } else if (securityConfig.defaultRolesAllowed.isPresent()) {
+            defaultSecurityCheckProducer
+                    .produce(DefaultSecurityCheckBuildItem.rolesAllowed(securityConfig.defaultRolesAllowed.get()));
         }
     }
 
@@ -91,8 +59,7 @@ public class ResteasyBuiltinsProcessor {
      */
     @BuildStep
     void setUpSecurity(BuildProducer<ResteasyJaxrsProviderBuildItem> providers,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItem, Capabilities capabilities,
-            Optional<EagerSecurityInterceptorBuildItem> eagerSecurityInterceptors) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItem, Capabilities capabilities) {
         providers.produce(new ResteasyJaxrsProviderBuildItem(UnauthorizedExceptionMapper.class.getName()));
         providers.produce(new ResteasyJaxrsProviderBuildItem(ForbiddenExceptionMapper.class.getName()));
         providers.produce(new ResteasyJaxrsProviderBuildItem(AuthenticationFailedExceptionMapper.class.getName()));
@@ -102,10 +69,16 @@ public class ResteasyBuiltinsProcessor {
         if (capabilities.isPresent(Capability.SECURITY)) {
             providers.produce(new ResteasyJaxrsProviderBuildItem(SecurityContextFilter.class.getName()));
             additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(SecurityContextFilter.class));
-            if (eagerSecurityInterceptors.isPresent()) {
-                providers.produce(new ResteasyJaxrsProviderBuildItem(EagerSecurityFilter.class.getName()));
-                additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(EagerSecurityFilter.class));
-            }
+            providers.produce(new ResteasyJaxrsProviderBuildItem(EagerSecurityFilter.class.getName()));
+            additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(EagerSecurityFilter.class));
+            additionalBeanBuildItem.produce(
+                    AdditionalBeanBuildItem.unremovableOf(StandardSecurityCheckInterceptor.RolesAllowedInterceptor.class));
+            additionalBeanBuildItem.produce(AdditionalBeanBuildItem
+                    .unremovableOf(StandardSecurityCheckInterceptor.PermissionsAllowedInterceptor.class));
+            additionalBeanBuildItem.produce(
+                    AdditionalBeanBuildItem.unremovableOf(StandardSecurityCheckInterceptor.PermitAllInterceptor.class));
+            additionalBeanBuildItem.produce(
+                    AdditionalBeanBuildItem.unremovableOf(StandardSecurityCheckInterceptor.AuthenticatedInterceptor.class));
         }
     }
 

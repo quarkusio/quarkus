@@ -45,17 +45,18 @@ public class RegisterForReflectionBuildStep {
         ReflectiveHierarchyBuildItem.Builder builder = new ReflectiveHierarchyBuildItem.Builder();
         Set<DotName> processedReflectiveHierarchies = new HashSet<DotName>();
 
+        IndexView index = combinedIndexBuildItem.getComputingIndex();
         for (AnnotationInstance i : combinedIndexBuildItem.getIndex()
                 .getAnnotations(DotName.createSimple(RegisterForReflection.class.getName()))) {
 
-            boolean methods = getBooleanValue(i, "methods");
-            boolean fields = getBooleanValue(i, "fields");
-            boolean ignoreNested = getBooleanValue(i, "ignoreNested");
-            boolean serialization = i.value("serialization") != null && i.value("serialization").asBoolean();
-            boolean unsafeAllocated = i.value("unsafeAllocated") != null && i.value("unsafeAllocated").asBoolean();
+            boolean methods = i.valueWithDefault(index, "methods").asBoolean();
+            boolean fields = i.valueWithDefault(index, "fields").asBoolean();
+            boolean ignoreNested = i.valueWithDefault(index, "ignoreNested").asBoolean();
+            boolean serialization = i.valueWithDefault(index, "serialization").asBoolean();
+            boolean unsafeAllocated = i.valueWithDefault(index, "unsafeAllocated").asBoolean();
+            boolean registerFullHierarchyValue = i.valueWithDefault(index, "registerFullHierarchy").asBoolean();
 
             AnnotationValue targetsValue = i.value("targets");
-            AnnotationValue registerFullHierarchyValue = i.value("registerFullHierarchy");
             AnnotationValue classNamesValue = i.value("classNames");
             AnnotationValue lambdaCapturingTypesValue = i.value("lambdaCapturingTypes");
 
@@ -114,14 +115,14 @@ public class RegisterForReflectionBuildStep {
             boolean ignoreNested, boolean serialization, boolean unsafeAllocated,
             final BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClassHierarchy, Set<DotName> processedReflectiveHierarchies,
-            AnnotationValue registerFullHierarchyValue, Builder builder) {
+            boolean registerFullHierarchyValue, Builder builder) {
         reflectiveClass.produce(serialization
                 ? ReflectiveClassBuildItem.builder(className).serialization().unsafeAllocated(unsafeAllocated).build()
                 : ReflectiveClassBuildItem.builder(className).constructors().methods(methods).fields(fields)
                         .unsafeAllocated(unsafeAllocated).build());
 
         //Search all class hierarchy, fields and methods in order to register its classes for reflection
-        if (registerFullHierarchyValue != null && registerFullHierarchyValue.asBoolean()) {
+        if (registerFullHierarchyValue) {
             registerClassDependencies(reflectiveClassHierarchy, classLoader, processedReflectiveHierarchies, methods, builder,
                     className);
         }
@@ -228,7 +229,4 @@ public class RegisterForReflectionBuildStep {
         return methodReturnType;
     }
 
-    private static boolean getBooleanValue(AnnotationInstance i, String name) {
-        return i.value(name) == null || i.value(name).asBoolean();
-    }
 }

@@ -363,7 +363,7 @@ public class KeycloakDevServicesProcessor {
                     capturedDevServicesConfiguration.port,
                     useSharedNetwork,
                     capturedDevServicesConfiguration.realmPath.orElse(List.of()),
-                    resourcesMap(),
+                    resourcesMap(errors),
                     capturedDevServicesConfiguration.serviceName,
                     capturedDevServicesConfiguration.shared,
                     capturedDevServicesConfiguration.javaOpts,
@@ -401,12 +401,17 @@ public class KeycloakDevServicesProcessor {
                 .orElseGet(defaultKeycloakContainerSupplier);
     }
 
-    private Map<String, String> resourcesMap() {
+    private Map<String, String> resourcesMap(List<String> errors) {
         Map<String, String> resources = new HashMap<>();
         for (Map.Entry<String, String> aliasEntry : capturedDevServicesConfiguration.resourceAliases.entrySet()) {
             if (capturedDevServicesConfiguration.resourceMappings.containsKey(aliasEntry.getKey())) {
                 resources.put(aliasEntry.getValue(),
                         capturedDevServicesConfiguration.resourceMappings.get(aliasEntry.getKey()));
+            } else {
+                errors.add(String.format("%s alias for the %s resource does not have a mapping", aliasEntry.getKey(),
+                        aliasEntry.getValue()));
+                LOG.errorf("%s alias for the %s resource does not have a mapping", aliasEntry.getKey(),
+                        aliasEntry.getValue());
             }
         }
         return resources;
@@ -540,12 +545,18 @@ public class KeycloakDevServicesProcessor {
 
         private void mapResource(String resourcePath, String mappedResource) {
             if (Thread.currentThread().getContextClassLoader().getResource(resourcePath) != null) {
+                LOG.debugf("Mapping the classpath %s resource to %s", resourcePath, mappedResource);
                 withClasspathResourceMapping(resourcePath, mappedResource, BindMode.READ_ONLY);
             } else if (Files.exists(Paths.get(resourcePath))) {
+                LOG.debugf("Mapping the file system %s resource to %s", resourcePath, mappedResource);
                 withFileSystemBind(resourcePath, mappedResource, BindMode.READ_ONLY);
             } else {
-                errors.add(String.format("%s resource is not available", resourcePath));
-                LOG.errorf("Realm %s resource is not available", resourcePath);
+                errors.add(
+                        String.format(
+                                "%s resource can not be mapped to %s because it is not available on the classpath and file system",
+                                resourcePath, mappedResource));
+                LOG.errorf("%s resource can not be mapped to %s because it is not available on the classpath and file system",
+                        resourcePath, mappedResource);
             }
         }
 

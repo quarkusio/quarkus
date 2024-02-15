@@ -44,36 +44,39 @@ public abstract class AbstractAsyncDataFetcher<K, T> extends AbstractDataFetcher
                     .onItemOrFailure()
                     .transformToUni((result, throwable, emitter) -> {
 
-                        emitter.onTermination(() -> {
-                            deactivate(requestContext);
-                        });
-                        if (throwable != null) {
-                            eventEmitter.fireOnDataFetchError(c, throwable);
-                            if (throwable instanceof GraphQLException) {
-                                GraphQLException graphQLException = (GraphQLException) throwable;
-                                errorResultHelper.appendPartialResult(resultBuilder, dfe, graphQLException);
-                            } else if (throwable instanceof ConstraintViolationException) {
-                                BeanValidationUtil.addConstraintViolationsToDataFetcherResult(
-                                        ((ConstraintViolationException) throwable).getConstraintViolations(),
-                                        operationInvoker.getMethod(), resultBuilder, dfe);
-                            } else if (throwable instanceof Exception) {
-                                emitter.fail(SmallRyeGraphQLServerMessages.msg.dataFetcherException(operation, throwable));
-                                return;
-                            } else if (throwable instanceof Error) {
-                                emitter.fail(throwable);
-                                return;
+                        try {
+                            emitter.onTermination(() -> {
+                                deactivate(requestContext);
+                            });
+                            if (throwable != null) {
+                                eventEmitter.fireOnDataFetchError(c, throwable);
+                                if (throwable instanceof GraphQLException) {
+                                    GraphQLException graphQLException = (GraphQLException) throwable;
+                                    errorResultHelper.appendPartialResult(resultBuilder, dfe, graphQLException);
+                                } else if (throwable instanceof ConstraintViolationException) {
+                                    BeanValidationUtil.addConstraintViolationsToDataFetcherResult(
+                                            ((ConstraintViolationException) throwable).getConstraintViolations(),
+                                            operationInvoker.getMethod(), resultBuilder, dfe);
+                                } else if (throwable instanceof Exception) {
+                                    emitter.fail(SmallRyeGraphQLServerMessages.msg.dataFetcherException(operation, throwable));
+                                    return;
+                                } else if (throwable instanceof Error) {
+                                    emitter.fail(throwable);
+                                    return;
+                                }
+                            } else {
+                                try {
+                                    resultBuilder.data(fieldHelper.transformOrAdaptResponse(result, dfe));
+                                } catch (AbstractDataFetcherException te) {
+                                    te.appendDataFetcherResult(resultBuilder, dfe);
+                                } finally {
+                                    eventEmitter.fireAfterDataFetch(c);
+                                }
                             }
-                        } else {
-                            try {
-                                resultBuilder.data(fieldHelper.transformOrAdaptResponse(result, dfe));
-                            } catch (AbstractDataFetcherException te) {
-                                te.appendDataFetcherResult(resultBuilder, dfe);
-                            } finally {
-                                eventEmitter.fireAfterDataFetch(c);
-                                metricsEmitter.end(measurementIds.remove());
-                            }
+                            emitter.complete(resultBuilder.build());
+                        } finally {
+                            metricsEmitter.end(measurementIds.remove());
                         }
-                        emitter.complete(resultBuilder.build());
                     })
                     .onCancellation().invoke(() -> {
                         deactivate(requestContext);

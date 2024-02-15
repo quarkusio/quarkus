@@ -64,7 +64,7 @@ class RequestContext implements ManagedContext {
             throw Scopes.scopeDoesNotMatchException(this, bean);
         }
         RequestContextState ctxState = currentContext.get();
-        if (ctxState == null) {
+        if (!isActive(ctxState)) {
             // Context is not active!
             return null;
         }
@@ -102,7 +102,7 @@ class RequestContext implements ManagedContext {
             throw Scopes.scopeDoesNotMatchException(this, bean);
         }
         RequestContextState state = currentContext.get();
-        if (state == null) {
+        if (!isActive(state)) {
             throw notActive();
         }
         ContextInstanceHandle<T> instance = (ContextInstanceHandle<T>) state.contextInstances
@@ -112,14 +112,17 @@ class RequestContext implements ManagedContext {
 
     @Override
     public boolean isActive() {
-        RequestContextState requestContextState = currentContext.get();
-        return requestContextState == null ? false : requestContextState.isValid();
+        return isActive(currentContext.get());
+    }
+
+    private boolean isActive(RequestContextState state) {
+        return state == null ? false : state.isValid();
     }
 
     @Override
     public void destroy(Contextual<?> contextual) {
         RequestContextState state = currentContext.get();
-        if (state == null) {
+        if (!isActive(state)) {
             // Context is not active
             throw notActive();
         }
@@ -164,8 +167,7 @@ class RequestContext implements ManagedContext {
     @Override
     public ContextState getState() {
         RequestContextState state = currentContext.get();
-        if (state == null) {
-            // Thread local not set - context is not active!
+        if (!isActive(state)) {
             throw notActive();
         }
         return state;

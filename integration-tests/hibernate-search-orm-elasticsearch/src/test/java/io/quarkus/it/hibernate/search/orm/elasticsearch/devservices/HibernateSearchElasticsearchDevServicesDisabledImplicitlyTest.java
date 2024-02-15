@@ -37,7 +37,7 @@ public class HibernateSearchElasticsearchDevServicesDisabledImplicitlyTest {
                     // But here it doesn't matter as we won't send a request to Elasticsearch anyway,
                     // so we're free to put anything.
                     // Just make sure to set something consistent with what we have in application.properties.
-                    "quarkus.hibernate-search-orm.elasticsearch.version", "8.9");
+                    "quarkus.hibernate-search-orm.elasticsearch.version", "8.12");
         }
 
         @Override

@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
-@RegisterForReflection
+@RegisterForReflection(ignoreNested = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ModelWithSerializerAndDeserializerOnField {
 

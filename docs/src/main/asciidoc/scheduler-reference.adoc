@@ -166,7 +166,7 @@ So for example a Property Expression with the default value `"off"` can be used 
 void myMethod() { }
 ----
 
-[#identity]
+[[identity]]
 === Identity
 
 By default, a unique identifier is generated for each scheduled method.

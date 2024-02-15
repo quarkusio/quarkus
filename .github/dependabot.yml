@@ -44,7 +44,7 @@ updates:
       # JDBC Drivers
       - dependency-name: org.postgresql:postgresql
       - dependency-name: org.mariadb.jdbc:mariadb-java-client
-      - dependency-name: mysql:mysql-connector-java
+      - dependency-name: com.mysql:mysql-connector-j
       - dependency-name: org.apache.derby:*
       - dependency-name: com.ibm.db2:jcc
       # Kafka
@@ -152,6 +152,8 @@ updates:
       - dependency-name: org.elasticsearch.client:elasticsearch-rest-client
       - dependency-name: org.elasticsearch.client:elasticsearch-rest-client-sniffer
       - dependency-name: co.elastic.clients:elasticsearch-java
+      # Gradle extensions present in .mvn/extensions.xml
+      - dependency-name: com.gradle:*
       # Others
       - dependency-name: com.puppycrawl.tools:checkstyle
       - dependency-name: com.google.cloud.functions:*

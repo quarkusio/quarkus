@@ -422,25 +422,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return ret;
     }
 
-    /**
-     * Return endpoints defined directly on classInfo.
-     *
-     * @param classInfo resource class
-     * @return classInfo endpoint method info
-     */
-    public static Collection<MethodInfo> collectClassEndpoints(ClassInfo classInfo,
-            Map<DotName, String> httpAnnotationToMethod, IndexView index, ApplicationScanningResult applicationScanningResult) {
-        Collection<FoundEndpoint> endpoints = collectEndpoints(classInfo, classInfo, new HashSet<>(), new HashSet<>(), true,
-                httpAnnotationToMethod, index, applicationScanningResult, new AnnotationStore(null));
-        Collection<MethodInfo> ret = new HashSet<>();
-        for (FoundEndpoint endpoint : endpoints) {
-            if (endpoint.classInfo.equals(classInfo)) {
-                ret.add(endpoint.methodInfo);
-            }
-        }
-        return ret;
-    }
-
     private static List<FoundEndpoint> collectEndpoints(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
             Set<String> seenMethods, Set<String> existingClassNameBindings, boolean considerApplication,
             Map<DotName, String> httpAnnotationToMethod, IndexView index, ApplicationScanningResult applicationScanningResult,

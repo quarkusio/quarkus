@@ -45,7 +45,7 @@ jobs:
           echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
       - name: Cache Maven Repository
         id: cache-maven
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           # refresh cache every month to avoid unlimited growth

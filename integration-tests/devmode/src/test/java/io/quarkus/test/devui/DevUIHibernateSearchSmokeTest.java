@@ -12,7 +12,7 @@ public class DevUIHibernateSearchSmokeTest extends AbstractDevUIHibernateSearchT
             .withApplicationRoot((jar) -> jar.addAsResource(
                     new StringAsset("quarkus.datasource.db-kind=h2\n"
                             + "quarkus.datasource.jdbc.url=jdbc:h2:mem:test\n"
-                            + "quarkus.hibernate-search-orm.elasticsearch.version=8.9\n"
+                            + "quarkus.hibernate-search-orm.elasticsearch.version=8.12\n"
                             // Start offline, we don't have an Elasticsearch cluster here
                             + "quarkus.hibernate-search-orm.schema-management.strategy=none\n"
                             + "quarkus.hibernate-search-orm.elasticsearch.version-check.enabled=false\n"),

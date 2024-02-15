@@ -237,7 +237,7 @@ Injecting `@Channel("prices")` or having `@Incoming("prices")` does not automati
 You need to configure an inbound connector with `mp.messaging.incoming.prices\...` or have an `@Outgoing("prices")` method somewhere in your application (in which case, `prices` will be an in-memory channel).
 ====
 
-[#blocking-processing]
+[[blocking-processing]]
 === Blocking processing
 
 Reactive Messaging invokes your method on an I/O thread.
@@ -2775,7 +2775,7 @@ mp.messaging.incoming.fruits.value.deserializer=org.acme.FruitDeserializer
 Check <<jackson-serialization>> for more detail about the usage of Jackson with Kafka.
 You can also use Avro.
 
-[#persisting-kafka-messages-with-hibernate-reactive]
+[[persisting-kafka-messages-with-hibernate-reactive]]
 === Persisting Kafka messages with Hibernate Reactive
 
 To persist objects received from Kafka into a database, you can use Hibernate Reactive with Panache.
@@ -2922,7 +2922,7 @@ public class ResourceSendingToKafka {
 <3> Wrap the managed entity inside a Data transfer object and send it to Kafka.
 This makes sure that managed entity is not impacted by the Kafka serialization.
 
-[#writing-entities-managed-by-hibernate-reactive-to-kafka]
+[[writing-entities-managed-by-hibernate-reactive-to-kafka]]
 === Writing entities managed by Hibernate Reactive to Kafka
 
 To send to Kafka entities managed by Hibernate Reactive, we recommend using:

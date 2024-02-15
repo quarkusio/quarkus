@@ -142,7 +142,7 @@ Open your browser to http://localhost:8080/greeting.
 
 The result should be: `{"message": "hello"}`.
 
-[#secure]
+[[secure]]
 == Modify the controller to secure the `hello` method
 
 In order to restrict access to the `hello` method to users with certain roles, the `@Secured` annotation will be utilized.

@@ -15,7 +15,7 @@ As described in the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Arc
 This guide is the companion to the xref:vertx.adoc[Using Eclipse Vert.x API from a Quarkus Application] guide.
 It provides more advanced details about the usage and the configuration of the Vert.x instance used by Quarkus.
 
-[#vertx-access]
+[[vertx-access]]
 == Access the Vert.x instance
 
 To access the managed Vert.x instance, add the `quarkus-vertx` extension to your project.
@@ -230,7 +230,7 @@ Then, create the native executable with:
 
 include::{includes}/devtools/build-native.adoc[]
 
-[#using-vert-x-json]
+[[using-vert-x-json]]
 == Use Vert.x JSON
 
 Vert.x APIs often rely on JSON.
@@ -463,7 +463,7 @@ Thanks to the `@Dependent` scope, it returns a new instance on every call.
 Finally, you pass the desired number of instances to the `DeploymentOptions`, such as two in the previous example.
 It will call the supplier twice, which will create two instances of your verticle.
 
-[#eventbus]
+[[eventbus]]
 == Use the Event Bus
 
 Vert.x comes with a built-in https://vertx.io/docs/vertx-core/java/#event_bus[event bus] that you can use from your Quarkus application.
@@ -942,7 +942,7 @@ The browser must use the `vertx-eventbus` JavaScript library to consume the mess
 </html>
 ----
 
-[#native-transport]
+[[native-transport]]
 == Use native transports
 
 IMPORTANT: Native transports are not supported in native executables.
@@ -1110,7 +1110,7 @@ See <<native-transport>> for details.
 
 IMPORTANT: Make sure your application has the right permissions to write to the socket.
 
-[#use-io_uring]
+[[use-io_uring]]
 == Use io_uring
 
 IMPORTANT: `io_uring` is not supported in native executables.
@@ -1215,7 +1215,7 @@ java.lang.IllegalStateException: Failed to create cache dir
 
 Assuming `/tmp/` is writable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in OpenShift by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`.
 
-[#customizing-the-vert-x-configuration]
+[[customizing-the-vert-x-configuration]]
 == Customize the Vert.x configuration
 
 The configuration of the managed Vert.x instance can be provided using the `application.properties` file, but also using _special beans_.

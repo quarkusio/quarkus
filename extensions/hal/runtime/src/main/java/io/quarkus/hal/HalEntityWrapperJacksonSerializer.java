@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.BasicClassIntrospector;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 
-public class HalEntityWrapperJacksonSerializer extends JsonSerializer<HalEntityWrapper> {
+public class HalEntityWrapperJacksonSerializer extends JsonSerializer<HalEntityWrapper<?>> {
 
     @Override
     public void serialize(HalEntityWrapper wrapper, JsonGenerator generator, SerializerProvider serializers)

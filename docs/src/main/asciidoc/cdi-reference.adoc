@@ -1072,9 +1072,10 @@ The downside of this approach is that CDI Portable Extensions cannot be supporte
 Nevertheless, most of the functionality can be achieved using Quarkus xref:writing-extensions.adoc[extensions].
 See the xref:cdi-integration.adoc[integration guide] for more information.
 
-== Development Mode
+[[dev_mode]]
+== [[development-mode]] Dev mode
 
-In the development mode, two special endpoints are registered automatically to provide some basic debug info in the JSON format:
+In dev mode, two special endpoints are registered automatically to provide some basic debug info in the JSON format:
 
 * HTTP GET `/q/arc` - returns the summary; number of beans, config properties, etc.
 * HTTP GET `/q/arc/beans` - returns the list of all beans
@@ -1085,11 +1086,11 @@ In the development mode, two special endpoints are registered automatically to p
 * HTTP GET `/q/arc/removed-beans` - returns the list of unused beans removed during build
 * HTTP GET `/q/arc/observers` - returns the list of all observer methods
 
-NOTE: These endpoints are only available in the development mode, i.e. when you run your application via `mvn quarkus:dev` (or `./gradlew quarkusDev`).
+NOTE: These endpoints are only available in dev mode, i.e. when you run your application via `mvn quarkus:dev` (or `./gradlew quarkusDev`).
 
 === Monitoring Business Method Invocations and Events
 
-In the development mode, it is also possible to enable monitoring of business method invocations and fired events.
+In dev mode, it is also possible to enable monitoring of business method invocations and fired events.
 Simply set the `quarkus.arc.dev-mode.monitoring-enabled` configuration property to `true` and explore the relevant Dev UI pages.
 
 [[strict_mode]]

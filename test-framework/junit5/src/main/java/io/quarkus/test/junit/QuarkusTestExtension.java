@@ -586,10 +586,15 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         QuarkusTestExtensionState state = getState(extensionContext);
         Class<? extends QuarkusTestProfile> selectedProfile = getQuarkusTestProfile(extensionContext);
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
+        // we reset the failed state if we changed test class and the new test class is not a nested class
+        boolean isNewTestClass = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
+                && !isNested(currentJUnitTestClass, extensionContext.getRequiredTestClass());
+        if (isNewTestClass && state != null) {
+            state.setTestFailed(null);
+            currentJUnitTestClass = extensionContext.getRequiredTestClass();
+        }
         // we reload the test resources if we changed test class and the new test class is not a nested class, and if we had or will have per-test test resources
-        boolean reloadTestResources = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass)
-                && !isNested(currentJUnitTestClass, extensionContext.getRequiredTestClass())
-                && (hasPerTestResources || hasPerTestResources(extensionContext));
+        boolean reloadTestResources = isNewTestClass && (hasPerTestResources || hasPerTestResources(extensionContext));
         if ((state == null && !failedBoot) || wrongProfile || reloadTestResources) {
             if (wrongProfile || reloadTestResources) {
                 if (state != null) {

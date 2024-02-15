@@ -76,4 +76,19 @@ public interface OTelRuntimeConfig {
      * Enable/disable instrumentation for specific technologies.
      */
     InstrumentRuntimeConfig instrument();
+
+    /**
+     * Opt-in to emit stable OpenTelemetry semantic conventions or a
+     * duplication of the old plus the new semantic convention attribute names.
+     * <p>
+     * - <code>http</code> - emit the new, stable HTTP and networking attributes, and stop emitting the old
+     * experimental HTTP and networking attributes that the instrumentation emitted previously.
+     * <p>
+     * - <code>http/dup</code> - emit both the old and the stable HTTP and networking attributes, allowing
+     * for a more seamless transition.
+     * <p>
+     * The default, by not defining a property value, will mean the use of the old legacy semantic attribute names.
+     */
+    @WithName("otel.semconv-stability.opt-in")
+    Optional<String> otelSemconvStabilityOptIn();
 }

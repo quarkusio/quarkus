@@ -214,7 +214,7 @@ And let's build the native executable again:
 
 include::{includes}/devtools/build-native.adoc[]
 
-[#the-truststore-path]
+[[the-truststore-path]]
 == The TrustStore path
 
 [WARNING]
@@ -257,7 +257,7 @@ The file containing the custom TrustStore does *not* (and probably should not) h
 Using the runtime certificate configuration, supported by GraalVM since 21.3 does not require any special or additional configuration compared to regular java programs or Quarkus in jvm mode.
 For more information, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/CertificateManagement/#runtime-options[Runtime Options] section of the "GraalVM Certificate Management in Native Image" guide.
 
-[#working-with-containers]
+[[working-with-containers]]
 === Working with containers
 
 No special action needs to be taken when running the native binary in a container. If the native binary was properly built with the custom TrustStore

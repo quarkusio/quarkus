@@ -702,6 +702,71 @@ quarkus.oidc-client.credentials.jwt.subject=custom-subject
 quarkus.oidc-client.credentials.jwt.issuer=custom-issuer
 ----
 
+==== JWT Bearer
+
+link:https://www.rfc-editor.org/rfc/rfc7523[RFC7523] explains how JWT Bearer tokens can be used to authenticate clients, see the link:https://www.rfc-editor.org/rfc/rfc7523#section-2.2[Using JWTs for Client Authentication] section for more information.
+
+It can be enabled as follows:
+
+[source,properties]
+----
+quarkus.oidc-client.auth-server-url=${auth-server-url}
+quarkus.oidc-client.client-id=quarkus-app
+quarkus.oidc-client.credentials.jwt.source=bearer
+----
+
+Next, the JWT bearer token must be provided as a `client_assertion` parameter to the OIDC client.
+
+You can use `OidcClient` methods for acquiring or refreshing tokens which accept additional grant parameters, for example, `oidcClient.getTokens(Map.of("client_assertion", "ey..."))`.
+
+If you work work with the OIDC client filters then you must register a custom filter which will provide this assertion.
+
+Here is an example of the RestEasy Reactive custom filter:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import java.util.Map;
+
+import io.quarkus.oidc.client.reactive.filter.runtime.AbstractOidcClientRequestReactiveFilter;
+import io.quarkus.oidc.common.runtime.OidcConstants;
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.Priorities;
+
+@Priority(Priorities.AUTHENTICATION)
+public class OidcClientRequestCustomFilter extends AbstractOidcClientRequestReactiveFilter {
+
+    @Override
+    protected Map<String, String> additionalParameters() {
+        return Map.of(OidcConstants.CLIENT_ASSERTION, "ey...");
+    }
+}
+----
+
+Here is an example of the RestEasy Classic custom filter:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import java.util.Map;
+
+import io.quarkus.oidc.client.filter.runtime.AbstractOidcClientRequestFilter;
+import io.quarkus.oidc.common.runtime.OidcConstants;
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.Priorities;
+
+@Priority(Priorities.AUTHENTICATION)
+public class OidcClientRequestCustomFilter extends AbstractOidcClientRequestFilter {
+
+    @Override
+    protected Map<String, String> additionalParameters() {
+        return Map.of(OidcConstants.CLIENT_ASSERTION, "ey...");
+    }
+}
+----
+
 ==== Apple POST JWT
 
 Apple OpenID Connect Provider uses a `client_secret_post` method where a secret is a JWT produced with a `private_key_jwt` authentication method but with Apple account-specific issuer and subject properties.
@@ -879,7 +944,7 @@ quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".min-lev
 [[oidc-request-filters]]
 == OIDC request filters
 
-You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFiler` implementations, which can update or add new request headers. For example, a filter can analyze the request body and add its digest as a new header value:
+You can filter OIDC requests made by Quarkus to the OIDC provider by registering one or more `OidcRequestFilter` implementations, which can update or add new request headers. For example, a filter can analyze the request body and add its digest as a new header value:
 
 [source,java]
 ----

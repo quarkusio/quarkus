@@ -152,6 +152,49 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         return source;
     }
 
+    /**
+     * Creates a new {@link Builder} instance, using the specified class for the underlying {@link Type} which hierarchy is to
+     * be be registered for reflection.
+     *
+     * @param clazz the Class which hierarchy is to be registered for reflection
+     * @return a new {@link Builder} instance, initialized from the specified Class
+     */
+    public static Builder builder(Class<?> clazz) {
+        return builder(clazz.getName());
+    }
+
+    /**
+     * Creates a new {@link Builder} instance, using the specified class for the underlying {@link Type} which hierarchy is to
+     * be be registered for reflection.
+     *
+     * @param className the name of the Class which hierarchy is to be registered for reflection
+     * @return a new {@link Builder} instance, initialized from the specified Class
+     */
+    public static Builder builder(String className) {
+        return builder(DotName.createSimple(className));
+    }
+
+    /**
+     * Creates a new {@link Builder} instance, using the specified class for the underlying {@link Type} which hierarchy is to
+     * be be registered for reflection.
+     *
+     * @param className the {@link DotName} of the Class which hierarchy is to be registered for reflection
+     * @return a new {@link Builder} instance, initialized from the specified Class
+     */
+    public static Builder builder(DotName className) {
+        return builder(Type.create(className, Type.Kind.CLASS));
+    }
+
+    /**
+     * Creates a new {@link Builder} instance, initializing it with the specified {@link Type}
+     *
+     * @param type the {@link Type} which hierarchy is to be registered for reflection
+     * @return a new {@link Builder} instance, initialized from the specified {@link Type}
+     */
+    public static Builder builder(Type type) {
+        return new Builder().type(type);
+    }
+
     public static class Builder {
 
         private Type type;
@@ -165,6 +208,26 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         public Builder type(Type type) {
             this.type = type;
             return this;
+        }
+
+        /**
+         * Derives the target {@link Type} to be registered from the specified class name.
+         *
+         * @param className a {@link DotName} representing the name of the class of the Type to be registered for reflection
+         * @return this {@link Builder} instance
+         */
+        public Builder className(DotName className) {
+            return type(Type.create(className, Type.Kind.CLASS));
+        }
+
+        /**
+         * Derives the target {@link Type} to be registered from the specified class name.
+         *
+         * @param className the name of the class of the Type to be registered for reflection
+         * @return this {@link Builder} instance
+         */
+        public Builder className(String className) {
+            return className(DotName.createSimple(className));
         }
 
         public Builder index(IndexView index) {
@@ -208,7 +271,8 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         public static final DefaultIgnoreTypePredicate INSTANCE = new DefaultIgnoreTypePredicate();
 
         private static final List<String> DEFAULT_IGNORED_PACKAGES = Arrays.asList("java.", "io.reactivex.",
-                "org.reactivestreams.", "org.slf4j.", "jakarta.json.", "jakarta.json.",
+                "org.reactivestreams.", "org.slf4j.", "jakarta.", "jakarta.json.",
+                "javax.net.ssl.", "javax.xml.", "javax.management.", "reactor.core.",
                 "com.fasterxml.jackson.databind.", "io.vertx.core.json.", "kotlin.");
         // if this gets more complicated we will need to move to some tree like structure
         static final Set<String> ALLOWED_FROM_IGNORED_PACKAGES = new HashSet<>(

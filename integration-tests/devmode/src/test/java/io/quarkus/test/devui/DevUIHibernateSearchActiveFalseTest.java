@@ -14,7 +14,7 @@ public class DevUIHibernateSearchActiveFalseTest extends AbstractDevUIHibernateS
                             + "quarkus.datasource.jdbc.url=jdbc:h2:mem:test\n"
                             // Hibernate Search is inactive: the dev console should be empty.
                             + "quarkus.hibernate-search-orm.active=false\n"
-                            + "quarkus.hibernate-search-orm.elasticsearch.version=8.9\n"),
+                            + "quarkus.hibernate-search-orm.elasticsearch.version=8.12\n"),
                     "application.properties")
                     .addClasses(MyIndexedEntity.class));
 

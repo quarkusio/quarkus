@@ -1,9 +1,13 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
+import org.eclipse.microprofile.config.spi.ConfigSource;
+
+import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConvertWith;
@@ -20,7 +24,7 @@ public class CertificateConfig {
      * The {@linkplain CredentialsProvider}.
      * If this property is configured, then a matching 'CredentialsProvider' will be used
      * to get the keystore, keystore key, and truststore passwords unless these passwords have already been configured.
-     *
+     * <p>
      * Please note that using MicroProfile {@linkplain ConfigSource} which is directly supported by Quarkus Configuration
      * should be preferred unless using `CredentialsProvider` provides for some additional security and dynamism.
      */
@@ -51,7 +55,7 @@ public class CertificateConfig {
     /**
      * The list of path to server certificates private key files using the PEM format.
      * Specifying multiple files requires SNI to be enabled.
-     *
+     * <p>
      * The order of the key files must match the order of the certificates.
      */
     @ConfigItem
@@ -167,4 +171,15 @@ public class CertificateConfig {
      */
     @ConfigItem
     public Optional<String> trustStoreCertAlias;
+
+    /**
+     * When set, the configured certificate will be reloaded after the given period.
+     * Note that the certificate will be reloaded only if the file has been modified.
+     * <p>
+     * Also, the update can also occur when the TLS certificate is configured using paths (and not in-memory).
+     * <p>
+     * The reload period must be equal or greater than 30 seconds. If not set, the certificate will not be reloaded.
+     */
+    @ConfigItem
+    public Optional<Duration> reloadPeriod;
 }

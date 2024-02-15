@@ -9,6 +9,7 @@ import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
+import io.vertx.redis.client.ProtocolVersion;
 import io.vertx.redis.client.RedisClientType;
 import io.vertx.redis.client.RedisReplicas;
 import io.vertx.redis.client.RedisRole;
@@ -55,7 +56,7 @@ public interface RedisClientConfig {
     /**
      * The master name (only considered in HA mode).
      */
-    @ConfigDocDefault("my-master")
+    @ConfigDocDefault("mymaster")
     Optional<String> masterName();
 
     /**
@@ -132,10 +133,28 @@ public interface RedisClientConfig {
     Duration reconnectInterval();
 
     /**
-     * Should the client perform {@code RESP protocol negotiation during the connection handshake.
+     * Should the client perform {@code RESP} protocol negotiation during the connection handshake.
      */
     @WithDefault("true")
     boolean protocolNegotiation();
+
+    /**
+     * The preferred protocol version to be used during protocol negotiation. When not set,
+     * defaults to RESP 3. When protocol negotiation is disabled, this setting has no effect.
+     */
+    @ConfigDocDefault("resp3")
+    Optional<ProtocolVersion> preferredProtocolVersion();
+
+    /**
+     * The TTL of the hash slot cache. A hash slot cache is used by the clustered Redis client
+     * to prevent constantly sending {@code CLUSTER SLOTS} commands to the first statically
+     * configured cluster node.
+     * <p>
+     * This setting is only meaningful in case of a clustered Redis client and has no effect
+     * otherwise.
+     */
+    @WithDefault("1s")
+    Duration hashSlotCacheTtl();
 
     /**
      * TCP config.
@@ -168,6 +187,8 @@ public interface RedisClientConfig {
                 ", reconnectAttempts=" + reconnectAttempts() +
                 ", reconnectInterval=" + reconnectInterval() +
                 ", protocolNegotiation=" + protocolNegotiation() +
+                ", preferredProtocolVersion=" + preferredProtocolVersion() +
+                ", hashSlotCacheTtl=" + hashSlotCacheTtl() +
                 ", tcp=" + tcp() +
                 ", tls=" + tls() +
                 '}';

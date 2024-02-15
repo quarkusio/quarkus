@@ -5,12 +5,13 @@ import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.opentelemetry.semconv.SemanticAttributes.HTTP_METHOD;
 import static io.opentelemetry.semconv.SemanticAttributes.HTTP_ROUTE;
 import static io.opentelemetry.semconv.SemanticAttributes.HTTP_STATUS_CODE;
-import static io.opentelemetry.semconv.SemanticAttributes.HTTP_TARGET;
 import static io.opentelemetry.semconv.SemanticAttributes.HTTP_URL;
 import static io.opentelemetry.semconv.SemanticAttributes.NET_HOST_NAME;
 import static io.opentelemetry.semconv.SemanticAttributes.NET_HOST_PORT;
 import static io.opentelemetry.semconv.SemanticAttributes.NET_PEER_NAME;
 import static io.opentelemetry.semconv.SemanticAttributes.NET_PEER_PORT;
+import static io.quarkus.opentelemetry.deployment.common.SemconvResolver.assertSemanticAttribute;
+import static io.quarkus.opentelemetry.deployment.common.SemconvResolver.assertTarget;
 import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.stream.Collectors.toSet;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.quarkus.opentelemetry.deployment.common.SemconvResolver;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.runtime.StartupEvent;
@@ -47,7 +49,7 @@ public class VertxClientOpenTelemetryTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class, SemconvResolver.class)
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
             .withConfigurationResource("application-default.properties");
@@ -78,21 +80,21 @@ public class VertxClientOpenTelemetryTest {
 
         SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
         assertEquals("GET", client.getName());
-        assertEquals(HTTP_OK, client.getAttributes().get(HTTP_STATUS_CODE));
-        assertEquals(HttpMethod.GET, client.getAttributes().get(HTTP_METHOD));
-        assertEquals(uri.toString() + "hello", client.getAttributes().get(HTTP_URL));
-        assertEquals(uri.getHost(), client.getAttributes().get(NET_PEER_NAME));
-        assertEquals(uri.getPort(), client.getAttributes().get(NET_PEER_PORT));
+        assertSemanticAttribute(client, (long) HTTP_OK, HTTP_STATUS_CODE);
+        assertSemanticAttribute(client, HttpMethod.GET, HTTP_METHOD);
+        assertSemanticAttribute(client, uri.toString() + "hello", HTTP_URL);
+        assertSemanticAttribute(client, uri.getHost(), NET_PEER_NAME);
+        assertSemanticAttribute(client, (long) uri.getPort(), NET_PEER_PORT);
 
         SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
         assertEquals(SERVER, server.getKind());
         assertEquals("GET /hello", server.getName());
-        assertEquals(HTTP_OK, server.getAttributes().get(HTTP_STATUS_CODE));
-        assertEquals(HttpMethod.GET, server.getAttributes().get(HTTP_METHOD));
+        assertSemanticAttribute(server, (long) HTTP_OK, HTTP_STATUS_CODE);
+        assertSemanticAttribute(server, HttpMethod.GET, HTTP_METHOD);
         assertEquals("/hello", server.getAttributes().get(HTTP_ROUTE));
-        assertEquals(uri.getHost(), server.getAttributes().get(NET_HOST_NAME));
-        assertEquals(uri.getPort(), server.getAttributes().get(NET_HOST_PORT));
-        assertEquals(uri.getPath() + "hello", server.getAttributes().get(HTTP_TARGET));
+        assertSemanticAttribute(server, uri.getHost(), NET_HOST_NAME);
+        assertSemanticAttribute(server, (long) uri.getPort(), NET_HOST_PORT);
+        assertTarget(server, uri.getPath() + "hello", null);
 
         assertEquals(client.getTraceId(), server.getTraceId());
     }
@@ -112,21 +114,21 @@ public class VertxClientOpenTelemetryTest {
         SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
         assertEquals(CLIENT, client.getKind());
         assertEquals("GET", client.getName());
-        assertEquals(HTTP_OK, client.getAttributes().get(HTTP_STATUS_CODE));
-        assertEquals(HttpMethod.GET, client.getAttributes().get(HTTP_METHOD));
-        assertEquals(uri.toString() + "hello/naruto", client.getAttributes().get(HTTP_URL));
-        assertEquals(uri.getHost(), client.getAttributes().get(NET_PEER_NAME));
-        assertEquals(uri.getPort(), client.getAttributes().get(NET_PEER_PORT));
+        assertSemanticAttribute(client, (long) HTTP_OK, HTTP_STATUS_CODE);
+        assertSemanticAttribute(client, HttpMethod.GET, HTTP_METHOD);
+        assertSemanticAttribute(client, uri.toString() + "hello/naruto", HTTP_URL);
+        assertSemanticAttribute(client, uri.getHost(), NET_PEER_NAME);
+        assertSemanticAttribute(client, (long) uri.getPort(), NET_PEER_PORT);
 
         SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
         assertEquals(SERVER, server.getKind());
         assertEquals("GET /hello/:name", server.getName());
-        assertEquals(HTTP_OK, server.getAttributes().get(HTTP_STATUS_CODE));
-        assertEquals(HttpMethod.GET, server.getAttributes().get(HTTP_METHOD));
+        assertSemanticAttribute(server, (long) HTTP_OK, HTTP_STATUS_CODE);
+        assertSemanticAttribute(server, HttpMethod.GET, HTTP_METHOD);
         assertEquals("/hello/:name", server.getAttributes().get(HTTP_ROUTE));
-        assertEquals(uri.getHost(), server.getAttributes().get(NET_HOST_NAME));
-        assertEquals(uri.getPort(), server.getAttributes().get(NET_HOST_PORT));
-        assertEquals(uri.getPath() + "hello/naruto", server.getAttributes().get(HTTP_TARGET));
+        assertSemanticAttribute(server, uri.getHost(), NET_HOST_NAME);
+        assertSemanticAttribute(server, (long) uri.getPort(), NET_HOST_PORT);
+        assertTarget(server, uri.getPath() + "hello/naruto", null);
 
         assertEquals(client.getTraceId(), server.getTraceId());
     }
@@ -146,21 +148,21 @@ public class VertxClientOpenTelemetryTest {
         SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
         assertEquals(CLIENT, client.getKind());
         assertEquals("GET", client.getName());
-        assertEquals(HTTP_OK, client.getAttributes().get(HTTP_STATUS_CODE));
-        assertEquals(HttpMethod.GET, client.getAttributes().get(HTTP_METHOD));
-        assertEquals(uri.toString() + "hello?name=foo", client.getAttributes().get(HTTP_URL));
-        assertEquals(uri.getHost(), client.getAttributes().get(NET_PEER_NAME));
-        assertEquals(uri.getPort(), client.getAttributes().get(NET_PEER_PORT));
+        assertSemanticAttribute(client, (long) HTTP_OK, HTTP_STATUS_CODE);
+        assertSemanticAttribute(client, HttpMethod.GET, HTTP_METHOD);
+        assertSemanticAttribute(client, uri.toString() + "hello?name=foo", HTTP_URL);
+        assertSemanticAttribute(client, uri.getHost(), NET_PEER_NAME);
+        assertSemanticAttribute(client, (long) uri.getPort(), NET_PEER_PORT);
 
         SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
         assertEquals(SERVER, server.getKind());
         assertEquals("GET /hello", server.getName());
-        assertEquals(HTTP_OK, server.getAttributes().get(HTTP_STATUS_CODE));
-        assertEquals(HttpMethod.GET, server.getAttributes().get(HTTP_METHOD));
+        assertSemanticAttribute(server, (long) HTTP_OK, HTTP_STATUS_CODE);
+        assertSemanticAttribute(server, HttpMethod.GET, HTTP_METHOD);
         assertEquals("/hello", server.getAttributes().get(HTTP_ROUTE));
-        assertEquals(uri.getHost(), server.getAttributes().get(NET_HOST_NAME));
-        assertEquals(uri.getPort(), server.getAttributes().get(NET_HOST_PORT));
-        assertEquals(uri.getPath() + "hello?name=foo", server.getAttributes().get(HTTP_TARGET));
+        assertSemanticAttribute(server, uri.getHost(), NET_HOST_NAME);
+        assertSemanticAttribute(server, (long) uri.getPort(), NET_HOST_PORT);
+        assertTarget(server, uri.getPath() + "hello", "name=foo");
 
         assertEquals(client.getTraceId(), server.getTraceId());
     }

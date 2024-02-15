@@ -369,7 +369,7 @@ mp.messaging.incoming.people-out.link-name=people
 
 More details about the AMQP Address model can be found in the https://activemq.apache.org/components/artemis/documentation/2.0.0/address-model.html[Artemis documentation].
 
-[#blocking-processing]
+[[blocking-processing]]
 === Execution model and Blocking processing
 
 Reactive Messaging invokes your method on an I/O thread.

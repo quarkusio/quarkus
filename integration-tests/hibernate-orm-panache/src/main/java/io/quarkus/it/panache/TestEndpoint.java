@@ -85,6 +85,9 @@ public class TestEndpoint {
         Assertions.assertEquals(1, Person.count("name = :name", Parameters.with("name", "stef").map()));
         Assertions.assertEquals(1, Person.count("name = :name", Parameters.with("name", "stef")));
         Assertions.assertEquals(1, Person.count("name", "stef"));
+        Assertions.assertEquals(1, Person.count("from Person2 where name = ?1", "stef"));
+        Assertions.assertEquals(1, Person.count("where name = ?1", "stef"));
+        Assertions.assertEquals(1, Person.count("order by name"));
 
         Assertions.assertEquals(1, Dog.count());
         Assertions.assertEquals(1, person.dogs.size());
@@ -107,6 +110,10 @@ public class TestEndpoint {
         Assertions.assertEquals(person, Person.findAll().singleResult());
 
         persons = Person.find("name = ?1", "stef").list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
+        persons = Person.find("where name = ?1", "stef").list();
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
 
@@ -1356,6 +1363,64 @@ public class TestEndpoint {
     }
 
     @GET
+    @Path("projection-nested")
+    @Transactional
+    public String testNestedProjection() {
+        Person person = new Person();
+        person.name = "2n";
+        person.uniqueName = "2n";
+        person.address = new Address("street 2");
+        person.persist();
+        PersonDTO personDTO = Person.find(
+                "select uniqueName, name, " +
+                        " new io.quarkus.it.panache.PersonDTO$AddressDTO(address.street)," +
+                        " new io.quarkus.it.panache.PersonDTO$DescriptionDTO(description.size, description.weight)," +
+                        " description.size" +
+                        " from Person2 where name = ?1",
+                "2n")
+                .project(PersonDTO.class)
+                .firstResult();
+        person.delete();
+        Assertions.assertEquals("2n", personDTO.name);
+        Assertions.assertEquals("street 2", personDTO.address.street);
+
+        person = new Person();
+        person.name = "3";
+        person.uniqueName = "3";
+        person.address = new Address("street 3");
+        person.address.persist();
+        person.description = new PersonDescription();
+        person.description.weight = 75;
+        person.description.size = 170;
+        person.persist();
+        personDTO = Person.find(" name = ?1", "3")
+                .project(PersonDTO.class)
+                .firstResult();
+        person.delete();
+        Assertions.assertEquals("3", personDTO.name);
+        Assertions.assertEquals("street 3", personDTO.address.street);
+        Assertions.assertEquals(170, personDTO.directHeight);
+        Assertions.assertEquals(170, personDTO.description.height);
+        Assertions.assertEquals("Height: 170, weight: 75", personDTO.description.getDescription());
+
+        Person hum = new Person();
+        hum.name = "hum";
+        hum.uniqueName = "hum";
+        Dog kit = new Dog("kit", "bulldog");
+        hum.dogs.add(kit);
+        kit.owner = hum;
+        hum.persist();
+        DogDto2 dogDto2 = Dog.find(" name = ?1", "kit")
+                .project(DogDto2.class)
+                .firstResult();
+        hum.delete();
+        Assertions.assertEquals("kit", dogDto2.name);
+        Assertions.assertEquals("hum", dogDto2.owner.name);
+
+        return "OK";
+    }
+
+    @GET
     @Path("model3")
     @Transactional
     public String testModel3() {
@@ -1684,6 +1749,34 @@ public class TestEndpoint {
     }
 
     @GET
+    @Path("testSortByEmbedded")
+    @Transactional
+    public String testSortByEmbedded() {
+        Person.deleteAll();
+
+        Person stefPerson = new Person();
+        stefPerson.name = "Stef";
+        stefPerson.description = new PersonDescription();
+        stefPerson.description.size = 0;
+        stefPerson.persist();
+
+        Person josePerson = new Person();
+        josePerson.name = "Jose";
+        josePerson.description = new PersonDescription();
+        josePerson.description.size = 100;
+        josePerson.persist();
+
+        List<Person> persons = Person.findAll(Sort.by("description.size", Sort.Direction.Descending)).list();
+        assertEquals(josePerson.id, persons.get(0).id);
+        persons = Person.findAll(Sort.by("description.size", Sort.Direction.Ascending)).list();
+        assertEquals(josePerson.id, persons.get(persons.size() - 1).id);
+
+        Person.deleteAll();
+
+        return "OK";
+    }
+
+    @GET
     @Path("testEnhancement27184DeleteDetached")
     // NOT @Transactional
     public String testEnhancement27184DeleteDetached() {
@@ -1716,6 +1809,38 @@ public class TestEndpoint {
         Person.deleteAll();
         QuarkusTransaction.commit();
 
+        return "OK";
+    }
+
+    @GET
+    @Path("26308")
+    @Transactional
+    public String testBug26308() {
+        testBug26308Query("from Person2 p left join fetch p.address");
+        testBug26308Query("from Person2 p left join p.address");
+        testBug26308Query("select p from Person2 p left join fetch p.address");
+        testBug26308Query("select p from Person2 p left join p.address");
+        testBug26308Query("from Person2 p left join fetch p.address select p");
+        testBug26308Query("from Person2 p left join p.address select p");
+
+        return "OK";
+    }
+
+    private void testBug26308Query(String hql) {
+        PanacheQuery<Person> query = Person.find(hql);
+        Assertions.assertEquals(0, query.list().size());
+        Assertions.assertEquals(0, query.count());
+    }
+
+    @GET
+    @Path("36496")
+    @Transactional
+    public String testBug36496() {
+        PanacheQuery<Person> query = Person.find("WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT p FROM Person2 p");
+        Assertions.assertEquals(0, query.list().size());
+        Assertions.assertEquals(0, query.count());
+        Assertions.assertEquals(0,
+                Person.count("WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT count(*) FROM Person2 p"));
         return "OK";
     }
 }

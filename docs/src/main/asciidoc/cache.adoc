@@ -273,7 +273,7 @@ Congratulations! You just added application data caching to your Quarkus applica
 Do you want to learn more about the Quarkus application data caching abilities?
 The following sections will show you everything there is to know about it.
 
-[#annotations-api]
+[[annotations-api]]
 == Caching using annotations
 
 Quarkus offers a set of annotations that can be used in a CDI managed bean to enable caching abilities.
@@ -327,7 +327,7 @@ method annotated with `@CacheResult` or `@CacheInvalidate`.
 
 This annotation is optional and should only be used when some method arguments are NOT part of the cache key.
 
-[#cache-keys-building-logic]
+[[cache-keys-building-logic]]
 === Cache keys building logic
 
 Cache keys are built by the annotations API using the following logic:
@@ -390,9 +390,13 @@ public class CachedService {
 You may want to include more than the arguments of a method into a cache key.
 This can be done by implementing the `io.quarkus.cache.CacheKeyGenerator` interface and declaring that implementation in the `keyGenerator` field of a `@CacheResult` or `@CacheInvalidate` annotation.
 
-If a CDI scope is declared on a key generator class and if that class has a default qualifier (no qualifier annotation or `@jakarta.enterprise.inject.Default`), then the key generator will be injected as a CDI bean during the cache key computation.
-Otherwise, the key generator will be instantiated using its default constructor.
-All CDI scopes supported by Quarkus can be used on a key generator.
+The class must either represent a CDI bean or declare a public no-args constructor.
+If it represents a CDI bean, then the key generator will be injected during the cache key computation.
+Otherwise, a new instance of the key generator will be created using its default constructor for each cache key computation.
+
+In case of CDI, there must be exactly one bean that has the class in its set of bean types, otherwise the build fails. 
+The context associated with the scope of the bean must be active when the `CacheKeyGenerator#generate()` method is invoked.
+If the scope is `@Dependent` then the bean instance is destroyed when the `CacheKeyGenerator#generate()` method completes.
 
 The following key generator will be injected as a CDI bean:
 
@@ -485,7 +489,7 @@ public class CachedService {
 <3> This key generator is not a CDI bean.
 <4> The `@CacheKey` annotation will be ignored when the `foo` cache data is invalidated, but `param1` will be the cache key when the `bar` cache data is invalidated.
 
-[#programmatic-api]
+[[programmatic-api]]
 == Caching using the programmatic API
 
 Quarkus also offers a programmatic API which can be used to store, retrieve or delete values from any cache declared using the annotations API.
@@ -962,7 +966,7 @@ public class CacheClearer {
 }
 ----
 
-[#negative-cache]
+[[negative-cache]]
 == Negative caching and nulls
 
 Sometimes one wants to cache the result of an (expensive) remote call.

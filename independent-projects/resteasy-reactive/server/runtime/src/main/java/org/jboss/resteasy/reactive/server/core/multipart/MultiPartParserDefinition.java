@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.container.CompletionCallback;
 import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
@@ -339,22 +340,33 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 contentBytes.reset();
             } else {
 
-                try {
-                    String charset = defaultEncoding;
-                    String contentType = headers.getFirst(HttpHeaders.CONTENT_TYPE);
-                    if (contentType != null) {
-                        String cs = HeaderUtil.extractQuotedValueFromHeader(contentType, "charset");
+                String contentType = headers.getFirst(HttpHeaders.CONTENT_TYPE);
+                if (isText(contentType)) {
+                    try {
+                        String charset = defaultEncoding;
+                        String cs = contentType != null ? HeaderUtil.extractQuotedValueFromHeader(contentType, "charset")
+                                : null;
                         if (cs != null) {
                             charset = cs;
                         }
-                    }
 
-                    data.add(currentName, contentBytes.toString(charset), charset, headers);
-                } catch (UnsupportedEncodingException e) {
-                    throw new RuntimeException(e);
+                        data.add(currentName, contentBytes.toString(charset), charset, headers);
+                    } catch (UnsupportedEncodingException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    data.add(currentName, Arrays.copyOf(contentBytes.toByteArray(), contentBytes.size()), null, headers);
                 }
+
                 contentBytes.reset();
             }
+        }
+
+        private boolean isText(String contentType) {
+            if (contentType == null || contentType.isEmpty()) { // https://www.rfc-editor.org/rfc/rfc7578.html#section-4.4 says the default content-type if missing is text/plain
+                return true;
+            }
+            return MediaType.TEXT_PLAIN_TYPE.isCompatible(MediaType.valueOf(contentType));
         }
 
         public List<Path> getCreatedFiles() {

@@ -61,6 +61,7 @@ public class ResourceLocatorTest {
 
     @RegisterExtension
     static QuarkusUnitTest testExtension = new QuarkusUnitTest()
+            .overrideConfigKey("quarkus.http.root-path", "/app")
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
@@ -154,5 +155,10 @@ public class ResourceLocatorTest {
         given().get("/sub3/first/resources/subresource3?value=second")
                 .then()
                 .body(is("first and second"));
+    }
+
+    @Test
+    public void testRoot() throws Exception {
+        given().get().then().body(is("[app, ]"));
     }
 }

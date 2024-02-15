@@ -88,6 +88,21 @@ export class HibernateOrmPersistenceUnitsComponent extends LitElement {
                         <vaadin-horizontal-layout
                                 theme="spacing"
                                 style="align-items: center;">
+                            <span>Update Script</span>
+                            <vaadin-button @click="${(e) => this._copyToClipboard(e, 'Update Script')}"
+                                    theme="small">
+                                <vaadin-icon icon="font-awesome-solid:clipboard"></vaadin-icon>
+                                Copy
+                            </vaadin-button>
+                        </vaadin-horizontal-layout>
+                    </vaadin-details-summary>
+                    <pre class="ddl-script">${pu.updateDDL}</pre>
+                </vaadin-details>
+                <vaadin-details>
+                    <vaadin-details-summary slot="summary" theme="filled">
+                        <vaadin-horizontal-layout
+                                theme="spacing"
+                                style="align-items: center;">
                             <span>Drop Script</span>
                             <vaadin-button @click="${(e) => this._copyToClipboard(e, 'Drop Script')}"
                                     theme="small">

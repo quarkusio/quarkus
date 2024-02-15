@@ -4,34 +4,29 @@ import java.util.Map;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefaults;
 import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
 @ConfigMapping(prefix = "quarkus.datasource")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface DataSourcesJdbcRuntimeConfig {
 
     /**
-     * The default datasource.
+     * Datasources.
      */
-    DataSourceJdbcRuntimeConfig jdbc();
-
-    /**
-     * Additional named datasources.
-     */
-    @ConfigDocSection
     @ConfigDocMapKey("datasource-name")
     @WithParentName
     @WithDefaults
-    Map<String, DataSourceJdbcOuterNamedRuntimeConfig> namedDataSources();
+    @WithUnnamedKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME)
+    Map<String, DataSourceJdbcOuterNamedRuntimeConfig> dataSources();
 
     @ConfigGroup
-    public interface DataSourceJdbcOuterNamedRuntimeConfig {
+    interface DataSourceJdbcOuterNamedRuntimeConfig {
 
         /**
          * The JDBC runtime configuration.
@@ -39,11 +34,4 @@ public interface DataSourcesJdbcRuntimeConfig {
         DataSourceJdbcRuntimeConfig jdbc();
     }
 
-    default DataSourceJdbcRuntimeConfig getDataSourceJdbcRuntimeConfig(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return jdbc();
-        }
-
-        return namedDataSources().get(dataSourceName).jdbc();
-    }
 }

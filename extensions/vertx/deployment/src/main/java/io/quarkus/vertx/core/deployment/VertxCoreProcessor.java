@@ -59,6 +59,7 @@ import io.quarkus.vertx.core.runtime.VertxLocalsHelper;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.core.runtime.context.SafeVertxContextInterceptor;
+import io.quarkus.vertx.deployment.VertxBuildConfig;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
@@ -273,8 +274,8 @@ class VertxCoreProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ContextHandlerBuildItem createVertxContextHandlers(VertxCoreRecorder recorder) {
-        return new ContextHandlerBuildItem(recorder.executionContextHandler());
+    ContextHandlerBuildItem createVertxContextHandlers(VertxCoreRecorder recorder, VertxBuildConfig buildConfig) {
+        return new ContextHandlerBuildItem(recorder.executionContextHandler(buildConfig.customizeArcContext()));
     }
 
     private void handleBlockingWarningsInDevOrTestMode() {

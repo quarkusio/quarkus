@@ -33,7 +33,7 @@ The guide can be used either via the Apache Qpid JMS AMQP client as detailed imm
 alternatively with the Apache ActiveMQ Artemis JMS client given some different configuration
 as <<artemis-jms,detailed later>>.
 
-[#qpid-jms-amqp]
+[[qpid-jms-amqp]]
 == Qpid JMS - AMQP
 
 In the detailed steps below we will use the https://qpid.apache.org/components/jms/[Apache Qpid JMS]
@@ -75,7 +75,7 @@ This command generates a new project importing the quarkus-qpid-jms extension:
 implementation("org.amqphub.quarkus:quarkus-qpid-jms")
 ----
 
-[#starting-the-broker]
+[[starting-the-broker]]
 === Starting the broker
 
 Then, we need an AMQP broker. In this case we will use an Apache ActiveMQ Artemis server.
@@ -83,7 +83,7 @@ You can follow the instructions from the https://activemq.apache.org/components/
 
 [source,bash]
 ----
-docker run -it --rm -p 8161:8161 -p 61616:61616 -p 5672:5672 -e AMQ_USER=quarkus -e AMQ_PASSWORD=quarkus quay.io/artemiscloud/activemq-artemis-broker:1.0.21
+docker run -it --rm -p 8161:8161 -p 61616:61616 -p 5672:5672 -e AMQ_USER=quarkus -e AMQ_PASSWORD=quarkus quay.io/artemiscloud/activemq-artemis-broker:1.0.25
 ----
 
 === The price producer
@@ -294,7 +294,7 @@ quarkus.qpid-jms.password=quarkus
 
 More detail about the configuration are available in the https://github.com/amqphub/quarkus-qpid-jms#configuration[Quarkus Qpid JMS] documentation.
 
-[#get-it-running]
+[[get-it-running]]
 === Get it running
 
 If you followed the instructions, you should have the Artemis server running.
@@ -326,7 +326,7 @@ Open `http://localhost:8080/prices.html` in your browser.
 '''
 
 
-[#artemis-jms]
+[[artemis-jms]]
 == Artemis JMS
 
 The above steps detailed using the Qpid JMS AMQP client, however the guide can also be used

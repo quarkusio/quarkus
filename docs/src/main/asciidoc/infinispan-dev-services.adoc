@@ -62,6 +62,31 @@ Dev Services for Infinispan relies on Docker to start the broker.
 If your environment does not support Docker, you will need to start the broker manually, or connect to an already running broker.
 You can configure the broker address using `quarkus.infinispan-client.hosts`.
 
+== Providing configuration to the running server
+Dev Services for Infinispan will spin up an Infinispan with the infinispan.xml file by default.
+However, there are cases where is helpful to provide some extra configuration to the server.
+This can be done by adding configuration files in xml, yaml or json to the resources classpath and
+providing the following configuration:
+
+[source,properties]
+----
+quarkus.infinispan-client.devservices.config-files=server-config-override.xml <1>
+----
+<1> server-config-override.xml is a file under the resources folder
+
+[source,xml]
+----
+<infinispan> <1>
+    <cache-container>
+        <local-cache name="my-local-cache"> <2>
+            <encoding media-type="application/x-protostream" />
+        </local-cache>
+    </cache-container>
+</infinispan>
+----
+<1> The content of server-config-override.xml file
+<2> By providing a cache configuration, this cache will be present on the server container
+
 == Cross Site Replication
 If you want run the Infinispan Server container with Cross Site Replication configuration, you need to provide a site name.
 

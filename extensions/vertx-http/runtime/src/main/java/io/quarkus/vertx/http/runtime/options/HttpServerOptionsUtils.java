@@ -88,6 +88,7 @@ public class HttpServerOptionsUtils {
         if (!certificates.isEmpty() && !keys.isEmpty()) {
             createPemKeyCertOptions(certificates, keys, serverOptions);
         } else if (keyStoreFile.isPresent()) {
+
             KeyStoreOptions options = createKeyStoreOptions(
                     keyStoreFile.get(),
                     keyStorePassword.orElse("password"),
@@ -223,7 +224,7 @@ public class HttpServerOptionsUtils {
         return serverOptions;
     }
 
-    private static Optional<String> getCredential(Optional<String> password, Map<String, String> credentials,
+    public static Optional<String> getCredential(Optional<String> password, Map<String, String> credentials,
             Optional<String> passwordKey) {
         if (password.isPresent()) {
             return password;
@@ -369,7 +370,7 @@ public class HttpServerOptionsUtils {
         return options;
     }
 
-    private static byte[] getFileContent(Path path) throws IOException {
+    static byte[] getFileContent(Path path) throws IOException {
         byte[] data;
         final InputStream resource = Thread.currentThread().getContextClassLoader()
                 .getResourceAsStream(ClassPathUtils.toResourceName(path));

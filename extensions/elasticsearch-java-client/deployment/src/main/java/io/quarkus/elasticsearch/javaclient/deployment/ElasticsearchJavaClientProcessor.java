@@ -6,7 +6,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.elasticsearch.javaclient.runtime.ElasticsearchJavaClientProducer;
 
@@ -20,11 +19,6 @@ class ElasticsearchJavaClientProcessor {
     @BuildStep
     AdditionalBeanBuildItem build() {
         return AdditionalBeanBuildItem.unremovableOf(ElasticsearchJavaClientProducer.class);
-    }
-
-    @BuildStep
-    RuntimeInitializedClassBuildItem runtimeInitializedClass() {
-        return new RuntimeInitializedClassBuildItem("org.elasticsearch.client.RequestOptions");
     }
 
     @BuildStep

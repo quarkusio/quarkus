@@ -28,7 +28,8 @@ public @interface QuarkusComponentTest {
      * The set of additional components under test.
      * <p>
      * The initial set of components is derived from the test class. The types of all fields annotated with
-     * {@link jakarta.inject.Inject} are considered the component types.
+     * {@link jakarta.inject.Inject} are considered the component types. Furthermore, all types of parameters of test methods
+     * that are not annotated with {@link InjectMock} or {@link SkipInject} are also considered the component types.
      *
      * @return the components under test
      */

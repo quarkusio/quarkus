@@ -17,17 +17,17 @@ public class HibernateConfigUtil {
 
     public static Map<String, String> getCacheConfigEntries(HibernateOrmConfigPersistenceUnit config) {
         Map<String, String> cacheRegionsConfigEntries = new HashMap<>();
-        for (Map.Entry<String, HibernateOrmConfigPersistenceUnitCache> regionEntry : config.cache.entrySet()) {
+        for (Map.Entry<String, HibernateOrmConfigPersistenceUnitCache> regionEntry : config.cache().entrySet()) {
             String regionName = regionEntry.getKey();
             HibernateOrmConfigPersistenceUnitCache cacheConfig = regionEntry.getValue();
 
-            if (cacheConfig.expiration.maxIdle.isPresent()) {
+            if (cacheConfig.expiration().maxIdle().isPresent()) {
                 cacheRegionsConfigEntries.put(getCacheConfigKey(regionName, EXPIRATION_MAX_IDLE),
-                        String.valueOf(cacheConfig.expiration.maxIdle.get().getSeconds()));
+                        String.valueOf(cacheConfig.expiration().maxIdle().get().getSeconds()));
             }
-            if (cacheConfig.memory.objectCount.isPresent()) {
+            if (cacheConfig.memory().objectCount().isPresent()) {
                 cacheRegionsConfigEntries.put(getCacheConfigKey(regionName, MEMORY_OBJECT_COUNT),
-                        String.valueOf(cacheConfig.memory.objectCount.getAsLong()));
+                        String.valueOf(cacheConfig.memory().objectCount().getAsLong()));
             }
         }
 

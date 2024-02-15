@@ -54,4 +54,25 @@ public class JpaOperationsSortTest {
         assertEquals(" ORDER BY `foo` , `bar`", PanacheJpaUtil.toOrderBy(sort));
     }
 
+    @Test
+    public void testSortByEmbeddedColumn() {
+        Sort sort = Sort.by("foo.bar");
+        assertEquals(" ORDER BY `foo`.`bar`", PanacheJpaUtil.toOrderBy(sort));
+    }
+
+    @Test
+    public void testSortByQuotedEmbeddedColumn() {
+        Sort sort1 = Sort.by("foo.`bar`");
+        assertEquals(" ORDER BY `foo`.`bar`", PanacheJpaUtil.toOrderBy(sort1));
+        Sort sort2 = Sort.by("`foo`.bar");
+        assertEquals(" ORDER BY `foo`.`bar`", PanacheJpaUtil.toOrderBy(sort2));
+        Sort sort3 = Sort.by("`foo`.`bar`");
+        assertEquals(" ORDER BY `foo`.`bar`", PanacheJpaUtil.toOrderBy(sort3));
+    }
+
+    @Test
+    public void testSortByDisabledEscaping() {
+        Sort sort1 = Sort.by("foo.`bar`").disableEscaping();
+        assertEquals(" ORDER BY foo.`bar`", PanacheJpaUtil.toOrderBy(sort1));
+    }
 }

@@ -16,7 +16,7 @@ public class KafkaStreamsRuntimeConfig {
     /**
      * Default Kafka bootstrap server.
      */
-    public static final String DEFAULT_KAFKA_BROKER = "localhost:9012";
+    public static final String DEFAULT_KAFKA_BROKER = "localhost:9092";
 
     /**
      * A unique identifier for this Kafka Streams application.
@@ -27,7 +27,7 @@ public class KafkaStreamsRuntimeConfig {
 
     /**
      * A comma-separated list of host:port pairs identifying the Kafka bootstrap server(s).
-     * If not set, fallback to {@code kafka.bootstrap.servers}, and if not set either use {@code localhost:9012}.
+     * If not set, fallback to {@code kafka.bootstrap.servers}, and if not set either use {@code localhost:9092}.
      */
     @ConfigItem(defaultValue = DEFAULT_KAFKA_BROKER)
     public List<InetSocketAddress> bootstrapServers;

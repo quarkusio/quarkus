@@ -166,19 +166,19 @@ mvn clean install -Dquarkus.analytics.disabled=true
 |===
 | Configuration property | Type | Default
 
-| [[build-analytics.quarkus.analytics.disabled]]`link:#build-analytics.quarkus.analytics.disabled[quarkus.analytics.disabled]`
+| [[build-analytics-quarkus-analytics-disabled]]`link:#build-analytics-quarkus-analytics-disabled[quarkus.analytics.disabled]`
 
 Values can be `true` or `false`.
 
 Setting this property to `true` will disable the collection of analytics data on that specific project regardless of any other configuration.
 | boolean
 | false
-| [[build-analytics.quarkus.analytics.uri.base]]`link:#build-analytics.quarkus.analytics.uri.base[quarkus.analytics.uri.base]`
+| [[build-analytics-quarkus-analytics-uri-base]]`link:#build-analytics.quarkus-analytics-uri-base[quarkus.analytics.uri.base]`
 
 Base URL of the analytics service. This is were all the data is sent to.
 | String
 | "https://api.segment.io/"
-| [[build-analytics.quarkus.analytics.timeout]]`link:#build-analytics.quarkus.analytics.timeout[quarkus.analytics.timeout]`
+| [[build-analytics-quarkus-analytics-timeout]]`link:#build-analytics-quarkus-analytics-timeout[quarkus.analytics.timeout]`
 
 Value in milliseconds for the timeout of the HTTP request to submit the analytics service.
 | int

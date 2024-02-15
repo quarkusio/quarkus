@@ -108,7 +108,7 @@ class CookiesTest {
                 .formParam("cookie", "greeting=\"hello\";SameSite=\"Lax\";")
                 .post("/cookies/set-cookie")
                 .then()
-                .cookie("greeting", detailedCookie().value("hello").sameSite("LAX"));
+                .cookie("greeting", detailedCookie().value("hello").sameSite("Lax"));
     }
 
     @Test
@@ -119,7 +119,7 @@ class CookiesTest {
                 .formParam("cookie", "greeting=\"hello\";SameSite=\"None\"")
                 .post("/cookies/set-cookie")
                 .then()
-                .cookie("greeting", detailedCookie().value("hello").sameSite("NONE"));
+                .cookie("greeting", detailedCookie().value("hello").sameSite("None"));
     }
 
     @Test
@@ -130,7 +130,7 @@ class CookiesTest {
                 .formParam("cookie", "greeting=\"hello\";samesite=\"Strict\"")
                 .post("/cookies/set-cookie")
                 .then()
-                .cookie("greeting", detailedCookie().value("hello").sameSite("STRICT"));
+                .cookie("greeting", detailedCookie().value("hello").sameSite("Strict"));
     }
 
     @Test

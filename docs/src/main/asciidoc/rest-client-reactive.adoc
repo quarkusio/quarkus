@@ -681,7 +681,7 @@ public class ExtensionsResource {
 
 <1> the client will use the registered HTTP Client options over the HTTP Client options provided via CDI if any.
 
-[#redirection]
+[[redirection]]
 == Redirection
 
 A HTTP server can redirect a response to another location by sending a response with a status code that starts with "3" and a HTTP header "Location" holding the URL to be redirected to. When the REST Client receives a redirection response from a HTTP server, it won't automatically perform another request to the new location. We can enable the automatic redirection in REST Client by adding the "follow-redirects" property:
@@ -808,7 +808,7 @@ public class ExtensionsResourceTest {
 The code above uses link:https://rest-assured.io/[REST Assured]'s link:https://github.com/rest-assured/rest-assured/wiki/GettingStarted#jsonpath[json-path] capabilities.
 
 
-[#async-support]
+[[async-support]]
 == Async Support
 
 To get the full power of the reactive nature of the client, you can use the non-blocking flavor of REST Client Reactive extension,
@@ -1198,6 +1198,25 @@ public class GetTokenReactiveClientHeadersFactory extends ReactiveClientHeadersF
     }
 }
 ----
+
+[TIP]
+====
+When using HTTP Basic Auth, the `@io.quarkus.rest.client.reactive.ClientBasicAuth` annotation provides a much simpler way of configuring
+the necessary `Authorization` header.
+
+A very simple example is:
+
+[source, java]
+----
+@ClientBasicAuth(username = "${service.username}", password = "${service.password}")
+public interface SomeClient {
+
+}
+----
+
+where `service.username` and `service.password` are configuration properties that must be set at runtime to the username and password that allow access to the service being called.
+
+====
 
 === Default header factory
 
@@ -1662,7 +1681,14 @@ quarkus.rest-client.logging.body-limit=50
 quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
 ----
 
-TIP: REST Client Reactive uses a default `ClientLogger` implementation. You can change it by providing a custom `ClientLogger` instance through CDI or when programmatically creating your client.
+[TIP]
+====
+REST Client Reactive uses a default `ClientLogger` implementation, which can be swapped out for a custom implementation.
+
+When setting up the client programmatically using the `QuarkusRestClientBuilder`, the `ClientLogger` is set via the `clientLogger` method.
+
+For declarative clients using `@RegisterRestClient`, simply providing a CDI bean that implements `ClientLogger` is enough for that logger to be used by said clients.
+====
 
 == Mocking the client for tests
 If you use a client injected with the `@RestClient` annotation, you can easily mock it for tests.
@@ -1785,7 +1811,7 @@ public class QuarkusMockTest {
 <2> note that `RestClient.LITERAL` has to be passed as the last argument of the `installMockForType` method
 
 
-[#using-a-mock-http-server-for-tests]
+[[using-a-mock-http-server-for-tests]]
 == Using a Mock HTTP Server for tests
 
 Setting up a mock HTTP server, against which tests are run, is a common testing pattern.

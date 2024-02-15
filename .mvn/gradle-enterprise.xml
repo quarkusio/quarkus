@@ -11,6 +11,9 @@
         <!-- build scan publication is configured in gradle-enterprise-custom-user-data.groovy
         to leverage options to disable build scan publication for test builds
         -->
+        <!--
+        Expression support is documented here: https://docs.gradle.com/enterprise/maven-extension/#expression_support
+        -->
         <obfuscation>
           <!-- Don't share ip addresses-->
           <ipAddresses>#{{'0.0.0.0'}}</ipAddresses>
@@ -23,10 +26,10 @@
     </buildScan>
     <buildCache>
         <local>
-            <enabled>#{env['GRADLE_LOCAL_BUILD_CACHE'] != null and env['RELEASE_GITHUB_TOKEN'] == null}</enabled>
+            <enabled>#{env['GRADLE_LOCAL_BUILD_CACHE'] != null and env['RELEASE_GITHUB_TOKEN'] == null and properties['no-build-cache'] == null}</enabled>
         </local>
         <remote>
-            <enabled>#{env['RELEASE_GITHUB_TOKEN'] == null}</enabled>
+            <enabled>#{env['RELEASE_GITHUB_TOKEN'] == null and properties['no-build-cache'] == null}</enabled>
             <storeEnabled>#{env['CI'] != null and env['GRADLE_ENTERPRISE_ACCESS_KEY'] != null and env['GRADLE_ENTERPRISE_ACCESS_KEY'] != '' and env['RELEASE_GITHUB_TOKEN'] == null}</storeEnabled>
         </remote>
     </buildCache>

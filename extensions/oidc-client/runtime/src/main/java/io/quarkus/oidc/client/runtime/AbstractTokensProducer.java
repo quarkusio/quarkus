@@ -1,10 +1,13 @@
 package io.quarkus.oidc.client.runtime;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.client.OidcClient;
@@ -13,6 +16,8 @@ import io.quarkus.oidc.client.Tokens;
 import io.smallrye.mutiny.Uni;
 
 public abstract class AbstractTokensProducer {
+    private static final Logger LOG = Logger.getLogger(AbstractTokensProducer.class);
+    private static final String DEFAULT_OIDC_CLIENT_ID = "Default";
     private OidcClient oidcClient;
 
     protected boolean earlyTokenAcquisition = true;
@@ -41,12 +46,18 @@ public abstract class AbstractTokensProducer {
 
     protected void initTokens() {
         if (earlyTokenAcquisition) {
-            tokensHelper.initTokens(oidcClient);
+            tokensHelper.initTokens(oidcClient, additionalParameters());
         }
     }
 
     public Uni<Tokens> getTokens() {
-        return tokensHelper.getTokens(oidcClient);
+        final boolean forceNewTokens = isForceNewTokens();
+        if (forceNewTokens) {
+            final Optional<String> clientId = clientId();
+            LOG.debugf("%s OidcClient will discard the current access and refresh tokens",
+                    clientId.orElse(DEFAULT_OIDC_CLIENT_ID));
+        }
+        return tokensHelper.getTokens(oidcClient, additionalParameters(), forceNewTokens);
     }
 
     public Tokens awaitTokens() {
@@ -59,5 +70,20 @@ public abstract class AbstractTokensProducer {
      */
     protected Optional<String> clientId() {
         return Optional.empty();
+    }
+
+    /**
+     * @return {@code true} if the OIDC client must acquire a new set of tokens, discarding
+     *         previously obtained access and refresh tokens.
+     */
+    protected boolean isForceNewTokens() {
+        return false;
+    }
+
+    /**
+     * @return Additional parameters which will be used during the token acquisition or refresh methods.
+     */
+    protected Map<String, String> additionalParameters() {
+        return Map.of();
     }
 }

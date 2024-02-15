@@ -166,7 +166,7 @@ To learn more about why this behavior occurs, you can use OIDC Dev UI as explain
 
 == Looking at Auth0 tokens in the OIDC Dev UI
 
-Quarkus provides a great xref:dev-ui-v2.adoc[Dev UI] experience.
+Quarkus provides a great xref:dev-ui.adoc[Dev UI] experience.
 Specifically, Quarkus offers built-in support for developing and testing OIDC endpoints with a Keycloak container.
 xref:security-openid-connect-dev-services.adoc#dev-services-for-keycloak[DevService for Keycloak] is automatically started and used if the address of the OIDC provider is not specified for the Quarkus `quarkus.oidc.auth-server-url` configuration property.
 
@@ -492,9 +492,9 @@ For more information on how to configure Auth0 and Quarkus to have authorization
 
 So far we have only tested the Quarkus endpoint using OIDC authorization code flow. In this flow you use the browser to access the Quarkus endpoint, Quarkus itself manages the authorization code flow, a user is redirected to Auth0, logs in, is redirected back to Quarkus, Quarkus completes the flow by exchanging the code for the ID, access, and refresh tokens, and works with the ID token representing the successful user authentication. The access token is not relevant at the moment. As mentioned earlier, in the authorization code flow, Quarkus will only use the access token to access downstream services on behalf of the currently authenticated user.
 
-Lets imagine though that the Quarkus endpoint we have developed has to accept `Bearer` access tokens too: it may be that the other Quarkus endpoint which is propagating it to this endpoint or it can be SPA which uses the access token to access the Quarkus endpoint. And Quarkus OIDC DevUI SPA which we already used to analyze the ID token fits perfectly for using the access token available to SPA to test the Quarkus endpoint.
+Let's imagine though that the Quarkus endpoint we have developed has to accept `Bearer` access tokens too: it may be that the other Quarkus endpoint which is propagating it to this endpoint or it can be SPA which uses the access token to access the Quarkus endpoint. And Quarkus OIDC DevUI SPA which we already used to analyze the ID token fits perfectly for using the access token available to SPA to test the Quarkus endpoint.
 
-Lets go again to http://localhost:8080/q/dev, select the `OpenId Connect` card, login to Auth0, and check the Access token content:
+Let's go again to http://localhost:8080/q/dev-ui, select the `OpenId Connect` card, login to Auth0, and check the Access token content:
 
 image::auth0-devui-accesstoken.png[Auth0 DevUI Access Token]
 
@@ -632,7 +632,7 @@ For more information about token propagation, see xref:security-openid-connect-c
 
 We have already looked in detail at how Quarkus OIDC can handle <<opaque-access-tokens>>, but we don't want to propagate Auth0 opaque tokens to micro services which do something useful on behalf on the currently authenticated user, beyond checking its UserInfo.
 
-A microservice which the front-end Quarkus application will access by propagating authorization code flow access tokens to it is represented in the Auth0 dashboard as an `API`. Lets add it in the `Applications/APIs`:
+A microservice which the front-end Quarkus application will access by propagating authorization code flow access tokens to it is represented in the Auth0 dashboard as an `API`. Let's add it in the `Applications/APIs`:
 
 image::auth0-api.png[Auth0 API]
 
@@ -804,6 +804,12 @@ public class GreetingResource {
 
 Open a browser, access http://localhost:8080/hello and get your name displayed in the browser.
 
+Let's go to http://localhost:8080/q/dev-ui, select the `OpenId Connect` card, login to Auth0, and check the Access token content:
+
+image::auth0-devui-jwt-accesstoken.png[Auth0 DevUI JWT Access Token]
+
+As you can see, the access token is no longer encrypted as shown in the <<opaque-access-tokens>> section and indeed it is in the JWT format now.
+
 [[permission-based-access-control]]
 === Permission Based Access Control
 
@@ -939,7 +945,7 @@ quarkus.oidc.client-id=sKQu1dXjHB6r0sra0Y1YCqBZKWXqCkly
 quarkus.oidc.credentials.secret=${client-secret}
 ----
 
-In production, you will distinguish between prod and test level configuration with `%prod.` and `%test.` qualifiers. Lets assume that the above configuration will indeed be prefixed with `%test.` in your real application, with this configuration also including the `%prod.` qualified Auth0 production tenant configuration.
+In production, you will distinguish between prod and test level configuration with `%prod.` and `%test.` qualifiers. Let's assume that the above configuration will indeed be prefixed with `%test.` in your real application, with this configuration also including the `%prod.` qualified Auth0 production tenant configuration.
 
 Using `OidcTestClient` to test such configuration requires acquiring a token from the Auth0 dev tenant, using either OAuth2 `password` or `client_credentials` grant, we will try a `password` grant. Make sure the application registered in the Auth0 dashboard allows the `password` grant:
 

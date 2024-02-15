@@ -77,6 +77,11 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.smallrye.config</groupId>
+            <artifactId>smallrye-config-crypto</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- This dependency is here to make sure the build order is correct-->
         <dependency>
             <groupId>io.quarkus</groupId>

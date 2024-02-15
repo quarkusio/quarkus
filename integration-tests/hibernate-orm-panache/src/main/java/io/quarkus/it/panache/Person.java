@@ -5,6 +5,7 @@ import java.util.List;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -57,6 +58,9 @@ public class Person extends PanacheEntity {
 
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     public Address address;
+
+    @Embedded
+    public PersonDescription description;
 
     @Enumerated(EnumType.STRING)
     public Status status;

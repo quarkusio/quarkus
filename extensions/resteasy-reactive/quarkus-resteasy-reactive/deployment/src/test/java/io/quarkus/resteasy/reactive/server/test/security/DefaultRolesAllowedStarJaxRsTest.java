@@ -17,8 +17,8 @@ public class DefaultRolesAllowedStarJaxRsTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(PermitAllResource.class, UnsecuredResource.class,
-                            TestIdentityProvider.class,
-                            TestIdentityController.class,
+                            TestIdentityProvider.class, UnsecuredResourceInterface.class,
+                            TestIdentityController.class, UnsecuredParentResource.class,
                             UnsecuredSubResource.class)
                     .addAsResource(new StringAsset("quarkus.security.jaxrs.default-roles-allowed = **\n"),
                             "application.properties"));

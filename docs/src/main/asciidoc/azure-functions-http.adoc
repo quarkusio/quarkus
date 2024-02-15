@@ -85,7 +85,7 @@ The Azure Functions `host.json` deployment descriptor is automatically
 generated, but if you need to override it, declare it in the root directory of the project and
 rerun the build when you are ready.
 
-[#config-azure-paths]
+[[config-azure-paths]]
 == Configuring Root Paths
 
 The default route prefix for an Azure Function is `/api`.  All of your Jakarta REST, Servlet, Reactive Routes, and xref:funqy-http.adoc[Funqy HTTP] endpoints must

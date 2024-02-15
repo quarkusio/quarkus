@@ -40,6 +40,7 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
             "spring-web-codestart",
             "picocli-codestart",
             "hibernate-orm-codestart",
+            "hibernate-orm-rest-data-codestart",
             "reactive-messaging-codestart");
 
     @BeforeAll

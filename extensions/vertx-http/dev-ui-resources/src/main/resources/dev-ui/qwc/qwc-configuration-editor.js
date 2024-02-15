@@ -71,16 +71,14 @@ export class QwcConfigurationEditor extends LitElement {
             return html`<span>Error: ${this._error}</span>`;
         }
 
-        if(this._value){
-            return html`
-            ${this._renderToolbar()}
-            <qui-code-block id="code"
-                mode='${this._type}'
-                content='${this._value}'
-                value='${this._value}'
-                editable>
-            </qui-code-block>`;
-        }
+        return html`
+        ${this._renderToolbar()}
+        <qui-code-block id="code"
+            mode='${this._type}'
+            content='${this._value}'
+            value='${this._value}'
+            editable>
+        </qui-code-block>`;
     }
 
     _renderToolbar(){

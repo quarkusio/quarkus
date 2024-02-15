@@ -174,6 +174,12 @@ public class InfinispanExample {
 <2> The client connects to the 'lon-site'.
 <3> The client connects to the default site.
 
+By default, Protobuf Schemas will also be uploaded to the backup clusters. However, it might be required to handle
+the registration manually as a schema may evolve over time when used in production, so you can
+disable this from occurring in each backup site by configuring the
+`quarkus.infinispan-client.backup-cluster.YOUR_SITE_NAME.use-schema-registration` to `false`.
+The value of this property will be ignored if the `use-schema-registration` global property is `false`.
+
 [NOTE]
 ====
 Cross-site replication is a powerful feature offered by Infinispan that facilitates data backup between clusters
@@ -666,7 +672,7 @@ for Kubernetes deployments, Infinispan Console,
 https://infinispan.org/docs/stable/titles/rest/rest.html#rest_v2_protobuf_schemas[REST API] or the
 https://infinispan.org/docs/stable/titles/encoding/encoding.html#registering-sci-remote-caches_marshalling[Hot Rod Java Client].
 
-[#infinispan-annotations-api]
+[[infinispan-annotations-api]]
 == Caching using annotations
 
 The Infinispan Client extension offers a set of annotations that can be used in a CDI managed bean to enable caching abilities with Infinispan.

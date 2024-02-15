@@ -105,6 +105,11 @@ Thus, when running the production application, build time operations are not per
 Furthermore, the purpose built ClassLoader that comes with the xref:maven-tooling.adoc#fast-jar[fast-jar] package type ensures that class lookup is done as fast as possible while also keeping
 the minimum amount of jars in memory.
 
+[NOTE]
+====
+Since optimal performance is never an objective of dev mode, in the interest of improving startup time, the JVM's C2 compiler is disabled in dev mode.
+====
+
 == Security implications
 
 Perhaps the most important reason why dev mode applications should not be run in production is that the dev mode allows reading information that could be confidential (via the Dev-UI)

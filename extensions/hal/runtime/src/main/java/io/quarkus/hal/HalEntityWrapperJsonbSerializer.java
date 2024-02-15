@@ -10,6 +10,8 @@ import org.eclipse.yasson.internal.ProcessingContext;
 import org.eclipse.yasson.internal.model.ClassModel;
 import org.eclipse.yasson.internal.model.PropertyModel;
 
+// Using the raw type here as eclipse yasson doesn't like custom serializers for
+// generic root types, see https://github.com/eclipse-ee4j/yasson/issues/639
 public class HalEntityWrapperJsonbSerializer implements JsonbSerializer<HalEntityWrapper> {
 
     @Override

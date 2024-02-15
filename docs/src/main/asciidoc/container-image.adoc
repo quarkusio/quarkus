@@ -19,7 +19,7 @@ Quarkus provides extensions for building (and pushing) container images. Current
 
 == Container Image extensions
 
-[#jib]
+[[jib]]
 === Jib
 
 The extension `quarkus-container-image-jib` is powered by https://github.com/GoogleContainerTools/jib[Jib] for performing container image builds.
@@ -106,7 +106,7 @@ this property needs to be known very early on in the build process.
 Quarkus supports generating and including an link:https://docs.oracle.com/en/java/javase/17/docs/specs/man/java.html#application-class-data-sharing[Application Class Data Sharing] archive when generating a container image using Jib.
 See the xref:appcds.adoc[AppCDS documentation] for more details.
 
-[#docker]
+[[docker]]
 === Docker
 
 The extension `quarkus-container-image-docker` is using the Docker binary and the generated Dockerfiles under `src/main/docker` in order to perform Docker builds.
@@ -120,7 +120,7 @@ The `quarkus-container-image-docker` extension is capable of https://docs.docker
 
 NOTE: `docker buildx build` ONLY supports https://docs.docker.com/engine/reference/commandline/buildx_build/#load[loading the result of a build] to `docker images` when building for a single platform. Therefore, if you specify more than one argument in the `quarkus.docker.buildx.platform` property, the resulting images will not be loaded into `docker images`. If `quarkus.docker.buildx.platform` is omitted or if only a single platform is specified, it will then be loaded into `docker images`.
 
-[#openshift]
+[[openshift]]
 === OpenShift
 
 The extension `quarkus-container-image-openshift` is using OpenShift binary builds in order to perform container builds inside the OpenShift cluster.
@@ -137,7 +137,7 @@ OpenShift builds require creating a `BuildConfig` and two `ImageStream` resource
 The creation of such objects is being taken care of by the Quarkus Kubernetes extension.
 
 
-[#buildpack]
+[[buildpack]]
 === Buildpack
 
 The extension `quarkus-container-image-buildpack` is using buildpacks in order to perform container image builds.
@@ -248,7 +248,7 @@ In addition to the generic container image options, the `container-image-jib` al
 
 include::{generated-dir}/config/quarkus-container-image-jib.adoc[opts=optional, leveloffset=+1]
 
-[#DockerOptions]
+[[DockerOptions]]
 === Docker Options
 
 In addition to the generic container image options, the `container-image-docker` also provides the following options:

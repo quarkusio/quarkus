@@ -118,8 +118,6 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             throw new PersistenceException("No name provided and multiple persistence units found");
         }
 
-        Map<String, HibernateOrmRuntimeConfigPersistenceUnit> puConfigMap = hibernateOrmRuntimeConfig
-                .getAllPersistenceUnitConfigsAsMap();
         for (RuntimePersistenceUnitDescriptor persistenceUnit : units) {
             log.debugf(
                     "Checking persistence-unit [name=%s, explicit-provider=%s] against incoming persistence unit name [%s]",
@@ -146,9 +144,8 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,
                     integrationSettings);
 
-            var puConfig = puConfigMap.getOrDefault(persistenceUnit.getConfigurationName(),
-                    new HibernateOrmRuntimeConfigPersistenceUnit());
-            if (puConfig.active.isPresent() && !puConfig.active.get()) {
+            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(persistenceUnit.getConfigurationName());
+            if (puConfig.active().isPresent() && !puConfig.active().get()) {
                 throw new IllegalStateException(
                         "Attempting to boot a deactivated Hibernate Reactive persistence unit");
             }
@@ -166,7 +163,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                 }
             }
 
-            if (!puConfig.unsupportedProperties.isEmpty()) {
+            if (!puConfig.unsupportedProperties().isEmpty()) {
                 log.warnf("Persistence-unit [%s] sets unsupported properties."
                         + " These properties may not work correctly, and even if they do,"
                         + " that may change when upgrading to a newer version of Quarkus (even just a micro/patch version)."
@@ -175,9 +172,9 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                         + " and more importantly so that the configuration property is tested regularly."
                         + " Unsupported properties being set: %s",
                         persistenceUnitName,
-                        puConfig.unsupportedProperties.keySet());
+                        puConfig.unsupportedProperties().keySet());
             }
-            for (Map.Entry<String, String> entry : puConfig.unsupportedProperties.entrySet()) {
+            for (Map.Entry<String, String> entry : puConfig.unsupportedProperties().entrySet()) {
                 var key = entry.getKey();
                 if (runtimeSettingsBuilder.get(key) != null) {
                     log.warnf("Persistence-unit [%s] sets property '%s' to a custom value through '%s',"
@@ -311,12 +308,12 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             Builder runtimeSettingsBuilder) {
         // Database
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION,
-                persistenceUnitConfig.database.generation.generation);
+                persistenceUnitConfig.database().generation().generation());
 
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_CREATE_SCHEMAS,
-                String.valueOf(persistenceUnitConfig.database.generation.createSchemas));
+                String.valueOf(persistenceUnitConfig.database().generation().createSchemas()));
 
-        if (persistenceUnitConfig.database.generation.haltOnError) {
+        if (persistenceUnitConfig.database().generation().haltOnError()) {
             runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
         }
 
@@ -324,41 +321,41 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_SCRIPTS_CREATE_APPEND, "false");
 
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_SCRIPTS_ACTION,
-                persistenceUnitConfig.scripts.generation.generation);
+                persistenceUnitConfig.scripts().generation().generation());
 
-        if (persistenceUnitConfig.scripts.generation.createTarget.isPresent()) {
+        if (persistenceUnitConfig.scripts().generation().createTarget().isPresent()) {
             runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_SCRIPTS_CREATE_TARGET,
-                    persistenceUnitConfig.scripts.generation.createTarget.get());
+                    persistenceUnitConfig.scripts().generation().createTarget().get());
         }
 
-        if (persistenceUnitConfig.scripts.generation.dropTarget.isPresent()) {
+        if (persistenceUnitConfig.scripts().generation().dropTarget().isPresent()) {
             runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_SCRIPTS_DROP_TARGET,
-                    persistenceUnitConfig.scripts.generation.dropTarget.get());
+                    persistenceUnitConfig.scripts().generation().dropTarget().get());
         }
 
-        persistenceUnitConfig.database.defaultCatalog.ifPresent(
+        persistenceUnitConfig.database().defaultCatalog().ifPresent(
                 catalog -> runtimeSettingsBuilder.put(AvailableSettings.DEFAULT_CATALOG, catalog));
 
-        persistenceUnitConfig.database.defaultSchema.ifPresent(
+        persistenceUnitConfig.database().defaultSchema().ifPresent(
                 schema -> runtimeSettingsBuilder.put(AvailableSettings.DEFAULT_SCHEMA, schema));
 
         // Logging
-        if (persistenceUnitConfig.log.sql) {
+        if (persistenceUnitConfig.log().sql()) {
             runtimeSettingsBuilder.put(AvailableSettings.SHOW_SQL, "true");
 
-            if (persistenceUnitConfig.log.formatSql) {
+            if (persistenceUnitConfig.log().formatSql()) {
                 runtimeSettingsBuilder.put(AvailableSettings.FORMAT_SQL, "true");
             }
         }
 
-        if (persistenceUnitConfig.log.jdbcWarnings.isPresent()) {
+        if (persistenceUnitConfig.log().jdbcWarnings().isPresent()) {
             runtimeSettingsBuilder.put(AvailableSettings.LOG_JDBC_WARNINGS,
-                    persistenceUnitConfig.log.jdbcWarnings.get().toString());
+                    persistenceUnitConfig.log().jdbcWarnings().get().toString());
         }
 
-        if (persistenceUnitConfig.log.queriesSlowerThanMs.isPresent()) {
+        if (persistenceUnitConfig.log().queriesSlowerThanMs().isPresent()) {
             runtimeSettingsBuilder.put(AvailableSettings.LOG_SLOW_QUERY,
-                    persistenceUnitConfig.log.queriesSlowerThanMs.get());
+                    persistenceUnitConfig.log().queriesSlowerThanMs().get());
         }
     }
 

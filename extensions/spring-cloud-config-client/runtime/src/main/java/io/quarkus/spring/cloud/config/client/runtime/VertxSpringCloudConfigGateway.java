@@ -205,6 +205,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
         }
         log.debug("Attempting to read configuration from '" + finalURI + "'.");
         return request.send().map(r -> {
+            log.debug("Received HTTP response code '" + r.statusCode() + "'");
             if (r.statusCode() != 200) {
                 throw new RuntimeException("Got unexpected HTTP response code " + r.statusCode()
                         + " from " + finalURI);
@@ -214,6 +215,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
                     throw new RuntimeException("Got empty HTTP response body " + finalURI);
                 }
                 try {
+                    log.debug("Attempting to deserialize response");
                     return OBJECT_MAPPER.readValue(bodyAsString, Response.class);
                 } catch (JsonProcessingException e) {
                     throw new RuntimeException("Got unexpected error " + e.getOriginalMessage());
@@ -233,7 +235,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
     private String getFinalURI(String applicationName, String profile) {
         String finalURI = baseURI.toString() + "/" + applicationName + "/" + profile;
         if (config.label().isPresent()) {
-            finalURI = "/" + config.label().get();
+            finalURI += "/" + config.label().get();
         }
         return finalURI;
     }

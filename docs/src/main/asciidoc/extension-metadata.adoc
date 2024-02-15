@@ -11,6 +11,8 @@ include::_attributes.adoc[]
 Quarkus extensions are distributed as Maven JAR artifacts that application and other libraries may depend on. When a Quarkus application project is built, tested or edited using the Quarkus dev tools, Quarkus extension JAR artifacts will be identified on the application classpath by the presence of the Quarkus extension metadata files in them.
 This document describes the purpose of each Quarkus extension metadata file and its content.
 
+IMPORTANT: Two of the metadata files have the same name but different extensions, `quarkus-extension.yaml` and `quarkus-extension.properties`. It is easy to mix them up, be careful. You will usually edit the YAML file and track it in your SCM. While you _can_ manually manage the properties file, Quarkus will generated it at build if you don't.
+
 [[quarkus-extension-yaml]]
 == META-INF/quarkus-extension.yaml
 
@@ -100,8 +102,7 @@ metadata:
 description: "A Jakarta REST implementation utilizing build time processing and Vert.x.\
   \ This extension is not compatible with the quarkus-resteasy extension, or any of\
   \ the extensions that depend on it." <4>
-scm:
-  url: "https://github.com/quarkusio/quarkus" <5>
+scm-url: "https://github.com/quarkusio/quarkus" <5>
 sponsor: A Sponsoring Organisation <6>
 ----
 
@@ -109,7 +110,7 @@ sponsor: A Sponsoring Organisation <6>
 <2> https://quarkus.io/guides/capabilities[Capabilities] this extension provides
 <3> Direct dependencies on other extensions
 <4> Description that can be displayed to users. In this case, the description was copied from the `pom.xml` of the extension module but it could also be provided in the template file.
-<5> The source code repository of this extension. Optional, and will often be set automatically. In GitHub Actions builds, it will be inferred from the CI environment. For other GitHub repositories, it can be controlled by setting a `GITHUB_REPOSITORY` environment variable.
+<5> The source code repository of this extension. Optional, and will often be set automatically using the `<scm>` information in the pom. In GitHub Actions builds, it will be inferred from the CI environment. For other GitHub repositories, it can be controlled by setting a `GITHUB_REPOSITORY` environment variable.
 <6> The sponsor(s) of this extension. Optional, and will sometimes be determined automatically from commit history.
 
 [[quarkus-extension-properties]]

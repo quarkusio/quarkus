@@ -24,10 +24,10 @@ public abstract class HalService {
      * @param entityClass The class of the objects in the collection. If null, it will not resolve the links for these objects.
      * @return The Hal collection wrapper instance.
      */
-    public HalCollectionWrapper toHalCollectionWrapper(Collection<Object> collection, String collectionName,
+    public <T> HalCollectionWrapper<T> toHalCollectionWrapper(Collection<T> collection, String collectionName,
             Class<?> entityClass) {
-        List<HalEntityWrapper> items = new ArrayList<>();
-        for (Object entity : collection) {
+        List<HalEntityWrapper<T>> items = new ArrayList<>();
+        for (T entity : collection) {
             items.add(toHalWrapper(entity));
         }
 
@@ -36,7 +36,7 @@ public abstract class HalService {
             classLinks = getClassLinks(entityClass);
         }
 
-        return new HalCollectionWrapper(items, collectionName, classLinks);
+        return new HalCollectionWrapper<>(items, collectionName, classLinks);
     }
 
     /**
@@ -45,8 +45,8 @@ public abstract class HalService {
      * @param entity The entity to wrap.
      * @return The Hal entity wrapper.
      */
-    public HalEntityWrapper toHalWrapper(Object entity) {
-        return new HalEntityWrapper(entity, getInstanceLinks(entity));
+    public <T> HalEntityWrapper<T> toHalWrapper(T entity) {
+        return new HalEntityWrapper<>(entity, getInstanceLinks(entity));
     }
 
     /**

@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.setRoutingContextAttribute;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -284,7 +286,8 @@ public class HttpSecurityRecorder {
                                 }
                                 if (identity == null) {
                                     Uni<SecurityIdentity> anon = authenticator.getIdentityProviderManager()
-                                            .authenticate(AnonymousAuthenticationRequest.INSTANCE);
+                                            .authenticate(
+                                                    setRoutingContextAttribute(new AnonymousAuthenticationRequest(), event));
                                     anon.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
                                         @Override
                                         public void onSubscribe(UniSubscription subscription) {
@@ -340,7 +343,8 @@ public class HttpSecurityRecorder {
                                 //if it is null we use the anonymous identity
                                 if (securityIdentity == null) {
                                     return authenticator.getIdentityProviderManager()
-                                            .authenticate(AnonymousAuthenticationRequest.INSTANCE);
+                                            .authenticate(
+                                                    setRoutingContextAttribute(new AnonymousAuthenticationRequest(), event));
                                 }
                                 return Uni.createFrom().item(securityIdentity);
                             }

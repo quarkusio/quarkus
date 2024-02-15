@@ -2,6 +2,9 @@
 # The format of this file is documented here:
 # https://github.com/quarkusio/quarkus-github-bot#triage-issues
 features: [ALL]
+develocity:
+  enabled: true
+  url: "https://ge.quarkus.io/"
 workflows:
   rules:
     - allow:
@@ -11,7 +14,7 @@ workflows:
           - "**/*.md"
           - "**/*.adoc"
 workflowRunAnalysis:
-  workflows: ["Quarkus CI"]
+  workflows: ["Quarkus CI", "Quarkus Documentation CI"]
 projectsClassic:
   rules:
     - labels: [area/documentation]

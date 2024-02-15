@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -217,7 +216,6 @@ class SmallRyeHealthProcessor {
                 .routeConfigKey("quarkus.smallrye-health.root-path")
                 .handler(new SmallRyeHealthHandler())
                 .displayOnNotFoundPage()
-                .blockingRoute()
                 .build());
 
         // Register the liveness handler
@@ -226,7 +224,6 @@ class SmallRyeHealthProcessor {
                 .nestedRoute(healthConfig.rootPath, healthConfig.livenessPath)
                 .handler(new SmallRyeLivenessHandler())
                 .displayOnNotFoundPage()
-                .blockingRoute()
                 .build());
 
         // Register the readiness handler
@@ -235,21 +232,7 @@ class SmallRyeHealthProcessor {
                 .nestedRoute(healthConfig.rootPath, healthConfig.readinessPath)
                 .handler(new SmallRyeReadinessHandler())
                 .displayOnNotFoundPage()
-                .blockingRoute()
                 .build());
-
-        // Find all health groups
-        Set<String> healthGroups = new HashSet<>();
-        // with simple @HealthGroup annotations
-        for (AnnotationInstance healthGroupAnnotation : index.getAnnotations(HEALTH_GROUP)) {
-            healthGroups.add(healthGroupAnnotation.value().asString());
-        }
-        // with @HealthGroups repeatable annotations
-        for (AnnotationInstance healthGroupsAnnotation : index.getAnnotations(HEALTH_GROUPS)) {
-            for (AnnotationInstance healthGroupAnnotation : healthGroupsAnnotation.value().asNestedArray()) {
-                healthGroups.add(healthGroupAnnotation.value().asString());
-            }
-        }
 
         // Register the health group handlers
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
@@ -257,7 +240,6 @@ class SmallRyeHealthProcessor {
                 .nestedRoute(healthConfig.rootPath, healthConfig.groupPath)
                 .handler(new SmallRyeHealthGroupHandler())
                 .displayOnNotFoundPage()
-                .blockingRoute()
                 .build());
 
         SmallRyeIndividualHealthGroupHandler handler = new SmallRyeIndividualHealthGroupHandler();
@@ -266,7 +248,6 @@ class SmallRyeHealthProcessor {
                 .nestedRoute(healthConfig.rootPath, healthConfig.groupPath + "/*")
                 .handler(handler)
                 .displayOnNotFoundPage()
-                .blockingRoute()
                 .build());
 
         // Register the wellness handler
@@ -275,7 +256,6 @@ class SmallRyeHealthProcessor {
                 .nestedRoute(healthConfig.rootPath, healthConfig.wellnessPath)
                 .handler(new SmallRyeWellnessHandler())
                 .displayOnNotFoundPage()
-                .blockingRoute()
                 .build());
 
         // Register the startup handler
@@ -284,7 +264,6 @@ class SmallRyeHealthProcessor {
                 .nestedRoute(healthConfig.rootPath, healthConfig.startupPath)
                 .handler(new SmallRyeStartupHandler())
                 .displayOnNotFoundPage()
-                .blockingRoute()
                 .build());
 
     }

@@ -12,7 +12,7 @@ import io.vertx.core.http.HttpClientResponse;
 
 @ApplicationScoped
 public class MyClientLogger implements ClientLogger {
-    public final AtomicBoolean used = new AtomicBoolean(false);
+    private final AtomicBoolean used = new AtomicBoolean(false);
 
     @Override
     public void setBodySize(int bodySize) {

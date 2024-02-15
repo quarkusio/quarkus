@@ -129,7 +129,7 @@ jobs:
           echo "key=m2-cache-$(/bin/date -u "+%Y-%U")" >> $GITHUB_OUTPUT
       - name: Cache Maven Repository
         id: cache-maven
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           # refresh cache every week to avoid unlimited growth
@@ -148,7 +148,7 @@ jobs:
         env:
           CAPTURE_BUILD_SCAN: true
         run: |
-          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dno-format -Dtcks -Prelocations clean install
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations clean install
       - name: Verify extension dependencies
         run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
       - name: Get GIB arguments
@@ -201,15 +201,20 @@ jobs:
           retention-days: 7
       - name: Delete snapshots artifacts from cache
         run: find ~/.m2 -name \*-SNAPSHOT -type d -exec rm -rf {} +
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-Initial JDK 17 Build"
           path: |
-            target/build-report.json
-            target/gradle-build-scan-url.txt
-            LICENSE.txt
+            build-reports.zip
           retention-days: 7
 
   calculate-test-jobs:
@@ -345,7 +350,7 @@ jobs:
           architecture: ${{ matrix.java.architecture || 'x64' }}
 
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
           # refresh cache every week to avoid unlimited growth
@@ -381,16 +386,21 @@ jobs:
           name: test-reports-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 7
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-JVM Tests - JDK ${{matrix.java.name}}"
           path: |
-            **/target/*-reports/TEST-*.xml
-            target/build-report.json
-            target/gradle-build-scan-url.txt
-            LICENSE.txt
+            build-reports.zip
           retention-days: 7
       - name: Upload build.log (if build failed)
         uses: actions/upload-artifact@v3
@@ -439,7 +449,7 @@ jobs:
       - name: Add quarkusio remote for GIB
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
           # refresh cache every week to avoid unlimited growth
@@ -485,16 +495,21 @@ jobs:
           if [ -d 'integration-tests/maven/target/test-classes/projects/qit?fast?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?fast?jar' 'integration-tests/maven/target/test-classes/projects/qit--fast--jar'; fi
           if [ -d 'integration-tests/maven/target/test-classes/projects/qit?legacy?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?legacy?jar' 'integration-tests/maven/target/test-classes/projects/qit--legacy--jar'; fi
           if [ -d 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' 'integration-tests/maven/target/test-classes/projects/qit--uber--jar'; fi
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-Maven Tests - JDK ${{matrix.java.name}}"
           path: |
-            **/target/*-reports/TEST-*.xml
-            target/build-report.json
-            target/gradle-build-scan-url.txt
-            LICENSE.txt
+            build-reports.zip
           retention-days: 7
 
   gradle-tests:
@@ -531,7 +546,7 @@ jobs:
         run: git config --global core.longpaths true
       - uses: actions/checkout@v4
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
           # refresh cache every week to avoid unlimited growth
@@ -564,17 +579,22 @@ jobs:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl integration-tests/gradle
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/build/test-results/test/TEST-*.xml' \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-Gradle Tests - JDK ${{matrix.java.name}}"
           path: |
-            **/build/test-results/test/TEST-*.xml
-            **/target/*-reports/TEST-*.xml
-            target/build-report.json
-            target/gradle-build-scan-url.txt
-            LICENSE.txt
+            build-reports.zip
           retention-days: 7
 
   devtools-tests:
@@ -613,7 +633,7 @@ jobs:
         run: git config --global core.longpaths true
       - uses: actions/checkout@v4
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
           # refresh cache every week to avoid unlimited growth
@@ -651,16 +671,21 @@ jobs:
           name: test-reports-devtools-java${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 7
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-Devtools Tests - JDK ${{matrix.java.name}}"
           path: |
-            **/target/*-reports/TEST-*.xml
-            target/build-report.json
-            target/gradle-build-scan-url.txt
-            LICENSE.txt
+            build-reports.zip
           retention-days: 7
 
   kubernetes-tests:
@@ -699,7 +724,7 @@ jobs:
         run: git config --global core.longpaths true
       - uses: actions/checkout@v4
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
           # refresh cache every week to avoid unlimited growth
@@ -737,16 +762,21 @@ jobs:
           name: test-reports-kubernetes-java${{matrix.java.name}}
           path: 'test-reports.tgz'
           retention-days: 7
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-Kubernetes Tests - JDK ${{matrix.java.name}}"
           path: |
-            **/target/*-reports/TEST-*.xml
-            target/build-report.json
-            **/target/gradle-build-scan-url.txt
-            LICENSE.txt
+            build-reports.zip
           retention-days: 7
 
   quickstarts-tests:
@@ -772,7 +802,7 @@ jobs:
           echo "GE_CUSTOM_VALUES=gh-job-name=Quickstarts Compilation - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
           # refresh cache every week to avoid unlimited growth
@@ -802,15 +832,20 @@ jobs:
           git clone https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
           git checkout development
           export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              'quarkus-quickstarts/**/target/*-reports/TEST-*.xml' \
+              'quarkus-quickstarts/target/build-report.json' \
+              'quarkus-quickstarts/LICENSE' \
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-Quickstarts Compilation - JDK ${{matrix.java.name}}"
           path: |
-            quarkus-quickstarts/**/target/*-reports/TEST-*.xml
-            quarkus-quickstarts/target/build-report.json
-            quarkus-quickstarts/LICENSE
+            build-reports.zip
           retention-days: 7
 
   virtual-thread-native-tests:
@@ -832,7 +867,7 @@ jobs:
           echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - Virtual Thread - ${{matrix.category}}" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
           # refresh cache every week to avoid unlimited growth
@@ -868,15 +903,21 @@ jobs:
           CAPTURE_BUILD_SCAN: true
         run: |
           export LANG=en_US && ./mvnw $COMMON_MAVEN_ARGS -f integration-tests/virtual-threads -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dextra-args=--enable-preview -Dquarkus.native.container-build=true
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              'integration-tests/virtual-threads/**/target/*-reports/TEST-*.xml' \
+              'integration-tests/virtual-threads/target/build-report.json' \
+              'integration-tests/virtual-threads/target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-Virtual Thread Support Tests Native - ${{matrix.category}}"
           path: |
-            integration-tests/virtual-threads/**/target/*-reports/TEST-*.xml
-            integration-tests/virtual-threads/target/build-report.json
-            integration-tests/virtual-threads/target/gradle-build-scan-url.txt
+            build-reports.zip
           retention-days: 7
 
   tcks-test:
@@ -905,7 +946,7 @@ jobs:
           distribution: temurin
           java-version: 17
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
           # refresh cache every week to avoid unlimited growth
@@ -942,16 +983,21 @@ jobs:
           name: test-reports-tcks
           path: 'test-reports.tgz'
           retention-days: 7
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/target/*-reports/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-MicroProfile TCKs Tests"
           path: |
-            **/target/*-reports/TEST-*.xml
-            target/build-report.json
-            **/target/gradle-build-scan-url.txt
-            LICENSE.txt
+            build-reports.zip
           retention-days: 7
 
   native-tests:
@@ -990,7 +1036,7 @@ jobs:
       - name: Install cl.exe
         if: startsWith(matrix.os-name, 'windows')
         uses: ilammy/msvc-dev-cmd@v1
-      - uses: microsoft/setup-msbuild@v1
+      - uses: microsoft/setup-msbuild@v2
         if: startsWith(matrix.os-name, 'windows')
       - name: Setup GraalVM
         id: setup-graalvm
@@ -1008,7 +1054,7 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Restore Maven Repository
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/repository
           # refresh cache every week to avoid unlimited growth
@@ -1042,17 +1088,22 @@ jobs:
           name: test-reports-native-${{matrix.category}}
           path: 'test-reports.tgz'
           retention-days: 7
-      - name: Upload build reports (if build failed)
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/target/*-reports/TEST-*.xml' \
+              '**/build/test-results/test/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE.txt
+      - name: Upload build reports
         uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
+        if: always()
         with:
           name: "build-reports-Native Tests - ${{matrix.category}}"
           path: |
-            **/target/*-reports/TEST-*.xml
-            **/build/test-results/test/TEST-*.xml
-            target/build-report.json
-            **/target/gradle-build-scan-url.txt
-            LICENSE.txt
+            build-reports.zip
           retention-days: 7
 
   build-report:

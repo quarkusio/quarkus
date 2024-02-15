@@ -19,6 +19,7 @@ import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Variant;
 
 import org.jboss.logging.Logger;
@@ -246,7 +247,8 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                 requestContext.resume();
                             }
                         });
-                    } else if (!requestContext.isRegisterBodyHandler()) {
+                    } else if (!requestContext.isRegisterBodyHandler()
+                            && (Response.Status.Family.familyOf(status) == Response.Status.Family.SUCCESSFUL)) { // we force the registration of a body handler if there was an error, so we can ensure the body can be read
                         clientResponse.pause();
                         if (loggingScope != LoggingScope.NONE) {
                             clientLogger.logResponse(clientResponse, false);

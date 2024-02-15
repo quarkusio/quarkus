@@ -280,6 +280,27 @@ public class OidcUtilsTest {
         assertNull(perms[3].getActions());
     }
 
+    @Test
+    public void testEncodeScopesOpenidAdded() throws Exception {
+        OidcTenantConfig config = new OidcTenantConfig();
+        assertEquals("openid", OidcUtils.encodeScopes(config));
+    }
+
+    @Test
+    public void testEncodeScopesOpenidNotAdded() throws Exception {
+        OidcTenantConfig config = new OidcTenantConfig();
+        config.authentication.setAddOpenidScope(false);
+        assertEquals("", OidcUtils.encodeScopes(config));
+    }
+
+    @Test
+    public void testEncodeAllScopes() throws Exception {
+        OidcTenantConfig config = new OidcTenantConfig();
+        config.authentication.setScopes(List.of("a:1", "b:2"));
+        config.authentication.setExtraParams(Map.of("scope", "c,d"));
+        assertEquals("openid+a%3A1+b%3A2+c+d", OidcUtils.encodeScopes(config));
+    }
+
     public static JsonObject read(InputStream input) throws IOException {
         try (BufferedReader buffer = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
             return new JsonObject(buffer.lines().collect(Collectors.joining("\n")));

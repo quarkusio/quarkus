@@ -2,6 +2,7 @@ package io.quarkus.annotation.processor.generate_doc;
 
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_DEFAULT;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_ENUM_VALUE;
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_IGNORE;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_MAP_KEY;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_SECTION;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_ITEM;
@@ -246,6 +247,8 @@ class ConfigDocItemFinder {
                             : annotationMirror.getElementValues().values().iterator().next().getValue().toString();
                 } else if (annotationName.equals(ANNOTATION_CONFIG_WITH_UNNAMED_KEY)) {
                     unnamedMapKey = true;
+                } else if (annotationName.equals(ANNOTATION_CONFIG_DOC_IGNORE)) {
+                    generateDocumentation = false;
                 }
             }
 
@@ -390,7 +393,8 @@ class ConfigDocItemFinder {
                 configDocKey.setConfigPhase(configPhase);
                 configDocKey.setDefaultValue(defaultValue);
                 configDocKey.setDocMapKey(configDocMapKey);
-                configDocKey.setConfigDoc(javaDocParser.parseConfigDescription(rawJavaDoc));
+                javaDocParser.parseConfigDescription(rawJavaDoc, configDocKey::setConfigDoc, configDocKey::setSince);
+                configDocKey.setEnvironmentVariable(DocGeneratorUtil.toEnvVarName(name));
                 configDocKey.setAcceptedValues(acceptedValues);
                 configDocKey.setJavaDocSiteLink(getJavaDocSiteLink(type));
                 ConfigDocItem configDocItem = new ConfigDocItem();
@@ -628,6 +632,8 @@ class ConfigDocItemFinder {
                 additionalKeys.addAll(additionalNames.stream().map(k -> k + configDocKey.getKey()).collect(toList()));
                 configDocKey.setAdditionalKeys(additionalKeys);
                 configDocKey.setKey(parentName + configDocKey.getKey());
+                configDocKey.setEnvironmentVariable(
+                        DocGeneratorUtil.toEnvVarName(parentName) + configDocKey.getEnvironmentVariable());
                 decoratedItems.add(configDocItem);
             } else {
                 ConfigDocSection section = configDocItem.getConfigDocSection();

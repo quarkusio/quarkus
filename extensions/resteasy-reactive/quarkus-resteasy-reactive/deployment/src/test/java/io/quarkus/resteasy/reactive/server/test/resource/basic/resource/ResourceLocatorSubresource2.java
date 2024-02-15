@@ -18,9 +18,9 @@ public class ResourceLocatorSubresource2 {
     public String doGet(@PathParam("param") String param, @Context UriInfo uri) {
         LOG.debug("Uri Ancestors for Subresource2.doGet():");
         Assertions.assertEquals(4, uri.getMatchedURIs().size());
-        Assertions.assertEquals("base/1/resources/subresource2/stuff/2/bar", uri.getMatchedURIs().get(0));
-        Assertions.assertEquals("base/1/resources/subresource2", uri.getMatchedURIs().get(1));
-        Assertions.assertEquals("base/1/resources", uri.getMatchedURIs().get(2));
+        Assertions.assertEquals("app/base/1/resources/subresource2/stuff/2/bar", uri.getMatchedURIs().get(0));
+        Assertions.assertEquals("app/base/1/resources/subresource2", uri.getMatchedURIs().get(1));
+        Assertions.assertEquals("app/base/1/resources", uri.getMatchedURIs().get(2));
         Assertions.assertEquals("", uri.getMatchedURIs().get(3));
         for (String ancestor : uri.getMatchedURIs())
             LOG.debugv("   {0}", ancestor);

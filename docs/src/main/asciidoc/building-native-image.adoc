@@ -379,7 +379,7 @@ It is also possible to re-run the tests against a native executable that has alr
 If the process cannot find the native image for some reason, or you want to test a native image that is no longer in the
 target directory you can specify the executable with the `-Dnative.image.path=` system property.
 
-[#container-runtime]
+[[container-runtime]]
 == Creating a Linux executable without GraalVM installed
 
 IMPORTANT: Before going further, be sure to have a working container runtime (Docker, podman) environment. If you use Docker
@@ -415,7 +415,7 @@ These are regular Quarkus config properties, so if you always want to build in a
 it is recommended you add these to your `application.properties` in order to avoid specifying them every time.
 ====
 
-[#tip-quarkus-native-remote-container-build]
+[[tip-quarkus-native-remote-container-build]]
 [TIP]
 ====
 If you see the following invalid path error for your application JAR when trying to create a native executable using a container build, even though your JAR was built successfully, you're most likely using a remote daemon for your container runtime.
@@ -548,7 +548,7 @@ CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 The UBI minimal image is bigger than the micro one mentioned above.
 It contains more utilities such as the `microdnf` package manager.
 
-[#multistage-docker]
+[[multistage-docker]]
 === Using a multi-stage Docker build
 
 The previous section showed you how to build a native executable using Maven or Gradle, but it requires you to have created the native executable first.

@@ -123,7 +123,7 @@ including the Elasticsearch schema and the content of indexes.
 If that's not what you want -- and if your tests write to the indexes, that's probably not what you want --
 consider reinitializing your schema and data on application startup.
 If you use Hibernate Search,
-xref:hibernate-search-orm-elasticsearch.adoc#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.schema-management.strategy[Hibernate Search's schema management]
+xref:hibernate-search-orm-elasticsearch.adoc#quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-schema-management-strategy[Hibernate Search's schema management]
 may help with that.
 ====
 
@@ -138,7 +138,7 @@ In that case, you will need to stop and remove these containers manually.
 If you want to reuse containers for some Quarkus applications but not all of them,
 or some Dev Services but not all of them,
 you can disable this feature for a specific Dev Service by setting the configuration property
-xref:elasticsearch-dev-services.adoc#quarkus-elasticsearch-devservices-elasticsearch-dev-services-build-time-config_quarkus.elasticsearch.devservices.reuse[`quarkus.elasticsearch.devservices.reuse`]
+xref:elasticsearch-dev-services.adoc#quarkus-elasticsearch-devservices-elasticsearch-dev-services-build-time-config_quarkus-elasticsearch-devservices-reuse[`quarkus.elasticsearch.devservices.reuse`]
 to `false`.
 
 == Current limitations

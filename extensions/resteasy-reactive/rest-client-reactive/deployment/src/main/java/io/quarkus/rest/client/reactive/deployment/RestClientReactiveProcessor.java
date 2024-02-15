@@ -60,6 +60,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.interceptors.ClientGZIPDecodingInterceptor;
 import org.jboss.resteasy.reactive.client.spi.MissingMessageBodyReaderErrorMessageContextualizer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
@@ -179,8 +180,8 @@ class RestClientReactiveProcessor {
     }
 
     @BuildStep
-    UnremovableBeanBuildItem makeConfigUnremovable() {
-        return UnremovableBeanBuildItem.beanTypes(RestClientsConfig.class);
+    UnremovableBeanBuildItem unremovableBeans() {
+        return UnremovableBeanBuildItem.beanTypes(RestClientsConfig.class, ClientLogger.class);
     }
 
     @BuildStep

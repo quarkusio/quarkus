@@ -44,9 +44,9 @@ jobs:
         run: git config --global core.autocrlf false
         if: startsWith(matrix.os, 'windows')
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17

@@ -3,6 +3,7 @@ package io.quarkus.jaxb.deployment;
 import java.io.IOError;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.annotation.XmlAccessOrder;
+import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAnyAttribute;
 import jakarta.xml.bind.annotation.XmlAnyElement;
@@ -49,8 +51,11 @@ import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapters;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
@@ -70,6 +75,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -123,6 +129,8 @@ public class JaxbProcessor {
     private static final DotName XML_JAVA_TYPE_ADAPTER = DotName.createSimple(XmlJavaTypeAdapter.class.getName());
     private static final DotName XML_ANY_ELEMENT = DotName.createSimple(XmlAnyElement.class.getName());
     private static final DotName XML_SEE_ALSO = DotName.createSimple(XmlSeeAlso.class.getName());
+    private static final DotName XML_TRANSIENT = DotName.createSimple(XmlTransient.class.getName());
+    private static final DotName XML_ACCESSOR_TYPE = DotName.createSimple(XmlAccessorType.class.getName());
 
     private static final List<DotName> JAXB_ROOT_ANNOTATIONS = List.of(XML_ROOT_ELEMENT, XML_TYPE, XML_REGISTRY);
 
@@ -186,6 +194,7 @@ public class JaxbProcessor {
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinitions,
             CombinedIndexBuildItem combinedIndexBuildItem,
             List<JaxbFileRootBuildItem> fileRoots,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
@@ -202,10 +211,11 @@ public class JaxbProcessor {
         for (DotName jaxbRootAnnotation : JAXB_ROOT_ANNOTATIONS) {
             for (AnnotationInstance jaxbRootAnnotationInstance : index
                     .getAnnotations(jaxbRootAnnotation)) {
-                if (jaxbRootAnnotationInstance.target().kind() == Kind.CLASS) {
-                    String className = jaxbRootAnnotationInstance.target().asClass().name().toString();
-                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
-                    classesToBeBound.add(className);
+                if (jaxbRootAnnotationInstance.target().kind() == Kind.CLASS
+                        && !JAXB_ANNOTATIONS.contains(jaxbRootAnnotationInstance.target().asClass().getClass())) {
+                    ClassInfo targetClassInfo = jaxbRootAnnotationInstance.target().asClass();
+                    addReflectiveHierarchyClass(targetClassInfo, reflectiveHierarchies, index);
+                    classesToBeBound.add(targetClassInfo.name().toString());
                     jaxbRootAnnotationsDetected = true;
                 }
             }
@@ -412,6 +422,22 @@ public class JaxbProcessor {
         }
     }
 
+    private void addReflectiveHierarchyClass(ClassInfo classInfo,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
+            IndexView index) {
+        Type jandexType = Type.create(classInfo.name(), Type.Kind.CLASS);
+
+        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                .type(jandexType)
+                .index(index)
+                .ignoreTypePredicate(t -> ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(t)
+                        || IGNORE_TYPES.contains(t))
+                .ignoreFieldPredicate(JaxbProcessor::isFieldIgnored)
+                .ignoreMethodPredicate(JaxbProcessor::isMethodIgnored)
+                .source(getClass().getSimpleName() + " > " + jandexType.name().toString())
+                .build());
+    }
+
     private void addReflectiveClass(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, boolean methods, boolean fields,
             String... className) {
         reflectiveClass.produce(new ReflectiveClassBuildItem(methods, fields, className));
@@ -421,4 +447,92 @@ public class JaxbProcessor {
         resourceBundle.produce(new NativeImageResourceBundleBuildItem(bundle));
     }
 
+    private static boolean isFieldIgnored(FieldInfo fieldInfo) {
+        // see JakartaXmlBindingAnnotationIntrospector#isVisible(AnnotatedField f)
+        // and XmlAccessType
+        if (fieldInfo.hasAnnotation(XML_TRANSIENT)) {
+            return true;
+        }
+        if (Modifier.isStatic(fieldInfo.flags())) {
+            return true;
+        }
+
+        for (Class<? extends Annotation> jaxbAnnotation : JAXB_ANNOTATIONS) {
+            if (fieldInfo.hasAnnotation(jaxbAnnotation)) {
+                return true;
+            }
+        }
+
+        ClassInfo declaringClass = fieldInfo.declaringClass();
+        XmlAccessType xmlAccessType = getXmlAccessType(declaringClass);
+        switch (xmlAccessType) {
+            case FIELD:
+                return false;
+            case PROPERTY:
+                return true;
+            case PUBLIC_MEMBER:
+                return !Modifier.isPublic(fieldInfo.flags());
+            case NONE:
+                return true;
+            default:
+                return true;
+        }
+    }
+
+    private static boolean isMethodIgnored(MethodInfo methodInfo) {
+        // see JakartaXmlBindingAnnotationIntrospector#isVisible(AnnotatedMethod m)
+        // and XmlAccessType
+        MethodInfo getterSetterCounterpart = getGetterSetterCounterPart(methodInfo);
+
+        if (methodInfo.hasAnnotation(XML_TRANSIENT) ||
+                (getterSetterCounterpart != null && getterSetterCounterpart.hasAnnotation(XML_TRANSIENT))) {
+            return true;
+        }
+        if (Modifier.isStatic(methodInfo.flags())) {
+            return true;
+        }
+
+        // if method has a JAXB annotation, we consider it
+        for (Class<? extends Annotation> jaxbAnnotation : JAXB_ANNOTATIONS) {
+            if (methodInfo.hasAnnotation(jaxbAnnotation)) {
+                return false;
+            }
+        }
+
+        ClassInfo declaringClass = methodInfo.declaringClass();
+        XmlAccessType xmlAccessType = getXmlAccessType(declaringClass);
+        switch (xmlAccessType) {
+            case FIELD:
+                return true;
+            case PROPERTY:
+            case PUBLIC_MEMBER:
+                return !Modifier.isPublic(methodInfo.flags());
+            case NONE:
+                return true;
+            default:
+                return true;
+        }
+    }
+
+    private static MethodInfo getGetterSetterCounterPart(MethodInfo methodInfo) {
+        if (!methodInfo.name().startsWith("get") || methodInfo.parametersCount() > 0) {
+            return null;
+        }
+
+        return methodInfo.declaringClass().method(methodInfo.name().replaceFirst("get", "set"), methodInfo.returnType());
+    }
+
+    private static XmlAccessType getXmlAccessType(ClassInfo classInfo) {
+        AnnotationInstance xmlAccessorTypeAi = classInfo.annotation(XML_ACCESSOR_TYPE);
+        if (xmlAccessorTypeAi == null) {
+            return XmlAccessType.PUBLIC_MEMBER;
+        }
+
+        AnnotationValue xmlAccessorType = xmlAccessorTypeAi.value();
+        if (xmlAccessorType == null) {
+            return XmlAccessType.PUBLIC_MEMBER;
+        }
+
+        return XmlAccessType.valueOf(xmlAccessorTypeAi.value().asEnum());
+    }
 }

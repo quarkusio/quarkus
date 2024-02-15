@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -100,7 +101,16 @@ public class VertxCoreRecorder {
     public Supplier<Vertx> configureVertx(VertxConfiguration config, ThreadPoolConfig threadPoolConfig,
             LaunchMode launchMode, ShutdownContext shutdown, List<Consumer<VertxOptions>> customizers,
             ExecutorService executorProxy) {
-        QuarkusExecutorFactory.sharedExecutor = executorProxy;
+        if (launchMode == LaunchMode.NORMAL) {
+            // In prod mode, we wrap the ExecutorService and the shutdown() and shutdownNow() are deliberately not delegated
+            // This is a workaround to solve the problem described in https://github.com/quarkusio/quarkus/issues/16833#issuecomment-1917042589
+            // The Vertx instance is closed before io.quarkus.runtime.ExecutorRecorder.createShutdownTask() is used
+            // And when it's closed the underlying worker thread pool (which is in the prod mode backed by the ExecutorBuildItem) is closed as well
+            // As a result the quarkus.thread-pool.shutdown-interrupt config property and logic defined in ExecutorRecorder.createShutdownTask() is completely ignored
+            QuarkusExecutorFactory.sharedExecutor = new NoopShutdownExecutorService(executorProxy);
+        } else {
+            QuarkusExecutorFactory.sharedExecutor = executorProxy;
+        }
         if (launchMode != LaunchMode.DEVELOPMENT) {
             vertx = new VertxSupplier(launchMode, config, customizers, threadPoolConfig, shutdown);
             // we need this to be part of the last shutdown tasks because closing it early (basically before Arc)
@@ -555,7 +565,10 @@ public class VertxCoreRecorder {
         thread.setContextClassLoader(cl);
     }
 
-    public ContextHandler<Object> executionContextHandler() {
+    public ContextHandler<Object> executionContextHandler(boolean customizeArcContext) {
+        VertxCurrentContextFactory currentContextFactory = customizeArcContext
+                ? (VertxCurrentContextFactory) Arc.container().getCurrentContextFactory()
+                : null;
         return new ContextHandler<Object>() {
             @Override
             public Object captureContext() {
@@ -565,17 +578,21 @@ public class VertxCoreRecorder {
             @Override
             public void runWith(Runnable task, Object context) {
                 ContextInternal currentContext = (ContextInternal) Vertx.currentContext();
+                // Only do context handling if it's non-null
                 if (context != null && context != currentContext) {
-                    // Only do context handling if it's non-null
                     ContextInternal vertxContext = (ContextInternal) context;
-                    // The CDI request context must not be propagated
-                    ConcurrentMap<Object, Object> local = vertxContext.localContextData();
-                    if (local.containsKey(VertxCurrentContextFactory.LOCAL_KEY)) {
-                        // Duplicate the context, copy the data, remove the request context
-                        vertxContext = vertxContext.duplicate();
-                        vertxContext.localContextData().putAll(local);
-                        vertxContext.localContextData().remove(VertxCurrentContextFactory.LOCAL_KEY);
-                        VertxContextSafetyToggle.setContextSafe(vertxContext, true);
+                    // The CDI contexts must not be propagated
+                    // First test if VertxCurrentContextFactory is actually used
+                    if (currentContextFactory != null) {
+                        List<String> keys = currentContextFactory.keys();
+                        ConcurrentMap<Object, Object> local = vertxContext.localContextData();
+                        if (containsScopeKey(keys, local)) {
+                            // Duplicate the context, copy the data, remove the request context
+                            vertxContext = vertxContext.duplicate();
+                            vertxContext.localContextData().putAll(local);
+                            keys.forEach(vertxContext.localContextData()::remove);
+                            VertxContextSafetyToggle.setContextSafe(vertxContext, true);
+                        }
                     }
                     vertxContext.beginDispatch();
                     try {
@@ -586,6 +603,23 @@ public class VertxCoreRecorder {
                 } else {
                     task.run();
                 }
+            }
+
+            private boolean containsScopeKey(List<String> keys, Map<Object, Object> localContextData) {
+                if (keys.isEmpty()) {
+                    return false;
+                }
+                if (keys.size() == 1) {
+                    // Very often there will be only one key used
+                    return localContextData.containsKey(keys.get(0));
+                } else {
+                    for (String key : keys) {
+                        if (localContextData.containsKey(key)) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
             }
         };
     }

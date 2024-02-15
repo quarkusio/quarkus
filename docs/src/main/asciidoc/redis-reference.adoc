@@ -87,7 +87,8 @@ To help you select the suitable API for you, here are some recommendations:
 * If you have existing Vert.x code, use `io.vertx.redis.client.RedisAPI`
 * If you need to emit custom commands, you can either use the data sources (reactive or imperative) or the `io.vertx.mutiny.redis.client.Redis`.
 
-== Inject the default and named clients
+[[default-and-named-clients]]
+== [[inject-the-default-and-named-clients]] Inject the default and named clients
 
 This extension lets you configure a _default_ Redis client/data sources or _named_ ones.
 The latter is essential when you need to connect to multiple Redis instances.
@@ -172,9 +173,15 @@ quarkus.redis.hosts=redis://localhost:5000,redis://localhost:5001,redis://localh
 quarkus.redis.client-type=sentinel
 
 # Optional
-quarkus.redis.master-name=my-sentinel # Default is my-master
+quarkus.redis.master-name=my-sentinel # Default is mymaster
 quarkus.redis.role=master # master is the default
 ----
+
+The host URLs here must be the sentinel servers.
+The client will obtain the URLs of actual Redis servers (master or replicas, depending on `role`) from one of the sentinels, using the `master-name` as an identifier of the "master set".
+
+Note that you practically never want to configure `quarkus.redis.role=sentinel`.
+This setting means that the Redis client will execute commands directly on one of the sentinel servers, instead of an actual Redis server guarded by the sentinels.
 
 === Use the Cluster Mode
 
@@ -186,6 +193,10 @@ quarkus.redis.hosts=redis://localhost:7000,redis://localhost:7001,redis://localh
 quarkus.redis.client-type=cluster
 quarkus.redis.replicas=share
 ----
+
+The host URLs here must be some of the cluster members.
+Not all cluster members need to be configured, as the client will obtain a full cluster topology from one of the known servers.
+However, it is advisable to configure at least 2 or 3 nodes, not just 1.
 
 === Use the replication Mode
 

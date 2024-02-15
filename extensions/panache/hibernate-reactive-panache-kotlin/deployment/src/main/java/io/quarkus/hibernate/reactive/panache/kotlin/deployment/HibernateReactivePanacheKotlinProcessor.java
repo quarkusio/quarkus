@@ -22,7 +22,6 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
-import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -41,7 +40,6 @@ import io.quarkus.panache.common.deployment.TypeBundle;
 
 public class HibernateReactivePanacheKotlinProcessor {
 
-    private static final String META_INF_PANACHE_ARCHIVE_MARKER = "META-INF/panache-archive.marker";
     private static final DotName DOTNAME_REACTIVE_SESSION = DotName.createSimple(Mutiny.Session.class.getName());
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
     private static final TypeBundle TYPE_BUNDLE = ReactiveKotlinJpaTypeBundle.BUNDLE;
@@ -61,11 +59,6 @@ public class HibernateReactivePanacheKotlinProcessor {
     @BuildStep
     public UnremovableBeanBuildItem ensureBeanLookupAvailable() {
         return UnremovableBeanBuildItem.beanTypes(DOTNAME_REACTIVE_SESSION);
-    }
-
-    @BuildStep
-    public AdditionalApplicationArchiveMarkerBuildItem marker() {
-        return new AdditionalApplicationArchiveMarkerBuildItem(META_INF_PANACHE_ARCHIVE_MARKER);
     }
 
     @BuildStep

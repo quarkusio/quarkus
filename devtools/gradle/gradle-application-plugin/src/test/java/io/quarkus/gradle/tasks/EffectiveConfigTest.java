@@ -12,6 +12,7 @@ import java.util.Set;
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -47,6 +48,15 @@ public class EffectiveConfigTest {
         EffectiveConfig effectiveConfig = EffectiveConfig.builder().withTaskProperties(Map.of("quarkus.foo", "bar")).build();
 
         soft.assertThat(effectiveConfig.configMap()).containsEntry("quarkus.foo", "bar");
+    }
+
+    @Test
+    @Disabled("To be fixed via https://github.com/quarkusio/quarkus/issues/38007")
+    void crypto() {
+        EffectiveConfig effectiveConfig = EffectiveConfig.builder()
+                .withTaskProperties(Map.of("quarkus.foo", "${aes-gcm-nopadding::superSecret}")).build();
+
+        soft.assertThat(effectiveConfig.configMap()).containsEntry("quarkus.foo", "superSecret");
     }
 
     @Test

@@ -180,7 +180,7 @@ class CacheProcessor {
         cacheNames.produce(new CacheNamesBuildItem(names));
 
         if (!keyGenerators.isEmpty()) {
-            throwables.addAll(validateKeyGeneratorsDefaultConstructor(combinedIndex, beanDiscoveryFinished, keyGenerators));
+            throwables.addAll(validateKeyGenerators(combinedIndex, beanDiscoveryFinished, keyGenerators));
         }
 
         validationErrors.produce(new ValidationErrorBuildItem(throwables.toArray(new Throwable[0])));
@@ -226,21 +226,25 @@ class CacheProcessor {
         return Optional.empty();
     }
 
-    // Key generators must have a default constructor if they are not managed by Arc.
-    private List<Throwable> validateKeyGeneratorsDefaultConstructor(CombinedIndexBuildItem combinedIndex,
+    private List<Throwable> validateKeyGenerators(CombinedIndexBuildItem combinedIndex,
             BeanDiscoveryFinishedBuildItem beanDiscoveryFinished, Set<DotName> keyGenerators) {
-        List<DotName> managedBeans = beanDiscoveryFinished.getBeans()
-                .stream()
-                .filter(BeanInfo::isClassBean)
-                .map(BeanInfo::getBeanClass)
-                .collect(toList());
         List<Throwable> throwables = new ArrayList<>();
         for (DotName keyGenClassName : keyGenerators) {
-            if (!managedBeans.contains(keyGenClassName)) {
+            List<BeanInfo> beans = beanDiscoveryFinished.beanStream().withBeanType(keyGenClassName).collect();
+            if (beans.isEmpty()) {
+                // Key generators must have a default constructor if they are not CDI beans
                 ClassInfo keyGenClassInfo = combinedIndex.getIndex().getClassByName(keyGenClassName);
-                if (!keyGenClassInfo.hasNoArgsConstructor()) {
+                if (keyGenClassInfo == null) {
+                    throwables.add(new IllegalStateException(
+                            "Unable to find the key generator class in the index:" + keyGenClassName));
+                } else if (!keyGenClassInfo.hasNoArgsConstructor()) {
                     throwables.add(new KeyGeneratorConstructorException(keyGenClassInfo));
                 }
+            } else if (beans.size() > 1) {
+                String message = String.format(
+                        "There must be exactly one bean that matches the key generator class: \"%s\"\n\t- beans: %s",
+                        keyGenClassName, beans);
+                throwables.add(new IllegalStateException(message));
             }
         }
         return throwables;

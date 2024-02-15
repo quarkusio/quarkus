@@ -10,9 +10,9 @@ import java.util.stream.Collectors;
 import io.quarkus.cli.BuildToolContext;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "openshift", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image using Openshift.", description = "%n"
+@CommandLine.Command(name = "openshift", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "Build a container image using OpenShift.", description = "%n"
         + "This command will build or push a container image for the project, using Openshift.", footer = "%n"
-                + "For example (using default values), it will create a container image in Openshift using the docker build strategy with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>'.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+                + "For example (using default values), it will create a container image in OpenShift using the docker build strategy with REPOSITORY='${user.name}/<project.artifactId>' and TAG='<project.version>'.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
 public class Openshift extends BaseImageSubCommand implements Callable<Integer> {
 
     private static final String OPENSHIFT = "openshift";

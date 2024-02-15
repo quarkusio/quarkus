@@ -18,6 +18,7 @@ import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.commons.util.Version;
 import org.infinispan.server.test.core.InfinispanContainer;
 import org.jboss.logging.Logger;
+import org.testcontainers.containers.BindMode;
 
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
@@ -272,10 +273,16 @@ public class InfinispanDevServiceProcessor {
             }
             withUser(DEFAULT_USERNAME);
             withPassword(InfinispanDevServiceProcessor.DEFAULT_PASSWORD);
-            String command = "";
+            String command = "-c infinispan.xml";
             if (config.site.isPresent()) {
                 command = "-c infinispan-xsite.xml -Dinfinispan.site.name=" + config.site.get();
             }
+            command = command + config.configFiles.map(files -> files.stream().map(file -> {
+                String userConfigFile = "/user-config/" + file;
+                withClasspathResourceMapping(file, userConfigFile, BindMode.READ_ONLY);
+                return " -c " + userConfigFile;
+            }).collect(Collectors.joining())).orElse("");
+
             if (config.mcastPort.isPresent()) {
                 command = command + " -Djgroups.mcast_port=" + config.mcastPort.getAsInt();
             }
@@ -284,10 +291,10 @@ public class InfinispanDevServiceProcessor {
                 command = command + " -Dotel.exporter.otlp.endpoint=" + config.exporterOtlpEndpoint.get();
                 command = command + " -Dotel.service.name=infinispan-server-service -Dotel.metrics.exporter=none";
             }
-            if (!command.isEmpty()) {
-                withCommand(command);
-            }
+
             config.artifacts.ifPresent(a -> withArtifacts(a.toArray(new String[0])));
+
+            withCommand(command);
         }
 
         @Override

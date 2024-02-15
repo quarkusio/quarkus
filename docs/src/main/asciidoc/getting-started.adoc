@@ -429,7 +429,7 @@ As a result, most of the Quarkus extensions will not work properly if this build
 This index is created by default on the project on which Quarkus is configured for, thanks to our Maven and Gradle plugins.
 
 However, when working with a multi-module project, be sure to read the `Working with multi-module projects` section of the
-xref:maven-tooling.adoc#multi-module-maven[Maven] or xref:gradle-tooling.adoc#multi-module-maven[Gradle] guides.
+xref:maven-tooling.adoc#multi-module-maven[Maven] or xref:gradle-tooling.adoc#multi-module-gradle[Gradle] guides.
 
 If you plan to use external modules (for example, an external library for all your domain objects),
 you will need to make these modules known to the indexing process either by adding the Jandex plugin (if you can modify them)
@@ -456,7 +456,7 @@ NOTE: If you want to deploy your application somewhere (typically in a container
 
 NOTE: Before running the application, don't forget to stop the hot reload mode (hit `CTRL+C`), or you will have a port conflict.
 
-[#banner]
+[[banner]]
 == Configuring the banner
 
 By default, when a Quarkus application starts (in regular or dev mode), it will display an ASCII art banner. The banner can be disabled by setting `quarkus.banner.enabled=false` in `application.properties`,

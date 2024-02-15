@@ -36,7 +36,7 @@ public @interface TestConfigProperty {
     String value();
 
     @Retention(RUNTIME)
-    @Target(TYPE)
+    @Target({ TYPE, METHOD })
     @interface TestConfigProperties {
 
         TestConfigProperty[] value();

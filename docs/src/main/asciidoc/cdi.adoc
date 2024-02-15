@@ -520,7 +520,7 @@ TIP: For more info about events/observers visit https://docs.jboss.org/weld/refe
 
 In this guide, we've covered some basic topics of the Quarkus programming model that is based on the https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html[Jakarta Contexts and Dependency Injection 4.0, window="_blank"] specification.
 Quarkus implements the CDI Lite specification, but not CDI Full.
-See also <<cdi-reference.adoc#supported_features,the list of supported features>> and <<cdi-reference.adoc#limitations,the list of limitations>>.
+See also <<cdi-reference.adoc#supported_features_and_limitations,the list of supported features and limitations>>.
 There are also quite a few <<cdi-reference#nonstandard_features,non-standard features>> and <<cdi-reference.adoc#build_time_apis,Quarkus-specific APIs>>.
 
 TIP: If you wish to learn more about Quarkus-specific features and limitations there is a Quarkus xref:cdi-reference.adoc[CDI Reference Guide].

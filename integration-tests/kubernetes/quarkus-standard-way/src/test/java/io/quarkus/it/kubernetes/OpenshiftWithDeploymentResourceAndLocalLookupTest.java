@@ -71,6 +71,9 @@ public class OpenshiftWithDeploymentResourceAndLocalLookupTest {
 
                 assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
+                        assertThat(t.getMetadata()).satisfies(metadata -> assertThat(metadata.getAnnotations()).contains(
+                                entry("alpha.image.policy.openshift.io/resolve-names", "*")));
+
                         assertThat(t.getMetadata()).satisfies(metadata -> assertThat(metadata.getLabels()).containsAnyOf(
                                 entry("app.kubernetes.io/name", NAME),
                                 entry("app.kubernetes.io/version", "0.1-SNAPSHOT")));

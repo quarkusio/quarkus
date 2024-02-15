@@ -42,7 +42,7 @@ public final class RepositorySupport {
     }
 
     public static Object getOne(AbstractJpaOperations<PanacheQuery<?>> operations, Class<?> entityClass, Object id) {
-        return operations.getEntityManager().getReference(entityClass, id);
+        return operations.getEntityManager(entityClass).getReference(entityClass, id);
     }
 
     public static void clear(Class<?> clazz) {

@@ -928,4 +928,4 @@ As usual, along the path Quarkus simplifies things under the hood (Maven Mojo, b
 == Further reading
 
 - xref:writing-extensions.adoc[Writing your own extension] for the full documentation.
-- xref:dev-ui-v2.adoc[Quarkus Dev UI] to learn how to support the Dev UI in your extension
+- xref:dev-ui.adoc[Quarkus Dev UI] to learn how to support the Dev UI in your extension

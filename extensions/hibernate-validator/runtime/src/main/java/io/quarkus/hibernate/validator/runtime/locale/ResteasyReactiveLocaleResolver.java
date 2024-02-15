@@ -1,11 +1,12 @@
 package io.quarkus.hibernate.validator.runtime.locale;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+
+import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
@@ -31,7 +32,7 @@ public class ResteasyReactiveLocaleResolver extends AbstractLocaleResolver {
         }
         RoutingContext current = currentVertxRequest.getCurrent();
         if (current != null) {
-            Map<String, List<String>> result = new HashMap<>();
+            Map<String, List<String>> result = new CaseInsensitiveMap();
             MultiMap headers = current.request().headers();
             for (String name : headers.names()) {
                 result.put(name, headers.getAll(name));

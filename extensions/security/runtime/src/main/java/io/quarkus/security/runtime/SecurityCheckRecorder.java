@@ -351,4 +351,8 @@ public class SecurityCheckRecorder {
             throw new RuntimeException("Unable to load class '" + className + "' for creating permission", e);
         }
     }
+
+    public void registerDefaultSecurityCheck(RuntimeValue<SecurityCheckStorageBuilder> builder, SecurityCheck securityCheck) {
+        builder.getValue().registerDefaultSecurityCheck(securityCheck);
+    }
 }

@@ -659,7 +659,7 @@ which is why we provide Quarkus with this connection info in the `prod` profile 
 Because we rely on <<dev-services,Dev Services>>, the database and Elasticsearch schema
 will automatically be dropped and re-created on each application startup
 in tests and dev mode
-(unless link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.schema-management.strategy[`quarkus.hibernate-search-orm.schema-management.strategy`] is set explicitly).
+(unless <<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-schema-management-strategy,`quarkus.hibernate-search-orm.schema-management.strategy`>> is set explicitly).
 
 If for some reason you cannot use Dev Services,
 you will have to set the following properties to get similar behavior:
@@ -672,7 +672,7 @@ you will have to set the following properties to get similar behavior:
 %test.quarkus.hibernate-search-orm.schema-management.strategy=drop-and-create
 ----
 
-See also link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.schema-management.strategy[`quarkus.hibernate-search-orm.schema-management.strategy`].
+See also <<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-schema-management-strategy,`quarkus.hibernate-search-orm.schema-management.strategy`>>.
 ====
 
 
@@ -759,7 +759,7 @@ as shown below.
 
 [source,properties]
 ----
-quarkus.hibernate-search-orm.elasticsearch.version=opensearch:1.2
+quarkus.hibernate-search-orm.elasticsearch.version=opensearch:2.11
 ----
 
 All other configuration options and APIs are exactly the same as with Elasticsearch.
@@ -898,10 +898,10 @@ this could cause a startup failure.
 To address this, you can configure Hibernate Search to not send any request on startup:
 
 * Disable Elasticsearch version checks on startup by setting the configuration property
-  link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.elasticsearch.version-check.enabled[`quarkus.hibernate-search-orm.elasticsearch.version-check.enabled`]
+  <<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-elasticsearch-version-check-enabled,`quarkus.hibernate-search-orm.elasticsearch.version-check.enabled`>>
   to `false`.
 * Disable schema management on startup by setting the configuration property
-  link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.schema-management.strategy[`quarkus.hibernate-search-orm.schema-management.strategy`]
+  <<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-schema-management-strategy,`quarkus.hibernate-search-orm.schema-management.strategy`>>
   to `none`.
 
 Of course, even with this configuration, Hibernate Search still won't be able to index anything or run search queries
@@ -948,7 +948,7 @@ To enable the `outbox-polling` coordination strategy, an additional extension is
 include::{includes}/devtools/extension-add.adoc[]
 
 Once the extension is there, you will need to explicitly select the `outbox-polling` strategy
-by setting link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.coordination.strategy[`quarkus.hibernate-search-orm.coordination.strategy`]
+by setting <<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-coordination-strategy,`quarkus.hibernate-search-orm.coordination.strategy`>>
 to `outbox-polling`.
 
 Finally, you will need to make sure that the Hibernate ORM entities added by Hibernate Search
@@ -965,16 +965,16 @@ link:{hibernate-search-docs-url}#coordination-outbox-polling-schema[manually alt
 The database schema Hibernate Search will expect for outbox-polling coordination
 may be customized through the following configuration properties:
 
-* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.agent.catalog[`quarkus.hibernate-search-orm.coordination.entity-mapping.agent.catalog`]
-* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.agent.schema[`quarkus.hibernate-search-orm.coordination.entity-mapping.agent.schema`]
-* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.agent.table[`quarkus.hibernate-search-orm.coordination.entity-mapping.agent.table`]
-* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.agent.uuid-gen-strategy[`quarkus.hibernate-search-orm.coordination.entity-mapping.agent.uuid-gen-strategy`]
-* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.agent.uuid-type[`quarkus.hibernate-search-orm.coordination.entity-mapping.agent.uuid-type`]
-* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.catalog[`quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.catalog`]
-* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.schema[`quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.schema`]
-* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.table[`quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.table`]
-* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.uuid-gen-strategy[`quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.uuid-gen-strategy`]
-* link:#quarkus-hibernate-search-orm-outboxpolling_quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.uuid-type[`quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.uuid-type`]
+* <<quarkus-hibernate-search-orm-outboxpolling_quarkus-hibernate-search-orm-coordination-entity-mapping-agent-catalog,`quarkus.hibernate-search-orm.coordination.entity-mapping.agent.catalog`>>
+* <<quarkus-hibernate-search-orm-outboxpolling_quarkus-hibernate-search-orm-coordination-entity-mapping-agent-schema,`quarkus.hibernate-search-orm.coordination.entity-mapping.agent.schema`>>
+* <<quarkus-hibernate-search-orm-outboxpolling_quarkus-hibernate-search-orm-coordination-entity-mapping-agent-table,`quarkus.hibernate-search-orm.coordination.entity-mapping.agent.table`>>
+* <<quarkus-hibernate-search-orm-outboxpolling_quarkus-hibernate-search-orm-coordination-entity-mapping-agent-uuid-gen-strategy,`quarkus.hibernate-search-orm.coordination.entity-mapping.agent.uuid-gen-strategy`>>
+* <<quarkus-hibernate-search-orm-outboxpolling_quarkus-hibernate-search-orm-coordination-entity-mapping-agent-uuid-type,`quarkus.hibernate-search-orm.coordination.entity-mapping.agent.uuid-type`>>
+* <<quarkus-hibernate-search-orm-outboxpolling_quarkus-hibernate-search-orm-coordination-entity-mapping-outbox-event-catalog,`quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.catalog`>>
+* <<quarkus-hibernate-search-orm-outboxpolling_quarkus-hibernate-search-orm-coordination-entity-mapping-outbox-event-schema,`quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.schema`>>
+* <<quarkus-hibernate-search-orm-outboxpolling_quarkus-hibernate-search-orm-coordination-entity-mapping-outbox-event-table,`quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.table`>>
+* <<quarkus-hibernate-search-orm-outboxpolling_quarkus-hibernate-search-orm-coordination-entity-mapping-outbox-event-uuid-gen-strategy,`quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.uuid-gen-strategy`>>
+* <<quarkus-hibernate-search-orm-outboxpolling_quarkus-hibernate-search-orm-coordination-entity-mapping-outbox-event-uuid-type,`quarkus.hibernate-search-orm.coordination.entity-mapping.outbox-event.uuid-type`>>
 
 ====
 
@@ -992,7 +992,7 @@ However, there is one key difference: index updates are necessarily asynchronous
 they are guaranteed to happen _eventually_, but not immediately.
 
 This means in particular that the configuration property
-link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy[`quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy`]
+<<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-indexing-plan-synchronization-strategy,`quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy`>>
 cannot be set when using the `outbox-polling` coordination strategy:
 Hibernate Search will always behave as if this property was set to `write-sync` (the default).
 
@@ -1164,7 +1164,7 @@ For example `class:com.mycompany.MyClass`.
 * An arbitrary string referencing a built-in implementation.
 Available values are detailed in the documentation of each configuration property,
 such as `async`/`read-sync`/`write-sync`/`sync` for
-<<quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy,`quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy`>>.
+<<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-indexing-plan-synchronization-strategy,`quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy`>>.
 
 Other formats are also accepted, but are only useful for advanced use cases.
 See link:{hibernate-search-docs-url}#configuration-bean-reference-parsing[this section of Hibernate Search's reference documentation]

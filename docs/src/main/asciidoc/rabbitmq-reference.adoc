@@ -294,7 +294,7 @@ mp.messaging.outgoing.people.exchange.name=people
 mp.messaging.outgoing.people.exchange.declare=false
 ----
 
-[#blocking-processing]
+[[blocking-processing]]
 === Execution model and Blocking processing
 
 Reactive Messaging invokes your method on an I/O thread.

@@ -31,6 +31,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.resteasy.reactive.common.deployment.JaxRsResourceIndexBuildItem;
+import io.quarkus.resteasy.reactive.links.RestLinkId;
 import io.quarkus.resteasy.reactive.links.runtime.GetterAccessorsContainer;
 import io.quarkus.resteasy.reactive.links.runtime.GetterAccessorsContainerRecorder;
 import io.quarkus.resteasy.reactive.links.runtime.LinkInfo;
@@ -150,35 +151,7 @@ final class LinksProcessor {
                 validateClassHasFieldId(index, entityType);
 
                 for (String parameterName : linkInfo.getPathParameters()) {
-                    FieldInfoSupplier byParamName = new FieldInfoSupplier(c -> c.field(parameterName), className, index);
-
-                    // We implement a getter inside a class that has the required field.
-                    // We later map that getter's accessor with an entity type.
-                    // If a field is inside a parent class, the getter accessor will be mapped to each subclass which
-                    // has REST links that need access to that field.
-                    FieldInfo fieldInfo = byParamName.get();
-                    if ((fieldInfo == null) && parameterName.equals("id")) {
-                        // this is a special case where we want to go through the fields of the class
-                        // and see if any is annotated with any sort of @Id annotation
-                        // N.B. as this module does not depend on any other module that could supply this @Id annotation
-                        // (like Panache), we need this general lookup
-                        FieldInfoSupplier byIdAnnotation = new FieldInfoSupplier(
-                                c -> {
-                                    for (FieldInfo field : c.fields()) {
-                                        List<AnnotationInstance> annotationInstances = field.annotations();
-                                        for (AnnotationInstance annotationInstance : annotationInstances) {
-                                            if (annotationInstance.name().toString().endsWith("persistence.Id")) {
-                                                return field;
-                                            }
-                                        }
-                                    }
-                                    return null;
-                                },
-                                className,
-                                index);
-                        fieldInfo = byIdAnnotation.get();
-                    }
-
+                    FieldInfo fieldInfo = resolveField(index, parameterName, className);
                     if (fieldInfo != null) {
                         GetterMetadata getterMetadata = new GetterMetadata(fieldInfo);
                         if (!implementedGetters.contains(getterMetadata)) {
@@ -187,13 +160,60 @@ final class LinksProcessor {
                         }
 
                         getterAccessorsContainerRecorder.addAccessor(getterAccessorsContainer,
-                                entityType, getterMetadata.getFieldName(), getterMetadata.getGetterAccessorName());
+                                entityType, parameterName,
+                                getterMetadata.getGetterAccessorName());
                     }
                 }
             }
         }
 
         return getterAccessorsContainer;
+    }
+
+    private FieldInfo resolveField(IndexView index, String parameterName, DotName className) {
+        FieldInfoSupplier byParamName = new FieldInfoSupplier(c -> c.field(parameterName), className, index);
+
+        // check if we have field matching the name
+        FieldInfo fieldInfo = byParamName.get();
+        if (parameterName.equals("id")) {
+            // this is a special case where we want to go through the fields of the class
+            // and see if any is annotated with any sort of @persistence.Id/@RestLinkId annotation
+            // N.B. as this module does not depend on any other module that could supply this @Id annotation
+            // (like Panache), we need this general lookup
+            // the order of preference for the annotations is @RestLinkId > @persistence.Id > id
+            FieldInfoSupplier byAnnotation = new FieldInfoSupplier(
+                    c -> {
+                        FieldInfo persistenceId = null;
+                        for (FieldInfo field : c.fields()) {
+                            // prefer RestLinId over Id
+                            if (field.hasAnnotation(RestLinkId.class)) {
+                                return field;
+                            }
+                            // keep the first found @persistence.Id annotation in case not @RestLinkId is found
+                            if (fieldAnnotatedWith(field, "persistence.Id") && persistenceId == null) {
+                                persistenceId = field;
+                            }
+                        }
+                        return persistenceId;
+                    },
+                    className,
+                    index);
+            FieldInfo annotatedField = byAnnotation.get();
+            if (annotatedField != null) {
+                fieldInfo = annotatedField;
+            }
+        }
+        return fieldInfo;
+    }
+
+    private boolean fieldAnnotatedWith(FieldInfo field, String annotation) {
+        List<AnnotationInstance> annotationInstances = field.annotations();
+        for (AnnotationInstance annotationInstance : annotationInstances) {
+            if (annotationInstance.name().toString().endsWith(annotation)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -227,15 +247,26 @@ final class LinksProcessor {
                 .filter(a -> a.name().toString().endsWith("persistence.Id"))
                 .toList();
 
+        List<AnnotationInstance> fieldsAnnotatedWithRestLinkId = classInfo.fields().stream()
+                .flatMap(f -> f.annotations(RestLinkId.class).stream())
+                .toList();
+
+        // @RestLinkId annotation count > 1 is not allowed
+        if (fieldsAnnotatedWithRestLinkId.size() > 1) {
+            throw new IllegalStateException("Cannot generate web links for the class " + entityType +
+                    " because it has multiple fields annotated with `@RestLinkId`, where a maximum of one is allowed");
+        }
+
         // Id field found, break the loop
-        if (!fieldsNamedId.isEmpty() || !fieldsAnnotatedWithId.isEmpty())
+        if (!fieldsNamedId.isEmpty() || !fieldsAnnotatedWithId.isEmpty() || !fieldsAnnotatedWithRestLinkId.isEmpty()) {
             return;
+        }
 
         // Id field not found and hope is gone
         DotName superClassName = classInfo.superName();
         if (superClassName == null) {
             throw new IllegalStateException("Cannot generate web links for the class " + entityType +
-                    " because is either missing an `id` field or a field with an `@Id` annotation");
+                    " because it is either missing an `id` field, a field with an `@Id` annotation or a field with a `@RestLinkId annotation");
         }
 
         // Id field not found but there's still hope

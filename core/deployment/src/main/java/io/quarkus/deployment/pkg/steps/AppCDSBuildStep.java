@@ -75,28 +75,10 @@ public class AppCDSBuildStep {
             }
         }
 
-        boolean useArchiveClassesAtExit = compiledJavaVersion.getJavaVersion()
-                .isJava17OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE;
-
-        Path classesListPath = null;
-        if (!useArchiveClassesAtExit) {
-            classesListPath = createClassesList(jarResult, outputTarget, javaBinPath, containerImage,
-                    appCDsRequested.get().getAppCDSDir(), packageConfig.isFastJar());
-            if (classesListPath == null) {
-                return;
-            }
-            log.debugf("'%s' successfully created.", CLASSES_LIST_FILE_NAME);
-        }
-
         Path appCDSPath;
         log.info("Launching AppCDS creation process.");
-        if (useArchiveClassesAtExit) {
-            appCDSPath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
-                    packageConfig.isFastJar());
-        } else {
-            appCDSPath = createAppCDSFromClassesList(jarResult, outputTarget, javaBinPath, containerImage, classesListPath,
-                    packageConfig.isFastJar());
-        }
+        appCDSPath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
+                packageConfig.isFastJar());
 
         if (appCDSPath == null) {
             log.warn("Unable to create AppCDS.");
@@ -212,11 +194,18 @@ public class AppCDSBuildStep {
         command.add(outputTarget.getOutputDirectory().toAbsolutePath().toString() + ":" + CONTAINER_IMAGE_BASE_BUILD_DIR
                 + ":z");
         if (SystemUtils.IS_OS_LINUX) {
-            String uid = getLinuxID("-ur");
-            String gid = getLinuxID("-gr");
-            if (uid != null && gid != null && !uid.isEmpty() && !gid.isEmpty()) {
-                command.add("--user");
-                command.add(uid + ":" + gid);
+            if (containerRuntime.isDocker() && containerRuntime.isRootless()) {
+                Collections.addAll(command, "--user", String.valueOf(0));
+            } else {
+                String uid = getLinuxID("-ur");
+                String gid = getLinuxID("-gr");
+                if (uid != null && gid != null && !uid.isEmpty() && !gid.isEmpty()) {
+                    Collections.addAll(command, "--user", uid + ":" + gid);
+                    if (containerRuntime.isPodman() && containerRuntime.isRootless()) {
+                        // Needed to avoid AccessDeniedExceptions
+                        command.add("--userns=keep-id");
+                    }
+                }
             }
         }
         command.add("-w");

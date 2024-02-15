@@ -2,6 +2,7 @@ package io.quarkus.arc.test.contexts.request.optimized;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -14,6 +15,7 @@ import java.util.concurrent.TimeoutException;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 
@@ -58,7 +60,8 @@ public class RequestContextInstancesTest {
         InjectableContext appContext = container.getActiveContext(RequestScoped.class);
         // ContextInstances#removeEach()
         appContext.destroy();
-        assertNotEquals(id2, boom.ping());
+        // Request context was invalidated
+        assertThrows(ContextNotActiveException.class, () -> boom.ping());
 
         container.requestContext().terminate();
     }

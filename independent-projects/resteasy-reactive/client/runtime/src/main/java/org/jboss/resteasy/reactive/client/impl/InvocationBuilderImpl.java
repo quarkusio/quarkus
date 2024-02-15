@@ -1,7 +1,5 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.READ_TIMEOUT;
-
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Locale;
@@ -33,8 +31,6 @@ import io.vertx.core.http.HttpClient;
 
 public class InvocationBuilderImpl implements Invocation.Builder {
 
-    private static final long DEFAULT_READ_TIMEOUT = 30_000L;
-
     final URI uri;
     final HttpClient httpClient;
     final WebTargetImpl target;
@@ -44,7 +40,6 @@ public class InvocationBuilderImpl implements Invocation.Builder {
     final ClientImpl restClient;
     final HandlerChain handlerChain;
     final ThreadSetupAction requestContext;
-    final long readTimeoutMs;
 
     public InvocationBuilderImpl(URI uri, ClientImpl restClient, HttpClient httpClient,
             WebTargetImpl target,
@@ -57,12 +52,6 @@ public class InvocationBuilderImpl implements Invocation.Builder {
         this.configuration = configuration;
         this.handlerChain = handlerChain;
         this.requestContext = requestContext;
-        Object readTimeoutMs = configuration.getProperty(READ_TIMEOUT);
-        if (readTimeoutMs == null) {
-            this.readTimeoutMs = DEFAULT_READ_TIMEOUT;
-        } else {
-            this.readTimeoutMs = (long) readTimeoutMs;
-        }
     }
 
     @Override

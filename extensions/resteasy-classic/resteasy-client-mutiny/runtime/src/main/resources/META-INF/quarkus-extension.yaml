@@ -8,6 +8,7 @@ metadata:
   - "web-client"
   - "microprofile-rest-client"
   - "mutiny"
+  guide: "https://quarkus.io/guides/resteasy-client"
   categories:
   - "web"
   - "reactive"

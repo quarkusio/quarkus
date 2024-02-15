@@ -276,7 +276,7 @@ Instead, the attributes are specified by an extension.
 NOTE: Since the CDI container does not control the instantiation of a synthetic bean the dependency injection and other services (such as interceptors) are not supported.
 In other words, it's up to the extension to provide all required services to a synthetic bean instance.
 
-There are several ways to register a <<cdi-reference.adoc#synthetic_beans,synthetic bean>> in Quarkus.
+There are several ways to register a <<cdi-integration.adoc#synthetic_beans,synthetic bean>> in Quarkus.
 In this chapter, we will cover a use case that can be used to initialize extension beans in a safe manner (compared to <<bean_init>>).
 
 The `SyntheticBeanBuildItem` can be used to register a synthetic bean:
@@ -1594,7 +1594,7 @@ Instead, Quarkus extensions can make use of various xref:cdi-reference.adoc[Buil
 
 === Quarkus Dev UI
 
-You can make your extension support the xref:dev-ui-v2.adoc[Quarkus Dev UI] for a greater developer experience.
+You can make your extension support the xref:dev-ui.adoc[Quarkus Dev UI] for a greater developer experience.
 
 === Extension-defined endpoints
 
@@ -1641,7 +1641,7 @@ Given a default non-application endpoint root of `/q`, this will create an endpo
 Absolute paths also have an impact on nested endpoints. If the above called `nestedRoute("custom-endpoint", "/deep")`,
 the resulting endpoint will be found at `/deep`.
 
-Refer to the xref:all-config.adoc#quarkus-vertx-http_quarkus.http.non-application-root-path[Quarkus Vertx HTTP configuration reference]
+Refer to the xref:all-config.adoc#quarkus-vertx-http_quarkus-http-non-application-root-path[Quarkus Vertx HTTP configuration reference]
 for details on how the non-application root path is configured.
 
 === Extension Health Check
@@ -1952,7 +1952,7 @@ The JSON-B extension will then use the produced build item to register your seri
 
 If you need more customization capabilities than registering a serializer or a deserializer,
 you can produce a CDI bean that implements `io.quarkus.jsonb.JsonbConfigCustomizer` via an `AdditionalBeanBuildItem`.
-More info about customizing JSON-B can be found on the JSON guide xref:rest-json.adoc#configuring-json-support[Configuring JSON support]
+More info about customizing JSON-B can be found on the JSON guide xref:rest-json.adoc#json[Configuring JSON support]
 
 === Integrating with Development Mode
 

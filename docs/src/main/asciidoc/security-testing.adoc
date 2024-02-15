@@ -36,7 +36,7 @@ quarkus.oauth2.client-secret=client-secret
 quarkus.oauth2.introspection-url=http://host:port/introspect
 ----
 
-[#testing-security]
+[[testing-security]]
 == Test Security Extension
 
 Quarkus provides explicit support for testing with different users, and with the security subsystem disabled. To use

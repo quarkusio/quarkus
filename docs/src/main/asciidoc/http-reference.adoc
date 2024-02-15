@@ -159,7 +159,7 @@ In both cases, a password must be provided. See the designated paragraph for a d
 
 [TIP]
 ====
-To enable SSL support with native executables, please refer to our xref:native-and-ssl.adoc[Using SSL With Native Executables guide].
+To enable TLS/SSL support with native executables, please refer to our xref:native-and-ssl.adoc[Using SSL With Native Executables guide].
 ====
 
 === Providing a certificate and key file
@@ -231,6 +231,22 @@ values:
 `disabled`:: The HTTP port will not be opened.
 
 NOTE: if you use `redirect` or `disabled` and have not added an SSL certificate or keystore, your server will not start!
+
+=== Reloading the certificates
+
+Key store, trust store and certificate files can be reloaded periodically.
+Configure the `quarkus.http.ssl.certificate.reload-period` property to specify the interval at which the certificates should be reloaded:
+
+[source, properties]
+----
+quarkus.http.ssl.certificate.files=/mount/certs/cert.pem
+quarkus.http.ssl.certificate.key-files=/mount/certs/key.pem
+quarkus.http.ssl.certificate.reload-period=1h
+----
+
+The files are reloaded from the same location as they were initially loaded from.
+If there is no content change, the reloading is a no-op.
+It the reloading fails, the server will continue to use the previous certificates.
 
 == Additional HTTP Headers
 
@@ -374,7 +390,7 @@ The check interval represents the period at which the traffic is computed, and a
 Despite 0 being accepted (no accounting), it is recommended to set a positive value for the check interval, even if it is high since the precision of the traffic shaping depends on the period where the traffic is computed.
 In this case, a suggested value is something close to 5 or 10 minutes.
 
- The `outbound-global-bandwidth` and `inbound-global-bandwidth` parameters represent the maximum number of bytes per second for write and read operations, respectively.
+The `outbound-global-bandwidth` and `inbound-global-bandwidth` parameters represent the maximum number of bytes per second for write and read operations, respectively.
 You shall also consider to have object size in read or write operations relatively adapted to the bandwidth you required.
 For instance having 10 MB objects for 10KB/s will lead to burst effect, while having 100 KB objects for 1 MB/s should be smoothly handle by the traffic shaping.
 

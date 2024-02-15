@@ -22,7 +22,7 @@ Finally, when either one of container image extensions is present (see the xref:
 include::{includes}/prerequisites.adoc[]
 * Access to a Kubernetes cluster (Minikube is a viable option)
 
-[#kubernetes]
+[[kubernetes]]
 == Kubernetes
 
 Let's create a new project that contains both the Kubernetes and Jib extensions:
@@ -238,7 +238,7 @@ You can provide the arguments that will be used by the Kubernetes Job via the pr
 
 Finally, the Kubernetes job will be launched every time it is installed in Kubernetes. You can know more about how to run Kubernetes jobs in this https://kubernetes.io/docs/concepts/workloads/controllers/job/#running-an-example-job[link].
 
-You can configure the rest of the Kubernetes Job configuration using the properties under `quarkus.kubernetes.job.xxx` (see xref:deploying-to-kubernetes.adoc#quarkus-kubernetes-kubernetes-config_quarkus.kubernetes.job.parallelism[link]).
+You can configure the rest of the Kubernetes Job configuration using the properties under `quarkus.kubernetes.job.xxx` (see xref:deploying-to-kubernetes.adoc#quarkus-kubernetes-kubernetes-config_quarkus-kubernetes-job-parallelism[link]).
 
 ==== Generating CronJob resources
 
@@ -253,7 +253,7 @@ quarkus.kubernetes.cron-job.schedule=0 * * * *
 
 IMPORTANT: CronJob resources require the https://en.wikipedia.org/wiki/Cron[Cron] expression to specify when to launch the job via the property `quarkus.kubernetes.cron-job.schedule`. If not provide, the build will fail.
 
-You can configure the rest of the Kubernetes CronJob configuration using the properties under `quarkus.kubernetes.cron-job.xxx` (see xref:deploying-to-kubernetes.adoc#quarkus-kubernetes-kubernetes-config_quarkus.kubernetes.cron-job.parallelism[link]).
+You can configure the rest of the Kubernetes CronJob configuration using the properties under `quarkus.kubernetes.cron-job.xxx` (see xref:deploying-to-kubernetes.adoc#quarkus-kubernetes-kubernetes-config_quarkus-kubernetes-cron-job-parallelism[link]).
 
 === Namespace
 
@@ -400,7 +400,7 @@ quarkus.kubernetes.annotations.foo=bar
 quarkus.kubernetes.annotations."app.quarkus/id"=42
 ----
 
-[#env-vars]
+[[env-vars]]
 ==== Environment variables
 
 Kubernetes provides multiple ways of defining environment variables:
@@ -538,7 +538,7 @@ A conflict between two definitions, e.g. mistakenly assigning both a value and s
 
 Similarly, two redundant definitions, e.g. defining an injection from the same secret twice, will not cause an issue but will indeed report a warning to let you know that you might not have intended to duplicate that definition.
 
-[#env-vars-backwards]
+[[env-vars-backwards]]
 ===== Backwards compatibility
 
 Previous versions of the Kubernetes extension supported a different syntax to add environment variables. The older syntax is still supported but is deprecated, and it's advised that you migrate to the new syntax.
@@ -645,7 +645,7 @@ implementation("io.quarkus:quarkus-smallrye-health")
 ----
 
 The values of the generated probes will be determined by the configured health properties: `quarkus.smallrye-health.root-path`, `quarkus.smallrye-health.liveness-path` and `quarkus.smallrye-health.readiness-path`.
-More information about the health extension can be found in the relevant xref:microprofile-health.adoc[guide].
+More information about the health extension can be found in the relevant xref:smallrye-health.adoc[guide].
 
 === Customizing the readiness probe
 To set the initial delay of the probe to 20 seconds and the period to 45:
@@ -1084,7 +1084,7 @@ The full list of the Kubernetes client configuration properties is provided belo
 :no-duration-note: true
 include::{generated-dir}/config/quarkus-kubernetes-client.adoc[opts=optional, leveloffset=+1]
 
-[#openshift]
+[[openshift]]
 === OpenShift
 
 One way to deploy an application to OpenShift is to use s2i (source to image) to create an image stream from the source and then deploy the image stream:
@@ -1195,7 +1195,7 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 :no-duration-note: true
 include::{generated-dir}/config/quarkus-openshift-openshift-config.adoc[opts=optional, leveloffset=+1]
 
-[#knative]
+[[knative]]
 === Knative
 
 To enable the generation of Knative resources, you need to include Knative in the target platforms:
@@ -1474,7 +1474,7 @@ The provided replicas <1>, labels <2> and environment variables <3>  were retain
 
 === Using common resources
 
-When generating the manifests for multiple deployment targets like Kubernetes, OpenShift or Knative, we can place the common resources in `src/main/kubernetes/common.yml`, so these resources will be integrated into the generated `kubernetes.json`/`kubernetes.yml`, and `openshift.json`/`openshift.yml` files (if you configure the Kubernetes and Openshift extensions at the same time).
+When generating the manifests for multiple deployment targets like Kubernetes, OpenShift or Knative, we can place the common resources in `src/main/kubernetes/common.yml`, so these resources will be integrated into the generated `kubernetes.json`/`kubernetes.yml`, and `openshift.json`/`openshift.yml` files (if you configure the Kubernetes and OpenShift extensions at the same time).
 
 For example, we can write a ConfigMap resource only once in the file `src/main/kubernetes/common.yml`:
 

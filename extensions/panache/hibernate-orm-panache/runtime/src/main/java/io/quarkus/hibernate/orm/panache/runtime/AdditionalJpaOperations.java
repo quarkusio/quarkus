@@ -32,7 +32,7 @@ public class AdditionalJpaOperations {
     public static PanacheQuery<?> find(AbstractJpaOperations<?> jpaOperations, Class<?> entityClass, String query,
             String countQuery, Sort sort, Map<String, Object> params) {
         String findQuery = createFindQuery(entityClass, query, jpaOperations.paramCount(params));
-        EntityManager em = jpaOperations.getEntityManager();
+        EntityManager em = jpaOperations.getEntityManager(entityClass);
         Query jpaQuery = em.createQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
         JpaOperations.bindParameters(jpaQuery, params);
         return new CustomCountPanacheQuery(em, jpaQuery, countQuery, params);
@@ -47,14 +47,14 @@ public class AdditionalJpaOperations {
     public static PanacheQuery<?> find(AbstractJpaOperations<?> jpaOperations, Class<?> entityClass, String query,
             String countQuery, Sort sort, Object... params) {
         String findQuery = createFindQuery(entityClass, query, jpaOperations.paramCount(params));
-        EntityManager em = jpaOperations.getEntityManager();
+        EntityManager em = jpaOperations.getEntityManager(entityClass);
         Query jpaQuery = em.createQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
         JpaOperations.bindParameters(jpaQuery, params);
         return new CustomCountPanacheQuery(em, jpaQuery, countQuery, params);
     }
 
     public static long deleteAllWithCascade(AbstractJpaOperations<?> jpaOperations, Class<?> entityClass) {
-        EntityManager em = jpaOperations.getEntityManager();
+        EntityManager em = jpaOperations.getEntityManager(entityClass);
         //detecting the case where there are cascade-delete associations, and do the bulk delete query otherwise.
         if (deleteOnCascadeDetected(jpaOperations, entityClass)) {
             int count = 0;
@@ -77,7 +77,7 @@ public class AdditionalJpaOperations {
      * @return true if cascading delete is needed. False otherwise
      */
     private static boolean deleteOnCascadeDetected(AbstractJpaOperations<?> jpaOperations, Class<?> entityClass) {
-        EntityManager em = jpaOperations.getEntityManager();
+        EntityManager em = jpaOperations.getEntityManager(entityClass);
         Metamodel metamodel = em.getMetamodel();
         EntityType<?> entity1 = metamodel.entity(entityClass);
         Set<Attribute<?, ?>> declaredAttributes = ((EntityTypeImpl) entity1).getDeclaredAttributes();
@@ -96,7 +96,7 @@ public class AdditionalJpaOperations {
 
     public static <PanacheQueryType> long deleteWithCascade(AbstractJpaOperations<PanacheQueryType> jpaOperations,
             Class<?> entityClass, String query, Object... params) {
-        EntityManager em = jpaOperations.getEntityManager();
+        EntityManager em = jpaOperations.getEntityManager(entityClass);
         if (deleteOnCascadeDetected(jpaOperations, entityClass)) {
             int count = 0;
             List<?> objects = jpaOperations.list(jpaOperations.find(entityClass, query, params));
@@ -112,7 +112,7 @@ public class AdditionalJpaOperations {
     public static <PanacheQueryType> long deleteWithCascade(AbstractJpaOperations<PanacheQueryType> jpaOperations,
             Class<?> entityClass, String query,
             Map<String, Object> params) {
-        EntityManager em = jpaOperations.getEntityManager();
+        EntityManager em = jpaOperations.getEntityManager(entityClass);
         if (deleteOnCascadeDetected(jpaOperations, entityClass)) {
             int count = 0;
             List<?> objects = jpaOperations.list(jpaOperations.find(entityClass, query, params));

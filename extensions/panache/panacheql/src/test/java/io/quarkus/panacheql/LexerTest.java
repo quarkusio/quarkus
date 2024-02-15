@@ -8,10 +8,10 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.panacheql.internal.HqlLexer;
 import io.quarkus.panacheql.internal.HqlParser;
 import io.quarkus.panacheql.internal.HqlParser.AndPredicateContext;
-import io.quarkus.panacheql.internal.HqlParser.EqualityPredicateContext;
+import io.quarkus.panacheql.internal.HqlParser.ComparisonPredicateContext;
+import io.quarkus.panacheql.internal.HqlParser.GeneralPathExpressionContext;
 import io.quarkus.panacheql.internal.HqlParser.IsNullPredicateContext;
 import io.quarkus.panacheql.internal.HqlParser.LiteralExpressionContext;
-import io.quarkus.panacheql.internal.HqlParser.PathExpressionContext;
 import io.quarkus.panacheql.internal.HqlParser.PredicateContext;
 import io.quarkus.panacheql.internal.HqlParserBaseVisitor;
 
@@ -47,8 +47,11 @@ public class LexerTest {
             }
 
             @Override
-            public String visitEqualityPredicate(EqualityPredicateContext ctx) {
-                return ctx.expression(0).accept(this) + " == " + ctx.expression(1).accept(this);
+            public String visitComparisonPredicate(ComparisonPredicateContext ctx) {
+                if (ctx.comparisonOperator().EQUAL() != null) {
+                    return ctx.expression(0).accept(this) + " == " + ctx.expression(1).accept(this);
+                }
+                return super.visitComparisonPredicate(ctx);
             }
 
             @Override
@@ -57,7 +60,7 @@ public class LexerTest {
             }
 
             @Override
-            public String visitPathExpression(PathExpressionContext ctx) {
+            public String visitGeneralPathExpression(GeneralPathExpressionContext ctx) {
                 return ctx.getText();
             }
         };

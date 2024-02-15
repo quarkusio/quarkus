@@ -26,6 +26,10 @@ public class FrontendResource {
     ProtectedResourceServiceOidcClient protectedResourceServiceOidcClient;
 
     @Inject
+    @RestClient
+    JwtBearerAuthenticationOidcClient jwtBearerAuthenticationOidcClient;
+
+    @Inject
     @NamedOidcClient("non-standard-response")
     Tokens tokens;
 
@@ -40,6 +44,12 @@ public class FrontendResource {
     @Path("echoToken")
     public String echoToken() {
         return protectedResourceServiceOidcClient.echoToken();
+    }
+
+    @GET
+    @Path("echoTokenJwtBearerAuthentication")
+    public String echoTokenJwtBearerAuthentication() {
+        return jwtBearerAuthenticationOidcClient.echoToken();
     }
 
     @GET

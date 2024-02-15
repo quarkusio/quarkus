@@ -15,6 +15,7 @@ public class OidcDevUiRuntimePropertiesDTO {
     private static final String END_SESSION_PATH_CONFIG_KEY = CONFIG_PREFIX + "end-session-path";
     private static final String POST_LOGOUT_URI_PARAM_CONFIG_KEY = CONFIG_PREFIX + "logout.post-logout-uri-param";
     private static final String SCOPES_KEY = CONFIG_PREFIX + "authentication.scopes";
+    private static final String AUTH_EXTRA_PARAMS_KEY = CONFIG_PREFIX + "authentication.extra-params";
     private final String clientId;
     private final String clientSecret;
     private final String authorizationUrl;
@@ -22,6 +23,7 @@ public class OidcDevUiRuntimePropertiesDTO {
     private final String logoutUrl;
     private final String postLogoutUriParam;
     private final String scopes;
+    private final String authExtraParams;
     private final int httpPort;
     private final String oidcProviderName;
     private final String oidcApplicationType;
@@ -49,6 +51,7 @@ public class OidcDevUiRuntimePropertiesDTO {
         this.logoutUrl = new OidcConfigPropertySupplier(END_SESSION_PATH_CONFIG_KEY, logoutUrl, true).get(config);
         this.postLogoutUriParam = new OidcConfigPropertySupplier(POST_LOGOUT_URI_PARAM_CONFIG_KEY).get(config);
         this.scopes = new OidcConfigPropertySupplier(SCOPES_KEY).get(config);
+        this.authExtraParams = new OidcConfigPropertySupplier(AUTH_EXTRA_PARAMS_KEY).get(config);
         this.httpPort = httpPort;
         this.oidcProviderName = oidcProviderName;
         this.oidcApplicationType = oidcApplicationType;
@@ -90,6 +93,10 @@ public class OidcDevUiRuntimePropertiesDTO {
 
     public String getScopes() {
         return scopes;
+    }
+
+    public String getAuthExtraParams() {
+        return authExtraParams;
     }
 
     public int getHttpPort() {

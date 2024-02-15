@@ -30,6 +30,7 @@ import io.vertx.core.tracing.TracingPolicy;
 import io.vertx.grpc.client.GrpcClient;
 import io.vertx.grpc.client.GrpcClientRequest;
 import io.vertx.grpc.client.GrpcClientResponse;
+import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcStatus;
 import io.vertx.grpc.common.ServiceName;
 
@@ -201,20 +202,39 @@ final class VertxGrpcExporter implements SpanExporter {
                 request.send(buffer).onSuccess(new Handler<>() {
                     @Override
                     public void handle(GrpcClientResponse<Buffer, Buffer> response) {
-                        GrpcStatus status = getStatus(response);
-                        if (status == GrpcStatus.OK) {
-                            exporterMetrics.addSuccess(numItems);
-                            result.succeed();
-                            return;
-                        }
-                        String statusMessage = getStatusMessage(response);
-                        if (statusMessage == null) {
-                            // TODO: this needs investigation, when this happened, the spans actually got to the server, but for some reason no status code was present in the result
-                            exporterMetrics.addSuccess(numItems);
-                            result.succeed();
-                            return;
-                        }
+                        response.exceptionHandler(new Handler<>() {
+                            @Override
+                            public void handle(Throwable t) {
+                                exporterMetrics.addFailed(numItems);
+                                logger.log(
+                                        Level.SEVERE,
+                                        "Failed to export "
+                                                + type
+                                                + "s. The stream failed. Full error message: "
+                                                + t.getMessage());
+                                result.fail();
+                            }
+                        }).errorHandler(new Handler<>() {
+                            @Override
+                            public void handle(GrpcError error) {
+                                handleError(error.status, response);
+                            }
+                        }).endHandler(new Handler<>() {
+                            @Override
+                            public void handle(Void ignored) {
+                                GrpcStatus status = getStatus(response);
+                                if (status == GrpcStatus.OK) {
+                                    exporterMetrics.addSuccess(numItems);
+                                    result.succeed();
+                                } else {
+                                    handleError(status, response);
+                                }
+                            }
+                        });
+                    }
 
+                    private void handleError(GrpcStatus status, GrpcClientResponse<Buffer, Buffer> response) {
+                        String statusMessage = getStatusMessage(response);
                         logAppropriateWarning(status, statusMessage);
                         exporterMetrics.addFailed(numItems);
                         result.fail();

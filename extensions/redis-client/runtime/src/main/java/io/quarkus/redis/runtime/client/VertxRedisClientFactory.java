@@ -75,9 +75,11 @@ public class VertxRedisClientFactory {
         options.setMaxWaitingHandlers(config.maxWaitingHandlers());
 
         options.setProtocolNegotiation(config.protocolNegotiation());
+        config.preferredProtocolVersion().ifPresent(options::setPreferredProtocolVersion);
         options.setPassword(config.password().orElse(null));
         config.poolCleanerInterval().ifPresent(d -> options.setPoolCleanerInterval((int) d.toMillis()));
         options.setPoolRecycleTimeout((int) config.poolRecycleTimeout().toMillis());
+        options.setHashSlotCacheTTL(config.hashSlotCacheTtl().toMillis());
 
         config.role().ifPresent(options::setRole);
         options.setType(config.clientType());

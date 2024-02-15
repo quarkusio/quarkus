@@ -7,7 +7,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 import io.quarkus.qute.Template.Fragment;
 
@@ -110,7 +112,7 @@ public class IncludeSectionHelper implements SectionHelper {
         }
 
         @Override
-        protected boolean ignoreParameterInit(String key, String value) {
+        protected boolean ignoreParameterInit(Supplier<String> firstParamSupplier, String key, String value) {
             return key.equals(TEMPLATE)
                     // {#include foo _isolated=true /}
                     || key.equals(ISOLATED)
@@ -147,6 +149,7 @@ public class IncludeSectionHelper implements SectionHelper {
         static final String ISOLATED = "_isolated";
         static final String UNISOLATED = "_unisolated";
         static final String IGNORE_FRAGMENTS = "_ignoreFragments";
+        static final Pattern WHITESPACE = Pattern.compile("\\s");
 
         @Override
         public boolean treatUnknownSectionsAsBlocks() {
@@ -161,6 +164,7 @@ public class IncludeSectionHelper implements SectionHelper {
             builder
                     .addParameter(Parameter.builder(ISOLATED).defaultValue(isolatedDefaultValue()).optional()
                             .valuePredicate(ISOLATED::equals).build())
+                    .addParameter(Parameter.builder(UNISOLATED).optional().valuePredicate(UNISOLATED::equals).build())
                     .addParameter(Parameter.builder(IGNORE_FRAGMENTS).defaultValue(Boolean.FALSE.toString()).optional()
                             .valuePredicate(IGNORE_FRAGMENTS::equals).build())
                     .build();
@@ -172,13 +176,7 @@ public class IncludeSectionHelper implements SectionHelper {
                 for (Entry<String, String> entry : block.getParameters().entrySet()) {
                     String key = entry.getKey();
                     String value = entry.getValue();
-                    if (ignoreParameterInit(key, value)) {
-                        continue;
-                    } else if (useDefaultedKey(key, value)) {
-                        // As "order" in {#include foo order /}
-                        key = value;
-                    }
-                    block.addExpression(key, value);
+                    handleParam(key, value, () -> block.getParameter(0), (k, v) -> block.addExpression(k, v));
                 }
                 return outerScope;
             } else {
@@ -228,7 +226,7 @@ public class IncludeSectionHelper implements SectionHelper {
                         ignoreFragments = true;
                         continue;
                     }
-                    handleParamInit(key, value, context, params);
+                    handleParam(key, value, () -> context.getParameter(0), (k, v) -> params.put(k, context.getExpression(k)));
                 }
             }
 
@@ -312,13 +310,19 @@ public class IncludeSectionHelper implements SectionHelper {
             return null;
         }
 
-        protected void handleParamInit(String key, String value, SectionInitContext context, Map<String, Expression> params) {
-            if (ignoreParameterInit(key, value)) {
+        protected void handleParam(String key, String value, Supplier<String> firstParamSupplier,
+                BiConsumer<String, String> paramConsumer) {
+            if (ignoreParameterInit(firstParamSupplier, key, value)) {
                 return;
             } else if (useDefaultedKey(key, value)) {
-                key = value;
+                if (LiteralSupport.isStringLiteral(value)) {
+                    // {#include "foo" /} => {#include foo="foo" /}
+                    key = value.substring(1, value.length() - 1);
+                } else {
+                    key = value;
+                }
             }
-            params.put(key, context.getExpression(key));
+            paramConsumer.accept(key, value);
         }
 
         protected boolean useDefaultedKey(String key, String value) {
@@ -331,10 +335,10 @@ public class IncludeSectionHelper implements SectionHelper {
         }
 
         protected boolean isSinglePart(String value) {
-            return Expressions.splitParts(value).size() == 1;
+            return Expressions.splitParts(value).size() == 1 && !WHITESPACE.matcher(value).find();
         }
 
-        protected boolean ignoreParameterInit(String key, String value) {
+        protected boolean ignoreParameterInit(Supplier<String> firstParamSupplier, String key, String value) {
             return key.equals(IGNORE_FRAGMENTS);
         }
 

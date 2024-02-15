@@ -76,6 +76,7 @@ import io.quarkus.annotation.processor.generate_doc.ConfigDocGeneratedOutput;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocItemScanner;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocWriter;
 import io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil;
+import io.quarkus.bootstrap.util.PropertyUtils;
 
 public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
@@ -239,23 +240,23 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             }
         }
 
-        try {
-
-            final FileObject listResource = filer.createResource(StandardLocation.CLASS_OUTPUT, "",
-                    "META-INF/quarkus-javadoc.properties");
-            try (OutputStream os = listResource.openOutputStream()) {
-                try (BufferedOutputStream bos = new BufferedOutputStream(os)) {
-                    try (OutputStreamWriter osw = new OutputStreamWriter(bos, StandardCharsets.UTF_8)) {
-                        try (BufferedWriter bw = new BufferedWriter(osw)) {
-                            javaDocProperties.store(bw, Constants.EMPTY);
+        if (!javaDocProperties.isEmpty()) {
+            try {
+                final FileObject listResource = filer.createResource(StandardLocation.CLASS_OUTPUT, "",
+                        "META-INF/quarkus-javadoc.properties");
+                try (OutputStream os = listResource.openOutputStream()) {
+                    try (BufferedOutputStream bos = new BufferedOutputStream(os)) {
+                        try (OutputStreamWriter osw = new OutputStreamWriter(bos, StandardCharsets.UTF_8)) {
+                            try (BufferedWriter bw = new BufferedWriter(osw)) {
+                                PropertyUtils.store(javaDocProperties, bw);
+                            }
                         }
                     }
                 }
+            } catch (IOException e) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write javadoc properties: " + e);
+                return;
             }
-
-        } catch (IOException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write javadoc properties: " + e);
-            return;
         }
 
         try {
@@ -528,7 +529,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                     rbn,
                     clazz);
             try (Writer writer = file.openWriter()) {
-                javadocProps.store(writer, Constants.EMPTY);
+                PropertyUtils.store(javadocProps, writer);
             }
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to persist resource " + rbn + ": " + e);

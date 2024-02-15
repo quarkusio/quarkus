@@ -154,15 +154,9 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         ElasticsearchQueryConfig query();
 
         /**
-         * Whether Hibernate Search should check the version of the Elasticsearch cluster on startup.
-         *
-         * Set to `false` if the Elasticsearch cluster may not be available on startup.
-         *
-         * @asciidoclet
+         * Configuration for version checks on this backend.
          */
-        @WithName("version-check.enabled")
-        @WithDefault("true")
-        boolean versionCheck();
+        ElasticsearchVersionCheckConfig versionCheck();
 
         /**
          * The default configuration for the Elasticsearch indexes.
@@ -210,6 +204,19 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         public String getHibernateSearchString() {
             return hibernateSearchString;
         }
+    }
+
+    @ConfigGroup
+    interface ElasticsearchVersionCheckConfig {
+        /**
+         * Whether Hibernate Search should check the version of the Elasticsearch cluster on startup.
+         *
+         * Set to `false` if the Elasticsearch cluster may not be available on startup.
+         *
+         * @asciidoclet
+         */
+        @WithDefault("true")
+        boolean enabled();
     }
 
     @ConfigGroup

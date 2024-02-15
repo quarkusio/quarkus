@@ -28,7 +28,6 @@ dependencies {
     implementation 'io.quarkus:quarkus-resteasy'
     implementation 'io.quarkus:quarkus-resteasy-jackson'
     implementation "org.mapstruct:mapstruct:${mapstructVersion}"
-    implementation 'io.quarkus:quarkus-hibernate-orm-panache'
 
     annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
 

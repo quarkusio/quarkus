@@ -2,6 +2,8 @@ package io.quarkus.annotation.processor.generate_doc;
 
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.hyphenate;
 
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -13,6 +15,7 @@ import org.jsoup.nodes.TextNode;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.javadoc.Javadoc;
 import com.github.javaparser.javadoc.JavadocBlockTag;
+import com.github.javaparser.javadoc.JavadocBlockTag.Type;
 import com.github.javaparser.javadoc.description.JavadocDescription;
 import com.github.javaparser.javadoc.description.JavadocDescriptionElement;
 import com.github.javaparser.javadoc.description.JavadocInlineTag;
@@ -80,8 +83,20 @@ final class JavaDocParser {
     }
 
     public String parseConfigDescription(String javadocComment) {
+        final AtomicReference<String> ref = new AtomicReference<>();
+        parseConfigDescription(javadocComment, ref::set, s -> {
+        });
+        return ref.get();
+    }
+
+    public void parseConfigDescription(
+            String javadocComment,
+            Consumer<String> javadocTextConsumer,
+            Consumer<String> sinceConsumer) {
+
         if (javadocComment == null || javadocComment.trim().isEmpty()) {
-            return Constants.EMPTY;
+            javadocTextConsumer.accept(Constants.EMPTY);
+            return;
         }
 
         // the parser expects all the lines to start with "* "
@@ -90,10 +105,16 @@ final class JavaDocParser {
         Javadoc javadoc = StaticJavaParser.parseJavadoc(javadocComment);
 
         if (isAsciidoc(javadoc)) {
-            return handleEolInAsciidoc(javadoc);
+            javadocTextConsumer.accept(handleEolInAsciidoc(javadoc));
+        } else {
+            javadocTextConsumer.accept(htmlJavadocToAsciidoc(javadoc.getDescription()));
         }
-
-        return htmlJavadocToAsciidoc(javadoc.getDescription());
+        javadoc.getBlockTags().stream()
+                .filter(t -> t.getType() == Type.SINCE)
+                .map(JavadocBlockTag::getContent)
+                .map(JavadocDescription::toText)
+                .findFirst()
+                .ifPresent(sinceConsumer::accept);
     }
 
     public SectionHolder parseConfigSection(String javadocComment, int sectionLevel) {

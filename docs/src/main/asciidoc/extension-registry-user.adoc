@@ -182,7 +182,7 @@ Some options need to be set:
 
 Here is an example on how it should look like:
 
-[#img-nexus]
+[[img-nexus]]
 .Nexus Repository Manager: Add Proxy Repository
 image:registry-nexus-repository.png[Nexus Repository Proxy]
 

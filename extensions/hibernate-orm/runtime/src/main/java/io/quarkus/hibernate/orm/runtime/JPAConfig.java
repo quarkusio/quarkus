@@ -29,13 +29,10 @@ public class JPAConfig {
 
     @Inject
     public JPAConfig(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
-        Map<String, HibernateOrmRuntimeConfigPersistenceUnit> puConfigMap = hibernateOrmRuntimeConfig
-                .getAllPersistenceUnitConfigsAsMap();
         for (RuntimePersistenceUnitDescriptor descriptor : PersistenceUnitsHolder.getPersistenceUnitDescriptors()) {
             String puName = descriptor.getName();
-            var puConfig = puConfigMap.getOrDefault(descriptor.getConfigurationName(),
-                    new HibernateOrmRuntimeConfigPersistenceUnit());
-            if (puConfig.active.isPresent() && !puConfig.active.get()) {
+            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(descriptor.getConfigurationName());
+            if (puConfig.active().isPresent() && !puConfig.active().get()) {
                 LOGGER.infof("Hibernate ORM persistence unit '%s' was deactivated through configuration properties",
                         puName);
                 deactivatedPersistenceUnitNames.add(puName);

@@ -13,7 +13,7 @@ public class TextResource {
     @GET
     @Path("/validate/{id}")
     public String validate(
-            @Digits(integer = 5, fraction = 0, message = "numeric value out of bounds") @PathParam("id") String id) {
+            @Digits(integer = 5, fraction = 0) @PathParam("id") String id) {
         return id;
     }
 
@@ -21,7 +21,7 @@ public class TextResource {
     @Path("/validate/text/{id}")
     @Produces(MediaType.TEXT_PLAIN)
     public String validateText(
-            @Digits(integer = 5, fraction = 0, message = "numeric value out of bounds") @PathParam("id") String id) {
+            @Digits(integer = 5, fraction = 0) @PathParam("id") String id) {
         return id;
     }
 }

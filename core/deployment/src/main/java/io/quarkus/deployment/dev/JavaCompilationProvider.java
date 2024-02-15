@@ -37,7 +37,7 @@ public class JavaCompilationProvider implements CompilationProvider {
     // -parameters is used to generate metadata for reflection on method parameters
     // this is useful when people using debuggers against their hot-reloaded app
     private static final Set<String> COMPILER_OPTIONS = Set.of("-g", "-parameters");
-    private static final Set<String> IGNORE_NAMESPACES = Set.of("org.osgi");
+    private static final Set<String> IGNORE_NAMESPACES = Set.of("org.osgi", "Annotation processing is enabled because");
 
     private static final String PROVIDER_KEY = "java";
 

@@ -117,6 +117,12 @@ public class InfinispanDevServicesConfig {
     @ConfigItem
     public Map<String, String> containerEnv;
 
+    /**
+     * Infinispan Server configuration chunks to be passed to the container.
+     */
+    @ConfigItem
+    public Optional<List<String>> configFiles;
+
     @Override
     public boolean equals(Object o) {
         if (this == o)

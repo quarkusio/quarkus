@@ -20,7 +20,6 @@ import org.jboss.logging.Logger;
 
 import io.smallrye.common.constraint.NotNull;
 
-@Path("")
 public class LocalesResource {
 
     private static final Logger LOG = Logger.getLogger(LocalesResource.class);

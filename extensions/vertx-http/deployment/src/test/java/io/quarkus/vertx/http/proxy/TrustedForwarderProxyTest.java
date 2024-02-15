@@ -30,4 +30,20 @@ public class TrustedForwarderProxyTest {
                 .then()
                 .body(Matchers.equalTo("http|somehost2|backend2:5555|/path|http://somehost2/path"));
     }
+
+    /**
+     * As described on <a href=
+     * "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded">https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Forwarded</a>,
+     * the syntax should be case-insensitive.
+     * <p>
+     * Kong, for example, uses `Proto` instead of `proto` and `For` instead of `for`.
+     */
+    @Test
+    public void testHeadersAreUsedWhenUsingCasedCharacters() {
+        RestAssured.given()
+                .header("Forwarded", "Proto=http;For=backend2:5555;Host=somehost2")
+                .get("/path")
+                .then()
+                .body(Matchers.equalTo("http|somehost2|backend2:5555|/path|http://somehost2/path"));
+    }
 }

@@ -33,7 +33,7 @@ public final class HibernateOrmMetricsProcessor {
 
         // IF Hibernate metrics and Hibernate statistics are enabled
         // then define a consumer. It will only be invoked if metrics is enabled
-        if (config.metrics.enabled && config.statistics.orElse(true) && metricsConfiguration.isPresent()) {
+        if (config.metrics().enabled() && config.statistics().orElse(true) && metricsConfiguration.isPresent()) {
             datasourceMetrics.produce(new MetricsFactoryConsumerBuildItem(metricsRecorder.consumeMetricsFactory()));
         }
     }

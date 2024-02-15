@@ -147,6 +147,10 @@ public class WebSocketServerProcessor {
             }
         });
         for (WebSocketEndpointBuildItem endpoint : endpoints) {
+            // For each WebSocket endpoint bean generate an implementation of WebSocketEndpoint
+            // A new instance of this generated endpoint is created for each client connection
+            // The generated endpoint ensures the correct execution model is used
+            // and delegates callback invocations to the endpoint bean
             String generatedName = generateEndpoint(endpoint, classOutput);
             reflectiveClasses.produce(ReflectiveClassBuildItem.builder(generatedName).constructors().build());
             generatedEndpoints.produce(new GeneratedEndpointBuildItem(generatedName, endpoint.path));
@@ -265,6 +269,40 @@ public class WebSocketServerProcessor {
         }
     }
 
+    /**
+     * The generated endpoint class looks like:
+     *
+     * <pre>
+     * public class Echo_WebSocketEndpoint extends DefaultWebSocketEndpoint {
+     *
+     *     public Echo_WebSocketEndpoint(Context context, WebSocketServerConnection connection, Codecs codecs) {
+     *         super(context, connection, codecs);
+     *     }
+     *
+     *     public WebSocketEndpoint.MessageType consumedMessageType() {
+     *         return MessageType.TEXT;
+     *     }
+     *
+     *     public Uni doOnMessage(Context context, Object message) {
+     *         Uni uni = ((Echo) super.beanInstance("MTd91f3oxHtG8gnznR7XcZBCLdE")).echo((String) message);
+     *         if (uni != null) {
+     *             // The lambda is implemented as a generated function: Echo_WebSocketEndpoint$$function$$1
+     *             return uni.chain(m -> sendText(m, false));
+     *         } else {
+     *             return Uni.createFrom().voidItem();
+     *         }
+     *     }
+     *
+     *     public WebSocketEndpoint.ExecutionModel onMessageExecutionModel() {
+     *         return ExecutionModel.EVENT_LOOP;
+     *     }
+     * }
+     * </pre>
+     *
+     * @param endpoint
+     * @param classOutput
+     * @return the name of the generated class
+     */
     private String generateEndpoint(WebSocketEndpointBuildItem endpoint, ClassOutput classOutput) {
         ClassInfo implClazz = endpoint.bean.getImplClazz();
         String baseName;

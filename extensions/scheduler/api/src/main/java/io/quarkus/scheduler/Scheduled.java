@@ -45,6 +45,11 @@ import io.quarkus.scheduler.Scheduled.Schedules;
  * {@code java.util.concurrent.CompletionStage<Void>} or {@code io.smallrye.mutiny.Uni<Void>}, or is annotated with
  * {@link io.smallrye.common.annotation.NonBlocking} is executed on the event loop.
  *
+ * <h2>Inheritance of metadata</h2>
+ * A subclass never inherits the metadata of a {@link Scheduled} method declared on a superclass. For example, suppose the class
+ * {@code org.amce.Foo} is extended by the class {@code org.amce.Bar}. If {@code Foo} declares a non-static method annotated
+ * with {@link Scheduled} then {@code Bar} does not inherit the metadata of the scheduled method.
+ *
  * @see ScheduledExecution
  */
 @Target(METHOD)

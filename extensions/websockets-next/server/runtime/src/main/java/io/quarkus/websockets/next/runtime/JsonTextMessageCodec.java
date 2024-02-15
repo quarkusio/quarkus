@@ -46,7 +46,7 @@ public class JsonTextMessageCodec implements TextMessageCodec<Object> {
     }
 
     @Override
-    public boolean canHandle(Type type) {
+    public boolean supports(Type type) {
         return true;
     }
 

@@ -13,7 +13,7 @@ import io.vertx.core.json.JsonObject;
 public class MyItemCodec implements TextMessageCodec<Item> {
 
     @Override
-    public boolean canHandle(Type type) {
+    public boolean supports(Type type) {
         return type == Item.class;
     }
 

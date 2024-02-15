@@ -28,7 +28,7 @@ public class FindBinary extends AbstractFind {
     public static class ItemBinaryMessageCodec implements BinaryMessageCodec<Item> {
 
         @Override
-        public boolean canHandle(Type type) {
+        public boolean supports(Type type) {
             return type.equals(Item.class);
         }
 
@@ -48,7 +48,7 @@ public class FindBinary extends AbstractFind {
     public static class ListItemBinaryMessageCodec implements BinaryMessageCodec<List<Item>> {
 
         @Override
-        public boolean canHandle(Type type) {
+        public boolean supports(Type type) {
             return type instanceof ParameterizedType && ((ParameterizedType) type).getRawType().equals(List.class);
         }
 

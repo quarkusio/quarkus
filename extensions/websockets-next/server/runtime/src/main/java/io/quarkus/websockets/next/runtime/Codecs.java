@@ -35,7 +35,7 @@ public class Codecs {
         if (codecBeanClass != null) {
             for (TextMessageCodec<?> codec : textCodecs) {
                 if (codec.getClass().equals(codecBeanClass)) {
-                    if (!codec.canHandle(type)) {
+                    if (!codec.supports(type)) {
                         throw forcedCannotHandle(false, codec, type);
                     }
                     try {
@@ -47,7 +47,7 @@ public class Codecs {
             }
         } else {
             for (TextMessageCodec<?> codec : textCodecs) {
-                if (codec.canHandle(type)) {
+                if (codec.supports(type)) {
                     try {
                         return codec.decode(type, value);
                     } catch (Exception e) {
@@ -65,7 +65,7 @@ public class Codecs {
         if (codecBeanClass != null) {
             for (TextMessageCodec<?> codec : textCodecs) {
                 if (codec.getClass().equals(codecBeanClass)) {
-                    if (!codec.canHandle(type)) {
+                    if (!codec.supports(type)) {
                         throw forcedCannotHandle(false, codec, type);
                     }
                     try {
@@ -77,7 +77,7 @@ public class Codecs {
             }
         } else {
             for (TextMessageCodec<?> codec : textCodecs) {
-                if (codec.canHandle(type)) {
+                if (codec.supports(type)) {
                     try {
                         return codec.encode(cast(message));
                     } catch (Exception e) {
@@ -93,7 +93,7 @@ public class Codecs {
         if (codecBeanClass != null) {
             for (BinaryMessageCodec<?> codec : binaryCodecs) {
                 if (codec.getClass().equals(codecBeanClass)) {
-                    if (!codec.canHandle(type)) {
+                    if (!codec.supports(type)) {
                         throw forcedCannotHandle(false, codec, type);
                     }
                     try {
@@ -105,7 +105,7 @@ public class Codecs {
             }
         } else {
             for (BinaryMessageCodec<?> codec : binaryCodecs) {
-                if (codec.canHandle(type)) {
+                if (codec.supports(type)) {
                     try {
                         return codec.decode(type, value);
                     } catch (Exception e) {
@@ -122,7 +122,7 @@ public class Codecs {
         if (codecBeanClass != null) {
             for (BinaryMessageCodec<?> codec : binaryCodecs) {
                 if (codec.getClass().equals(codecBeanClass)) {
-                    if (!codec.canHandle(type)) {
+                    if (!codec.supports(type)) {
                         throw forcedCannotHandle(false, codec, type);
                     }
                     try {
@@ -134,7 +134,7 @@ public class Codecs {
             }
         } else {
             for (BinaryMessageCodec<?> codec : binaryCodecs) {
-                if (codec.canHandle(type)) {
+                if (codec.supports(type)) {
                     try {
                         return codec.encode(cast(message));
                     } catch (Exception e) {

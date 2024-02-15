@@ -15,9 +15,9 @@ public interface MessageCodec<T, MESSAGE> {
     /**
      *
      * @param type the type to handle, must not be {@code null}
-     * @return {@code true} if this codec can handle the provided type, {@code false} otherwise
+     * @return {@code true} if this codec can encode/decode the provided type, {@code false} otherwise
      */
-    boolean canHandle(Type type);
+    boolean supports(Type type);
 
     /**
      *

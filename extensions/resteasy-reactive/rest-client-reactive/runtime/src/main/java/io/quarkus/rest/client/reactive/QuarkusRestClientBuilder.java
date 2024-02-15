@@ -280,6 +280,11 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
     QuarkusRestClientBuilder trustAll(boolean trustAll);
 
     /**
+     * Set the User-Agent header to be used
+     */
+    QuarkusRestClientBuilder userAgent(String userAgent);
+
+    /**
      * Based on the configured QuarkusRestClientBuilder, creates a new instance of the given REST interface to invoke API calls
      * against.
      *

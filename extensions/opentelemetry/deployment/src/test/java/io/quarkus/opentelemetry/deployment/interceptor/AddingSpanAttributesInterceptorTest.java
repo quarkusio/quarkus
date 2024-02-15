@@ -38,7 +38,7 @@ public class AddingSpanAttributesInterceptorTest {
                             .addAsManifestResource(
                                     "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
                                     "services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                            .addAsResource("resource-config/application.properties", "application.properties"));
+                            .addAsResource("resource-config/application-no-metrics.properties", "application.properties"));
 
     @Inject
     HelloRouter helloRouter;

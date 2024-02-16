@@ -1,12 +1,10 @@
 package io.quarkus.kafka.client.deployment;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
@@ -59,10 +57,13 @@ public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer>
             cmd += " " + additionalArgs;
         }
 
-        //noinspection OctalInteger
-        copyFileToContainer(
-                Transferable.of(cmd.getBytes(StandardCharsets.UTF_8), 0777),
-                STARTER_SCRIPT);
+        // docker exec since docker cp doesn't work with kubedock yet
+        try {
+            execInContainer("sh", "-c",
+                    String.format("echo -e \"%1$s\" >> %2$s && chmod 777 %2$s", cmd, STARTER_SCRIPT));
+        } catch (Exception e) {
+            throw new RuntimeException("Can't create run script in the Kafka native container.", e);
+        }
     }
 
     private String getKafkaAdvertisedListeners() {

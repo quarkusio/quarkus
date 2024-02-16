@@ -11,6 +11,7 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.LongFunction;
 
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
@@ -18,6 +19,7 @@ import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 import io.smallrye.mutiny.Context;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.groups.MultiMerge;
 import io.smallrye.mutiny.helpers.EmptyUniSubscription;
 import io.smallrye.mutiny.helpers.Subscriptions;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
@@ -69,6 +71,8 @@ public abstract class RestMulti<T> extends AbstractMulti<T> {
         private final Multi<T> multi;
         private final Integer status;
         private final MultivaluedTreeMap<String, String> headers;
+        private final long demand;
+        private final boolean encodeAsJsonArray;
 
         @Override
         public void subscribe(MultiSubscriber<? super T> subscriber) {
@@ -79,6 +83,8 @@ public abstract class RestMulti<T> extends AbstractMulti<T> {
             this.multi = builder.multi;
             this.status = builder.status;
             this.headers = builder.headers;
+            this.demand = builder.demand;
+            this.encodeAsJsonArray = builder.encodeAsJsonArray;
         }
 
         @Override
@@ -91,15 +97,60 @@ public abstract class RestMulti<T> extends AbstractMulti<T> {
             return headers;
         }
 
+        public long getDemand() {
+            return demand;
+        }
+
+        public boolean encodeAsJsonArray() {
+            return encodeAsJsonArray;
+        }
+
         public static class Builder<T> {
             private final Multi<T> multi;
-
-            private Integer status;
-
             private final MultivaluedTreeMap<String, String> headers = new CaseInsensitiveMap<>();
+            private Integer status;
+            private long demand = 1;
+            private boolean encodeAsJsonArray = true;
 
             private Builder(Multi<T> multi) {
                 this.multi = Objects.requireNonNull(multi, "multi cannot be null");
+            }
+
+            /**
+             * Configure the {@code demand} signaled to the wrapped {@link Multi}, defaults to {@code 1}.
+             *
+             * <p>
+             * A demand of {@code 1} guarantees serial/sequential processing, any higher demand supports
+             * concurrent processing. A demand greater {@code 1}, with concurrent {@link Multi} processing,
+             * does not guarantee element order - this means that elements emitted by the
+             * {@link RestMulti#fromMultiData(Multi) RestMulti.fromMultiData(Multi)} source <code>Multi</code>}
+             * will be produced in a non-deterministic order.
+             *
+             * @see MultiMerge#withConcurrency(int) Multi.createBy().merging().withConcurrency(int)
+             * @see Multi#capDemandsTo(long)
+             * @see Multi#capDemandsUsing(LongFunction)
+             */
+            public Builder<T> withDemand(long demand) {
+                if (demand <= 0) {
+                    throw new IllegalArgumentException("Demand must be greater than zero");
+                }
+                this.demand = demand;
+                return this;
+            }
+
+            /**
+             * Configure whether objects produced by the wrapped {@link Multi} are encoded as JSON array elements, which is the
+             * default.
+             *
+             * <p>
+             * {@code encodeAsJsonArray(false)} produces separate JSON objects.
+             *
+             * <p>
+             * This property is only used for JSON object results and ignored for SSE and chunked streaming.
+             */
+            public Builder<T> encodeAsJsonArray(boolean encodeAsJsonArray) {
+                this.encodeAsJsonArray = encodeAsJsonArray;
+                return this;
             }
 
             public Builder<T> status(int status) {

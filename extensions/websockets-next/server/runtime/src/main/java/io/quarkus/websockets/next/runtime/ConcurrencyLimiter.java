@@ -15,9 +15,9 @@ import io.vertx.core.Promise;
 /**
  * Used to limit concurrent invocations. Endpoint callbacks may not be invoked concurrently.
  */
-class Bulkhead {
+class ConcurrencyLimiter {
 
-    private static final Logger LOG = Logger.getLogger(Bulkhead.class);
+    private static final Logger LOG = Logger.getLogger(ConcurrencyLimiter.class);
 
     private final Context context;
     private final WebSocketServerConnection connection;
@@ -25,7 +25,7 @@ class Bulkhead {
     private final Queue<Runnable> queue;
     private final AtomicLong uncompleted;
 
-    Bulkhead(Context context, WebSocketServerConnection connection) {
+    ConcurrencyLimiter(Context context, WebSocketServerConnection connection) {
         this.context = context;
         this.connection = connection;
         this.uncompleted = new AtomicLong();
@@ -33,6 +33,8 @@ class Bulkhead {
     }
 
     /**
+     * This method must be always used before {@link #run(Runnable)} and the returned callback must be always invoked when an
+     * async computation completes.
      *
      * @param promise
      * @return a new callback to complete the given promise

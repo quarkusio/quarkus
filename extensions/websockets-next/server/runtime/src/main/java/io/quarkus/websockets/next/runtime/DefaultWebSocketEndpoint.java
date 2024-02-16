@@ -27,12 +27,12 @@ public abstract class DefaultWebSocketEndpoint implements WebSocketEndpoint {
 
     protected final Codecs codecs;
 
-    private final Bulkhead bulkhead;
+    private final ConcurrencyLimiter limiter;
 
     public DefaultWebSocketEndpoint(Context context, WebSocketServerConnection connection, Codecs codecs) {
         this.connection = connection;
         this.codecs = codecs;
-        this.bulkhead = new Bulkhead(context, connection);
+        this.limiter = new ConcurrencyLimiter(context, connection);
     }
 
     @Override
@@ -53,8 +53,8 @@ public abstract class DefaultWebSocketEndpoint implements WebSocketEndpoint {
     private Future<Void> execute(Context context, Object message, ExecutionModel executionModel,
             BiFunction<Context, Object, Uni<Void>> action) {
         Promise<Void> promise = Promise.promise();
-        Consumer<Void> complete = bulkhead.newComplete(promise);
-        bulkhead.run(new Runnable() {
+        Consumer<Void> complete = limiter.newComplete(promise);
+        limiter.run(new Runnable() {
             @Override
             public void run() {
                 if (executionModel == ExecutionModel.VIRTUAL_THREAD) {

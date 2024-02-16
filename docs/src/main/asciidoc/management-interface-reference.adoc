@@ -58,6 +58,20 @@ quarkus.management.ssl.certificate.key-store-file=server-keystore.jks
 quarkus.management.ssl.certificate.key-store-password=secret
 ----
 
+Key store, trust store and certificate files can be reloaded periodically.
+Configure the `quarkus.management.ssl.certificate.reload-period` property to specify the interval at which the certificates should be reloaded:
+
+[source, properties]
+----
+quarkus.http.management.certificate.files=/mount/certs/tls.crt
+quarkus.http.management.certificate.key-files=/mount/certs/tls.key
+quarkus.http.management.certificate.reload-period=1h
+----
+
+The files are reloaded from the same location as they were initially loaded from.
+If there is no content change, the reloading is a no-op.
+It the reloading fails, the server will continue to use the previous certificates.
+
 IMPORTANT: Unlike the main HTTP server, the management interface does not handle _http_ and _https_ at the same time.
 If _https_ is configured, plain HTTP requests will be rejected.
 

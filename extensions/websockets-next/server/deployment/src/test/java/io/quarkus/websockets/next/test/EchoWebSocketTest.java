@@ -26,6 +26,9 @@ public class EchoWebSocketTest {
     @TestHTTPResource("echo-blocking")
     URI echoBlockingUri;
 
+    @TestHTTPResource("echo-blocking-await")
+    URI echoBlockingAwaitUri;
+
     @TestHTTPResource("echo-json")
     URI echoJson;
 
@@ -47,7 +50,8 @@ public class EchoWebSocketTest {
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot(root -> {
-                root.addClasses(Echo.class, EchoBlocking.class, EchoService.class, EchoJson.class, EchoPojo.class,
+                root.addClasses(Echo.class, EchoBlocking.class, EchoBlockingAndAwait.class, EchoService.class, EchoJson.class,
+                        EchoPojo.class,
                         EchoBlockingPojo.class, EchoMultiConsume.class, EchoMultiProduce.class, EchoMultiBidi.class);
             });
 
@@ -59,6 +63,11 @@ public class EchoWebSocketTest {
     @Test
     public void testEchoBlocking() throws Exception {
         assertEcho(echoBlockingUri, "hello");
+    }
+
+    @Test
+    public void testEchoBlockingAndAwait() throws Exception {
+        assertEcho(echoBlockingAwaitUri, "hello");
     }
 
     @Test

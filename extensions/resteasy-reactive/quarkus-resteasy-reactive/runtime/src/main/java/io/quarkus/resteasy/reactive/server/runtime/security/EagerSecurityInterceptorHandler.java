@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.runtime.security;
 
-import static io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler.lazyMethodToMethodDescription;
+import static io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityContext.lazyMethodToMethodDescription;
 
 import java.util.Collections;
 import java.util.List;

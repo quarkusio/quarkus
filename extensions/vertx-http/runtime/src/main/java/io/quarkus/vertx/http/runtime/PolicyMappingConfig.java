@@ -67,4 +67,29 @@ public class PolicyMappingConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean shared;
+
+    /**
+     * Whether permission check should be applied on all matching paths, or paths specific for the Jakarta REST resources.
+     */
+    @ConfigItem(defaultValue = "ALL")
+    public AppliesTo appliesTo;
+
+    /**
+     * Specifies additional criteria on paths that should be checked.
+     */
+    public enum AppliesTo {
+        /**
+         * Apply on all matching paths.
+         */
+        ALL,
+        /**
+         * Declares that a permission check must only be applied on the Jakarta REST request paths.
+         * Use this option to delay the permission check if an authentication mechanism is chosen with an annotation on
+         * the matching Jakarta REST endpoint. This option must be set if the following REST endpoint annotations are used:
+         * <ul>
+         * <li>`io.quarkus.oidc.Tenant` annotation which selects an OIDC authentication mechanism with a tenant identifier</li>
+         * </ul>
+         */
+        JAXRS
+    }
 }

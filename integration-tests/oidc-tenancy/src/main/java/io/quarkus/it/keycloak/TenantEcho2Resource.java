@@ -22,42 +22,27 @@ public class TenantEcho2Resource {
     @Inject
     SecurityIdentity identity;
 
-    @Path("/hr")
-    @Tenant("hr")
+    @Path("/jax-rs-perm-check")
+    @Tenant("tenant-public-key")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public String getHrTenant() {
+    public String getTenantJaxRsPermCheck() {
         return getTenant();
     }
 
-    @Path("/hr-jax-rs-perm-check")
-    @Tenant("hr")
+    @Path("/classic-perm-check")
+    @Tenant("tenant-public-key")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public String getHrTenantJaxRsPermCheck() {
+    public String getTenantClassicPermCheck() {
         return getTenant();
     }
 
-    @Path("/hr-classic-perm-check")
-    @Tenant("hr")
+    @Path("/classic-and-jaxrs-perm-check")
+    @Tenant("tenant-public-key")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public String getHrTenantClassicPermCheck() {
-        return getTenant();
-    }
-
-    @Path("/hr-classic-and-jaxrs-perm-check")
-    @Tenant("hr")
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public String getHrTenantClassicAndJaxRsPermCheck() {
-        return getTenant();
-    }
-
-    @Path("/default")
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public String getDefaultTenant() {
+    public String getTenantClassicAndJaxRsPermCheck() {
         return getTenant();
     }
 

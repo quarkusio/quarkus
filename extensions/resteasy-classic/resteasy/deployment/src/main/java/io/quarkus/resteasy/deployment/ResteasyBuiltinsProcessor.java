@@ -23,6 +23,7 @@ import io.quarkus.resteasy.runtime.CompositeExceptionMapper;
 import io.quarkus.resteasy.runtime.EagerSecurityFilter;
 import io.quarkus.resteasy.runtime.ExceptionMapperRecorder;
 import io.quarkus.resteasy.runtime.ForbiddenExceptionMapper;
+import io.quarkus.resteasy.runtime.JaxRsPermissionChecker;
 import io.quarkus.resteasy.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.runtime.NotFoundExceptionMapper;
 import io.quarkus.resteasy.runtime.SecurityContextFilter;
@@ -71,6 +72,7 @@ public class ResteasyBuiltinsProcessor {
             additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(SecurityContextFilter.class));
             providers.produce(new ResteasyJaxrsProviderBuildItem(EagerSecurityFilter.class.getName()));
             additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(EagerSecurityFilter.class));
+            additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(JaxRsPermissionChecker.class));
             additionalBeanBuildItem.produce(
                     AdditionalBeanBuildItem.unremovableOf(StandardSecurityCheckInterceptor.RolesAllowedInterceptor.class));
             additionalBeanBuildItem.produce(AdditionalBeanBuildItem

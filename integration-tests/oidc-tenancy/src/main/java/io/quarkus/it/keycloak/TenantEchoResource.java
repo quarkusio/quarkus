@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -8,13 +9,13 @@ import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.oidc.Tenant;
 import io.quarkus.oidc.runtime.OidcUtils;
-import io.quarkus.security.Authenticated;
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.ext.web.RoutingContext;
 
-@Authenticated
-@Path("/api/tenant-echo2")
-public class TenantEcho2Resource {
+@Tenant("tenant-public-key")
+@Path("/api/tenant-echo")
+public class TenantEchoResource {
 
     @Inject
     RoutingContext routingContext;
@@ -22,46 +23,30 @@ public class TenantEcho2Resource {
     @Inject
     SecurityIdentity identity;
 
-    @Path("/hr")
-    @Tenant("hr")
+    @Path("/jax-rs-perm-check")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public String getHrTenant() {
-        return getTenant();
+    public String getTenantJaxRsPermCheck() {
+        return getTenantInternal();
     }
 
-    @Path("/hr-jax-rs-perm-check")
-    @Tenant("hr")
+    @RolesAllowed("role3")
+    @Path("/classic-and-jaxrs-perm-check")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public String getHrTenantJaxRsPermCheck() {
-        return getTenant();
+    public String getTenantClassicAndJaxRsPermCheck() {
+        return getTenantInternal();
     }
 
-    @Path("/hr-classic-perm-check")
-    @Tenant("hr")
+    @PermissionsAllowed("get-tenant")
+    @Path("/hr-identity-augmentation")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public String getHrTenantClassicPermCheck() {
-        return getTenant();
+    public String getHrTenantIdentityAugmentation() {
+        return getTenantInternal();
     }
 
-    @Path("/hr-classic-and-jaxrs-perm-check")
-    @Tenant("hr")
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public String getHrTenantClassicAndJaxRsPermCheck() {
-        return getTenant();
-    }
-
-    @Path("/default")
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    public String getDefaultTenant() {
-        return getTenant();
-    }
-
-    private String getTenant() {
+    private String getTenantInternal() {
         return OidcUtils.TENANT_ID_ATTRIBUTE + "=" + routingContext.get(OidcUtils.TENANT_ID_ATTRIBUTE)
                 + ", static.tenant.id=" + routingContext.get("static.tenant.id")
                 + ", name=" + identity.getPrincipal().getName();

@@ -158,7 +158,7 @@
         <aws-lambda-java.version>1.2.3</aws-lambda-java.version>
         <aws-lambda-java-events.version>3.11.3</aws-lambda-java-events.version>
         <aws-xray.version>2.15.0</aws-xray.version>
-        <azure-functions-java-library.version>2.2.0</azure-functions-java-library.version>
+        <azure-functions-java-library.version>3.1.0</azure-functions-java-library.version>
         <azure-functions-java-spi.version>1.0.0</azure-functions-java-spi.version>
         <kotlin.version>1.9.22</kotlin.version>
         <kotlin.coroutine.version>1.7.3</kotlin.coroutine.version>

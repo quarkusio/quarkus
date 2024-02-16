@@ -47,7 +47,6 @@ import org.infinispan.protostream.EnumMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.GeneratedSchema;
 import org.infinispan.protostream.MessageMarshaller;
-import org.infinispan.protostream.RawProtobufMarshaller;
 import org.infinispan.protostream.SerializationContextInitializer;
 import org.infinispan.protostream.WrappedMessage;
 import org.jboss.jandex.AnnotationInstance;
@@ -142,20 +141,7 @@ class InfinispanClientProcessor {
     @BuildStep
     public void handleProtoStreamRequirements(BuildProducer<MarshallingBuildItem> protostreamPropertiesBuildItem)
             throws ClassNotFoundException {
-        // We only apply this if we are in native mode in build time to apply to the properties
-        // Note that the other half is done in QuerySubstitutions.SubstituteMarshallerRegistration class
-        // Note that the registration of these files are done twice in normal VM mode
-        // (once during init and once at runtime)
         Properties properties = new Properties();
-        try {
-            properties.put(PROTOBUF_FILE_PREFIX + WrappedMessage.PROTO_FILE,
-                    getContents("/" + WrappedMessage.PROTO_FILE));
-            String queryProtoFile = "org/infinispan/query/remote/client/query.proto";
-            properties.put(PROTOBUF_FILE_PREFIX + queryProtoFile, getContents("/" + queryProtoFile));
-        } catch (Exception ex) {
-            // Do nothing if fails
-        }
-
         Map<String, Object> marshallers = new HashMap<>();
         initMarshaller(InfinispanClientUtil.DEFAULT_INFINISPAN_CLIENT_NAME,
                 infinispanClientsBuildTimeConfig.defaultInfinispanClient.marshallerClass, marshallers);
@@ -205,6 +191,8 @@ class InfinispanClientProcessor {
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(InfinispanClientName.class).build());
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(Remote.class).build());
 
+        resourceBuildItem.produce(new NativeImageResourceBuildItem("proto/generated/query.proto"));
+        resourceBuildItem.produce(new NativeImageResourceBuildItem(WrappedMessage.PROTO_FILE));
         hotDeployment
                 .produce(new HotDeploymentWatchedFileBuildItem(META_INF + File.separator + DEFAULT_HOTROD_CLIENT_PROPERTIES));
 
@@ -460,7 +448,7 @@ class InfinispanClientProcessor {
     @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {
         return UnremovableBeanBuildItem.beanTypes(BaseMarshaller.class, EnumMarshaller.class, MessageMarshaller.class,
-                RawProtobufMarshaller.class, FileDescriptorSource.class);
+                FileDescriptorSource.class);
     }
 
     @BuildStep

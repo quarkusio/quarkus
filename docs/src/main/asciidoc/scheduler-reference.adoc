@@ -164,7 +164,7 @@ void myMethod() { }
 
 An interval trigger defines a period between invocations.
 The period expression is based on the ISO-8601 duration format `PnDTnHnMn.nS` and the value of `@Scheduled#every()` is parsed with `java.time.Duration#parse(CharSequence)`.
-However, if an expression starts with a digit then the `PT` prefix is added automatically.
+However, if an expression starts with a digit and ends with `d`, `P` prefix will be added automatically. If the expression only starts with a digit, `PT` prefix is added automatically.
 So for example, `15m` can be used instead of `PT15M` and is parsed as "15 minutes".
 
 .Interval Trigger Example
@@ -237,7 +237,7 @@ NOTE: The final value is always rounded to full second.
 
 `@Scheduled#delayed()` is a text alternative to the properties above.
 The period expression is based on the ISO-8601 duration format `PnDTnHnMn.nS` and the value is parsed with `java.time.Duration#parse(CharSequence)`.
-However, if an expression starts with a digit, the `PT` prefix is added automatically.
+However, if an expression starts with a digit and ends with `d`, `P` prefix will be added automatically. If the expression only starts with a digit, `PT` prefix is added automatically.
 So for example, `15s` can be used instead of `PT15S` and is parsed as "15 seconds".
 
 [source,java]

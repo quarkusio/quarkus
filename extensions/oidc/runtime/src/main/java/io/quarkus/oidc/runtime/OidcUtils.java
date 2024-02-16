@@ -83,6 +83,7 @@ public final class OidcUtils {
     public static final Integer MAX_COOKIE_VALUE_LENGTH = 4096;
     public static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
     static final String UNDERSCORE = "_";
+    static final String CODE_ACCESS_TOKEN_RESULT = "code_flow_access_token_result";
     static final String COMMA = ",";
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
     static final BlockingTaskRunner<Void> deleteTokensRequestContext = new BlockingTaskRunner<Void>();
@@ -350,6 +351,10 @@ public final class OidcUtils {
         setSecurityIdentityConfigMetadata(builder, resolvedContext);
         setBlockingApiAttribute(builder, vertxContext);
         setTenantIdAttribute(builder, config);
+        TokenVerificationResult codeFlowAccessTokenResult = (TokenVerificationResult) requestData.get(CODE_ACCESS_TOKEN_RESULT);
+        if (codeFlowAccessTokenResult != null) {
+            builder.addAttribute(CODE_ACCESS_TOKEN_RESULT, codeFlowAccessTokenResult);
+        }
         return builder.build();
     }
 

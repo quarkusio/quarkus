@@ -1,5 +1,6 @@
 package io.quarkus.restclient.config;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -287,6 +288,22 @@ public class RestClientsConfig {
      */
     @ConfigItem
     public Optional<String> keyStoreType;
+
+    /**
+     * The classpath path or file path to server certificates or certificate chain in PEM format.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    public Optional<List<String>> certificate;
+
+    /**
+     * The classpath path or file path to the corresponding certificate private key files in PEM format.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     */
+    @ConfigItem
+    public Optional<List<String>> key;
 
     /**
      * If this is true then HTTP/2 will be enabled.

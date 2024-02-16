@@ -2,7 +2,9 @@ package io.quarkus.rest.client.reactive;
 
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.security.KeyStore;
+import java.util.List;
 import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
 
@@ -150,6 +152,16 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
      * @throws NullPointerException if the <code>trustStore</code> parameter is null.
      */
     QuarkusRestClientBuilder trustStore(KeyStore trustStore, String trustStorePassword);
+
+    /**
+     * The classpath path or file path to server certificates or certificate chain in PEM format.
+     */
+    QuarkusRestClientBuilder certificates(List<Path> certificate);
+
+    /**
+     * The classpath path or file path to the corresponding certificate private key files in PEM format.
+     */
+    QuarkusRestClientBuilder keys(List<Path> key);
 
     /**
      * Set the client-side key store.

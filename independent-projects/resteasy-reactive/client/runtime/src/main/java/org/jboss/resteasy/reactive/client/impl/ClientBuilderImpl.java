@@ -5,6 +5,10 @@ import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -39,6 +43,8 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.JksOptions;
+import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.PfxOptions;
 import io.vertx.core.net.ProxyOptions;
 
 public class ClientBuilderImpl extends ClientBuilder {
@@ -56,6 +62,9 @@ public class ClientBuilderImpl extends ClientBuilder {
     private SSLContext sslContext;
     private KeyStore trustStore;
     private char[] trustStorePassword;
+
+    private List<Path> certificates;
+    private List<Path> keys;
     private boolean http2;
     private boolean alpn;
 
@@ -110,6 +119,16 @@ public class ClientBuilderImpl extends ClientBuilder {
     public ClientBuilder trustStore(KeyStore trustStore, char[] password) {
         this.trustStore = trustStore;
         this.trustStorePassword = password;
+        return this;
+    }
+
+    public ClientBuilder certificates(List<Path> certificates) {
+        this.certificates = certificates;
+        return this;
+    }
+
+    public ClientBuilder keys(List<Path> keys) {
+        this.keys = keys;
         return this;
     }
 
@@ -221,22 +240,62 @@ public class ClientBuilderImpl extends ClientBuilder {
             options.setVerifyHost(false);
         }
 
-        char[] effectiveTrustStorePassword = trustStorePassword == null ? EMPTY_CHAR_ARARAY : trustStorePassword;
-        Buffer keyStore = asBuffer(this.keyStore, keystorePassword);
-        Buffer trustStore = asBuffer(this.trustStore, effectiveTrustStorePassword);
-        if (keyStore != null || trustStore != null) {
-            options = options.setSsl(true);
-            if (keyStore != null) {
-                JksOptions jks = new JksOptions();
-                jks.setValue(keyStore);
-                jks.setPassword(new String(keystorePassword));
-                options = options.setKeyStoreOptions(jks);
+        if (((certificates != null) && !certificates.isEmpty()) &&
+                ((keys != null) && !keys.isEmpty())) {
+            try {
+                PemKeyCertOptions pemKeyCertOptions = new PemKeyCertOptions();
+                for (Path key : keys) {
+                    byte[] keyBytes = getFileContent(key);
+                    pemKeyCertOptions.setKeyValue(Buffer.buffer(keyBytes));
+                }
+                for (Path certificate : certificates) {
+                    byte[] certBytes = getFileContent(certificate);
+                    pemKeyCertOptions.setKeyValue(Buffer.buffer(certBytes));
+                }
+                options.setKeyCertOptions(pemKeyCertOptions);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
-            if (trustStore != null) {
-                JksOptions jks = new JksOptions();
-                jks.setValue(trustStore);
-                jks.setPassword(new String(effectiveTrustStorePassword));
-                options.setTrustStoreOptions(jks);
+
+        } else {
+            char[] effectiveTrustStorePassword = trustStorePassword == null ? EMPTY_CHAR_ARARAY : trustStorePassword;
+            Buffer keyStore = asBuffer(this.keyStore, keystorePassword);
+            Buffer trustStore = asBuffer(this.trustStore, effectiveTrustStorePassword);
+            if (keyStore != null || trustStore != null) {
+                options = options.setSsl(true);
+                if (keyStore != null) {
+                    String keyStoreType = this.keyStore.getType();
+                    if ("PKCS12".equalsIgnoreCase(keyStoreType)) {
+                        PfxOptions pks = new PfxOptions();
+                        pks.setValue(keyStore);
+                        pks.setPassword(new String(keystorePassword));
+                        options = options.setKeyCertOptions(pks);
+                    } else if ("JKS".equalsIgnoreCase(keyStoreType)) {
+                        JksOptions jks = new JksOptions();
+                        jks.setValue(keyStore);
+                        jks.setPassword(new String(keystorePassword));
+                        options = options.setKeyStoreOptions(jks);
+                    } else {
+                        throw new IllegalStateException("Unsupported key store type " + keyStoreType);
+                    }
+
+                }
+                if (trustStore != null) {
+                    String trustStoreType = this.trustStore.getType();
+                    if ("PKCS12".equalsIgnoreCase(trustStoreType)) {
+                        PfxOptions pks = new PfxOptions();
+                        pks.setValue(trustStore);
+                        pks.setPassword(new String(effectiveTrustStorePassword));
+                        options.setTrustOptions(pks);
+                    } else if ("JKS".equalsIgnoreCase(trustStoreType)) {
+                        JksOptions jks = new JksOptions();
+                        jks.setValue(trustStore);
+                        jks.setPassword(new String(effectiveTrustStorePassword));
+                        options.setTrustStoreOptions(jks);
+                    } else {
+                        throw new IllegalStateException("Unsupported trust store type " + trustStoreType);
+                    }
+                }
             }
         }
 
@@ -423,5 +482,42 @@ public class ClientBuilderImpl extends ClientBuilder {
     public ClientBuilderImpl nonProxyHosts(String nonProxyHosts) {
         this.nonProxyHosts = nonProxyHosts;
         return this;
+    }
+
+    private static byte[] getFileContent(Path path) throws IOException {
+        byte[] data;
+        final InputStream resource = Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream(toResourceName(path));
+        if (resource != null) {
+            try (InputStream is = resource) {
+                data = doRead(is);
+            }
+        } else {
+            try (InputStream is = Files.newInputStream(path)) {
+                data = doRead(is);
+            }
+        }
+        return data;
+    }
+
+    /**
+     * Translates a file system-specific path to a Java classpath resource name
+     * that uses '/' as a separator.
+     *
+     * @param path file system path
+     * @return Java classpath resource name
+     */
+    public static String toResourceName(Path path) {
+        if (path == null) {
+            return null;
+        }
+        if (path.getFileSystem().getSeparator().equals("/")) {
+            return path.toString();
+        }
+        return path.toString().replace(path.getFileSystem().getSeparator(), "/");
+    }
+
+    private static byte[] doRead(InputStream is) throws IOException {
+        return is.readAllBytes();
     }
 }

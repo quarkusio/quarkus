@@ -2,7 +2,9 @@ package io.quarkus.rest.client.reactive.runtime;
 
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.security.KeyStore;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -81,6 +83,18 @@ public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
     @Override
     public QuarkusRestClientBuilder keyStore(KeyStore keyStore, String keystorePassword) {
         proxy.keyStore(keyStore, keystorePassword);
+        return this;
+    }
+
+    @Override
+    public QuarkusRestClientBuilder certificates(List<Path> certificates) {
+        proxy.certificates(certificates);
+        return this;
+    }
+
+    @Override
+    public QuarkusRestClientBuilder keys(List<Path> keys) {
+        proxy.keys(keys);
         return this;
     }
 

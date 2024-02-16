@@ -1,6 +1,7 @@
 package io.quarkus.restclient.config;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -179,6 +180,18 @@ public class RestClientConfig {
      */
     @ConfigItem
     public Optional<String> keyStoreType;
+
+    /**
+     * The classpath path or file path to server certificates or certificate chain in PEM format.
+     */
+    @ConfigItem
+    public Optional<List<String>> certificates;
+
+    /**
+     * The classpath path or file path to the corresponding certificate private key files in PEM format.
+     */
+    @ConfigItem
+    public Optional<List<String>> keys;
 
     /**
      * The class name of the host name verifier. The class must have a public no-argument constructor.

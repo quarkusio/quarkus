@@ -6,6 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -75,6 +76,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     private Boolean trustAll;
     private String userAgent;
+    private List<Path> certificates;
+    private List<Path> keys;
 
     @Override
     public RestClientBuilderImpl baseUrl(URL url) {
@@ -123,6 +126,16 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     @Override
     public RestClientBuilderImpl keyStore(KeyStore keyStore, String keystorePassword) {
         clientBuilder.keyStore(keyStore, keystorePassword);
+        return this;
+    }
+
+    public RestClientBuilderImpl certificates(List<Path> certificates) {
+        this.certificates = certificates;
+        return this;
+    }
+
+    public RestClientBuilderImpl keys(List<Path> key) {
+        this.keys = key;
         return this;
     }
 

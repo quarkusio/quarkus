@@ -10,15 +10,18 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.HostnameVerifier;
 
@@ -227,6 +230,19 @@ public class RestClientCDIDelegateBuilder<T> {
                 configRoot.keyStore);
         if (maybeKeyStore.isPresent() && !maybeKeyStore.get().isBlank() && !NONE.equals(maybeKeyStore.get())) {
             registerKeyStore(maybeKeyStore.get(), builder);
+        }
+
+        Optional<List<String>> maybeCertificates = oneOf(clientConfigByClassName().certificates,
+                clientConfigByConfigKey().certificates,
+                configRoot.certificate);
+        if (maybeCertificates.isPresent()) {
+            builder.certificates(maybeCertificates.get().stream().map(Paths::get).collect(Collectors.toList()));
+        }
+
+        Optional<List<String>> maybeKeys = oneOf(clientConfigByClassName().keys, clientConfigByConfigKey().keys,
+                configRoot.key);
+        if (maybeKeys.isPresent()) {
+            builder.keys(maybeKeys.get().stream().map(Paths::get).collect(Collectors.toList()));
         }
 
         Optional<String> maybeHostnameVerifier = oneOf(clientConfigByClassName().hostnameVerifier,

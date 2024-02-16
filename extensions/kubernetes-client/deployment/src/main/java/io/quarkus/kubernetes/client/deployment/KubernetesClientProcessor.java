@@ -20,7 +20,6 @@ import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import io.fabric8.kubernetes.api.builder.VisitableBuilder;
 import io.fabric8.kubernetes.api.model.AnyType;
 import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.KubeSchema;
@@ -70,9 +69,7 @@ public class KubernetesClientProcessor {
     private static final DotName KUBERNETES_RESOURCE_LIST = DotName
             .createSimple(KubernetesResourceList.class.getName());
     private static final DotName KUBE_SCHEMA = DotName.createSimple(KubeSchema.class.getName());
-    private static final DotName VISITABLE_BUILDER = DotName.createSimple(VisitableBuilder.class.getName());
     private static final DotName CUSTOM_RESOURCE = DotName.createSimple(CustomResource.class.getName());
-    private static final String SERVICE_ACCOUNT = "ServiceAccount";
 
     private static final DotName JSON_FORMAT = DotName.createSimple(JsonFormat.class.getName());
     private static final String[] EMPTY_STRINGS_ARRAY = new String[0];
@@ -153,7 +150,6 @@ public class KubernetesClientProcessor {
 
         Collection<ClassInfo> kubernetesResourceImpls = fullIndex.getAllKnownImplementors(KUBERNETES_RESOURCE);
         Collection<ClassInfo> kubernetesResourceListImpls = fullIndex.getAllKnownImplementors(KUBERNETES_RESOURCE_LIST);
-        Collection<ClassInfo> visitableBuilderImpls = fullIndex.getAllKnownImplementors(VISITABLE_BUILDER);
 
         // default sizes determined experimentally - these are only set in order to prevent continuous expansion of the array list
         List<String> withoutFieldsRegistration = new ArrayList<>(
@@ -166,9 +162,6 @@ public class KubernetesClientProcessor {
                 withoutFieldsRegistration,
                 withFieldsRegistration);
         populateReflectionRegistrationLists(kubernetesResourceListImpls, watchedClasses, ignoreJsonDeserialization,
-                withoutFieldsRegistration,
-                withFieldsRegistration);
-        populateReflectionRegistrationLists(visitableBuilderImpls, watchedClasses, ignoreJsonDeserialization,
                 withoutFieldsRegistration,
                 withFieldsRegistration);
 

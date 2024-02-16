@@ -1,6 +1,5 @@
 package io.quarkus.websockets.next.runtime;
 
-import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -26,7 +25,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.ServerWebSocket;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
@@ -141,41 +139,12 @@ public class WebSocketServerRecorder {
                             });
                         });
                     } else {
-                        // Multi consumed - forward message to the subcribers
-                        // TODO move decoding to the bytecode
+                        // Multi consumed - forward message to subcribers
                         messageHandlers(endpoint, ws, context, m -> {
-                            Type itemType = endpoint.consumedMultiType();
-                            Object item;
-                            if (itemType == Buffer.class) {
-                                item = m;
-                            } else if (itemType == byte[].class) {
-                                item = m.getBytes();
-                            } else if (itemType == String.class) {
-                                item = m.toString();
-                            } else if (itemType == JsonObject.class) {
-                                item = m.toJsonObject();
-                            } else {
-                                // TODO support forced codec
-                                item = codecs.binaryDecode(itemType, m, null);
-                            }
-                            broadcastProcessor.onNext(item);
+                            broadcastProcessor.onNext(endpoint.decodeMultiItem(m));
                             LOG.debugf("Binary message >> Multi: %s", connection);
                         }, m -> {
-                            Type itemType = endpoint.consumedMultiType();
-                            Object item;
-                            if (itemType == String.class) {
-                                item = m;
-                            } else if (itemType == JsonObject.class) {
-                                item = new JsonObject(m);
-                            } else if (itemType == Buffer.class) {
-                                item = Buffer.buffer(m);
-                            } else if (itemType == byte[].class) {
-                                item = Buffer.buffer(m).getBytes();
-                            } else {
-                                // TODO support forced codec
-                                item = codecs.textDecode(itemType, m, null);
-                            }
-                            broadcastProcessor.onNext(item);
+                            broadcastProcessor.onNext(endpoint.decodeMultiItem(m));
                             LOG.debugf("Text message >> Multi: %s", connection);
                         });
                     }

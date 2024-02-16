@@ -4,7 +4,7 @@ import java.lang.reflect.Type;
 
 /**
  * Used to encode and decode messages.
- * 
+ *
  * <h2>Special types of messages</h2>
  * Some types of messages bypass the encoding/decoding process:
  * <ul>
@@ -14,11 +14,11 @@ import java.lang.reflect.Type;
  * <li>{@code io.vertx.core.json.JsonObject}.</li>
  * </ul>
  * The encoding/decoding details are described in {@link BinaryMessage} and {@link TextMessage}.
- * 
+ *
  * <h2>CDI beans</h2>
  * Implementation classes must be CDI beans. Qualifiers are ignored. {@link jakarta.enterprise.context.Dependent} beans are
  * reused during encoding/decoding.
- * 
+ *
  * <h2>Lifecycle and concurrency</h2>
  * Codecs are shared accross all WebSocket connections. Therefore, implementations should be either stateless or thread-safe.
  *

@@ -38,6 +38,10 @@ public interface WebSocketEndpoint {
         return null;
     }
 
+    default Object decodeMultiItem(Object message) {
+        throw new UnsupportedOperationException();
+    }
+
     enum ExecutionModel {
         WORKER_THREAD,
         VIRTUAL_THREAD,

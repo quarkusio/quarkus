@@ -335,10 +335,15 @@ public class WebSocketServerProcessor {
         }
 
         if (endpoint.onMessage != null && endpoint.onMessage.acceptsMulti()) {
+            Type multiItemType = endpoint.onMessage.messageParamType().asParameterizedType().arguments().get(0);
             MethodCreator consumedMultiType = endpointCreator.getMethodCreator("consumedMultiType",
                     java.lang.reflect.Type.class);
-            consumedMultiType.returnValue(Types.getTypeHandle(consumedMultiType,
-                    endpoint.onMessage.messageParamType().asParameterizedType().arguments().get(0)));
+            consumedMultiType.returnValue(Types.getTypeHandle(consumedMultiType, multiItemType));
+
+            MethodCreator decodeMultiItem = endpointCreator.getMethodCreator("decodeMultiItem",
+                    Object.class, Object.class);
+            decodeMultiItem.returnValue(decodeMessage(decodeMultiItem, endpoint.onMessage.acceptsBinaryMessage(),
+                    multiItemType, decodeMultiItem.getMethodParam(0), endpoint.onMessage));
         }
 
         if (endpoint.onOpen != null) {

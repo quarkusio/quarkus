@@ -27,12 +27,12 @@ public abstract class DefaultWebSocketEndpoint implements WebSocketEndpoint {
 
     protected final Codecs codecs;
 
-    private final Mutex mutex;
+    private final Bulkhead bulkhead;
 
     public DefaultWebSocketEndpoint(Context context, WebSocketServerConnection connection, Codecs codecs) {
         this.connection = connection;
         this.codecs = codecs;
-        this.mutex = new Mutex(context, connection);
+        this.bulkhead = new Bulkhead(context, connection);
     }
 
     @Override
@@ -53,27 +53,27 @@ public abstract class DefaultWebSocketEndpoint implements WebSocketEndpoint {
     private Future<Void> execute(Context context, Object message, ExecutionModel executionModel,
             BiFunction<Context, Object, Uni<Void>> action) {
         Promise<Void> promise = Promise.promise();
-        Consumer<Void> promiseComplete = mutex.promiseComplete(promise);
-        mutex.run(new Runnable() {
+        Consumer<Void> complete = bulkhead.newComplete(promise);
+        bulkhead.run(new Runnable() {
             @Override
             public void run() {
                 if (executionModel == ExecutionModel.VIRTUAL_THREAD) {
                     VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
                         @Override
                         public void run() {
-                            action.apply(context, message).subscribe().with(promiseComplete);
+                            action.apply(context, message).subscribe().with(complete);
                         }
                     });
                 } else if (executionModel == ExecutionModel.WORKER_THREAD) {
                     context.executeBlocking(new Callable<Void>() {
                         @Override
                         public Void call() {
-                            action.apply(context, message).subscribe().with(promiseComplete);
+                            action.apply(context, message).subscribe().with(complete);
                             return null;
                         }
                     }, false);
                 } else {
-                    action.apply(context, message).subscribe().with(promiseComplete);
+                    action.apply(context, message).subscribe().with(complete);
                 }
             }
         });

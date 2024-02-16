@@ -1,5 +1,6 @@
 package io.quarkus.arc.test.validation;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -7,7 +8,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.spi.DefinitionException;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,10 +23,11 @@ public class InvalidPostConstructWithParametersTest {
     public void testFailure() {
         Throwable error = container.getFailure();
         assertNotNull(error);
-        assertTrue(error instanceof DefinitionException);
-        Assertions.assertTrue(error.getMessage().contains("invalid(java.lang.String ignored)"));
-        Assertions.assertTrue(error.getMessage().contains("$InvalidBean"));
-        Assertions.assertTrue(error.getMessage().contains("PostConstruct"));
+        assertInstanceOf(DefinitionException.class, error);
+        assertTrue(error.getMessage().contains(
+                "@PostConstruct lifecycle callback method declared in a target class must have zero parameters"));
+        assertTrue(error.getMessage().contains("invalid(java.lang.String ignored)"));
+        assertTrue(error.getMessage().contains("InvalidPostConstructWithParametersTest$InvalidBean"));
     }
 
     @ApplicationScoped

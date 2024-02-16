@@ -58,7 +58,7 @@ public class AbstractJsonObjectResponse {
     }
 
     public boolean contains(String propertyName) {
-        return json.containsKey(propertyName) && !json.isNull(propertyName);
+        return json != null && json.containsKey(propertyName) && !json.isNull(propertyName);
     }
 
     public Set<String> getPropertyNames() {

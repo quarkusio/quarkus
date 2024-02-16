@@ -58,8 +58,9 @@ class ConcurrencyLimiter {
             // We need to make sure that at least one completion is in flight
             if (uncompleted.getAndIncrement() == 0) {
                 LOG.debugf("Run action: %s", connection);
-                Runnable runnable = queue.poll();
-                runnable.run();
+                action = queue.poll();
+                assert action != null;
+                action.run();
             }
         }
     }
@@ -81,15 +82,14 @@ class ConcurrencyLimiter {
                     return;
                 }
                 Runnable action = queue.poll();
-                if (action != null) {
-                    LOG.debugf("Run action from queue: %s", connection);
-                    context.runOnContext(new Handler<Void>() {
-                        @Override
-                        public void handle(Void event) {
-                            action.run();
-                        }
-                    });
-                }
+                assert action != null;
+                LOG.debugf("Run action from queue: %s", connection);
+                context.runOnContext(new Handler<Void>() {
+                    @Override
+                    public void handle(Void event) {
+                        action.run();
+                    }
+                });
             }
         }
 

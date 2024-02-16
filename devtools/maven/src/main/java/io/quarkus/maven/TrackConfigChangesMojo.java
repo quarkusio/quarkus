@@ -1,12 +1,19 @@
 package io.quarkus.maven;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
+import java.util.zip.Adler32;
+import java.util.zip.Checksum;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -18,6 +25,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.runtime.LaunchMode;
 
 /**
@@ -58,6 +66,18 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
     @Parameter(defaultValue = "false", property = "quarkus.track-config-changes.dump-current-when-recorded-unavailable")
     boolean dumpCurrentWhenRecordedUnavailable;
 
+    /**
+     * Whether to dump Quarkus application dependencies along with their checksums
+     */
+    @Parameter(defaultValue = "true", property = "quarkus.track-config-changes.dump-dependencies")
+    boolean dumpDependencies;
+
+    /**
+     * Dependency dump file
+     */
+    @Parameter(property = "quarkus.track-config-changes.dependencies-file")
+    File dependenciesFile;
+
     @Override
     protected boolean beforeExecute() throws MojoExecutionException, MojoFailureException {
         if (skip) {
@@ -82,16 +102,6 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
             getLog().debug("Bootstrapping Quarkus application in mode " + launchMode);
         }
 
-        Path targetFile;
-        if (outputFile == null) {
-            targetFile = outputDirectory.toPath()
-                    .resolve("quarkus-" + launchMode.getDefaultProfile() + "-config-check");
-        } else if (outputFile.isAbsolute()) {
-            targetFile = outputFile.toPath();
-        } else {
-            targetFile = outputDirectory.toPath().resolve(outputFile.toPath());
-        }
-
         Path compareFile;
         if (this.recordedBuildConfigFile == null) {
             compareFile = recordedBuildConfigDirectory.toPath()
@@ -102,34 +112,64 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
             compareFile = recordedBuildConfigDirectory.toPath().resolve(this.recordedBuildConfigFile.toPath());
         }
 
-        final Properties compareProps = new Properties();
-        if (Files.exists(compareFile)) {
-            try (BufferedReader reader = Files.newBufferedReader(compareFile)) {
-                compareProps.load(reader);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to read " + compareFile, e);
-            }
-        } else if (!dumpCurrentWhenRecordedUnavailable) {
-            getLog().info(compareFile + " not found");
+        final boolean prevConfigExists = Files.exists(compareFile);
+        if (!prevConfigExists && !dumpCurrentWhenRecordedUnavailable && !dumpDependencies) {
+            getLog().info("Config dump from the previous build does not exist at " + compareFile);
             return;
         }
 
         CuratedApplication curatedApplication = null;
         QuarkusClassLoader deploymentClassLoader = null;
         final ClassLoader originalCl = Thread.currentThread().getContextClassLoader();
-        Properties actualProps;
         final boolean clearPackageTypeSystemProperty = setPackageTypeSystemPropertyIfNativeProfileEnabled();
         try {
             curatedApplication = bootstrapApplication(launchMode);
-            deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
-            Thread.currentThread().setContextClassLoader(deploymentClassLoader);
+            if (prevConfigExists || dumpCurrentWhenRecordedUnavailable) {
+                final Path targetFile = getOutputFile(outputFile, launchMode.getDefaultProfile(), "-config-check");
+                Properties compareProps = new Properties();
+                if (prevConfigExists) {
+                    try (BufferedReader reader = Files.newBufferedReader(compareFile)) {
+                        compareProps.load(reader);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to read " + compareFile, e);
+                    }
+                }
 
-            final Class<?> codeGenerator = deploymentClassLoader.loadClass("io.quarkus.deployment.CodeGenerator");
-            final Method dumpConfig = codeGenerator.getMethod("dumpCurrentConfigValues", ApplicationModel.class, String.class,
-                    Properties.class, QuarkusClassLoader.class, Properties.class, Path.class);
-            dumpConfig.invoke(null, curatedApplication.getApplicationModel(),
-                    launchMode.name(), getBuildSystemProperties(true),
-                    deploymentClassLoader, compareProps, targetFile);
+                deploymentClassLoader = curatedApplication.createDeploymentClassLoader();
+                Thread.currentThread().setContextClassLoader(deploymentClassLoader);
+
+                final Class<?> codeGenerator = deploymentClassLoader.loadClass("io.quarkus.deployment.CodeGenerator");
+                final Method dumpConfig = codeGenerator.getMethod("dumpCurrentConfigValues", ApplicationModel.class,
+                        String.class,
+                        Properties.class, QuarkusClassLoader.class, Properties.class, Path.class);
+                dumpConfig.invoke(null, curatedApplication.getApplicationModel(),
+                        launchMode.name(), getBuildSystemProperties(true),
+                        deploymentClassLoader, compareProps, targetFile);
+            }
+
+            if (dumpDependencies) {
+                final List<String> deps = new ArrayList<>();
+                for (var d : curatedApplication.getApplicationModel().getDependencies(DependencyFlags.DEPLOYMENT_CP)) {
+                    StringBuilder entry = new StringBuilder(d.toGACTVString());
+                    if (d.isSnapshot()) {
+                        var adler32 = new Adler32();
+                        updateChecksum(adler32, d.getResolvedPaths());
+                        entry.append(" ").append(adler32.getValue());
+                    }
+
+                    deps.add(entry.toString());
+                }
+                Collections.sort(deps);
+                final Path targetFile = getOutputFile(dependenciesFile, launchMode.getDefaultProfile(),
+                        "-dependency-checksums.txt");
+                Files.createDirectories(targetFile.getParent());
+                try (BufferedWriter writer = Files.newBufferedWriter(targetFile)) {
+                    for (var s : deps) {
+                        writer.write(s);
+                        writer.newLine();
+                    }
+                }
+            }
         } catch (Exception any) {
             throw new MojoExecutionException("Failed to bootstrap Quarkus application", any);
         } finally {
@@ -141,5 +181,45 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
                 deploymentClassLoader.close();
             }
         }
+    }
+
+    private Path getOutputFile(File outputFile, String profile, String fileNameSuffix) {
+        if (outputFile == null) {
+            return outputDirectory.toPath().resolve("quarkus-" + profile + fileNameSuffix);
+        }
+        if (outputFile.isAbsolute()) {
+            return outputFile.toPath();
+        }
+        return outputDirectory.toPath().resolve(outputFile.toPath());
+    }
+
+    private static void updateChecksum(Checksum checksum, Iterable<Path> pc) throws IOException {
+        for (var path : sort(pc)) {
+            if (Files.isDirectory(path)) {
+                try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+                    updateChecksum(checksum, stream);
+                }
+            } else {
+                checksum.update(Files.readAllBytes(path));
+            }
+        }
+    }
+
+    private static Iterable<Path> sort(Iterable<Path> original) {
+        var i = original.iterator();
+        if (!i.hasNext()) {
+            return List.of();
+        }
+        var o = i.next();
+        if (!i.hasNext()) {
+            return List.of(o);
+        }
+        final List<Path> sorted = new ArrayList<>();
+        sorted.add(o);
+        while (i.hasNext()) {
+            sorted.add(i.next());
+        }
+        Collections.sort(sorted);
+        return sorted;
     }
 }

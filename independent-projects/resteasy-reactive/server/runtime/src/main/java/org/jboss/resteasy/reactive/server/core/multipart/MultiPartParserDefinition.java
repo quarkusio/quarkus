@@ -29,6 +29,7 @@ import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
+import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
@@ -366,7 +367,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
             if (contentType == null || contentType.isEmpty()) { // https://www.rfc-editor.org/rfc/rfc7578.html#section-4.4 says the default content-type if missing is text/plain
                 return true;
             }
-            return MediaType.TEXT_PLAIN_TYPE.isCompatible(MediaType.valueOf(contentType));
+            return MediaTypeHelper.isTextLike(MediaType.valueOf(contentType));
         }
 
         public List<Path> getCreatedFiles() {

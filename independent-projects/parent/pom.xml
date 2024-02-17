@@ -941,6 +941,11 @@
                                         <ignoredProperties>
                                             <ignore>project</ignore>
                                             <ignore>plugin</ignore>
+                                            <!--
+                                              For now, we need to ignore the cachedir until we can declare it as an output.
+                                              See below.
+                                            -->
+                                            <ignore>cachedir</ignore>
                                         </ignoredProperties>
                                     </inputs>
                                     <outputs>

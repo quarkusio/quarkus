@@ -183,6 +183,7 @@ public class ServerEndpointIndexer
             }
         }
         serverResourceMethod.setHandlerChainCustomizers(methodCustomizers);
+        serverResourceMethod.setActualDeclaringClassName(methodInfo.declaringClass().name().toString());
         return serverResourceMethod;
     }
 

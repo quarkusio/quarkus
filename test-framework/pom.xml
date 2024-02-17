@@ -14,10 +14,6 @@
     <name>Quarkus - Test Framework</name>
     <packaging>pom</packaging>
 
-    <properties>
-        <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
-    </properties>
-
     <modules>
         <module>common</module>
         <module>h2</module>
@@ -50,4 +46,33 @@
         <module>google-cloud-functions</module>
     </modules>
 
+    <build>
+        <plugins>
+            <!--
+                This is a test dependency and as such some test libraries don't have the test scope
+                which is perfectly fine.
+                We override the enforcer rules to avoid testing that.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce</id>
+                        <configuration>
+                            <rules combine.self="override">
+                                <dependencyConvergence/>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                                </externalRules>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
+                                </externalRules>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

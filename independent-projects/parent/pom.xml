@@ -118,14 +118,13 @@
 
     <build>
         <plugins>
-
             <!-- Check for the minimum version of Java and Maven.  Runs during the validate phase. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>enforce-java-maven-prerequisites</id>
+                        <id>enforce</id>
                         <goals>
                             <goal>enforce</goal>
                         </goals>

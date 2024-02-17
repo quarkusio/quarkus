@@ -160,8 +160,6 @@
         <script.extension>sh</script.extension>
         <docker-prune.location>${maven.multiModuleProjectDirectory}/.github/docker-prune.${script.extension}</docker-prune.location>
 
-        <enforce-test-deps-scope.skip>${enforcer.skip}</enforce-test-deps-scope.skip>
-
         <surefire.argLine.additional></surefire.argLine.additional>
         <failsafe.argLine.additional>${surefire.argLine.additional}</failsafe.argLine.additional>
         <os-maven-plugin.version>1.7.0</os-maven-plugin.version>
@@ -502,65 +500,15 @@
                                 <rules>
                                     <dependencyConvergence/>
                                     <externalRules>
-                                        <location>classpath:enforcer-rules/quarkus-require-java-version.xml</location>
-                                    </externalRules>
-                                    <externalRules>
-                                        <location>classpath:enforcer-rules/quarkus-require-maven-version.xml</location>
-                                    </externalRules>
-                                    <externalRules>
                                         <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
                                     </externalRules>
                                     <externalRules>
                                         <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
                                     </externalRules>
+                                    <externalRules>
+                                        <location>classpath:enforcer-rules/quarkus-banned-dependencies-test.xml</location>
+                                    </externalRules>
                                 </rules>
-                            </configuration>
-                            <goals>
-                                <goal>enforce</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>enforce-test-deps-scope</id>
-                            <configuration>
-                                <rules>
-                                    <bannedDependencies>
-                                        <excludes>
-                                            <exclude>io.quarkus:quarkus-test-*</exclude>
-                                            <exclude>io.rest-assured:*</exclude>
-                                            <exclude>org.assertj:*</exclude>
-                                            <exclude>junit:junit</exclude>
-                                        </excludes>
-                                        <includes>
-                                            <include>io.quarkus:quarkus-test-*:*:*:test</include>
-                                            <include>io.rest-assured:*:*:*:test</include>
-                                            <include>org.assertj:*:*:*:test</include>
-                                            <include>junit:junit:*:*:test</include>
-                                        </includes>
-                                        <message>Found test dependencies with wrong scope:</message>
-                                    </bannedDependencies>
-                                </rules>
-                                <skip>${enforce-test-deps-scope.skip}</skip>
-                            </configuration>
-                            <goals>
-                                <goal>enforce</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>enforce-test-deps-junit-scope</id>
-                            <configuration>
-                                <rules>
-                                    <bannedDependencies>
-                                        <searchTransitive>false</searchTransitive>
-                                        <excludes>
-                                            <exclude>org.junit.jupiter:*</exclude>
-                                        </excludes>
-                                        <includes>
-                                            <include>org.junit.jupiter:*:*:*:test</include>
-                                        </includes>
-                                        <message>Found JUnit dependencies with wrong scope:</message>
-                                    </bannedDependencies>
-                                </rules>
-                                <skip>${enforce-test-deps-scope.skip}</skip>
                             </configuration>
                             <goals>
                                 <goal>enforce</goal>

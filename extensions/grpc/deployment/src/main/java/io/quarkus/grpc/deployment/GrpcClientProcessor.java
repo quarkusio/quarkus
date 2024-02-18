@@ -26,6 +26,7 @@ import jakarta.inject.Singleton;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -345,16 +346,22 @@ public class GrpcClientProcessor {
                 AnnotationInstance clientAnnotation = Annotations.find(ctx.getQualifiers(), GrpcDotNames.GRPC_CLIENT);
                 if (clientAnnotation != null && clientAnnotation.value() == null) {
                     String clientName = null;
+                    AnnotationTarget annotationTarget = ctx.getTarget();
                     if (ctx.getTarget().kind() == Kind.FIELD) {
                         clientName = clientAnnotation.target().asField().name();
-                    } else if (ctx.getTarget().kind() == Kind.METHOD_PARAMETER) {
+                    } else if (ctx.getTarget().kind() == Kind.METHOD
+                            && clientAnnotation.target().kind().equals(Kind.METHOD_PARAMETER)) {
                         MethodParameterInfo param = clientAnnotation.target().asMethodParameter();
+                        annotationTarget = param;
                         // We don't need to check if parameter names are recorded - that's validated elsewhere
                         clientName = param.method().parameterName(param.position());
                     }
                     if (clientName != null) {
                         ctx.transform().remove(GrpcDotNames::isGrpcClient)
-                                .add(GrpcDotNames.GRPC_CLIENT, AnnotationValue.createStringValue("value", clientName)).done();
+                                .add(AnnotationInstance.builder(GrpcDotNames.GRPC_CLIENT)
+                                        .value(clientName)
+                                        .buildWithTarget(annotationTarget))
+                                .done();
                     }
                 }
             }

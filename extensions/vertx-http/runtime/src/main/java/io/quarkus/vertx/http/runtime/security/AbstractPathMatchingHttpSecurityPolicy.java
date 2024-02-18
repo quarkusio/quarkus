@@ -40,21 +40,29 @@ public class AbstractPathMatchingHttpSecurityPolicy {
     private final List<ImmutablePathMatcher<List<HttpMatcher>>> sharedPermissionsPathMatchers;
     private final boolean hasNoPermissions;
 
-    AbstractPathMatchingHttpSecurityPolicy(Map<String, PolicyMappingConfig> permissions,
-            Map<String, PolicyConfig> rolePolicy, String rootPath, Instance<HttpSecurityPolicy> installedPolicies) {
-        this.hasNoPermissions = permissions.isEmpty();
+    public AbstractPathMatchingHttpSecurityPolicy(Map<String, PolicyMappingConfig> permissions,
+            Map<String, PolicyConfig> rolePolicy, String rootPath, Instance<HttpSecurityPolicy> installedPolicies,
+            PolicyMappingConfig.AppliesTo appliesTo) {
+        boolean hasNoPermissions = permissions.isEmpty();
         var namedHttpSecurityPolicies = toNamedHttpSecPolicies(rolePolicy, installedPolicies);
         List<ImmutablePathMatcher<List<HttpMatcher>>> sharedPermsMatchers = new ArrayList<>();
         final var builder = ImmutablePathMatcher.<List<HttpMatcher>> builder().handlerAccumulator(List::addAll);
-        for (Map.Entry<String, PolicyMappingConfig> entry : permissions.entrySet()) {
-            if (entry.getValue().shared) {
+        for (PolicyMappingConfig policyMappingConfig : permissions.values()) {
+            if (appliesTo != policyMappingConfig.appliesTo) {
+                continue;
+            }
+            if (hasNoPermissions) {
+                hasNoPermissions = false;
+            }
+            if (policyMappingConfig.shared) {
                 final var builder1 = ImmutablePathMatcher.<List<HttpMatcher>> builder().handlerAccumulator(List::addAll);
-                addPermissionToPathMatcher(namedHttpSecurityPolicies, rootPath, entry, builder1);
+                addPermissionToPathMatcher(namedHttpSecurityPolicies, rootPath, policyMappingConfig, builder1);
                 sharedPermsMatchers.add(builder1.build());
             } else {
-                addPermissionToPathMatcher(namedHttpSecurityPolicies, rootPath, entry, builder);
+                addPermissionToPathMatcher(namedHttpSecurityPolicies, rootPath, policyMappingConfig, builder);
             }
         }
+        this.hasNoPermissions = hasNoPermissions;
         this.sharedPermissionsPathMatchers = sharedPermsMatchers.isEmpty() ? null : List.copyOf(sharedPermsMatchers);
         this.pathMatcher = builder.build();
     }
@@ -71,7 +79,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
         return getAuthMechanismName(routingContext, pathMatcher);
     }
 
-    boolean hasNoPermissions() {
+    public boolean hasNoPermissions() {
         return hasNoPermissions;
     }
 
@@ -142,21 +150,21 @@ public class AbstractPathMatchingHttpSecurityPolicy {
     }
 
     private static void addPermissionToPathMatcher(Map<String, HttpSecurityPolicy> permissionCheckers, String rootPath,
-            Map.Entry<String, PolicyMappingConfig> entry,
+            PolicyMappingConfig policyMappingConfig,
             ImmutablePathMatcher.ImmutablePathMatcherBuilder<List<HttpMatcher>> builder) {
-        HttpSecurityPolicy checker = permissionCheckers.get(entry.getValue().policy);
+        HttpSecurityPolicy checker = permissionCheckers.get(policyMappingConfig.policy);
         if (checker == null) {
-            throw new RuntimeException("Unable to find HTTP security policy " + entry.getValue().policy);
+            throw new RuntimeException("Unable to find HTTP security policy " + policyMappingConfig.policy);
         }
 
-        if (entry.getValue().enabled.orElse(Boolean.TRUE)) {
-            for (String path : entry.getValue().paths.orElse(Collections.emptyList())) {
+        if (policyMappingConfig.enabled.orElse(Boolean.TRUE)) {
+            for (String path : policyMappingConfig.paths.orElse(Collections.emptyList())) {
                 path = path.trim();
                 if (!path.startsWith("/")) {
                     path = rootPath + path;
                 }
-                HttpMatcher m = new HttpMatcher(entry.getValue().authMechanism.orElse(null),
-                        new HashSet<>(entry.getValue().methods.orElse(Collections.emptyList())), checker);
+                HttpMatcher m = new HttpMatcher(policyMappingConfig.authMechanism.orElse(null),
+                        new HashSet<>(policyMappingConfig.methods.orElse(Collections.emptyList())), checker);
                 List<HttpMatcher> perms = new ArrayList<>();
                 perms.add(m);
                 builder.addPath(path, perms);

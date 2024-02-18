@@ -189,7 +189,7 @@ public class RuntimeResourceDeployment {
 
         ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
                 parameterDeclaredUnresolvedTypes, classAnnotationNames, method.getMethodAnnotationNames(),
-                !defaultBlocking && !method.isBlocking());
+                !defaultBlocking && !method.isBlocking(), method.getActualDeclaringClassName());
 
         RuntimeInterceptorDeployment.MethodInterceptorContext interceptorDeployment = runtimeInterceptorDeployment
                 .forMethod(method, lazyMethod);

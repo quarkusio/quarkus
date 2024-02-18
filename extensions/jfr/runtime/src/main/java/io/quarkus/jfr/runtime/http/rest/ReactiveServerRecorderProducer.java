@@ -4,33 +4,35 @@ import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.Context;
+
+import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 
 import io.quarkus.jfr.runtime.IdProducer;
 import io.vertx.core.http.HttpServerRequest;
 
 @Dependent
-public class RestRecorderProducer {
+public class ReactiveServerRecorderProducer {
 
     @Context
     HttpServerRequest vertxRequest;
 
     @Context
-    ResourceInfo resourceInfo;
+    SimpleResourceInfo resourceInfo;
 
     @Inject
     IdProducer idProducer;
 
     @Produces
     @RequestScoped
-    public RestRecorder create() {
+    public Recorder create() {
         String httpMethod = vertxRequest.method().name();
         String uri = vertxRequest.path();
-        String resourceClass = resourceInfo.getResourceClass().getName();
-        String resourceMethod = resourceInfo.getResourceMethod().toGenericString();
+        Class<?> resourceClass = resourceInfo.getResourceClass();
+        String resourceClassName = (resourceClass == null) ? null : resourceClass.getName();
+        String resourceMethodName = resourceInfo.getMethodName();
         String client = vertxRequest.remoteAddress().toString();
 
-        return new RestReactiveRecorder(httpMethod, uri, resourceClass, resourceMethod, client, idProducer);
+        return new ServerRecorder(httpMethod, uri, resourceClassName, resourceMethodName, client, idProducer);
     }
 }

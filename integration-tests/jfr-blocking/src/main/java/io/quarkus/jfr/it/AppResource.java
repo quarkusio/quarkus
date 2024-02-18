@@ -6,7 +6,6 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import io.quarkus.jfr.runtime.IdProducer;
-import io.smallrye.mutiny.Uni;
 
 @Path("/app")
 @ApplicationScoped
@@ -16,14 +15,14 @@ public class AppResource {
     IdProducer idProducer;
 
     @GET
-    @Path("/reactive")
-    public Uni<IdResponse> reactive() {
-        return Uni.createFrom().item(new IdResponse(idProducer.getTraceId(), idProducer.getSpanId()));
-    }
-
-    @GET
     @Path("blocking")
     public IdResponse blocking() {
         return new IdResponse(idProducer.getTraceId(), idProducer.getSpanId());
+    }
+
+    @GET
+    @Path("error")
+    public void error() {
+        throw new JfrTestException(idProducer.getTraceId());
     }
 }

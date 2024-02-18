@@ -8,15 +8,15 @@
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
-    <artifactId>jfr-reactive-integration-tests</artifactId>
-    <name>Quarkus - Integration Tests - Jfr Reactive</name>
+    <artifactId>jfr-blocking-integration-tests</artifactId>
+    <name>Quarkus - Integration Tests - Jfr Blocking</name>
     <properties>
         <skipITs>true</skipITs>
     </properties>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive</artifactId>
+            <artifactId>quarkus-resteasy</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -34,7 +34,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+            <artifactId>quarkus-resteasy-jackson</artifactId>
         </dependency>
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
@@ -52,7 +52,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -65,7 +65,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-jackson-deployment</artifactId>
+            <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

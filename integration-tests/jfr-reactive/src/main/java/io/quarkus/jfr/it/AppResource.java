@@ -7,6 +7,7 @@ import jakarta.ws.rs.Path;
 
 import io.quarkus.jfr.runtime.IdProducer;
 import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
 
 @Path("/app")
 @ApplicationScoped
@@ -14,6 +15,9 @@ public class AppResource {
 
     @Inject
     IdProducer idProducer;
+
+    @Inject
+    RoutingContext routingContext;
 
     @GET
     @Path("/reactive")
@@ -25,5 +29,11 @@ public class AppResource {
     @Path("blocking")
     public IdResponse blocking() {
         return new IdResponse(idProducer.getTraceId(), idProducer.getSpanId());
+    }
+
+    @GET
+    @Path("error")
+    public void error() {
+        throw new JfrTestException(idProducer.getTraceId());
     }
 }

@@ -7,10 +7,14 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.jfr.runtime.OTelIdProducer;
 import io.quarkus.jfr.runtime.QuarkusIdProducer;
-import io.quarkus.jfr.runtime.http.rest.JfrRestReactiveFilter;
-import io.quarkus.jfr.runtime.http.rest.RestRecorderProducer;
+import io.quarkus.jfr.runtime.http.rest.ClassicServerRecorderProducer;
+import io.quarkus.jfr.runtime.http.rest.JfrClassicServerFilter;
+import io.quarkus.jfr.runtime.http.rest.JfrReactiveServerFilter;
+import io.quarkus.jfr.runtime.http.rest.ReactiveServerRecorderProducer;
+import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 
 @BuildSteps
@@ -25,7 +29,8 @@ class JfrProcessor {
 
     @BuildStep
     void registerRequestIdProducer(Capabilities capabilities,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItem) {
 
         if (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
 
@@ -38,6 +43,9 @@ class JfrProcessor {
             additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
                     .addBeanClasses(QuarkusIdProducer.class)
                     .build());
+
+            runtimeInitializedClassBuildItem
+                    .produce(new RuntimeInitializedClassBuildItem(QuarkusIdProducer.class.getCanonicalName()));
         }
     }
 
@@ -49,11 +57,26 @@ class JfrProcessor {
         if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
 
             additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                    .addBeanClasses(RestRecorderProducer.class)
+                    .addBeanClasses(ReactiveServerRecorderProducer.class)
                     .build());
 
             filterBeans
-                    .produce(new CustomContainerRequestFilterBuildItem(JfrRestReactiveFilter.class.getName()));
+                    .produce(new CustomContainerRequestFilterBuildItem(JfrReactiveServerFilter.class.getName()));
+        }
+    }
+
+    @BuildStep
+    void registerResteasyClassicIntegration(Capabilities capabilities,
+            BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProviderBuildItemBuildProducer,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        if (capabilities.isPresent(Capability.RESTEASY)) {
+
+            additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                    .addBeanClasses(ClassicServerRecorderProducer.class)
+                    .build());
+
+            resteasyJaxrsProviderBuildItemBuildProducer
+                    .produce(new ResteasyJaxrsProviderBuildItem(JfrClassicServerFilter.class.getName()));
         }
     }
 }

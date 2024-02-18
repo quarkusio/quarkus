@@ -73,61 +73,6 @@ public class JfrTest {
     }
 
     @Test
-    public void reactiveTest() {
-        String jfrName = "reactiveTest";
-
-        final String url = "/app/reactive";
-
-        given()
-                .when().get("/jfr/start/" + jfrName)
-                .then()
-                .statusCode(204);
-
-        IdResponse response = given()
-                .when()
-                .get(url)
-                .then()
-                .statusCode(200)
-                .extract().as(IdResponse.class);
-
-        given()
-                .when().get("/jfr/stop/" + jfrName)
-                .then()
-                .statusCode(204);
-
-        final String resourceMethod = "reactive";
-
-        ValidatableResponse validatableResponse = given()
-                .when().get("/jfr/check/" + jfrName + "/" + response.traceId)
-                .then()
-                .statusCode(200)
-                .body("start", notNullValue())
-                .body("start.uri", is(url))
-                .body("start.traceId", is(response.traceId))
-                .body("start.spanId", is(response.spanId))
-                .body("start.httpMethod", is(HTTP_METHOD))
-                .body("start.resourceClass", is(RESOURCE_CLASS))
-                .body("start.resourceMethod", is(resourceMethod))
-                .body("start.client", matchesRegex(CLIENT))
-                .body("end", notNullValue())
-                .body("end.uri", is(url))
-                .body("end.traceId", is(response.traceId))
-                .body("end.spanId", is(response.spanId))
-                .body("end.httpMethod", is(HTTP_METHOD))
-                .body("end.resourceClass", is(RESOURCE_CLASS))
-                .body("end.resourceMethod", is(resourceMethod))
-                .body("end.client", matchesRegex(CLIENT))
-                .body("period", notNullValue())
-                .body("period.uri", is(url))
-                .body("period.traceId", is(response.traceId))
-                .body("period.spanId", is(response.spanId))
-                .body("period.httpMethod", is(HTTP_METHOD))
-                .body("period.resourceClass", is(RESOURCE_CLASS))
-                .body("period.resourceMethod", is(resourceMethod))
-                .body("period.client", matchesRegex(CLIENT));
-    }
-
-    @Test
     public void errorTest() {
         String jfrName = "errorTest";
 

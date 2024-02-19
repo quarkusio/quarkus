@@ -592,6 +592,7 @@ public class DevMojo extends AbstractMojo {
                 if (!e.getGoals().isEmpty()) {
                     goalPrefix = getMojoDescriptor(p, e.getGoals().get(0)).getPluginDescriptor().getGoalPrefix();
                     pluginPrefixes.put(goalPrefix, p);
+                    pluginPrefixes.put(p.getId(), p);
                 }
                 if (e.getPhase() != null) {
                     phaseExecutions.computeIfAbsent(e.getPhase(), k -> new ArrayList<>()).add(new PluginExec(p, goalPrefix, e));
@@ -630,7 +631,7 @@ public class DevMojo extends AbstractMojo {
             if (goal.endsWith(currentGoal)) {
                 break;
             }
-            var colon = goal.indexOf(':');
+            var colon = goal.lastIndexOf(':');
             if (colon >= 0) {
                 var plugin = pluginPrefixes.get(goal.substring(0, colon));
                 if (plugin == null) {

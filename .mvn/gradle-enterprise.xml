@@ -1,6 +1,6 @@
 <gradleEnterprise>
     <server>
-        <url>https://ge.quarkus.io</url>
+        <url>https://ge.solutions-team.gradle.com</url>
         <allowUntrusted>false</allowUntrusted>
     </server>
     <buildScan>

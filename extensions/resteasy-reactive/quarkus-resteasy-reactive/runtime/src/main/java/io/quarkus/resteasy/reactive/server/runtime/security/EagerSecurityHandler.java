@@ -57,7 +57,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
         }
         SecurityCheck check = this.check;
         ResteasyReactiveResourceInfo lazyMethod = requestContext.getTarget().getLazyMethod();
-        MethodDescription methodDescription = new MethodDescription(lazyMethod.getResourceClass().getName(),
+        MethodDescription methodDescription = new MethodDescription(lazyMethod.getActualDeclaringClassName(),
                 lazyMethod.getName(), MethodDescription.typesAsStrings(lazyMethod.getParameterTypes()));
         if (check == null) {
             SecurityCheckStorage storage = Arc.container().instance(SecurityCheckStorage.class).get();

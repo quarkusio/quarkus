@@ -384,8 +384,12 @@ Your extension project should be setup as a multi-module project with two submod
 
 Your runtime artifact should depend on `io.quarkus:quarkus-core`, and possibly the runtime artifacts of other Quarkus
 modules if you want to use functionality provided by them.
+
 Your deployment time module should depend on `io.quarkus:quarkus-core-deployment`, your runtime artifact,
-and possibly the deployment artifacts of other Quarkus modules if you want to use functionality provided by them.
+and the deployment artifacts of any other Quarkus extensions your own extension depends on. This is essential, otherwise any transitively
+pulled in extensions will not provide their full functionality.
+
+NOTE: The Maven and Gradle plugins will validate this for you and alert you to any deployment artifacts you might have forgotten to add.
 
 [WARNING]
 ====
@@ -573,10 +577,6 @@ dependencies {
 }
 ----
 
-[WARNING]
-====
-This plugin is still experimental, it does not validate the extension dependencies as the equivalent Maven plugin does.
-====
 
 [[build-step-processors]]
 === Build Step Processors

@@ -684,7 +684,7 @@ image::dev-ui-qui-code-block-v2.png[alt=Dev UI Code Block,role="center"]
 
 [source,javascript]
 ----
-import 'qui-code-block';
+import '@quarkus-webcomponents/codeblock';
 ----
 
 [source,html]

@@ -13,14 +13,21 @@ import io.vertx.mutiny.ext.web.client.HttpRequest;
 
 @ApplicationScoped
 @Unremovable
-@OidcEndpoint(value = Type.DISCOVERY)
-public class OidcDiscoveryRequestCustomizer implements OidcRequestFilter {
+@OidcEndpoint(value = { Type.DISCOVERY, Type.JWKS })
+public class OidcDiscoveryJwksRequestCustomizer implements OidcRequestFilter {
 
     @Override
     public void filter(HttpRequest<Buffer> request, Buffer buffer, OidcRequestContextProperties contextProps) {
-        if (!request.uri().endsWith(".well-known/openid-configuration")) {
+        if (!request.uri().endsWith(".well-known/openid-configuration")
+                && !isJwksRequest(request)) {
             throw new OIDCException("Filter is applied to the wrong endpoint: " + request.uri());
         }
-        request.putHeader("Discovery", "OK");
+        request.putHeader("Filter", "OK");
+    }
+
+    private boolean isJwksRequest(HttpRequest<Buffer> request) {
+        return request.uri().endsWith("/protocol/openid-connect/certs")
+                || request.uri().endsWith("/auth/azure/jwk")
+                || request.uri().endsWith("/single-key-without-kid-thumbprint");
     }
 }

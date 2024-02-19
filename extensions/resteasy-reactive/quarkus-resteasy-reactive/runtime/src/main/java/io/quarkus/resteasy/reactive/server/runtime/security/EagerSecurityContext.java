@@ -171,7 +171,7 @@ public class EagerSecurityContext {
     }
 
     static MethodDescription lazyMethodToMethodDescription(ResteasyReactiveResourceInfo lazyMethod) {
-        return new MethodDescription(lazyMethod.getResourceClass().getName(),
+        return new MethodDescription(lazyMethod.getActualDeclaringClassName(),
                 lazyMethod.getName(), MethodDescription.typesAsStrings(lazyMethod.getParameterTypes()));
     }
 }

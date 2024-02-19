@@ -13,6 +13,8 @@ dependencies {
 
 
     api project(':another-example-extension') // why: https://quarkus.io/guides/building-my-first-extension
+    implementation ('org.acme.extensions:example-extension-deployment')
+
     implementation 'io.quarkus:quarkus-core-deployment'
     implementation 'io.quarkus:quarkus-arc-deployment'
     implementation ('org.acme.libs:libraryB')

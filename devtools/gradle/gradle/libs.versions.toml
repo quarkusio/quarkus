@@ -22,8 +22,8 @@ quarkus-project-core-extension-codestarts = { module = "io.quarkus:quarkus-proje
 
 kotlin-gradle-plugin-api = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin" }
 smallrye-config-yaml = { module = "io.smallrye.config:smallrye-config-source-yaml", version.ref = "smallrye-config" }
-jackson-databind = {module="com.fasterxml.jackson.core:jackson-databind"}
-jackson-dataformat-yaml = {module="com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"}
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind" }
+jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml" }
 
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit5" }
 junit-api = { module = "org.junit.jupiter:junit-jupiter-api" }

@@ -611,8 +611,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                                         + currentMethodInfo.parameterName(i));
                     bodyParamType = paramType;
                     if (GET.equals(httpMethod) || HEAD.equals(httpMethod) || OPTIONS.equals(httpMethod)) {
-                        log.warn("Using a body parameter with " + httpMethod + " is strongly discouraged. Offending method is '"
-                                + currentMethodInfo.declaringClass().name() + "#" + currentMethodInfo + "'");
+                        warnAboutMissUsedBodyParameter(httpMethod, currentMethodInfo);
                     }
                 }
                 String elementType = parameterResult.getElementType();
@@ -776,6 +775,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             throw new RuntimeException("Failed to process method '" + currentMethodInfo.declaringClass().name() + "#"
                     + currentMethodInfo.name() + "'", e);
         }
+    }
+
+    protected void warnAboutMissUsedBodyParameter(DotName httpMethod, MethodInfo methodInfo) {
+        log.warn("Using a body parameter with " + httpMethod + " is strongly discouraged. Offending method is '"
+                + methodInfo.declaringClass().name() + "#" + methodInfo + "'");
     }
 
     protected boolean skipParameter(Map<DotName, AnnotationInstance> anns) {

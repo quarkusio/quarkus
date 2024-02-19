@@ -37,7 +37,7 @@ public class KafkaDevServicesDevModeTestCase {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(PriceConverter.class, PriceResource.class, PriceGenerator.class)
+                            .addClasses(PriceConverter.class, PriceResource.class, PriceGenerator.class, TopicCleaner.class)
                             .addAsResource(new StringAsset(FINAL_APP_PROPERTIES),
                                     "application.properties");
                 }

@@ -95,7 +95,7 @@
         <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
         <postgres.image>docker.io/postgres:14</postgres.image>
         <mariadb.image>docker.io/mariadb:10.11</mariadb.image>
-        <db2.image>docker.io/ibmcom/db2:11.5.7.0a</db2.image>
+        <db2.image>docker.io/ibmcom/db2:11.5.8.0</db2.image>
         <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
         <mysql.image>docker.io/mysql:8.0</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
@@ -115,7 +115,7 @@
 
         <assertj.version>3.25.3</assertj.version>
 
-        <wiremock.version>3.3.1</wiremock.version>
+        <wiremock.version>3.4.0</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
@@ -712,7 +712,6 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-plugin-plugin</artifactId>
-                    <version>${maven-plugin-plugin.version}</version>
                     <configuration>
                         <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
                     </configuration>

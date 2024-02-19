@@ -267,10 +267,12 @@ public class MediaTypeHelper {
         return true;
     }
 
+    // TODO: does this need to be more complex?
     public static boolean isTextLike(MediaType mediaType) {
-        return "text".equalsIgnoreCase(mediaType.getType())
-                || ("application".equalsIgnoreCase(mediaType.getType())
-                        && mediaType.getSubtype().toLowerCase().startsWith("xml"));
+        String type = mediaType.getType();
+        String subtype = mediaType.getSubtype();
+        return (type.equals("application") && (subtype.contains("json") || subtype.contains("xml") || subtype.contains("yaml")))
+                || type.equals("text");
     }
 
     public static boolean isUnsupportedWildcardSubtype(MediaType mediaType) {

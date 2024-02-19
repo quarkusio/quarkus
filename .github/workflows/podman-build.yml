@@ -74,6 +74,7 @@ jobs:
             | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:unstable.list > /dev/null
           sudo apt-get update -qq
           sudo apt-get -qq -y install podman
+          sudo bash -c "echo -e '[engine]\nservice_timeout=0' >> /etc/containers/containers.conf"
       # Runs a single command using the runners shell
       - name: Check podman
         run: docker version
@@ -89,7 +90,7 @@ jobs:
           key: q2maven-${{ steps.get-date.outputs.date }}
       - name: Initial build
         run: |
-          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dtcks -Prelocations clean install
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations clean install
       - name: Verify extension dependencies
         shell: bash
         run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
@@ -149,7 +150,7 @@ jobs:
       - name: Build
         shell: bash
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools -pl !docs $JVM_TEST_MAVEN_ARGS ${{ needs.build-jdk11.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devmode -pl !integration-tests/devtools -Dno-test-kubernetes -pl !docs $JVM_TEST_MAVEN_ARGS ${{ steps.get-gib-args.outputs.gib_args }}
       - name: Delete Local Artifacts From Cache
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus

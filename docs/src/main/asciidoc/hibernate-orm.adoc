@@ -1351,11 +1351,6 @@ and annotating the implementation with the appropriate qualifiers:
 @PersistenceUnitExtension // <2>
 public class MyJsonFormatMapper implements FormatMapper { // <3>
     @Override
-    public String inspect(String sql) {
-        // ...
-        return sql;
-    }
-    @Override
     public <T> T fromString(CharSequence charSequence, JavaType<T> javaType, WrapperOptions wrapperOptions) {
         // ...
     }
@@ -1382,11 +1377,6 @@ In case of a custom XML format mapper, a different CDI qualifier must be applied
 @XmlFormat // <1>
 @PersistenceUnitExtension // <2>
 public class MyJsonFormatMapper implements FormatMapper { // <3>
-    @Override
-    public String inspect(String sql) {
-        // ...
-        return sql;
-    }
     @Override
     public <T> T fromString(CharSequence charSequence, JavaType<T> javaType, WrapperOptions wrapperOptions) {
         // ...

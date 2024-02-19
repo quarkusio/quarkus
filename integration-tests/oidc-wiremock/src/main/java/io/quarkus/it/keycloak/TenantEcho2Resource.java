@@ -30,6 +30,30 @@ public class TenantEcho2Resource {
         return getTenant();
     }
 
+    @Path("/hr-jax-rs-perm-check")
+    @Tenant("hr")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getHrTenantJaxRsPermCheck() {
+        return getTenant();
+    }
+
+    @Path("/hr-classic-perm-check")
+    @Tenant("hr")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getHrTenantClassicPermCheck() {
+        return getTenant();
+    }
+
+    @Path("/hr-classic-and-jaxrs-perm-check")
+    @Tenant("hr")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getHrTenantClassicAndJaxRsPermCheck() {
+        return getTenant();
+    }
+
     @Path("/default")
     @GET
     @Produces(MediaType.TEXT_PLAIN)

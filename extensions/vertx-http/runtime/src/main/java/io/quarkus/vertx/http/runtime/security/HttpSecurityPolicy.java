@@ -1,8 +1,11 @@
 package io.quarkus.vertx.http.runtime.security;
 
 import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -80,4 +83,28 @@ public interface HttpSecurityPolicy {
 
     }
 
+    class DefaultAuthorizationRequestContext implements AuthorizationRequestContext {
+        private final BlockingSecurityExecutor blockingExecutor;
+
+        public DefaultAuthorizationRequestContext(BlockingSecurityExecutor blockingExecutor) {
+            this.blockingExecutor = blockingExecutor;
+        }
+
+        @Override
+        public Uni<HttpSecurityPolicy.CheckResult> runBlocking(RoutingContext context, Uni<SecurityIdentity> identityUni,
+                BiFunction<RoutingContext, SecurityIdentity, HttpSecurityPolicy.CheckResult> function) {
+            return identityUni
+                    .flatMap(new Function<SecurityIdentity, Uni<? extends CheckResult>>() {
+                        @Override
+                        public Uni<? extends HttpSecurityPolicy.CheckResult> apply(SecurityIdentity identity) {
+                            return blockingExecutor.executeBlocking(new Supplier<CheckResult>() {
+                                @Override
+                                public HttpSecurityPolicy.CheckResult get() {
+                                    return function.apply(context, identity);
+                                }
+                            });
+                        }
+                    });
+        }
+    }
 }

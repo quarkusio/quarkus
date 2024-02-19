@@ -42,6 +42,10 @@ public interface ArtifactCoords {
         return TYPE_JAR.equals(getType());
     }
 
+    default boolean isSnapshot() {
+        return getVersion() != null && getVersion().endsWith("-SNAPSHOT");
+    }
+
     default String toGACTVString() {
         return getGroupId() + ":" + getArtifactId() + ":" + getClassifier() + ":" + getType() + ":" + getVersion();
     }

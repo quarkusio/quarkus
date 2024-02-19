@@ -22,7 +22,6 @@ import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret.Method;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
-import io.quarkus.oidc.common.runtime.OidcEndpointAccessException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
 import io.vertx.core.Vertx;
@@ -109,7 +108,7 @@ public class OidcProviderClient implements Closeable {
         if (resp.statusCode() == 200) {
             return new JsonWebKeySet(resp.bodyAsString(StandardCharsets.UTF_8.name()));
         } else {
-            throw new OidcEndpointAccessException(resp.statusCode());
+            throw responseException(metadata.getJsonWebKeySetUri(), resp);
         }
     }
 
@@ -201,7 +200,7 @@ public class OidcProviderClient implements Closeable {
     }
 
     private AuthorizationCodeTokens getAuthorizationCodeTokens(HttpResponse<Buffer> resp) {
-        JsonObject json = getJsonObject(resp);
+        JsonObject json = getJsonObject(metadata.getAuthorizationUri(), resp);
         final String idToken = json.getString(OidcConstants.ID_TOKEN_VALUE);
         final String accessToken = json.getString(OidcConstants.ACCESS_TOKEN_VALUE);
         final String refreshToken = json.getString(OidcConstants.REFRESH_TOKEN_VALUE);
@@ -209,35 +208,41 @@ public class OidcProviderClient implements Closeable {
     }
 
     private UserInfo getUserInfo(HttpResponse<Buffer> resp) {
-        return new UserInfo(getString(resp));
+        return new UserInfo(getString(metadata.getUserInfoUri(), resp));
     }
 
     private TokenIntrospection getTokenIntrospection(HttpResponse<Buffer> resp) {
-        return new TokenIntrospection(getString(resp));
+        return new TokenIntrospection(getString(metadata.getIntrospectionUri(), resp));
     }
 
-    private static JsonObject getJsonObject(HttpResponse<Buffer> resp) {
+    private static JsonObject getJsonObject(String requestUri, HttpResponse<Buffer> resp) {
         if (resp.statusCode() == 200) {
             LOG.debugf("Request succeeded: %s", resp.bodyAsJsonObject());
             return resp.bodyAsJsonObject();
         } else {
-            throw responseException(resp);
+            throw responseException(requestUri, resp);
         }
     }
 
-    private static String getString(HttpResponse<Buffer> resp) {
+    private static String getString(String requestUri, HttpResponse<Buffer> resp) {
         if (resp.statusCode() == 200) {
             LOG.debugf("Request succeeded: %s", resp.bodyAsString());
             return resp.bodyAsString();
         } else {
-            throw responseException(resp);
+            throw responseException(requestUri, resp);
         }
     }
 
-    private static OIDCException responseException(HttpResponse<Buffer> resp) {
+    private static OIDCException responseException(String requestUri, HttpResponse<Buffer> resp) {
         String errorMessage = resp.bodyAsString();
-        LOG.debugf("Request has failed: status: %d, error message: %s", resp.statusCode(), errorMessage);
-        throw new OIDCException(errorMessage);
+
+        if (errorMessage != null && !errorMessage.isEmpty()) {
+            LOG.errorf("Request %s has failed: status: %d, error message: %s", requestUri, resp.statusCode(), errorMessage);
+            throw new OIDCException(errorMessage);
+        } else {
+            LOG.errorf("Request %s has failed: status: %d", requestUri, resp.statusCode());
+            throw new OIDCException("Error status:" + resp.statusCode());
+        }
     }
 
     @Override

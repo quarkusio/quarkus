@@ -4,9 +4,7 @@ import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_SUCCESS;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.event.Event;
@@ -37,15 +35,7 @@ import io.vertx.ext.web.RoutingContext;
 @Priority(Priorities.AUTHENTICATION)
 @Provider
 public class EagerSecurityFilter implements ContainerRequestFilter {
-
-    private static final Consumer<RoutingContext> NULL_SENTINEL = new Consumer<RoutingContext>() {
-        @Override
-        public void accept(RoutingContext routingContext) {
-
-        }
-    };
     static final String SKIP_DEFAULT_CHECK = "io.quarkus.resteasy.runtime.EagerSecurityFilter#SKIP_DEFAULT_CHECK";
-    private final Map<MethodDescription, Consumer<RoutingContext>> cache = new HashMap<>();
     private final EagerSecurityInterceptorStorage interceptorStorage;
     private final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> eventHelper;
 
@@ -64,13 +54,16 @@ public class EagerSecurityFilter implements ContainerRequestFilter {
     @Inject
     AuthorizationController authorizationController;
 
+    @Inject
+    JaxRsPermissionChecker jaxRsPermissionChecker;
+
     public EagerSecurityFilter() {
         var interceptorStorageHandle = Arc.container().instance(EagerSecurityInterceptorStorage.class);
         this.interceptorStorage = interceptorStorageHandle.isAvailable() ? interceptorStorageHandle.get() : null;
         Event<Object> event = Arc.container().beanManager().getEvent();
         this.eventHelper = new SecurityEventHelper<>(event.select(AuthorizationSuccessEvent.class),
-                event.select(AuthorizationFailureEvent.class), AUTHORIZATION_SUCCESS,
-                AUTHORIZATION_FAILURE, Arc.container().beanManager(),
+                event.select(AuthorizationFailureEvent.class), AUTHORIZATION_SUCCESS, AUTHORIZATION_FAILURE,
+                Arc.container().beanManager(),
                 ConfigProvider.getConfig().getOptionalValue("quarkus.security.events.enabled", Boolean.class).orElse(false));
     }
 
@@ -80,6 +73,9 @@ public class EagerSecurityFilter implements ContainerRequestFilter {
             var description = MethodDescription.ofMethod(resourceInfo.getResourceMethod());
             if (interceptorStorage != null) {
                 applyEagerSecurityInterceptors(description);
+            }
+            if (jaxRsPermissionChecker.shouldRunPermissionChecks()) {
+                jaxRsPermissionChecker.applyPermissionChecks(eventHelper);
             }
             applySecurityChecks(description);
         }
@@ -138,19 +134,9 @@ public class EagerSecurityFilter implements ContainerRequestFilter {
     }
 
     private void applyEagerSecurityInterceptors(MethodDescription description) {
-        var interceptor = cache.get(description);
-        if (interceptor != NULL_SENTINEL) {
-            if (interceptor != null) {
-                interceptor.accept(routingContext);
-            } else {
-                interceptor = interceptorStorage.getInterceptor(description);
-                if (interceptor == null) {
-                    cache.put(description, NULL_SENTINEL);
-                } else {
-                    cache.put(description, interceptor);
-                    interceptor.accept(routingContext);
-                }
-            }
+        var interceptor = interceptorStorage.getInterceptor(description);
+        if (interceptor != null) {
+            interceptor.accept(routingContext);
         }
     }
 }

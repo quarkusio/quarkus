@@ -447,7 +447,13 @@ public class OidcCommonUtils {
             if (resp.statusCode() == 200) {
                 return resp.bodyAsJsonObject();
             } else {
-                LOG.warnf("Discovery has failed, status code: %d", resp.statusCode());
+                String errorMessage = resp.bodyAsString();
+                if (errorMessage != null && !errorMessage.isEmpty()) {
+                    LOG.warnf("Discovery request %s has failed, status code: %d, error message: %s", discoveryUrl,
+                            resp.statusCode(), errorMessage);
+                } else {
+                    LOG.warnf("Discovery request %s has failed, status code: %d", discoveryUrl, resp.statusCode());
+                }
                 throw new OidcEndpointAccessException(resp.statusCode());
             }
         }).onFailure(oidcEndpointNotAvailable())

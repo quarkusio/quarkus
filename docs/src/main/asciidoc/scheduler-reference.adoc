@@ -34,12 +34,16 @@ Furthermore, the annotated method must return `void` and either declare no param
 
 TIP: The annotation is repeatable so a single method could be scheduled multiple times.
 
-[WARNING]
-====
-Subclasses never inherit the metadata of a `@Scheduled` method declared on a superclass. In the following example, the `everySecond()` method is only invoked upon the instance of `Jobs`.
+=== Inheritance of metadata
+
+A subclass never inherits the metadata of a `@Scheduled` method declared on a superclass. 
+For example, suppose the class `org.amce.Foo` is extended by the class `org.amce.Bar`. 
+If `Foo` declares a non-static method annotated with `@Scheduled` then `Bar` does not inherit the metadata of the scheduled method.
+In the following example, the `everySecond()` method is only invoked upon the instance of `Foo`.
+
 [source,java]
 ----
-class Jobs {
+class Foo {
 
    @Scheduled(every = "1s")
    void everySecond() {
@@ -48,12 +52,38 @@ class Jobs {
 }
 
 @Singleton
-class MyJobs extends Jobs {
+class Bar extends Foo {
 }
 ----
-====
 
-A CDI event of type `io.quarkus.scheduler.SuccessfulExecution` is fired synchronously and asynchronously when an execution of a scheduled method is successful. A CDI event of type `io.quarkus.scheduler.FailedExecution` is fired synchronously and asynchronously  when an execution of a scheduled method throws an exception.
+=== CDI events
+
+Some CDI events are fired synchronously and asynchronously when specific events occur.
+
+|===
+|Type |Event description
+
+|`io.quarkus.scheduler.SuccessfulExecution`
+|An execution of a scheduled job completed successfuly.
+
+|`io.quarkus.scheduler.FailedExecution`
+|An execution of a scheduled job completed with an exception.
+
+|`io.quarkus.scheduler.SkippedExecution`
+|An execution of a scheduled job was skipped.
+
+|`io.quarkus.scheduler.SchedulerPaused`
+|The scheduler was paused.
+
+|`io.quarkus.scheduler.SchedulerResumed`
+|The scheduler was resumed.
+
+|`io.quarkus.scheduler.ScheduledJobPaused`
+|A scheduled job was paused.
+
+|`io.quarkus.scheduler.ScheduledJobResumed`
+|A scheduled job was resumed.
+|===
 
 === Triggers
 

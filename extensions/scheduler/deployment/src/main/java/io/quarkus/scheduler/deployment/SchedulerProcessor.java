@@ -132,14 +132,21 @@ public class SchedulerProcessor {
         }
         for (AnnotationInstance annotationInstance : schedules) {
             if (annotationInstance.target().kind() != METHOD) {
-                continue;
+                continue; // This should never happen as the annotation has @Target(METHOD)
             }
             MethodInfo method = annotationInstance.target().asMethod();
+            ClassInfo declaringClass = method.declaringClass();
+            if (!Modifier.isStatic(method.flags())
+                    && (Modifier.isAbstract(declaringClass.flags()) || declaringClass.isInterface())) {
+                throw new IllegalStateException(String.format(
+                        "Non-static @Scheduled methods may not be declared on abstract classes and interfaces: %s() declared on %s",
+                        method.name(), declaringClass.name()));
+            }
             if (Modifier.isStatic(method.flags()) && !KotlinUtil.isSuspendMethod(method)) {
                 scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(null, method, schedules,
                         transformedAnnotations.hasAnnotation(method, SchedulerDotNames.NON_BLOCKING),
                         transformedAnnotations.hasAnnotation(method, SchedulerDotNames.RUN_ON_VIRTUAL_THREAD)));
-                LOGGER.debugf("Found scheduled static method %s declared on %s", method, method.declaringClass().name());
+                LOGGER.debugf("Found scheduled static method %s declared on %s", method, declaringClass.name());
             }
         }
 
@@ -425,14 +432,26 @@ public class SchedulerProcessor {
         String returnTypeStr = DescriptorUtils.typeToString(method.returnType());
         ResultHandle res;
         if (isStatic) {
-            if (method.parameterTypes().isEmpty()) {
-                res = tryBlock.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr));
+            if (implClazz.isInterface()) {
+                if (method.parameterTypes().isEmpty()) {
+                    res = tryBlock.invokeStaticInterfaceMethod(
+                            MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr));
+                } else {
+                    res = tryBlock.invokeStaticInterfaceMethod(
+                            MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr,
+                                    ScheduledExecution.class),
+                            tryBlock.getMethodParam(0));
+                }
             } else {
-                res = tryBlock.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr,
-                                ScheduledExecution.class),
-                        tryBlock.getMethodParam(0));
+                if (method.parameterTypes().isEmpty()) {
+                    res = tryBlock.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr));
+                } else {
+                    res = tryBlock.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(implClazz.name().toString(), method.name(), returnTypeStr,
+                                    ScheduledExecution.class),
+                            tryBlock.getMethodParam(0));
+                }
             }
         } else {
             // InjectableBean<Foo> bean = Arc.container().bean("foo1");

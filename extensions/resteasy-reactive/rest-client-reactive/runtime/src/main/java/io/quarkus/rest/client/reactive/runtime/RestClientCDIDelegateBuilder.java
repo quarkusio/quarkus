@@ -121,7 +121,7 @@ public class RestClientCDIDelegateBuilder<T> {
         Optional<String> userAgent = oneOf(clientConfigByClassName().userAgent,
                 clientConfigByConfigKey().userAgent, configRoot.userAgent);
         if (userAgent.isPresent()) {
-            builder.property(QuarkusRestClientProperties.USER_AGENT, userAgent.get());
+            builder.userAgent(userAgent.get());
         }
 
         Optional<Integer> maxChunkSize = oneOf(

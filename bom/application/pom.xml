@@ -157,11 +157,11 @@
         <scala.version>2.13.12</scala.version>
         <aws-lambda-java.version>1.2.3</aws-lambda-java.version>
         <aws-lambda-java-events.version>3.11.3</aws-lambda-java-events.version>
-        <aws-xray.version>2.15.0</aws-xray.version>
+        <aws-xray.version>2.15.1</aws-xray.version>
         <azure-functions-java-library.version>2.2.0</azure-functions-java-library.version>
         <azure-functions-java-spi.version>1.0.0</azure-functions-java-spi.version>
         <kotlin.version>1.9.22</kotlin.version>
-        <kotlin.coroutine.version>1.7.3</kotlin.coroutine.version>
+        <kotlin.coroutine.version>1.8.0</kotlin.coroutine.version>
         <azure.toolkit-lib.version>0.27.0</azure.toolkit-lib.version>
         <kotlin-serialization.version>1.6.2</kotlin-serialization.version>
         <dekorate.version>4.1.2</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
@@ -192,9 +192,9 @@
         <keycloak.version>23.0.6</keycloak.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
         <checker-qual.version>3.42.0</checker-qual.version>
-        <error-prone-annotations.version>2.24.1</error-prone-annotations.version>
+        <error-prone-annotations.version>2.25.0</error-prone-annotations.version>
         <jib-core.version>0.25.0</jib-core.version>
-        <google-http-client.version>1.43.3</google-http-client.version>
+        <google-http-client.version>1.44.1</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
         <picocli.version>4.7.5</picocli.version>
         <google-cloud-functions.version>1.1.0</google-cloud-functions.version>

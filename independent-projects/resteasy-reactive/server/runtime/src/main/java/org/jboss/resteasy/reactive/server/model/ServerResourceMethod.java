@@ -18,6 +18,7 @@ public class ServerResourceMethod extends ResourceMethod {
 
     private List<HandlerChainCustomizer> handlerChainCustomizers = new ArrayList<>();
     private ParameterExtractor customerParameterExtractor;
+    private String actualDeclaringClassName;
 
     public ServerResourceMethod() {
     }
@@ -69,5 +70,13 @@ public class ServerResourceMethod extends ResourceMethod {
     public ServerResourceMethod setCustomerParameterExtractor(ParameterExtractor customerParameterExtractor) {
         this.customerParameterExtractor = customerParameterExtractor;
         return this;
+    }
+
+    public String getActualDeclaringClassName() {
+        return actualDeclaringClassName;
+    }
+
+    public void setActualDeclaringClassName(String actualDeclaringClassName) {
+        this.actualDeclaringClassName = actualDeclaringClassName;
     }
 }

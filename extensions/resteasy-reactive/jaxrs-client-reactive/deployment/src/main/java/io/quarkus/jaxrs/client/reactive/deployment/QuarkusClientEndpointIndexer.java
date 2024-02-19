@@ -72,6 +72,11 @@ public class QuarkusClientEndpointIndexer extends ClientEndpointIndexer {
                 + "' but no JSON extension has been added. Consider adding 'quarkus-rest-client-reactive-jackson' (recommended) or 'quarkus-rest-client-reactive-jsonb'.");
     }
 
+    @Override
+    protected void warnAboutMissUsedBodyParameter(DotName httpMethod, MethodInfo methodInfo) {
+        // do nothing in the case of the client
+    }
+
     public static final class Builder extends AbstractBuilder<Builder> {
 
         private final Capabilities capabilities;

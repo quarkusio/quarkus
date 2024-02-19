@@ -341,7 +341,7 @@ public class SubclassGenerator extends AbstractGenerator {
                         applicationClassPredicate.test(bean.getBeanClass()),
                         funBytecode.getMethodParam(1),
                         funBytecode.getMethodParam(0));
-                funBytecode.returnValue(ret);
+                funBytecode.returnValue(ret != null ? ret : funBytecode.loadNull());
                 constructor.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, methodsList, fun.getInstance());
             }
             constructor.writeInstanceField(field.getFieldDescriptor(), constructor.getThis(), methodsList);
@@ -461,9 +461,9 @@ public class SubclassGenerator extends AbstractGenerator {
                     MethodDescriptor virtualMethodDescriptor = MethodDescriptor.ofMethod(declaringClass,
                             originalMethodDescriptor.getName(),
                             decoratorMethodDescriptor.getReturnType(), decoratorMethodDescriptor.getParameterTypes());
-                    funcBytecode
-                            .returnValue(funcBytecode.invokeVirtualMethod(virtualMethodDescriptor, funDecoratorInstance,
-                                    superParamHandles));
+                    ResultHandle superResult = funcBytecode.invokeVirtualMethod(virtualMethodDescriptor, funDecoratorInstance,
+                            superParamHandles);
+                    funcBytecode.returnValue(superResult != null ? superResult : funcBytecode.loadNull());
                 } else {
                     ResultHandle superResult = funcBytecode.invokeVirtualMethod(forwardDescriptor, targetHandle,
                             superParamHandles);

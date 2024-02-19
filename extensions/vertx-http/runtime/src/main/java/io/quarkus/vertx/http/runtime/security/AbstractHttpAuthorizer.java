@@ -6,10 +6,7 @@ import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.spi.BeanManager;
@@ -42,8 +39,8 @@ abstract class AbstractHttpAuthorizer {
     private final IdentityProviderManager identityProviderManager;
     private final AuthorizationController controller;
     private final List<HttpSecurityPolicy> policies;
-    private final BlockingSecurityExecutor blockingExecutor;
     private final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> securityEventHelper;
+    private final HttpSecurityPolicy.AuthorizationRequestContext context;
 
     AbstractHttpAuthorizer(HttpAuthenticator httpAuthenticator, IdentityProviderManager identityProviderManager,
             AuthorizationController controller, List<HttpSecurityPolicy> policies, BeanManager beanManager,
@@ -53,32 +50,10 @@ abstract class AbstractHttpAuthorizer {
         this.identityProviderManager = identityProviderManager;
         this.controller = controller;
         this.policies = policies;
-        this.blockingExecutor = blockingExecutor;
+        this.context = new HttpSecurityPolicy.DefaultAuthorizationRequestContext(blockingExecutor);
         this.securityEventHelper = new SecurityEventHelper<>(authZSuccessEvent, authZFailureEvent, AUTHORIZATION_SUCCESS,
                 AUTHORIZATION_FAILURE, beanManager, securityEventsEnabled);
     }
-
-    /**
-     * context that allows for running blocking tasks
-     */
-    private final HttpSecurityPolicy.AuthorizationRequestContext CONTEXT = new HttpSecurityPolicy.AuthorizationRequestContext() {
-        @Override
-        public Uni<HttpSecurityPolicy.CheckResult> runBlocking(RoutingContext context, Uni<SecurityIdentity> identityUni,
-                BiFunction<RoutingContext, SecurityIdentity, HttpSecurityPolicy.CheckResult> function) {
-            return identityUni
-                    .flatMap(new Function<SecurityIdentity, Uni<? extends HttpSecurityPolicy.CheckResult>>() {
-                        @Override
-                        public Uni<? extends HttpSecurityPolicy.CheckResult> apply(SecurityIdentity identity) {
-                            return blockingExecutor.executeBlocking(new Supplier<HttpSecurityPolicy.CheckResult>() {
-                                @Override
-                                public HttpSecurityPolicy.CheckResult get() {
-                                    return function.apply(context, identity);
-                                }
-                            });
-                        }
-                    });
-        }
-    };
 
     /**
      * Checks that the request is allowed to proceed. If it is then {@link RoutingContext#next()} will
@@ -121,7 +96,7 @@ abstract class AbstractHttpAuthorizer {
         }
         //get the current checker
         HttpSecurityPolicy res = permissionCheckers.get(index);
-        res.checkPermission(routingContext, identity, CONTEXT)
+        res.checkPermission(routingContext, identity, context)
                 .subscribe().with(new Consumer<HttpSecurityPolicy.CheckResult>() {
                     @Override
                     public void accept(HttpSecurityPolicy.CheckResult checkResult) {

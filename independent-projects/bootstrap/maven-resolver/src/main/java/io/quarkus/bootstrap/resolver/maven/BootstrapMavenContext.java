@@ -79,8 +79,6 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
-import io.smallrye.beanbag.BeanSupplier;
-import io.smallrye.beanbag.Scope;
 import io.smallrye.beanbag.maven.MavenFactory;
 
 public class BootstrapMavenContext {
@@ -132,6 +130,8 @@ public class BootstrapMavenContext {
     private Boolean effectiveModelBuilder;
     private Boolean wsModuleParentHierarchy;
     private SettingsDecrypter settingsDecrypter;
+    private final List<String> excludeSisuBeanPackages;
+    private final List<String> includeSisuBeanPackages;
 
     public static BootstrapMavenContextConfig<?> config() {
         return new BootstrapMavenContextConfig<>();
@@ -158,6 +158,8 @@ public class BootstrapMavenContext {
         this.remotePluginRepos = config.remotePluginRepos;
         this.remoteRepoManager = config.remoteRepoManager;
         this.cliOptions = config.cliOptions;
+        this.excludeSisuBeanPackages = config.getExcludeSisuBeanPackages();
+        this.includeSisuBeanPackages = config.getIncludeSisuBeanPackages();
         if (config.rootProjectDir == null) {
             final String topLevelBaseDirStr = PropertyUtils.getProperty(MAVEN_TOP_LEVEL_PROJECT_BASEDIR);
             if (topLevelBaseDirStr != null) {
@@ -871,12 +873,15 @@ public class BootstrapMavenContext {
 
     protected MavenFactory configureMavenFactory() {
         return MavenFactory.create(RepositorySystem.class.getClassLoader(), builder -> {
-            builder.addBean(ModelBuilder.class).setSupplier(new BeanSupplier<ModelBuilder>() {
-                @Override
-                public ModelBuilder get(Scope scope) {
-                    return new MavenModelBuilder(BootstrapMavenContext.this);
-                }
-            }).setPriority(100).build();
+            for (var pkg : includeSisuBeanPackages) {
+                builder.includePackage(pkg);
+            }
+            for (var pkg : excludeSisuBeanPackages) {
+                builder.excludePackage(pkg);
+            }
+            builder.addBean(ModelBuilder.class)
+                    .setSupplier(scope -> new MavenModelBuilder(BootstrapMavenContext.this))
+                    .setPriority(100).build();
         });
     }
 

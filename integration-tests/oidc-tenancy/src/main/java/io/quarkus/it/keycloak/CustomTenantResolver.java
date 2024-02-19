@@ -11,6 +11,10 @@ public class CustomTenantResolver implements TenantResolver {
 
     @Override
     public String resolve(RoutingContext context) {
+        if (context.request().path().contains("/api/tenant-echo")) {
+            // do what DefaultStaticTenantResolver does so that we can test @Tenant
+            return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+        }
         // Make sure this resolver is called only once during a given request
         if (context.get("static_config_resolved") != null) {
             throw new RuntimeException();
@@ -30,7 +34,6 @@ public class CustomTenantResolver implements TenantResolver {
             context.put("reauthenticated", "true");
             return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
         }
-
         return tenantId;
 
     }

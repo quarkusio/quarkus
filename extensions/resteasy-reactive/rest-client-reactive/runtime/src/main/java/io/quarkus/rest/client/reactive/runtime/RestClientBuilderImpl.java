@@ -74,6 +74,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private Integer loggingBodyLimit;
 
     private Boolean trustAll;
+    private String userAgent;
 
     @Override
     public RestClientBuilderImpl baseUrl(URL url) {
@@ -183,6 +184,11 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     public RestClientBuilderImpl trustAll(boolean trustAll) {
         this.trustAll = trustAll;
+        return this;
+    }
+
+    public RestClientBuilderImpl userAgent(String userAgent) {
+        this.userAgent = userAgent;
         return this;
     }
 
@@ -386,10 +392,10 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         clientBuilder.trustAll(effectiveTrustAll);
         restClientsConfig.verifyHost.ifPresent(clientBuilder::verifyHost);
 
-        String userAgent = (String) getConfiguration().getProperty(QuarkusRestClientProperties.USER_AGENT);
-        if (userAgent != null) {
-            clientBuilder.setUserAgent(userAgent);
-        } else if (restClientsConfig.userAgent.isPresent()) {
+        String effectiveUserAgent = userAgent;
+        if (effectiveUserAgent != null) {
+            clientBuilder.setUserAgent(effectiveUserAgent);
+        } else if (restClientsConfig.userAgent.isPresent()) { // if config set and client obtained programmatically
             clientBuilder.setUserAgent(restClientsConfig.userAgent.get());
         }
 

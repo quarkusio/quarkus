@@ -28,7 +28,8 @@ import io.quarkus.rest.client.reactive.jackson.runtime.serialisers.ClientJackson
 public class ResteasyReactiveClientProvider implements ResteasyClientProvider {
 
     private static final List<String> HANDLED_MEDIA_TYPES = List.of(MediaType.APPLICATION_JSON);
-    private static final int PROVIDER_PRIORITY = Priorities.USER + 100; // ensures that it will be used first
+    private static final int WRITER_PROVIDER_PRIORITY = Priorities.USER + 100; // ensures that it will be used first
+    private static final int READER_PROVIDER_PRIORITY = Priorities.USER - 100; // ensures that it will be used first
 
     private final boolean tlsTrustAll;
 
@@ -77,9 +78,9 @@ public class ResteasyReactiveClientProvider implements ResteasyClientProvider {
                 clientBuilder = clientBuilder
                         .registerMessageBodyReader(new JacksonBasicMessageBodyReader(newObjectMapper), Object.class,
                                 HANDLED_MEDIA_TYPES, true,
-                                PROVIDER_PRIORITY)
+                                READER_PROVIDER_PRIORITY)
                         .registerMessageBodyWriter(new ClientJacksonMessageBodyWriter(newObjectMapper), Object.class,
-                                HANDLED_MEDIA_TYPES, true, PROVIDER_PRIORITY);
+                                HANDLED_MEDIA_TYPES, true, WRITER_PROVIDER_PRIORITY);
             }
             InstanceHandle<ClientLogger> clientLogger = arcContainer.instance(ClientLogger.class);
             if (clientLogger.isAvailable()) {

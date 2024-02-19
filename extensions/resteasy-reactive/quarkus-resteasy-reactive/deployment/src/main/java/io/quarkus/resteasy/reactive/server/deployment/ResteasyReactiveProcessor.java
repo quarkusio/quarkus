@@ -165,6 +165,7 @@ import io.quarkus.resteasy.reactive.common.deployment.ResourceInterceptorsBuildI
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
 import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
+import io.quarkus.resteasy.reactive.common.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.server.EndpointDisabled;
 import io.quarkus.resteasy.reactive.server.runtime.QuarkusServerFileBodyHandler;
@@ -179,10 +180,10 @@ import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.Authenticati
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationRedirectExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.ForbiddenExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.UnauthorizedExceptionMapper;
+import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityContext;
 import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler;
 import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityInterceptorHandler;
 import io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler;
-import io.quarkus.resteasy.reactive.server.runtime.security.SecurityEventContext;
 import io.quarkus.resteasy.reactive.server.spi.AnnotationsTransformerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.ContextTypeBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.HandlerConfigurationProviderBuildItem;
@@ -1510,42 +1511,39 @@ public class ResteasyReactiveProcessor {
 
     @BuildStep
     MethodScannerBuildItem integrateEagerSecurity(Capabilities capabilities, CombinedIndexBuildItem indexBuildItem,
-            HttpBuildTimeConfig httpBuildTimeConfig, Optional<EagerSecurityInterceptorBuildItem> eagerSecurityInterceptors) {
+            HttpBuildTimeConfig httpBuildTimeConfig, Optional<EagerSecurityInterceptorBuildItem> eagerSecurityInterceptors,
+            JaxRsSecurityConfig securityConfig) {
         if (!capabilities.isPresent(Capability.SECURITY)) {
             return null;
         }
 
         final boolean applySecurityInterceptors = eagerSecurityInterceptors.isPresent();
-        final boolean denyJaxRs = ConfigProvider.getConfig()
-                .getOptionalValue("quarkus.security.jaxrs.deny-unannotated-endpoints", Boolean.class).orElse(false);
-        final boolean hasDefaultJaxRsRolesAllowed = ConfigProvider.getConfig()
-                .getOptionalValues("quarkus.security.jaxrs.default-roles-allowed", String.class).map(l -> !l.isEmpty())
-                .orElse(false);
+        final boolean denyJaxRs = securityConfig.denyJaxRs();
+        final boolean hasDefaultJaxRsRolesAllowed = !securityConfig.defaultRolesAllowed().orElse(List.of()).isEmpty();
         var index = indexBuildItem.getComputingIndex();
         return new MethodScannerBuildItem(new MethodScanner() {
             @Override
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                     Map<String, Object> methodContext) {
-                List<HandlerChainCustomizer> securityHandlerList = consumeStandardSecurityAnnotations(method,
-                        actualEndpointClass, index,
-                        (c) -> Collections.singletonList(
-                                EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth.proactive)));
-                if (securityHandlerList == null && (denyJaxRs || hasDefaultJaxRsRolesAllowed)) {
-                    securityHandlerList = Collections
-                            .singletonList(EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth.proactive));
-                }
                 if (applySecurityInterceptors && eagerSecurityInterceptors.get().applyInterceptorOn(method)) {
-                    List<HandlerChainCustomizer> nextSecurityHandlerList = new ArrayList<>();
-                    nextSecurityHandlerList.add(EagerSecurityInterceptorHandler.Customizer.newInstance());
-
-                    // EagerSecurityInterceptorHandler must be run before EagerSecurityHandler
-                    if (securityHandlerList != null) {
-                        nextSecurityHandlerList.addAll(securityHandlerList);
+                    // EagerSecurityHandler needs to be present whenever the method requires eager interceptor
+                    // because JAX-RS specific HTTP Security policies are defined by runtime config properties
+                    // for example: when you annotate resource method with @Tenant("hr") you select OIDC tenant,
+                    // so we can't authenticate before the tenant is selected, only after then HTTP perms can be checked
+                    return List.of(EagerSecurityInterceptorHandler.Customizer.newInstance(),
+                            EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth.proactive));
+                } else {
+                    if (denyJaxRs || hasDefaultJaxRsRolesAllowed) {
+                        return List.of(EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth.proactive));
+                    } else {
+                        return Objects
+                                .requireNonNullElse(
+                                        consumeStandardSecurityAnnotations(method, actualEndpointClass, index,
+                                                (c) -> Collections.singletonList(EagerSecurityHandler.Customizer
+                                                        .newInstance(httpBuildTimeConfig.auth.proactive))),
+                                        Collections.emptyList());
                     }
-
-                    securityHandlerList = List.copyOf(nextSecurityHandlerList);
                 }
-                return Objects.requireNonNullElse(securityHandlerList, Collections.emptyList());
             }
         });
     }
@@ -1608,7 +1606,7 @@ public class ResteasyReactiveProcessor {
                     StandardSecurityCheckInterceptor.AuthenticatedInterceptor.class,
                     StandardSecurityCheckInterceptor.PermitAllInterceptor.class,
                     StandardSecurityCheckInterceptor.PermissionsAllowedInterceptor.class));
-            beans.produce(AdditionalBeanBuildItem.unremovableOf(SecurityEventContext.class));
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(EagerSecurityContext.class));
         }
     }
 

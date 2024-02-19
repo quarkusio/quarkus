@@ -2,7 +2,10 @@ package io.quarkus.resteasy.reactive.jackson.deployment.test.streams;
 
 import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
@@ -44,7 +47,7 @@ public class StreamTestCase {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(StreamResource.class, Message.class));
+                    .addClasses(StreamResource.class, Message.class, Demands.class));
 
     @Test
     public void testSseFromSse() throws Exception {
@@ -110,11 +113,42 @@ public class StreamTestCase {
     @Test
     public void testJsonMultiFromMulti() {
         testJsonMulti("streams/json/multi");
+        testJsonMulti("streams/json/multi-alt");
     }
 
     @Test
     public void testJsonMultiFromMultiWithDefaultElementType() {
         testJsonMulti("streams/json/multi2");
+    }
+
+    @Test
+    public void testJsonMultiMultiDoc() {
+        when().get(uri.toString() + "streams/json/multi-docs")
+                .then().statusCode(HttpStatus.SC_OK)
+                // @formatter:off
+                .body(is("{\"name\":\"hello\"}\n"
+                            + "{\"name\":\"stef\"}\n"))
+                // @formatter:on
+                .header(HttpHeaders.CONTENT_TYPE, containsString(RestMediaType.APPLICATION_JSON));
+    }
+
+    @Test
+    public void testJsonMultiMultiDocHigherDemand() {
+        when().get(uri.toString() + "streams/json/multi-docs-huge-demand")
+                .then().statusCode(HttpStatus.SC_OK)
+                // @formatter:off
+                .body(allOf(
+                    containsString("{\"name\":\"hello\"}\n"),
+                    containsString("{\"name\":\"stef\"}\n"),
+                    containsString("{\"name\":\"snazy\"}\n"),
+                    containsString("{\"name\":\"elani\"}\n"),
+                    containsString("{\"name\":\"foo\"}\n"),
+                    containsString("{\"name\":\"bar\"}\n"),
+                    containsString("{\"name\":\"baz\"}\n"),
+                    endsWith("{\"demands\":[5,5]}\n")))
+                // @formatter:on
+                .header(HttpHeaders.CONTENT_TYPE, containsString(RestMediaType.APPLICATION_JSON))
+                .header("foo", equalTo("bar"));
     }
 
     @Test

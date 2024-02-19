@@ -109,7 +109,7 @@ public class RestClientCDIDelegateBuilderTest {
         Mockito.verify(restClientBuilderMock).nonProxyHosts("nonProxyHosts1");
         Mockito.verify(restClientBuilderMock).connectTimeout(100, TimeUnit.MILLISECONDS);
         Mockito.verify(restClientBuilderMock).readTimeout(101, TimeUnit.MILLISECONDS);
-        Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.USER_AGENT, "agent1");
+        Mockito.verify(restClientBuilderMock).userAgent("agent1");
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.STATIC_HEADERS,
                 Collections.singletonMap("header1", "value"));
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.CONNECTION_TTL, 10); // value converted to seconds
@@ -152,7 +152,7 @@ public class RestClientCDIDelegateBuilderTest {
         Mockito.verify(restClientBuilderMock).nonProxyHosts("nonProxyHosts2");
         Mockito.verify(restClientBuilderMock).connectTimeout(200, TimeUnit.MILLISECONDS);
         Mockito.verify(restClientBuilderMock).readTimeout(201, TimeUnit.MILLISECONDS);
-        Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.USER_AGENT, "agent2");
+        Mockito.verify(restClientBuilderMock).userAgent("agent2");
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.STATIC_HEADERS,
                 Collections.singletonMap("header2", "value"));
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.CONNECTION_TTL, 20);

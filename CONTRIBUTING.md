@@ -564,6 +564,23 @@ To be able to benefit from the remote cache, you need to use a Java version test
 The local cache is stored in the `~/.m2/.gradle-enterprise/build-cache/` directory.
 If you have problems with your local cache, you can delete this directory.
 
+During the experiment phase, there might be a need to benchmark the build in a reliable manner.
+
+For this, we can use the [Gradle Profiler](https://github.com/gradle/gradle-profiler).
+It can be installed with SDKMAN! (`sdk install gradleprofiler`) or Homebrew (`brew install gradle-profiler`).
+
+Then we can run the following commands at the root of the Quarkus project:
+
+```
+# Without cache
+gradle-profiler --maven --benchmark --scenario-file build.scenario clean_install_no_cache
+
+# With cache
+gradle-profiler --maven --benchmark --scenario-file build.scenario clean_install
+```
+
+Simple HTML reports will be published in the `profile_out*` directories.
+
 ## Release your own version
 
 You might want to release your own patched version of Quarkus to an internal repository.

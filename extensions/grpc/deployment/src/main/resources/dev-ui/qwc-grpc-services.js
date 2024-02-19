@@ -2,6 +2,9 @@ import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
 import { JsonRpc } from 'jsonrpc';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
+import { observeState } from 'lit-element-state';
+import { themeState } from 'theme-state';
+import '@quarkus-webcomponents/codeblock';
 import '@vaadin/progress-bar';
 import '@vaadin/grid';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
@@ -9,14 +12,13 @@ import '@vaadin/vertical-layout';
 import '@vaadin/tabs';
 import '@vaadin/split-layout';
 import 'qui-badge';
-import 'qui-code-block';
 import 'qui-ide-link';
 import '@vaadin/button';
 
 /**
  * This component shows the Grpc Services
  */
-export class QwcGrpcServices extends QwcHotReloadElement { 
+export class QwcGrpcServices extends observeState(QwcHotReloadElement) { 
     jsonRpc = new JsonRpc(this);
     streamsMap = new Map();
 
@@ -214,6 +216,7 @@ export class QwcGrpcServices extends QwcHotReloadElement {
                                     mode='json'
                                     content='${method.prototype}'
                                     value='${method.prototype}'
+                                    theme='${themeState.theme.name}'
                                     editable>
                                 </qui-code-block>
                             </master-content>
@@ -221,7 +224,8 @@ export class QwcGrpcServices extends QwcHotReloadElement {
                                 <qui-code-block
                                     id='${this._responseId(service.name, method)}'
                                     mode='json'
-                                    content='\n\n\n\n'>
+                                    content='\n\n\n\n'
+                                    theme='${themeState.theme.name}'>
                                 </qui-code-block>
                             </detail-content>
                         </vaadin-split-layout>`;

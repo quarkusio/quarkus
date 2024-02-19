@@ -155,8 +155,8 @@ The standard configuration does not show Quarkus events.
 We have to do three tasks to see the Quarkus events.
 
 1. Right-click and select `Edit Thread Activity Lanes...`.
-1. Select the plus button to add a new lane on the left side, then check to display that lane.
-1. Select Quarkus as the event type that lane will display and press OK.
+2. Select the plus button to add a new lane on the left side, then check to display that lane.
+3. Select Quarkus as the event type that lane will display and press OK.
 
 image::jfr-edit-thread-activity-lanes.png[alt=JDK Mission Control Edit Thread Activity Lanes,role="center"]
 

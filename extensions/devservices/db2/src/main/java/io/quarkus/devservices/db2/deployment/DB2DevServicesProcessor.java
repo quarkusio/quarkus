@@ -82,7 +82,7 @@ public class DB2DevServicesProcessor {
 
         public QuarkusDb2Container(Optional<String> imageName, OptionalInt fixedExposedPort, boolean useSharedNetwork) {
             super(DockerImageName.parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("db2")))
-                    .asCompatibleSubstituteFor(DockerImageName.parse("ibmcom/db2")));
+                    .asCompatibleSubstituteFor(DockerImageName.parse("icr.io/db2_community/db2")));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
         }

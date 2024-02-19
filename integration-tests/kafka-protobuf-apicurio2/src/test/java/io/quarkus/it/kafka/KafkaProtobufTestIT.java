@@ -1,12 +1,13 @@
 package io.quarkus.it.kafka;
 
+import org.junit.jupiter.api.BeforeAll;
+
 import io.apicurio.registry.rest.client.RegistryClientFactory;
 import io.apicurio.rest.client.VertxHttpClientProvider;
 import io.quarkus.it.kafka.protobuf.ProtobufKafkaCreator;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.vertx.core.Vertx;
-import org.junit.jupiter.api.BeforeAll;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(value = KafkaResource.class, restrictToAnnotatedClass = true)

@@ -31,6 +31,10 @@
                     <artifactId>slf4j-jboss-logging</artifactId>
                     <groupId>org.jboss.slf4j</groupId>
                 </exclusion>
+                <exclusion>
+                    <artifactId>okhttp</artifactId>
+                    <groupId>com.squareup.okhttp3</groupId>
+                </exclusion>
             </exclusions>
         </dependency>
 

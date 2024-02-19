@@ -1073,7 +1073,7 @@ jobs:
           job-name: "Native Tests - ${{matrix.category}}"
           wrapper-init: true
       - name: Cache Quarkus metadata
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: '**/.quarkus/quarkus-prod-config-dump'
           key: ${{ runner.os }}-quarkus-metadata

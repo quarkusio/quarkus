@@ -1,0 +1,12 @@
+quarkus:
+  grpc:
+    server:
+      use-separate-server: false
+
+"%test":
+  quarkus:
+    grpc:
+      clients:
+        helloGrpc:
+          host: localhost
+          port: 8081

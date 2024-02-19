@@ -72,6 +72,12 @@ public class CustomAwareJWTAuthMechanism implements HttpAuthenticationMechanism 
 }
 ----
 
+TIP: The `HttpAuthenticationMechanism` should transform incoming HTTP request with suitable authentication credentials
+into an `io.quarkus.security.identity.request.AuthenticationRequest` instance and delegate the authentication to the `io.quarkus.security.identity.IdentityProviderManager`.
+Leaving authentication to the `io.quarkus.security.identity.IdentityProvider`s gives you more options for credentials verifications,
+as well as convenient way to perform blocking tasks.
+Nevertheless, the `io.quarkus.security.identity.IdentityProvider` can be omitted and the `HttpAuthenticationMechanism` is free to authenticate request on its own in trivial use cases.
+
 [[dealing-with-more-than-one-http-auth-mechanisms]]
 == Dealing with more than one HttpAuthenticationMechanism
 

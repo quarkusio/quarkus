@@ -88,7 +88,7 @@ public class TransformNativeImageAgentConfigMojo extends QuarkusBootstrapMojo {
 
         try (BufferedWriter writer = new BufferedWriter(
                 new FileWriter(target.resolve(name).toFile(), StandardCharsets.UTF_8))) {
-            jsonBuilder.appendTo(writer);
+            jsonBuilder.appendTo(writer, true);
         }
     }
 

@@ -26,6 +26,10 @@ public final class Json {
     private static final int CONTROL_CHAR_START = 0;
     private static final int CONTROL_CHAR_END = 0x1f;
     private static final char CHAR_QUOTATION_MARK = '"';
+    private static final String DEFAULT_INDENT = "  ";
+    private static final String EMPTY_STRING = "";
+    private static final String NEW_LINE = System.lineSeparator();
+    private static final String ENTRY_SEPARATOR_NEW_LINE = "," + NEW_LINE;
 
     private static final Map<Character, String> REPLACEMENTS;
 
@@ -99,9 +103,11 @@ public final class Json {
          * @return a string representation
          * @throws IOException
          */
-        abstract String build() throws IOException;
+        abstract String build(String indent, String currentIndent) throws IOException;
 
         abstract void appendTo(Appendable appendable) throws IOException;
+
+        abstract void appendTo(Appendable appendable, boolean indent) throws IOException;
 
         /**
          * @param value
@@ -204,15 +210,28 @@ public final class Json {
             return isValuesEmpty(values);
         }
 
-        String build() throws IOException {
+        String build(String indent, String currentIndent) throws IOException {
             StringBuilder builder = new StringBuilder();
-            appendTo(builder);
+            appendTo(builder, indent, currentIndent);
             return builder.toString();
         }
 
         @Override
         public void appendTo(Appendable appendable) throws IOException {
+            appendTo(appendable, null, EMPTY_STRING);
+        }
+
+        @Override
+        void appendTo(Appendable appendable, boolean indent) throws IOException {
+            appendTo(appendable, indent ? DEFAULT_INDENT : null, EMPTY_STRING);
+        }
+
+        private void appendTo(Appendable appendable, String indent, String currentIndent) throws IOException {
+            String newIndent = indent + currentIndent;
             appendable.append(ARRAY_START);
+            if (indent != null) {
+                appendable.append(NEW_LINE);
+            }
             int idx = 0;
             for (ListIterator<Object> iterator = values.listIterator(); iterator.hasNext();) {
                 Object value = iterator.next();
@@ -220,9 +239,20 @@ public final class Json {
                     continue;
                 }
                 if (++idx > 1) {
-                    appendable.append(ENTRY_SEPARATOR);
+                    if (indent != null) {
+                        appendable.append(ENTRY_SEPARATOR_NEW_LINE);
+                    } else {
+                        appendable.append(ENTRY_SEPARATOR);
+                    }
                 }
-                appendValue(appendable, value, skipEscape);
+                if (indent != null) {
+                    appendable.append(newIndent);
+                }
+                appendValue(appendable, value, skipEscape, indent, newIndent);
+            }
+            if (indent != null) {
+                appendable.append(NEW_LINE);
+                appendable.append(currentIndent);
             }
             appendable.append(ARRAY_END);
         }
@@ -325,15 +355,28 @@ public final class Json {
             return isValuesEmpty(properties.values());
         }
 
-        String build() throws IOException {
+        String build(String indent, String currentIndent) throws IOException {
             StringBuilder builder = new StringBuilder();
-            appendTo(builder);
+            appendTo(builder, indent, currentIndent);
             return builder.toString();
         }
 
         @Override
         public void appendTo(Appendable appendable) throws IOException {
+            appendTo(appendable, null, EMPTY_STRING);
+        }
+
+        @Override
+        public void appendTo(Appendable appendable, boolean indent) throws IOException {
+            appendTo(appendable, indent ? DEFAULT_INDENT : null, EMPTY_STRING);
+        }
+
+        private void appendTo(Appendable appendable, String indent, String currentIndent) throws IOException {
+            String newIndent = indent + currentIndent;
             appendable.append(OBJECT_START);
+            if (indent != null) {
+                appendable.append(NEW_LINE);
+            }
             int idx = 0;
             for (Iterator<Entry<String, Object>> iterator = properties.entrySet().iterator(); iterator.hasNext();) {
                 Entry<String, Object> entry = iterator.next();
@@ -341,11 +384,22 @@ public final class Json {
                     continue;
                 }
                 if (++idx > 1) {
-                    appendable.append(ENTRY_SEPARATOR);
+                    if (indent != null) {
+                        appendable.append(ENTRY_SEPARATOR_NEW_LINE);
+                    } else {
+                        appendable.append(ENTRY_SEPARATOR);
+                    }
+                }
+                if (indent != null) {
+                    appendable.append(newIndent);
                 }
                 appendStringValue(appendable, entry.getKey(), skipEscape);
                 appendable.append(NAME_VAL_SEPARATOR);
-                appendValue(appendable, entry.getValue(), skipEscape);
+                appendValue(appendable, entry.getValue(), skipEscape, indent, newIndent);
+            }
+            if (indent != null) {
+                appendable.append(NEW_LINE);
+                appendable.append(currentIndent);
             }
             appendable.append(OBJECT_END);
         }
@@ -394,11 +448,12 @@ public final class Json {
         }
     }
 
-    static void appendValue(Appendable appendable, Object value, boolean skipEscape) throws IOException {
+    static void appendValue(Appendable appendable, Object value, boolean skipEscape, String indent, String currentIndent)
+            throws IOException {
         if (value instanceof JsonObjectBuilder) {
-            appendable.append(((JsonObjectBuilder) value).build());
+            appendable.append(((JsonObjectBuilder) value).build(indent, currentIndent));
         } else if (value instanceof JsonArrayBuilder) {
-            appendable.append(((JsonArrayBuilder) value).build());
+            appendable.append(((JsonArrayBuilder) value).build(indent, currentIndent));
         } else if (value instanceof String) {
             appendStringValue(appendable, value.toString(), skipEscape);
         } else if (value instanceof Boolean || value instanceof Integer || value instanceof Long) {

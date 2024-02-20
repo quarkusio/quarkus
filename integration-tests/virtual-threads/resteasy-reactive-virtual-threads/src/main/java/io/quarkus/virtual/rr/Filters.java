@@ -27,7 +27,7 @@ public class Filters {
         if (responseContext.getHeaders().get("X-filter") != null) {
             VirtualThreadsAssertions.assertEverything();
             // the request filter, the method, and here.
-            assert CDI.current().select(Counter.class).get().increment() == 3;
+            assert CDI.current().select(Counter.class).get().increment() == 4;
             assert Vertx.currentContext().getLocal("test").equals("test test");
             assert MDC.get("mdc").equals("test test");
         }

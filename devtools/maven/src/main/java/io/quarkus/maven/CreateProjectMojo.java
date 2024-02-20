@@ -276,10 +276,10 @@ public class CreateProjectMojo extends AbstractMojo {
         }
 
         askTheUserForMissingValues();
-        if (projectArtifactId != DEFAULT_ARTIFACT_ID && !OK_ID.matcher(projectArtifactId).matches()) {
+        if (!DEFAULT_ARTIFACT_ID.equals(projectArtifactId) && !OK_ID.matcher(projectArtifactId).matches()) {
             throw new MojoExecutionException(String.format(BAD_IDENTIFIER, "artifactId", projectArtifactId));
         }
-        if (projectGroupId != DEFAULT_GROUP_ID && !OK_ID.matcher(projectGroupId).matches()) {
+        if (!DEFAULT_GROUP_ID.equals(projectGroupId) && !OK_ID.matcher(projectGroupId).matches()) {
             throw new MojoExecutionException(String.format(BAD_IDENTIFIER, "groupId", projectGroupId));
         }
 
@@ -389,16 +389,7 @@ public class CreateProjectMojo extends AbstractMojo {
         // If the user has disabled the interactive mode or if the user has specified the artifactId, disable the
         // user interactions.
         if (!session.getRequest().isInteractiveMode() || shouldUseDefaults()) {
-            if (isBlank(projectArtifactId)) {
-                // we need to set it for the project directory
-                projectArtifactId = DEFAULT_ARTIFACT_ID;
-            }
-            if (isBlank(projectGroupId)) {
-                projectGroupId = DEFAULT_GROUP_ID;
-            }
-            if (isBlank(projectVersion)) {
-                projectVersion = DEFAULT_VERSION;
-            }
+            setProperDefaults();
             return;
         }
 
@@ -427,9 +418,24 @@ public class CreateProjectMojo extends AbstractMojo {
                         input -> noCode = input.startsWith("n"));
 
                 prompter.collectInput();
+            } else {
+                setProperDefaults();
             }
         } catch (IOException e) {
             throw new MojoExecutionException("Unable to get user input", e);
+        }
+    }
+
+    private void setProperDefaults() {
+        if (isBlank(projectArtifactId)) {
+            // we need to set it for the project directory
+            projectArtifactId = DEFAULT_ARTIFACT_ID;
+        }
+        if (isBlank(projectGroupId)) {
+            projectGroupId = DEFAULT_GROUP_ID;
+        }
+        if (isBlank(projectVersion)) {
+            projectVersion = DEFAULT_VERSION;
         }
     }
 

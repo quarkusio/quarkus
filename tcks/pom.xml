@@ -15,11 +15,9 @@
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
-        <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
     </properties>
 
     <!-- modules are in profile test-modules -->
-
     <build>
         <plugins>
             <plugin>
@@ -27,24 +25,31 @@
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>enforce-deployment-deps</id>
+                        <id>enforce</id>
                         <goals>
                             <goal>enforce</goal>
                         </goals>
                         <configuration>
-                            <rules>
+                            <!--
+                                This is a test dependency and as such some test libraries don't have the test scope
+                                which is perfectly fine.
+                                We override the enforcer rules to avoid testing that.
+
+                                Also we add the requiresMinimalDeploymentDependency rule.
+                            -->
+                            <rules combine.self="override">
+                                <dependencyConvergence/>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                                </externalRules>
+                                <externalRules>
+                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
+                                </externalRules>
                                 <requiresMinimalDeploymentDependency implementation="io.quarkus.enforcer.RequiresMinimalDeploymentDependency"/>
                             </rules>
                         </configuration>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-enforcer-rules</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>

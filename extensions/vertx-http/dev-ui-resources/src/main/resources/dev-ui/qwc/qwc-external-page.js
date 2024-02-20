@@ -1,14 +1,16 @@
 import { LitElement, html, css} from 'lit';
 import { RouterController } from 'router-controller';
 import { JsonRpc } from 'jsonrpc';
+import { observeState } from 'lit-element-state';
+import { themeState } from 'theme-state';
 import '@vaadin/icon';
-import 'qui-code-block';
+import '@quarkus-webcomponents/codeblock';
 import '@vaadin/progress-bar';
 
 /**
  * This component loads an external page
  */
-export class QwcExternalPage extends LitElement {
+export class QwcExternalPage extends observeState(LitElement) {
     routerController = new RouterController(this);
     
     static styles = css`
@@ -115,7 +117,8 @@ export class QwcExternalPage extends LitElement {
                             </span>
                             <qui-code-block 
                                 mode='${this._mode}'
-                                src='${this._externalUrl}'>
+                                src='${this._externalUrl}'
+                                theme='${themeState.theme.name}'>
                             </qui-code-block>
                         </div>
                         `;

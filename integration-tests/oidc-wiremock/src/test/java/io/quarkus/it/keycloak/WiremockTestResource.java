@@ -25,7 +25,7 @@ public class WiremockTestResource {
 
         server.stubFor(
                 get(urlEqualTo("/auth/realms/quarkus2/.well-known/openid-configuration"))
-                        .withHeader("Discovery", equalTo("OK"))
+                        .withHeader("Filter", equalTo("OK"))
                         .willReturn(aResponse()
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +
@@ -35,6 +35,7 @@ public class WiremockTestResource {
 
         server.stubFor(
                 get(urlEqualTo("/auth/realms/quarkus2/protocol/openid-connect/certs"))
+                        .withHeader("Filter", equalTo("OK"))
                         .willReturn(aResponse()
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +

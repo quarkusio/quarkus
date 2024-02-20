@@ -21,7 +21,7 @@ public class UnusedServiceTest {
     }
 
     @Test
-    public void testNonInjectedUnusedBeanIsNotRemoved() {
+    public void testNonInjectedUnusedBeanIsRemoved() {
         Assertions.assertFalse(Arc.container().instance(OtherUnusedService.class).isAvailable());
     }
 }

@@ -59,7 +59,7 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                                 continue;
                             }
                             AnnotationValue allowScopeConversionValue = instance.value("convertScopes");
-                            if ((allowScopeConversionValue != null) && allowScopeConversionValue.asBoolean()) {
+                            if (allowScopeConversionValue != null && allowScopeConversionValue.asBoolean()) {
                                 // we need to fetch the type of the bean, so we need to look at the type of the field
                                 mockTypes.add(instance.target().asField().type().name());
                             }
@@ -84,7 +84,15 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                         context.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
                             @Override
                             public boolean appliesTo(AnnotationTarget.Kind kind) {
-                                return (kind == AnnotationTarget.Kind.CLASS) || (kind == AnnotationTarget.Kind.METHOD);
+                                return kind == AnnotationTarget.Kind.CLASS || kind == AnnotationTarget.Kind.METHOD;
+                            }
+
+                            @Override
+                            public int getPriority() {
+                                // annotation transformer registered in `AutoProducerMethodsProcessor` has priority
+                                // of `DEFAULT_PRIORITY - 1` and we need to run _after_ it, otherwise we wouldn't
+                                // recognize an auto-producer (producer without `@Produces`)
+                                return DEFAULT_PRIORITY - 10;
                             }
 
                             @Override
@@ -100,9 +108,8 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                                     }
                                 } else if (target.kind() == AnnotationTarget.Kind.METHOD) { // CDI producer case
                                     MethodInfo methodInfo = target.asMethod();
-                                    if ((methodInfo.annotation(DotNames.PRODUCES) != null)
-                                            && (Annotations.contains(transformationContext.getAnnotations(),
-                                                    DotNames.SINGLETON)
+                                    if (Annotations.contains(transformationContext.getAnnotations(), DotNames.PRODUCES)
+                                            && (Annotations.contains(transformationContext.getAnnotations(), DotNames.SINGLETON)
                                                     || hasSingletonBeanDefiningAnnotation(transformationContext))) {
                                         DotName returnType = methodInfo.returnType().name();
                                         if (mockTypes.contains(returnType)) {

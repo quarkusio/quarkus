@@ -1,12 +1,14 @@
 import { LitElement, html, css} from 'lit';
 import { JsonRpc } from 'jsonrpc';
-import 'qui-code-block';
+import { observeState } from 'lit-element-state';
+import { themeState } from 'theme-state';
+import '@quarkus-webcomponents/codeblock';
 import '@vaadin/icon';
 import '@vaadin/tabs';
 import '@vaadin/tabsheet';
 import '@vaadin/progress-bar';
 
-export class QwcKubernetesManifest extends LitElement {
+export class QwcKubernetesManifest extends observeState(LitElement) {
 
     jsonRpc = new JsonRpc(this);
 
@@ -98,8 +100,9 @@ export class QwcKubernetesManifest extends LitElement {
         
         return html`<div class="codeBlock">
                             <qui-code-block 
-                                mode='yaml'
-                                content='${yaml}'>
+                                mode="yaml"
+                                content="${yaml}"
+                                theme="${themeState.theme.name}">
                             </qui-code-block>
                         </div>`;
     }

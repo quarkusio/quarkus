@@ -46,7 +46,7 @@ public @interface OidcEndpoint {
     }
 
     /**
-     * Identifies an OIDC tenant to which a given feature applies.
+     * Identifies one or more OIDC endpoints.
      */
-    Type value() default Type.ALL;
+    Type[] value() default Type.ALL;
 }

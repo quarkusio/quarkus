@@ -100,8 +100,8 @@
 
         <!-- Code editor -->
         <dependency>
-            <groupId>org.mvnpm.at.vanillawc</groupId>
-            <artifactId>wc-codemirror</artifactId>
+            <groupId>org.mvnpm.at.mvnpm</groupId>
+            <artifactId>codeblock</artifactId>
             <scope>runtime</scope>
         </dependency>
 

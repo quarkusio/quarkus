@@ -504,8 +504,13 @@ public class OidcCommonUtils {
             for (OidcRequestFilter filter : container.listAll(OidcRequestFilter.class).stream().map(handle -> handle.get())
                     .collect(Collectors.toList())) {
                 OidcEndpoint endpoint = ClientProxy.unwrap(filter).getClass().getAnnotation(OidcEndpoint.class);
-                OidcEndpoint.Type type = endpoint != null ? endpoint.value() : OidcEndpoint.Type.ALL;
-                map.computeIfAbsent(type, k -> new ArrayList<OidcRequestFilter>()).add(filter);
+                if (endpoint != null) {
+                    for (OidcEndpoint.Type type : endpoint.value()) {
+                        map.computeIfAbsent(type, k -> new ArrayList<OidcRequestFilter>()).add(filter);
+                    }
+                } else {
+                    map.computeIfAbsent(OidcEndpoint.Type.ALL, k -> new ArrayList<OidcRequestFilter>()).add(filter);
+                }
             }
             return map;
         }

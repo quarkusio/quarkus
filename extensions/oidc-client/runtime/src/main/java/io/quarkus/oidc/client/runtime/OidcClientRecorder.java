@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -170,10 +171,16 @@ public class OidcClientRecorder {
                                         // Without this block `password` will be listed first, before `username`
                                         // which is not a technical problem but might affect Wiremock tests or the endpoints
                                         // which expect a specific order.
-                                        tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_USERNAME,
-                                                grantOptions.get(OidcConstants.PASSWORD_GRANT_USERNAME));
-                                        tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_PASSWORD,
-                                                grantOptions.get(OidcConstants.PASSWORD_GRANT_PASSWORD));
+                                        final String userName = grantOptions.get(OidcConstants.PASSWORD_GRANT_USERNAME);
+                                        final String userPassword = grantOptions.get(OidcConstants.PASSWORD_GRANT_PASSWORD);
+                                        if (userName == null || userPassword == null) {
+                                            throw new ConfigurationException(
+                                                    "Username and password must be set when a password grant is used",
+                                                    Set.of("quarkus.oidc-client.grant.type",
+                                                            "quarkus.oidc-client.grant-options"));
+                                        }
+                                        tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_USERNAME, userName);
+                                        tokenGrantParams.add(OidcConstants.PASSWORD_GRANT_PASSWORD, userPassword);
                                         for (Map.Entry<String, String> entry : grantOptions.entrySet()) {
                                             if (!OidcConstants.PASSWORD_GRANT_USERNAME.equals(entry.getKey())
                                                     && !OidcConstants.PASSWORD_GRANT_PASSWORD.equals(entry.getKey())) {

@@ -67,4 +67,12 @@ public interface ResteasyReactiveConfig {
      */
     @WithDefault("true")
     boolean failOnDuplicate();
+
+    /**
+     * An advanced option that can be set when they RESTEasy Reactive should NOT reply with 404 when it does not match the URL
+     * path
+     * and instead just pass control onto the next Vert.x handler (if any)
+     */
+    @WithDefault("false")
+    boolean resumeOn404();
 }

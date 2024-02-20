@@ -102,12 +102,6 @@ public class ConditionalDependenciesEnabler {
                         queueConditionalDependency(extension, conditionalDep);
                     }
                 }
-
-                // If the extension doesn't have any conditions we just enable it by default
-                if (extension.getDependencyConditions().isEmpty()) {
-                    extension.setConditional(true);
-                    enableConditionalDependency(extension.getExtensionId());
-                }
             }
         }
     }

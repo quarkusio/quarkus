@@ -415,6 +415,9 @@ public class KafkaProcessor {
         reflectiveClassCondition.produce(new ReflectiveClassConditionBuildItem(
                 "org.apache.kafka.common.security.oauthbearer.secured.OAuthBearerValidatorCallbackHandler",
                 "org.jose4j.keys.resolvers.VerificationKeyResolver"));
+        reflectiveClassCondition.produce(new ReflectiveClassConditionBuildItem(
+                "org.apache.kafka.common.security.oauthbearer.OAuthBearerValidatorCallbackHandler",
+                "org.jose4j.keys.resolvers.VerificationKeyResolver"));
     }
 
     private void registerJDKLoginModules(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {

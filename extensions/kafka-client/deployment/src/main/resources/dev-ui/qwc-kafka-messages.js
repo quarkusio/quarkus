@@ -7,14 +7,16 @@ import { columnBodyRenderer, gridRowDetailsRenderer } from '@vaadin/grid/lit.js'
 import '@vaadin/dialog';
 import { dialogRenderer } from '@vaadin/dialog/lit.js';
 import '@vaadin/button';
-import 'qui-code-block';
+import { observeState } from 'lit-element-state';
+import { themeState } from 'theme-state';
+import '@quarkus-webcomponents/codeblock';
 import '@vaadin/split-layout';
 import './qwc-kafka-add-message.js';
 
 /**
  * This component shows the Kafka Messages for a certain topic
  */
-export class QwcKafkaMessages extends QwcHotReloadElement { 
+export class QwcKafkaMessages extends observeState(QwcHotReloadElement) {
     
     static styles = css`
         .kafka {
@@ -171,7 +173,8 @@ export class QwcKafkaMessages extends QwcHotReloadElement {
                             <div class="code-block">    
                                 <qui-code-block
                                     mode='json'
-                                    content='${message.value}'>
+                                    content='${message.value}'
+                                    theme='${themeState.theme.name}'>
                                 </qui-code-block>
                             </div>
                         </master-content>

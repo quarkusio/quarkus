@@ -108,7 +108,6 @@ public class BuildTimeContentProcessor {
 
         internalImportMapBuildItem.add("qui-badge", contextRoot + "qui/qui-badge.js");
         internalImportMapBuildItem.add("qui-alert", contextRoot + "qui/qui-alert.js");
-        internalImportMapBuildItem.add("qui-code-block", contextRoot + "qui/qui-code-block.js");
         internalImportMapBuildItem.add("qui-ide-link", contextRoot + "qui/qui-ide-link.js");
 
         // Echarts

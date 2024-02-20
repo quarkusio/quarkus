@@ -28,8 +28,13 @@ public class TransformNativeImageAgentConfigMojo extends QuarkusBootstrapMojo {
     private final Pattern resourceSkipPattern;
 
     public TransformNativeImageAgentConfigMojo() {
-        resourceSkipPattern = discardPattern("apache.maven", "application.properties", "groovy", "jboss", "junit",
-                "logging.properties", "microprofile", "quarkus", "slf4j", "smallrye", "surefire", "Test.class");
+        resourceSkipPattern = discardPattern("apache.maven", "application.properties", "groovy",
+                "java[.\\/](io|lang|net|nio|time|util)",
+                "javax[.\\/](inject|xml)", "jdk\\/internal",
+                "jboss",
+                "junit", "logging.properties", "microprofile", "osgi\\/annotation", "plexus", "quarkus", "slf4j", "smallrye",
+                "surefire",
+                "Test.class");
     }
 
     @Override

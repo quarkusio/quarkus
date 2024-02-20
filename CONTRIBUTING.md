@@ -532,12 +532,14 @@ For more details see the `Get GIB arguments` step in `.github/workflows/ci-actio
 
 ##### Develocity build cache
 
+###### Getting set up
+
 Quarkus has a Develocity instance set up at https://ge.quarkus.io that can be used to analyze the build performance of the Quarkus project and also provides build cache services.
 
 If you have an account on https://ge.quarkus.io, this can speed up your local builds significantly.
 
 If you have a need or interest to share your build scans and use the build cache, you will need to get an account for the Develocity instance.
-It is only relevant for members of the Quarkus team and you should contact either Max Andersen or Guillaume Smet to set up your account.
+It is only relevant for members of the Quarkus team and you should contact either Guillaume Smet or Max Andersen to set up your account.
 
 When you have the account set up, from the root of your local Quarkus workspace, run:
 
@@ -545,7 +547,7 @@ When you have the account set up, from the root of your local Quarkus workspace,
 ./mvnw gradle-enterprise:provision-access-key
 ```
 
-and log in (if not already logged in).
+and log in in the browser window it will open (if not already logged in).
 Your access key will be stored in the `~/.m2/.gradle-enterprise/keys.properties` file.
 From then your build scans will be sent to the Develocity instance and you will be able to benefit from the build cache.
 
@@ -559,10 +561,25 @@ When debugging a test (and especially flaky tests), you might want to temporaril
 You can easily do it by adding `-Dno-build-cache` to your Maven command.
 
 The remote cache is stored on the Develocity server and is populated by CI.
-To be able to benefit from the remote cache, you need to use a Java version tested on CI (at the moment, either 17 or 21) and using the same Maven version (thus why it is recommended to use the Maven wrapper aka `./mvnw`).
+To be able to benefit from the remote cache, you need to use a Java version tested on CI (at the moment, either 17 or 21) and the same Maven version (thus why it is recommended to use the Maven wrapper aka `./mvnw`).
+Note that the local cache alone should bring you a significant speedup.
 
 The local cache is stored in the `~/.m2/.gradle-enterprise/build-cache/` directory.
 If you have problems with your local cache, you can delete this directory.
+
+###### -Dquickly
+
+When using `-Dquickly` with no goals, Develocity is unable to detect that the `clean` goal is present.
+We worked around it but you will get the following warnings at the beginning of your build output:
+
+```
+[WARNING] Build cache entries produced by this build may be incorrect since the clean lifecycle is not part of the build invocation.
+[WARNING] You must only invoke the build without the clean lifecycle if the build is started from a clean working directory.
+```
+
+You can safely ignore them.
+
+###### Benchmarking the build
 
 During the experiment phase, there might be a need to benchmark the build in a reliable manner.
 

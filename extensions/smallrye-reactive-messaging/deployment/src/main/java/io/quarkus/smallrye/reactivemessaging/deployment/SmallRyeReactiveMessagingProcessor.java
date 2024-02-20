@@ -206,6 +206,12 @@ public class SmallRyeReactiveMessagingProcessor {
     }
 
     @BuildStep
+    public void disableObservation(BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfigProducer) {
+        runtimeConfigProducer.produce(
+                new RunTimeConfigurationDefaultBuildItem("smallrye.messaging.observation.enabled", "false"));
+    }
+
+    @BuildStep
     public void enableHealth(ReactiveMessagingBuildTimeConfig buildTimeConfig,
             BuildProducer<HealthBuildItem> producer) {
         producer.produce(

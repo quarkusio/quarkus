@@ -1,6 +1,5 @@
 package io.quarkus.quartz.test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
@@ -45,10 +44,10 @@ public class DependentBeanJobTest {
 
     @Test
     public void testDependentBeanJobDestroyed() throws SchedulerException, InterruptedException {
-        assertEquals(0, MyJob.timesConstructed);
-        assertEquals(0, MyJob.timesDestroyed);
-        // prepare latch, schedule 10 one-off jobs, assert
-        CountDownLatch latch = service.initializeLatch(10);
+        // prepare latches, schedule 10 one-off jobs, assert
+        CountDownLatch execLatch = service.initExecuteLatch(10);
+        CountDownLatch constructLatch = service.initConstructLatch(10);
+        CountDownLatch destroyedLatch = service.initDestroyedLatch(10);
         for (int i = 0; i < 10; i++) {
             Trigger trigger = TriggerBuilder.newTrigger()
                     .withIdentity("myTrigger" + i, "myGroup")
@@ -59,12 +58,14 @@ public class DependentBeanJobTest {
                     .build();
             quartz.scheduleJob(job, trigger);
         }
-        assertTrue(latch.await(5, TimeUnit.SECONDS), "Latch count: " + latch.getCount());
-        assertEquals(10, MyJob.timesConstructed);
-        assertEquals(10, MyJob.timesDestroyed);
+        assertTrue(execLatch.await(2, TimeUnit.SECONDS), "Latch count: " + execLatch.getCount());
+        assertTrue(constructLatch.await(2, TimeUnit.SECONDS), "Latch count: " + constructLatch.getCount());
+        assertTrue(destroyedLatch.await(2, TimeUnit.SECONDS), "Latch count: " + destroyedLatch.getCount());
 
         // now try the same with repeating job triggering three times
-        latch = service.initializeLatch(3);
+        execLatch = service.initExecuteLatch(3);
+        constructLatch = service.initConstructLatch(3);
+        destroyedLatch = service.initDestroyedLatch(3);
         JobDetail job = JobBuilder.newJob(MyJob.class)
                 .withIdentity("myRepeatingJob", "myGroup")
                 .build();
@@ -78,23 +79,43 @@ public class DependentBeanJobTest {
                 .build();
         quartz.scheduleJob(job, trigger);
 
-        assertTrue(latch.await(2, TimeUnit.SECONDS), "Latch count: " + latch.getCount());
-        assertEquals(13, MyJob.timesConstructed);
-        assertEquals(13, MyJob.timesDestroyed);
+        assertTrue(execLatch.await(2, TimeUnit.SECONDS), "Latch count: " + execLatch.getCount());
+        assertTrue(constructLatch.await(2, TimeUnit.SECONDS), "Latch count: " + constructLatch.getCount());
+        assertTrue(destroyedLatch.await(2, TimeUnit.SECONDS), "Latch count: " + destroyedLatch.getCount());
     }
 
     @ApplicationScoped
     public static class Service {
 
-        volatile CountDownLatch latch;
+        volatile CountDownLatch executeLatch;
+        volatile CountDownLatch constructedLatch;
+        volatile CountDownLatch destroyedLatch;
 
-        public CountDownLatch initializeLatch(int latchCountdown) {
-            this.latch = new CountDownLatch(latchCountdown);
-            return latch;
+        public CountDownLatch initExecuteLatch(int latchCountdown) {
+            this.executeLatch = new CountDownLatch(latchCountdown);
+            return executeLatch;
+        }
+
+        public CountDownLatch initConstructLatch(int latchCountdown) {
+            this.constructedLatch = new CountDownLatch(latchCountdown);
+            return constructedLatch;
+        }
+
+        public CountDownLatch initDestroyedLatch(int latchCountdown) {
+            this.destroyedLatch = new CountDownLatch(latchCountdown);
+            return destroyedLatch;
         }
 
         public void execute() {
-            latch.countDown();
+            executeLatch.countDown();
+        }
+
+        public void constructedLatch() {
+            constructedLatch.countDown();
+        }
+
+        public void destroyedLatch() {
+            destroyedLatch.countDown();
         }
 
     }
@@ -102,20 +123,17 @@ public class DependentBeanJobTest {
     @Dependent
     static class MyJob implements Job {
 
-        public static volatile int timesConstructed = 0;
-        public static volatile int timesDestroyed = 0;
-
         @Inject
         Service service;
 
         @PostConstruct
         void postConstruct() {
-            timesConstructed++;
+            service.constructedLatch();
         }
 
         @PreDestroy
         void preDestroy() {
-            timesDestroyed++;
+            service.destroyedLatch();
         }
 
         @Override

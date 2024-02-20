@@ -3593,6 +3593,11 @@
                 <artifactId>hamcrest</artifactId>
                 <version>${hamcrest.version}</version>
             </dependency>
+            <dependency>
+                <groupId>me.escoffier.certs</groupId>
+                <artifactId>certificate-generator-junit5</artifactId>
+                <version>0.3.0</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.antlr</groupId>

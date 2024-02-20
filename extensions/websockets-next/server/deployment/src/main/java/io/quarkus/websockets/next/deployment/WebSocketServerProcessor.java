@@ -684,7 +684,8 @@ public class WebSocketServerProcessor {
             validator.accept(method);
             return new Callback(annotation, method, executionModel(method));
         }
-        throw new IllegalStateException("TODO too many annotations found");
+        throw new WebSocketServerException(
+                String.format("There can be only one callback annotated with %s declared on %s", annotationName, beanClass));
     }
 
     ExecutionModel executionModel(MethodInfo method) {

@@ -216,6 +216,9 @@
             <properties>
                 <quarkus.package.type>native</quarkus.package.type>
                 <skipITs>false</skipITs>
+                <native.image.agent.output.property.name>config-output-dir</native.image.agent.output.property.name>
+                <native.image.agent.output.value>native-image-agent-base-config</native.image.agent.output.value>
+                <native.image.agent.additional.args></native.image.agent.additional.args>
             </properties>
             <build>
                 <plugins>
@@ -249,9 +252,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <version>$\{surefire-plugin.version}</version>
                         <configuration>
-                            <argLine>-agentlib:native-image-agent=access-filter-file=target/quarkus-access-filter.json,caller-filter-file=target/quarkus-caller-filter.json,config-output-dir=target/native-image-agent-base-config</argLine>
-<!--                            <argLine>-agentlib:native-image-agent=access-filter-file=target/quarkus-access-filter.json,caller-filter-file=target/quarkus-caller-filter.json,config-output-dir=target/native-image-agent-base-config,experimental-configuration-with-origins</argLine>-->
-<!--                            <argLine>-agentlib:native-image-agent=access-filter-file=target/quarkus-access-filter.json,caller-filter-file=target/quarkus-caller-filter.json,trace-output=target/native-image-agent-trace-file.json</argLine>-->
+                            <argLine>-agentlib:native-image-agent=access-filter-file=target/quarkus-access-filter.json,caller-filter-file=target/quarkus-caller-filter.json,$\{native.image.agent.output.property.name}=$\{project.build.directory}/$\{native.image.agent.output.value}$\{native.image.agent.additional.args}</argLine>
                             <systemPropertyVariables>
                                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                                 <maven.home>$\{maven.home}</maven.home>

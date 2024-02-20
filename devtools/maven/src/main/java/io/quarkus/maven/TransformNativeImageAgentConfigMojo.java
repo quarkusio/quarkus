@@ -44,37 +44,47 @@ public class TransformNativeImageAgentConfigMojo extends QuarkusBootstrapMojo {
 
     @Override
     protected void doExecute() throws MojoExecutionException, MojoFailureException {
-        getLog().info("Calling show native image agent configuration");
-
-        final Path basePath = buildDir().toPath().resolve(Path.of("native-image-agent-base-config"));
+        final String dirName = "native-image-agent-base-config";
+        final Path basePath = buildDir().toPath().resolve(Path.of(dirName));
         if (basePath.toFile().exists()) {
             try {
                 final Path targetPath = buildDir().toPath().resolve(Path.of("native-image-agent-transformed-config"));
                 if (!targetPath.toFile().exists()) {
                     targetPath.toFile().mkdirs();
                 }
-                Files.copy(basePath.resolve("reflect-config.json"), targetPath.resolve("reflect-config.json"),
-                        StandardCopyOption.REPLACE_EXISTING);
-                Files.copy(basePath.resolve("serialization-config.json"), targetPath.resolve("serialization-config.json"),
-                        StandardCopyOption.REPLACE_EXISTING);
-                Files.copy(basePath.resolve("jni-config.json"), targetPath.resolve("jni-config.json"),
-                        StandardCopyOption.REPLACE_EXISTING);
-                Files.copy(basePath.resolve("proxy-config.json"), targetPath.resolve("proxy-config.json"),
-                        StandardCopyOption.REPLACE_EXISTING);
-                transformJsonObject(basePath, "resource-config.json", targetPath,
-                        JsonTransform.dropping(this::discardResource));
+                final Path reflectConfigJsonPath = basePath.resolve("reflect-config.json");
+                if (reflectConfigJsonPath.toFile().exists()) {
+                    Files.copy(reflectConfigJsonPath, targetPath.resolve("reflect-config.json"),
+                            StandardCopyOption.REPLACE_EXISTING);
+                    Files.copy(basePath.resolve("serialization-config.json"), targetPath.resolve("serialization-config.json"),
+                            StandardCopyOption.REPLACE_EXISTING);
+                    Files.copy(basePath.resolve("jni-config.json"), targetPath.resolve("jni-config.json"),
+                            StandardCopyOption.REPLACE_EXISTING);
+                    Files.copy(basePath.resolve("proxy-config.json"), targetPath.resolve("proxy-config.json"),
+                            StandardCopyOption.REPLACE_EXISTING);
+                    transformJsonObject(basePath, "resource-config.json", targetPath,
+                            JsonTransform.dropping(this::discardResource));
 
-                if (getLog().isInfoEnabled()) {
-                    getLog().info("Discovered native image agent generated files");
-                    logConfigurationFileContents("reflect-config.json", targetPath);
-                    logConfigurationFileContents("serialization-config.json", targetPath);
-                    logConfigurationFileContents("jni-config.json", targetPath);
-                    logConfigurationFileContents("proxy-config.json", targetPath);
-                    logConfigurationFileContents("resource-config.json", targetPath);
+                    if (getLog().isInfoEnabled()) {
+                        getLog().info("Discovered native image agent generated files");
+                        logConfigurationFileContents("reflect-config.json", targetPath);
+                        logConfigurationFileContents("serialization-config.json", targetPath);
+                        logConfigurationFileContents("jni-config.json", targetPath);
+                        logConfigurationFileContents("proxy-config.json", targetPath);
+                        logConfigurationFileContents("resource-config.json", targetPath);
+                    }
+                } else {
+                    final Path reflectOriginsTxtPath = basePath.resolve("reflect-origins.txt");
+                    if (reflectOriginsTxtPath.toFile().exists()) {
+                        getLog().info("Native image agent configuration origin files exist, inspect them manually inside "
+                                + basePath);
+                    }
                 }
             } catch (IOException e) {
                 throw new MojoExecutionException("Failed to transform native image agent configuration", e);
             }
+        } else {
+            getLog().info("Missing " + dirName + " directory with native image agent configuration to transform");
         }
     }
 

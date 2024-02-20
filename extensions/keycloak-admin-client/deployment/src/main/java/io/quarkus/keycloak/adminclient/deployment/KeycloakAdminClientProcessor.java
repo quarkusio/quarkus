@@ -13,6 +13,8 @@ import org.keycloak.json.StringOrArrayDeserializer;
 import org.keycloak.json.StringOrArraySerializer;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -49,8 +51,10 @@ public class KeycloakAdminClientProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
-    public void integrate(ResteasyKeycloakAdminClientRecorder recorder, TlsConfig tlsConfig) {
-        recorder.setClientProvider(tlsConfig.trustAll);
+    public void integrate(ResteasyKeycloakAdminClientRecorder recorder, TlsConfig tlsConfig, Capabilities capabilities) {
+        boolean areJSONBProvidersPresent = capabilities.isPresent(Capability.RESTEASY_JSON_JSONB)
+                || capabilities.isPresent(Capability.RESTEASY_JSON_JSONB_CLIENT);
+        recorder.setClientProvider(tlsConfig.trustAll, areJSONBProvidersPresent);
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

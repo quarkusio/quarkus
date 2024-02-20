@@ -25,6 +25,7 @@ import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.KubeSchema;
 import io.fabric8.kubernetes.api.model.KubernetesResource;
 import io.fabric8.kubernetes.api.model.KubernetesResourceList;
+import io.fabric8.kubernetes.api.model.ValidationSchema;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
@@ -66,6 +67,7 @@ public class KubernetesClientProcessor {
     private static final DotName RESOURCE_EVENT_HANDLER = DotName
             .createSimple(io.fabric8.kubernetes.client.informers.ResourceEventHandler.class.getName());
     private static final DotName KUBERNETES_RESOURCE = DotName.createSimple(KubernetesResource.class.getName());
+    private static final DotName VALIDATION_SCHEMA = DotName.createSimple(ValidationSchema.class.getName());
     private static final DotName KUBERNETES_RESOURCE_LIST = DotName
             .createSimple(KubernetesResourceList.class.getName());
     private static final DotName KUBE_SCHEMA = DotName.createSimple(KubeSchema.class.getName());
@@ -190,6 +192,7 @@ public class KubernetesClientProcessor {
         ignoredJsonDeserializationClasses.produce(
                 new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE_LIST));
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE));
+        ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(VALIDATION_SCHEMA));
 
         final String[] deserializerClasses = combinedIndexBuildItem.getIndex()
                 .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonDeserializer"))

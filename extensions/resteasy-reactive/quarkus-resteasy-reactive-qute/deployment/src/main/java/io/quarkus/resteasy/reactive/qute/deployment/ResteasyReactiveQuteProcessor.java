@@ -12,17 +12,21 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.server.handlers.PublisherResponseHandler;
 import org.jboss.resteasy.reactive.server.handlers.UniResponseHandler;
 import org.jboss.resteasy.reactive.server.model.FixedHandlersChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.qute.TemplateInstance;
+import io.quarkus.resteasy.reactive.qute.Chunked;
 import io.quarkus.resteasy.reactive.qute.runtime.TemplateResponseFilter;
+import io.quarkus.resteasy.reactive.qute.runtime.TemplateResponseMultiHandler;
 import io.quarkus.resteasy.reactive.qute.runtime.TemplateResponseUniHandler;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.NonBlockingReturnTypeBuildItem;
@@ -31,6 +35,7 @@ import io.quarkus.resteasy.reactive.spi.CustomContainerResponseFilterBuildItem;
 public class ResteasyReactiveQuteProcessor {
 
     private static final DotName TEMPLATE_INSTANCE = DotName.createSimple(TemplateInstance.class.getName());
+    private static final DotName CHUNKED = DotName.createSimple(Chunked.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -65,10 +70,17 @@ public class ResteasyReactiveQuteProcessor {
                     // the reason why we use AFTER_METHOD_INVOKE_SECOND_ROUND is to be able to properly support Uni<TemplateInstance>
                     return Collections.singletonList(
                             new FixedHandlersChainCustomizer(
-                                    List.of(new TemplateResponseUniHandler(), new UniResponseHandler()),
+                                    getHandlers(method.hasAnnotation(CHUNKED)),
                                     HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE_SECOND_ROUND));
                 }
                 return Collections.emptyList();
+            }
+
+            private List<ServerRestHandler> getHandlers(boolean isChunked) {
+                if (isChunked) {
+                    return List.of(new TemplateResponseMultiHandler(), new PublisherResponseHandler());
+                }
+                return List.of(new TemplateResponseUniHandler(), new UniResponseHandler());
             }
 
             private boolean isAsyncTemplateInstance(Type type) {

@@ -65,6 +65,8 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
         // - match labels
         if (jobTemplateSpec.buildSelector().getMatchLabels() == null) {
             jobTemplateSpec.editSelector().withMatchLabels(new HashMap<>()).endSelector();
+        } else {
+            jobTemplateSpec.withSelector(null);
         }
         // - termination grace period seconds
         if (jobTemplateSpec.buildTemplate().getSpec().getTerminationGracePeriodSeconds() == null) {

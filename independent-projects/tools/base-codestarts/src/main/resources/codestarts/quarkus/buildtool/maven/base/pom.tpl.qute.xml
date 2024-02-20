@@ -250,6 +250,7 @@
                         <version>$\{surefire-plugin.version}</version>
                         <configuration>
                             <argLine>-agentlib:native-image-agent=access-filter-file=target/quarkus-access-filter.json,caller-filter-file=target/quarkus-caller-filter.json,config-output-dir=target/native-image-agent-base-config</argLine>
+<!--                            <argLine>-agentlib:native-image-agent=access-filter-file=target/quarkus-access-filter.json,caller-filter-file=target/quarkus-caller-filter.json,config-output-dir=target/native-image-agent-base-config,experimental-configuration-with-origins</argLine>-->
 <!--                            <argLine>-agentlib:native-image-agent=access-filter-file=target/quarkus-access-filter.json,caller-filter-file=target/quarkus-caller-filter.json,trace-output=target/native-image-agent-trace-file.json</argLine>-->
                             <systemPropertyVariables>
                                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>

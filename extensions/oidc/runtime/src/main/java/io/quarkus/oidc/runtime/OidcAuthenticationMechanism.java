@@ -6,6 +6,8 @@ import java.util.function.Function;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
@@ -23,6 +25,8 @@ import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
 public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism {
+    private static final Logger LOG = Logger.getLogger(OidcAuthenticationMechanism.class);
+
     private static HttpCredentialTransport OIDC_WEB_APP_TRANSPORT = new HttpCredentialTransport(
             HttpCredentialTransport.Type.AUTHORIZATION_CODE, OidcConstants.CODE_FLOW_CODE);
 
@@ -75,6 +79,7 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
                 if (oidcTenantConfig == null) {
                     throw new OIDCException("Tenant configuration has not been resolved");
                 }
+                LOG.debugf("Resolved OIDC tenant id: %s", oidcTenantConfig.tenantId.orElse(OidcUtils.DEFAULT_TENANT_ID));
                 return oidcTenantConfig;
             };
         });

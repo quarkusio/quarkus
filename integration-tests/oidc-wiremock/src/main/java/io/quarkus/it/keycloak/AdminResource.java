@@ -42,7 +42,7 @@ public class AdminResource {
     @Authenticated
     @Produces(MediaType.APPLICATION_JSON)
     public String adminAzure() {
-        return "Issuer:" + ((JsonWebToken) identity.getPrincipal()).getIssuer();
+        return "Name:" + identity.getPrincipal().getName() + ",Issuer:" + ((JsonWebToken) identity.getPrincipal()).getIssuer();
     }
 
     @Path("bearer-no-introspection")

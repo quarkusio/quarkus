@@ -87,8 +87,15 @@ public class OidcProvider implements Closeable {
         this.client = client;
         this.oidcConfig = oidcConfig;
         this.tokenCustomizer = tokenCustomizer;
-        this.asymmetricKeyResolver = jwks == null ? null
-                : new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval, oidcConfig.certificateChain);
+        if (jwks != null) {
+            this.asymmetricKeyResolver = new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval,
+                    oidcConfig.certificateChain);
+        } else if (oidcConfig != null && oidcConfig.certificateChain.trustStoreFile.isPresent()) {
+            this.asymmetricKeyResolver = new CertChainPublicKeyResolver(oidcConfig.certificateChain);
+        } else {
+            this.asymmetricKeyResolver = null;
+        }
+
         if (client != null && oidcConfig != null && !oidcConfig.jwks.resolveEarly) {
             this.keyResolverProvider = new DynamicVerificationKeyResolver(client, oidcConfig);
         } else {

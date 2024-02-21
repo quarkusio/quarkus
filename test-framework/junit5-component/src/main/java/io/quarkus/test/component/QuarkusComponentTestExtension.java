@@ -64,6 +64,7 @@ import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.RepetitionInfo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -1031,7 +1032,9 @@ public class QuarkusComponentTestExtension
     }
 
     static boolean isTestMethod(Executable method) {
-        return method.isAnnotationPresent(Test.class) || method.isAnnotationPresent(ParameterizedTest.class);
+        return method.isAnnotationPresent(Test.class)
+                || method.isAnnotationPresent(ParameterizedTest.class)
+                || method.isAnnotationPresent(RepeatedTest.class);
     }
 
     private List<Field> findFields(Class<?> testClass, List<Class<? extends Annotation>> annotations) {

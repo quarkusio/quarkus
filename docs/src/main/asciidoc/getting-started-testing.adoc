@@ -1666,10 +1666,13 @@ The fields annotated with `@Inject` and `@InjectMock` are injected after a test 
 Finally, the CDI request context is activated and terminated per each test method.
 
 === Injection
+
 Test class fields annotated with `@jakarta.inject.Inject` and `@io.quarkus.test.InjectMock` are injected after a test instance is created.
 Dependent beans injected into these fields are correctly destroyed before a test instance is destroyed.
 Parameters of a test method for which a matching bean exists are resolved unless annotated with `@io.quarkus.test.component.SkipInject`.
 Dependent beans injected into the test method arguments are correctly destroyed after the test method completes.
+
+NOTE: Arguments of a `@ParameterizedTest` method that are provided by an `ArgumentsProvider`, for example with `@org.junit.jupiter.params.provider.ValueArgumentsProvider`, must be annotated with `@SkipInject`. 
 
 === Auto Mocking Unsatisfied Dependencies
 

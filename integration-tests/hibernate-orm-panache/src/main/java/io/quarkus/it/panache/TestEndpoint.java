@@ -1341,8 +1341,7 @@ public class TestEndpoint {
         Assertions.assertNull(aggregationDistinctProjection.getOwnerName());
         Assertions.assertEquals(bubulle.weight, aggregationDistinctProjection.getWeight());
 
-        long countDistinct = projectionDistinctQuery.count();
-        Assertions.assertEquals(1L, countDistinct);
+        Assertions.assertThrows(RuntimeException.class, () -> projectionDistinctQuery.count());
 
         // We are checking that not everything gets lowercased
         PanacheQuery<CatProjectionBean> letterCaseQuery = Cat
@@ -1841,6 +1840,22 @@ public class TestEndpoint {
         Assertions.assertEquals(0, query.count());
         Assertions.assertEquals(0,
                 Person.count("WITH id AS (SELECT p.id AS pid FROM Person2 AS p) SELECT count(*) FROM Person2 p"));
+        return "OK";
+    }
+
+    @GET
+    @Path("31117")
+    @Transactional
+    public String testBug31117() {
+        Person.deleteAll();
+        Person p = new Person();
+        p.name = "stef";
+        p.persist();
+        Assertions.assertEquals(1, Person.find("\r\n  \n\nfrom\n Person2\nwhere\n\rname = ?1", "stef").list().size());
+        Assertions.assertEquals(1, Person.find("\r\n  \n\nfrom\n Person2\nwhere\n\rname = ?1", "stef").count());
+        Assertions.assertEquals(1, Person.count("\r\n  \n\nfrom\n Person2\nwhere\n\rname = ?1", "stef"));
+        Assertions.assertEquals(1, Person.update("\r\n  \n\nupdate\n Person2\nset\n\rname='foo' where\n\rname = ?1", "stef"));
+        Assertions.assertEquals(1, Person.delete("\r\n  \n\ndelete\nfrom\n Person2\nwhere\nname = ?1", "foo"));
         return "OK";
     }
 }

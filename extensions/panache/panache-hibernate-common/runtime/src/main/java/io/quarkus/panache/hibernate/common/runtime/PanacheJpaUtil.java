@@ -1,5 +1,6 @@
 package io.quarkus.panache.hibernate.common.runtime;
 
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,8 +52,13 @@ public class PanacheJpaUtil {
         Matcher selectMatcher = SELECT_PATTERN.matcher(query);
         if (selectMatcher.matches()) {
             // this one cannot be null
-            String firstSelection = selectMatcher.group(1).trim();
-            if (firstSelection.toLowerCase().startsWith("distinct ")) {
+            String firstSelection = selectMatcher.group(1).trim().toLowerCase(Locale.ROOT);
+            if (firstSelection.startsWith("distinct")) {
+                // if firstSelection matched distinct only, we have something wrong in our selection list, probably functions/parens
+                // so bail out
+                if (firstSelection.length() == 8) {
+                    return getCountQueryUsingParser(query);
+                }
                 // this one can be null
                 String secondSelection = selectMatcher.group(2);
                 // we can only count distinct single columns
@@ -103,27 +109,44 @@ public class PanacheJpaUtil {
         return "`%s`".formatted(entityClass.getName());
     }
 
+    /**
+     * Removes \n, \r and outside spaces, and turns to lower case. DO NOT USE the result to pass it on to ORM,
+     * because the query is likely to be invalid since we replace newlines even if they
+     * are in quoted strings. This is only useful to analyse the start of the query for
+     * quick processing. NEVER use this to pass it to the DB or to replace user queries.
+     */
+    public static String trimForAnalysis(String query) {
+        // first replace single chars \n\r\t to spaces
+        // turn to lower case
+        String ret = query.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ').toLowerCase(Locale.ROOT);
+        // if we have more than one space, replace with one
+        if (ret.indexOf("  ") != -1) {
+            ret = ret.replaceAll("\\s+", " ");
+        }
+        // replace outer spaces
+        return ret.trim();
+    }
+
     public static String createFindQuery(Class<?> entityClass, String query, int paramCount) {
         if (query == null) {
             return "FROM " + getEntityName(entityClass);
         }
 
-        String trimmed = query.replace('\n', ' ').replace('\r', ' ').trim();
-        if (trimmed.isEmpty()) {
+        String trimmedForAnalysis = trimForAnalysis(query);
+        if (trimmedForAnalysis.isEmpty()) {
             return "FROM " + getEntityName(entityClass);
         }
 
-        String trimmedLc = trimmed.toLowerCase();
-        if (trimmedLc.startsWith("from ")
-                || trimmedLc.startsWith("select ")
-                || trimmedLc.startsWith("with ")) {
+        if (trimmedForAnalysis.startsWith("from ")
+                || trimmedForAnalysis.startsWith("select ")
+                || trimmedForAnalysis.startsWith("with ")) {
             return query;
         }
-        if (trimmedLc.startsWith("order by ")
-                || trimmedLc.startsWith("where ")) {
+        if (trimmedForAnalysis.startsWith("order by ")
+                || trimmedForAnalysis.startsWith("where ")) {
             return "FROM " + getEntityName(entityClass) + " " + query;
         }
-        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
+        if (trimmedForAnalysis.indexOf(' ') == -1 && trimmedForAnalysis.indexOf('=') == -1 && paramCount == 1) {
             query += " = ?1";
         }
         return "FROM " + getEntityName(entityClass) + " WHERE " + query;
@@ -140,27 +163,26 @@ public class PanacheJpaUtil {
         if (query == null)
             return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
 
-        String trimmed = query.trim();
-        if (trimmed.isEmpty())
+        String trimmedForAnalysis = trimForAnalysis(query);
+        if (trimmedForAnalysis.isEmpty())
             return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
 
-        String trimmedLc = trimmed.toLowerCase();
         // assume these have valid select clauses and let them through
-        if (trimmedLc.startsWith("select ")
-                || trimmedLc.startsWith("with ")) {
+        if (trimmedForAnalysis.startsWith("select ")
+                || trimmedForAnalysis.startsWith("with ")) {
             return query;
         }
-        if (trimmedLc.startsWith("from ")) {
+        if (trimmedForAnalysis.startsWith("from ")) {
             return "SELECT COUNT(*) " + query;
         }
-        if (trimmedLc.startsWith("where ")) {
+        if (trimmedForAnalysis.startsWith("where ")) {
             return "SELECT COUNT(*) FROM " + getEntityName(entityClass) + " " + query;
         }
-        if (trimmedLc.startsWith("order by ")) {
+        if (trimmedForAnalysis.startsWith("order by ")) {
             // ignore it
             return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
         }
-        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
+        if (trimmedForAnalysis.indexOf(' ') == -1 && trimmedForAnalysis.indexOf('=') == -1 && paramCount == 1) {
             query += " = ?1";
         }
         return "SELECT COUNT(*) FROM " + getEntityName(entityClass) + " WHERE " + query;
@@ -171,26 +193,29 @@ public class PanacheJpaUtil {
             throw new PanacheQueryException("Query string cannot be null");
         }
 
-        String trimmed = query.trim();
-        if (trimmed.isEmpty()) {
+        String trimmedForAnalysis = trimForAnalysis(query);
+        if (trimmedForAnalysis.isEmpty()) {
             throw new PanacheQueryException("Query string cannot be empty");
         }
 
-        String trimmedLc = trimmed.toLowerCase();
         // backwards compat trying to be helpful, remove the from
-        if (trimmedLc.startsWith("update from")) {
-            return "update " + trimmed.substring(11);
+        if (trimmedForAnalysis.startsWith("update from")) {
+            // find the original from and skip it
+            int index = query.toLowerCase(Locale.ROOT).indexOf("from");
+            return "update " + query.substring(index + 4);
         }
-        if (trimmedLc.startsWith("update ")) {
+        if (trimmedForAnalysis.startsWith("update ")) {
             return query;
         }
-        if (trimmedLc.startsWith("from ")) {
-            return "UPDATE " + trimmed.substring(5);
+        if (trimmedForAnalysis.startsWith("from ")) {
+            // find the original from and skip it
+            int index = query.toLowerCase(Locale.ROOT).indexOf("from");
+            return "UPDATE " + query.substring(index + 4);
         }
-        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
+        if (trimmedForAnalysis.indexOf(' ') == -1 && trimmedForAnalysis.indexOf('=') == -1 && paramCount == 1) {
             query += " = ?1";
         }
-        if (trimmedLc.startsWith("set ")) {
+        if (trimmedForAnalysis.startsWith("set ")) {
             return "UPDATE " + getEntityName(entityClass) + " " + query;
         }
         return "UPDATE " + getEntityName(entityClass) + " SET " + query;
@@ -200,22 +225,21 @@ public class PanacheJpaUtil {
         if (query == null)
             return "DELETE FROM " + getEntityName(entityClass);
 
-        String trimmed = query.trim();
-        if (trimmed.isEmpty())
+        String trimmedForAnalysis = trimForAnalysis(query);
+        if (trimmedForAnalysis.isEmpty())
             return "DELETE FROM " + getEntityName(entityClass);
 
-        String trimmedLc = trimmed.toLowerCase();
-        if (trimmedLc.startsWith("delete ")) {
+        if (trimmedForAnalysis.startsWith("delete ")) {
             return query;
         }
-        if (trimmedLc.startsWith("from ")) {
+        if (trimmedForAnalysis.startsWith("from ")) {
             return "DELETE " + query;
         }
-        if (trimmedLc.startsWith("order by ")) {
+        if (trimmedForAnalysis.startsWith("order by ")) {
             // ignore it
             return "DELETE FROM " + getEntityName(entityClass);
         }
-        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
+        if (trimmedForAnalysis.indexOf(' ') == -1 && trimmedForAnalysis.indexOf('=') == -1 && paramCount == 1) {
             query += " = ?1";
         }
         return "DELETE FROM " + getEntityName(entityClass) + " WHERE " + query;

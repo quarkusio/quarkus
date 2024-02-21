@@ -1715,7 +1715,8 @@ public class TestEndpoint {
                             () -> Cat.find("select new FakeClass('fake_cat', 'fake_owner', 12.5) from Cat c")
                                     .project(CatProjectionBean.class));
                     Assertions.assertTrue(
-                            exception.getMessage().startsWith("Unable to perform a projection on a 'select new' query"));
+                            exception.getMessage()
+                                    .startsWith("Unable to perform a projection on a 'select [distinct]? new' query"));
                 })
                 .chain(() -> Cat
                         .find("   SELECT   disTINct  'GARFIELD', 'JoN ArBuCkLe' from Cat c where name = :NamE group by name  ",

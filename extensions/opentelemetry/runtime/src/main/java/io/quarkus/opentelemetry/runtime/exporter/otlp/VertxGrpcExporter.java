@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -22,7 +23,6 @@ import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.vertx.core.runtime.BufferOutputStream;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -109,8 +109,14 @@ final class VertxGrpcExporter implements SpanExporter {
             int numberOfAttempts,
             Handler<GrpcClientRequest<Buffer, Buffer>> onSuccessHandler,
             Consumer<Throwable> onFailureCallback) {
-        Future<GrpcClientRequest<Buffer, Buffer>> reqFuture = client.request(server);
-        Uni.createFrom().completionStage(reqFuture.toCompletionStage()).onFailure().retry().withBackOff(Duration.ofMillis(100))
+        Uni.createFrom().completionStage(new Supplier<CompletionStage<GrpcClientRequest<Buffer, Buffer>>>() {
+
+            @Override
+            public CompletionStage<GrpcClientRequest<Buffer, Buffer>> get() {
+                return client.request(server).toCompletionStage();
+            }
+        }).onFailure().retry()
+                .withBackOff(Duration.ofMillis(100))
                 .atMost(numberOfAttempts).subscribe().with(
                         new Consumer<>() {
                             @Override

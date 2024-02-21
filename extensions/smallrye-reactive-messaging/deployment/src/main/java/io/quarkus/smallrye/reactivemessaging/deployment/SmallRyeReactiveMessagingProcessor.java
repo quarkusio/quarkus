@@ -81,9 +81,9 @@ import io.quarkus.smallrye.reactivemessaging.runtime.devmode.DevModeSupportConne
 import io.smallrye.reactive.messaging.EmitterConfiguration;
 import io.smallrye.reactive.messaging.Invoker;
 import io.smallrye.reactive.messaging.annotations.Blocking;
-import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingLivenessCheck;
-import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingReadinessCheck;
-import io.smallrye.reactive.messaging.health.SmallRyeReactiveMessagingStartupCheck;
+import io.smallrye.reactive.messaging.extension.health.SmallRyeReactiveMessagingLivenessCheck;
+import io.smallrye.reactive.messaging.extension.health.SmallRyeReactiveMessagingReadinessCheck;
+import io.smallrye.reactive.messaging.extension.health.SmallRyeReactiveMessagingStartupCheck;
 import io.smallrye.reactive.messaging.providers.extension.ChannelConfiguration;
 
 public class SmallRyeReactiveMessagingProcessor {

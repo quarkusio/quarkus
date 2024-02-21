@@ -49,4 +49,16 @@ public class UnsecuredResource extends UnsecuredParentResource implements Unsecu
     public UnsecuredSubResource permitAllSub() {
         return new UnsecuredSubResource();
     }
+
+    @Override
+    public String interfaceOverriddenDeclaredOnInterface() {
+        return "implementor-response";
+    }
+
+    @GET
+    @Path("/interface-overridden-declared-on-implementor")
+    @Override
+    public String interfaceOverriddenDeclaredOnImplementor() {
+        return "implementor-response";
+    }
 }

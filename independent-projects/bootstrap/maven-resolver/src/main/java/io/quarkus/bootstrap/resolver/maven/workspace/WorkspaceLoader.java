@@ -61,6 +61,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
 
     private final LocalWorkspace workspace = new LocalWorkspace();
     private final Path currentProjectPom;
+    private boolean warnOnFailingWsModules;
 
     private ModelBuilder modelBuilder;
     private BootstrapModelResolver modelResolver;
@@ -94,6 +95,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
             }
             activeProfileIds.addAll(cliOptions.getActiveProfileIds());
             inactiveProfileIds = cliOptions.getInactiveProfileIds();
+            warnOnFailingWsModules = ctx.isWarnOnFailingWorkspaceModules();
         }
         workspace.setBootstrapMavenContext(ctx);
     }
@@ -131,10 +133,14 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
                 req.setProfiles(profiles);
                 req.setRawModel(rawModel);
                 req.setWorkspaceModelResolver(this);
-                LocalProject project;
+                LocalProject project = null;
                 try {
                     project = new LocalProject(modelBuilder.build(req), workspace);
                 } catch (Exception e) {
+                    if (warnOnFailingWsModules) {
+                        log.warn("Failed to resolve effective model for " + rawModel.getPomFile(), e);
+                        return;
+                    }
                     throw new RuntimeException("Failed to resolve the effective model for " + rawModel.getPomFile(), e);
                 }
                 if (currentProject.get() == null && project.getDir().equals(currentProjectPom.getParent())) {

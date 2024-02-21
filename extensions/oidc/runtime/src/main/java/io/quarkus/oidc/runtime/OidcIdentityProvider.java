@@ -46,7 +46,6 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     static final String NEW_AUTHENTICATION = "new_authentication";
 
     private static final Uni<TokenVerificationResult> NULL_CODE_ACCESS_TOKEN_UNI = Uni.createFrom().nullItem();
-    private static final String CODE_ACCESS_TOKEN_RESULT = "code_flow_access_token_result";
 
     protected final DefaultTenantConfigResolver tenantResolver;
     private final BlockingTaskRunner<Void> uniVoidOidcContext;
@@ -149,30 +148,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                         isIdToken(request), null);
             }
 
-            // Verify Code Flow access token first if it is available and has to be verified.
-            // It may be refreshed if it has or has nearly expired
-            Uni<TokenVerificationResult> codeAccessTokenUni = verifyCodeFlowAccessTokenUni(requestData, request,
-                    resolvedContext,
-                    null);
-            return codeAccessTokenUni.onItemOrFailure().transformToUni(
-                    new BiFunction<TokenVerificationResult, Throwable, Uni<? extends SecurityIdentity>>() {
-                        @Override
-                        public Uni<SecurityIdentity> apply(TokenVerificationResult codeAccessTokenResult, Throwable t) {
-                            if (t != null) {
-                                return Uni.createFrom().failure(t instanceof AuthenticationFailedException ? t
-                                        : new AuthenticationFailedException(t));
-                            }
-                            if (codeAccessTokenResult != null) {
-                                if (tokenAutoRefreshPrepared(codeAccessTokenResult, requestData,
-                                        resolvedContext.oidcConfig)) {
-                                    return Uni.createFrom().failure(new TokenAutoRefreshException(null));
-                                }
-                                requestData.put(CODE_ACCESS_TOKEN_RESULT, codeAccessTokenResult);
-                            }
-                            return getUserInfoAndCreateIdentity(primaryTokenUni, requestData, request, resolvedContext);
-                        }
-                    });
-
+            return getUserInfoAndCreateIdentity(primaryTokenUni, requestData, request, resolvedContext);
         }
     }
 
@@ -191,7 +167,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                         }
 
                         if (codeAccessToken != null) {
-                            requestData.put(CODE_ACCESS_TOKEN_RESULT, codeAccessToken);
+                            requestData.put(OidcUtils.CODE_ACCESS_TOKEN_RESULT, codeAccessToken);
                         }
 
                         Uni<TokenVerificationResult> tokenUni = verifyTokenUni(requestData, resolvedContext,
@@ -217,7 +193,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private Uni<SecurityIdentity> getUserInfoAndCreateIdentity(Uni<TokenVerificationResult> tokenUni,
-            Map<String, Object> requestData, TokenAuthenticationRequest request,
+            Map<String, Object> requestData,
+            TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext) {
 
         return tokenUni.onItemOrFailure()
@@ -227,21 +204,49 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                         if (t != null) {
                             return Uni.createFrom().failure(new AuthenticationFailedException(t));
                         }
-                        if (resolvedContext.oidcConfig.authentication.isUserInfoRequired().orElse(false)) {
-                            return getUserInfoUni(requestData, request, resolvedContext).onItemOrFailure().transformToUni(
-                                    new BiFunction<UserInfo, Throwable, Uni<? extends SecurityIdentity>>() {
-                                        @Override
-                                        public Uni<SecurityIdentity> apply(UserInfo userInfo, Throwable t) {
-                                            if (t != null) {
-                                                return Uni.createFrom().failure(new AuthenticationFailedException(t));
-                                            }
-                                            return createSecurityIdentityWithOidcServer(result, requestData, request,
-                                                    resolvedContext, userInfo);
+
+                        Uni<TokenVerificationResult> codeAccessTokenUni = verifyCodeFlowAccessTokenUni(requestData, request,
+                                resolvedContext,
+                                null);
+                        return codeAccessTokenUni.onItemOrFailure().transformToUni(
+                                new BiFunction<TokenVerificationResult, Throwable, Uni<? extends SecurityIdentity>>() {
+                                    @Override
+                                    public Uni<SecurityIdentity> apply(TokenVerificationResult codeAccessTokenResult,
+                                            Throwable t) {
+                                        if (t != null) {
+                                            return Uni.createFrom().failure(t instanceof AuthenticationFailedException ? t
+                                                    : new AuthenticationFailedException(t));
                                         }
-                                    });
-                        } else {
-                            return createSecurityIdentityWithOidcServer(result, requestData, request, resolvedContext, null);
-                        }
+                                        if (codeAccessTokenResult != null) {
+                                            if (tokenAutoRefreshPrepared(codeAccessTokenResult, requestData,
+                                                    resolvedContext.oidcConfig)) {
+                                                return Uni.createFrom().failure(new TokenAutoRefreshException(null));
+                                            }
+                                            requestData.put(OidcUtils.CODE_ACCESS_TOKEN_RESULT, codeAccessTokenResult);
+                                        }
+
+                                        if (resolvedContext.oidcConfig.authentication.isUserInfoRequired().orElse(false)) {
+                                            return getUserInfoUni(requestData, request, resolvedContext).onItemOrFailure()
+                                                    .transformToUni(
+                                                            new BiFunction<UserInfo, Throwable, Uni<? extends SecurityIdentity>>() {
+                                                                @Override
+                                                                public Uni<SecurityIdentity> apply(UserInfo userInfo,
+                                                                        Throwable t) {
+                                                                    if (t != null) {
+                                                                        return Uni.createFrom()
+                                                                                .failure(new AuthenticationFailedException(t));
+                                                                    }
+                                                                    return createSecurityIdentityWithOidcServer(result,
+                                                                            requestData, request,
+                                                                            resolvedContext, userInfo);
+                                                                }
+                                                            });
+                                        } else {
+                                            return createSecurityIdentityWithOidcServer(result, requestData, request,
+                                                    resolvedContext, null);
+                                        }
+                                    }
+                                });
 
                     }
                 });
@@ -405,7 +410,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 rolesJson = new JsonObject(userInfo.getJsonObject().toString());
             } else if (tokenCred instanceof IdTokenCredential
                     && resolvedContext.oidcConfig.roles.source.get() == Source.accesstoken) {
-                rolesJson = ((TokenVerificationResult) requestData.get(CODE_ACCESS_TOKEN_RESULT)).localVerificationResult;
+                rolesJson = ((TokenVerificationResult) requestData
+                        .get(OidcUtils.CODE_ACCESS_TOKEN_RESULT)).localVerificationResult;
                 if (rolesJson == null) {
                     // JSON token representation may be null not only if it is an opaque access token
                     // but also if it is JWT and no JWK with a matching kid is available, asynchronous

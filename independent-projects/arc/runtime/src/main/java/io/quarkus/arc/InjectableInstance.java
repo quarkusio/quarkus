@@ -2,6 +2,8 @@ package io.quarkus.arc;
 
 import java.lang.annotation.Annotation;
 import java.util.Iterator;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Instance;
@@ -14,9 +16,17 @@ import jakarta.enterprise.util.TypeLiteral;
  */
 public interface InjectableInstance<T> extends Instance<T> {
 
+    @Override
     InstanceHandle<T> getHandle();
 
+    @Override
     Iterable<InstanceHandle<T>> handles();
+
+    @Override
+    default Stream<InstanceHandle<T>> handlesStream() {
+        // copy of `Instance.handlesStream()` to avoid unchecked conversion
+        return StreamSupport.stream(handles().spliterator(), false);
+    }
 
     @Override
     InjectableInstance<T> select(Annotation... qualifiers);

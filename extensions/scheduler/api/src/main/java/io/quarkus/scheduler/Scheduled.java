@@ -95,7 +95,8 @@ public @interface Scheduled {
     /**
      * Defines the period between invocations.
      * <p>
-     * The value is parsed with {@link Duration#parse(CharSequence)}. However, if an expression starts with a digit, "PT" prefix
+     * The value is parsed with {@link Duration#parse(CharSequence)}. However, if an expression starts with a digit and ends
+     * with 'd', "P" prefix will be added automatically. If the expression only starts with a digit, "PT" prefix
      * is added automatically, so for example, {@code 15m} can be used instead of {@code PT15M} and is parsed as "15 minutes".
      * Note that the absolute value of the value is always used.
      * <p>
@@ -135,7 +136,8 @@ public @interface Scheduled {
      * Defines a period after which the trigger should start. It's an alternative to {@link #delay()}. If {@link #delay()} is
      * set to a value greater than zero the value of {@link #delayed()} is ignored.
      * <p>
-     * The value is parsed with {@link Duration#parse(CharSequence)}. However, if an expression starts with a digit, "PT" prefix
+     * The value is parsed with {@link Duration#parse(CharSequence)}. However, if an expression starts with a digit and ends
+     * with 'd', "P" prefix will be added automatically. If the expression only starts with a digit, "PT" prefix
      * is added automatically, so for example, {@code 15s} can be used instead of {@code PT15S} and is parsed as "15 seconds".
      * Note that the absolute value of the value is always used.
      * <p>
@@ -171,7 +173,8 @@ public @interface Scheduled {
     /**
      * Defines a period after which the job is considered overdue.
      * <p>
-     * The value is parsed with {@link Duration#parse(CharSequence)}. However, if an expression starts with a digit, "PT" prefix
+     * The value is parsed with {@link Duration#parse(CharSequence)}. HHowever, if an expression starts with a digit and ends
+     * with 'd', "P" prefix will be added automatically. If the expression only starts with a digit, "PT" prefix
      * is added automatically, so for example, {@code 15m} can be used instead of {@code PT15M} and is parsed as "15 minutes".
      * Note that the absolute value of the value is always used.
      * <p>

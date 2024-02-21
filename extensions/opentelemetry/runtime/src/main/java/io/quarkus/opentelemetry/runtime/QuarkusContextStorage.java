@@ -75,7 +75,7 @@ public enum QuarkusContextStorage implements ContextStorage {
             public void close() {
                 final Context before = getContext(vertxContext);
                 if (before != toAttach) {
-                    log.warn("Context in storage not the expected context, Scope.close was not called correctly. Details:" +
+                    log.info("Context in storage not the expected context, Scope.close was not called correctly. Details:" +
                             " OTel context before: " + OpenTelemetryUtil.getSpanData(before) +
                             ". OTel context toAttach: " + spanDataToAttach);
                 }

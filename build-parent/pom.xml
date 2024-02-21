@@ -95,7 +95,7 @@
         <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
         <postgres.image>docker.io/postgres:14</postgres.image>
         <mariadb.image>docker.io/mariadb:10.11</mariadb.image>
-        <db2.image>docker.io/ibmcom/db2:11.5.8.0</db2.image>
+        <db2.image>icr.io/db2_community/db2:11.5.9.0</db2.image>
         <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
         <mysql.image>docker.io/mysql:8.0</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
@@ -115,7 +115,7 @@
 
         <assertj.version>3.25.3</assertj.version>
 
-        <wiremock.version>3.4.0</wiremock.version>
+        <wiremock.version>3.4.1</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
@@ -125,7 +125,7 @@
         <jacoco.agent.argLine></jacoco.agent.argLine>
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
-        <docker-maven-plugin.version>0.43.4</docker-maven-plugin.version>
+        <docker-maven-plugin.version>0.44.0</docker-maven-plugin.version>
         <formatter-maven-plugin.version>2.23.0</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.9.0</impsort-maven-plugin.version>
         <maven-invoker-plugin.version>3.6.0</maven-invoker-plugin.version>

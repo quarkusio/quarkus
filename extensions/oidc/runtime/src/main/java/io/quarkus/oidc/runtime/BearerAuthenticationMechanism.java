@@ -2,6 +2,8 @@ package io.quarkus.oidc.runtime;
 
 import java.util.function.Function;
 
+import org.jboss.logging.Logger;
+
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AccessTokenCredential;
@@ -15,14 +17,17 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
 public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMechanism {
+    private static final Logger LOG = Logger.getLogger(BearerAuthenticationMechanism.class);
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager, OidcTenantConfig oidcTenantConfig) {
+        LOG.debug("Starting a bearer access token authentication");
         String token = extractBearerToken(context, oidcTenantConfig);
         // if a bearer token is provided try to authenticate
         if (token != null) {
             return authenticate(identityProviderManager, context, new AccessTokenCredential(token));
         }
+        LOG.debug("Bearer access token is not available");
         return Uni.createFrom().nullItem();
     }
 
@@ -41,6 +46,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
         final HttpServerRequest request = context.request();
         String header = oidcConfig.token.header.isPresent() ? oidcConfig.token.header.get()
                 : HttpHeaders.AUTHORIZATION.toString();
+        LOG.debugf("Looking for a token in the %s header", header);
         final String headerValue = request.headers().get(header);
 
         if (headerValue == null) {
@@ -49,6 +55,10 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
 
         int idx = headerValue.indexOf(' ');
         final String scheme = idx > 0 ? headerValue.substring(0, idx) : null;
+
+        if (scheme != null) {
+            LOG.debugf("Authorization scheme: %s", scheme);
+        }
 
         if (scheme == null && !header.equalsIgnoreCase(HttpHeaders.AUTHORIZATION.toString())) {
             return headerValue;

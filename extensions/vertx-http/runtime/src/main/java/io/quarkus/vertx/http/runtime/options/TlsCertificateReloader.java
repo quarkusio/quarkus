@@ -7,11 +7,15 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.vertx.http.runtime.ServerSslConfig;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -26,18 +30,18 @@ import io.vertx.core.net.SSLOptions;
 /**
  * Utility class to handle TLS certificate reloading.
  */
-public class TlsCertificateReloadUtils {
+public class TlsCertificateReloader {
 
-    public static long handleCertificateReloading(Vertx vertx, HttpServer server,
+    /**
+     * A structure storing the reload tasks.
+     */
+    private static final List<ReloadCertificateTask> TASKS = new CopyOnWriteArrayList<>();
+
+    private static final Logger LOGGER = Logger.getLogger(TlsCertificateReloader.class);
+
+    public static long initCertReloadingAction(Vertx vertx, HttpServer server,
             HttpServerOptions options, ServerSslConfig configuration) {
-        // Validation
-        if (configuration.certificate.reloadPeriod.isEmpty()) {
-            return -1;
-        }
-        if (configuration.certificate.reloadPeriod.get().toMillis() < 30_000) {
-            throw new IllegalArgumentException(
-                    "Unable to configure TLS reloading - The reload period cannot be less than 30 seconds");
-        }
+
         if (options == null) {
             throw new IllegalArgumentException("Unable to configure TLS reloading - The HTTP server options were not provided");
         }
@@ -46,12 +50,23 @@ public class TlsCertificateReloadUtils {
             throw new IllegalArgumentException("Unable to configure TLS reloading - TLS/SSL is not enabled on the server");
         }
 
-        Logger log = Logger.getLogger(TlsCertificateReloadUtils.class);
-        return vertx.setPeriodic(configuration.certificate.reloadPeriod.get().toMillis(), new Handler<Long>() {
-            @Override
-            public void handle(Long id) {
+        long period;
+        // Validation
+        if (configuration.certificate.reloadPeriod.isPresent()) {
+            if (configuration.certificate.reloadPeriod.get().toMillis() < 30_000) {
+                throw new IllegalArgumentException(
+                        "Unable to configure TLS reloading - The reload period cannot be less than 30 seconds");
+            }
+            period = configuration.certificate.reloadPeriod.get().toMillis();
+        } else {
+            return -1;
+        }
 
-                vertx.executeBlocking(new Callable<SSLOptions>() {
+        Supplier<Uni<Boolean>> task = new Supplier<Uni<Boolean>>() {
+            @Override
+            public Uni<Boolean> get() {
+
+                Future<Boolean> future = vertx.executeBlocking(new Callable<SSLOptions>() {
                     @Override
                     public SSLOptions call() throws Exception {
                         // We are reading files - must be done on a worker thread.
@@ -76,17 +91,51 @@ public class TlsCertificateReloadUtils {
                             @Override
                             public void handle(AsyncResult<Boolean> ar) {
                                 if (ar.failed()) {
-                                    log.error("Unable to reload the TLS certificate, keeping the current one.", ar.cause());
+                                    LOGGER.error("Unable to reload the TLS certificate, keeping the current one.", ar.cause());
                                 } else {
                                     if (ar.result()) {
-                                        log.debug("TLS certificates updated");
+                                        LOGGER.debug("TLS certificates updated");
                                     }
                                     // Not updated, no change.
                                 }
                             }
                         });
+
+                return Uni.createFrom().completionStage(future.toCompletionStage());
+            }
+        };
+
+        long id = vertx.setPeriodic(configuration.certificate.reloadPeriod.get().toMillis(), new Handler<Long>() {
+            @Override
+            public void handle(Long id) {
+                //noinspection ResultOfMethodCallIgnored
+                task.get().subscribeAsCompletionStage();
             }
         });
+
+        TASKS.add(new ReloadCertificateTask(id, task));
+        return id;
+    }
+
+    public static void unschedule(Vertx vertx, long id) {
+        vertx.cancelTimer(id);
+        for (ReloadCertificateTask task : TASKS) {
+            if (task.it == id) {
+                TASKS.remove(task);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Trigger all the reload tasks.
+     * This method is <strong>NOT</strong> part of the public API, and is only used for testing purpose.
+     *
+     * @return a Uni that is completed when all the reload tasks have been executed
+     */
+    public static Uni<Void> reload() {
+        var unis = TASKS.stream().map(ReloadCertificateTask::action).map(Supplier::get).collect(Collectors.toList());
+        return Uni.join().all(unis).andFailFast().replaceWithVoid();
     }
 
     private static SSLOptions reloadFileContent(SSLOptions ssl, ServerSslConfig configuration) throws IOException {
@@ -132,5 +181,9 @@ public class TlsCertificateReloadUtils {
         }
 
         return copy;
+    }
+
+    record ReloadCertificateTask(long it, Supplier<Uni<Boolean>> action) {
+
     }
 }

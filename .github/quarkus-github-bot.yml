@@ -383,13 +383,13 @@ triage:
     - id: scheduler
       labels: [area/scheduler]
       title: "schedule(r)?"
-      notify: [mkouba]
+      notify: [mkouba, manovotn]
       directories:
         - extensions/scheduler/
     - id: quartz
       labels: [area/scheduler]
       title: "quartz"
-      notify: [mkouba, machi1990]
+      notify: [mkouba, machi1990, manovotn]
       directories:
         - extensions/quartz/
         - integration-tests/quartz/

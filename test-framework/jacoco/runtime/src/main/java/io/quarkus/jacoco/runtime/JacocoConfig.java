@@ -17,6 +17,13 @@ public class JacocoConfig {
     public static final String TARGET_JACOCO_REPORT = "target/" + JACOCO_REPORT;
 
     /**
+     * Whether or not the jacoco extension is enabled. Disabling it can come in handy when runnig tests in IDEs that do their
+     * own jacoco instrumentation, e.g. EclEmma in Eclipse.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled;
+
+    /**
      * The jacoco data file.
      * The path can be relative (to the module) or absolute.
      */

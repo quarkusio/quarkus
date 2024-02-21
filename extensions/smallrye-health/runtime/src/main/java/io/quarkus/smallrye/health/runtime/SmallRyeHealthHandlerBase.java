@@ -28,18 +28,19 @@ abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContext> {
     public void handle(RoutingContext ctx) {
         ManagedContext requestContext = Arc.container().requestContext();
         if (requestContext.isActive()) {
-            doHandle(ctx);
+            doHandle(ctx, null);
         } else {
             requestContext.activate();
             try {
-                doHandle(ctx);
-            } finally {
+                doHandle(ctx, requestContext);
+            } catch (Exception e) {
                 requestContext.terminate();
+                throw e;
             }
         }
     }
 
-    private void doHandle(RoutingContext ctx) {
+    private void doHandle(RoutingContext ctx, ManagedContext requestContext) {
         QuarkusHttpUser user = (QuarkusHttpUser) ctx.user();
         if (user != null) {
             Arc.container().instance(CurrentIdentityAssociation.class).get().setIdentity(user.getSecurityIdentity());
@@ -48,6 +49,9 @@ abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContext> {
         Context context = Vertx.currentContext();
         getHealth(reporter, ctx).emitOn(MutinyHelper.executor(context))
                 .subscribe().with(health -> {
+                    if (requestContext != null) {
+                        requestContext.terminate();
+                    }
                     HttpServerResponse resp = ctx.response();
                     if (health.isDown()) {
                         resp.setStatusCode(503);
@@ -59,6 +63,10 @@ abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContext> {
                         resp.end(buffer);
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
+                    }
+                }, failure -> {
+                    if (requestContext != null) {
+                        requestContext.terminate();
                     }
                 });
     }

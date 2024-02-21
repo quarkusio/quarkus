@@ -2048,14 +2048,31 @@ mp.messaging.incoming.data.tracing-enabled=false
 If the xref:telemetry-micrometer.adoc[Micrometer extension] is present,
 then Kafka producer and consumer clients metrics are exposed as Micrometer meters.
 
-Per channel metrics are also exposed as Micrometer meters.
-The number of messages produced or received per channel, acknowledgments and duration of processing are exposed.
+=== Channel metrics
 
-The messaging meters can be disabled:
+Per channel metrics can also be gathered and exposed as Micrometer meters.
+Following metrics can be gathered per channel, identified with the _channel_ tag:
+
+* `quarkus.messaging.message.count` : The number of messages produced or received
+* `quarkus.messaging.message.acks` : The number of messages processed successfully
+* `quarkus.messaging.message.failures` : The number of messages processed with failures
+* `quarkus.messaging.message.duration` : The duration of the message processing.
+
+For backwards compatibility reasons channel metrics are not enabled by default and can be enabled with:
+
+[IMPORTANT]
+====
+The https://smallrye.io/smallrye-reactive-messaging/latest/concepts/observability/[message observation]
+depends on intercepting messages and therefore doesn't support channels consuming messages with
+a custom message type such as `IncomingKafkaRecord`, `KafkaRecord`, `IncomingKafkaRecordBatch` or `KafkaRecordBatch`.
+
+The message interception, and observation, still work with channels consuming the generic `Message` type,
+or custom payloads enabled by https://smallrye.io/smallrye-reactive-messaging/latest/concepts/converters/[converters].
+====
 
 [source, properties]
 ----
-quarkus.micrometer.binder.messaging.enabled=false
+smallrye.messaging.observation.enabled=true
 ----
 
 

@@ -239,8 +239,8 @@ Configure the `quarkus.http.ssl.certificate.reload-period` property to specify t
 
 [source, properties]
 ----
-quarkus.http.ssl.certificate.files=/mount/certs/cert.pem
-quarkus.http.ssl.certificate.key-files=/mount/certs/key.pem
+quarkus.http.ssl.certificate.files=/mount/certs/tls.crt
+quarkus.http.ssl.certificate.key-files=/mount/certs/tls.key
 quarkus.http.ssl.certificate.reload-period=1h
 ----
 

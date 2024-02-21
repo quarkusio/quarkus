@@ -181,29 +181,6 @@ public class DevServicesElasticsearchProcessor {
 
         Distribution resolvedDistribution = resolveDistribution(config, buildItemConfig);
         DockerImageName resolvedImageName = resolveImageName(config, resolvedDistribution);
-        // Hibernate Search Elasticsearch have a version configuration property, we need to check that it is coherent
-        // with the image we are about to launch
-        if (buildItemConfig.version != null) {
-            String containerTag = resolvedImageName.getVersionPart();
-            if (!containerTag.startsWith(buildItemConfig.version)) {
-                throw new BuildException(
-                        "Dev Services for Elasticsearch detected a version mismatch."
-                                + " Consuming extensions are configured to use version " + config.imageName
-                                + " but Dev Services are configured to use version " + buildItemConfig.version +
-                                ". Either configure the same version or disable Dev Services for Elasticsearch.",
-                        Collections.emptyList());
-            }
-        }
-
-        if (buildItemConfig.distribution != null
-                && !buildItemConfig.distribution.equals(resolvedDistribution)) {
-            throw new BuildException(
-                    "Dev Services for Elasticsearch detected a distribution mismatch."
-                            + " Consuming extensions are configured to use distribution " + config.distribution
-                            + " but Dev Services are configured to use distribution " + buildItemConfig.distribution +
-                            ". Either configure the same distribution or disable Dev Services for Elasticsearch.",
-                    Collections.emptyList());
-        }
 
         final Optional<ContainerAddress> maybeContainerAddress = elasticsearchContainerLocator.locateContainer(
                 config.serviceName,

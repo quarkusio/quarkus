@@ -166,16 +166,15 @@ public class VanillaKubernetesProcessor {
                 livenessPath, readinessPath, startupPath,
                 roles, clusterRoles, serviceAccounts, roleBindings));
 
-        KubernetesConfig.DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
-        if (deploymentKind != KubernetesConfig.DeploymentResourceKind.Deployment) {
+        DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
+        if (deploymentKind != DeploymentResourceKind.Deployment) {
             result.add(new DecoratorBuildItem(KUBERNETES, new RemoveDeploymentResourceDecorator(name)));
         }
-
-        if (deploymentKind == KubernetesConfig.DeploymentResourceKind.StatefulSet) {
+        if (deploymentKind == DeploymentResourceKind.StatefulSet) {
             result.add(new DecoratorBuildItem(KUBERNETES, new AddStatefulSetResourceDecorator(name, config)));
-        } else if (deploymentKind == KubernetesConfig.DeploymentResourceKind.Job) {
+        } else if (deploymentKind == DeploymentResourceKind.Job) {
             result.add(new DecoratorBuildItem(KUBERNETES, new AddJobResourceDecorator(name, config.job)));
-        } else if (deploymentKind == KubernetesConfig.DeploymentResourceKind.CronJob) {
+        } else if (deploymentKind == DeploymentResourceKind.CronJob) {
             result.add(new DecoratorBuildItem(KUBERNETES, new AddCronJobResourceDecorator(name, config.cronJob)));
         }
 

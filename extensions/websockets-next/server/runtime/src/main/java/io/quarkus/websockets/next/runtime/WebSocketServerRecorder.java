@@ -14,7 +14,9 @@ import io.quarkus.arc.InjectableContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
+import io.quarkus.websockets.next.WebSocketRuntimeConfig;
 import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint.MessageType;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
@@ -34,6 +36,12 @@ public class WebSocketServerRecorder {
 
     private static final String WEB_SOCKET_CONN_KEY = WebSocketServerConnection.class.getName();
 
+    private final WebSocketRuntimeConfig config;
+
+    public WebSocketServerRecorder(WebSocketRuntimeConfig config) {
+        this.config = config;
+    }
+
     public Supplier<Object> connectionSupplier() {
         return new Supplier<Object>() {
 
@@ -41,9 +49,12 @@ public class WebSocketServerRecorder {
             public Object get() {
                 Context context = Vertx.currentContext();
                 if (context != null && VertxContext.isDuplicatedContext(context)) {
-                    return context.getLocal(WEB_SOCKET_CONN_KEY);
+                    Object connection = context.getLocal(WEB_SOCKET_CONN_KEY);
+                    if (connection != null) {
+                        return connection;
+                    }
                 }
-                throw new IllegalStateException("TODO unable to obtain the WebSocketConnection");
+                throw new WebSocketServerException("Unable to obtain the connection from the Vertx duplicated context");
             }
         };
     }
@@ -73,7 +84,7 @@ public class WebSocketServerRecorder {
                     connectionManager.add(endpointClass, connection);
 
                     // Create an endpoint that delegates callbacks to the @WebSocket bean
-                    WebSocketEndpoint endpoint = createEndpoint(endpointClass, context, connection, codecs);
+                    WebSocketEndpoint endpoint = createEndpoint(endpointClass, context, connection, codecs, config);
                     WebSocketSessionContext sessionContext = sessionContext(container);
 
                     // The processor is only needed if Multi is consumed by the @OnMessage callback
@@ -203,7 +214,7 @@ public class WebSocketServerRecorder {
     }
 
     private WebSocketEndpoint createEndpoint(String endpointClassName, Context context, WebSocketServerConnection connection,
-            Codecs codecs) {
+            Codecs codecs, WebSocketRuntimeConfig config) {
         try {
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
             if (cl == null) {
@@ -213,11 +224,12 @@ public class WebSocketServerRecorder {
             Class<? extends WebSocketEndpoint> endpointClazz = (Class<? extends WebSocketEndpoint>) cl
                     .loadClass(endpointClassName);
             WebSocketEndpoint endpoint = (WebSocketEndpoint) endpointClazz
-                    .getDeclaredConstructor(Context.class, WebSocketServerConnection.class, Codecs.class)
-                    .newInstance(context, connection, codecs);
+                    .getDeclaredConstructor(Context.class, WebSocketServerConnection.class, Codecs.class,
+                            WebSocketRuntimeConfig.class)
+                    .newInstance(context, connection, codecs, config);
             return endpoint;
         } catch (Exception e) {
-            throw new IllegalStateException("TODO Unable to create endpoint: " + endpointClassName, e);
+            throw new WebSocketServerException("Unable to create endpoint instance: " + endpointClassName, e);
         }
     }
 
@@ -227,7 +239,7 @@ public class WebSocketServerRecorder {
                 return (WebSocketSessionContext) injectableContext;
             }
         }
-        throw new IllegalStateException("TODO session context not registered");
+        throw new WebSocketServerException("CDI session context not registered");
     }
 
 }

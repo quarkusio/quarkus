@@ -3,9 +3,9 @@ package io.quarkus.websockets.next.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -52,7 +52,9 @@ import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.websockets.next.TextMessageCodec;
+import io.quarkus.websockets.next.WebSocketRuntimeConfig;
 import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.deployment.WebSocketEndpointBuildItem.Callback;
 import io.quarkus.websockets.next.runtime.Codecs;
 import io.quarkus.websockets.next.runtime.ConnectionManager;
@@ -98,7 +100,7 @@ public class WebSocketServerProcessor {
             BuildProducer<WebSocketEndpointBuildItem> endpoints) {
 
         IndexView index = beanArchiveIndex.getIndex();
-        Set<String> paths = new HashSet<>();
+        Map<String, DotName> pathToEndpoint = new HashMap<>();
 
         for (BeanInfo bean : beanDiscoveryFinished.beanStream().classBeans()) {
             ClassInfo beanClass = bean.getTarget().get().asClass();
@@ -109,8 +111,10 @@ public class WebSocketServerProcessor {
                     // Sub-websocket - merge the path from the enclosing classes
                     path = mergePath(getPathPrefix(index, beanClass.enclosingClass()), path);
                 }
-                if (!paths.add(path)) {
-                    throw new IllegalStateException("TODO multiple endpoints define the same path");
+                DotName previous = pathToEndpoint.put(path, beanClass.name());
+                if (previous != null) {
+                    throw new WebSocketServerException(
+                            String.format("Multiple endpoints [%s, %s] define the same path: %s", previous, beanClass, path));
                 }
                 Callback onOpen = findCallback(beanArchiveIndex.getIndex(), beanClass, WebSocketDotNames.ON_OPEN,
                         this::validateOnOpen);
@@ -119,8 +123,8 @@ public class WebSocketServerProcessor {
                 Callback onClose = findCallback(beanArchiveIndex.getIndex(), beanClass, WebSocketDotNames.ON_CLOSE,
                         this::validateOnClose);
                 if (onOpen == null && onMessage == null) {
-                    throw new IllegalStateException(
-                            "TODO the endpoint must declare at least one method annotated with @OnMessage or @OnOpen");
+                    throw new WebSocketServerException(
+                            "The endpoint must declare at least one method annotated with @OnMessage or @OnOpen: " + beanClass);
                 }
                 endpoints.produce(new WebSocketEndpointBuildItem(bean, path, onOpen,
                         onMessage, onClose));
@@ -227,20 +231,26 @@ public class WebSocketServerProcessor {
     private void validateCallback(MethodInfo callback) {
         if (callback.hasDeclaredAnnotation(WebSocketDotNames.BINARY_MESSAGE)
                 && callback.hasDeclaredAnnotation(WebSocketDotNames.TEXT_MESSAGE)) {
-            throw new IllegalStateException("TODO only @BinaryMessage or @TextMessage can be declared on a callback");
+            throw new WebSocketServerException(
+                    "Either @BinaryMessage or @TextMessage can be declared on a callback: " + callbackToString(callback));
         }
     }
 
     private void validateOnMessage(MethodInfo callback) {
         if (callback.parameters().size() != 1) {
-            throw new IllegalStateException("@OnMessage callback must accept exactly one parameter");
+            throw new WebSocketServerException(
+                    "@OnMessage callback must accept exactly one parameter: " + callbackToString(callback));
         }
+    }
+
+    private String callbackToString(MethodInfo callback) {
+        return callback.declaringClass().name() + "#" + callback.name() + "()";
     }
 
     private String getPathPrefix(IndexView index, DotName enclosingClassName) {
         ClassInfo enclosingClass = index.getClassByName(enclosingClassName);
         if (enclosingClass == null) {
-            throw new IllegalStateException("TODO enclosing class not found in index");
+            throw new WebSocketServerException("Enclosing class not found in index: " + enclosingClass);
         }
         AnnotationInstance webSocketAnnotation = enclosingClass.annotation(WebSocketDotNames.WEB_SOCKET);
         if (webSocketAnnotation != null) {
@@ -256,16 +266,19 @@ public class WebSocketServerProcessor {
 
     private void validateOnOpen(MethodInfo callback) {
         if (!callback.parameters().isEmpty()) {
-            throw new IllegalStateException("@OnOpen callback must not accept any parameters");
+            throw new WebSocketServerException(
+                    "@OnOpen callback must not accept any parameters: " + callbackToString(callback));
         }
     }
 
     private void validateOnClose(MethodInfo callback) {
         if (callback.returnType().kind() != Kind.VOID && !Callback.isUniVoid(callback.returnType())) {
-            throw new IllegalStateException("@OnClose callback must return void or Uni<Void>");
+            throw new WebSocketServerException(
+                    "@OnClose callback must return void or Uni<Void>: " + callbackToString(callback));
         }
         if (!callback.parameters().isEmpty()) {
-            throw new IllegalStateException("@OnClose callback must not accept any parameters");
+            throw new WebSocketServerException(
+                    "@OnClose callback must not accept any parameters: " + callbackToString(callback));
         }
     }
 
@@ -320,12 +333,12 @@ public class WebSocketServerProcessor {
                 .build();
 
         MethodCreator constructor = endpointCreator.getConstructorCreator(Context.class, WebSocketServerConnection.class,
-                Codecs.class);
+                Codecs.class, WebSocketRuntimeConfig.class);
         constructor.invokeSpecialMethod(
                 MethodDescriptor.ofConstructor(DefaultWebSocketEndpoint.class, Context.class, WebSocketServerConnection.class,
-                        Codecs.class),
+                        Codecs.class, WebSocketRuntimeConfig.class),
                 constructor.getThis(), constructor.getMethodParam(0), constructor.getMethodParam(1),
-                constructor.getMethodParam(2));
+                constructor.getMethodParam(2), constructor.getMethodParam(3));
         constructor.returnNull();
 
         if (endpoint.onMessage != null && endpoint.onMessage.acceptsMessage()) {
@@ -693,7 +706,7 @@ public class WebSocketServerProcessor {
                 DotName name = method.returnType().asParameterizedType().name();
                 return !name.equals(WebSocketDotNames.UNI) && !name.equals(WebSocketDotNames.MULTI);
             default:
-                throw new IllegalStateException("TODO Unsupported return type");
+                throw new WebSocketServerException("Unsupported return type:" + callbackToString(method));
         }
     }
 

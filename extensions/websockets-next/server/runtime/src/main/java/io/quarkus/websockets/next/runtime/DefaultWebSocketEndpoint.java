@@ -11,6 +11,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
+import io.quarkus.websockets.next.WebSocketRuntimeConfig;
 import io.quarkus.websockets.next.WebSocketServerConnection;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -29,10 +30,14 @@ public abstract class DefaultWebSocketEndpoint implements WebSocketEndpoint {
 
     private final ConcurrencyLimiter limiter;
 
-    public DefaultWebSocketEndpoint(Context context, WebSocketServerConnection connection, Codecs codecs) {
+    private final WebSocketRuntimeConfig config;
+
+    public DefaultWebSocketEndpoint(Context context, WebSocketServerConnection connection, Codecs codecs,
+            WebSocketRuntimeConfig config) {
         this.connection = connection;
         this.codecs = codecs;
         this.limiter = new ConcurrencyLimiter(context, connection);
+        this.config = config;
     }
 
     @Override
@@ -61,23 +66,30 @@ public abstract class DefaultWebSocketEndpoint implements WebSocketEndpoint {
                     VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
                         @Override
                         public void run() {
-                            action.apply(context, message).subscribe().with(complete);
+                            withTimeout(action.apply(context, message)).subscribe().with(complete);
                         }
                     });
                 } else if (executionModel == ExecutionModel.WORKER_THREAD) {
                     context.executeBlocking(new Callable<Void>() {
                         @Override
                         public Void call() {
-                            action.apply(context, message).subscribe().with(complete);
+                            withTimeout(action.apply(context, message)).subscribe().with(complete);
                             return null;
                         }
                     }, false);
                 } else {
-                    action.apply(context, message).subscribe().with(complete);
+                    withTimeout(action.apply(context, message)).subscribe().with(complete);
                 }
             }
         });
         return promise.future();
+    }
+
+    private Uni<Void> withTimeout(Uni<Void> action) {
+        if (config.timeout().isEmpty()) {
+            return action;
+        }
+        return action.ifNoItem().after(config.timeout().get()).fail();
     }
 
     protected Object beanInstance(String identifier) {

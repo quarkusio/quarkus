@@ -194,7 +194,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * A parameter to specify the password of the truststore file if it is configured with {@link #trustStoreFile}.
          */
         @ConfigItem
-        public Optional<String> trustStorePassword;
+        public Optional<String> trustStorePassword = Optional.empty();
 
         /**
          * A parameter to specify the alias of the truststore certificate.

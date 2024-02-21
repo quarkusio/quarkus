@@ -8,6 +8,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.notContaining;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -23,6 +24,7 @@ import java.util.Set;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -271,6 +273,16 @@ public class CodeFlowAuthorizationTest {
 
             webClient.getCookieManager().clearCookies();
         }
+
+        // Now send a bearer access token with the inline chain
+        String bearerAccessToken = TestUtils.createTokenWithInlinedCertChain("alice-certificate");
+
+        RestAssured.given().auth().oauth2(bearerAccessToken)
+                .when().get("/code-flow-user-info-github-cached-in-idtoken")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("alice:alice:alice-certificate, cache size: 0"));
+
         clearCache();
     }
 
@@ -296,6 +308,7 @@ public class CodeFlowAuthorizationTest {
 
             webClient.getCookieManager().clearCookies();
         }
+
         clearCache();
     }
 

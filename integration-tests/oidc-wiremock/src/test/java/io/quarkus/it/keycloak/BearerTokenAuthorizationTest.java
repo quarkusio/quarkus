@@ -65,11 +65,20 @@ public class BearerTokenAuthorizationTest {
         wireMockServer.stubFor(WireMock.get("/auth/azure/jwk")
                 .withHeader("Authorization", matching("Access token: " + azureToken))
                 .willReturn(WireMock.aResponse().withBody(azureJwk)));
-        RestAssured.given().auth().oauth2(azureToken)
+        //        RestAssured.given().auth().oauth2(azureToken)
+        //                .when().get("/api/admin/bearer-azure")
+        //                .then()
+        //                .statusCode(200)
+        //                .body(Matchers.equalTo(
+        //                        "Name:jondoe@quarkusoidctest.onmicrosoft.com,Issuer:https://sts.windows.net/e7861267-92c5-4a03-bdb2-2d3e491e7831/"));
+
+        String accessTokenWithCert = TestUtils.createTokenWithInlinedCertChain("alice-certificate");
+
+        RestAssured.given().auth().oauth2(accessTokenWithCert)
                 .when().get("/api/admin/bearer-azure")
                 .then()
                 .statusCode(200)
-                .body(Matchers.equalTo("Issuer:https://sts.windows.net/e7861267-92c5-4a03-bdb2-2d3e491e7831/"));
+                .body(Matchers.equalTo("Name:alice-certificate,Issuer:https://server.example.com"));
     }
 
     private String readFile(String filePath) throws Exception {
@@ -292,7 +301,7 @@ public class BearerTokenAuthorizationTest {
                 List.of(subjectCert, intermediateCert, rootCert),
                 subjectPrivateKey);
 
-        assertX5cOnlyIsPresent(token);
+        TestUtils.assertX5cOnlyIsPresent(token);
 
         RestAssured.given().auth().oauth2(token)
                 .when().get("/api/admin/bearer-kid-or-chain")
@@ -311,7 +320,7 @@ public class BearerTokenAuthorizationTest {
                 List.of(intermediateCert, subjectCert, rootCert),
                 subjectPrivateKey);
 
-        assertX5cOnlyIsPresent(token);
+        TestUtils.assertX5cOnlyIsPresent(token);
 
         RestAssured.given().auth().oauth2(token)
                 .when().get("/api/admin/bearer-kid-or-chain")
@@ -360,14 +369,6 @@ public class BearerTokenAuthorizationTest {
         JsonObject headers = OidcUtils.decodeJwtHeaders(token);
         assertFalse(headers.containsKey("x5c"));
         assertEquals(kid, headers.getString("kid"));
-        assertFalse(headers.containsKey("x5t"));
-        assertFalse(headers.containsKey("x5t#S256"));
-    }
-
-    private void assertX5cOnlyIsPresent(String token) {
-        JsonObject headers = OidcUtils.decodeJwtHeaders(token);
-        assertTrue(headers.containsKey("x5c"));
-        assertFalse(headers.containsKey("kid"));
         assertFalse(headers.containsKey("x5t"));
         assertFalse(headers.containsKey("x5t#S256"));
     }

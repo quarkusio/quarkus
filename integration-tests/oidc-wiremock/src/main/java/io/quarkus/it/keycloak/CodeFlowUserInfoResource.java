@@ -16,12 +16,15 @@ import io.quarkus.security.identity.SecurityIdentity;
 @Authenticated
 public class CodeFlowUserInfoResource {
 
+    // UserInfo stubs are available for code flow JWT and binary access tokens and bearer JWT tokens
     @Inject
     UserInfo userInfo;
 
+    // Custom test augmentor changes Principal to use UserInfo which has a preferred `alice` name
     @Inject
     SecurityIdentity identity;
 
+    // current access token
     @Inject
     JsonWebToken accessToken;
 

@@ -49,6 +49,7 @@ final class VertxGrpcExporter implements SpanExporter {
     // We only log unimplemented once since it's a configuration issue that won't be recovered.
     private final AtomicBoolean loggedUnimplemented = new AtomicBoolean();
     private final AtomicBoolean isShutdown = new AtomicBoolean();
+    private final CompletableResultCode shutdownResult = new CompletableResultCode();
     private final String type;
     private final ExporterMetrics exporterMetrics;
     private final SocketAddress server;
@@ -137,11 +138,25 @@ final class VertxGrpcExporter implements SpanExporter {
     @Override
     public CompletableResultCode shutdown() {
         if (!isShutdown.compareAndSet(false, true)) {
-            logger.log(Level.INFO, "Calling shutdown() multiple times.");
-            return CompletableResultCode.ofSuccess();
+            logger.log(Level.FINE, "Calling shutdown() multiple times.");
+            return shutdownResult;
         }
-        client.close();
-        return CompletableResultCode.ofSuccess();
+
+        client.close()
+                .onSuccess(
+                        new Handler<>() {
+                            @Override
+                            public void handle(Void event) {
+                                shutdownResult.succeed();
+                            }
+                        })
+                .onFailure(new Handler<>() {
+                    @Override
+                    public void handle(Throwable event) {
+                        shutdownResult.fail();
+                    }
+                });
+        return shutdownResult;
     }
 
     private static final class ClientRequestOnSuccessHandler implements Handler<GrpcClientRequest<Buffer, Buffer>> {

@@ -8,13 +8,17 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 
 import io.opentelemetry.exporter.internal.http.HttpExporter;
 import io.opentelemetry.exporter.internal.http.HttpSender;
 import io.opentelemetry.exporter.internal.otlp.traces.TraceRequestMarshaler;
 import io.opentelemetry.sdk.common.CompletableResultCode;
+import io.opentelemetry.sdk.internal.ThrottlingLogger;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.vertx.core.runtime.BufferOutputStream;
@@ -30,6 +34,9 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.tracing.TracingPolicy;
 
 final class VertxHttpExporter implements SpanExporter {
+
+    private static final Logger internalLogger = Logger.getLogger(VertxHttpExporter.class.getName());
+    private static final ThrottlingLogger logger = new ThrottlingLogger(internalLogger);
 
     private final HttpExporter<TraceRequestMarshaler> delegate;
 
@@ -82,6 +89,9 @@ final class VertxHttpExporter implements SpanExporter {
             clientOptionsCustomizer.accept(httpClientOptions);
             this.client = vertx.createHttpClient(httpClientOptions);
         }
+
+        private final AtomicBoolean isShutdown = new AtomicBoolean();
+        private final CompletableResultCode shutdownResult = new CompletableResultCode();
 
         private static String determineBasePath(URI baseUri) {
             String path = baseUri.getPath();
@@ -173,8 +183,26 @@ final class VertxHttpExporter implements SpanExporter {
 
         @Override
         public CompletableResultCode shutdown() {
-            client.close();
-            return CompletableResultCode.ofSuccess();
+            if (!isShutdown.compareAndSet(false, true)) {
+                logger.log(Level.FINE, "Calling shutdown() multiple times.");
+                return shutdownResult;
+            }
+
+            client.close()
+                    .onSuccess(
+                            new Handler<>() {
+                                @Override
+                                public void handle(Void event) {
+                                    shutdownResult.succeed();
+                                }
+                            })
+                    .onFailure(new Handler<>() {
+                        @Override
+                        public void handle(Throwable event) {
+                            shutdownResult.fail();
+                        }
+                    });
+            return shutdownResult;
         }
     }
 }

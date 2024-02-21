@@ -96,6 +96,8 @@ public class TransformNativeImageAgentConfigMojo extends QuarkusBootstrapMojo {
     }
 
     private void transformJsonObject(Path base, String name, Path target, JsonTransform transform) throws IOException {
+        getLog().debug("Discarding resources from native image configuration that match the following regular expression: "
+                + resourceSkipPattern);
         final String original = Files.readString(base.resolve(name));
         final JsonReader.JsonObject jsonRead = JsonReader.of(original).read();
         final Json.JsonObjectBuilder jsonBuilder = Json.object().skipEscape(true);
@@ -112,7 +114,11 @@ public class TransformNativeImageAgentConfigMojo extends QuarkusBootstrapMojo {
             final JsonReader.JsonMember member = (JsonReader.JsonMember) value;
             if ("pattern".equals(member.attribute().value())) {
                 final JsonReader.JsonString memberValue = (JsonReader.JsonString) member.value();
-                return resourceSkipPattern.matcher(memberValue.value()).find();
+                final boolean discarded = resourceSkipPattern.matcher(memberValue.value()).find();
+                if (discarded) {
+                    getLog().debug("Discarded included resource with pattern: " + memberValue.value());
+                }
+                return discarded;
             }
         }
 

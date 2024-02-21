@@ -92,6 +92,39 @@ public class DenyAllJaxRsTest {
     }
 
     @Test
+    public void shouldAllowAnnotatedParentEndpoint() {
+        // the endpoint has @RolesAllowed, therefore default JAX-RS security should not be applied
+        String path = "/unsecured/parent-annotated";
+        assertStatus(path, 200, 401);
+    }
+
+    @Test
+    public void shouldAllowAnnotatedEndpointOnInterface() {
+        // the endpoint has @RolesAllowed, therefore default JAX-RS security should not be applied
+        String path = "/unsecured/interface-annotated";
+        assertStatus(path, 200, 401);
+    }
+
+    @Test
+    public void shouldDenyUnannotatedOverriddenOnInterfaceImplementor() {
+        // @RolesAllowed on interface, however implementor overridden the endpoint method with @Path @GET
+        String path = "/unsecured/interface-overridden-declared-on-implementor";
+        assertStatus(path, 403, 401);
+    }
+
+    @Test
+    public void shouldAllowAnnotatedOverriddenEndpointDeclaredOnInterface() {
+        // @RolesAllowed on interface and implementor didn't declare endpoint declaring annotations @GET
+        String path = "/unsecured/interface-overridden-declared-on-interface";
+        assertStatus(path, 200, 401);
+        // check that response comes from the overridden method
+        given().auth().preemptive()
+                .basic("admin", "admin").get(path)
+                .then()
+                .body(Matchers.is("implementor-response"));
+    }
+
+    @Test
     public void shouldDenyUnannotatedOnInterface() {
         String path = "/unsecured/defaultSecurityInterface";
         assertStatus(path, 403, 401);

@@ -287,12 +287,12 @@ public class CodeFlowAuthorizationTest {
 
             TextPage textPage = form.getInputByValue("login").click();
 
-            assertEquals("alice", textPage.getContent());
+            assertEquals("alice:alice", textPage.getContent());
 
             // refresh
             Thread.sleep(3000);
             textPage = webClient.getPage("http://localhost:8081/code-flow-token-introspection");
-            assertEquals("admin", textPage.getContent());
+            assertEquals("admin:admin", textPage.getContent());
 
             webClient.getCookieManager().clearCookies();
         }

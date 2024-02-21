@@ -30,6 +30,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.oidc.common.OidcEndpoint;
@@ -446,7 +447,13 @@ public class OidcCommonUtils {
             if (resp.statusCode() == 200) {
                 return resp.bodyAsJsonObject();
             } else {
-                LOG.warnf("Discovery has failed, status code: %d", resp.statusCode());
+                String errorMessage = resp.bodyAsString();
+                if (errorMessage != null && !errorMessage.isEmpty()) {
+                    LOG.warnf("Discovery request %s has failed, status code: %d, error message: %s", discoveryUrl,
+                            resp.statusCode(), errorMessage);
+                } else {
+                    LOG.warnf("Discovery request %s has failed, status code: %d", discoveryUrl, resp.statusCode());
+                }
                 throw new OidcEndpointAccessException(resp.statusCode());
             }
         }).onFailure(oidcEndpointNotAvailable())
@@ -496,7 +503,7 @@ public class OidcCommonUtils {
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> map = new HashMap<>();
             for (OidcRequestFilter filter : container.listAll(OidcRequestFilter.class).stream().map(handle -> handle.get())
                     .collect(Collectors.toList())) {
-                OidcEndpoint endpoint = filter.getClass().getAnnotation(OidcEndpoint.class);
+                OidcEndpoint endpoint = ClientProxy.unwrap(filter).getClass().getAnnotation(OidcEndpoint.class);
                 OidcEndpoint.Type type = endpoint != null ? endpoint.value() : OidcEndpoint.Type.ALL;
                 map.computeIfAbsent(type, k -> new ArrayList<OidcRequestFilter>()).add(filter);
             }

@@ -16,6 +16,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public class EchoWebSocketTest {
@@ -31,6 +32,9 @@ public class EchoWebSocketTest {
 
     @TestHTTPResource("echo-json")
     URI echoJson;
+
+    @TestHTTPResource("echo-json-array")
+    URI echoJsonArray;
 
     @TestHTTPResource("echo-pojo")
     URI echoPojo;
@@ -51,8 +55,8 @@ public class EchoWebSocketTest {
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot(root -> {
                 root.addClasses(Echo.class, EchoBlocking.class, EchoBlockingAndAwait.class, EchoService.class, EchoJson.class,
-                        EchoPojo.class,
-                        EchoBlockingPojo.class, EchoMultiConsume.class, EchoMultiProduce.class, EchoMultiBidi.class);
+                        EchoJsonArray.class, EchoPojo.class, EchoBlockingPojo.class, EchoMultiConsume.class,
+                        EchoMultiProduce.class, EchoMultiBidi.class);
             });
 
     @Test
@@ -72,7 +76,12 @@ public class EchoWebSocketTest {
 
     @Test
     public void testEchoJson() throws Exception {
-        assertEcho(echoJson, new JsonObject().put("msg", "hello").toString());
+        assertEcho(echoJson, new JsonObject().put("msg", "hello").encode());
+    }
+
+    @Test
+    public void testEchoJsonArray() throws Exception {
+        assertEcho(echoJsonArray, new JsonArray().add(new JsonObject().put("msg", "hello")).encode());
     }
 
     @Test

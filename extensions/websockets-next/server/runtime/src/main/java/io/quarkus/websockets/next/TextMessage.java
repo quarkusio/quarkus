@@ -6,9 +6,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.JsonObject;
-
 /**
  * The annotated method consumes/produces text messages.
  * <p>
@@ -19,10 +16,13 @@ import io.vertx.core.json.JsonObject;
  *
  * <ul>
  * <li>{@code java.lang.String} is used as is,</li>
- * <li>{@code io.vertx.core.json.JsonObject} is encoded with {@link JsonObject#encode()} and decoded with
- * {@link JsonObject#JsonObject(String))}.</li>
- * <li>{@code java.lang.Buffer} is encoded with {@link Buffer#toString()} and decoded with {@link Buffer#buffer(String)},</li>
- * <li>{@code byte[]} is first converted to {@link Buffer} and then converted as defined above,</li>
+ * <li>{@code io.vertx.core.json.JsonObject} is encoded with {@link io.vertx.core.json.JsonObject#encode()} and decoded with
+ * {@link io.vertx.core.json.JsonObject#JsonObject(String))}.</li>
+ * <li>{@code io.vertx.core.json.JsonArray} is encoded with {@link io.vertx.core.json.JsonArray#encode()} and decoded with
+ * {@link io.vertx.core.json.JsonArray#JsonArray(String))}.</li>
+ * <li>{@code java.lang.Buffer} is encoded with {@link io.vertx.core.buffer.Buffer#toString()} and decoded with
+ * {@link io.vertx.core.buffer.Buffer#buffer(String)},</li>
+ * <li>{@code byte[]} is first converted to {@link io.vertx.core.buffer.Buffer} and then converted as defined above,</li>
  * <p>
  *
  * @see TextMessageCodec

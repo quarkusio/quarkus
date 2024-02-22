@@ -70,6 +70,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniCreate;
 import io.vertx.core.Context;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public class WebSocketServerProcessor {
@@ -437,6 +438,10 @@ public class WebSocketServerProcessor {
                 // JsonObject message = new JsonObject(buffer);
                 return method.newInstance(
                         MethodDescriptor.ofConstructor(JsonObject.class, Buffer.class), value);
+            } else if (WebSocketDotNames.JSON_ARRAY.equals(valueType.name())) {
+                // JsonArray message = new JsonArray(buffer);
+                return method.newInstance(
+                        MethodDescriptor.ofConstructor(JsonArray.class, Buffer.class), value);
             } else {
                 // Try to use codecs
                 DotName inputCodec = callback.getInputCodec();
@@ -456,6 +461,10 @@ public class WebSocketServerProcessor {
                 // JsonObject message = new JsonObject(string);
                 return method.newInstance(
                         MethodDescriptor.ofConstructor(JsonObject.class, String.class), value);
+            } else if (WebSocketDotNames.JSON_ARRAY.equals(valueType.name())) {
+                // JsonArray message = new JsonArray(string);
+                return method.newInstance(
+                        MethodDescriptor.ofConstructor(JsonArray.class, String.class), value);
             } else if (WebSocketDotNames.BUFFER.equals(valueType.name())) {
                 // Buffer message = Buffer.buffer(string);
                 return method.invokeStaticInterfaceMethod(
@@ -605,6 +614,9 @@ public class WebSocketServerProcessor {
         } else if (messageType.name().equals(WebSocketDotNames.JSON_OBJECT)) {
             buffer = method.invokeVirtualMethod(MethodDescriptor.ofMethod(JsonObject.class, "toBuffer", Buffer.class),
                     value);
+        } else if (messageType.name().equals(WebSocketDotNames.JSON_ARRAY)) {
+            buffer = method.invokeVirtualMethod(MethodDescriptor.ofMethod(JsonArray.class, "toBuffer", Buffer.class),
+                    value);
         } else {
             // Try to use codecs
             DotName outputCodec = callback.getOutpuCodec();
@@ -630,6 +642,9 @@ public class WebSocketServerProcessor {
             text = value;
         } else if (messageType.name().equals(WebSocketDotNames.JSON_OBJECT)) {
             text = method.invokeVirtualMethod(MethodDescriptor.ofMethod(JsonObject.class, "encode", String.class),
+                    value);
+        } else if (messageType.name().equals(WebSocketDotNames.JSON_ARRAY)) {
+            text = method.invokeVirtualMethod(MethodDescriptor.ofMethod(JsonArray.class, "encode", String.class),
                     value);
         } else {
             // Try to use codecs

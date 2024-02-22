@@ -12,7 +12,7 @@ import io.smallrye.config.ConfigMapping;
 public interface WebSocketRuntimeConfig {
 
     /**
-     * The default timeout for callbacks that do not return {@link io.smallrye.mutiny.Multi}.
+     * The default timeout to complete processing of a message.
      */
     Optional<Duration> timeout();
 

@@ -12,6 +12,7 @@ import java.lang.reflect.Type;
  * <li>{@code byte[]},</li>
  * <li>{@code java.lang.String},</li>
  * <li>{@code io.vertx.core.json.JsonObject}.</li>
+ * <li>{@code io.vertx.core.json.JsonArray}.</li>
  * </ul>
  * The encoding/decoding details are described in {@link BinaryMessage} and {@link TextMessage}.
  *

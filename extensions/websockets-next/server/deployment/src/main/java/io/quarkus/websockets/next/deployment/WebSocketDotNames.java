@@ -14,6 +14,7 @@ import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 final class WebSocketDotNames {
@@ -30,6 +31,7 @@ final class WebSocketDotNames {
     static final DotName STRING = DotName.createSimple(String.class);
     static final DotName BUFFER = DotName.createSimple(Buffer.class);
     static final DotName JSON_OBJECT = DotName.createSimple(JsonObject.class);
+    static final DotName JSON_ARRAY = DotName.createSimple(JsonArray.class);
     static final DotName VOID = DotName.createSimple(Void.class);
     static final DotName BINARY_MESSAGE = DotName.createSimple(BinaryMessage.class);
     static final DotName TEXT_MESSAGE = DotName.createSimple(TextMessage.class);

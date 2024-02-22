@@ -81,26 +81,6 @@
                 </configuration>
             </plugin>
         </plugins>
-
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>com.gradle</groupId>
-                    <artifactId>gradle-enterprise-maven-extension</artifactId>
-                    <configuration>
-                        <gradleEnterprise>
-                            <normalization>
-                                <systemProperties>
-                                    <ignoredKeys combine.children="append">
-                                        <ignore>org.jboss.cdi.tck.libraryDirectory</ignore>
-                                    </ignoredKeys>
-                                </systemProperties>
-                            </normalization>
-                        </gradleEnterprise>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
 
 </project>

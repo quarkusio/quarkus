@@ -221,4 +221,12 @@ public class SmallRyeGraphQLConfig {
      */
     @ConfigItem
     public Optional<List<ExtraScalar>> extraScalars;
+
+    /**
+     * Excludes all the 'null' fields in the GraphQL response's <code>data</code> field,
+     * except for the non-successfully resolved fields (errors).
+     * Disabled by default.
+     */
+    @ConfigItem
+    public Optional<Boolean> excludeNullFieldsInResponses;
 }

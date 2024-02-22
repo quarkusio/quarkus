@@ -32,7 +32,7 @@ public class DependentBeanJobTest {
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(Service.class, MyJob.class)
+                    .addClasses(Service.class, MyJob.class, RefiringJob.class)
                     .addAsResource(new StringAsset("quarkus.quartz.start-mode=forced"),
                             "application.properties"));
 
@@ -75,7 +75,49 @@ public class DependentBeanJobTest {
                 .withSchedule(
                         SimpleScheduleBuilder.simpleSchedule()
                                 .withIntervalInMilliseconds(333)
-                                .withRepeatCount(3))
+                                .withRepeatCount(2))
+                .build();
+        quartz.scheduleJob(job, trigger);
+
+        assertTrue(execLatch.await(2, TimeUnit.SECONDS), "Latch count: " + execLatch.getCount());
+        assertTrue(constructLatch.await(2, TimeUnit.SECONDS), "Latch count: " + constructLatch.getCount());
+        assertTrue(destroyedLatch.await(2, TimeUnit.SECONDS), "Latch count: " + destroyedLatch.getCount());
+    }
+
+    @Test
+    public void testDependentBeanJobWithRefire() throws SchedulerException, InterruptedException {
+        // 5 one-off jobs should trigger construction/execution/destruction 10 times in total
+        CountDownLatch execLatch = service.initExecuteLatch(10);
+        CountDownLatch constructLatch = service.initConstructLatch(10);
+        CountDownLatch destroyedLatch = service.initDestroyedLatch(10);
+        for (int i = 0; i < 5; i++) {
+            Trigger trigger = TriggerBuilder.newTrigger()
+                    .withIdentity("myTrigger" + i, "myRefiringGroup")
+                    .startNow()
+                    .build();
+            JobDetail job = JobBuilder.newJob(RefiringJob.class)
+                    .withIdentity("myJob" + i, "myRefiringGroup")
+                    .build();
+            quartz.scheduleJob(job, trigger);
+        }
+        assertTrue(execLatch.await(2, TimeUnit.SECONDS), "Latch count: " + execLatch.getCount());
+        assertTrue(constructLatch.await(2, TimeUnit.SECONDS), "Latch count: " + constructLatch.getCount());
+        assertTrue(destroyedLatch.await(2, TimeUnit.SECONDS), "Latch count: " + destroyedLatch.getCount());
+
+        // repeating job triggering three times; we expect six beans to exist for that due to refires
+        execLatch = service.initExecuteLatch(6);
+        constructLatch = service.initConstructLatch(6);
+        destroyedLatch = service.initDestroyedLatch(6);
+        JobDetail job = JobBuilder.newJob(RefiringJob.class)
+                .withIdentity("myRepeatingJob", "myRefiringGroup")
+                .build();
+        Trigger trigger = TriggerBuilder.newTrigger()
+                .withIdentity("myRepeatingTrigger", "myRefiringGroup")
+                .startNow()
+                .withSchedule(
+                        SimpleScheduleBuilder.simpleSchedule()
+                                .withIntervalInMilliseconds(333)
+                                .withRepeatCount(2))
                 .build();
         quartz.scheduleJob(job, trigger);
 
@@ -139,6 +181,36 @@ public class DependentBeanJobTest {
         @Override
         public void execute(JobExecutionContext context) throws JobExecutionException {
             service.execute();
+        }
+    }
+
+    @Dependent
+    static class RefiringJob implements Job {
+
+        @Inject
+        Service service;
+
+        @PostConstruct
+        void postConstruct() {
+            service.constructedLatch();
+        }
+
+        @PreDestroy
+        void preDestroy() {
+            service.destroyedLatch();
+        }
+
+        @Override
+        public void execute(JobExecutionContext context) throws JobExecutionException {
+            if (context.getRefireCount() == 0) {
+                service.execute();
+                // request re-fire; we expect a new dependent bean to be used for that
+                throw new JobExecutionException("Refiring job", true);
+            } else {
+                service.execute();
+                // no re-fire the second time
+                throw new JobExecutionException("Job was re-fired successfully", false);
+            }
         }
     }
 }

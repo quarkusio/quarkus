@@ -17,19 +17,20 @@ import org.quartz.spi.TriggerFiredBundle;
  */
 class CdiAwareJob implements Job {
 
-    private final Instance.Handle<? extends Job> jobInstanceHandle;
+    private final Instance<? extends Job> jobInstance;
 
-    public CdiAwareJob(Instance.Handle<? extends Job> jobInstanceHandle) {
-        this.jobInstanceHandle = jobInstanceHandle;
+    public CdiAwareJob(Instance<? extends Job> jobInstance) {
+        this.jobInstance = jobInstance;
     }
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
+        Instance.Handle<? extends Job> handle = jobInstance.getHandle();
         try {
-            jobInstanceHandle.get().execute(context);
+            handle.get().execute(context);
         } finally {
-            if (jobInstanceHandle.getBean().getScope().equals(Dependent.class)) {
-                jobInstanceHandle.destroy();
+            if (handle.getBean().getScope().equals(Dependent.class)) {
+                handle.destroy();
             }
         }
     }

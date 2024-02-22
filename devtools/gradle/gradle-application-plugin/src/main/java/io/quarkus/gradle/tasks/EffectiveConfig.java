@@ -41,7 +41,7 @@ import io.smallrye.config.source.yaml.YamlConfigSource;
  * Eventually used to construct a map with the <em>effective</em> config options from all the sources above and expose
  * the Quarkus config objects like {@link PackageConfig}, {@link ClassLoadingConfig} and the underlying {@link SmallRyeConfig}.
  */
-final class EffectiveConfig {
+public final class EffectiveConfig {
     private final Map<String, String> fullConfig;
 
     private final SmallRyeConfig config;
@@ -84,7 +84,7 @@ final class EffectiveConfig {
         this.fullConfig = generateFullConfigMap(config);
     }
 
-    SmallRyeConfig config() {
+    public SmallRyeConfig config() {
         return config;
     }
 
@@ -126,7 +126,7 @@ final class EffectiveConfig {
         return new Builder();
     }
 
-    Map<String, String> configMap() {
+    public Map<String, String> configMap() {
         return fullConfig;
     }
 

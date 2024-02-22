@@ -56,6 +56,7 @@ import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentClusterBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesOptionalResourceDefinitionBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesOutputDirectoryBuildItem;
+import io.quarkus.logging.Log;
 
 public class KubernetesDeployer {
 
@@ -198,6 +199,19 @@ public class KubernetesDeployer {
 
         try (FileInputStream fis = new FileInputStream(manifest)) {
             KubernetesList list = Serialization.unmarshalAsList(fis);
+
+            Optional<GenericKubernetesResource> conflictingResource = findConflictingResource(client, deploymentTarget,
+                    list.getItems());
+            if (conflictingResource.isPresent()) {
+                String messsage = "Skipping deployment of " + deploymentTarget.getDeploymentResourceKind() + " "
+                        + conflictingResource.get().getMetadata().getName() + " because a "
+                        + conflictingResource.get().getKind() + " with the same name exists.";
+                log.warn(messsage);
+                Log.warn("This may occur when switching deployment targets, or when the default deployment target is changed.");
+                Log.warn("Please remove conflicting resource and try again.");
+                throw new IllegalStateException(messsage);
+            }
+
             list.getItems().stream().filter(distinctByResourceKey()).forEach(i -> {
                 deployResource(deploymentTarget, client, i, optionalResourceDefinitions);
                 log.info("Applied: " + i.getKind() + " " + i.getMetadata().getName() + ".");
@@ -205,9 +219,11 @@ public class KubernetesDeployer {
 
             printExposeInformation(client, list, openshiftConfig, applicationInfo);
 
-            HasMetadata m = list.getItems().stream().filter(r -> r.getKind().equals(deploymentTarget.getKind()))
+            HasMetadata m = list.getItems().stream()
+                    .filter(r -> deploymentTarget.getDeploymentResourceKind().matches(r))
                     .findFirst().orElseThrow(() -> new IllegalStateException(
-                            "No " + deploymentTarget.getKind() + " found under: " + manifest.getAbsolutePath()));
+                            "No " + deploymentTarget.getDeploymentResourceKind() + " found under: "
+                                    + manifest.getAbsolutePath()));
             return new DeploymentResultBuildItem(m.getMetadata().getName(), m.getMetadata().getLabels());
         } catch (FileNotFoundException e) {
             throw new IllegalStateException("Can't find generated kubernetes manifest: " + manifest.getAbsolutePath());
@@ -253,6 +269,35 @@ public class KubernetesDeployer {
                 throw e;
             }
         }
+    }
+
+    private Optional<GenericKubernetesResource> findConflictingResource(KubernetesClient clinet,
+            DeploymentTargetEntry deploymentTarget, List<HasMetadata> generated) {
+        HasMetadata deploymentResource = generated.stream()
+                .filter(r -> deploymentTarget.getDeploymentResourceKind().matches(r))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "No " + deploymentTarget.getDeploymentResourceKind() + " found under: " + deploymentTarget.getName()));
+        String name = deploymentResource.getMetadata().getName();
+
+        for (DeploymentResourceKind deploymentKind : DeploymentResourceKind.values()) {
+            if (deploymentKind.matches(deploymentResource)) {
+                continue;
+            }
+            try {
+                GenericKubernetesResource resource = clinet
+                        .genericKubernetesResources(deploymentKind.getApiVersion(), deploymentKind.getKind()).withName(name)
+                        .get();
+                if (resource != null) {
+                    Log.warn("Found conflicting resource:" + resource.getApiVersion() + "/" + resource.getKind() + ":"
+                            + resource.getMetadata().getName());
+                    return Optional.of(resource);
+                }
+            } catch (KubernetesClientException e) {
+                // ignore
+            }
+        }
+        return Optional.empty();
     }
 
     private void deleteResource(HasMetadata metadata, Resource<?> r) {

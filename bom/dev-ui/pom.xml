@@ -29,7 +29,7 @@
         <lit-state.version>1.7.0</lit-state.version>
         <echarts.version>5.4.3</echarts.version>
         <codeblock.version>1.0.12</codeblock.version>
-        <es-module-shims.version>1.8.2</es-module-shims.version>
+        <es-module-shims.version>1.8.3</es-module-shims.version>
         <path-to-regexp.version>2.4.0</path-to-regexp.version>
 
         <hpcc-js-wasm.version>2.15.3</hpcc-js-wasm.version>

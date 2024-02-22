@@ -43,10 +43,9 @@ public class DataSourceHealthCheck implements HealthCheck {
                 .get();
         AgroalDataSourceSupport agroalSupport = Arc.container().instance(AgroalDataSourceSupport.class)
                 .get();
-        Set<String> names = support.getConfiguredNames();
         Set<String> excludedNames = support.getInactiveOrHealthCheckExcludedNames();
-        for (String name : names) {
-            if (excludedNames.contains(name) || !agroalSupport.entries.containsKey(name)) {
+        for (String name : agroalSupport.entries.keySet()) {
+            if (excludedNames.contains(name)) {
                 continue;
             }
             DataSource ds = dataSources.get().getDataSource(name);

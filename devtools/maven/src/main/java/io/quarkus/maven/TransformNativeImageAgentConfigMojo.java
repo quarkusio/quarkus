@@ -48,7 +48,7 @@ public class TransformNativeImageAgentConfigMojo extends QuarkusBootstrapMojo {
         final Path basePath = buildDir().toPath().resolve(Path.of(dirName));
         if (basePath.toFile().exists()) {
             try {
-                final Path targetPath = buildDir().toPath().resolve(Path.of("native-image-agent-transformed-config"));
+                final Path targetPath = buildDir().toPath().resolve(Path.of("native-image-agent-final-config"));
                 if (!targetPath.toFile().exists()) {
                     targetPath.toFile().mkdirs();
                 }

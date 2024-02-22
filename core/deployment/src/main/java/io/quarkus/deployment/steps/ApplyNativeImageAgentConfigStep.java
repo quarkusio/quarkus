@@ -24,7 +24,7 @@ public class ApplyNativeImageAgentConfigStep {
             NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
             BuildSystemTargetBuildItem buildSystemTargetBuildItem) throws IOException {
         final Path basePath = buildSystemTargetBuildItem.getOutputDirectory()
-                .resolve(Path.of("native-image-agent-transformed-config"));
+                .resolve(Path.of("native-image-agent-final-config"));
         if (basePath.toFile().exists() && nativeConfig.agentConfigurationApply()) {
             final Path outputDir = nativeImageSourceJarBuildItem.getPath().getParent();
             final String targetDirName = "native-image-agent-config";

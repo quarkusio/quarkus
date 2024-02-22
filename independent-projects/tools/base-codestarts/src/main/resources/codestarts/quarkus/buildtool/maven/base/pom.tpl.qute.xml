@@ -218,7 +218,7 @@
                 <skipITs>false</skipITs>
                 <native.image.agent.output.property.name>config-output-dir</native.image.agent.output.property.name>
                 <native.image.agent.output.value>native-image-agent-base-config</native.image.agent.output.value>
-                <native.image.agent.additional.args></native.image.agent.additional.args>
+                <native.image.agent.additional.args>,</native.image.agent.additional.args>
             </properties>
             <build>
                 <plugins>

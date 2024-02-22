@@ -228,59 +228,9 @@ As an example, in order to register all methods of class `com.acme.MyClass` for 
 For more information about the format of this file, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/Reflection/[GraalVM Reflection in Native Image] guide.
 ====
 
-The final order of business is to make the configuration file known to the `native-image` executable by adding the proper configuration to `application.properties`:
-
-[source,properties]
-----
-quarkus.native.additional-build-args =\
-    -H:+UnlockExperimentalVMOptions,\
-    -H:ReflectionConfigurationFiles=reflect-config.json,\
-    -H:-UnlockExperimentalVMOptions
-----
-
-[NOTE]
-====
-Starting with Mandrel 23.1 and GraalVM for JDK 21, `-H:ResourceConfigurationFiles=resource-config.json` results in a warning being shown unless wrapped in `-H:+UnlockExperimentalVMOptions` and `-H:-UnlockExperimentalVMOptions`.
-The absence of these options will result in build failures in the future.
-====
-
-In the previous snippet we were able to simply use `reflect-config.json` instead of specifying the entire path of the file simply because it was added to `src/main/resources`.
-If the file had been added to another directory, the proper file path would have had to be specified manually.
-
-[TIP]
-====
-Multiple options may be separated by a comma. For example, one could use:
-
-[source,properties]
-----
-quarkus.native.additional-build-args =\
-    -H:+UnlockExperimentalVMOptions,\
-    -H:ResourceConfigurationFiles=resource-config.json,\
-    -H:ReflectionConfigurationFiles=reflect-config.json,\
-    -H:-UnlockExperimentalVMOptions
-----
-
-in order to ensure that various resources are included and additional reflection is registered.
-
-====
-If for some reason adding the aforementioned configuration to `application.properties` is not desirable, it is possible to configure the build tool to effectively perform the same operation.
-
-When using Maven, we could use the following configuration:
-
-[source,xml]
-----
-<profiles>
-    <profile>
-        <id>native</id>
-        <properties>
-            <quarkus.package.type>native</quarkus.package.type>
-            <quarkus.native.additional-build-args>
-                -H:+UnlockExperimentalVMOptions,-H:ReflectionConfigurationFiles=reflect-config.json,-H:-UnlockExperimentalVMOptions
-            </quarkus.native.additional-build-args>
-        </properties>
-    </profile>
-</profiles>
-----
+The final order of business is to make the configuration file known to the `native-image` executable.
+To do that, place the configuration file under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder.
+This way they will be automatically parsed by the native build, without additional configuration.
 
 [[delay-class-init-in-your-app]]
 === Delaying class initialization

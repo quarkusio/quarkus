@@ -26,7 +26,13 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.LaunchMode;
 
 @Mojo(name = "generate-native-image-agent-filters", defaultPhase = LifecyclePhase.PROCESS_TEST_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
-public class GenerateNativeImageAgentFiltersMojo extends GenerateCodeMojo {
+public class GenerateNativeImageAgentFiltersMojo extends QuarkusBootstrapMojo {
+
+    @Override
+    protected boolean beforeExecute() throws MojoExecutionException, MojoFailureException {
+        return true;
+    }
+
     @Override
     protected void doExecute() throws MojoExecutionException, MojoFailureException {
         System.out.println("Calling generate native image agent filters");

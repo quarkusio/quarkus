@@ -32,21 +32,21 @@ public class EffectiveConfigTest {
 
         // Cannot do an exact match, because `map` contains both the "raw" environment variables AND the
         // "property-key-ish" entries - i.e. environment appears "twice".
-        soft.assertThat(effectiveConfig.configMap()).containsAllEntriesOf(expect);
+        soft.assertThat(effectiveConfig.getValues()).containsAllEntriesOf(expect);
     }
 
     @Test
     void fromProjectProperties() {
         EffectiveConfig effectiveConfig = EffectiveConfig.builder().withProjectProperties(Map.of("quarkus.foo", "bar")).build();
 
-        soft.assertThat(effectiveConfig.configMap()).containsEntry("quarkus.foo", "bar");
+        soft.assertThat(effectiveConfig.getValues()).containsEntry("quarkus.foo", "bar");
     }
 
     @Test
     void fromForcedProperties() {
         EffectiveConfig effectiveConfig = EffectiveConfig.builder().withTaskProperties(Map.of("quarkus.foo", "bar")).build();
 
-        soft.assertThat(effectiveConfig.configMap()).containsEntry("quarkus.foo", "bar");
+        soft.assertThat(effectiveConfig.getValues()).containsEntry("quarkus.foo", "bar");
     }
 
     @Test
@@ -59,13 +59,13 @@ public class EffectiveConfigTest {
 
         EffectiveConfig effectiveConfig = EffectiveConfig.builder().withSourceDirectories(source).build();
 
-        SmallRyeConfig config = effectiveConfig.config();
+        SmallRyeConfig config = effectiveConfig.getConfig();
         List<String> sourceNames = new ArrayList<>();
         config.getConfigSources().forEach(configSource -> sourceNames.add(configSource.getName()));
         soft.assertThat(sourceNames).anyMatch(s -> s.contains(url1.getPath()));
         soft.assertThat(sourceNames).anyMatch(s -> s.contains(url2.getPath()));
         // The YAML source is always higher in ordinal than the properties source
-        soft.assertThat(effectiveConfig.configMap()).containsEntry("quarkus.prop.overload", "from-yaml");
+        soft.assertThat(effectiveConfig.getValues()).containsEntry("quarkus.prop.overload", "from-yaml");
     }
 
     @Test
@@ -80,14 +80,14 @@ public class EffectiveConfigTest {
 
         EffectiveConfig effectiveConfig = EffectiveConfig.builder().withSourceDirectories(source).build();
 
-        SmallRyeConfig config = effectiveConfig.config();
+        SmallRyeConfig config = effectiveConfig.getConfig();
         List<String> sourceNames = new ArrayList<>();
         config.getConfigSources().forEach(configSource -> sourceNames.add(configSource.getName()));
         soft.assertThat(sourceNames).anyMatch(s -> s.contains(url1.getPath()));
         soft.assertThat(sourceNames).anyMatch(s -> s.contains(url2.getPath()));
         soft.assertThat(sourceNames).anyMatch(s -> s.contains(url3.getPath()));
         // The YAML source is always higher in ordinal than the properties source
-        soft.assertThat(effectiveConfig.configMap()).containsEntry("quarkus.prop.overload", "from-yaml");
+        soft.assertThat(effectiveConfig.getValues()).containsEntry("quarkus.prop.overload", "from-yaml");
     }
 
     @Test
@@ -106,7 +106,7 @@ public class EffectiveConfigTest {
 
         EffectiveConfig effectiveConfig = EffectiveConfig.builder().withSourceDirectories(source).build();
 
-        SmallRyeConfig config = effectiveConfig.config();
+        SmallRyeConfig config = effectiveConfig.getConfig();
         List<String> sourceNames = new ArrayList<>();
         config.getConfigSources().forEach(configSource -> sourceNames.add(configSource.getName()));
         soft.assertThat(sourceNames).anyMatch(s -> s.contains(url1.getPath()));
@@ -115,6 +115,6 @@ public class EffectiveConfigTest {
         soft.assertThat(sourceNames).anyMatch(s -> s.contains(url4.getPath()));
         soft.assertThat(sourceNames).anyMatch(s -> s.contains(url5.getPath()));
         // The YAML source is always higher in ordinal than the properties source, even for profile property names
-        soft.assertThat(effectiveConfig.configMap()).containsEntry("quarkus.prop.overload", "from-yaml-prod");
+        soft.assertThat(effectiveConfig.getValues()).containsEntry("quarkus.prop.overload", "from-yaml-prod");
     }
 }

@@ -24,6 +24,7 @@ import io.quarkus.gradle.QuarkusPlugin;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * Collect the Quarkus app dependencies, the contents of the {@code quarkus-app/lib} folder, without making the task
@@ -139,22 +140,23 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
         }
 
         ApplicationModel appModel = resolveAppModelForBuild();
-        Map<String, String> configMap = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).configMap();
+        SmallRyeConfig config = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).getConfig();
 
         // see https://quarkus.io/guides/class-loading-reference#configuring-class-loading
-        Set<ArtifactKey> removedArtifacts = java.util.Optional.ofNullable(
-                configMap.getOrDefault(CLASS_LOADING_REMOVED_ARTIFACTS, null))
+        Set<ArtifactKey> removedArtifacts = config.getOptionalValue(CLASS_LOADING_REMOVED_ARTIFACTS, String.class)
                 .map(QuarkusBuildDependencies::dependenciesListToArtifactKeySet)
                 .orElse(Collections.emptySet());
-        getLogger().info("Removed artifacts: {}", configMap.getOrDefault(CLASS_LOADING_REMOVED_ARTIFACTS, "(none)"));
+        getLogger().info("Removed artifacts: {}",
+                config.getOptionalValue(CLASS_LOADING_REMOVED_ARTIFACTS, String.class).orElse("(none)"));
 
-        String parentFirstArtifactsProp = configMap.getOrDefault(CLASS_LOADING_PARENT_FIRST_ARTIFACTS, "");
+        String parentFirstArtifactsProp = config.getOptionalValue(CLASS_LOADING_PARENT_FIRST_ARTIFACTS, String.class)
+                .orElse("");
         Set<ArtifactKey> parentFirstArtifacts = dependenciesListToArtifactKeySet(parentFirstArtifactsProp);
-        getLogger().info("parent first artifacts: {}", configMap.getOrDefault(CLASS_LOADING_PARENT_FIRST_ARTIFACTS, "(none)"));
+        getLogger().info("parent first artifacts: {}",
+                config.getOptionalValue(CLASS_LOADING_PARENT_FIRST_ARTIFACTS, String.class).orElse("(none)"));
 
-        String optionalDependenciesProp = configMap.getOrDefault(INCLUDED_OPTIONAL_DEPENDENCIES, "");
-        boolean filterOptionalDependencies = Boolean
-                .parseBoolean(configMap.getOrDefault(FILTER_OPTIONAL_DEPENDENCIES, "false"));
+        String optionalDependenciesProp = config.getOptionalValue(INCLUDED_OPTIONAL_DEPENDENCIES, String.class).orElse("");
+        boolean filterOptionalDependencies = config.getOptionalValue(FILTER_OPTIONAL_DEPENDENCIES, Boolean.class).orElse(false);
         Set<ArtifactKey> optionalDependencies = filterOptionalDependencies
                 ? dependenciesListToArtifactKeySet(optionalDependenciesProp)
                 : Collections.emptySet();

@@ -103,57 +103,6 @@
                         </systemPropertyVariables>
                     </configuration>
                 </plugin>
-
-                <plugin>
-                    <groupId>com.gradle</groupId>
-                    <artifactId>gradle-enterprise-maven-extension</artifactId>
-                    <configuration>
-                        <gradleEnterprise>
-                            <normalization>
-                                <systemProperties>
-                                    <ignoredKeys combine.children="append">
-                                        <ignore>native.image.path</ignore>
-                                        <ignore>quarkus.kubernetes-service-binding.root</ignore>
-                                    </ignoredKeys>
-                                </systemProperties>
-                            </normalization>
-                            <!-- config to avoid unbind-executions confuses gradle enterprise caching-->
-                            <plugins combine.children="append">
-                                <plugin>
-                                    <artifactId>maven-compiler-plugin</artifactId>
-                                    <inputs>
-                                        <fileSets combine.children="append">
-                                            <fileSet>
-                                                <name>specs</name>
-                                                <paths>
-                                                    <path>${project.basedir}/disable-unbind-executions</path>
-                                                </paths>
-                                                <normalization>RELATIVE_PATH</normalization>
-                                            </fileSet>
-                                        </fileSets>
-                                    </inputs>
-                                </plugin>
-                                <plugin>
-                                    <artifactId>maven-failsafe-plugin</artifactId>
-                                    <inputs>
-                                        <fileSets combine.children="append">
-                                            <fileSet>
-                                                <name>native-runner</name>
-                                                <paths>
-                                                    <path>${project.build.directory}</path>
-                                                </paths>
-                                                <includes>
-                                                    <include>*-runner</include>
-                                                </includes>
-                                                <normalization>RELATIVE_PATH</normalization>
-                                            </fileSet>
-                                        </fileSets>
-                                    </inputs>
-                                </plugin>
-                            </plugins>
-                        </gradleEnterprise>
-                    </configuration>
-                </plugin>
             </plugins>
         </pluginManagement>
     </build>

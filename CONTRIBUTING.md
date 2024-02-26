@@ -4,57 +4,56 @@
 We try to make it easy, and all contributions, even the smaller ones, are more than welcome. This includes bug reports,
 fixes, documentation, examples... But first, read this page (including the small print at the end).
 
-* [Legal](#legal)
-* [Reporting an issue](#reporting-an-issue)
-* [Checking an issue is fixed in main](#checking-an-issue-is-fixed-in-main)
-    + [Using snapshots](#using-snapshots)
-    + [Building main](#building-main)
-    + [Updating the version](#updating-the-version)
-* [Before you contribute](#before-you-contribute)
-    + [Code reviews](#code-reviews)
-    + [Coding Guidelines](#coding-guidelines)
-    + [Continuous Integration](#continuous-integration)
-    + [Tests and documentation are not optional](#tests-and-documentation-are-not-optional)
-* [Setup](#setup)
-    + [IDE Config and Code Style](#ide-config-and-code-style)
-        - [Eclipse Setup](#eclipse-setup)
-        - [IDEA Setup](#idea-setup)
-            * [How to work](#how-to-work)
-            * [`OutOfMemoryError` while importing](#-outofmemoryerror--while-importing)
-            * [`package sun.misc does not exist` while building](#-package-sunmisc-does-not-exist--while-building)
-            * [Formatting](#formatting)
-    + [Gitpod](#gitpod)
-* [Build](#build)
-    + [Workflow tips](#workflow-tips)
-        - [Building all modules of an extension](#building-all-modules-of-an-extension)
-        - [Building a single module of an extension](#building-a-single-module-of-an-extension)
-        - [Building with relocations](#building-with-relocations)
-        - [Running a single test](#running-a-single-test)
-            * [Maven Invoker tests](#maven-invoker-tests)
-    + [Build with multiple threads](#build-with-multiple-threads)
-    + [Don't build any test modules](#don-t-build-any-test-modules)
-        - [Automatic incremental build](#automatic-incremental-build)
-            * [Special case `bom-descriptor-json`](#special-case--bom-descriptor-json-)
-            * [Usage by CI](#usage-by-ci)
-* [Release your own version](#release)
-* [Documentation](#documentation)
-    + [Building the documentation](#building-the-documentation)
-    + [Referencing a new guide in the index](#referencing-a-new-guide-in-the-index)
-* [Usage](#usage)
-    - [With Maven](#with-maven)
-    - [With Gradle](#with-gradle)
+- [Legal](#legal)
+- [Reporting an issue](#reporting-an-issue)
+- [Checking an issue is fixed in main](#checking-an-issue-is-fixed-in-main)
+  * [Using snapshots](#using-snapshots)
+  * [Building main](#building-main)
+  * [Updating the version](#updating-the-version)
+- [Before you contribute](#before-you-contribute)
+  * [Code reviews](#code-reviews)
+  * [Coding Guidelines](#coding-guidelines)
+  * [Continuous Integration](#continuous-integration)
+  * [Tests and documentation are not optional](#tests-and-documentation-are-not-optional)
+- [Setup](#setup)
+  * [IDE Config and Code Style](#ide-config-and-code-style)
+    + [Eclipse Setup](#eclipse-setup)
+    + [IDEA Setup](#idea-setup)
+      - [How to work](#how-to-work)
+      - [`OutOfMemoryError` while importing](#-outofmemoryerror--while-importing)
+      - [`package sun.misc does not exist` while building](#-package-sunmisc-does-not-exist--while-building)
+      - [Formatting](#formatting)
+  * [Gitpod](#gitpod)
+- [Build](#build)
+  * [Workflow tips](#workflow-tips)
+    + [Building all modules of an extension](#building-all-modules-of-an-extension)
+    + [Building a single module of an extension](#building-a-single-module-of-an-extension)
+    + [Building with relocations](#building-with-relocations)
+    + [Running a single test](#running-a-single-test)
+      - [Maven Invoker tests](#maven-invoker-tests)
+  * [Build with multiple threads](#build-with-multiple-threads)
+  * [Don't build any test modules](#don-t-build-any-test-modules)
+    + [Automatic incremental build](#automatic-incremental-build)
+      - [Special case `bom-descriptor-json`](#special-case--bom-descriptor-json-)
+      - [Usage by CI](#usage-by-ci)
+      - [Develocity build cache](#develocity-build-cache)
+- [Release your own version](#release-your-own-version)
+- [Documentation](#documentation)
+  * [Building the documentation](#building-the-documentation)
+  * [Referencing a new guide in the index](#referencing-a-new-guide-in-the-index)
+- [Usage](#usage)
+    + [With Maven](#with-maven)
+    + [With Gradle](#with-gradle)
+  * [MicroProfile TCK's](#microprofile-tck-s)
+  * [Test Coverage](#test-coverage)
+- [Extensions](#extensions)
+  * [Descriptions](#descriptions)
+  * [Update dependencies to extensions](#update-dependencies-to-extensions)
+  * [Check security vulnerabilities](#check-security-vulnerabilities)
+- [The small print](#the-small-print)
+- [Frequently Asked Questions](#frequently-asked-questions)
 
-    + [MicroProfile TCK's](#microprofile-tck-s)
-    + [Test Coverage](#test-coverage)
-* [Extensions](#extensions)
-    + [Descriptions](#descriptions)
-    + [Update dependencies to extensions](#update-dependencies-to-extensions)
-    + [Check security vulnerabilities](#check-security-vulnerabilities)
-* [The small print](#the-small-print)
-* [Frequently Asked Questions](#frequently-asked-questions)
-
-<small><i><a href='https://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with
-markdown-toc</a></i></small>
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
 ## Legal
 
@@ -531,20 +530,73 @@ CI is using a slightly different GIB config than locally:
 
 For more details see the `Get GIB arguments` step in `.github/workflows/ci-actions-incremental.yml`.
 
-##### Gradle Enterprise build cache
+##### Develocity build cache
 
-Quarkus has a Gradle Enterprise setup at https://ge.quarkus.io that can be used to analyze the build performance of the Quarkus project.
+###### Getting set up
 
-Locally you can use `-Dgradle.cache.local.enabled=true` to enable the local Gradle Enterprise cache. This can speed up the build significantly. It is still considered experimental but can be used for local development.
+Quarkus has a Develocity instance set up at https://ge.quarkus.io that can be used to analyze the build performance of the Quarkus project and also provides build cache services.
 
-If you have a need or interest to report build times, you will need to get an API key for the GE instance. It is mainly relevant for those working on optimizing the Quarkus build. Ping on quarkus-dev mailing list or on Zulip if you need one.
+If you have an account on https://ge.quarkus.io, this can speed up your local builds significantly.
 
-When you have the account setup you run `mvn gradle-enterprise:provision-access-key` and login - from then on build time info will be sent to the GE instance.
-You can alternatively also generate an API key from the GE UI and then use an environment variable like this:
+If you have a need or interest to share your build scans and use the build cache, you will need to get an account for the Develocity instance.
+It is only relevant for members of the Quarkus team and you should contact either Guillaume Smet or Max Andersen to set up your account.
+
+When you have the account set up, from the root of your local Quarkus workspace, run:
+
+```
+./mvnw gradle-enterprise:provision-access-key
+```
+
+and log in in the browser window it will open (if not already logged in).
+Your access key will be stored in the `~/.m2/.gradle-enterprise/keys.properties` file.
+From then your build scans will be sent to the Develocity instance and you will be able to benefit from the build cache.
+
+You can alternatively also generate an API key from the Develocity UI and then use an environment variable like this:
 
 ```
 export GRADLE_ENTERPRISE_ACCESS_KEY=ge.quarkus.io=a_secret_key
 ```
+
+When debugging a test (and especially flaky tests), you might want to temporarily disable the build cache.
+You can easily do it by adding `-Dno-build-cache` to your Maven command.
+
+The remote cache is stored on the Develocity server and is populated by CI.
+To be able to benefit from the remote cache, you need to use a Java version tested on CI (at the moment, either 17 or 21) and the same Maven version (thus why it is recommended to use the Maven wrapper aka `./mvnw`).
+Note that the local cache alone should bring you a significant speedup.
+
+The local cache is stored in the `~/.m2/.gradle-enterprise/build-cache/` directory.
+If you have problems with your local cache, you can delete this directory.
+
+###### -Dquickly
+
+When using `-Dquickly` with no goals, Develocity is unable to detect that the `clean` goal is present.
+We worked around it but you will get the following warnings at the beginning of your build output:
+
+```
+[WARNING] Build cache entries produced by this build may be incorrect since the clean lifecycle is not part of the build invocation.
+[WARNING] You must only invoke the build without the clean lifecycle if the build is started from a clean working directory.
+```
+
+You can safely ignore them.
+
+###### Benchmarking the build
+
+During the experiment phase, there might be a need to benchmark the build in a reliable manner.
+
+For this, we can use the [Gradle Profiler](https://github.com/gradle/gradle-profiler).
+It can be installed with SDKMAN! (`sdk install gradleprofiler`) or Homebrew (`brew install gradle-profiler`).
+
+Then we can run the following commands at the root of the Quarkus project:
+
+```
+# Without cache
+gradle-profiler --maven --benchmark --scenario-file build.scenario clean_install_no_cache
+
+# With cache
+gradle-profiler --maven --benchmark --scenario-file build.scenario clean_install
+```
+
+Simple HTML reports will be published in the `profile_out*` directories.
 
 ## Release your own version
 

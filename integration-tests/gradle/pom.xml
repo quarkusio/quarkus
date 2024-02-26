@@ -435,28 +435,6 @@
         <!-- END update-dependencies.sh -->
     </dependencies>
     <build>
-        <pluginManagement>
-            <plugins>
-                <!-- https://docs.gradle.com/enterprise/maven-extension/#ignoring_arbitrary_files-->
-                <!-- fixes https://github.com/quarkusio/quarkus/issues/33625 -->
-                <plugin>
-                    <groupId>com.gradle</groupId>
-                    <artifactId>gradle-enterprise-maven-extension</artifactId>
-                    <configuration>
-                        <gradleEnterprise>
-                            <normalization combine.children="append">
-                                <runtimeClassPath>
-                                    <ignoredFiles>
-                                        <ignoredFile>.quarkus/config.yml</ignoredFile>
-                                    </ignoredFiles>
-                                </runtimeClassPath>
-                            </normalization>
-                        </gradleEnterprise>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>        
-
         <resources>
             <resource>
                 <directory>src/main/resources</directory>

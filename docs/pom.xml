@@ -2922,6 +2922,7 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
+                            <skip>${skipDocs}</skip>
                             <outputDirectory>${project.basedir}/target/asciidoc/sources</outputDirectory>
                             <resources>
                                 <resource>
@@ -3111,6 +3112,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
+                            <skip>${skipDocs}</skip>
                             <executable>java</executable>
                             <arguments>
                                 <argument>-classpath</argument>
@@ -3213,6 +3215,7 @@
                             <goal>single</goal>
                         </goals>
                         <configuration>
+                            <skipAssembly>${skipDocs}</skipAssembly>
                             <descriptors>
                                 <descriptor>assembly.xml</descriptor>
                             </descriptors>
@@ -3243,31 +3246,51 @@
                 </executions>
             </plugin>
         </plugins>
-
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>com.gradle</groupId>
-                    <artifactId>gradle-enterprise-maven-extension</artifactId>
-                    <configuration>
-                        <gradleEnterprise>
-                            <normalization>
-                                <systemProperties>
-                                    <ignoredKeys combine.children="append">
-                                        <ignore>vale.dir</ignore>
-                                        <ignore>git.dir</ignore>
-                                    </ignoredKeys>
-                                </systemProperties>
-                            </normalization>
-                        </gradleEnterprise>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-
     </build>
 
     <profiles>
+        <profile>
+            <id>unbind-skip-docs</id>
+            <activation>
+                <property>
+                    <name>skipDocs</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>default-jar</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-install-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>default-install</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>documentation-pdf</id>
             <activation>
@@ -3322,6 +3345,7 @@
                                     <goal>single</goal>
                                 </goals>
                                 <configuration>
+                                    <skipAssembly>${skipDocs}</skipAssembly>
                                     <descriptors>
                                         <descriptor>assembly-pdf.xml</descriptor>
                                     </descriptors>

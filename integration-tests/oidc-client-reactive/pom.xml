@@ -147,30 +147,6 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>com.gradle</groupId>
-                    <artifactId>gradle-enterprise-maven-extension</artifactId>
-                    <configuration>
-                        <gradleEnterprise>
-                            <normalization>
-                                <runtimeClassPath combine.children="append">
-                                    <propertiesNormalizations>
-                                        <propertiesNormalization>
-                                            <path>application.properties</path>
-                                            <ignoredProperties>
-                                                <ignore>quarkus.keycloak.devservices.realm-path</ignore>
-                                            </ignoredProperties>
-                                        </propertiesNormalization>
-                                    </propertiesNormalizations>
-                                </runtimeClassPath>
-                            </normalization>
-                        </gradleEnterprise>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>

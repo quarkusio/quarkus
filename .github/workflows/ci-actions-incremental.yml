@@ -1041,7 +1041,7 @@ jobs:
       - name: Setup GraalVM
         id: setup-graalvm
         uses: graalvm/setup-graalvm@v1
-        if: startsWith(matrix.os-name, 'windows')
+        if: "startsWith(matrix.os-name, 'windows') || startsWith(matrix.category, 'Misc1')"
         with:
           version: 'mandrel-latest'
           java-version: '21'

@@ -40,6 +40,7 @@ public class QuarkusServerEndpointIndexer
         extends ServerEndpointIndexer {
 
     private static final org.jboss.logging.Logger LOGGER = Logger.getLogger(QuarkusServerEndpointIndexer.class);
+    private static final String REST_CLIENT_NOT_BODY_ANNOTATION = "io.quarkus.rest.client.reactive.NotBody";
 
     private final Capabilities capabilities;
     private final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
@@ -261,6 +262,16 @@ public class QuarkusServerEndpointIndexer
         LOGGER.warnf("Quarkus detected the use of JSON in JAX-RS method '" + info.declaringClass().name() + "#"
                 + info.name()
                 + "' but no JSON extension has been added. Consider adding 'quarkus-resteasy-reactive-jackson' (recommended) or 'quarkus-resteasy-reactive-jsonb'.");
+    }
+
+    @Override
+    protected void warnAboutMissUsedBodyParameter(DotName httpMethod, MethodInfo methodInfo) {
+        // This indexer also picks up REST client methods as well as there is no bulletproof way of distinguishing the two.
+        // That is why we check for client specific annotations here
+        if (methodInfo.hasAnnotation(REST_CLIENT_NOT_BODY_ANNOTATION)) {
+            return;
+        }
+        super.warnAboutMissUsedBodyParameter(httpMethod, methodInfo);
     }
 
 }

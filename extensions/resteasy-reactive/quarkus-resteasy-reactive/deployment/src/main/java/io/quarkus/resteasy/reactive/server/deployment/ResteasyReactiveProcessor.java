@@ -119,7 +119,6 @@ import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyBufferMe
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxAsyncFileMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxBufferMessageBodyWriter;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
-import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.arc.Unremovable;
@@ -1011,7 +1010,6 @@ public class ResteasyReactiveProcessor {
         }
     }
 
-    @Nullable
     private static String determineHandledGenericTypeOfProviderInterface(Class<?> providerClass,
             Class<?> targetProviderInterface) {
 

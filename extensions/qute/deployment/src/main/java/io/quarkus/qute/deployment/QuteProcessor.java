@@ -41,6 +41,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import jakarta.inject.Singleton;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -77,6 +79,7 @@ import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -109,6 +112,7 @@ import io.quarkus.qute.NamespaceResolver;
 import io.quarkus.qute.ParameterDeclaration;
 import io.quarkus.qute.ParserHelper;
 import io.quarkus.qute.ParserHook;
+import io.quarkus.qute.RenderedResults;
 import io.quarkus.qute.ResultNode;
 import io.quarkus.qute.SectionHelper;
 import io.quarkus.qute.SectionHelperFactory;
@@ -148,6 +152,7 @@ import io.quarkus.qute.runtime.extensions.NumberTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.OrOperatorTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.StringTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.TimeTemplateExtensions;
+import io.quarkus.qute.runtime.test.RenderedResultsCreator;
 import io.quarkus.runtime.util.StringUtil;
 
 public class QuteProcessor {
@@ -872,6 +877,18 @@ public class QuteProcessor {
                 }
             }
         }
+    }
+
+    @BuildStep(onlyIf = IsTest.class)
+    SyntheticBeanBuildItem registerRenderedResults(QuteConfig config) {
+        if (config.testMode.recordRenderedResults) {
+            return SyntheticBeanBuildItem.configure(RenderedResults.class)
+                    .unremovable()
+                    .scope(Singleton.class)
+                    .creator(RenderedResultsCreator.class)
+                    .done();
+        }
+        return null;
     }
 
     @SuppressWarnings("incomplete-switch")

@@ -2654,6 +2654,12 @@ The configration value is a regular expression that matches the template path re
 For example, `quarkus.qute.dev-mode.no-restart-templates=templates/foo.html` matches the template `src/main/resources/templates/foo.html`.
 The matching templates are reloaded and only runtime validations are performed.
 
+=== Testing
+
+In the test mode, the rendering results of injected and type-safe templates are recorded in the managed `io.quarkus.qute.RenderedResults` which is registered as a CDI bean.
+You can inject `RenderedResults` in a test or any other CDI bean and assert the results.
+However, it's possible to set the `quarkus.qute.test-mode.record-rendered-results` configuration property to `false` to disable this feature.
+
 [[type-safe-message-bundles]]
 === Type-safe Message Bundles
 

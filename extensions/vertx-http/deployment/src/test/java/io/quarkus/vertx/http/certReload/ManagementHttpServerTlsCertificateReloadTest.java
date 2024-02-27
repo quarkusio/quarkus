@@ -7,8 +7,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import javax.net.ssl.SSLHandshakeException;
@@ -118,7 +120,7 @@ public class ManagementHttpServerTlsCertificateReloadTest {
     File certs;
 
     @Test
-    void test() throws IOException {
+    void test() throws IOException, ExecutionException, InterruptedException, TimeoutException {
         var options = new HttpClientOptions()
                 .setSsl(true)
                 .setDefaultPort(9001) // Management interface test port
@@ -139,7 +141,7 @@ public class ManagementHttpServerTlsCertificateReloadTest {
                 new File(certs, "/tls.key").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
         // Trigger the reload
-        TlsCertificateReloader.reload().await().atMost(Duration.ofSeconds(10));
+        TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
 
         // The client truststore is not updated, thus it should fail.
         assertThatThrownBy(() -> vertx.createHttpClient(options)

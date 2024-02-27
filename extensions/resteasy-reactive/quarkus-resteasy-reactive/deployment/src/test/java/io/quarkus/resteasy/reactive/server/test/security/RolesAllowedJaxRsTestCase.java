@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.server.test.security;
 
+import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.when;
 import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
@@ -14,6 +16,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.Provider;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -31,7 +34,8 @@ public class RolesAllowedJaxRsTestCase {
                     .addClasses(RolesAllowedResource.class, UserResource.class, RolesAllowedBlockingResource.class,
                             SerializationEntity.class, SerializationRolesResource.class, TestIdentityProvider.class,
                             TestIdentityController.class, UnsecuredSubResource.class, RolesAllowedService.class,
-                            RolesAllowedServiceResource.class));
+                            RolesAllowedServiceResource.class, UnsecuredResource.class, UnsecuredParentResource.class,
+                            UnsecuredResourceInterface.class));
 
     @BeforeAll
     public static void setupUsers() {
@@ -88,6 +92,53 @@ public class RolesAllowedJaxRsTestCase {
         RestAssured.given().body(new SerializationEntity()).auth().basic("user", "user").post("/roles-validate/admin").then()
                 .statusCode(403);
         Assertions.assertFalse(read);
+    }
+
+    @Test
+    public void shouldAllowAnnotatedParentEndpoint() {
+        // the endpoint has @RolesAllowed, therefore default JAX-RS security should not be applied
+        String path = "/unsecured/parent-annotated";
+        assertStatus(path, 200, 200, 401);
+    }
+
+    @Test
+    public void shouldAllowAnnotatedEndpointOnInterface() {
+        // the endpoint has @RolesAllowed, therefore default JAX-RS security should not be applied
+        String path = "/unsecured/interface-annotated";
+        assertStatus(path, 200, 200, 401);
+    }
+
+    @Test
+    public void shouldDenyUnannotatedOverriddenOnInterfaceImplementor() {
+        // @RolesAllowed on interface, however implementor overridden the endpoint method with @Path @GET
+        String path = "/unsecured/interface-overridden-declared-on-implementor";
+        assertStatus(path, 200, 200, 200);
+    }
+
+    @Test
+    public void shouldAllowAnnotatedOverriddenEndpointDeclaredOnInterface() {
+        // @RolesAllowed on interface and implementor didn't declare endpoint declaring annotations @GET
+        String path = "/unsecured/interface-overridden-declared-on-interface";
+        assertStatus(path, 200, 200, 401);
+        // check that response comes from the overridden method
+        given().auth().preemptive()
+                .basic("admin", "admin").get(path)
+                .then()
+                .body(Matchers.is("implementor-response"));
+    }
+
+    private void assertStatus(String path, int adminStatus, int userStatus, int anonStatus) {
+        given().auth().preemptive()
+                .basic("admin", "admin").get(path)
+                .then()
+                .statusCode(adminStatus);
+        given().auth().preemptive()
+                .basic("user", "user").get(path)
+                .then()
+                .statusCode(userStatus);
+        when().get(path)
+                .then()
+                .statusCode(anonStatus);
     }
 
     static volatile boolean read = false;

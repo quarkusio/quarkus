@@ -26,21 +26,33 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
      * If it's non-blocking method within the runtime that won't always default to blocking
      */
     public final boolean isNonBlocking;
-
+    /**
+     * This class name will only differ from {@link this#declaringClass} name when the {@link this#method} was inherited.
+     */
+    private final String actualDeclaringClassName;
     private volatile Annotation[] classAnnotations;
     private volatile Method method;
     private volatile Annotation[] annotations;
     private volatile Type returnType;
     private volatile String methodId;
 
+    @Deprecated
     public ResteasyReactiveResourceInfo(String name, Class<?> declaringClass, Class[] parameterTypes,
             Set<String> classAnnotationNames, Set<String> methodAnnotationNames, boolean isNonBlocking) {
+        this(name, declaringClass, parameterTypes, classAnnotationNames, methodAnnotationNames, isNonBlocking,
+                declaringClass.getName());
+    }
+
+    public ResteasyReactiveResourceInfo(String name, Class<?> declaringClass, Class[] parameterTypes,
+            Set<String> classAnnotationNames, Set<String> methodAnnotationNames, boolean isNonBlocking,
+            String actualDeclaringClassName) {
         this.name = name;
         this.declaringClass = declaringClass;
         this.parameterTypes = parameterTypes;
         this.classAnnotationNames = classAnnotationNames;
         this.methodAnnotationNames = methodAnnotationNames;
         this.isNonBlocking = isNonBlocking;
+        this.actualDeclaringClassName = actualDeclaringClassName;
     }
 
     public String getName() {
@@ -118,5 +130,9 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
             methodId = MethodId.get(name, declaringClass, parameterTypes);
         }
         return methodId;
+    }
+
+    public String getActualDeclaringClassName() {
+        return actualDeclaringClassName;
     }
 }

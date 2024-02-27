@@ -14,17 +14,26 @@ import java.lang.annotation.Target;
 public @interface WebSocket {
 
     /**
-     * @return the path
+     * The path of the endpoint.
+     * <p>
+     * It is possible to match path parameters. The placeholder of a path parameter consists of the parameter name surrounded by
+     * curly brackets. The actual value of a path parameter can be obtained using
+     * {@link WebSocketServerConnection#pathParam(String)}. For example, the path <code>/foo/{bar}</code> defines the path
+     * parameter {@code bar}.
+     * 
+     * @see WebSocketServerConnection#pathParam(String)
      */
     public String path();
 
     /**
-     * @return the execution mode
+     * The execution mode used to process incoming messages for a specific connection.
      */
     public ExecutionMode executionMode() default ExecutionMode.SERIAL;
 
     /**
-     * Execution mode used during message processing.
+     * Defines the execution mode used to process incoming messages for a specific connection.
+     * 
+     * @see WebSocketServerConnection
      */
     enum ExecutionMode {
 

@@ -927,6 +927,13 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<List<String>> scopes = Optional.empty();
 
         /**
+         * The separator which is used when more than one scope is configured.
+         * A single space is used by default.
+         */
+        @ConfigItem
+        public Optional<String> scopeSeparator = Optional.empty();
+
+        /**
          * Require that ID token includes a `nonce` claim which must match `nonce` authentication request query parameter.
          * Enabling this property can help mitigate replay attacks.
          * Do not enable this property if your OpenId Connect provider does not support setting `nonce` in ID token
@@ -1341,6 +1348,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setStateSecret(Optional<String> stateSecret) {
             this.stateSecret = stateSecret;
+        }
+
+        public Optional<String> getScopeSeparator() {
+            return scopeSeparator;
+        }
+
+        public void setScopeSeparator(String scopeSeparator) {
+            this.scopeSeparator = Optional.of(scopeSeparator);
         }
     }
 

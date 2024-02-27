@@ -455,6 +455,7 @@ public class KnownOidcProvidersTest {
         assertFalse(config.getAuthentication().idTokenRequired.get());
         assertEquals(Method.QUERY, config.credentials.clientSecret.method.get());
         assertEquals("/strava", config.authentication.redirectPath.get());
+        assertEquals(",", config.authentication.scopeSeparator.get());
     }
 
     @Test
@@ -472,6 +473,7 @@ public class KnownOidcProvidersTest {
         tenant.token.setVerifyAccessTokenWithUserInfo(false);
         tenant.credentials.clientSecret.setMethod(Method.BASIC);
         tenant.authentication.setRedirectPath("/fitness-app");
+        tenant.authentication.setScopeSeparator(" ");
 
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.STRAVA));
 
@@ -485,6 +487,7 @@ public class KnownOidcProvidersTest {
         assertFalse(config.token.verifyAccessTokenWithUserInfo.get());
         assertEquals(Method.BASIC, config.credentials.clientSecret.method.get());
         assertEquals("/fitness-app", config.authentication.redirectPath.get());
+        assertEquals(" ", config.authentication.scopeSeparator.get());
     }
 
     @Test

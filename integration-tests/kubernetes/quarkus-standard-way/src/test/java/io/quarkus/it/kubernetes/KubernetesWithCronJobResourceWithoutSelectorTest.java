@@ -18,9 +18,9 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithCronJobResourceTest {
+public class KubernetesWithCronJobResourceWithoutSelectorTest {
 
-    static final String APP_NAME = "kubernetes-with-cronjob-resource";
+    static final String APP_NAME = "kubernetes-with-cronjob-resource-without-selector";
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
@@ -49,21 +49,7 @@ public class KubernetesWithCronJobResourceTest {
                     assertThat(m.getName()).isEqualTo(APP_NAME);
                 });
 
-                assertThat(s.getSpec().getSchedule()).isEqualTo("0 0 0 0 *");
-
                 assertThat(s.getSpec().getJobTemplate().getSpec()).satisfies(jobSpec -> {
-                    assertThat(jobSpec.getParallelism()).isEqualTo(10);
-                    assertThat(jobSpec.getTemplate()).satisfies(t -> {
-                        assertThat(t.getSpec()).satisfies(templateSpec -> {
-                            assertThat(templateSpec.getRestartPolicy()).isEqualTo("Never");
-                            assertThat(templateSpec.getContainers()).allMatch(c -> {
-                                return APP_NAME.equals(c.getName())
-                                        && c.getArgs().size() == 2
-                                        && c.getArgs().get(0).equals("A")
-                                        && c.getArgs().get(1).equals("B");
-                            });
-                        });
-                    });
                     assertThat(jobSpec.getSelector()).isEqualTo(null);
                 });
             });

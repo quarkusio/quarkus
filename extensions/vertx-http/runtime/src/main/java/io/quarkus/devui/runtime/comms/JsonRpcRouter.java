@@ -1,5 +1,6 @@
 package io.quarkus.devui.runtime.comms;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -206,7 +207,19 @@ public class JsonRpcRouter {
                                         MessageType.Response);
                             }
                         }, failure -> {
-                            codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, failure);
+                            Throwable actualFailure;
+                            // If the jsonrpc method is actually
+                            // synchronous, the failure is wrapped in an
+                            // InvocationTargetException, so unwrap it here
+                            if (failure instanceof InvocationTargetException f) {
+                                actualFailure = f.getTargetException();
+                            } else if (failure.getCause() != null
+                                    && failure.getCause() instanceof InvocationTargetException f) {
+                                actualFailure = f.getTargetException();
+                            } else {
+                                actualFailure = failure;
+                            }
+                            codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, actualFailure);
                         });
             }
         } else {

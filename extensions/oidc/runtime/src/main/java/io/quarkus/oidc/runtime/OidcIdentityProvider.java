@@ -18,6 +18,7 @@ import org.jose4j.lang.UnresolvableKeyException;
 
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
+import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.TokenIntrospection;
@@ -98,14 +99,16 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
     private Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request, Map<String, Object> requestData,
             TenantConfigContext resolvedContext) {
-        if (resolvedContext.oidcConfig.publicKey.isPresent()) {
-            LOG.debug("Performing token verification with a configured public key");
-            return validateTokenWithoutOidcServer(request, resolvedContext);
+        if (resolvedContext.oidcConfig.authServerUrl.isPresent()) {
+            return validateAllTokensWithOidcServer(requestData, request, resolvedContext);
         } else if (resolvedContext.oidcConfig.getCertificateChain().trustStoreFile.isPresent()) {
             LOG.debug("Performing token verification with a public key inlined in the certificate chain");
             return validateTokenWithoutOidcServer(request, resolvedContext);
+        } else if (resolvedContext.oidcConfig.publicKey.isPresent()) {
+            LOG.debug("Performing token verification with a configured public key");
+            return validateTokenWithoutOidcServer(request, resolvedContext);
         } else {
-            return validateAllTokensWithOidcServer(requestData, request, resolvedContext);
+            return Uni.createFrom().failure(new OIDCException("Unexpected authentication request"));
         }
     }
 

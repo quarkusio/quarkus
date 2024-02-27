@@ -88,16 +88,26 @@ public class ResteasyReactiveCDIProcessor {
     @BuildStep
     void subResourcesAsBeans(ResourceScanningResultBuildItem setupEndpointsResult,
             List<SubResourcesAsBeansBuildItem> subResourcesAsBeans,
-            BuildProducer<AdditionalBeanBuildItem> producer) {
-        if (subResourcesAsBeans.isEmpty() || setupEndpointsResult.getResult().getPossibleSubResources().isEmpty()) {
+            BuildProducer<UnremovableBeanBuildItem> unremovableProducer,
+            BuildProducer<AdditionalBeanBuildItem> additionalProducer) {
+        Map<DotName, ClassInfo> possibleSubResources = setupEndpointsResult.getResult().getPossibleSubResources();
+        if (possibleSubResources.isEmpty()) {
             return;
         }
 
-        List<String> classNames = new ArrayList<>(setupEndpointsResult.getResult().getPossibleSubResources().size());
-        for (DotName subResourceClass : setupEndpointsResult.getResult().getPossibleSubResources().keySet()) {
-            classNames.add(subResourceClass.toString());
+        // make SubResources unremovable - this will only apply if they become beans by some other means
+        unremovableProducer.produce(UnremovableBeanBuildItem.beanTypes(possibleSubResources.keySet()));
+
+        if (subResourcesAsBeans.isEmpty()) {
+            return;
         }
-        producer.produce(new AdditionalBeanBuildItem(classNames.toArray(new String[0])));
+
+        // now actually make SubResources beans as it was requested via build item
+        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
+        for (DotName subResourceClass : possibleSubResources.keySet()) {
+            builder.addBeanClass(subResourceClass.toString());
+        }
+        additionalProducer.produce(builder.build());
     }
 
     // when an interface is annotated with @Path and there is only one implementation of it that is not annotated with @Path,

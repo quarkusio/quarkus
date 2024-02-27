@@ -1,6 +1,6 @@
-package io.quarkus.websockets.next.test.signatures;
+package io.quarkus.websockets.next.test.executionmode;
 
-import static io.quarkus.websockets.next.WebSocket.ExecutionMode.SIMULTANEOUS;
+import static io.quarkus.websockets.next.WebSocket.ExecutionMode.CONCURRENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URI;
@@ -19,7 +19,7 @@ import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.vertx.core.Vertx;
 
-public class SimultaneouExecutionModeTest {
+public class ConcurrentExecutionModeTest {
 
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
@@ -46,7 +46,7 @@ public class SimultaneouExecutionModeTest {
         }
     }
 
-    @WebSocket(path = "/sim", executionMode = SIMULTANEOUS)
+    @WebSocket(path = "/sim", executionMode = CONCURRENT)
     public static class Sim {
 
         private final CountDownLatch latch = new CountDownLatch(4);

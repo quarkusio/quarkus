@@ -34,9 +34,9 @@ public @interface WebSocket {
         SERIAL,
 
         /**
-         * Messages are processed simultaneously, there are no ordering guarantees.
+         * Messages are processed concurrently, there are no ordering guarantees.
          */
-        SIMULTANEOUS,
+        CONCURRENT,
 
     }
 

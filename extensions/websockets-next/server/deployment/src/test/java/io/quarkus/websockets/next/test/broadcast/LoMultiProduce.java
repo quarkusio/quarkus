@@ -10,7 +10,7 @@ import io.quarkus.websockets.next.WebSocketServerConnection;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.Context;
 
-@WebSocket("/lo-multi-produce/{client}")
+@WebSocket(path = "/lo-multi-produce/{client}")
 public class LoMultiProduce {
 
     @Inject

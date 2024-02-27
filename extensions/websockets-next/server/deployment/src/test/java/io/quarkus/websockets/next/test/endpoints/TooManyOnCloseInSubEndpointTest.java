@@ -23,7 +23,7 @@ public class TooManyOnCloseInSubEndpointTest {
 
     }
 
-    @WebSocket("/ws")
+    @WebSocket(path = "/ws")
     public static class ParentEndpoint {
 
         @OnMessage
@@ -31,7 +31,7 @@ public class TooManyOnCloseInSubEndpointTest {
             // Ignored.
         }
 
-        @WebSocket("/sub")
+        @WebSocket(path = "/sub")
         public static class SubEndpointWithTooManyOnClose {
 
             @OnMessage

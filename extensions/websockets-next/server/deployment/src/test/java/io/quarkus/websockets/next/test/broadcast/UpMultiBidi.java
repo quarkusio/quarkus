@@ -11,7 +11,7 @@ import io.quarkus.websockets.next.WebSocketServerConnection;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.Context;
 
-@WebSocket("/up-multi-bidi/{client}")
+@WebSocket(path = "/up-multi-bidi/{client}")
 public class UpMultiBidi {
 
     @Inject

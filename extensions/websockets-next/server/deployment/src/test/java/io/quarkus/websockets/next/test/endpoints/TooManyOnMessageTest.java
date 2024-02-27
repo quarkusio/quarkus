@@ -22,7 +22,7 @@ public class TooManyOnMessageTest {
 
     }
 
-    @WebSocket("/ws")
+    @WebSocket(path = "/ws")
     public static class TooManyOnMessage {
         @OnMessage
         public void onMessage(String message) {

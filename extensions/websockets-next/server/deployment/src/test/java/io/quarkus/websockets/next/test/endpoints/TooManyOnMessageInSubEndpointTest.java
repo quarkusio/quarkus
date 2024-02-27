@@ -22,7 +22,7 @@ public class TooManyOnMessageInSubEndpointTest {
 
     }
 
-    @WebSocket("/ws")
+    @WebSocket(path = "/ws")
     public static class ParentEndpoint {
 
         @OnMessage
@@ -30,7 +30,7 @@ public class TooManyOnMessageInSubEndpointTest {
             // Ignored.
         }
 
-        @WebSocket("/sub")
+        @WebSocket(path = "/sub")
         public static class SubEndpointWithTooManyOnMessage {
 
             @OnMessage

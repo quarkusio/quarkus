@@ -10,7 +10,7 @@ import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketServerConnection;
 import io.vertx.core.Context;
 
-@WebSocket("/up-blocking/{client}")
+@WebSocket(path = "/up-blocking/{client}")
 public class UpBlocking {
 
     @Inject

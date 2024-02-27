@@ -9,7 +9,7 @@ import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketServerConnection;
 import io.vertx.core.Context;
 
-@WebSocket("/lo-blocking/{client}")
+@WebSocket(path = "/lo-blocking/{client}")
 public class LoBlocking {
 
     @Inject

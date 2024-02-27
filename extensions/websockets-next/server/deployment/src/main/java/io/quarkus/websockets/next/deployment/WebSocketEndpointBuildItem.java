@@ -10,6 +10,7 @@ import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint.ExecutionModel;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint.MessageType;
@@ -21,13 +22,16 @@ public final class WebSocketEndpointBuildItem extends MultiBuildItem {
 
     public final BeanInfo bean;
     public final String path;
+    public final WebSocket.ExecutionMode executionMode;
     public final Callback onOpen;
     public final Callback onMessage;
     public final Callback onClose;
 
-    public WebSocketEndpointBuildItem(BeanInfo bean, String path, Callback onOpen, Callback onMessage, Callback onClose) {
+    public WebSocketEndpointBuildItem(BeanInfo bean, String path, WebSocket.ExecutionMode executionMode, Callback onOpen,
+            Callback onMessage, Callback onClose) {
         this.bean = bean;
         this.path = path;
+        this.executionMode = executionMode;
         this.onOpen = onOpen;
         this.onMessage = onMessage;
         this.onClose = onClose;

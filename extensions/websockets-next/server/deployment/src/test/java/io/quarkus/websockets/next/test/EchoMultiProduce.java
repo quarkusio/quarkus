@@ -4,7 +4,7 @@ import io.quarkus.websockets.next.OnMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.smallrye.mutiny.Multi;
 
-@WebSocket("/echo-multi-produce")
+@WebSocket(path = "/echo-multi-produce")
 public class EchoMultiProduce {
 
     @OnMessage

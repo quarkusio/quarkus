@@ -22,7 +22,7 @@ public class EmptySubEndpointTest {
 
     }
 
-    @WebSocket("/ws")
+    @WebSocket(path = "/ws")
     public static class ParentEndpoint {
 
         @OnMessage
@@ -30,7 +30,7 @@ public class EmptySubEndpointTest {
             // Ignored.
         }
 
-        @WebSocket("/sub")
+        @WebSocket(path = "/sub")
         public static class EmptySubEndpoint {
 
         }

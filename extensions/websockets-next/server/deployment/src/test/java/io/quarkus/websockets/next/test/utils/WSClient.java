@@ -54,18 +54,20 @@ public class WSClient {
         return this;
     }
 
-    public void send(String message) {
-        WebSocket current = socket.get();
-        if (current != null) {
-            await(current.writeTextMessage(message));
-        }
+    public Future<Void> send(String message) {
+        return socket.get().writeTextMessage(message);
     }
 
-    public void send(Buffer message) {
-        WebSocket current = socket.get();
-        if (current != null) {
-            await(current.writeBinaryMessage(message));
-        }
+    public void sendAndAwait(String message) {
+        await(send(message));
+    }
+
+    public Future<Void> send(Buffer message) {
+        return socket.get().writeBinaryMessage(message);
+    }
+
+    public void sendAndAwait(Buffer message) {
+        await(send(message));
     }
 
     public List<Buffer> getMessages() {
@@ -85,6 +87,10 @@ public class WSClient {
         return messages.get(c);
     }
 
+    public void waitForMessages(int count) {
+        Awaitility.await().until(() -> messages.size() >= count);
+    }
+
     public void disconnect() {
         WebSocket current = socket.getAndSet(null);
         if (current != null) {
@@ -99,7 +105,7 @@ public class WSClient {
 
     public Buffer sendAndAwaitReply(String message) {
         var c = messages.size();
-        send(message);
+        sendAndAwait(message);
         Awaitility.await().until(() -> messages.size() > c);
         return messages.get(c);
     }

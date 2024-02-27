@@ -8,7 +8,7 @@ import io.quarkus.websockets.next.OnMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.vertx.core.Context;
 
-@WebSocket("/echo-blocking-pojo")
+@WebSocket(path = "/echo-blocking-pojo")
 public class EchoBlockingPojo {
 
     @Inject

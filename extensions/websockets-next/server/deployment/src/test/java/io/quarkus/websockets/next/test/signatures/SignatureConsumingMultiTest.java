@@ -43,7 +43,7 @@ public class SignatureConsumingMultiTest {
         WSClient client = WSClient.create(vertx).connect(WSClient.toWS(uri, "/ws/%s/%d".formatted("bi-directional", 3)));
 
         for (int i = 0; i < 10; i++) {
-            client.send("hello" + i);
+            client.sendAndAwait("hello" + i);
         }
 
         await().until(() -> client.getMessages().size() == 10);
@@ -53,7 +53,7 @@ public class SignatureConsumingMultiTest {
                                 .collect(Collectors.toList()));
     }
 
-    @WebSocket("/ws/bi-directional/{id}")
+    @WebSocket(path = "/ws/bi-directional/{id}")
     public static class BiDirectional {
 
         @Inject

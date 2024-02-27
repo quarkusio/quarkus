@@ -15,7 +15,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-@WebSocket("/find-binary")
+@WebSocket(path = "/find-binary")
 public class FindBinary extends AbstractFind {
 
     // Force binary message format

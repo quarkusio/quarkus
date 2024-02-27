@@ -8,7 +8,7 @@ import io.quarkus.websockets.next.WebSocketServerConnection;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-@WebSocket("/echo-multi-consume")
+@WebSocket(path = "/echo-multi-consume")
 public class EchoMultiConsume {
 
     @Inject

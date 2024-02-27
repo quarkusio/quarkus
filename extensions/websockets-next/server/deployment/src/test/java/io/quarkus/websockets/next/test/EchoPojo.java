@@ -9,7 +9,7 @@ import io.quarkus.websockets.next.WebSocket;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 
-@WebSocket("/echo-pojo")
+@WebSocket(path = "/echo-pojo")
 public class EchoPojo {
 
     @Inject

@@ -23,7 +23,7 @@ public class TooManyOnCloseTest {
 
     }
 
-    @WebSocket("/ws")
+    @WebSocket(path = "/ws")
     public static class TooManyOnClose {
         @OnOpen
         public void onOpen() {

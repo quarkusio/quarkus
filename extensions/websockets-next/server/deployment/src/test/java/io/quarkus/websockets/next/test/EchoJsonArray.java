@@ -11,7 +11,7 @@ import io.vertx.core.Context;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-@WebSocket("/echo-json-array")
+@WebSocket(path = "/echo-json-array")
 public class EchoJsonArray {
 
     @Inject

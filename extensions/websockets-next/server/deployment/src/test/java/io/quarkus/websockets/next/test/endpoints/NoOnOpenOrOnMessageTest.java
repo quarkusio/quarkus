@@ -22,7 +22,7 @@ public class NoOnOpenOrOnMessageTest {
 
     }
 
-    @WebSocket("/ws")
+    @WebSocket(path = "/ws")
     public static class NoOnOpenOrOnMessage {
 
         // Invalid endpoint, must have at least one @OnOpen or @OnMessage method.

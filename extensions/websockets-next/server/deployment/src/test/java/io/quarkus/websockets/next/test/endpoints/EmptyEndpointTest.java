@@ -23,7 +23,7 @@ public class EmptyEndpointTest {
         fail();
     }
 
-    @WebSocket("/ws")
+    @WebSocket(path = "/ws")
     public static class EmptyEndpoint {
 
     }

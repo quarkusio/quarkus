@@ -55,7 +55,7 @@ public class SignatureTest {
         assertThat(resp.toString()).isEqualTo("WS " + id + " received: hello");
     }
 
-    @WebSocket("/ws/string/{id}")
+    @WebSocket(path = "/ws/string/{id}")
     public static class MethodReturningString {
 
         @Inject
@@ -75,7 +75,7 @@ public class SignatureTest {
 
     }
 
-    @WebSocket("/ws/uni/{id}")
+    @WebSocket(path = "/ws/uni/{id}")
     public static class UniWs {
 
         @Inject
@@ -98,7 +98,7 @@ public class SignatureTest {
         }
     }
 
-    @WebSocket("/ws/multi/{id}")
+    @WebSocket(path = "/ws/multi/{id}")
     public static class MultiWs {
 
         @Inject

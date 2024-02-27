@@ -10,7 +10,7 @@ import io.quarkus.websockets.next.WebSocketServerConnection;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 
-@WebSocket("/sub")
+@WebSocket(path = "/sub")
 public class Sub {
 
     @OnMessage
@@ -19,7 +19,7 @@ public class Sub {
         return Uni.createFrom().item(msg);
     }
 
-    @WebSocket("/sub/{id}")
+    @WebSocket(path = "/sub/{id}")
     public static class SubSub {
 
         @Inject
@@ -31,7 +31,7 @@ public class Sub {
             return Uni.createFrom().item(connection.pathParam("id") + ":" + msg);
         }
 
-        @WebSocket("/sub/{name}")
+        @WebSocket(path = "/sub/{name}")
         public static class SubSubSub {
 
             @Inject

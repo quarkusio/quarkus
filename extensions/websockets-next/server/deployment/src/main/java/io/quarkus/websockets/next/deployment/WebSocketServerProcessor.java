@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 import jakarta.enterprise.context.SessionScoped;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassInfo.NestingType;
 import org.jboss.jandex.DotName;
@@ -52,6 +53,7 @@ import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.websockets.next.TextMessageCodec;
+import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketRuntimeConfig;
 import io.quarkus.websockets.next.WebSocketServerConnection;
 import io.quarkus.websockets.next.WebSocketServerException;
@@ -107,7 +109,7 @@ public class WebSocketServerProcessor {
             ClassInfo beanClass = bean.getTarget().get().asClass();
             AnnotationInstance webSocketAnnotation = beanClass.annotation(WebSocketDotNames.WEB_SOCKET);
             if (webSocketAnnotation != null) {
-                String path = getPath(webSocketAnnotation.value().asString());
+                String path = getPath(webSocketAnnotation.value("path").asString());
                 if (beanClass.nestingType() == NestingType.INNER) {
                     // Sub-websocket - merge the path from the enclosing classes
                     path = mergePath(getPathPrefix(index, beanClass.enclosingClass()), path);
@@ -127,7 +129,11 @@ public class WebSocketServerProcessor {
                     throw new WebSocketServerException(
                             "The endpoint must declare at least one method annotated with @OnMessage or @OnOpen: " + beanClass);
                 }
-                endpoints.produce(new WebSocketEndpointBuildItem(bean, path, onOpen,
+                AnnotationValue executionMode = webSocketAnnotation.value("executionMode");
+                endpoints.produce(new WebSocketEndpointBuildItem(bean, path,
+                        executionMode != null ? WebSocket.ExecutionMode.valueOf(executionMode.asEnum())
+                                : WebSocket.ExecutionMode.SERIAL,
+                        onOpen,
                         onMessage, onClose));
             }
         }
@@ -255,7 +261,7 @@ public class WebSocketServerProcessor {
         }
         AnnotationInstance webSocketAnnotation = enclosingClass.annotation(WebSocketDotNames.WEB_SOCKET);
         if (webSocketAnnotation != null) {
-            String path = getPath(webSocketAnnotation.value().asString());
+            String path = getPath(webSocketAnnotation.value("path").asString());
             if (enclosingClass.nestingType() == NestingType.INNER) {
                 return mergePath(getPathPrefix(index, enclosingClass.enclosingClass()), path);
             } else {
@@ -288,6 +294,10 @@ public class WebSocketServerProcessor {
      *
      * <pre>
      * public class Echo_WebSocketEndpoint extends DefaultWebSocketEndpoint {
+     *
+     *     public WebSocket.ExecutionMode executionMode() {
+     *         return WebSocket.ExecutionMode.SERIAL;
+     *     }
      *
      *     public Echo_WebSocketEndpoint(Context context, WebSocketServerConnection connection, Codecs codecs) {
      *         super(context, connection, codecs);
@@ -341,6 +351,9 @@ public class WebSocketServerProcessor {
                 constructor.getThis(), constructor.getMethodParam(0), constructor.getMethodParam(1),
                 constructor.getMethodParam(2), constructor.getMethodParam(3));
         constructor.returnNull();
+
+        MethodCreator executionMode = endpointCreator.getMethodCreator("executionMode", WebSocket.ExecutionMode.class);
+        executionMode.returnValue(executionMode.load(endpoint.executionMode));
 
         if (endpoint.onMessage != null && endpoint.onMessage.acceptsMessage()) {
             MethodCreator messageType = endpointCreator.getMethodCreator("consumedMessageType",

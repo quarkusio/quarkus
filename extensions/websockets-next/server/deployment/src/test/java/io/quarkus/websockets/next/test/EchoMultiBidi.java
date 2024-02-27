@@ -4,7 +4,7 @@ import io.quarkus.websockets.next.OnMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.smallrye.mutiny.Multi;
 
-@WebSocket("/echo-multi-bidi")
+@WebSocket(path = "/echo-multi-bidi")
 public class EchoMultiBidi {
 
     @OnMessage

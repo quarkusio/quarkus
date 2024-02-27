@@ -12,7 +12,7 @@ import io.quarkus.websockets.next.TextMessageCodec;
 import io.quarkus.websockets.next.WebSocket;
 import io.vertx.core.json.JsonObject;
 
-@WebSocket("/find-output-codec")
+@WebSocket(path = "/find-output-codec")
 public class FindOutputCodec extends AbstractFind {
 
     // The codec is only used for output

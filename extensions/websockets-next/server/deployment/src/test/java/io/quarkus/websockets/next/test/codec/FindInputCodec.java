@@ -14,7 +14,7 @@ import io.quarkus.websockets.next.WebSocket;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-@WebSocket("/find-input-codec")
+@WebSocket(path = "/find-input-codec")
 public class FindInputCodec extends AbstractFind {
 
     // The codec is used for both input/output

@@ -11,6 +11,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
+import io.quarkus.websockets.next.WebSocket.ExecutionMode;
 import io.quarkus.websockets.next.WebSocketRuntimeConfig;
 import io.quarkus.websockets.next.WebSocketServerConnection;
 import io.smallrye.mutiny.Multi;
@@ -36,7 +37,7 @@ public abstract class DefaultWebSocketEndpoint implements WebSocketEndpoint {
             WebSocketRuntimeConfig config) {
         this.connection = connection;
         this.codecs = codecs;
-        this.limiter = new ConcurrencyLimiter(context, connection);
+        this.limiter = executionMode() == ExecutionMode.SERIAL ? new ConcurrencyLimiter(context, connection) : null;
         this.config = config;
     }
 
@@ -58,30 +59,51 @@ public abstract class DefaultWebSocketEndpoint implements WebSocketEndpoint {
     private Future<Void> execute(Context context, Object message, ExecutionModel executionModel,
             BiFunction<Context, Object, Uni<Void>> action) {
         Promise<Void> promise = Promise.promise();
-        Consumer<Void> complete = limiter.newComplete(promise);
-        limiter.run(new Runnable() {
-            @Override
-            public void run() {
-                if (executionModel == ExecutionModel.VIRTUAL_THREAD) {
-                    VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            withTimeout(action.apply(context, message)).subscribe().with(complete);
-                        }
-                    });
-                } else if (executionModel == ExecutionModel.WORKER_THREAD) {
-                    context.executeBlocking(new Callable<Void>() {
-                        @Override
-                        public Void call() {
-                            withTimeout(action.apply(context, message)).subscribe().with(complete);
-                            return null;
-                        }
-                    }, false);
-                } else {
-                    withTimeout(action.apply(context, message)).subscribe().with(complete);
+        if (limiter != null) {
+            Consumer<Void> complete = limiter.newComplete(promise);
+            limiter.run(new Runnable() {
+                @Override
+                public void run() {
+                    if (executionModel == ExecutionModel.VIRTUAL_THREAD) {
+                        VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                withTimeout(action.apply(context, message)).subscribe().with(complete);
+                            }
+                        });
+                    } else if (executionModel == ExecutionModel.WORKER_THREAD) {
+                        context.executeBlocking(new Callable<Void>() {
+                            @Override
+                            public Void call() {
+                                withTimeout(action.apply(context, message)).subscribe().with(complete);
+                                return null;
+                            }
+                        }, false);
+                    } else {
+                        withTimeout(action.apply(context, message)).subscribe().with(complete);
+                    }
                 }
+            });
+        } else {
+            if (executionModel == ExecutionModel.VIRTUAL_THREAD) {
+                VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        withTimeout(action.apply(context, message)).subscribe().with(promise::complete);
+                    }
+                });
+            } else if (executionModel == ExecutionModel.WORKER_THREAD) {
+                context.executeBlocking(new Callable<Void>() {
+                    @Override
+                    public Void call() {
+                        withTimeout(action.apply(context, message)).subscribe().with(promise::complete);
+                        return null;
+                    }
+                }, false);
+            } else {
+                withTimeout(action.apply(context, message)).subscribe().with(promise::complete);
             }
-        });
+        }
         return promise.future();
     }
 

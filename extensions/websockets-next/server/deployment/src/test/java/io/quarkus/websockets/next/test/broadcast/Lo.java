@@ -10,7 +10,7 @@ import io.quarkus.websockets.next.WebSocketServerConnection;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 
-@WebSocket("/lo/{client}")
+@WebSocket(path = "/lo/{client}")
 public class Lo {
 
     @Inject

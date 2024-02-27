@@ -75,8 +75,7 @@ public class WebSocketServerRecorder {
                     VertxContextSafetyToggle.setContextSafe(context, true);
 
                     WebSocketServerConnection connection = new WebSocketServerConnectionImpl(endpointClass, ws,
-                            connectionManager,
-                            Map.copyOf(ctx.pathParams()), codecs);
+                            connectionManager, Map.copyOf(ctx.pathParams()), codecs);
                     LOG.debugf("WebSocket connnected: %s", connection);
 
                     // This is a bit weird but we need to store the connection to initialize the bean later on

@@ -5,7 +5,7 @@ import java.util.List;
 import io.quarkus.websockets.next.OnMessage;
 import io.quarkus.websockets.next.WebSocket;
 
-@WebSocket("/find")
+@WebSocket(path = "/find")
 public class Find extends AbstractFind {
 
     @OnMessage

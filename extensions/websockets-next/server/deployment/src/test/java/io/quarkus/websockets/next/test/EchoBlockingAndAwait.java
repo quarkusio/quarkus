@@ -9,7 +9,7 @@ import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketServerConnection;
 import io.vertx.core.Context;
 
-@WebSocket("/echo-blocking-await")
+@WebSocket(path = "/echo-blocking-await")
 public class EchoBlockingAndAwait {
 
     @Inject

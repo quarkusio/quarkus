@@ -11,7 +11,7 @@ import io.quarkus.websockets.next.WebSocketServerConnection;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 
-@WebSocket("/up/{client}")
+@WebSocket(path = "/up/{client}")
 public class Up {
 
     @Inject

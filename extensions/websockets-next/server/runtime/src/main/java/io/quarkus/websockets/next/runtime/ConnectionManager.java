@@ -4,6 +4,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import jakarta.annotation.PreDestroy;
 import jakarta.inject.Singleton;
 
 import io.quarkus.websockets.next.WebSocketServerConnection;
@@ -26,6 +27,11 @@ public class ConnectionManager {
 
     Set<WebSocketServerConnection> getConnections(String endpoint) {
         return endpointToConnections.get(endpoint);
+    }
+
+    @PreDestroy
+    void destroy() {
+        endpointToConnections.clear();
     }
 
 }

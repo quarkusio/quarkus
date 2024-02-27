@@ -23,7 +23,7 @@ public class NoOnOpenOrOnMessageInSubEndpointTest {
 
     }
 
-    @WebSocket("/ws")
+    @WebSocket(path = "/ws")
     public static class ParentEndpoint {
 
         @OnMessage
@@ -31,7 +31,7 @@ public class NoOnOpenOrOnMessageInSubEndpointTest {
             // Ignored.
         }
 
-        @WebSocket("/sub")
+        @WebSocket(path = "/sub")
         public static class SubEndpointWithoutOnOpenAndOnMessage {
 
             @OnClose

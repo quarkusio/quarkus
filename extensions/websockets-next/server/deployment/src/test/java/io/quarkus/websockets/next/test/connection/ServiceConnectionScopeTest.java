@@ -55,7 +55,7 @@ public class ServiceConnectionScopeTest {
         assertThat(resp.toString()).isEqualTo("HELLO");
     }
 
-    @WebSocket("/ws")
+    @WebSocket(path = "/ws")
     public static class MyEndpoint {
 
         @Inject

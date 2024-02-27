@@ -2,6 +2,7 @@ package io.quarkus.websockets.next.runtime;
 
 import java.lang.reflect.Type;
 
+import io.quarkus.websockets.next.WebSocket;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 
@@ -11,6 +12,8 @@ import io.vertx.core.Future;
  * A new instance is created for each client connection.
  */
 public interface WebSocketEndpoint {
+
+    WebSocket.ExecutionMode executionMode();
 
     Future<Void> onOpen(Context context);
 

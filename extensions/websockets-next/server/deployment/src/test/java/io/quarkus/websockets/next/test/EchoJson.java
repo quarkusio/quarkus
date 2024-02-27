@@ -10,7 +10,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.json.JsonObject;
 
-@WebSocket("/echo-json")
+@WebSocket(path = "/echo-json")
 public class EchoJson {
 
     @Inject

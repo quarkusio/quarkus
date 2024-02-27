@@ -129,7 +129,7 @@ jobs:
       - name: Setup Develocity Build Scan capture
         uses: gradle/github-actions/maven-setup@v0.0.1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Initial JDK 17 Build"
           skip-pr-comment: true
           skip-job-summary: true
@@ -346,7 +346,7 @@ jobs:
       - name: Setup Develocity Build Scan capture
         uses: gradle/github-actions/maven-setup@v0.0.1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "JVM Tests - JDK ${{matrix.java.name}}"
           skip-pr-comment: true
           skip-job-summary: true
@@ -447,7 +447,7 @@ jobs:
       - name: Setup Develocity Build Scan capture
         uses: gradle/github-actions/maven-setup@v0.0.1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Maven Tests - JDK ${{matrix.java.name}}"
           skip-pr-comment: true
           skip-job-summary: true
@@ -543,7 +543,7 @@ jobs:
       - name: Setup Develocity Build Scan capture
         uses: gradle/github-actions/maven-setup@v0.0.1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Gradle Tests - JDK ${{matrix.java.name}}"
           skip-pr-comment: true
           skip-job-summary: true
@@ -619,7 +619,7 @@ jobs:
       - name: Setup Develocity Build Scan capture
         uses: gradle/github-actions/maven-setup@v0.0.1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Devtools Tests - JDK ${{matrix.java.name}}"
           skip-pr-comment: true
           skip-job-summary: true
@@ -704,7 +704,7 @@ jobs:
       - name: Setup Develocity Build Scan capture
         uses: gradle/github-actions/maven-setup@v0.0.1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Kubernetes Tests - JDK ${{matrix.java.name}}"
           skip-pr-comment: true
           skip-job-summary: true
@@ -776,7 +776,7 @@ jobs:
       - name: Setup Develocity Build Scan capture
         uses: gradle/github-actions/maven-setup@v0.0.1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Quickstarts Compilation - JDK ${{matrix.java.name}}"
           skip-pr-comment: true
           skip-job-summary: true
@@ -841,7 +841,7 @@ jobs:
       - name: Setup Develocity Build Scan capture
         uses: gradle/github-actions/maven-setup@v0.0.1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
           skip-pr-comment: true
           skip-job-summary: true
@@ -902,7 +902,7 @@ jobs:
       - name: Setup Develocity Build Scan capture
         uses: gradle/github-actions/maven-setup@v0.0.1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "MicroProfile TCKs Tests"
           skip-pr-comment: true
           skip-job-summary: true
@@ -1004,7 +1004,7 @@ jobs:
       - name: Setup Develocity Build Scan capture
         uses: gradle/github-actions/maven-setup@v0.0.1
         with:
-          build-scan-capture-strategy: ON_DEMAND
+          capture-strategy: ON_DEMAND
           job-name: "Native Tests - ${{matrix.category}}"
           skip-pr-comment: true
           skip-job-summary: true

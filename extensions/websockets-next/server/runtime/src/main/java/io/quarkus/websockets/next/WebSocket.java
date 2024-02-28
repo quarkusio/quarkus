@@ -20,7 +20,7 @@ public @interface WebSocket {
      * curly brackets. The actual value of a path parameter can be obtained using
      * {@link WebSocketServerConnection#pathParam(String)}. For example, the path <code>/foo/{bar}</code> defines the path
      * parameter {@code bar}.
-     * 
+     *
      * @see WebSocketServerConnection#pathParam(String)
      */
     public String path();
@@ -32,7 +32,7 @@ public @interface WebSocket {
 
     /**
      * Defines the execution mode used to process incoming messages for a specific connection.
-     * 
+     *
      * @see WebSocketServerConnection
      */
     enum ExecutionMode {

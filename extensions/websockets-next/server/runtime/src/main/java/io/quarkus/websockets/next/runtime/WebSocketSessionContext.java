@@ -8,12 +8,10 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import jakarta.enterprise.context.ContextNotActiveException;
-import jakarta.enterprise.context.SessionScoped;
-import jakarta.enterprise.context.spi.Contextual;
-import jakarta.enterprise.context.spi.CreationalContext;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ContextInstanceHandle;
 import io.quarkus.arc.CurrentContext;
 import io.quarkus.arc.InjectableBean;
@@ -22,20 +20,36 @@ import io.quarkus.arc.impl.ComputingCacheContextInstances;
 import io.quarkus.arc.impl.ContextInstanceHandleImpl;
 import io.quarkus.arc.impl.ContextInstances;
 import io.quarkus.arc.impl.LazyValue;
+import jakarta.enterprise.context.BeforeDestroyed;
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.Destroyed;
+import jakarta.enterprise.context.Initialized;
+import jakarta.enterprise.context.SessionScoped;
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.inject.Any;
 
 public class WebSocketSessionContext implements ManagedContext {
 
+    private static final Logger LOG = Logger.getLogger(WebSocketSessionContext.class);
+
     private final LazyValue<CurrentContext<SessionContextState>> currentContext;
-    // TODO inti/predestroy/destroy events
+    private final LazyValue<Event<Object>> initializedEvent;
+    private final LazyValue<Event<Object>> beforeDestroyEvent;
+    private final LazyValue<Event<Object>> destroyEvent;
 
     public WebSocketSessionContext() {
-        // Use lazy value because no-args constructor needed
+        // Use lazy value because no-args constructor is needed
         this.currentContext = new LazyValue<>(new Supplier<CurrentContext<SessionContextState>>() {
             @Override
             public CurrentContext<SessionContextState> get() {
                 return Arc.container().getCurrentContextFactory().create(SessionScoped.class);
             }
         });
+        this.initializedEvent = newEvent(Initialized.Literal.SESSION, Any.Literal.INSTANCE);
+        this.beforeDestroyEvent = newEvent(BeforeDestroyed.Literal.SESSION, Any.Literal.INSTANCE);
+        this.destroyEvent = newEvent(Destroyed.Literal.SESSION, Any.Literal.INSTANCE);
     }
 
     @Override
@@ -58,7 +72,7 @@ public class WebSocketSessionContext implements ManagedContext {
         if (initialState == null) {
             SessionContextState state = new SessionContextState(new ComputingCacheContextInstances());
             currentContext().set(state);
-            // TODO fire an event with qualifier @Initialized(SessionScoped.class) if there are any observers for it
+            fireIfNotNull(initializedEvent.get());
             return state;
         } else {
             if (initialState instanceof SessionContextState) {
@@ -147,7 +161,9 @@ public class WebSocketSessionContext implements ManagedContext {
         if (state instanceof SessionContextState) {
             SessionContextState sessionState = ((SessionContextState) state);
             if (sessionState.invalidate()) {
+                fireIfNotNull(beforeDestroyEvent.get());
                 sessionState.contextInstances.removeEach(ContextInstanceHandle::destroy);
+                fireIfNotNull(destroyEvent.get());
             }
         } else {
             throw new IllegalArgumentException("Invalid state implementation: " + state.getClass().getName());
@@ -168,6 +184,29 @@ public class WebSocketSessionContext implements ManagedContext {
 
     private ContextNotActiveException notActive() {
         return new ContextNotActiveException("Session context is not active");
+    }
+
+    private void fireIfNotNull(Event<Object> event) {
+        if (event != null) {
+            try {
+                event.fire(toString());
+            } catch (Exception e) {
+                LOG.warn("An error occurred during delivery of the context lifecycle event for " + toString(), e);
+            }
+        }
+    }
+
+    private static LazyValue<Event<Object>> newEvent(Annotation... qualifiers) {
+        return new LazyValue<>(new Supplier<Event<Object>>() {
+            @Override
+            public Event<Object> get() {
+                ArcContainer container = Arc.container();
+                if (container.resolveObserverMethods(Object.class, qualifiers).isEmpty()) {
+                    return null;
+                }
+                return container.beanManager().getEvent().select(qualifiers);
+            }
+        });
     }
 
     class SessionContextState implements ContextState {

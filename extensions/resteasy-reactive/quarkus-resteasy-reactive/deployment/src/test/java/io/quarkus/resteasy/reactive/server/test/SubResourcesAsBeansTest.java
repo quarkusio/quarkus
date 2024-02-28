@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.container.ResourceContext;
 import jakarta.ws.rs.core.HttpHeaders;
 
 import org.hamcrest.Matchers;
@@ -63,11 +64,11 @@ public class SubResourcesAsBeansTest {
     public static class MiddleRestResource {
 
         @Inject
-        RestSubResource restSubResource;
+        ResourceContext resourceContext;
 
         @Path("{last}")
         public RestSubResource hello() {
-            return restSubResource;
+            return resourceContext.getResource(RestSubResource.class);
         }
     }
 

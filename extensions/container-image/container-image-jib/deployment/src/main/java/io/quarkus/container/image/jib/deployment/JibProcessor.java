@@ -455,6 +455,7 @@ public class JibProcessor {
             // which would mean AppCDS would not be taken into account at all
             entrypoint = List.of(RUN_JAVA_PATH);
             envVars.put("JAVA_APP_JAR", workDirInContainer + "/" + JarResultBuildStep.QUARKUS_RUN_JAR);
+            envVars.put("JAVA_APP_DIR", workDirInContainer.toString());
             envVars.put("JAVA_OPTS_APPEND", String.join(" ", determineEffectiveJvmArguments(jibConfig, appCDSResult)));
         } else {
             List<String> effectiveJvmArguments = determineEffectiveJvmArguments(jibConfig, appCDSResult);

@@ -310,12 +310,20 @@ final class VertxGrpcExporter implements SpanExporter {
                                             + statusMessage);
                         } else {
                             if (status == null) {
-                                logger.log(
-                                        Level.WARNING,
-                                        "Failed to export "
-                                                + type
-                                                + "s. Server responded with error message: "
-                                                + statusMessage);
+                                if (statusMessage == null) {
+                                    logger.log(
+                                            Level.WARNING,
+                                            "Failed to export "
+                                                    + type
+                                                    + "s. Perhaps the collector does not support collecting traces using grpc? Try configuring 'quarkus.otel.exporter.otlp.traces.protocol=http/protobuf'");
+                                } else {
+                                    logger.log(
+                                            Level.WARNING,
+                                            "Failed to export "
+                                                    + type
+                                                    + "s. Server responded with error message: "
+                                                    + statusMessage);
+                                }
                             } else {
                                 logger.log(
                                         Level.WARNING,

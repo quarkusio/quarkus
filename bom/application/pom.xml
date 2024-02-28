@@ -129,7 +129,7 @@
         <quartz.version>2.3.2</quartz.version>
         <h2.version>2.2.224</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions -->
         <postgresql-jdbc.version>42.7.2</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.3.2</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.3.3</mariadb-jdbc.version>
         <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
         <mssql-jdbc.version>12.4.2.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
@@ -145,7 +145,7 @@
         <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
         <netty.version>4.1.106.Final</netty.version>
-        <brotli4j.version>1.12.0</brotli4j.version>
+        <brotli4j.version>1.14.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
         <mutiny.version>2.5.7</mutiny.version>
@@ -189,7 +189,7 @@
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.13.0</antlr.version><!-- needs to align with same property in build-parent/pom.xml -->
         <quarkus-security.version>2.0.3.Final</quarkus-security.version>
-        <keycloak.version>23.0.6</keycloak.version>
+        <keycloak.version>23.0.7</keycloak.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
         <checker-qual.version>3.42.0</checker-qual.version>
         <error-prone-annotations.version>2.24.0</error-prone-annotations.version>

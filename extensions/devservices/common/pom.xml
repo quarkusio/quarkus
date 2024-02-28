@@ -31,6 +31,14 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!--
+          This should be removed once we upgrade to commons-compress 1.26.1 (or similar).
+          See https://github.com/quarkusio/quarkus/issues/38990
+        -->
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit4-mock</artifactId>

@@ -8,6 +8,16 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import jakarta.enterprise.context.BeforeDestroyed;
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.Destroyed;
+import jakarta.enterprise.context.Initialized;
+import jakarta.enterprise.context.SessionScoped;
+import jakarta.enterprise.context.spi.Contextual;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.inject.Any;
+
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
@@ -20,15 +30,6 @@ import io.quarkus.arc.impl.ComputingCacheContextInstances;
 import io.quarkus.arc.impl.ContextInstanceHandleImpl;
 import io.quarkus.arc.impl.ContextInstances;
 import io.quarkus.arc.impl.LazyValue;
-import jakarta.enterprise.context.BeforeDestroyed;
-import jakarta.enterprise.context.ContextNotActiveException;
-import jakarta.enterprise.context.Destroyed;
-import jakarta.enterprise.context.Initialized;
-import jakarta.enterprise.context.SessionScoped;
-import jakarta.enterprise.context.spi.Contextual;
-import jakarta.enterprise.context.spi.CreationalContext;
-import jakarta.enterprise.event.Event;
-import jakarta.enterprise.inject.Any;
 
 public class WebSocketSessionContext implements ManagedContext {
 

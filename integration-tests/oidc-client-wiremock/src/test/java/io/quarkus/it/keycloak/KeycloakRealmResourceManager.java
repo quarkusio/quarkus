@@ -117,6 +117,15 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .withBody(
                                 "{\"access_token\":\"ciba_access_token\", \"expires_in\":4, \"refresh_token\":\"ciba_refresh_token\"}")));
 
+        server.stubFor(WireMock.post("/device-token")
+                .withRequestBody(matching(
+                        "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&client_id=quarkus-app&client_secret=secret&device_code=123456789"))
+                .willReturn(WireMock
+                        .ok()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"device_code_access_token\", \"expires_in\":4}")));
+
         LOG.infof("Keycloak started in mock mode: %s", server.baseUrl());
 
         Map<String, String> conf = new HashMap<>();

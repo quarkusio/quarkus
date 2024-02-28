@@ -6,10 +6,13 @@ import java.io.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Profile;
 import org.apache.maven.shared.invoker.*;
 import org.junit.jupiter.api.Test;
 
@@ -71,8 +74,8 @@ public class KotlinCreateMavenProjectIT extends QuarkusPlatformAwareMojoTestBase
                         && d.getVersion() == null))
                 .isTrue();
 
-        assertThat(model.getProfiles()).hasSize(1);
-        assertThat(model.getProfiles().get(0).getId()).isEqualTo("native");
+        final Set<String> profileIds = model.getProfiles().stream().map(Profile::getId).collect(Collectors.toUnmodifiableSet());
+        assertThat(profileIds).isEqualTo(Set.of("native", "native-with-agent"));
     }
 
     private InvocationResult setup(Properties params)

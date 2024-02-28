@@ -65,12 +65,12 @@ public class BearerTokenAuthorizationTest {
         wireMockServer.stubFor(WireMock.get("/auth/azure/jwk")
                 .withHeader("Authorization", matching("Access token: " + azureToken))
                 .willReturn(WireMock.aResponse().withBody(azureJwk)));
-        //        RestAssured.given().auth().oauth2(azureToken)
-        //                .when().get("/api/admin/bearer-azure")
-        //                .then()
-        //                .statusCode(200)
-        //                .body(Matchers.equalTo(
-        //                        "Name:jondoe@quarkusoidctest.onmicrosoft.com,Issuer:https://sts.windows.net/e7861267-92c5-4a03-bdb2-2d3e491e7831/"));
+        RestAssured.given().auth().oauth2(azureToken)
+                .when().get("/api/admin/bearer-azure")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo(
+                        "Name:jondoe@quarkusoidctest.onmicrosoft.com,Issuer:https://sts.windows.net/e7861267-92c5-4a03-bdb2-2d3e491e7831/"));
 
         String accessTokenWithCert = TestUtils.createTokenWithInlinedCertChain("alice-certificate");
 
@@ -217,7 +217,7 @@ public class BearerTokenAuthorizationTest {
                 .then()
                 .statusCode(401);
 
-        // Send the token with the valid certificates but which are are in the wrong order in the chain
+        // Send the token with the valid certificates but which are in the wrong order in the chain
         accessToken = getAccessTokenWithCertChain(
                 List.of(intermediateCert, subjectCert, rootCert),
                 subjectPrivateKey);
@@ -244,6 +244,58 @@ public class BearerTokenAuthorizationTest {
                 .then()
                 .statusCode(401);
 
+    }
+
+    @Test
+    public void testFullCertChainWithOnlyRootInTruststore() throws Exception {
+        X509Certificate rootCert = KeyUtils.getCertificate(ResourceUtils.readResource("/ca.cert.pem"));
+        X509Certificate intermediateCert = KeyUtils.getCertificate(ResourceUtils.readResource("/intermediate.cert.pem"));
+        X509Certificate subjectCert = KeyUtils.getCertificate(ResourceUtils.readResource("/www.quarkustest.com.cert.pem"));
+        PrivateKey subjectPrivateKey = KeyUtils.readPrivateKey("/www.quarkustest.com.key.pem");
+
+        // Send the token with the valid certificate chain
+        String accessToken = getAccessTokenWithCertChain(
+                List.of(subjectCert, intermediateCert, rootCert),
+                subjectPrivateKey);
+
+        RestAssured.given().auth().oauth2(accessToken)
+                .when().get("/api/admin/bearer-certificate-full-chain-root-only")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("admin"));
+
+        // Send the same token to the service expecting a different leaf certificate name
+        RestAssured.given().auth().oauth2(accessToken)
+                .when().get("/api/admin/bearer-certificate-full-chain-root-only-wrongcname")
+                .then()
+                .statusCode(401);
+
+        // Send the token with the valid certificates but which are in the wrong order in the chain
+        accessToken = getAccessTokenWithCertChain(
+                List.of(intermediateCert, subjectCert, rootCert),
+                subjectPrivateKey);
+        RestAssured.given().auth().oauth2(accessToken)
+                .when().get("/api/admin/bearer-certificate-full-chain-root-only")
+                .then()
+                .statusCode(401);
+
+        // Send the token with the valid certificates but with the intermediate one omitted from the chain
+        accessToken = getAccessTokenWithCertChain(
+                List.of(subjectCert, rootCert),
+                subjectPrivateKey);
+        RestAssured.given().auth().oauth2(accessToken)
+                .when().get("/api/admin/bearer-certificate-full-chain-root-only")
+                .then()
+                .statusCode(401);
+
+        // Send the token with the only the last valid certificate
+        accessToken = getAccessTokenWithCertChain(
+                List.of(subjectCert),
+                subjectPrivateKey);
+        RestAssured.given().auth().oauth2(accessToken)
+                .when().get("/api/admin/bearer-certificate-full-chain-root-only")
+                .then()
+                .statusCode(401);
     }
 
     @Test

@@ -96,6 +96,7 @@ public class BootstrapMavenContext {
     private static final String SETTINGS_SECURITY = "settings.security";
 
     private static final String EFFECTIVE_MODEL_BUILDER_PROP = "quarkus.bootstrap.effective-model-builder";
+    private static final String WARN_ON_FAILING_WS_MODULES_PROP = "quarkus.bootstrap.warn-on-failing-workspace-modules";
 
     private static final String MAVEN_RESOLVER_TRANSPORT_KEY = "maven.resolver.transport";
     private static final String MAVEN_RESOLVER_TRANSPORT_DEFAULT = "default";
@@ -112,6 +113,11 @@ public class BootstrapMavenContext {
     private File userSettings;
     private File globalSettings;
     private Boolean offline;
+
+    // Typically, this property will not be enabled in Quarkus application development use-cases
+    // It was introduced to support use-cases of using the bootstrap resolver API beyond Quarkus application development
+    private Boolean warnOnFailingWorkspaceModules;
+
     private LocalWorkspace workspace;
     private LocalProject currentProject;
     private Settings settings;
@@ -152,6 +158,7 @@ public class BootstrapMavenContext {
         this.artifactTransferLogging = config.artifactTransferLogging;
         this.localRepo = config.localRepo;
         this.offline = config.offline;
+        this.warnOnFailingWorkspaceModules = config.warnOnFailedWorkspaceModules;
         this.repoSystem = config.repoSystem;
         this.repoSession = config.repoSession;
         this.remoteRepos = config.remoteRepos;
@@ -271,6 +278,12 @@ public class BootstrapMavenContext {
         return offline == null
                 ? offline = (getCliOptions().hasOption(BootstrapMavenOptions.OFFLINE) || getEffectiveSettings().isOffline())
                 : offline;
+    }
+
+    public boolean isWarnOnFailingWorkspaceModules() {
+        return warnOnFailingWorkspaceModules == null
+                ? warnOnFailingWorkspaceModules = Boolean.getBoolean(WARN_ON_FAILING_WS_MODULES_PROP)
+                : warnOnFailingWorkspaceModules;
     }
 
     public RepositorySystem getRepositorySystem() throws BootstrapMavenException {

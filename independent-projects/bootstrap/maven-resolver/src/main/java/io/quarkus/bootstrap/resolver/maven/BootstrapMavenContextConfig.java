@@ -39,6 +39,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     protected Function<Path, Model> modelProvider;
     protected List<String> excludeSisuBeanPackages;
     protected List<String> includeSisuBeanPackages;
+    protected Boolean warnOnFailedWorkspaceModules;
 
     public T excludeSisuBeanPackage(String packageName) {
         if (excludeSisuBeanPackages == null) {
@@ -317,6 +318,18 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     @SuppressWarnings("unchecked")
     public T setProjectModelProvider(Function<Path, Model> modelProvider) {
         this.modelProvider = modelProvider;
+        return (T) this;
+    }
+
+    /**
+     * Whether to warn about failures loading workspace modules instead of throwing errors
+     *
+     * @param warnOnFailedWorkspaceModules whether to warn about failures loading workspace modules instead of throwing errors
+     * @return this config instance
+     */
+    @SuppressWarnings("unchecked")
+    public T setWarnOnFailedWorkspaceModules(boolean warnOnFailedWorkspaceModules) {
+        this.warnOnFailedWorkspaceModules = warnOnFailedWorkspaceModules;
         return (T) this;
     }
 

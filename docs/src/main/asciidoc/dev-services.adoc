@@ -100,6 +100,12 @@ xref:rabbitmq-dev-services.adoc[RabbitMQ Dev Services Guide].
 
 include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-rabbitmq-config-group-rabbit-mq-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
 
+== Pulsar
+
+The Pulsar Dev Service will be enabled when the `quarkus-smallrye-reactive-messaging-pulsar` extension is present in your application, and
+the broker address has not been explicitly configured. More information can be found in the
+xref:pulsar-dev-services.adoc[Pulsar Dev Services Guide].
+
 == Redis
 
 The Redis Dev Service will be enabled when the `quarkus-redis-client` extension is present in your application, and

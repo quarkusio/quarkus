@@ -101,6 +101,8 @@ public class JibProcessor {
     private static final String JAVA_17_BASE_IMAGE = String.format("%s/%s-17-%s:1.18", UBI8_PREFIX, OPENJDK_PREFIX,
             RUNTIME_SUFFIX);
 
+    // The source for this can be found at https://github.com/jboss-container-images/openjdk/blob/ubi8/modules/run/artifacts/opt/jboss/container/java/run/run-java.sh
+    // A list of env vars that affect this script can be found at https://jboss-container-images.github.io/openjdk/ubi8/ubi8-openjdk-17.html
     private static final String RUN_JAVA_PATH = "/opt/jboss/container/java/run/run-java.sh";
 
     private static final String DEFAULT_BASE_IMAGE_USER = "185";

@@ -4,8 +4,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.concurrent.Callable;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -54,8 +58,10 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.ProxyOptions;
 import io.vertx.mutiny.core.MultiMap;
+import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcCommonUtils {
@@ -433,7 +439,7 @@ public class OidcCommonUtils {
     }
 
     public static Uni<JsonObject> discoverMetadata(WebClient client, Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters,
-            String authServerUrl, long connectionDelayInMillisecs) {
+            String authServerUrl, long connectionDelayInMillisecs, Vertx vertx, boolean blockingDnsLookup) {
         final String discoveryUrl = getDiscoveryUri(authServerUrl);
         HttpRequest<Buffer> request = client.getAbs(discoveryUrl);
         if (!filters.isEmpty()) {
@@ -443,7 +449,7 @@ public class OidcCommonUtils {
                 filter.filter(request, null, requestProps);
             }
         }
-        return request.send().onItem().transform(resp -> {
+        return sendRequest(vertx, request, blockingDnsLookup).onItem().transform(resp -> {
             if (resp.statusCode() == 200) {
                 return resp.bodyAsJsonObject();
             } else {
@@ -535,5 +541,38 @@ public class OidcCommonUtils {
             return combined;
         }
 
+    }
+
+    public static Uni<HttpResponse<Buffer>> sendRequest(io.vertx.core.Vertx vertx, HttpRequest<Buffer> request,
+            boolean blockingDnsLookup) {
+        if (blockingDnsLookup) {
+            return sendRequest(new Vertx(vertx), request, true);
+        } else {
+            return request.send();
+        }
+    }
+
+    public static Uni<HttpResponse<Buffer>> sendRequest(Vertx vertx, HttpRequest<Buffer> request, boolean blockingDnsLookup) {
+        if (blockingDnsLookup) {
+            return vertx.executeBlocking(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    try {
+                        // cache DNS lookup
+                        InetAddress.getByName(request.host());
+                    } catch (UnknownHostException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return null;
+                }
+            }).flatMap(new Function<Void, Uni<? extends HttpResponse<Buffer>>>() {
+                @Override
+                public Uni<? extends HttpResponse<Buffer>> apply(Void unused) {
+                    return request.send();
+                }
+            });
+        } else {
+            return request.send();
+        }
     }
 }

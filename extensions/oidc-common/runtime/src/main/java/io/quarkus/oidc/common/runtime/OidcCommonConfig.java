@@ -75,6 +75,13 @@ public class OidcCommonConfig {
     public Duration connectionTimeout = Duration.ofSeconds(10);
 
     /**
+     * Whether DNS lookup should be performed on the worker thread.
+     * Use this option when you can see logged warnings about blocked Vert.x event loop by HTTP requests to OIDC server.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean useBlockingDnsLookup;
+
+    /**
      * The maximum size of the connection pool used by the WebClient.
      */
     @ConfigItem

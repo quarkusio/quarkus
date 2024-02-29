@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -15,7 +16,6 @@ import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
@@ -34,7 +34,6 @@ public class UpxCompressionBuildStep {
      */
     private static final String PATH = "PATH";
 
-    @BuildStep(onlyIf = NativeBuild.class)
     public void compress(NativeConfig nativeConfig, NativeImageRunnerBuildItem nativeImageRunner,
             NativeImageBuildItem image,
             BuildProducer<UpxCompressedBuildItem> upxCompressedProducer,
@@ -70,11 +69,13 @@ public class UpxCompressionBuildStep {
     }
 
     private boolean runUpxFromHost(File upx, File executable, NativeConfig nativeConfig) {
-        String level = getCompressionLevel(nativeConfig.compression().level().getAsInt());
         List<String> extraArgs = nativeConfig.compression().additionalArgs().orElse(Collections.emptyList());
-        List<String> args = Stream.concat(
-                Stream.concat(Stream.of(upx.getAbsolutePath(), level), extraArgs.stream()),
+        List<String> args = Stream.of(
+                Stream.of(upx.getAbsolutePath()),
+                nativeConfig.compression().level().stream().mapToObj(this::getCompressionLevel),
+                extraArgs.stream(),
                 Stream.of(executable.getAbsolutePath()))
+                .flatMap(Function.identity())
                 .collect(Collectors.toList());
         log.infof("Executing %s", String.join(" ", args));
         final ProcessBuilder processBuilder = new ProcessBuilder(args)
@@ -104,7 +105,6 @@ public class UpxCompressionBuildStep {
 
     private boolean runUpxInContainer(NativeImageBuildItem nativeImage, NativeConfig nativeConfig,
             String effectiveBuilderImage) {
-        String level = getCompressionLevel(nativeConfig.compression().level().getAsInt());
         List<String> extraArgs = nativeConfig.compression().additionalArgs().orElse(Collections.emptyList());
 
         List<String> commandLine = new ArrayList<>();
@@ -140,7 +140,9 @@ public class UpxCompressionBuildStep {
                 volumeOutputPath + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH + ":z");
 
         commandLine.add(effectiveBuilderImage);
-        commandLine.add(level);
+        if (nativeConfig.compression().level().isPresent()) {
+            commandLine.add(getCompressionLevel(nativeConfig.compression().level().getAsInt()));
+        }
         commandLine.addAll(extraArgs);
 
         commandLine.add(nativeImage.getPath().toFile().getName());

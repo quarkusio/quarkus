@@ -2,6 +2,7 @@ package io.quarkus.smallrye.graphql.runtime.spi.datafetcher;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 
 import jakarta.validation.ConstraintViolationException;
 
@@ -49,6 +50,9 @@ public abstract class AbstractAsyncDataFetcher<K, T> extends AbstractDataFetcher
                                 deactivate(requestContext);
                             });
                             if (throwable != null) {
+                                if (throwable instanceof ExecutionException && throwable.getCause() != null) {
+                                    throwable = throwable.getCause();
+                                }
                                 eventEmitter.fireOnDataFetchError(c, throwable);
                                 if (throwable instanceof GraphQLException) {
                                     GraphQLException graphQLException = (GraphQLException) throwable;

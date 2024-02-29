@@ -27,13 +27,14 @@ With this extension, you can retrieve the managed instance of Vert.x using eithe
 ----
 @ApplicationScoped
 public class MyBean {
-// Field injection
-@Inject Vertx vertx;
 
-// Constructor injection
-MyBean(Vertx vertx) {
-    // ...
-}
+    // Field injection
+    @Inject Vertx vertx;
+
+    // Constructor injection
+    MyBean(Vertx vertx) {
+        // ...
+    }
 
 }
 ----

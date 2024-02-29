@@ -203,8 +203,8 @@ public class PathMatchingHttpSecurityPolicyTest {
     public void testMiscellaneousPaths() {
         // /api/baz with segment indicating version shouldn't match /api/baz path policy
         assurePath("/api/baz;v=1.1", 200);
-        // /api/baz/ is different resource than secured /api/baz, therefore request should succeed
-        assurePath("/api/baz/", 200);
+        // /api/baz/ is different resource than secured /api/baz, but we secure both when there is not more specific exact path pattern
+        assurePath("/api/baz/", 401);
     }
 
     @Test

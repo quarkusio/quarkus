@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -11,6 +12,8 @@ import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
+import jakarta.persistence.AttributeConverter;
+import jakarta.transaction.TransactionManager;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -31,6 +34,7 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.DotNames;
@@ -42,12 +46,16 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
+import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
+import io.quarkus.hibernate.orm.runtime.RequestScopedStatelessSessionHolder;
 import io.quarkus.hibernate.orm.runtime.TransactionSessions;
+import io.quarkus.hibernate.orm.runtime.cdi.QuarkusArcBeanContainer;
 
 @BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public class HibernateOrmCdiProcessor {
@@ -182,7 +190,8 @@ public class HibernateOrmCdiProcessor {
                             .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
                             .done());
 
-            if (capabilities.isPresent(Capability.TRANSACTIONS)) {
+            if (capabilities.isPresent(Capability.TRANSACTIONS)
+                    && capabilities.isMissing(Capability.HIBERNATE_REACTIVE)) {
                 // Do register a Session/EntityManager bean only if JTA is available
                 // Note that the Hibernate Reactive extension excludes JTA intentionally
                 syntheticBeanBuildItemBuildProducer
@@ -222,7 +231,8 @@ public class HibernateOrmCdiProcessor {
                             .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
                             .done());
 
-            if (capabilities.isPresent(Capability.TRANSACTIONS)) {
+            if (capabilities.isPresent(Capability.TRANSACTIONS)
+                    && capabilities.isMissing(Capability.HIBERNATE_REACTIVE)) {
                 // Do register a Session/EntityManager bean only if JTA is available
                 // Note that the Hibernate Reactive extension excludes JTA intentionally
                 syntheticBeanBuildItemBuildProducer
@@ -243,6 +253,40 @@ public class HibernateOrmCdiProcessor {
                                 .done());
             }
         }
+    }
+
+    @BuildStep
+    void registerBeans(HibernateOrmConfig hibernateOrmConfig,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            Capabilities capabilities,
+            CombinedIndexBuildItem combinedIndex,
+            List<PersistenceUnitDescriptorBuildItem> descriptors,
+            JpaModelBuildItem jpaModel) {
+        if (!HibernateOrmProcessor.hasEntities(jpaModel)) {
+            return;
+        }
+
+        List<Class<?>> unremovableClasses = new ArrayList<>();
+        unremovableClasses.add(QuarkusArcBeanContainer.class);
+
+        if (capabilities.isMissing(Capability.HIBERNATE_REACTIVE)) {
+            // The following beans only make sense for Hibernate ORM, not for Hibernate Reactive
+
+            if (capabilities.isPresent(Capability.TRANSACTIONS)) {
+                unremovableClasses.add(TransactionManager.class);
+                unremovableClasses.add(TransactionSessions.class);
+            }
+            unremovableClasses.add(RequestScopedSessionHolder.class);
+            unremovableClasses.add(RequestScopedStatelessSessionHolder.class);
+        }
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                .addBeanClasses(unremovableClasses.toArray(new Class<?>[unremovableClasses.size()]))
+                .build());
+
+        // Some user-injectable beans are retrieved programmatically and shouldn't be removed
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(AttributeConverter.class));
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(jpaModel.getPotentialCdiBeanClassNames()));
     }
 
     @BuildStep

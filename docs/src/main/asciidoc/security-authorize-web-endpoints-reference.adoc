@@ -65,15 +65,41 @@ quarkus.http.auth.permission.roles1.policy=role-policy1
 ----
 <1> This permission references the default built-in `permit` policy to allow `GET` methods to `/public`.
 In this case, the demonstrated setting would not affect this example because this request is allowed anyway.
-<2> This permission references the built-in `deny` policy for `/forbidden`.
+<2> This permission references the built-in `deny` policy for both `/forbidden` and `/forbidden/` paths.
 It is an exact path match because it does not end with `*`.
 <3> This permission set references the previously defined policy.
 `roles1` is an example name; you can call the permission sets whatever you want.
 
-[WARNING]
+[IMPORTANT]
 ====
-The exact path `/forbidden` in the example will not secure the `/forbidden/` path.
-It is necessary to add a new exact path for the `/forbidden/` path to ensure proper security coverage.
+The exact path pattern `/forbidden` in the example above also secures the `/forbidden/` path.
+This way, the `forbidden` endpoint in the example below is secured by the `deny1` permission.
+
+[source,java]
+----
+package org.acme.crud;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("/forbidden")
+public class ForbiddenResource {
+    @GET
+    public String forbidden() { <1>
+        return "No!";
+    }
+}
+----
+<1> Both `/forbidden` and `/forbidden/` paths need to be secured in order to secure the `forbidden` endpoint.
+
+If you need to permit access to the `/forbidden/` path, please add new permission with more specific exact path like in the example below:
+
+[source,properties]
+----
+quarkus.http.auth.permission.permit1.paths=/forbidden/ <1>
+quarkus.http.auth.permission.permit1.policy=permit
+----
+<1> The `/forbidden/` path is not secured.
 ====
 
 [[custom-http-security-policy]]

@@ -81,6 +81,42 @@ The resulting digest is used as a key for AES-256 encryption of the cookie value
 The cookie contains an expiry time as part of the encrypted value, so all nodes in the cluster must have their clocks synchronized.
 At one-minute intervals, a new cookie gets generated with an updated expiry time if the session is in use.
 
+To get started with form authentication, you should have similar settings as described in xref:security-basic-authentication-howto.adoc[Enable Basic authentication] and property `quarkus.http.auth.form.enabled` must be set to `true`.
+
+Simple `application.properties` with form-base authentication can look similar to this:
+[source,properties]
+----
+quarkus.http.auth.form.enabled=true
+
+quarkus.http.auth.form.login-page=login.html
+quarkus.http.auth.form.landing-page=hello
+quarkus.http.auth.form.error-page=
+
+# Define testing user
+quarkus.security.users.embedded.enabled=true
+quarkus.security.users.embedded.plain-text=true
+quarkus.security.users.embedded.users.alice=alice 
+quarkus.security.users.embedded.roles.alice=user
+----
+
+[IMPORTANT]
+====
+Configuring user names, secrets, and roles in the application.properties file is appropriate only for testing scenarios. For securing a production application, it is crucial to use a database or LDAP to store this information. For more information you can take a look at xref:security-jpa.adoc[Quarkus Security with Jakarta Persistence] or other mentioned in xref:security-basic-authentication-howto.adoc[Enable Basic authentication].
+====
+
+and application login page will contain HTML form similar to this:
+
+[source,html]
+----
+<form action="/j_security_check" method="post">
+    <label>Username</label>
+    <input type="text" placeholder="Username" name="j_username" required>
+    <label>Password</label>
+    <input type="password" placeholder="Password" name="j_password" required>
+    <button type="submit">Login</button>
+</form>
+----
+
 With single-page applications (SPA), you typically want to avoid redirects by removing default page paths, as shown in the following example:
 
 [source,properties]

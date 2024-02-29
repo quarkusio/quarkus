@@ -12,6 +12,8 @@ import io.smallrye.config.ConfigMapping;
 public interface WebSocketRuntimeConfig {
 
     /**
+     * TODO Not implemented yet.
+     *
      * The default timeout to complete processing of a message.
      */
     Optional<Duration> timeout();

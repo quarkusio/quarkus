@@ -2,7 +2,6 @@ package io.quarkus.websockets.next.runtime;
 
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 
@@ -13,22 +12,21 @@ import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 
 /**
- * Used to limit concurrent invocations. Endpoint callbacks may not be invoked concurrently.
+ * Used to limit concurrent invocations.
  */
 class ConcurrencyLimiter {
 
     private static final Logger LOG = Logger.getLogger(ConcurrencyLimiter.class);
 
-    private final Context context;
     private final WebSocketServerConnection connection;
-
-    private final Queue<Runnable> queue;
+    private final Queue<Action> queue;
     private final AtomicLong uncompleted;
+    private final AtomicLong queueCounter;
 
-    ConcurrencyLimiter(Context context, WebSocketServerConnection connection) {
-        this.context = context;
+    ConcurrencyLimiter(WebSocketServerConnection connection) {
         this.connection = connection;
         this.uncompleted = new AtomicLong();
+        this.queueCounter = new AtomicLong();
         this.queue = Queues.createMpscQueue();
     }
 
@@ -39,7 +37,7 @@ class ConcurrencyLimiter {
      * @param promise
      * @return a new callback to complete the given promise
      */
-    Consumer<Void> newComplete(Promise<Void> promise) {
+    PromiseComplete newComplete(Promise<Void> promise) {
         return new PromiseComplete(promise);
     }
 
@@ -47,25 +45,27 @@ class ConcurrencyLimiter {
      * Run or queue up the given action.
      *
      * @param action
+     * @param context
      */
-    void run(Runnable action) {
+    void run(Context context, Runnable action) {
         if (uncompleted.compareAndSet(0, 1)) {
             LOG.debugf("Run action: %s", connection);
             action.run();
         } else {
-            LOG.debugf("Action queued: %s", connection);
-            queue.offer(action);
+            long queueIndex = queueCounter.incrementAndGet();
+            LOG.debugf("Action queued as %s: %s", queueIndex, connection);
+            queue.offer(new Action(queueIndex, action, context));
             // We need to make sure that at least one completion is in flight
             if (uncompleted.getAndIncrement() == 0) {
-                LOG.debugf("Run action: %s", connection);
-                action = queue.poll();
-                assert action != null;
-                action.run();
+                Action queuedAction = queue.poll();
+                assert queuedAction != null;
+                LOG.debugf("Run action %s from queue: %s", queuedAction.queueIndex, connection);
+                queuedAction.runnable.run();
             }
         }
     }
 
-    class PromiseComplete implements Consumer<Void> {
+    class PromiseComplete {
 
         final Promise<Void> promise;
 
@@ -73,25 +73,30 @@ class ConcurrencyLimiter {
             this.promise = promise;
         }
 
-        @Override
-        public void accept(Void t) {
+        void failure(Throwable t) {
+            complete();
+        }
+
+        void complete() {
             try {
                 promise.complete();
             } finally {
                 if (uncompleted.decrementAndGet() == 0) {
                     return;
                 }
-                Runnable action = queue.poll();
-                assert action != null;
-                LOG.debugf("Run action from queue: %s", connection);
-                context.runOnContext(new Handler<Void>() {
+                Action queuedAction = queue.poll();
+                assert queuedAction != null;
+                LOG.debugf("Run action %s from queue: %s", queuedAction.queueIndex, connection);
+                queuedAction.context.runOnContext(new Handler<Void>() {
                     @Override
                     public void handle(Void event) {
-                        action.run();
+                        queuedAction.runnable.run();
                     }
                 });
             }
         }
+    }
 
+    record Action(long queueIndex, Runnable runnable, Context context) {
     }
 }

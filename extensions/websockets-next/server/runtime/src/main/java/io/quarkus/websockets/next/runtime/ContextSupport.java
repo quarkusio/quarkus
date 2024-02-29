@@ -1,0 +1,64 @@
+package io.quarkus.websockets.next.runtime;
+
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.ManagedContext;
+import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
+import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.runtime.WebSocketSessionContext.SessionContextState;
+import io.smallrye.common.vertx.VertxContext;
+import io.vertx.core.Context;
+
+public class ContextSupport {
+
+    private static final Logger LOG = Logger.getLogger(ContextSupport.class);
+
+    private final SessionContextState sessionContextState;
+    private final WebSocketSessionContext sessionContext;
+    private final ManagedContext requestContext;
+
+    ContextSupport(SessionContextState sessionContextState, WebSocketSessionContext sessionContext,
+            ManagedContext requestContext) {
+        this.sessionContextState = sessionContextState;
+        this.sessionContext = sessionContext;
+        this.requestContext = requestContext;
+    }
+
+    void start() {
+        LOG.debug("Start contexts");
+        startSession();
+        // Activate a new request context
+        requestContext.activate();
+    }
+
+    void startSession() {
+        // Activate the captured session context
+        sessionContext.activate(sessionContextState);
+    }
+
+    void end(boolean terminateSession) {
+        LOG.debug("End contexts");
+        requestContext.terminate();
+        if (terminateSession) {
+            // OnClose - terminate the session context
+            endSession();
+        } else {
+            sessionContext.deactivate();
+        }
+    }
+
+    void endSession() {
+        sessionContext.terminate();
+    }
+
+    static Context createNewDuplicatedContext(Context context, WebSocketServerConnection connection) {
+        Context duplicated = VertxContext.createNewDuplicatedContext(context);
+        VertxContextSafetyToggle.setContextSafe(duplicated, true);
+        // We need to store the connection in the duplicated context
+        // It's used to initialize the synthetic bean later on
+        duplicated.putLocal(WebSocketServerRecorder.WEB_SOCKET_CONN_KEY, connection);
+        LOG.debugf("New vertx duplicated context created: %s", duplicated);
+        return duplicated;
+    }
+
+}

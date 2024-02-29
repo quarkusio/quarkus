@@ -13,11 +13,11 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
-import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.websockets.next.WebSocketRuntimeConfig;
 import io.quarkus.websockets.next.WebSocketServerConnection;
 import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint.MessageType;
+import io.quarkus.websockets.next.runtime.WebSocketSessionContext.SessionContextState;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
@@ -34,7 +34,7 @@ public class WebSocketServerRecorder {
 
     private static final Logger LOG = Logger.getLogger(WebSocketServerRecorder.class);
 
-    private static final String WEB_SOCKET_CONN_KEY = WebSocketServerConnection.class.getName();
+    static final String WEB_SOCKET_CONN_KEY = WebSocketServerConnection.class.getName();
 
     private final WebSocketRuntimeConfig config;
 
@@ -69,45 +69,47 @@ public class WebSocketServerRecorder {
             public void handle(RoutingContext ctx) {
                 Future<ServerWebSocket> future = ctx.request().toWebSocket();
                 future.onSuccess(ws -> {
-                    // Create a new duplicated context
-                    Context context = VertxContext
-                            .createNewDuplicatedContext(VertxCoreRecorder.getVertx().get().getOrCreateContext());
-                    VertxContextSafetyToggle.setContextSafe(context, true);
+                    Context context = VertxCoreRecorder.getVertx().get().getOrCreateContext();
 
                     WebSocketServerConnection connection = new WebSocketServerConnectionImpl(endpointClass, ws,
                             connectionManager, Map.copyOf(ctx.pathParams()), codecs);
+                    connectionManager.add(endpointClass, connection);
                     LOG.debugf("WebSocket connnected: %s", connection);
 
-                    // This is a bit weird but we need to store the connection to initialize the bean later on
-                    context.putLocal(WEB_SOCKET_CONN_KEY, connection);
-                    connectionManager.add(endpointClass, connection);
+                    // Initialize and capture the session context state that will be activated
+                    // during message processing
+                    WebSocketSessionContext sessionContext = sessionContext(container);
+                    SessionContextState sessionContextState = sessionContext.initializeContextState();
+                    ContextSupport contextSupport = new ContextSupport(sessionContextState, sessionContext(container),
+                            container.requestContext());
 
                     // Create an endpoint that delegates callbacks to the @WebSocket bean
-                    WebSocketEndpoint endpoint = createEndpoint(endpointClass, context, connection, codecs, config);
-                    WebSocketSessionContext sessionContext = sessionContext(container);
+                    WebSocketEndpoint endpoint = createEndpoint(endpointClass, context, connection, codecs, config,
+                            contextSupport);
 
                     // The processor is only needed if Multi is consumed by the @OnMessage callback
                     BroadcastProcessor<Object> broadcastProcessor = endpoint.consumedMultiType() != null
                             ? BroadcastProcessor.create()
                             : null;
 
-                    // Invoke @OnOpen callback
-                    // Note we always run on the duplicated context and the endpoint is responsible to make the switch if blocking/virtualThread
-                    context.runOnContext(new Handler<Void>() {
+                    // NOTE: we always invoke callbacks (onOpen, onMessage, onClose) on a new duplicated context
+                    // and the endpoint is responsible to make the switch if blocking/virtualThread
+
+                    Context onOpenContext = ContextSupport.createNewDuplicatedContext(context, connection);
+                    onOpenContext.runOnContext(new Handler<Void>() {
                         @Override
                         public void handle(Void event) {
-                            sessionContext.activate();
-                            endpoint.onOpen(context).onComplete(r -> {
+                            endpoint.onOpen().onComplete(r -> {
                                 if (r.succeeded()) {
                                     LOG.debugf("@OnOpen callback completed: %s", connection);
                                     if (broadcastProcessor != null) {
                                         // If Multi is consumed we need to invoke @OnMessage callback eagerly
                                         // but after @OnOpen completes
                                         Multi<Object> multi = broadcastProcessor.onCancellation().call(connection::close);
-                                        context.runOnContext(new Handler<Void>() {
+                                        onOpenContext.runOnContext(new Handler<Void>() {
                                             @Override
                                             public void handle(Void event) {
-                                                endpoint.onMessage(context, multi).onComplete(r -> {
+                                                endpoint.onMessage(multi).onComplete(r -> {
                                                     if (r.succeeded()) {
                                                         LOG.debugf("@OnMessage callback consuming Multi completed: %s",
                                                                 connection);
@@ -129,8 +131,8 @@ public class WebSocketServerRecorder {
 
                     if (broadcastProcessor == null) {
                         // Multi not consumed - invoke @OnMessage callback for each message received
-                        messageHandlers(endpoint, ws, context, m -> {
-                            endpoint.onMessage(context, m).onComplete(r -> {
+                        messageHandlers(connection, endpoint, ws, context, m -> {
+                            endpoint.onMessage(m).onComplete(r -> {
                                 if (r.succeeded()) {
                                     LOG.debugf("@OnMessage callback consumed binary message: %s", connection);
                                 } else {
@@ -139,7 +141,7 @@ public class WebSocketServerRecorder {
                                 }
                             });
                         }, m -> {
-                            endpoint.onMessage(context, m).onComplete(r -> {
+                            endpoint.onMessage(m).onComplete(r -> {
                                 if (r.succeeded()) {
                                     LOG.debugf("@OnMessage callback consumed text message: %s", connection);
                                 } else {
@@ -147,32 +149,35 @@ public class WebSocketServerRecorder {
                                             connection);
                                 }
                             });
-                        });
+                        }, true);
                     } else {
                         // Multi consumed - forward message to subcribers
-                        messageHandlers(endpoint, ws, context, m -> {
+                        messageHandlers(connection, endpoint, ws, onOpenContext, m -> {
+                            contextSupport.start();
                             broadcastProcessor.onNext(endpoint.decodeMultiItem(m));
                             LOG.debugf("Binary message >> Multi: %s", connection);
+                            contextSupport.end(false);
                         }, m -> {
+                            contextSupport.start();
                             broadcastProcessor.onNext(endpoint.decodeMultiItem(m));
                             LOG.debugf("Text message >> Multi: %s", connection);
-                        });
+                            contextSupport.end(false);
+                        }, false);
                     }
 
                     ws.closeHandler(new Handler<Void>() {
                         @Override
                         public void handle(Void event) {
-                            context.runOnContext(new Handler<Void>() {
+                            ContextSupport.createNewDuplicatedContext(context, connection).runOnContext(new Handler<Void>() {
                                 @Override
                                 public void handle(Void event) {
-                                    endpoint.onClose(context).onComplete(r -> {
+                                    endpoint.onClose().onComplete(r -> {
                                         if (r.succeeded()) {
                                             LOG.debugf("@OnClose callback completed: %s", connection);
                                         } else {
                                             LOG.errorf(r.cause(), "Unable to complete @OnClose callback: %s", connection);
                                         }
                                         connectionManager.remove(endpointClass, connection);
-                                        sessionContext.terminate();
                                     });
                                 }
                             });
@@ -183,13 +188,16 @@ public class WebSocketServerRecorder {
         };
     }
 
-    private void messageHandlers(WebSocketEndpoint endpoint, ServerWebSocket ws, Context context, Consumer<Buffer> binaryAction,
-            Consumer<String> textAction) {
+    private void messageHandlers(WebSocketServerConnection connection, WebSocketEndpoint endpoint, ServerWebSocket ws,
+            Context context, Consumer<Buffer> binaryAction, Consumer<String> textAction, boolean newDuplicatedContext) {
         if (endpoint.consumedMessageType() == MessageType.BINARY) {
             ws.binaryMessageHandler(new Handler<Buffer>() {
                 @Override
                 public void handle(Buffer message) {
-                    context.runOnContext(new Handler<Void>() {
+                    Context duplicatedContext = newDuplicatedContext
+                            ? ContextSupport.createNewDuplicatedContext(context, connection)
+                            : context;
+                    duplicatedContext.runOnContext(new Handler<Void>() {
                         @Override
                         public void handle(Void event) {
                             binaryAction.accept(message);
@@ -201,7 +209,10 @@ public class WebSocketServerRecorder {
             ws.textMessageHandler(new Handler<String>() {
                 @Override
                 public void handle(String message) {
-                    context.runOnContext(new Handler<Void>() {
+                    Context duplicatedContext = newDuplicatedContext
+                            ? ContextSupport.createNewDuplicatedContext(context, connection)
+                            : context;
+                    duplicatedContext.runOnContext(new Handler<Void>() {
                         @Override
                         public void handle(Void event) {
                             textAction.accept(message);
@@ -213,7 +224,7 @@ public class WebSocketServerRecorder {
     }
 
     private WebSocketEndpoint createEndpoint(String endpointClassName, Context context, WebSocketServerConnection connection,
-            Codecs codecs, WebSocketRuntimeConfig config) {
+            Codecs codecs, WebSocketRuntimeConfig config, ContextSupport contextSupport) {
         try {
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
             if (cl == null) {
@@ -223,16 +234,16 @@ public class WebSocketServerRecorder {
             Class<? extends WebSocketEndpoint> endpointClazz = (Class<? extends WebSocketEndpoint>) cl
                     .loadClass(endpointClassName);
             WebSocketEndpoint endpoint = (WebSocketEndpoint) endpointClazz
-                    .getDeclaredConstructor(Context.class, WebSocketServerConnection.class, Codecs.class,
-                            WebSocketRuntimeConfig.class)
-                    .newInstance(context, connection, codecs, config);
+                    .getDeclaredConstructor(WebSocketServerConnection.class, Codecs.class,
+                            WebSocketRuntimeConfig.class, ContextSupport.class)
+                    .newInstance(connection, codecs, config, contextSupport);
             return endpoint;
         } catch (Exception e) {
             throw new WebSocketServerException("Unable to create endpoint instance: " + endpointClassName, e);
         }
     }
 
-    private WebSocketSessionContext sessionContext(ArcContainer container) {
+    private static WebSocketSessionContext sessionContext(ArcContainer container) {
         for (InjectableContext injectableContext : container.getContexts(SessionScoped.class)) {
             if (WebSocketSessionContext.class.equals(injectableContext.getClass())) {
                 return (WebSocketSessionContext) injectableContext;

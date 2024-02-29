@@ -60,17 +60,17 @@ import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.deployment.WebSocketEndpointBuildItem.Callback;
 import io.quarkus.websockets.next.runtime.Codecs;
 import io.quarkus.websockets.next.runtime.ConnectionManager;
-import io.quarkus.websockets.next.runtime.DefaultWebSocketEndpoint;
+import io.quarkus.websockets.next.runtime.ContextSupport;
 import io.quarkus.websockets.next.runtime.JsonTextMessageCodec;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint.ExecutionModel;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint.MessageType;
+import io.quarkus.websockets.next.runtime.WebSocketEndpointBase;
 import io.quarkus.websockets.next.runtime.WebSocketServerRecorder;
 import io.quarkus.websockets.next.runtime.WebSocketSessionContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniCreate;
-import io.vertx.core.Context;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -293,21 +293,22 @@ public class WebSocketServerProcessor {
      * The generated endpoint class looks like:
      *
      * <pre>
-     * public class Echo_WebSocketEndpoint extends DefaultWebSocketEndpoint {
+     * public class Echo_WebSocketEndpoint extends WebSocketEndpointBase {
      *
      *     public WebSocket.ExecutionMode executionMode() {
      *         return WebSocket.ExecutionMode.SERIAL;
      *     }
      *
-     *     public Echo_WebSocketEndpoint(Context context, WebSocketServerConnection connection, Codecs codecs) {
-     *         super(context, connection, codecs);
+     *     public Echo_WebSocketEndpoint(WebSocketServerConnection connection, Codecs codecs,
+     *             WebSocketRuntimeConfig config, ContextSupport contextSupport) {
+     *         super(context, connection, codecs, config, contextActivator);
      *     }
      *
      *     public WebSocketEndpoint.MessageType consumedMessageType() {
      *         return MessageType.TEXT;
      *     }
      *
-     *     public Uni doOnMessage(Context context, Object message) {
+     *     public Uni doOnMessage(Object message) {
      *         Uni uni = ((Echo) super.beanInstance("MTd91f3oxHtG8gnznR7XcZBCLdE")).echo((String) message);
      *         if (uni != null) {
      *             // The lambda is implemented as a generated function: Echo_WebSocketEndpoint$$function$$1
@@ -340,14 +341,14 @@ public class WebSocketServerProcessor {
                 + ENDPOINT_SUFFIX;
 
         ClassCreator endpointCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .superClass(DefaultWebSocketEndpoint.class)
+                .superClass(WebSocketEndpointBase.class)
                 .build();
 
-        MethodCreator constructor = endpointCreator.getConstructorCreator(Context.class, WebSocketServerConnection.class,
-                Codecs.class, WebSocketRuntimeConfig.class);
+        MethodCreator constructor = endpointCreator.getConstructorCreator(WebSocketServerConnection.class,
+                Codecs.class, WebSocketRuntimeConfig.class, ContextSupport.class);
         constructor.invokeSpecialMethod(
-                MethodDescriptor.ofConstructor(DefaultWebSocketEndpoint.class, Context.class, WebSocketServerConnection.class,
-                        Codecs.class, WebSocketRuntimeConfig.class),
+                MethodDescriptor.ofConstructor(WebSocketEndpointBase.class, WebSocketServerConnection.class,
+                        Codecs.class, WebSocketRuntimeConfig.class, ContextSupport.class),
                 constructor.getThis(), constructor.getMethodParam(0), constructor.getMethodParam(1),
                 constructor.getMethodParam(2), constructor.getMethodParam(3));
         constructor.returnNull();
@@ -374,10 +375,10 @@ public class WebSocketServerProcessor {
         }
 
         if (endpoint.onOpen != null) {
-            MethodCreator doOnOpen = endpointCreator.getMethodCreator("doOnOpen", Uni.class, Context.class, Object.class);
+            MethodCreator doOnOpen = endpointCreator.getMethodCreator("doOnOpen", Uni.class, Object.class);
             // Foo foo = beanInstance("foo");
             ResultHandle beanInstance = doOnOpen.invokeSpecialMethod(
-                    MethodDescriptor.ofMethod(DefaultWebSocketEndpoint.class, "beanInstance", Object.class, String.class),
+                    MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
                     doOnOpen.getThis(), doOnOpen.load(endpoint.bean.getIdentifier()));
             // Call the business method
             ResultHandle ret = doOnOpen.invokeVirtualMethod(MethodDescriptor.of(endpoint.onOpen.method), beanInstance);
@@ -389,15 +390,15 @@ public class WebSocketServerProcessor {
         }
 
         if (endpoint.onMessage != null) {
-            MethodCreator doOnMessage = endpointCreator.getMethodCreator("doOnMessage", Uni.class, Context.class, Object.class);
+            MethodCreator doOnMessage = endpointCreator.getMethodCreator("doOnMessage", Uni.class, Object.class);
             // Foo foo = beanInstance("foo");
             ResultHandle beanInstance = doOnMessage.invokeSpecialMethod(
-                    MethodDescriptor.ofMethod(DefaultWebSocketEndpoint.class, "beanInstance", Object.class, String.class),
+                    MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
                     doOnMessage.getThis(), doOnMessage.load(endpoint.bean.getIdentifier()));
             ResultHandle[] args;
             if (endpoint.onMessage.acceptsMessage()) {
                 args = new ResultHandle[] { decodeMessage(doOnMessage, endpoint.onMessage.acceptsBinaryMessage(),
-                        endpoint.onMessage.method.parameterType(0), doOnMessage.getMethodParam(1), endpoint.onMessage) };
+                        endpoint.onMessage.method.parameterType(0), doOnMessage.getMethodParam(0), endpoint.onMessage) };
             } else {
                 args = new ResultHandle[] {};
             }
@@ -412,10 +413,10 @@ public class WebSocketServerProcessor {
         }
 
         if (endpoint.onClose != null) {
-            MethodCreator doOnClose = endpointCreator.getMethodCreator("doOnClose", Uni.class, Context.class, Object.class);
+            MethodCreator doOnClose = endpointCreator.getMethodCreator("doOnClose", Uni.class, Object.class);
             // Foo foo = beanInstance("foo");
             ResultHandle beanInstance = doOnClose.invokeSpecialMethod(
-                    MethodDescriptor.ofMethod(DefaultWebSocketEndpoint.class, "beanInstance", Object.class, String.class),
+                    MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
                     doOnClose.getThis(), doOnClose.load(endpoint.bean.getIdentifier()));
             // Call the business method
             ResultHandle ret = doOnClose.invokeVirtualMethod(MethodDescriptor.of(endpoint.onClose.method), beanInstance);
@@ -459,7 +460,7 @@ public class WebSocketServerProcessor {
                 // Try to use codecs
                 DotName inputCodec = callback.getInputCodec();
                 ResultHandle type = Types.getTypeHandle(method, valueType);
-                ResultHandle decoded = method.invokeSpecialMethod(MethodDescriptor.ofMethod(DefaultWebSocketEndpoint.class,
+                ResultHandle decoded = method.invokeSpecialMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                         "decodeBinary", Object.class, java.lang.reflect.Type.class, Buffer.class, Class.class),
                         method.getThis(), type,
                         value, inputCodec != null ? method.loadClass(inputCodec.toString()) : method.loadNull());
@@ -492,7 +493,7 @@ public class WebSocketServerProcessor {
                 // Try to use codecs
                 DotName inputCodec = callback.getInputCodec();
                 ResultHandle type = Types.getTypeHandle(method, valueType);
-                ResultHandle decoded = method.invokeSpecialMethod(MethodDescriptor.ofMethod(DefaultWebSocketEndpoint.class,
+                ResultHandle decoded = method.invokeSpecialMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                         "decodeText", Object.class, java.lang.reflect.Type.class, String.class, Class.class), method.getThis(),
                         type, value, inputCodec != null ? method.loadClass(inputCodec.toString()) : method.loadNull());
                 return decoded;
@@ -521,7 +522,7 @@ public class WebSocketServerProcessor {
                             callback.returnType().asParameterizedType().arguments().get(0),
                             funBytecode.getMethodParam(0), method.getThis(), callback);
                     funBytecode.returnValue(funBytecode.invokeSpecialMethod(
-                            MethodDescriptor.ofMethod(DefaultWebSocketEndpoint.class,
+                            MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                                     "sendBinary", Uni.class, Buffer.class, boolean.class),
                             method.getThis(), buffer,
                             funBytecode.load(callback.broadcast())));
@@ -540,11 +541,11 @@ public class WebSocketServerProcessor {
                 ResultHandle buffer = encodeBuffer(funBytecode, callback.returnType().asParameterizedType().arguments().get(0),
                         funBytecode.getMethodParam(0), method.getThis(), callback);
                 funBytecode.returnValue(funBytecode.invokeSpecialMethod(
-                        MethodDescriptor.ofMethod(DefaultWebSocketEndpoint.class,
+                        MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                                 "sendBinary", Uni.class, Buffer.class, boolean.class),
                         method.getThis(), buffer,
                         funBytecode.load(callback.broadcast())));
-                return method.invokeSpecialMethod(MethodDescriptor.ofMethod(DefaultWebSocketEndpoint.class,
+                return method.invokeSpecialMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                         "multiBinary", Uni.class, Multi.class, boolean.class, Function.class), method.getThis(),
                         value,
                         method.load(callback.broadcast()),
@@ -552,7 +553,7 @@ public class WebSocketServerProcessor {
             } else {
                 // return sendBinary(buffer,broadcast);
                 ResultHandle buffer = encodeBuffer(method, callback.returnType(), value, method.getThis(), callback);
-                return method.invokeSpecialMethod(MethodDescriptor.ofMethod(DefaultWebSocketEndpoint.class,
+                return method.invokeSpecialMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                         "sendBinary", Uni.class, Buffer.class, boolean.class), method.getThis(), buffer,
                         method.load(callback.broadcast()));
             }
@@ -575,7 +576,7 @@ public class WebSocketServerProcessor {
                     ResultHandle text = encodeText(funBytecode, callback.returnType().asParameterizedType().arguments().get(0),
                             funBytecode.getMethodParam(0), method.getThis(), callback);
                     funBytecode.returnValue(funBytecode.invokeSpecialMethod(
-                            MethodDescriptor.ofMethod(DefaultWebSocketEndpoint.class,
+                            MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                                     "sendText", Uni.class, String.class, boolean.class),
                             method.getThis(), text,
                             funBytecode.load(callback.broadcast())));
@@ -594,11 +595,11 @@ public class WebSocketServerProcessor {
                 ResultHandle text = encodeText(funBytecode, callback.returnType().asParameterizedType().arguments().get(0),
                         funBytecode.getMethodParam(0), method.getThis(), callback);
                 funBytecode.returnValue(funBytecode.invokeSpecialMethod(
-                        MethodDescriptor.ofMethod(DefaultWebSocketEndpoint.class,
+                        MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                                 "sendText", Uni.class, String.class, boolean.class),
                         method.getThis(), text,
                         funBytecode.load(callback.broadcast())));
-                return method.invokeSpecialMethod(MethodDescriptor.ofMethod(DefaultWebSocketEndpoint.class,
+                return method.invokeSpecialMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                         "multiText", Uni.class, Multi.class, boolean.class, Function.class), method.getThis(),
                         value,
                         method.load(callback.broadcast()),
@@ -606,7 +607,7 @@ public class WebSocketServerProcessor {
             } else {
                 // return sendText(text,broadcast);
                 ResultHandle text = encodeText(method, callback.returnType(), value, method.getThis(), callback);
-                return method.invokeSpecialMethod(MethodDescriptor.ofMethod(DefaultWebSocketEndpoint.class,
+                return method.invokeSpecialMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                         "sendText", Uni.class, String.class, boolean.class), method.getThis(), text,
                         method.load(callback.broadcast()));
             }
@@ -633,7 +634,7 @@ public class WebSocketServerProcessor {
         } else {
             // Try to use codecs
             DotName outputCodec = callback.getOutpuCodec();
-            buffer = method.invokeSpecialMethod(MethodDescriptor.ofMethod(DefaultWebSocketEndpoint.class,
+            buffer = method.invokeSpecialMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                     "encodeBinary", Buffer.class, Object.class, Class.class), defaultWebSocketEndpoint, value,
                     outputCodec != null ? method.loadClass(outputCodec.toString()) : method.loadNull());
         }
@@ -662,7 +663,7 @@ public class WebSocketServerProcessor {
         } else {
             // Try to use codecs
             DotName outputCodec = callback.getOutpuCodec();
-            text = method.invokeSpecialMethod(MethodDescriptor.ofMethod(DefaultWebSocketEndpoint.class,
+            text = method.invokeSpecialMethod(MethodDescriptor.ofMethod(WebSocketEndpointBase.class,
                     "encodeText", String.class, Object.class, Class.class), defaultWebSocketEndpoint, value,
                     outputCodec != null ? method.loadClass(outputCodec.toString()) : method.loadNull());
         }

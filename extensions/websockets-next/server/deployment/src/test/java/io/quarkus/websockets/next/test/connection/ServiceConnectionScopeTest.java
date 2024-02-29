@@ -64,7 +64,7 @@ public class ServiceConnectionScopeTest {
         @OnMessage
         public String onMessage(String message) {
             assertNotNull(Arc.container().getActiveContext(SessionScoped.class));
-            assertNull(Arc.container().getActiveContext(RequestScoped.class));
+            assertNotNull(Arc.container().getActiveContext(RequestScoped.class));
             assertNotNull(connection.id());
             return message.toUpperCase();
         }

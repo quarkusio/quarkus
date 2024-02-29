@@ -71,9 +71,8 @@ public class WebSocketSessionContext implements ManagedContext {
     @Override
     public ContextState activate(ContextState initialState) {
         if (initialState == null) {
-            SessionContextState state = new SessionContextState(new ComputingCacheContextInstances());
+            SessionContextState state = initializeContextState();
             currentContext().set(state);
-            fireIfNotNull(initializedEvent.get());
             return state;
         } else {
             if (initialState instanceof SessionContextState) {
@@ -169,6 +168,12 @@ public class WebSocketSessionContext implements ManagedContext {
         } else {
             throw new IllegalArgumentException("Invalid state implementation: " + state.getClass().getName());
         }
+    }
+
+    SessionContextState initializeContextState() {
+        SessionContextState state = new SessionContextState(new ComputingCacheContextInstances());
+        fireIfNotNull(initializedEvent.get());
+        return state;
     }
 
     private CurrentContext<SessionContextState> currentContext() {

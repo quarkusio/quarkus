@@ -8,7 +8,6 @@ metadata:
   - "web-socket"
   - "web-sockets"
   - "http"
-  guide: "https://quarkus.io/guides/websockets"
   categories:
   - "web"
   status: "preview"

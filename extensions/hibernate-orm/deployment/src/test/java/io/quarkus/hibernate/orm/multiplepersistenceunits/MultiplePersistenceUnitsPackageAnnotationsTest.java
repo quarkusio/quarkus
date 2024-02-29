@@ -75,7 +75,7 @@ public class MultiplePersistenceUnitsPackageAnnotationsTest {
 
         OtherUserInSubPackage savedOtherUserInSubPackage = usersEntityManager.find(OtherUserInSubPackage.class,
                 otherUserInSubPackage.getId());
-        assertEquals(savedOtherUserInSubPackage.getName(), savedOtherUserInSubPackage.getName());
+        assertEquals(otherUserInSubPackage.getName(), savedOtherUserInSubPackage.getName());
     }
 
     @Test

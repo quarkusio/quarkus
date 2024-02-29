@@ -2,11 +2,15 @@ package io.quarkus.websockets.next.test.signatures;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.net.URI;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
@@ -29,7 +33,7 @@ public class SignatureConsumingMultiTest {
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot(root -> {
-                root.addClasses(BiDirectional.class, WSClient.class);
+                root.addClasses(BiDirectional.class, WSClient.class, RequestScopedBean.class);
             });
 
     @Inject
@@ -59,6 +63,9 @@ public class SignatureConsumingMultiTest {
         @Inject
         WebSocketServerConnection connection;
 
+        @Inject
+        RequestScopedBean requestScopedBean;
+
         volatile Context context = null;
 
         @OnMessage
@@ -67,6 +74,7 @@ public class SignatureConsumingMultiTest {
             Context context = Vertx.currentContext();
             assertThat(context).isNotNull();
             assertThat(VertxContext.isOnDuplicatedContext()).isTrue();
+            String requestScopedBeanId = requestScopedBean.getId();
 
             assertThat(connection).isNotNull();
             if (this.context == null) {
@@ -75,9 +83,28 @@ public class SignatureConsumingMultiTest {
 
             return multi.map(s -> {
                 assertThat(this.context).isSameAs(Vertx.currentContext());
+                // For bi-directional streams we subscribe to the returned Multi during onOpen
+                // As a result the same duplicated context is used but a new request context is activated/terminated per each message processing
+                assertNotEquals(requestScopedBeanId, requestScopedBean.getId());
                 String id = connection.pathParam("id");
                 return "WS " + id + " received: " + s;
             });
+        }
+
+    }
+
+    @RequestScoped
+    public static class RequestScopedBean {
+
+        private String id;
+
+        @PostConstruct
+        void init() {
+            id = UUID.randomUUID().toString();
+        }
+
+        String getId() {
+            return id;
         }
 
     }

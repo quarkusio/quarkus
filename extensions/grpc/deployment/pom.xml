@@ -101,6 +101,11 @@
             <artifactId>quarkus-elytron-security-properties-file-deployment</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>me.escoffier.certs</groupId>
+            <artifactId>certificate-generator-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

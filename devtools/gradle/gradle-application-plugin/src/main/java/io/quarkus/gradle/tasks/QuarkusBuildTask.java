@@ -29,6 +29,7 @@ import io.quarkus.gradle.QuarkusPlugin;
 import io.quarkus.gradle.tasks.worker.BuildWorker;
 import io.quarkus.maven.dependency.GACTV;
 import io.smallrye.config.Expressions;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * Base class for the {@link QuarkusBuildDependencies}, {@link QuarkusBuildCacheableAppParts}, {@link QuarkusBuild} tasks
@@ -207,30 +208,29 @@ abstract class QuarkusBuildTask extends QuarkusTask {
         });
 
         ApplicationModel appModel = resolveAppModelForBuild();
-        Map<String, String> configMap = new HashMap<>();
-        EffectiveConfig effectiveConfig = extension().buildEffectiveConfiguration(appModel.getAppArtifact());
-        Expressions.withoutExpansion(() -> {
-            for (Map.Entry<String, String> entry : effectiveConfig.configMap().entrySet()) {
-                if (entry.getKey().startsWith("quarkus.")) {
-                    configMap.put(entry.getKey(), effectiveConfig.config().getRawValue(entry.getKey()));
-                }
-            }
+        SmallRyeConfig config = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).getConfig();
+        Map<String, String> quarkusProperties = Expressions.withoutExpansion(() -> {
+            Map<String, String> values = new HashMap<>();
+            config.getValues("quarkus", String.class, String.class)
+                    .forEach((key, value) -> values.put("quarkus." + key, value));
+            return values;
         });
 
         getLogger().info("Starting Quarkus application build for package type {}", packageType);
 
         if (getLogger().isEnabled(LogLevel.INFO)) {
             getLogger().info("Effective properties: {}",
-                    configMap.entrySet().stream()
+                    quarkusProperties.entrySet().stream()
                             .map(Object::toString)
                             .sorted()
                             .collect(Collectors.joining("\n    ", "\n    ", "")));
         }
 
-        WorkQueue workQueue = workQueue(configMap, () -> extension().buildForkOptions);
+        WorkQueue workQueue = workQueue(quarkusProperties, () -> extension().buildForkOptions);
 
         workQueue.submit(BuildWorker.class, params -> {
-            params.getBuildSystemProperties().putAll(extension().buildSystemProperties(appModel.getAppArtifact()));
+            params.getBuildSystemProperties()
+                    .putAll(extension().buildSystemProperties(appModel.getAppArtifact(), quarkusProperties));
             params.getBaseName().set(extension().finalName());
             params.getTargetDirectory().set(buildDir.toFile());
             params.getAppModel().set(appModel);

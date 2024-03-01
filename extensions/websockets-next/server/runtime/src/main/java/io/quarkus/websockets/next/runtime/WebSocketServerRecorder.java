@@ -80,7 +80,8 @@ public class WebSocketServerRecorder {
                     // during message processing
                     WebSocketSessionContext sessionContext = sessionContext(container);
                     SessionContextState sessionContextState = sessionContext.initializeContextState();
-                    ContextSupport contextSupport = new ContextSupport(sessionContextState, sessionContext(container),
+                    ContextSupport contextSupport = new ContextSupport(connection, sessionContextState,
+                            sessionContext(container),
                             container.requestContext());
 
                     // Create an endpoint that delegates callbacks to the @WebSocket bean

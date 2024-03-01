@@ -13,19 +13,22 @@ public class ContextSupport {
 
     private static final Logger LOG = Logger.getLogger(ContextSupport.class);
 
+    private final WebSocketServerConnection connection;
     private final SessionContextState sessionContextState;
     private final WebSocketSessionContext sessionContext;
     private final ManagedContext requestContext;
 
-    ContextSupport(SessionContextState sessionContextState, WebSocketSessionContext sessionContext,
+    ContextSupport(WebSocketServerConnection connection, SessionContextState sessionContextState,
+            WebSocketSessionContext sessionContext,
             ManagedContext requestContext) {
+        this.connection = connection;
         this.sessionContextState = sessionContextState;
         this.sessionContext = sessionContext;
         this.requestContext = requestContext;
     }
 
     void start() {
-        LOG.debug("Start contexts");
+        LOG.debugf("Start contexts: %s", connection);
         startSession();
         // Activate a new request context
         requestContext.activate();
@@ -37,7 +40,7 @@ public class ContextSupport {
     }
 
     void end(boolean terminateSession) {
-        LOG.debug("End contexts");
+        LOG.debugf("End contexts: %s", connection);
         requestContext.terminate();
         if (terminateSession) {
             // OnClose - terminate the session context
@@ -57,7 +60,7 @@ public class ContextSupport {
         // We need to store the connection in the duplicated context
         // It's used to initialize the synthetic bean later on
         duplicated.putLocal(WebSocketServerRecorder.WEB_SOCKET_CONN_KEY, connection);
-        LOG.debugf("New vertx duplicated context created: %s", duplicated);
+        LOG.debugf("New vertx duplicated context [%s] created: %s", duplicated, connection);
         return duplicated;
     }
 

@@ -109,4 +109,8 @@ public class WSClient {
         Awaitility.await().until(() -> messages.size() > c);
         return messages.get(c);
     }
+
+    public boolean isClosed() {
+        return socket.get().isClosed();
+    }
 }

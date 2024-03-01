@@ -77,11 +77,19 @@ public interface WebSocketServerConnection extends Sender, BlockingSender {
     }
 
     /**
+     * Close the connection.
      *
      * @return a new {@link Uni} with a {@code null} item
      */
     @CheckReturnValue
     Uni<Void> close();
+
+    /**
+     * Close the connection.
+     */
+    default void closeAndAwait() {
+        close().await().indefinitely();
+    }
 
     /**
      * Makes it possible to send messages to all clients connected to the same WebSocket endpoint.

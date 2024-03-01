@@ -19,6 +19,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.OnMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.test.utils.WSClient;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 
 public class RequestContextTest {
@@ -26,7 +27,7 @@ public class RequestContextTest {
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
             .withApplicationRoot(root -> {
-                root.addClasses(Append.class, WSClient.class, RequestScopedBean.class, RequestContextListener.class);
+                root.addClasses(AppendBlocking.class, WSClient.class, RequestScopedBean.class, RequestContextListener.class);
             })
             // Disable SR Context Propagation for ArC, otherwise there could be a mess in context lifecycle events
             .overrideConfigKey("quarkus.arc.context-propagation.enabled", "false");
@@ -37,15 +38,28 @@ public class RequestContextTest {
     @TestHTTPResource("append")
     URI appendUri;
 
+    @TestHTTPResource("append-blocking")
+    URI appendBlockingUri;
+
     @Inject
     RequestContextListener listener;
 
     @Test
     void testRequestContext() throws InterruptedException {
+        assertRequestContext(appendUri);
+    }
+
+    @Test
+    void testRequestContextBlocking() throws InterruptedException {
+        assertRequestContext(appendBlockingUri);
+    }
+
+    private void assertRequestContext(URI testUri) throws InterruptedException {
         // Remove all events that could be fired due to startup observers
         listener.clear();
+        RequestScopedBean.COUNTER.set(0);
 
-        WSClient client = WSClient.create(vertx).connect(appendUri);
+        WSClient client = WSClient.create(vertx).connect(testUri);
         client.send("foo");
         client.send("bar");
         client.send("baz");
@@ -68,8 +82,8 @@ public class RequestContextTest {
         assertTrue(listener.events.get(8).qualifiers().contains(Destroyed.Literal.REQUEST));
     }
 
-    @WebSocket(path = "/append")
-    public static class Append {
+    @WebSocket(path = "/append-blocking")
+    public static class AppendBlocking {
 
         @Inject
         RequestScopedBean bean;
@@ -77,6 +91,18 @@ public class RequestContextTest {
         @OnMessage
         String process(String message) throws InterruptedException {
             return bean.appendId(message);
+        }
+    }
+
+    @WebSocket(path = "/append")
+    public static class Append {
+
+        @Inject
+        RequestScopedBean bean;
+
+        @OnMessage
+        Uni<String> process(String message) throws InterruptedException {
+            return Uni.createFrom().item(() -> bean.appendId(message));
         }
     }
 

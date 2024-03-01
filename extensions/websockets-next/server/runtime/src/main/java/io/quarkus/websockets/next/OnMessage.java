@@ -6,16 +6,20 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import io.smallrye.common.annotation.Experimental;
+
 /**
- * Annotated method is invoked when an incoming web socket message is received.
+ * A method of an {@link WebSocket} endpoint annotated with this annotation is invoked when an incoming message is received.
  */
 @Retention(RUNTIME)
 @Target(METHOD)
+@Experimental("This API is experimental and may change in the future")
 public @interface OnMessage {
 
     /**
      *
      * @return {@code true} if all the connected clients should receive the objects emitted by the annotated method
+     * @see WebSocketServerConnection#broadcast()
      */
     public boolean broadcast() default false;
 

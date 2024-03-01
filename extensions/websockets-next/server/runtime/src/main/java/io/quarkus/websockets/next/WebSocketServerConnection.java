@@ -4,11 +4,20 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import io.smallrye.common.annotation.CheckReturnValue;
+import io.smallrye.common.annotation.Experimental;
 import io.smallrye.mutiny.Uni;
 
 /**
- * A WebSocket connection represents a client connected to a specific WebSocket endpoint.
+ * This interface represents a client connected to a specific {@link WebSocket} endpoint.
+ * <p>
+ * Quarkus provides a built-in CDI bean of type {@code WebSocketServerConnection} that can be injected in a {@link WebSocket}
+ * endpoint and used to interact with the connected client, or all clients connected to the endpoint respectively
+ * (broadcasting).
+ * <p>
+ * Specifically, it is possible to send messages using blocking and non-blocking methods, declared on
+ * {@link BlockingSender} and {@link Sender} respectively.
  */
+@Experimental("This API is experimental and may change in the future")
 public interface WebSocketServerConnection extends Sender, BlockingSender {
 
     /**
@@ -21,6 +30,7 @@ public interface WebSocketServerConnection extends Sender, BlockingSender {
      *
      * @param name
      * @return the actual value of the path parameter or null
+     * @see WebSocket#path()
      */
     String pathParam(String name);
 

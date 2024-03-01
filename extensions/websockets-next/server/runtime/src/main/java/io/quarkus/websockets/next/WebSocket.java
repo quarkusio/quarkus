@@ -6,11 +6,14 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import io.smallrye.common.annotation.Experimental;
+
 /**
  * Denotes a WebSocket endpoint.
  */
 @Retention(RUNTIME)
 @Target(TYPE)
+@Experimental("This API is experimental and may change in the future")
 public @interface WebSocket {
 
     /**

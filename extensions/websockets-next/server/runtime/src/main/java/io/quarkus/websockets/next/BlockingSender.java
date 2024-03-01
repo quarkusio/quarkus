@@ -1,5 +1,6 @@
 package io.quarkus.websockets.next;
 
+import io.smallrye.common.annotation.Experimental;
 import io.vertx.core.buffer.Buffer;
 
 /**
@@ -7,6 +8,7 @@ import io.vertx.core.buffer.Buffer;
  * <p>
  * Note that blocking sender methods should never be called on an event loop thread.
  */
+@Experimental("This API is experimental and may change in the future")
 public interface BlockingSender extends Sender {
 
     /**

@@ -6,11 +6,15 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import io.smallrye.common.annotation.Experimental;
+
 /**
- * Annotated method is invoked when the client disconnects from the web socket.
+ * A method of an {@link WebSocket} endpoint annotated with this annotation is invoked when the client disconnects from the
+ * socket.
  */
 @Retention(RUNTIME)
 @Target(METHOD)
+@Experimental("This API is experimental and may change in the future")
 public @interface OnClose {
 
 }

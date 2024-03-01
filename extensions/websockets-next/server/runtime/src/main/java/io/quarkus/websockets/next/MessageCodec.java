@@ -2,6 +2,8 @@ package io.quarkus.websockets.next;
 
 import java.lang.reflect.Type;
 
+import io.smallrye.common.annotation.Experimental;
+
 /**
  * Used to encode and decode messages.
  *
@@ -26,6 +28,7 @@ import java.lang.reflect.Type;
  * @param <T>
  * @param <MESSAGE>
  */
+@Experimental("This API is experimental and may change in the future")
 public interface MessageCodec<T, MESSAGE> {
 
     /**

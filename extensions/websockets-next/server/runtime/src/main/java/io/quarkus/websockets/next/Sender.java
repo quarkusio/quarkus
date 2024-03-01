@@ -1,12 +1,14 @@
 package io.quarkus.websockets.next;
 
 import io.smallrye.common.annotation.CheckReturnValue;
+import io.smallrye.common.annotation.Experimental;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
 
 /**
  * Sends a message to the connected WebSocket client.
  */
+@Experimental("This API is experimental and may change in the future")
 public interface Sender {
 
     /**

@@ -6,6 +6,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import io.smallrye.common.annotation.Experimental;
+
 /**
  * The annotated method consumes/produces binary messages.
  * <p>
@@ -31,6 +33,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RUNTIME)
 @Target(METHOD)
+@Experimental("This API is experimental and may change in the future")
 public @interface BinaryMessage {
 
     /**

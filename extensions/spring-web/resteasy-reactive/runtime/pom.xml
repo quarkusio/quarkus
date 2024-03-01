@@ -16,7 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive</artifactId>
+            <artifactId>quarkus-rest</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -37,7 +37,7 @@
                         </goals>
                         <configuration>
                             <dependencyCondition>
-                                <artifact>io.quarkus:quarkus-resteasy-reactive-jackson</artifact>
+                                <artifact>io.quarkus:quarkus-rest-jackson</artifact>
                             </dependencyCondition>
                         </configuration>
                     </execution>

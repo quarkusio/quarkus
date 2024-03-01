@@ -10,6 +10,6 @@ metadata:
   - "http"
   categories:
   - "web"
-  status: "preview"
+  status: "experimental"
   config:
   - "quarkus.websocket.next"

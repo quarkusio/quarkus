@@ -103,13 +103,8 @@ public class ConfigMappingUtils {
             // This is the generated implementation of the mapping by SmallRye Config.
             generatedClasses.produce(new GeneratedClassBuildItem(isApplicationClass, mappingMetadata.getClassName(),
                     mappingMetadata.getClassBytes()));
-            // Register the interface and implementation methods for reflection. This is required for Bean Validation.
-            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(mappingMetadata.getInterfaceType()).methods().build());
-            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName()).methods().build());
-            // Register also the interface hierarchy
-            for (Class<?> parent : getHierarchy(mappingMetadata.getInterfaceType())) {
-                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(parent).methods().build());
-            }
+            // Register the implementation for reflection.
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(mappingMetadata.getClassName()).build());
 
             processProperties(mappingMetadata.getInterfaceType(), reflectiveClasses);
         });

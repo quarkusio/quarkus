@@ -60,8 +60,12 @@ public class MultiplePersistenceUnitsInterceptorTest {
         transaction.begin();
         DefaultEntity entity = new DefaultEntity("default");
         defaultSession.persist(entity);
+        transaction.commit();
+        transaction.begin();
         User user = new User("user");
         usersSession.persist(user);
+        transaction.commit();
+        transaction.begin();
         Plane plane = new Plane("plane");
         inventorySession.persist(plane);
         transaction.commit();

@@ -1,6 +1,5 @@
 package io.quarkus.websockets.next.runtime;
 
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -72,9 +71,9 @@ public class WebSocketServerRecorder {
                     Context context = VertxCoreRecorder.getVertx().get().getOrCreateContext();
 
                     WebSocketServerConnection connection = new WebSocketServerConnectionImpl(endpointClass, ws,
-                            connectionManager, Map.copyOf(ctx.pathParams()), codecs);
+                            connectionManager, codecs, ctx);
                     connectionManager.add(endpointClass, connection);
-                    LOG.debugf("WebSocket connnected: %s", connection);
+                    LOG.debugf("Connnected: %s", connection);
 
                     // Initialize and capture the session context state that will be activated
                     // during message processing

@@ -1,8 +1,10 @@
 package io.quarkus.websockets.next.runtime;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -15,6 +17,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.vertx.UniHelper;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.ServerWebSocket;
+import io.vertx.ext.web.RoutingContext;
 
 class WebSocketServerConnectionImpl implements WebSocketServerConnection {
 
@@ -30,17 +33,20 @@ class WebSocketServerConnectionImpl implements WebSocketServerConnection {
 
     private final Map<String, String> pathParams;
 
+    private final HandshakeRequest handshakeRequest;
+
     private final BroadcastSender defaultBroadcast;
 
     WebSocketServerConnectionImpl(String endpoint, ServerWebSocket webSocket, ConnectionManager connectionManager,
-            Map<String, String> pathParams, Codecs codecs) {
+            Codecs codecs, RoutingContext ctx) {
         this.endpoint = endpoint;
         this.identifier = UUID.randomUUID().toString();
         this.webSocket = Objects.requireNonNull(webSocket);
         this.connectionManager = Objects.requireNonNull(connectionManager);
-        this.pathParams = pathParams;
+        this.pathParams = Map.copyOf(ctx.pathParams());
         this.defaultBroadcast = new BroadcastImpl(null);
         this.codecs = codecs;
+        this.handshakeRequest = new HandshakeRequestImpl(ctx);
     }
 
     @Override
@@ -100,6 +106,11 @@ class WebSocketServerConnectionImpl implements WebSocketServerConnection {
     }
 
     @Override
+    public HandshakeRequest handshake() {
+        return handshakeRequest;
+    }
+
+    @Override
     public String toString() {
         return "WebSocket connection [id=" + identifier + ", path=" + webSocket.path() + "]";
     }
@@ -119,6 +130,75 @@ class WebSocketServerConnectionImpl implements WebSocketServerConnection {
             return false;
         WebSocketServerConnectionImpl other = (WebSocketServerConnectionImpl) obj;
         return Objects.equals(identifier, other.identifier);
+    }
+
+    private class HandshakeRequestImpl implements HandshakeRequest {
+
+        private final Map<String, List<String>> headers;
+
+        HandshakeRequestImpl(RoutingContext ctx) {
+            this.headers = initHeaders(ctx);
+        }
+
+        @Override
+        public String header(String name) {
+            List<String> values = headers(name);
+            return values.isEmpty() ? null : values.get(0);
+        }
+
+        @Override
+        public List<String> headers(String name) {
+            return headers.getOrDefault(Objects.requireNonNull(name).toLowerCase(), List.of());
+        }
+
+        @Override
+        public Map<String, List<String>> headers() {
+            return headers;
+        }
+
+        @Override
+        public String scheme() {
+            return webSocket.scheme();
+        }
+
+        @Override
+        public String host() {
+            return webSocket.authority().host();
+        }
+
+        @Override
+        public int port() {
+            return webSocket.authority().port();
+        }
+
+        @Override
+        public String path() {
+            return webSocket.path();
+        }
+
+        @Override
+        public String query() {
+            return webSocket.query();
+        }
+
+        static Map<String, List<String>> initHeaders(RoutingContext ctx) {
+            Map<String, List<String>> headers = new HashMap<>();
+            for (Entry<String, String> e : ctx.request().headers()) {
+                String key = e.getKey().toLowerCase();
+                List<String> values = headers.get(key);
+                if (values == null) {
+                    values = new ArrayList<>();
+                    headers.put(key, values);
+                }
+                values.add(e.getValue());
+            }
+            for (Entry<String, List<String>> e : headers.entrySet()) {
+                // Make the list of values immutable
+                e.setValue(List.copyOf(e.getValue()));
+            }
+            return Map.copyOf(headers);
+        }
+
     }
 
     private class BroadcastImpl implements WebSocketServerConnection.BroadcastSender {

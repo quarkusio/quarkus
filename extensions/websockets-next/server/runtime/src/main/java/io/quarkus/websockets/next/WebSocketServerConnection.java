@@ -1,5 +1,7 @@
 package io.quarkus.websockets.next;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -92,11 +94,77 @@ public interface WebSocketServerConnection extends Sender, BlockingSender {
     }
 
     /**
+     *
+     * @return the handshake request
+     */
+    HandshakeRequest handshake();
+
+    /**
      * Makes it possible to send messages to all clients connected to the same WebSocket endpoint.
      *
      * @see WebSocketServerConnection#getOpenConnections()
      */
     interface BroadcastSender extends Sender, BlockingSender {
+
+    }
+
+    /**
+     * Provides some useful information about the initial handshake request.
+     */
+    interface HandshakeRequest {
+
+        /**
+         * The name is converted to lower case before use.
+         *
+         * @param name
+         * @return the first header value for the given header name, or {@code null}
+         */
+        String header(String name);
+
+        /**
+         * The name is converted to lower case before use.
+         *
+         * @param name
+         * @return an immutable list of header values for the given header name, never {@code null}
+         */
+        List<String> headers(String name);
+
+        /**
+         * Names of the headers are converted to lower case.
+         *
+         * @return an immutable map of header names to header values
+         */
+        Map<String, List<String>> headers();
+
+        /**
+         *
+         * @return the scheme
+         */
+        String scheme();
+
+        /**
+         *
+         * @return the host
+         */
+        String host();
+
+        /**
+         *
+         * @return the port
+         */
+        int port();
+
+        /**
+         *
+         * @return the path
+         */
+        String path();
+
+        /**
+         *
+         * @return the query string
+         */
+        String query();
 
     }
 

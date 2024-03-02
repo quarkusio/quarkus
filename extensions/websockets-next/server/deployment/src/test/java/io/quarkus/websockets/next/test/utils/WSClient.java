@@ -12,6 +12,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
+import io.vertx.core.http.WebSocketConnectOptions;
 
 public class WSClient {
 
@@ -43,8 +44,14 @@ public class WSClient {
         }
     }
 
-    public WSClient connect(URI url) {
-        WebSocket webSocket = await(client.connect(url.getPort(), url.getHost(), url.getPath()));
+    public WSClient connect(WebSocketConnectOptions options, URI url) {
+        StringBuilder uri = new StringBuilder();
+        uri.append(url.getPath());
+        if (url.getQuery() != null) {
+            uri.append("?").append(url.getQuery());
+        }
+        WebSocket webSocket = await(
+                client.connect(options.setPort(url.getPort()).setHost(url.getHost()).setURI(uri.toString())));
         var prev = socket.getAndSet(webSocket);
         if (prev != null) {
             messages.clear();
@@ -52,6 +59,10 @@ public class WSClient {
         }
         webSocket.handler(b -> messages.add(b));
         return this;
+    }
+
+    public WSClient connect(URI url) {
+        return connect(new WebSocketConnectOptions(), url);
     }
 
     public Future<Void> send(String message) {

@@ -32,6 +32,8 @@ class LiquibaseCreator {
         if (liquibaseRuntimeConfig.databaseChangeLogTableName.isPresent()) {
             config.databaseChangeLogTableName = liquibaseRuntimeConfig.databaseChangeLogTableName.get();
         }
+        config.password = liquibaseRuntimeConfig.password;
+        config.username = liquibaseRuntimeConfig.username;
         config.defaultSchemaName = liquibaseRuntimeConfig.defaultSchemaName;
         config.defaultCatalogName = liquibaseRuntimeConfig.defaultCatalogName;
         config.liquibaseTablespaceName = liquibaseRuntimeConfig.liquibaseTablespaceName;

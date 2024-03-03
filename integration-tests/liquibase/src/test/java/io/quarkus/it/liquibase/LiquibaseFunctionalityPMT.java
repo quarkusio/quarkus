@@ -16,7 +16,7 @@ public class LiquibaseFunctionalityPMT {
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot(jar -> jar
-                    .addClasses(LiquibaseApp.class, LiquibaseFunctionalityResource.class)
+                    .addClasses(AppEntity.class, LiquibaseApp.class, LiquibaseFunctionalityResource.class)
                     .addAsResource("db")
                     .addAsResource("application.properties"))
             .setApplicationName("liquibase-prodmode-test")

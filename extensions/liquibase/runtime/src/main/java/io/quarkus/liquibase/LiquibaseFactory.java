@@ -1,9 +1,12 @@
 package io.quarkus.liquibase;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.util.Map;
 
 import javax.sql.DataSource;
 
+import io.agroal.api.AgroalDataSource;
 import io.quarkus.liquibase.runtime.LiquibaseConfig;
 import liquibase.Contexts;
 import liquibase.LabelExpression;
@@ -31,9 +34,23 @@ public class LiquibaseFactory {
         try (ClassLoaderResourceAccessor resourceAccessor = new ClassLoaderResourceAccessor(
                 Thread.currentThread().getContextClassLoader())) {
 
-            Database database = DatabaseFactory.getInstance()
-                    .findCorrectDatabaseImplementation(new JdbcConnection(dataSource.getConnection()));
-            ;
+            Database database;
+
+            if (config.username.isPresent() && config.password.isPresent()) {
+                AgroalDataSource agroalDataSource = dataSource.unwrap(AgroalDataSource.class);
+                String jdbcUrl = agroalDataSource.getConfiguration().connectionPoolConfiguration()
+                        .connectionFactoryConfiguration().jdbcUrl();
+                Connection connection = DriverManager.getConnection(jdbcUrl, config.username.get(), config.password.get());
+
+                database = DatabaseFactory.getInstance()
+                        .findCorrectDatabaseImplementation(
+                                new JdbcConnection(connection));
+
+            } else {
+                database = DatabaseFactory.getInstance()
+                        .findCorrectDatabaseImplementation(new JdbcConnection(dataSource.getConnection()));
+            }
+
             if (database != null) {
                 database.setDatabaseChangeLogLockTableName(config.databaseChangeLogLockTableName);
                 database.setDatabaseChangeLogTableName(config.databaseChangeLogTableName);

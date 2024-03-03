@@ -121,6 +121,14 @@ public class LiquibaseExtensionConfigFixture {
         return getStringValue("quarkus.liquibase.%s.default-schema-name", datasourceName);
     }
 
+    public String username(String datasourceName) {
+        return getStringValue("quarkus.liquibase.%s.username", datasourceName);
+    }
+
+    public String password(String datasourceName) {
+        return getStringValue("quarkus.liquibase.%s.password", datasourceName);
+    }
+
     public String liquibaseCatalogName(String datasourceName) {
         return getStringValue("quarkus.liquibase.%s.liquibase-catalog-name", datasourceName);
     }

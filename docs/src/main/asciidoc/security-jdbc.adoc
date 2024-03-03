@@ -183,6 +183,24 @@ INSERT INTO test_user (id, username, password, role) VALUES (1, 'admin', '$2a$10
 INSERT INTO test_user (id, username, password, role) VALUES (2, 'user','$2a$10$Uc.SZ0hvGJQlYdsAp7be1.lFjmOnc7aAr4L0YY3/VN3oK.F8zJHRG', 'user');
 ----
 
+When signing up new users, we can encrypt their password as follows:
+
+[source,java]
+----
+package org.acme.security.jdbc;
+
+import io.quarkus.elytron.security.common.BcryptUtil;
+
+public class AccountService {
+
+    public void signupUser(String username, String password) {
+        String encryptedPassword = BcryptUtil.bcryptHash(password);
+
+        // store user with the encrypted password in the database
+    }
+}
+----
+
 We can now configure the Elytron JDBC Realm.
 
 [source,properties]

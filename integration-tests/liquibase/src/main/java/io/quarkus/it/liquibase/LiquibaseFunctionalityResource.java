@@ -5,10 +5,12 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.WebApplicationException;
 
+import io.quarkus.liquibase.LiquibaseDataSource;
 import io.quarkus.liquibase.LiquibaseFactory;
 import liquibase.Liquibase;
 import liquibase.changelog.ChangeSet;
@@ -20,6 +22,13 @@ public class LiquibaseFunctionalityResource {
 
     @Inject
     LiquibaseFactory liquibaseFactory;
+
+    @Inject
+    @LiquibaseDataSource("it")
+    LiquibaseFactory liquibaseSecondFactory;
+
+    @Inject
+    EntityManager entityManager;
 
     @GET
     @Path("update")
@@ -40,6 +49,33 @@ public class LiquibaseFunctionalityResource {
         } catch (Exception ex) {
             throw new WebApplicationException(ex.getMessage(), ex);
         }
+    }
+
+    @GET
+    @Path("updateWithDedicatedUser")
+    public String updateWithDedicatedUser() {
+        try (Liquibase liquibase = liquibaseSecondFactory.createLiquibase()) {
+            liquibase.update(liquibaseSecondFactory.createContexts(), liquibaseSecondFactory.createLabels());
+            List<ChangeSetStatus> status = liquibase.getChangeSetStatuses(liquibaseSecondFactory.createContexts(),
+                    liquibaseSecondFactory.createLabels());
+            List<ChangeSetStatus> changeSets = Objects.requireNonNull(status,
+                    "ChangeSetStatus is null! Database update was not applied");
+            return changeSets.stream()
+                    .filter(ChangeSetStatus::getPreviouslyRan)
+                    .map(ChangeSetStatus::getChangeSet)
+                    .map(ChangeSet::getId)
+                    .collect(Collectors.joining(","));
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex.getMessage(), ex);
+        }
+
+    }
+
+    @GET
+    @Path("created-by")
+    public String returnCreatedByUser() {
+        return entityManager.createQuery("select a from AppEntity a where a.id = 1", AppEntity.class)
+                .getSingleResult().getCreatedBy();
     }
 
     private void assertCommandScopeResolvesProperly() {

@@ -1,0 +1,9 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <include relativeToChangelogFile="true" file="create-table.xml"/>
+    <include relativeToChangelogFile="true" file="insert-into-table.xml"/>
+</databaseChangeLog>

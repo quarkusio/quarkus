@@ -7,6 +7,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 @QuarkusTest
 @DisplayName("Tests liquibase extension")
@@ -16,6 +18,17 @@ public class LiquibaseFunctionalityTest {
     @DisplayName("Migrates a schema correctly using integrated instance")
     public void testLiquibaseQuarkusFunctionality() {
         doTestLiquibaseQuarkusFunctionality(isIncludeAllExpectedToWork());
+    }
+
+    @Test
+    @DisplayName("Migrates a schema correctly using dedicated username and password from config properties")
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Our Windows CI does not have Docker installed properly")
+    public void testLiquibaseUsingDedicatedUsernameAndPassword() {
+        when().get("/liquibase/updateWithDedicatedUser").then().body(is(
+                "create-quarkus-table,insert-into-quarkus-table"));
+
+        when().get("/liquibase/created-by").then().body(is(
+                "usr"));
     }
 
     static void doTestLiquibaseQuarkusFunctionality(boolean isIncludeAllExpectedToWork) {

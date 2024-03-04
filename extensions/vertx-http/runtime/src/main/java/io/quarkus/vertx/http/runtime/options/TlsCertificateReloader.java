@@ -149,12 +149,8 @@ public class TlsCertificateReloader {
         final List<Path> keys = new ArrayList<>();
         final List<Path> certificates = new ArrayList<>();
 
-        if (configuration.certificate.keyFiles.isPresent()) {
-            keys.addAll(configuration.certificate.keyFiles.get());
-        }
-        if (configuration.certificate.files.isPresent()) {
-            certificates.addAll(configuration.certificate.files.get());
-        }
+        configuration.certificate.keyFiles.ifPresent(keys::addAll);
+        configuration.certificate.files.ifPresent(certificates::addAll);
 
         if (!certificates.isEmpty() && !keys.isEmpty()) {
             List<Buffer> certBuffer = new ArrayList<>();

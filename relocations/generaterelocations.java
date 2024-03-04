@@ -81,6 +81,11 @@ public class generaterelocations implements Runnable {
                 "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
         RELOCATIONS.put("quarkus-jaxrs-client-reactive", jaxrsClientReactiveRelocation);
         RELOCATIONS.put("quarkus-jaxrs-client-reactive-deployment", jaxrsClientReactiveRelocation);
+
+        Function<String, Relocation>  csrfReactiveRelocation = a -> Relocation.ofArtifactId(a.replace("csrf-reactive", "rest-csrf"),
+                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        RELOCATIONS.put("quarkus-csrf-reactive", csrfReactiveRelocation);
+        RELOCATIONS.put("quarkus-csrf-reactive-deployment", csrfReactiveRelocation);
     }
 
     private static final String RELOCATION_POM_TEMPLATE = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + //

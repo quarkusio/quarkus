@@ -423,7 +423,7 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-csrf-reactive</artifactId>
+                    <artifactId>quarkus-rest-csrf</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>

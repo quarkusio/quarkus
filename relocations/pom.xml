@@ -69,6 +69,8 @@
         <module>quarkus-rest-client-reactive-spi-deployment</module>
         <module>quarkus-jaxrs-client-reactive</module>
         <module>quarkus-jaxrs-client-reactive-deployment</module>
+        <module>quarkus-csrf-reactive</module>
+        <module>quarkus-csrf-reactive-deployment</module>
     </modules>
 
 </project>

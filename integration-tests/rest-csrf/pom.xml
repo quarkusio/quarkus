@@ -10,14 +10,14 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-csrf-reactive</artifactId>
-    <name>Quarkus - Integration Tests - Cross-Site Request Forgery Filter Reactive</name>
-    <description>Module that contains Cross-Site Request Forgery Filter Reactive tests</description>
+    <artifactId>quarkus-integration-test-rest-csrf</artifactId>
+    <name>Quarkus - Integration Tests - REST - Cross-Site Request Forgery Filter</name>
+    <description>Module that contains Cross-Site Request Forgery Filter tests</description>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-csrf-reactive</artifactId>
+            <artifactId>quarkus-rest-csrf</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -54,7 +54,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-csrf-reactive-deployment</artifactId>
+            <artifactId>quarkus-rest-csrf-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

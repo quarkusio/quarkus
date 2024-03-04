@@ -27,6 +27,7 @@
         <module>rest-kotlin</module>
         <module>rest-kotlin-serialization-common</module>
         <module>rest-kotlin-serialization</module>
+        <module>rest-csrf</module>
         <module>rest-client-jaxrs</module>
         <module>rest-client</module>
         <module>rest-client-jackson</module>

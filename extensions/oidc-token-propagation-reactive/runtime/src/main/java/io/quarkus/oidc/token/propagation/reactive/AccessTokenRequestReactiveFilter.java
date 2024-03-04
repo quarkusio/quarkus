@@ -4,19 +4,17 @@ import static io.quarkus.oidc.token.propagation.TokenPropagationConstants.JWT_PR
 import static io.quarkus.oidc.token.propagation.TokenPropagationConstants.OIDC_PROPAGATE_TOKEN_CREDENTIAL;
 
 import java.util.Collections;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
+import jakarta.enterprise.inject.spi.CDI;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestFilter;
@@ -38,16 +36,7 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
     private static final String BEARER_SCHEME_WITH_SPACE = "Bearer ";
     private static final String ERROR_MSG = "OIDC Token Propagation Reactive requires a safe (isolated) Vert.x sub-context because configuration property 'quarkus.oidc-token-propagation-reactive.enabled-during-authentication' has been set to true, but the current context hasn't been flagged as such.";
     private final boolean enabledDuringAuthentication;
-
-    @Inject
-    Instance<TokenCredential> accessToken;
-
-    @Inject
-    @ConfigProperty(name = "quarkus.oidc-token-propagation-reactive.client-name")
-    Optional<String> oidcClientName;
-    @Inject
-    @ConfigProperty(name = "quarkus.oidc-token-propagation-reactive.exchange-token")
-    boolean exchangeToken;
+    private final Instance<TokenCredential> accessToken;
 
     OidcClient exchangeTokenClient;
     String exchangeTokenProperty;
@@ -55,6 +44,7 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
     public AccessTokenRequestReactiveFilter() {
         this.enabledDuringAuthentication = Boolean.getBoolean(OIDC_PROPAGATE_TOKEN_CREDENTIAL)
                 || Boolean.getBoolean(JWT_PROPAGATE_TOKEN_CREDENTIAL);
+        this.accessToken = CDI.current().select(TokenCredential.class);
     }
 
     @PostConstruct
@@ -80,7 +70,8 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
     }
 
     protected boolean isExchangeToken() {
-        return exchangeToken;
+        return ConfigProvider.getConfig()
+                .getValue("quarkus.oidc-token-propagation-reactive.exchange-token", boolean.class);
     }
 
     @Override
@@ -119,7 +110,10 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
     }
 
     protected String getClientName() {
-        return oidcClientName.orElse(null);
+        return ConfigProvider
+                .getConfig()
+                .getOptionalValue("quarkus.oidc-token-propagation-reactive.client-name", String.class)
+                .orElse(null);
     }
 
     public void propagateToken(ResteasyReactiveClientRequestContext requestContext, String accessToken) {

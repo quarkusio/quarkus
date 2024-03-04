@@ -125,7 +125,7 @@ when the method returns a `String`.
 
 === Injection of `@SessionScoped` beans
 
-`@SessionScoped` beans cannot be injected into Rest endpoints. If you need this, you will need to use the extension `quarkus-resteasy` instead of `quarkus-resteasy-reactive`.
+`@SessionScoped` beans are currently not supported. Should you really need this functionality, you'll need to use RESTEasy Classic instead of RESTEasy Reactive.
 
 === Servlets
 

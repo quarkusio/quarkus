@@ -10,8 +10,8 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-integration-test-grpc-tls</artifactId>
-    <name>Quarkus - Integration Tests - gRPC - TLS</name>
+    <artifactId>quarkus-integration-test-grpc-tls-p12</artifactId>
+    <name>Quarkus - Integration Tests - gRPC - TLS using P12 certificates</name>
 
     <dependencies>
         <dependency>

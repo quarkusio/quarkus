@@ -1,6 +1,5 @@
 package io.quarkus.devservices.common;
 
-import java.net.URL;
 import java.util.Map;
 
 import org.testcontainers.containers.BindMode;

@@ -3,9 +3,10 @@ package io.quarkus.oidc.token.propagation.reactive;
 import static io.quarkus.oidc.token.propagation.TokenPropagationConstants.JWT_PROPAGATE_TOKEN_CREDENTIAL;
 import static io.quarkus.oidc.token.propagation.TokenPropagationConstants.OIDC_PROPAGATE_TOKEN_CREDENTIAL;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.function.BooleanSupplier;
+
+import jakarta.ws.rs.Priorities;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -13,16 +14,18 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.oidc.token.propagation.AccessToken;
+import io.quarkus.oidc.client.deployment.AccessTokenInstanceBuildItem;
+import io.quarkus.oidc.client.deployment.AccessTokenRequestFilterGenerator;
 import io.quarkus.rest.client.reactive.deployment.DotNames;
 import io.quarkus.rest.client.reactive.deployment.RegisterProviderAnnotationInstanceBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -30,19 +33,25 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 @BuildSteps(onlyIf = OidcTokenPropagationReactiveBuildStep.IsEnabled.class)
 public class OidcTokenPropagationReactiveBuildStep {
 
-    private static final DotName ACCESS_TOKEN = DotName.createSimple(AccessToken.class.getName());
-    private static final DotName ACCESS_TOKEN_REQUEST_REACTIVE_FILTER = DotName
-            .createSimple(AccessTokenRequestReactiveFilter.class.getName());
-
     @BuildStep
-    void oidcClientFilterSupport(CombinedIndexBuildItem indexBuildItem,
-            BuildProducer<RegisterProviderAnnotationInstanceBuildItem> producer) {
-        Collection<AnnotationInstance> instances = indexBuildItem.getIndex().getAnnotations(ACCESS_TOKEN);
-        for (AnnotationInstance instance : instances) {
-            String targetClass = instance.target().asClass().name().toString();
-            producer.produce(new RegisterProviderAnnotationInstanceBuildItem(targetClass, AnnotationInstance.create(
-                    DotNames.REGISTER_PROVIDER, instance.target(), List.of(AnnotationValue.createClassValue("value",
-                            Type.create(ACCESS_TOKEN_REQUEST_REACTIVE_FILTER, org.jboss.jandex.Type.Kind.CLASS))))));
+    void oidcClientFilterSupport(List<AccessTokenInstanceBuildItem> accessTokenInstances,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<GeneratedBeanBuildItem> generatedBean,
+            BuildProducer<RegisterProviderAnnotationInstanceBuildItem> providerProducer) {
+        if (!accessTokenInstances.isEmpty()) {
+            var filterGenerator = new AccessTokenRequestFilterGenerator(unremovableBeans, reflectiveClass, generatedBean,
+                    AccessTokenRequestReactiveFilter.class);
+            for (AccessTokenInstanceBuildItem instance : accessTokenInstances) {
+                String providerClass = filterGenerator.generateClass(instance);
+                providerProducer
+                        .produce(new RegisterProviderAnnotationInstanceBuildItem(instance.targetClass(),
+                                AnnotationInstance.create(DotNames.REGISTER_PROVIDER, instance.getAnnotationTarget(), List.of(
+                                        AnnotationValue.createClassValue("value",
+                                                Type.create(DotName.createSimple(providerClass),
+                                                        org.jboss.jandex.Type.Kind.CLASS)),
+                                        AnnotationValue.createIntegerValue("priority", Priorities.AUTHENTICATION)))));
+            }
         }
     }
 
@@ -55,7 +64,6 @@ public class OidcTokenPropagationReactiveBuildStep {
                 ReflectiveClassBuildItem.builder(AccessTokenRequestReactiveFilter.class).methods().fields().build());
         additionalIndexedClassesBuildItem
                 .produce(new AdditionalIndexedClassesBuildItem(AccessTokenRequestReactiveFilter.class.getName()));
-
     }
 
     @BuildStep(onlyIf = IsEnabledDuringAuth.class)

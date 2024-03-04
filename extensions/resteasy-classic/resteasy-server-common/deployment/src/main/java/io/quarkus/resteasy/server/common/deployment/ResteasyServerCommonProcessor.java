@@ -544,6 +544,7 @@ public class ResteasyServerCommonProcessor {
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("jakarta.annotation.security"));
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("java.lang"));
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("jakarta.inject"));
+        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("jakarta.enterprise.context"));
         return prefixes;
     }
 
@@ -736,8 +737,11 @@ public class ResteasyServerCommonProcessor {
 
             boolean hasNonJaxRSAnnotations = false;
             for (AnnotationInstance instance : classInfo.declaredAnnotations()) {
-                final String packageName = packageName(instance.name());
+                DotName name = instance.name();
+                final String packageName = packageName(name);
                 if (packageName == null || !isPackageAllowed(allowedAnnotationPrefixes, packageName)) {
+                    log.warn("Annotation " + name + " results in Quarkus not being able to generate a default constructor for "
+                            + classInfo.name());
                     hasNonJaxRSAnnotations = true;
                     break;
                 }

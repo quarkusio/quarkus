@@ -13,7 +13,12 @@ import examples.HelloRequest;
 import examples.MutinyGreeterGrpc;
 import io.grpc.Channel;
 import io.quarkus.grpc.test.utils.GRPCTestUtils;
+import me.escoffier.certs.Format;
+import me.escoffier.certs.junit5.Certificate;
+import me.escoffier.certs.junit5.Certificates;
 
+@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "grpc-tls", password = "wibble", formats = {
+        Format.JKS, Format.PEM }))
 class HelloWorldTlsServiceTestBase {
 
     Channel channel;

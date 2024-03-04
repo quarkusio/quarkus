@@ -7,17 +7,19 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import me.escoffier.certs.Format;
 import me.escoffier.certs.junit5.Certificate;
 import me.escoffier.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "grpc-tls", password = "wibble", formats = {
-        Format.JKS, Format.PEM }))
-class HelloWorldTlsEndpointTestBase {
+        Format.PKCS12, Format.PEM }))
+@QuarkusTest
+class HelloWorldTlsEndpointTest {
 
     @BeforeEach
-    void relax() {
+    void init() {
         RestAssured.useRelaxedHTTPSValidation();
     }
 

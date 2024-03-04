@@ -370,6 +370,7 @@
                 <module>grpc-inprocess</module>
                 <module>grpc-vertx</module>
                 <module>grpc-tls</module>
+                <module>grpc-tls-p12</module>
                 <module>grpc-plain-text-gzip</module>
                 <module>grpc-plain-text-mutiny</module>
                 <module>grpc-mutual-auth</module>

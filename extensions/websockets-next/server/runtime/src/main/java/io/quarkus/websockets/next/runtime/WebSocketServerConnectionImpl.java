@@ -106,7 +106,7 @@ class WebSocketServerConnectionImpl implements WebSocketServerConnection {
     }
 
     @Override
-    public HandshakeRequest handshake() {
+    public HandshakeRequest handshakeRequest() {
         return handshakeRequest;
     }
 

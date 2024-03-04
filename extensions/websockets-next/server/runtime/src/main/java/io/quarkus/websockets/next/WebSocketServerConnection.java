@@ -97,7 +97,7 @@ public interface WebSocketServerConnection extends Sender, BlockingSender {
      *
      * @return the handshake request
      */
-    HandshakeRequest handshake();
+    HandshakeRequest handshakeRequest();
 
     /**
      * Makes it possible to send messages to all clients connected to the same WebSocket endpoint.

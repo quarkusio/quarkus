@@ -59,15 +59,15 @@ public class HandshakeRequestTest {
         @OnMessage
         JsonObject process(String message) throws InterruptedException {
             JsonObject headers = new JsonObject();
-            connection.handshake().headers().forEach((k, v) -> headers.put(k, v.get(0)));
+            connection.handshakeRequest().headers().forEach((k, v) -> headers.put(k, v.get(0)));
             return new JsonObject()
-                    .put("header", connection.handshake().header("X-Test"))
+                    .put("header", connection.handshakeRequest().header("X-Test"))
                     .put("headers", headers)
-                    .put("scheme", connection.handshake().scheme())
-                    .put("host", connection.handshake().host())
-                    .put("port", connection.handshake().port())
-                    .put("path", connection.handshake().path())
-                    .put("query", connection.handshake().query());
+                    .put("scheme", connection.handshakeRequest().scheme())
+                    .put("host", connection.handshakeRequest().host())
+                    .put("port", connection.handshakeRequest().port())
+                    .put("path", connection.handshakeRequest().path())
+                    .put("query", connection.handshakeRequest().query());
         }
 
     }

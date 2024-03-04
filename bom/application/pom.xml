@@ -140,7 +140,6 @@
         <rest-assured.version>5.4.0</rest-assured.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>5.10.2</junit.jupiter.version>
-        <junit-pioneer.version>1.5.0</junit-pioneer.version>
         <infinispan.version>14.0.25.Final</infinispan.version>
         <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
@@ -5240,11 +5239,6 @@
                 <groupId>org.elasticsearch.client</groupId>
                 <artifactId>elasticsearch-rest-client-sniffer</artifactId>
                 <version>${elasticsearch-opensource-components.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit-pioneer</groupId>
-                <artifactId>junit-pioneer</artifactId>
-                <version>${junit-pioneer.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jacoco</groupId>

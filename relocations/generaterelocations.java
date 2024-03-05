@@ -89,25 +89,35 @@ public class generaterelocations implements Runnable {
         RELOCATIONS.put("quarkus-csrf-reactive-deployment", csrfReactiveRelocation);
 
         Function<String, Relocation>  oidcTokenPropagationReactiveRelocation = a -> Relocation.ofArtifactId(a.replace("oidc-token-propagation-reactive", "rest-client-oidc-token-propagation"),
-        "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
         RELOCATIONS.put("quarkus-oidc-token-propagation-reactive", oidcTokenPropagationReactiveRelocation);
         RELOCATIONS.put("quarkus-oidc-token-propagation-reactive-deployment", oidcTokenPropagationReactiveRelocation);
 
         Function<String, Relocation>  oidcTokenPropagationRelocation = a -> Relocation.ofArtifactId(a.replace("oidc-token-propagation", "resteasy-client-oidc-token-propagation"),
-        "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
         RELOCATIONS.put("quarkus-oidc-token-propagation", oidcTokenPropagationRelocation);
         RELOCATIONS.put("quarkus-oidc-token-propagation-deployment", oidcTokenPropagationRelocation);
 
         Function<String, Relocation>  oidcClientFilterRelocation = a -> Relocation.ofArtifactId(a.replace("oidc-client-filter", "resteasy-client-oidc-filter"),
-        "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
         RELOCATIONS.put("quarkus-oidc-client-filter", oidcClientFilterRelocation);
         RELOCATIONS.put("quarkus-oidc-client-filter-deployment", oidcClientFilterRelocation);
 
 
         Function<String, Relocation>  oidcClientReactiveFilterRelocation = a -> Relocation.ofArtifactId(a.replace("oidc-client-reactive-filter", "rest-client-oidc-filter"),
-        "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
         RELOCATIONS.put("quarkus-oidc-client-reactive-filter", oidcClientReactiveFilterRelocation);
         RELOCATIONS.put("quarkus-oidc-client-reactive-filter-deployment", oidcClientReactiveFilterRelocation);
+
+        Function<String, Relocation>  keycloakAdminClientRelocation = a -> Relocation.ofArtifactId(a.replace("keycloak-admin-client", "keycloak-admin-resteasy-client"),
+                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        RELOCATIONS.put("quarkus-keycloak-admin-client", keycloakAdminClientRelocation);
+        RELOCATIONS.put("quarkus-keycloak-admin-client-deployment", keycloakAdminClientRelocation);
+
+        Function<String, Relocation>  keycloakAdminClientReactiveRelocation = a -> Relocation.ofArtifactId(a.replace("keycloak-admin-client-reactive", "keycloak-admin-rest-client"),
+                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        RELOCATIONS.put("quarkus-keycloak-admin-client-reactive", keycloakAdminClientReactiveRelocation);
+        RELOCATIONS.put("quarkus-keycloak-admin-client-reactive-deployment", keycloakAdminClientReactiveRelocation);
     }
 
     private static final String RELOCATION_POM_TEMPLATE = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + //

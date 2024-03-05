@@ -79,6 +79,10 @@
         <module>quarkus-oidc-client-filter-deployment</module>
         <module>quarkus-oidc-client-reactive-filter</module>
         <module>quarkus-oidc-client-reactive-filter-deployment</module>
+        <module>quarkus-keycloak-admin-client</module>
+        <module>quarkus-keycloak-admin-client-deployment</module>
+        <module>quarkus-keycloak-admin-client-reactive</module>
+        <module>quarkus-keycloak-admin-client-reactive-deployment</module>
     </modules>
 
 </project>

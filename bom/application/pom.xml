@@ -957,22 +957,22 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-keycloak-admin-client</artifactId>
+                <artifactId>quarkus-keycloak-admin-resteasy-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-keycloak-admin-client-deployment</artifactId>
+                <artifactId>quarkus-keycloak-admin-resteasy-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-keycloak-admin-client-reactive</artifactId>
+                <artifactId>quarkus-keycloak-admin-rest-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-keycloak-admin-client-reactive-deployment</artifactId>
+                <artifactId>quarkus-keycloak-admin-rest-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -6484,6 +6484,26 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-oidc-client-reactive-filter-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak-admin-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak-admin-client-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak-admin-client-reactive</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak-admin-client-reactive-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- End of Relocations, please put new extensions above this list -->

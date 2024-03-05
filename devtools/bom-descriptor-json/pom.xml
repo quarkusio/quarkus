@@ -2750,7 +2750,7 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-spring-web-resteasy-classic</artifactId>
+                    <artifactId>quarkus-spring-web-rest</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>
@@ -2763,7 +2763,7 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-spring-web-resteasy-reactive</artifactId>
+                    <artifactId>quarkus-spring-web-resteasy</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>

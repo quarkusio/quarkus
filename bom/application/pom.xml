@@ -2177,22 +2177,22 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-spring-web-resteasy-classic</artifactId>
+                <artifactId>quarkus-spring-web-resteasy</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-spring-web-resteasy-classic-deployment</artifactId>
+                <artifactId>quarkus-spring-web-resteasy-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-spring-web-resteasy-reactive</artifactId>
+                <artifactId>quarkus-spring-web-rest</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-spring-web-resteasy-reactive-deployment</artifactId>
+                <artifactId>quarkus-spring-web-rest-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -6504,6 +6504,26 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-keycloak-admin-client-reactive-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-web-resteasy-reactive</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-web-resteasy-reactive-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-web-resteasy-classic</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-web-resteasy-classic-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- End of Relocations, please put new extensions above this list -->

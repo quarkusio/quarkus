@@ -83,6 +83,10 @@
         <module>quarkus-keycloak-admin-client-deployment</module>
         <module>quarkus-keycloak-admin-client-reactive</module>
         <module>quarkus-keycloak-admin-client-reactive-deployment</module>
+        <module>quarkus-spring-web-resteasy-reactive</module>
+        <module>quarkus-spring-web-resteasy-reactive-deployment</module>
+        <module>quarkus-spring-web-resteasy-classic</module>
+        <module>quarkus-spring-web-resteasy-classic-deployment</module>
     </modules>
 
 </project>

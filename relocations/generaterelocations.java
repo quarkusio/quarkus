@@ -118,6 +118,16 @@ public class generaterelocations implements Runnable {
                 "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
         RELOCATIONS.put("quarkus-keycloak-admin-client-reactive", keycloakAdminClientReactiveRelocation);
         RELOCATIONS.put("quarkus-keycloak-admin-client-reactive-deployment", keycloakAdminClientReactiveRelocation);
+
+        Function<String, Relocation>  springWebRESTEasyReactiveRelocation = a -> Relocation.ofArtifactId(a.replace("spring-web-resteasy-reactive", "spring-web-rest"),
+                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        RELOCATIONS.put("quarkus-spring-web-resteasy-reactive", springWebRESTEasyReactiveRelocation);
+        RELOCATIONS.put("quarkus-spring-web-resteasy-reactive-deployment", springWebRESTEasyReactiveRelocation);
+
+        Function<String, Relocation>  springWebRESTEasyClassicRelocation = a -> Relocation.ofArtifactId(a.replace("spring-web-resteasy-classic", "spring-web-resteasy"),
+                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        RELOCATIONS.put("quarkus-spring-web-resteasy-classic", springWebRESTEasyClassicRelocation);
+        RELOCATIONS.put("quarkus-spring-web-resteasy-classic-deployment", springWebRESTEasyClassicRelocation);
     }
 
     private static final String RELOCATION_POM_TEMPLATE = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + //

@@ -202,7 +202,7 @@ public class GreetingControllerTest {
 }
 ----
 
-It should be noted that when using the Spring Web support in Quarkus, link:https://github.com/FasterXML/jackson[Jackson] is automatically added to the classpath and properly setup.
+It should be noted that when using the Spring Web support in Quarkus, link:https://github.com/FasterXML/jackson[Jackson] is automatically added to the classpath and properly set up.
 
 == Adding OpenAPI and Swagger-UI
 

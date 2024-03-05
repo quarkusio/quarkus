@@ -4,7 +4,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.runtime.WebSocketSessionContext.SessionContextState;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
@@ -13,12 +13,12 @@ public class ContextSupport {
 
     private static final Logger LOG = Logger.getLogger(ContextSupport.class);
 
-    private final WebSocketServerConnection connection;
+    private final WebSocketConnection connection;
     private final SessionContextState sessionContextState;
     private final WebSocketSessionContext sessionContext;
     private final ManagedContext requestContext;
 
-    ContextSupport(WebSocketServerConnection connection, SessionContextState sessionContextState,
+    ContextSupport(WebSocketConnection connection, SessionContextState sessionContextState,
             WebSocketSessionContext sessionContext,
             ManagedContext requestContext) {
         this.connection = connection;
@@ -54,7 +54,7 @@ public class ContextSupport {
         sessionContext.terminate();
     }
 
-    static Context createNewDuplicatedContext(Context context, WebSocketServerConnection connection) {
+    static Context createNewDuplicatedContext(Context context, WebSocketConnection connection) {
         Context duplicated = VertxContext.createNewDuplicatedContext(context);
         VertxContextSafetyToggle.setContextSafe(duplicated, true);
         // We need to store the connection in the duplicated context

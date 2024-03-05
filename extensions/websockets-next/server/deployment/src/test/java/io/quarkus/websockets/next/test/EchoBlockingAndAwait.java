@@ -6,7 +6,7 @@ import jakarta.inject.Inject;
 
 import io.quarkus.websockets.next.OnMessage;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.vertx.core.Context;
 
 @WebSocket(path = "/echo-blocking-await")
@@ -16,7 +16,7 @@ public class EchoBlockingAndAwait {
     EchoService echoService;
 
     @Inject
-    WebSocketServerConnection connection;
+    WebSocketConnection connection;
 
     @OnMessage
     void echo(String msg) {

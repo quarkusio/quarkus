@@ -7,7 +7,7 @@ import jakarta.inject.Inject;
 
 import io.quarkus.websockets.next.OnMessage;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.Context;
 
@@ -15,7 +15,7 @@ import io.vertx.core.Context;
 public class UpMultiBidi {
 
     @Inject
-    WebSocketServerConnection connection;
+    WebSocketConnection connection;
 
     @OnMessage(broadcast = true)
     Multi<String> echo(Multi<String> multi) {

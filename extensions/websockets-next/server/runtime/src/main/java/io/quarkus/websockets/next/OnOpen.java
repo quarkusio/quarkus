@@ -21,7 +21,7 @@ public @interface OnOpen {
 
     /**
      * @return {@code true} if all the connected clients should receive the objects emitted by the annotated method
-     * @see WebSocketServerConnection#broadcast()
+     * @see WebSocketConnection#broadcast()
      */
     public boolean broadcast() default false;
 

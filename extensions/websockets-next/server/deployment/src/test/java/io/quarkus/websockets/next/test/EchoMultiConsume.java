@@ -4,7 +4,7 @@ import jakarta.inject.Inject;
 
 import io.quarkus.websockets.next.OnMessage;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -12,7 +12,7 @@ import io.smallrye.mutiny.Uni;
 public class EchoMultiConsume {
 
     @Inject
-    WebSocketServerConnection connection;
+    WebSocketConnection connection;
 
     @OnMessage
     Uni<Void> echo(Multi<String> multi) {

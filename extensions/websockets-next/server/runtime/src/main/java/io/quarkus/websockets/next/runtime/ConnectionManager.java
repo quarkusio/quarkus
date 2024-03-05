@@ -7,25 +7,25 @@ import java.util.concurrent.ConcurrentMap;
 import jakarta.annotation.PreDestroy;
 import jakarta.inject.Singleton;
 
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 
 @Singleton
 public class ConnectionManager {
 
-    private final ConcurrentMap<String, Set<WebSocketServerConnection>> endpointToConnections = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Set<WebSocketConnection>> endpointToConnections = new ConcurrentHashMap<>();
 
-    void add(String endpoint, WebSocketServerConnection connection) {
+    void add(String endpoint, WebSocketConnection connection) {
         endpointToConnections.computeIfAbsent(endpoint, e -> ConcurrentHashMap.newKeySet()).add(connection);
     }
 
-    void remove(String endpoint, WebSocketServerConnection connection) {
-        Set<WebSocketServerConnection> connections = endpointToConnections.get(endpoint);
+    void remove(String endpoint, WebSocketConnection connection) {
+        Set<WebSocketConnection> connections = endpointToConnections.get(endpoint);
         if (connections != null) {
             connections.remove(connection);
         }
     }
 
-    Set<WebSocketServerConnection> getConnections(String endpoint) {
+    Set<WebSocketConnection> getConnections(String endpoint) {
         return endpointToConnections.get(endpoint);
     }
 

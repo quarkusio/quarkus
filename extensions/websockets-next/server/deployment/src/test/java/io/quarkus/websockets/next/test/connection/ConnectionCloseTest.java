@@ -17,7 +17,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.OnMessage;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
@@ -63,7 +63,7 @@ public class ConnectionCloseTest {
         static final CountDownLatch CLOSED = new CountDownLatch(1);
 
         @Inject
-        WebSocketServerConnection connection;
+        WebSocketConnection connection;
 
         @OnMessage
         public Uni<Void> onMessage(String message) {
@@ -83,7 +83,7 @@ public class ConnectionCloseTest {
         static final CountDownLatch CLOSED = new CountDownLatch(1);
 
         @Inject
-        WebSocketServerConnection connection;
+        WebSocketConnection connection;
 
         @OnMessage
         public void onMessage(String message) {

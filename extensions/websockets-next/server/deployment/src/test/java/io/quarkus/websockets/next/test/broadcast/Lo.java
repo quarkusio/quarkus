@@ -6,7 +6,7 @@ import jakarta.inject.Inject;
 
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 
@@ -14,7 +14,7 @@ import io.vertx.core.Context;
 public class Lo {
 
     @Inject
-    WebSocketServerConnection connection;
+    WebSocketConnection connection;
 
     @OnOpen(broadcast = true)
     Uni<String> open() {

@@ -12,7 +12,7 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.WebSocketsRuntimeConfig;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint.MessageType;
@@ -33,7 +33,7 @@ public class WebSocketServerRecorder {
 
     private static final Logger LOG = Logger.getLogger(WebSocketServerRecorder.class);
 
-    static final String WEB_SOCKET_CONN_KEY = WebSocketServerConnection.class.getName();
+    static final String WEB_SOCKET_CONN_KEY = WebSocketConnection.class.getName();
 
     private final WebSocketsRuntimeConfig config;
 
@@ -70,7 +70,7 @@ public class WebSocketServerRecorder {
                 future.onSuccess(ws -> {
                     Context context = VertxCoreRecorder.getVertx().get().getOrCreateContext();
 
-                    WebSocketServerConnection connection = new WebSocketServerConnectionImpl(endpointClass, ws,
+                    WebSocketConnection connection = new WebSocketConnectionImpl(endpointClass, ws,
                             connectionManager, codecs, ctx);
                     connectionManager.add(endpointClass, connection);
                     LOG.debugf("Connnected: %s", connection);
@@ -188,7 +188,7 @@ public class WebSocketServerRecorder {
         };
     }
 
-    private void messageHandlers(WebSocketServerConnection connection, WebSocketEndpoint endpoint, ServerWebSocket ws,
+    private void messageHandlers(WebSocketConnection connection, WebSocketEndpoint endpoint, ServerWebSocket ws,
             Context context, Consumer<Buffer> binaryAction, Consumer<String> textAction, boolean newDuplicatedContext) {
         if (endpoint.consumedMessageType() == MessageType.BINARY) {
             ws.binaryMessageHandler(new Handler<Buffer>() {
@@ -223,7 +223,7 @@ public class WebSocketServerRecorder {
         }
     }
 
-    private WebSocketEndpoint createEndpoint(String endpointClassName, Context context, WebSocketServerConnection connection,
+    private WebSocketEndpoint createEndpoint(String endpointClassName, Context context, WebSocketConnection connection,
             Codecs codecs, WebSocketsRuntimeConfig config, ContextSupport contextSupport) {
         try {
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -234,7 +234,7 @@ public class WebSocketServerRecorder {
             Class<? extends WebSocketEndpoint> endpointClazz = (Class<? extends WebSocketEndpoint>) cl
                     .loadClass(endpointClassName);
             WebSocketEndpoint endpoint = (WebSocketEndpoint) endpointClazz
-                    .getDeclaredConstructor(WebSocketServerConnection.class, Codecs.class,
+                    .getDeclaredConstructor(WebSocketConnection.class, Codecs.class,
                             WebSocketsRuntimeConfig.class, ContextSupport.class)
                     .newInstance(connection, codecs, config, contextSupport);
             return endpoint;

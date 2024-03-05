@@ -7,7 +7,10 @@ import io.quarkus.deployment.pkg.PackageConfig;
 /**
  * Supplier that can be used to only run build steps in the
  * native sources build.
+ *
+ * @deprecated In the future, it will be possible to request multiple output types.
  */
+@Deprecated
 public class NativeSourcesBuild implements BooleanSupplier {
 
     private final PackageConfig packageConfig;

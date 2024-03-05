@@ -12,7 +12,10 @@ import io.quarkus.deployment.pkg.PackageConfig;
  * the extension works properly when the build produces a {@code native-sources} artifact instead of a
  * native binary.
  * This build item should be used only when there is a real need for a step to run exclusively for a {@code native} build.
+ *
+ * @deprecated In the future, it will be possible to request multiple output types.
  */
+@Deprecated
 public class NativeBuild implements BooleanSupplier {
 
     private final PackageConfig packageConfig;

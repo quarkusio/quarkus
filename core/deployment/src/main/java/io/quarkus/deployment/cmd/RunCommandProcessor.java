@@ -49,7 +49,7 @@ public class RunCommandProcessor {
         List<String> args = new ArrayList<>();
         args.add(determineJavaPath());
 
-        for (Map.Entry e : System.getProperties().entrySet()) {
+        for (Map.Entry<?, ?> e : System.getProperties().entrySet()) {
             args.add("-D" + e.getKey().toString() + "=" + e.getValue().toString());
         }
         args.add("-jar");

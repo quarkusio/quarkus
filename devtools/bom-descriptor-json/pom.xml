@@ -1554,7 +1554,7 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-oidc-client-filter</artifactId>
+                    <artifactId>quarkus-resteasy-client-oidc-filter</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>

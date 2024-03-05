@@ -71,6 +71,8 @@
         <module>quarkus-jaxrs-client-reactive-deployment</module>
         <module>quarkus-csrf-reactive</module>
         <module>quarkus-csrf-reactive-deployment</module>
+        <module>quarkus-oidc-token-propagation-reactive</module>
+        <module>quarkus-oidc-token-propagation-reactive-deployment</module>
     </modules>
 
 </project>

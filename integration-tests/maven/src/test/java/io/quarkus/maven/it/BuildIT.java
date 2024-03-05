@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
-import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.test.devmode.util.DevModeClient;
 
 @DisableForNative
@@ -122,7 +121,7 @@ class BuildIT extends MojoTestBase {
     @Test
     void testModuleWithOverriddenBuildProfile() throws MavenInvocationException, InterruptedException, IOException {
         testDir = initProject("projects/build-mode-quarkus-profile-override");
-        build(String.format("-D%s=foo", ProfileManager.QUARKUS_PROFILE_PROP));
+        build(String.format("-D%s=foo", "quarkus.profile"));
         launch();
     }
 

@@ -13,11 +13,15 @@ import org.jboss.shrinkwrap.api.Node;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 
+import io.smallrye.config.ConfigSourceInterceptor;
+
 public class DeploymentProcessor implements ApplicationArchiveProcessor {
     @Override
     public void process(Archive<?> archive, TestClass testClass) {
         if (archive instanceof WebArchive) {
             WebArchive war = (WebArchive) archive;
+            war.addClass(TelemetryRelocateInterceptor.class);
+            war.addAsServiceProvider(ConfigSourceInterceptor.class, TelemetryRelocateInterceptor.class);
 
             boolean otelSdkDisabled = true;
             Node microprofileConfig = war.get("/WEB-INF/classes/META-INF/microprofile-config.properties");
@@ -31,10 +35,8 @@ public class DeploymentProcessor implements ApplicationArchiveProcessor {
                 }
             }
 
-            // Remap OTel config to Quarkus config. Remove this after OTel Config integration is complete https://github.com/quarkusio/quarkus/pull/30033
             war.addAsResource(new StringAsset(
-                    "quarkus.opentelemetry.tracer.sampler=" + (otelSdkDisabled ? "off" : "on") + "\n" +
-                            "quarkus.opentelemetry.tracer.resource-attributes=service.name=${otel.service.name:quarkus-tck-microprofile-opentelemetry},${otel.resource.attributes:}\n"),
+                    "quarkus.otel.sdk.disabled=" + (otelSdkDisabled ? "true" : "false") + "\n"),
                     "application.properties");
         }
     }

@@ -202,10 +202,9 @@ public class PgPoolRecorder {
                 final SslMode sslMode = dataSourceReactivePostgreSQLConfig.sslMode().get();
                 pgConnectOptions.setSslMode(sslMode);
 
+                var algo = dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm();
                 // If sslMode is verify-full, we also need a hostname verification algorithm
-                if (sslMode == SslMode.VERIFY_FULL
-                        && (!dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().isPresent()
-                                || "".equals(dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().get()))) {
+                if ("NONE".equalsIgnoreCase(algo) && sslMode == SslMode.VERIFY_FULL) {
                     throw new IllegalArgumentException(
                             "quarkus.datasource.reactive.hostname-verification-algorithm must be specified under verify-full sslmode");
                 }
@@ -227,8 +226,12 @@ public class PgPoolRecorder {
 
             pgConnectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval().toMillis());
 
-            dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().ifPresent(
-                    pgConnectOptions::setHostnameVerificationAlgorithm);
+            var algo = dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm();
+            if ("NONE".equalsIgnoreCase(algo)) {
+                pgConnectOptions.setHostnameVerificationAlgorithm("");
+            } else {
+                pgConnectOptions.setHostnameVerificationAlgorithm(algo);
+            }
 
             dataSourceReactiveRuntimeConfig.additionalProperties().forEach(pgConnectOptions::addProperty);
 

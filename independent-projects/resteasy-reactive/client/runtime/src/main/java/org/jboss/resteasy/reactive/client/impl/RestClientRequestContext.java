@@ -167,6 +167,14 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         return null;
     }
 
+    public Annotation[] getMethodDeclaredAnnotationsSafe() {
+        Method invokedMethod = getInvokedMethod();
+        if (invokedMethod != null) {
+            return invokedMethod.getDeclaredAnnotations();
+        }
+        return null;
+    }
+
     @Override
     protected Throwable unwrapException(Throwable t) {
         var res = super.unwrapException(t);
@@ -190,12 +198,14 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     @SuppressWarnings("unchecked")
     public <T> T readEntity(InputStream in,
-            GenericType<T> responseType, MediaType mediaType,
+            GenericType<T> responseType,
+            MediaType mediaType,
+            Annotation[] annotations,
             MultivaluedMap<String, Object> metadata)
             throws IOException {
         if (in == null)
             return null;
-        return (T) ClientSerialisers.invokeClientReader(null, responseType.getRawType(), responseType.getType(),
+        return (T) ClientSerialisers.invokeClientReader(annotations, responseType.getRawType(), responseType.getType(),
                 mediaType, properties, this, metadata, restClient.getClientContext().getSerialisers(), in,
                 getReaderInterceptors(), configuration);
     }

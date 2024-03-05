@@ -5,15 +5,13 @@ import static io.quarkus.oidc.token.propagation.TokenPropagationConstants.OIDC_P
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Optional;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
+import jakarta.enterprise.inject.spi.CDI;
 import jakarta.ws.rs.client.ClientRequestContext;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.client.OidcClient;
@@ -31,16 +29,7 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
 
     private static final String ERROR_MSG = "OIDC Token Propagation requires a safe (isolated) Vert.x sub-context because configuration property 'quarkus.oidc-token-propagation.enabled-during-authentication' has been set to true, but the current context hasn't been flagged as such.";
     private final boolean enabledDuringAuthentication;
-
-    @Inject
-    Instance<TokenCredential> accessToken;
-
-    @Inject
-    @ConfigProperty(name = "quarkus.oidc-token-propagation.client-name")
-    Optional<String> oidcClientName;
-    @Inject
-    @ConfigProperty(name = "quarkus.oidc-token-propagation.exchange-token")
-    boolean exchangeToken;
+    private final Instance<TokenCredential> accessToken;
 
     OidcClient exchangeTokenClient;
     String exchangeTokenProperty;
@@ -48,6 +37,7 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
     public AccessTokenRequestFilter() {
         this.enabledDuringAuthentication = Boolean.getBoolean(OIDC_PROPAGATE_TOKEN_CREDENTIAL)
                 || Boolean.getBoolean(JWT_PROPAGATE_TOKEN_CREDENTIAL);
+        this.accessToken = CDI.current().select(TokenCredential.class);
     }
 
     @PostConstruct
@@ -73,7 +63,7 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
     }
 
     protected boolean isExchangeToken() {
-        return exchangeToken;
+        return ConfigProvider.getConfig().getValue("quarkus.oidc-token-propagation.exchange-token", boolean.class);
     }
 
     @Override
@@ -98,7 +88,8 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
     }
 
     protected String getClientName() {
-        return oidcClientName.orElse(null);
+        return ConfigProvider.getConfig().getOptionalValue("quarkus.oidc-token-propagation.client-name", String.class)
+                .orElse(null);
     }
 
     private boolean acquireTokenCredentialFromCtx(ClientRequestContext requestContext) {

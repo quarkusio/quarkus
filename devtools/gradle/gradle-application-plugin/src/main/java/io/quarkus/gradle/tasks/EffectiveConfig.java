@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
@@ -26,6 +27,7 @@ import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSourceLoader;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.AbstractLocationConfigSourceLoader;
 import io.smallrye.config.EnvConfigSource;
+import io.smallrye.config.Expressions;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.PropertiesConfigSourceProvider;
 import io.smallrye.config.SmallRyeConfig;
@@ -41,10 +43,9 @@ import io.smallrye.config.source.yaml.YamlConfigSource;
  * Eventually used to construct a map with the <em>effective</em> config options from all the sources above and expose
  * the Quarkus config objects like {@link PackageConfig}, {@link ClassLoadingConfig} and the underlying {@link SmallRyeConfig}.
  */
-final class EffectiveConfig {
-    private final Map<String, String> fullConfig;
-
+public final class EffectiveConfig {
     private final SmallRyeConfig config;
+    private final Map<String, String> values;
 
     private EffectiveConfig(Builder builder) {
         List<ConfigSource> configSources = new ArrayList<>();
@@ -81,11 +82,15 @@ final class EffectiveConfig {
                 .addAll(PropertiesConfigSourceProvider.classPathSources(META_INF_MICROPROFILE_CONFIG_PROPERTIES, classLoader));
 
         this.config = buildConfig(builder.profile, configSources);
-        this.fullConfig = generateFullConfigMap(config);
+        this.values = generateFullConfigMap(config);
     }
 
-    SmallRyeConfig config() {
+    public SmallRyeConfig getConfig() {
         return config;
+    }
+
+    public Map<String, String> getValues() {
+        return values;
     }
 
     private Map<String, String> asStringMap(Map<String, ?> map) {
@@ -100,14 +105,19 @@ final class EffectiveConfig {
 
     @VisibleForTesting
     static Map<String, String> generateFullConfigMap(SmallRyeConfig config) {
-        Map<String, String> map = new HashMap<>();
-        config.getPropertyNames().forEach(property -> {
-            String v = config.getConfigValue(property).getValue();
-            if (v != null) {
-                map.put(property, v);
+        return Expressions.withoutExpansion(new Supplier<Map<String, String>>() {
+            @Override
+            public Map<String, String> get() {
+                Map<String, String> properties = new HashMap<>();
+                for (String propertyName : config.getPropertyNames()) {
+                    String value = config.getRawValue(propertyName);
+                    if (value != null) {
+                        properties.put(propertyName, value);
+                    }
+                }
+                return unmodifiableMap(properties);
             }
         });
-        return unmodifiableMap(map);
     }
 
     @VisibleForTesting
@@ -124,10 +134,6 @@ final class EffectiveConfig {
 
     static Builder builder() {
         return new Builder();
-    }
-
-    Map<String, String> configMap() {
-        return fullConfig;
     }
 
     static final class Builder {

@@ -470,8 +470,8 @@ public class OidcRecorder {
         WebClientOptions options = new WebClientOptions();
 
         OidcCommonUtils.setHttpClientOptions(oidcConfig, tlsConfig, options);
-
-        WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
+        var mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
+        WebClient client = WebClient.create(mutinyVertx, options);
 
         Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcCommonUtils.getOidcRequestFilters();
 
@@ -481,7 +481,8 @@ public class OidcRecorder {
         } else {
             final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
             metadataUni = OidcCommonUtils
-                    .discoverMetadata(client, oidcRequestFilters, authServerUriString, connectionDelayInMillisecs)
+                    .discoverMetadata(client, oidcRequestFilters, authServerUriString, connectionDelayInMillisecs, mutinyVertx,
+                            oidcConfig.useBlockingDnsLookup)
                     .onItem()
                     .transform(new Function<JsonObject, OidcConfigurationMetadata>() {
                         @Override

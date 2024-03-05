@@ -301,6 +301,15 @@ public class OidcUtilsTest {
         assertEquals("openid+a%3A1+b%3A2+c+d", OidcUtils.encodeScopes(config));
     }
 
+    @Test
+    public void testEncodeAllScopesWithCustomSeparator() throws Exception {
+        OidcTenantConfig config = new OidcTenantConfig();
+        config.authentication.setScopeSeparator(",");
+        config.authentication.setScopes(List.of("a:1", "b:2"));
+        config.authentication.setExtraParams(Map.of("scope", "c,d"));
+        assertEquals("openid%2Ca%3A1%2Cb%3A2%2Cc%2Cd", OidcUtils.encodeScopes(config));
+    }
+
     public static JsonObject read(InputStream input) throws IOException {
         try (BufferedReader buffer = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
             return new JsonObject(buffer.lines().collect(Collectors.joining("\n")));

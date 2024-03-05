@@ -25,6 +25,13 @@ public class BootstrapConfig {
     Boolean workspaceDiscovery;
 
     /**
+     * If set to true, workspace loader will log warnings for modules that could not be loaded for some reason
+     * instead of throwing errors.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean warnOnFailingWorkspaceModules;
+
+    /**
      * By default, the bootstrap mechanism will create a shared cache of open JARs for
      * Quarkus classloaders to reduce the total number of opened ZIP FileSystems in dev and test modes.
      * Setting system property {@code quarkus.bootstrap.disable-jar-cache} to {@code true} will make

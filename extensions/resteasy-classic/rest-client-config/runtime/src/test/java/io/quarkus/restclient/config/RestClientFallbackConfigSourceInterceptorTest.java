@@ -192,14 +192,13 @@ public class RestClientFallbackConfigSourceInterceptorTest {
         }
 
         @Override
-        public Iterator<String> iterateNames() {
-            return names.iterator();
+        public ConfigValue restart(String name) {
+            return proceed(name);
         }
 
         @Override
-        public Iterator<ConfigValue> iterateValues() {
-            return null;
+        public Iterator<String> iterateNames() {
+            return names.iterator();
         }
     }
-
 }

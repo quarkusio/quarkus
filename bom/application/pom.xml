@@ -14,7 +14,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <angus-activation.version>2.0.1</angus-activation.version>
+        <angus-activation.version>2.0.2</angus-activation.version>
         <bouncycastle.version>1.77</bouncycastle.version>
         <bouncycastle.fips.version>1.0.2.4</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.18</bouncycastle.tls.fips.version>
@@ -51,7 +51,7 @@
         <microprofile-lra.version>2.0</microprofile-lra.version>
         <microprofile-openapi.version>3.1.1</microprofile-openapi.version>
         <smallrye-common.version>2.3.0</smallrye-common.version>
-        <smallrye-config.version>3.5.4</smallrye-config.version>
+        <smallrye-config.version>3.6.0</smallrye-config.version>
         <smallrye-health.version>4.1.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>3.10.0</smallrye-open-api.version>
@@ -64,7 +64,7 @@
         <smallrye-mutiny-vertx-binding.version>3.9.0</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>4.17.0</smallrye-reactive-messaging.version>
         <smallrye-stork.version>2.5.0</smallrye-stork.version>
-        <jakarta.activation.version>2.1.2</jakarta.activation.version>
+        <jakarta.activation.version>2.1.3</jakarta.activation.version>
         <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
         <jakarta.authentication-api>3.0.0</jakarta.authentication-api>
         <jakarta.authorization-api.version>2.1.0</jakarta.authorization-api.version>
@@ -106,11 +106,11 @@
         <hibernate-reactive.version>2.2.2.Final</hibernate-reactive.version>
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
         <!-- When updating, align hibernate-search.version-for-documentation in docs/pom.xml -->
-        <hibernate-search.version>7.1.0.CR1</hibernate-search.version>
+        <hibernate-search.version>7.1.0.Final</hibernate-search.version>
         <narayana.version>7.0.0.Final</narayana.version>
-        <agroal.version>2.1</agroal.version>
+        <agroal.version>2.3</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>8.12.1</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>8.12.2</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.Final</wildfly.openssl-linux.version>
@@ -140,12 +140,11 @@
         <rest-assured.version>5.4.0</rest-assured.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>5.10.2</junit.jupiter.version>
-        <junit-pioneer.version>1.5.0</junit-pioneer.version>
-        <infinispan.version>14.0.24.Final</infinispan.version>
+        <infinispan.version>14.0.25.Final</infinispan.version>
         <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
         <netty.version>4.1.106.Final</netty.version>
-        <brotli4j.version>1.12.0</brotli4j.version>
+        <brotli4j.version>1.14.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
         <mutiny.version>2.5.7</mutiny.version>
@@ -198,7 +197,7 @@
         <scram-client.version>2.1</scram-client.version>
         <picocli.version>4.7.5</picocli.version>
         <google-cloud-functions.version>1.1.0</google-cloud-functions.version>
-        <commons-compress.version>1.26.0</commons-compress.version>
+        <commons-compress.version>1.26.0</commons-compress.version> <!-- Please check with Java Operator SDK / Fabric8 team before updating -->
         <commons-text.version>1.11.0</commons-text.version>
         <gson.version>2.10.1</gson.version>
         <log4j2-jboss-logmanager.version>1.1.2.Final</log4j2-jboss-logmanager.version>
@@ -207,8 +206,8 @@
         <avro.version>1.11.3</avro.version>
         <apicurio-registry.version>2.5.8.Final</apicurio-registry.version>
         <apicurio-common-rest-client.version>0.1.18.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
-        <testcontainers.version>1.19.4</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
-        <docker-java.version>3.3.4</docker-java.version> <!-- must be the version Testcontainers use -->
+        <testcontainers.version>1.19.6</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
+        <docker-java.version>3.3.5</docker-java.version> <!-- must be the version Testcontainers use -->
         <!-- Check the compatibility matrix (https://github.com/opensearch-project/opensearch-testcontainers) before upgrading: -->
         <opensearch-testcontainers.version>2.0.0</opensearch-testcontainers.version>
         <com.dajudge.kindcontainer>1.4.4</com.dajudge.kindcontainer>
@@ -3593,11 +3592,6 @@
                 <artifactId>hamcrest</artifactId>
                 <version>${hamcrest.version}</version>
             </dependency>
-            <dependency>
-                <groupId>me.escoffier.certs</groupId>
-                <artifactId>certificate-generator-junit5</artifactId>
-                <version>0.3.0</version>
-            </dependency>
 
             <dependency>
                 <groupId>org.antlr</groupId>
@@ -5245,11 +5239,6 @@
                 <groupId>org.elasticsearch.client</groupId>
                 <artifactId>elasticsearch-rest-client-sniffer</artifactId>
                 <version>${elasticsearch-opensource-components.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.junit-pioneer</groupId>
-                <artifactId>junit-pioneer</artifactId>
-                <version>${junit-pioneer.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jacoco</groupId>

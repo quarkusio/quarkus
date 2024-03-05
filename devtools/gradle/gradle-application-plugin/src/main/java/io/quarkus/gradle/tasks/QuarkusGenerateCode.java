@@ -102,17 +102,17 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
     @TaskAction
     public void generateCode() {
         ApplicationModel appModel = extension().getApplicationModel(launchMode);
-        Map<String, String> configMap = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).configMap();
+        Map<String, String> values = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).getValues();
 
         File outputPath = getGeneratedOutputDirectory().get().getAsFile();
 
         getLogger().debug("Will trigger preparing sources for source directories: {} buildDir: {}",
                 sourcesDirectories, buildDir.getAbsolutePath());
 
-        WorkQueue workQueue = workQueue(configMap, () -> extension().codeGenForkOptions);
+        WorkQueue workQueue = workQueue(values, () -> extension().codeGenForkOptions);
 
         workQueue.submit(CodeGenWorker.class, params -> {
-            params.getBuildSystemProperties().putAll(configMap);
+            params.getBuildSystemProperties().putAll(values);
             params.getBaseName().set(extension().finalName());
             params.getTargetDirectory().set(buildDir);
             params.getAppModel().set(appModel);

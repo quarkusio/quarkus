@@ -27,13 +27,14 @@ With this extension, you can retrieve the managed instance of Vert.x using eithe
 ----
 @ApplicationScoped
 public class MyBean {
-// Field injection
-@Inject Vertx vertx;
 
-// Constructor injection
-MyBean(Vertx vertx) {
-    // ...
-}
+    // Field injection
+    @Inject Vertx vertx;
+
+    // Constructor injection
+    MyBean(Vertx vertx) {
+        // ...
+    }
 
 }
 ----
@@ -83,7 +84,7 @@ Check the associated documentation to learn how to use them.
 
 |AMQP Client
 |`io.quarkus:quarkus-smallrye-reactive-messaging-amqp` (extension)
-|xref:amqp.adoc
+|xref:amqp.adoc[Getting Started to SmallRye Reactive Messaging with AMQP]
 
 |Circuit Breaker
 |`io.smallrye.reactive:smallrye-mutiny-vertx-circuit-breaker` (external dependency)
@@ -95,15 +96,15 @@ Check the associated documentation to learn how to use them.
 
 |DB2 Client
 |`io.quarkus:quarkus-reactive-db2-client` (extension)
-|xref:reactive-sql-clients.adoc
+|xref:reactive-sql-clients.adoc[Reactive SQL Clients]
 
 |Kafka Client
 |`io.quarkus:quarkus-smallrye-reactive-messaging-kafka` (extension)
-|xref:kafka.adoc
+|xref:kafka.adoc[Apache Kafka Reference Guide]
 
 |Mail Client
 |`io.quarkus:quarkus-mailer` (extension)
-|xref:mailer.adoc
+|xref:mailer.adoc[Sending emails using SMTP]
 
 |MQTT Client
 |`io.quarkus:quarkus-smallrye-reactive-messaging-mqtt` (extension)
@@ -111,19 +112,19 @@ Check the associated documentation to learn how to use them.
 
 |MS SQL Client
 |`io.quarkus:quarkus-reactive-mssql-client` (extension)
-|xref:reactive-sql-clients.adoc
+|xref:reactive-sql-clients.adoc[Reactive SQL Clients]
 
 |MySQL Client
 |`io.quarkus:quarkus-reactive-mysql-client` (extension)
-|xref:reactive-sql-clients.adoc
+|xref:reactive-sql-clients.adoc[Reactive SQL Clients]
 
 |Oracle Client
 |`io.quarkus:quarkus-reactive-oracle-client` (extension)
-|xref:reactive-sql-clients.adoc
+|xref:reactive-sql-clients.adoc[Reactive SQL Clients]
 
 |PostgreSQL Client
 |`io.quarkus:quarkus-reactive-pg-client` (extension)
-|xref:reactive-sql-clients.adoc
+|xref:reactive-sql-clients.adoc[Reactive SQL Clients]
 
 |RabbitMQ Client
 |`io.smallrye.reactive:smallrye-mutiny-vertx-rabbitmq-client` (external dependency)
@@ -131,7 +132,7 @@ Check the associated documentation to learn how to use them.
 
 |Redis Client
 |`io.quarkus:quarkus-redis-client` (extension)
-|xref:redis.adoc
+|xref:redis.adoc[Using the Redis Client]
 
 |Web Client
 |`io.smallrye.reactive:smallrye-mutiny-vertx-web-client` (external dependency)

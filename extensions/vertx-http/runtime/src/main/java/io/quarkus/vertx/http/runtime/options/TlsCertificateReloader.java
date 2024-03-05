@@ -6,16 +6,17 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.vertx.http.runtime.ServerSslConfig;
-import io.smallrye.mutiny.Uni;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -62,9 +63,9 @@ public class TlsCertificateReloader {
             return -1;
         }
 
-        Supplier<Uni<Boolean>> task = new Supplier<Uni<Boolean>>() {
+        Supplier<CompletionStage<Boolean>> task = new Supplier<CompletionStage<Boolean>>() {
             @Override
-            public Uni<Boolean> get() {
+            public CompletionStage<Boolean> get() {
 
                 Future<Boolean> future = vertx.executeBlocking(new Callable<SSLOptions>() {
                     @Override
@@ -101,15 +102,14 @@ public class TlsCertificateReloader {
                             }
                         });
 
-                return Uni.createFrom().completionStage(future.toCompletionStage());
+                return future.toCompletionStage();
             }
         };
 
-        long id = vertx.setPeriodic(configuration.certificate.reloadPeriod.get().toMillis(), new Handler<Long>() {
+        long id = vertx.setPeriodic(period, new Handler<Long>() {
             @Override
             public void handle(Long id) {
-                //noinspection ResultOfMethodCallIgnored
-                task.get().subscribeAsCompletionStage();
+                task.get();
             }
         });
 
@@ -133,9 +133,14 @@ public class TlsCertificateReloader {
      *
      * @return a Uni that is completed when all the reload tasks have been executed
      */
-    public static Uni<Void> reload() {
-        var unis = TASKS.stream().map(ReloadCertificateTask::action).map(Supplier::get).collect(Collectors.toList());
-        return Uni.join().all(unis).andFailFast().replaceWithVoid();
+    public static CompletionStage<Void> reload() {
+        @SuppressWarnings("rawtypes")
+        CompletableFuture[] futures = new CompletableFuture[TASKS.size()];
+        for (int i = 0; i < TASKS.size(); i++) {
+            futures[i] = TASKS.get(i).action().get().toCompletableFuture();
+        }
+
+        return CompletableFuture.allOf(futures);
     }
 
     private static SSLOptions reloadFileContent(SSLOptions ssl, ServerSslConfig configuration) throws IOException {
@@ -144,12 +149,8 @@ public class TlsCertificateReloader {
         final List<Path> keys = new ArrayList<>();
         final List<Path> certificates = new ArrayList<>();
 
-        if (configuration.certificate.keyFiles.isPresent()) {
-            keys.addAll(configuration.certificate.keyFiles.get());
-        }
-        if (configuration.certificate.files.isPresent()) {
-            certificates.addAll(configuration.certificate.files.get());
-        }
+        configuration.certificate.keyFiles.ifPresent(keys::addAll);
+        configuration.certificate.files.ifPresent(certificates::addAll);
 
         if (!certificates.isEmpty() && !keys.isEmpty()) {
             List<Buffer> certBuffer = new ArrayList<>();
@@ -183,7 +184,45 @@ public class TlsCertificateReloader {
         return copy;
     }
 
-    record ReloadCertificateTask(long it, Supplier<Uni<Boolean>> action) {
+    static final class ReloadCertificateTask {
+        private final long it;
+        private final Supplier<CompletionStage<Boolean>> action;
+
+        ReloadCertificateTask(long it, Supplier<CompletionStage<Boolean>> action) {
+            this.it = it;
+            this.action = action;
+        }
+
+        public long it() {
+            return it;
+        }
+
+        public Supplier<CompletionStage<Boolean>> action() {
+            return action;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this)
+                return true;
+            if (obj == null || obj.getClass() != this.getClass())
+                return false;
+            var that = (ReloadCertificateTask) obj;
+            return this.it == that.it &&
+                    Objects.equals(this.action, that.action);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(it, action);
+        }
+
+        @Override
+        public String toString() {
+            return "ReloadCertificateTask[" +
+                    "it=" + it + ", " +
+                    "action=" + action + ']';
+        }
 
     }
 }

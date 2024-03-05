@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.graphql.deployment;
 
+import static org.hamcrest.CoreMatchers.is;
+
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
@@ -213,6 +215,70 @@ public class GraphQLTest extends AbstractGraphQLTest {
                 .and()
                 .body(CoreMatchers.containsString(
                         "{\"data\":{\"generics\":{\"message\":\"I know it\"}}}"));
+    }
+
+    @Test
+    public void testFailureUniNonBlocking() {
+        String request = getPayload("{failureUniNonBlocking}");
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("errors[0].extensions.classification", is("DataFetchingException"))
+                .body("errors[0].message", is("boom"));
+    }
+
+    @Test
+    public void testFailureUniBlocking() {
+        String request = getPayload("{failureUniBlocking}");
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("errors[0].extensions.classification", is("DataFetchingException"))
+                .body("errors[0].message", is("boom"));
+    }
+
+    @Test
+    public void testFailureSyncNonBlocking() {
+        String request = getPayload("{failureSyncNonBlocking}");
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("errors[0].extensions.classification", is("DataFetchingException"))
+                .body("errors[0].message", is("boom"));
+    }
+
+    @Test
+    public void testFailureSyncBlocking() {
+        String request = getPayload("{failureSyncBlocking}");
+        RestAssured.given().when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(request)
+                .post("/graphql")
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("errors[0].extensions.classification", is("DataFetchingException"))
+                .body("errors[0].message", is("boom"));
     }
 
     /**

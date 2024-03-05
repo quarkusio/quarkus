@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.apache.maven.model.Model;
+import org.apache.maven.settings.crypto.SettingsDecrypter;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
@@ -28,6 +29,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     protected List<RemoteRepository> remoteRepos;
     protected List<RemoteRepository> remotePluginRepos;
     protected RemoteRepositoryManager remoteRepoManager;
+    protected SettingsDecrypter settingsDecrypter;
     protected String alternatePomName;
     protected File userSettings;
     protected boolean artifactTransferLogging = true;
@@ -39,6 +41,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     protected Function<Path, Model> modelProvider;
     protected List<String> excludeSisuBeanPackages;
     protected List<String> includeSisuBeanPackages;
+    protected Boolean warnOnFailedWorkspaceModules;
 
     public T excludeSisuBeanPackage(String packageName) {
         if (excludeSisuBeanPackages == null) {
@@ -191,6 +194,18 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     }
 
     /**
+     * Settings decryptor
+     *
+     * @param settingsDecrypter settings decrypter
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public T setSettingsDecrypter(SettingsDecrypter settingsDecrypter) {
+        this.settingsDecrypter = settingsDecrypter;
+        return (T) this;
+    }
+
+    /**
      * The meaning of this option is equivalent to alternative POM in Maven,
      * which can be specified with command line argument '-f'.
      *
@@ -317,6 +332,18 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     @SuppressWarnings("unchecked")
     public T setProjectModelProvider(Function<Path, Model> modelProvider) {
         this.modelProvider = modelProvider;
+        return (T) this;
+    }
+
+    /**
+     * Whether to warn about failures loading workspace modules instead of throwing errors
+     *
+     * @param warnOnFailedWorkspaceModules whether to warn about failures loading workspace modules instead of throwing errors
+     * @return this config instance
+     */
+    @SuppressWarnings("unchecked")
+    public T setWarnOnFailedWorkspaceModules(boolean warnOnFailedWorkspaceModules) {
+        this.warnOnFailedWorkspaceModules = warnOnFailedWorkspaceModules;
         return (T) this;
     }
 

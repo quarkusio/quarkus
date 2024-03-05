@@ -4,6 +4,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 
 import java.util.function.Supplier;
 
+import jakarta.inject.Singleton;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -50,10 +51,11 @@ public class SubResourceDevModeTest {
 
         @Path("sub")
         public SubResource subresource() {
-            return new SubResource();
+            return resourceContext.getResource(SubResource.class);
         }
     }
 
+    @Singleton
     public static class SubResource {
 
         @GET
@@ -61,4 +63,5 @@ public class SubResourceDevModeTest {
             return "hello";
         }
     }
+
 }

@@ -84,16 +84,22 @@ public class OidcProviderClient implements Closeable {
     }
 
     public Uni<JsonWebKeySet> getJsonWebKeySet(OidcRequestContextProperties contextProperties) {
-        return filter(OidcEndpoint.Type.JWKS, client.getAbs(metadata.getJsonWebKeySetUri()), null, contextProperties).send()
+        return OidcCommonUtils
+                .sendRequest(vertx,
+                        filter(OidcEndpoint.Type.JWKS, client.getAbs(metadata.getJsonWebKeySetUri()), null, contextProperties),
+                        oidcConfig.useBlockingDnsLookup)
                 .onItem()
                 .transform(resp -> getJsonWebKeySet(resp));
     }
 
     public Uni<UserInfo> getUserInfo(String token) {
         LOG.debugf("Get UserInfo on: %s auth: %s", metadata.getUserInfoUri(), OidcConstants.BEARER_SCHEME + " " + token);
-        return filter(OidcEndpoint.Type.USERINFO, client.getAbs(metadata.getUserInfoUri()), null, null)
-                .putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + token)
-                .send().onItem().transform(resp -> getUserInfo(resp));
+        return OidcCommonUtils
+                .sendRequest(vertx,
+                        filter(OidcEndpoint.Type.USERINFO, client.getAbs(metadata.getUserInfoUri()), null, null)
+                                .putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + token),
+                        oidcConfig.useBlockingDnsLookup)
+                .onItem().transform(resp -> getUserInfo(resp));
     }
 
     public Uni<TokenIntrospection> introspectToken(String token) {

@@ -91,6 +91,7 @@
         <opensearch-server.version>2.11.1</opensearch-server.version>
         <opensearch.image>docker.io/opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
         <opensearch.protocol>http</opensearch.protocol>
+        <junit-pioneer.version>2.2.0</junit-pioneer.version>
 
         <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
         <postgres.image>docker.io/postgres:14</postgres.image>
@@ -289,6 +290,12 @@
                 <version>${assertj.version}</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>org.junit-pioneer</groupId>
+                <artifactId>junit-pioneer</artifactId>
+                <version>${junit-pioneer.version}</version>
+                <scope>test</scope>
+            </dependency>
 
             <dependency>
                 <groupId>org.asciidoctor</groupId>
@@ -369,6 +376,13 @@
                         <artifactId>artemis-server</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>me.escoffier.certs</groupId>
+                <artifactId>certificate-generator-junit5</artifactId>
+                <version>0.4.3</version>
+                <scope>test</scope>
             </dependency>
 
         </dependencies>

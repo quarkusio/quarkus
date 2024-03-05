@@ -176,14 +176,32 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
     /**
      * Configuration of the certificate chain which can be used to verify tokens.
-     * If the certificate chain trusstore is configured, the tokens can be verified using the certificate
+     * If the certificate chain truststore is configured, the tokens can be verified using the certificate
      * chain inlined in the Base64-encoded format as an `x5c` header in the token itself.
+     * <p/>
+     * The certificate chain inlined in the token is verified.
+     * Signature of every certificate in the chain but the root certificate is verified by the next certificate in the chain.
+     * Thumbprint of the root certificate in the chain must match a thumbprint of one of the certificates in the truststore.
+     * <p/>
+     * Additionally, a direct trust in the leaf chain certificate which will be used to verify the token signature must
+     * be established.
+     * By default, the leaf certificate's thumbprint must match a thumbprint of one of the certificates in the truststore.
+     * If the truststore does not have the leaf certificate imported, then the leaf certificate must be identified by its Common
+     * Name.
      */
     @ConfigItem
     public CertificateChain certificateChain = new CertificateChain();
 
     @ConfigGroup
     public static class CertificateChain {
+        /**
+         * Common name of the leaf certificate. It must be set if the {@link #trustStoreFile} does not have
+         * this certificate imported.
+         *
+         */
+        @ConfigItem
+        public Optional<String> leafCertificateName = Optional.empty();
+
         /**
          * Truststore file which keeps thumbprints of the trusted certificates.
          */
@@ -232,6 +250,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setTrustStoreFileType(Optional<String> trustStoreFileType) {
             this.trustStoreFileType = trustStoreFileType;
+        }
+
+        public Optional<String> getLeafCertificateName() {
+            return leafCertificateName;
+        }
+
+        public void setLeafCertificateName(String leafCertificateName) {
+            this.leafCertificateName = Optional.of(leafCertificateName);
         }
     }
 
@@ -927,6 +953,13 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<List<String>> scopes = Optional.empty();
 
         /**
+         * The separator which is used when more than one scope is configured.
+         * A single space is used by default.
+         */
+        @ConfigItem
+        public Optional<String> scopeSeparator = Optional.empty();
+
+        /**
          * Require that ID token includes a `nonce` claim which must match `nonce` authentication request query parameter.
          * Enabling this property can help mitigate replay attacks.
          * Do not enable this property if your OpenId Connect provider does not support setting `nonce` in ID token
@@ -1341,6 +1374,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setStateSecret(Optional<String> stateSecret) {
             this.stateSecret = stateSecret;
+        }
+
+        public Optional<String> getScopeSeparator() {
+            return scopeSeparator;
+        }
+
+        public void setScopeSeparator(String scopeSeparator) {
+            this.scopeSeparator = Optional.of(scopeSeparator);
         }
     }
 

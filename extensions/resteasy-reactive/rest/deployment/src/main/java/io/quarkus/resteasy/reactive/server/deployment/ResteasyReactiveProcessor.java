@@ -236,7 +236,7 @@ public class ResteasyReactiveProcessor {
 
     @BuildStep
     public FeatureBuildItem buildSetup() {
-        return new FeatureBuildItem(Feature.RESTEASY_REACTIVE);
+        return new FeatureBuildItem(Feature.REST);
     }
 
     // This is required to get rid of netty exceptions when allocating direct buffers in tests running

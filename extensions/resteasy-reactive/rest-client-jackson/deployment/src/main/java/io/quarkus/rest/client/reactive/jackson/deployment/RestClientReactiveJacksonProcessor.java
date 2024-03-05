@@ -1,6 +1,5 @@
 package io.quarkus.rest.client.reactive.jackson.deployment;
 
-import static io.quarkus.deployment.Feature.REST_CLIENT_REACTIVE_JACKSON;
 import static org.jboss.resteasy.reactive.common.util.RestMediaType.APPLICATION_NDJSON;
 import static org.jboss.resteasy.reactive.common.util.RestMediaType.APPLICATION_STREAM_JSON;
 
@@ -15,6 +14,7 @@ import org.jboss.jandex.DotName;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -41,7 +41,7 @@ public class RestClientReactiveJacksonProcessor {
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> features) {
-        features.produce(new FeatureBuildItem(REST_CLIENT_REACTIVE_JACKSON));
+        features.produce(new FeatureBuildItem(Feature.REST_CLIENT_JACKSON));
     }
 
     @BuildStep

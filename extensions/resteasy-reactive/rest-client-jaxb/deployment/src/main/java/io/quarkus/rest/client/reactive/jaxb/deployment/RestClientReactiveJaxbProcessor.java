@@ -1,6 +1,6 @@
 package io.quarkus.rest.client.reactive.jaxb.deployment;
 
-import static io.quarkus.deployment.Feature.REST_CLIENT_REACTIVE_JAXB;
+import static io.quarkus.deployment.Feature.REST_CLIENT_JAXB;
 
 import java.util.List;
 
@@ -21,7 +21,7 @@ public class RestClientReactiveJaxbProcessor {
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> features) {
-        features.produce(new FeatureBuildItem(REST_CLIENT_REACTIVE_JAXB));
+        features.produce(new FeatureBuildItem(REST_CLIENT_JAXB));
     }
 
     @BuildStep

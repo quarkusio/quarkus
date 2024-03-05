@@ -137,7 +137,7 @@ class RestClientReactiveProcessor {
 
     @BuildStep
     void announceFeature(BuildProducer<FeatureBuildItem> features) {
-        features.produce(new FeatureBuildItem(Feature.REST_CLIENT_REACTIVE));
+        features.produce(new FeatureBuildItem(Feature.REST_CLIENT));
     }
 
     @BuildStep
@@ -147,7 +147,7 @@ class RestClientReactiveProcessor {
 
     @BuildStep
     ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
-        return new ExtensionSslNativeSupportBuildItem(Feature.REST_CLIENT_REACTIVE);
+        return new ExtensionSslNativeSupportBuildItem(Feature.REST_CLIENT);
     }
 
     @BuildStep

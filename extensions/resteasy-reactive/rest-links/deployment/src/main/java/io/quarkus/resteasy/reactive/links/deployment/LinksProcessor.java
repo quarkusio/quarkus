@@ -51,7 +51,7 @@ final class LinksProcessor {
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature) {
-        feature.produce(new FeatureBuildItem(Feature.RESTEASY_REACTIVE_LINKS));
+        feature.produce(new FeatureBuildItem(Feature.REST_LINKS));
     }
 
     @BuildStep

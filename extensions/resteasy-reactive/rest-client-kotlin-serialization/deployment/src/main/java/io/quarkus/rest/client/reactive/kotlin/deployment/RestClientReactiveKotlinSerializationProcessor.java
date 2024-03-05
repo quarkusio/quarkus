@@ -1,6 +1,6 @@
 package io.quarkus.rest.client.reactive.kotlin.deployment;
 
-import static io.quarkus.deployment.Feature.REST_CLIENT_REACTIVE_KOTLIN_SERIALIZATION;
+import static io.quarkus.deployment.Feature.REST_CLIENT_KOTLIN_SERIALIZATION;
 
 import java.util.Collections;
 
@@ -21,7 +21,7 @@ public class RestClientReactiveKotlinSerializationProcessor {
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> features) {
-        features.produce(new FeatureBuildItem(REST_CLIENT_REACTIVE_KOTLIN_SERIALIZATION));
+        features.produce(new FeatureBuildItem(REST_CLIENT_KOTLIN_SERIALIZATION));
     }
 
     @BuildStep

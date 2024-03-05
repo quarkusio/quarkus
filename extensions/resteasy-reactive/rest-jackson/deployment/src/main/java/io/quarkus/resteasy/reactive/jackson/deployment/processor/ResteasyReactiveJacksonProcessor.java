@@ -105,7 +105,7 @@ public class ResteasyReactiveJacksonProcessor {
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature) {
-        feature.produce(new FeatureBuildItem(Feature.RESTEASY_REACTIVE_JACKSON));
+        feature.produce(new FeatureBuildItem(Feature.REST_JACKSON));
     }
 
     @BuildStep

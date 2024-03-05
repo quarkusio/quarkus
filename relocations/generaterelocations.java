@@ -91,6 +91,11 @@ public class generaterelocations implements Runnable {
         "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
         RELOCATIONS.put("quarkus-oidc-token-propagation-reactive", oidcTokenPropagationReactiveRelocation);
         RELOCATIONS.put("quarkus-oidc-token-propagation-reactive-deployment", oidcTokenPropagationReactiveRelocation);
+
+        Function<String, Relocation>  oidcTokenPropagationRelocation = a -> Relocation.ofArtifactId(a.replace("oidc-token-propagation", "resteasy-client-oidc-token-propagation"),
+        "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        RELOCATIONS.put("quarkus-oidc-token-propagation", oidcTokenPropagationRelocation);
+        RELOCATIONS.put("quarkus-oidc-token-propagation-deployment", oidcTokenPropagationRelocation);
     }
 
     private static final String RELOCATION_POM_TEMPLATE = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + //

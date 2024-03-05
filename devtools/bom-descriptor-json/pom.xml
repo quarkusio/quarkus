@@ -1619,7 +1619,7 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-oidc-token-propagation</artifactId>
+                    <artifactId>quarkus-resteasy-client-oidc-token-propagation</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>

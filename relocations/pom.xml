@@ -73,6 +73,8 @@
         <module>quarkus-csrf-reactive-deployment</module>
         <module>quarkus-oidc-token-propagation-reactive</module>
         <module>quarkus-oidc-token-propagation-reactive-deployment</module>
+        <module>quarkus-oidc-token-propagation</module>
+        <module>quarkus-oidc-token-propagation-deployment</module>
     </modules>
 
 </project>

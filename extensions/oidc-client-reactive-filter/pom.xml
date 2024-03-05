@@ -10,8 +10,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-oidc-client-reactive-filter-parent</artifactId>
-    <name>Quarkus - OpenID Connect Oidc Client Reactive Filter</name>
+    <artifactId>quarkus-rest-client-oidc-filter-parent</artifactId>
+    <name>Quarkus - REST Client - OpenID Connect Filter</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

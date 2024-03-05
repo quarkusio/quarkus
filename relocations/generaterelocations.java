@@ -101,6 +101,12 @@ public class generaterelocations implements Runnable {
         "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
         RELOCATIONS.put("quarkus-oidc-client-filter", oidcClientFilterRelocation);
         RELOCATIONS.put("quarkus-oidc-client-filter-deployment", oidcClientFilterRelocation);
+
+
+        Function<String, Relocation>  oidcClientReactiveFilterRelocation = a -> Relocation.ofArtifactId(a.replace("oidc-client-reactive-filter", "rest-client-oidc-filter"),
+        "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        RELOCATIONS.put("quarkus-oidc-client-reactive-filter", oidcClientReactiveFilterRelocation);
+        RELOCATIONS.put("quarkus-oidc-client-reactive-filter-deployment", oidcClientReactiveFilterRelocation);
     }
 
     private static final String RELOCATION_POM_TEMPLATE = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + //

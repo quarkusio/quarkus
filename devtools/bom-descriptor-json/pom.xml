@@ -1580,7 +1580,7 @@
                 </dependency>
                 <dependency>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-oidc-client-reactive-filter</artifactId>
+                    <artifactId>quarkus-rest-client-oidc-filter</artifactId>
                     <version>${project.version}</version>
                     <type>pom</type>
                     <scope>test</scope>

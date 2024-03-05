@@ -77,6 +77,8 @@
         <module>quarkus-oidc-token-propagation-deployment</module>
         <module>quarkus-oidc-client-filter</module>
         <module>quarkus-oidc-client-filter-deployment</module>
+        <module>quarkus-oidc-client-reactive-filter</module>
+        <module>quarkus-oidc-client-reactive-filter-deployment</module>
     </modules>
 
 </project>

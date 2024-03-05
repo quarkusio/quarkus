@@ -28,6 +28,7 @@ import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageAgentConfigDirectoryBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathAggregateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageEnableModule;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
@@ -178,6 +179,7 @@ public class NativeImageBuildStep {
             Optional<ProcessInheritIODisabled> processInheritIODisabled,
             Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem,
             List<NativeImageFeatureBuildItem> nativeImageFeatures,
+            Optional<NativeImageAgentConfigDirectoryBuildItem> nativeImageAgentConfigDirectoryBuildItem,
             NativeImageRunnerBuildItem nativeImageRunner) {
         if (nativeConfig.debug().enabled()) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
@@ -245,6 +247,7 @@ public class NativeImageBuildStep {
                     .setGraalVMVersion(graalVMVersion)
                     .setNativeImageFeatures(nativeImageFeatures)
                     .setContainerBuild(isContainerBuild)
+                    .setNativeImageAgentConfigDirectory(nativeImageAgentConfigDirectoryBuildItem)
                     .build();
 
             List<String> nativeImageArgs = commandAndExecutable.args;
@@ -593,9 +596,16 @@ public class NativeImageBuildStep {
             private String nativeImageName;
             private boolean classpathIsBroken;
             private boolean containerBuild;
+            private Optional<NativeImageAgentConfigDirectoryBuildItem> nativeImageAgentConfigDirectory = Optional.empty();
 
             public Builder setNativeConfig(NativeConfig nativeConfig) {
                 this.nativeConfig = nativeConfig;
+                return this;
+            }
+
+            public Builder setNativeImageAgentConfigDirectory(
+                    Optional<NativeImageAgentConfigDirectoryBuildItem> nativeImageAgentConfigDirectory) {
+                this.nativeImageAgentConfigDirectory = nativeImageAgentConfigDirectory;
                 return this;
             }
 
@@ -982,6 +992,9 @@ public class NativeImageBuildStep {
                         throw new UnsupportedOperationException(errs);
                     }
                 }
+
+                nativeImageAgentConfigDirectory
+                        .ifPresent(dir -> nativeImageArgs.add("-H:ConfigurationFileDirectories=" + dir.getDirectory()));
 
                 for (ExcludeConfigBuildItem excludeConfig : excludeConfigs) {
                     nativeImageArgs.add("--exclude-config");

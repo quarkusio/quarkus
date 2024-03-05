@@ -11,6 +11,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 
+import io.quarkus.builder.json.JsonArray;
+import io.quarkus.builder.json.JsonBoolean;
+import io.quarkus.builder.json.JsonInteger;
+import io.quarkus.builder.json.JsonMember;
+import io.quarkus.builder.json.JsonMultiValue;
+import io.quarkus.builder.json.JsonObject;
+import io.quarkus.builder.json.JsonString;
+import io.quarkus.builder.json.JsonValue;
+
 /**
  * A simple JSON string generator.
  */
@@ -48,7 +57,7 @@ public final class Json {
      * @return the new JSON array builder, empty builders are not ignored
      */
     public static JsonArrayBuilder array() {
-        return new JsonArrayBuilder(false);
+        return new JsonArrayBuilder(false, false);
     }
 
     /**
@@ -56,15 +65,15 @@ public final class Json {
      * @return the new JSON array builder
      * @see JsonBuilder#ignoreEmptyBuilders
      */
-    static JsonArrayBuilder array(boolean ignoreEmptyBuilders) {
-        return new JsonArrayBuilder(ignoreEmptyBuilders);
+    public static JsonArrayBuilder array(boolean ignoreEmptyBuilders, boolean skipEscapeCharacters) {
+        return new JsonArrayBuilder(ignoreEmptyBuilders, skipEscapeCharacters);
     }
 
     /**
      * @return the new JSON object builder, empty builders are not ignored
      */
     public static JsonObjectBuilder object() {
-        return new JsonObjectBuilder(false);
+        return new JsonObjectBuilder(false, false);
     }
 
     /**
@@ -72,20 +81,30 @@ public final class Json {
      * @return the new JSON object builder
      * @see JsonBuilder#ignoreEmptyBuilders
      */
-    static JsonObjectBuilder object(boolean ignoreEmptyBuilders) {
-        return new JsonObjectBuilder(ignoreEmptyBuilders);
+    public static JsonObjectBuilder object(boolean ignoreEmptyBuilders, boolean skipEscapeCharacters) {
+        return new JsonObjectBuilder(ignoreEmptyBuilders, skipEscapeCharacters);
     }
 
-    abstract static class JsonBuilder<T> {
+    public abstract static class JsonBuilder<T> {
 
-        protected boolean ignoreEmptyBuilders = false;
+        protected final boolean ignoreEmptyBuilders;
+        /**
+         * Skips escaping characters in string values.
+         * This option should be enabled when transforming JSON input,
+         * whose string values are already escaped.
+         * In situations like this, the option avoids escaping characters
+         * that are already escaped.
+         */
+        protected final boolean skipEscapeCharacters;
+        protected JsonTransform transform;
 
         /**
          * @param ignoreEmptyBuilders If set to true all empty builders added to this builder will be ignored during
          *        {@link #build()}
          */
-        JsonBuilder(boolean ignoreEmptyBuilders) {
+        JsonBuilder(boolean ignoreEmptyBuilders, boolean skipEscapeCharacters) {
             this.ignoreEmptyBuilders = ignoreEmptyBuilders;
+            this.skipEscapeCharacters = skipEscapeCharacters;
         }
 
         /**
@@ -130,6 +149,16 @@ public final class Json {
 
         protected abstract T self();
 
+        abstract void add(JsonValue element);
+
+        void setTransform(JsonTransform transform) {
+            this.transform = transform;
+        }
+
+        public void transform(JsonMultiValue value, JsonTransform transform) {
+            final ResolvedTransform resolved = new ResolvedTransform(this, transform);
+            value.forEach(resolved);
+        }
     }
 
     /**
@@ -139,8 +168,8 @@ public final class Json {
 
         private final List<Object> values;
 
-        private JsonArrayBuilder(boolean ignoreEmptyBuilders) {
-            super(ignoreEmptyBuilders);
+        private JsonArrayBuilder(boolean ignoreEmptyBuilders, boolean skipEscapeCharacters) {
+            super(ignoreEmptyBuilders, skipEscapeCharacters);
             this.values = new ArrayList<Object>();
         }
 
@@ -209,7 +238,7 @@ public final class Json {
                 if (++idx > 1) {
                     appendable.append(ENTRY_SEPARATOR);
                 }
-                appendValue(appendable, value);
+                appendValue(appendable, value, skipEscapeCharacters);
             }
             appendable.append(ARRAY_END);
         }
@@ -219,6 +248,32 @@ public final class Json {
             return this;
         }
 
+        @Override
+        void add(JsonValue element) {
+            if (element instanceof JsonString) {
+                add(((JsonString) element).value());
+            } else if (element instanceof JsonInteger) {
+                final long longValue = ((JsonInteger) element).longValue();
+                final int intValue = (int) longValue;
+                if (longValue == intValue) {
+                    add(intValue);
+                } else {
+                    add(longValue);
+                }
+            } else if (element instanceof JsonBoolean) {
+                add(((JsonBoolean) element).value());
+            } else if (element instanceof JsonArray) {
+                final JsonArrayBuilder arrayBuilder = Json.array(ignoreEmptyBuilders, skipEscapeCharacters);
+                arrayBuilder.transform((JsonArray) element, transform);
+                add(arrayBuilder);
+            } else if (element instanceof JsonObject) {
+                final JsonObjectBuilder objectBuilder = Json.object(ignoreEmptyBuilders, skipEscapeCharacters);
+                objectBuilder.transform((JsonObject) element, transform);
+                if (!objectBuilder.isEmpty()) {
+                    add(objectBuilder);
+                }
+            }
+        }
     }
 
     /**
@@ -228,8 +283,8 @@ public final class Json {
 
         private final Map<String, Object> properties;
 
-        private JsonObjectBuilder(boolean ignoreEmptyBuilders) {
-            super(ignoreEmptyBuilders);
+        private JsonObjectBuilder(boolean ignoreEmptyBuilders, boolean skipEscapeCharacters) {
+            super(ignoreEmptyBuilders, skipEscapeCharacters);
             this.properties = new HashMap<String, Object>();
         }
 
@@ -299,9 +354,9 @@ public final class Json {
                 if (++idx > 1) {
                     appendable.append(ENTRY_SEPARATOR);
                 }
-                appendStringValue(appendable, entry.getKey());
+                appendStringValue(appendable, entry.getKey(), skipEscapeCharacters);
                 appendable.append(NAME_VAL_SEPARATOR);
-                appendValue(appendable, entry.getValue());
+                appendValue(appendable, entry.getValue(), skipEscapeCharacters);
             }
             appendable.append(OBJECT_END);
         }
@@ -311,15 +366,47 @@ public final class Json {
             return this;
         }
 
+        @Override
+        void add(JsonValue element) {
+            if (element instanceof JsonMember) {
+                final JsonMember member = (JsonMember) element;
+                final String attribute = member.attribute().value();
+                final JsonValue value = member.value();
+                if (value instanceof JsonString) {
+                    put(attribute, ((JsonString) value).value());
+                } else if (value instanceof JsonInteger) {
+                    final long longValue = ((JsonInteger) value).longValue();
+                    final int intValue = (int) longValue;
+                    if (longValue == intValue) {
+                        put(attribute, intValue);
+                    } else {
+                        put(attribute, longValue);
+                    }
+                } else if (value instanceof JsonBoolean) {
+                    final boolean booleanValue = ((JsonBoolean) value).value();
+                    put(attribute, booleanValue);
+                } else if (value instanceof JsonArray) {
+                    final JsonArrayBuilder arrayBuilder = Json.array(ignoreEmptyBuilders, skipEscapeCharacters);
+                    arrayBuilder.transform((JsonArray) value, transform);
+                    put(attribute, arrayBuilder);
+                } else if (value instanceof JsonObject) {
+                    final JsonObjectBuilder objectBuilder = Json.object(ignoreEmptyBuilders, skipEscapeCharacters);
+                    objectBuilder.transform((JsonObject) value, transform);
+                    if (!objectBuilder.isEmpty()) {
+                        put(attribute, objectBuilder);
+                    }
+                }
+            }
+        }
     }
 
-    static void appendValue(Appendable appendable, Object value) throws IOException {
+    static void appendValue(Appendable appendable, Object value, boolean skipEscapeCharacters) throws IOException {
         if (value instanceof JsonObjectBuilder) {
             appendable.append(((JsonObjectBuilder) value).build());
         } else if (value instanceof JsonArrayBuilder) {
             appendable.append(((JsonArrayBuilder) value).build());
         } else if (value instanceof String) {
-            appendStringValue(appendable, value.toString());
+            appendStringValue(appendable, value.toString(), skipEscapeCharacters);
         } else if (value instanceof Boolean || value instanceof Integer || value instanceof Long) {
             appendable.append(value.toString());
         } else {
@@ -327,9 +414,13 @@ public final class Json {
         }
     }
 
-    static void appendStringValue(Appendable appendable, String value) throws IOException {
+    static void appendStringValue(Appendable appendable, String value, boolean skipEscapeCharacters) throws IOException {
         appendable.append(CHAR_QUOTATION_MARK);
-        appendable.append(escape(value));
+        if (skipEscapeCharacters) {
+            appendable.append(value);
+        } else {
+            appendable.append(escape(value));
+        }
         appendable.append(CHAR_QUOTATION_MARK);
     }
 
@@ -354,4 +445,21 @@ public final class Json {
         return builder.toString();
     }
 
+    private static final class ResolvedTransform implements JsonTransform {
+        private final Json.JsonBuilder<?> resolvedBuilder;
+        private final JsonTransform transform;
+
+        private ResolvedTransform(Json.JsonBuilder<?> resolvedBuilder, JsonTransform transform) {
+            this.resolvedBuilder = resolvedBuilder;
+            this.resolvedBuilder.setTransform(transform);
+            this.transform = transform;
+        }
+
+        @Override
+        public void accept(Json.JsonBuilder<?> builder, JsonValue element) {
+            if (builder == null) {
+                transform.accept(resolvedBuilder, element);
+            }
+        }
+    }
 }

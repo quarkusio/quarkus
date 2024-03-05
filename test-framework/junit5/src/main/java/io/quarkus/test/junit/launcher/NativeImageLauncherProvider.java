@@ -21,7 +21,7 @@ import io.quarkus.test.common.TestConfigUtil;
 
 public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
     @Override
-    public boolean supportsArtifactType(String type) {
+    public boolean supportsArtifactType(String type, String testProfile) {
         return isNativeBinary(type);
     }
 

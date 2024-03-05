@@ -326,7 +326,7 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         }
     }
 
-    private boolean isNativeProfileEnabled(MavenProject mavenProject) {
+    static boolean isNativeProfileEnabled(MavenProject mavenProject) {
         // gotcha: mavenProject.getActiveProfiles() does not always contain all active profiles (sic!),
         //         but getInjectedProfileIds() does (which has to be "flattened" first)
         Stream<String> activeProfileIds = mavenProject.getInjectedProfileIds().values().stream().flatMap(List<String>::stream);
@@ -334,6 +334,6 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
             return true;
         }
         // recurse into parent (if available)
-        return Optional.ofNullable(mavenProject.getParent()).map(this::isNativeProfileEnabled).orElse(false);
+        return Optional.ofNullable(mavenProject.getParent()).map(QuarkusBootstrapMojo::isNativeProfileEnabled).orElse(false);
     }
 }

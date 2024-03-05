@@ -1,6 +1,7 @@
 package io.quarkus.it.rest.client;
 
 import java.io.InputStream;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import jakarta.ws.rs.FormParam;
@@ -21,4 +22,8 @@ public class MultipartBody {
     @FormParam("uuid")
     @PartType(MediaType.TEXT_PLAIN)
     public UUID uuid;
+
+    @FormParam("offsetDateTime")
+    @PartType(MediaType.TEXT_PLAIN)
+    public OffsetDateTime offsetDateTime;
 }

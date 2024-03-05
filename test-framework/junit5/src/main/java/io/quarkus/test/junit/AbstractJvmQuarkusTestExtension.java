@@ -36,7 +36,7 @@ import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.deployment.dev.testing.CurrentTestApplication;
 import io.quarkus.paths.PathList;
-import io.quarkus.runtime.configuration.ProfileManager;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.RestorableSystemProperties;
@@ -165,7 +165,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
                 additional.put("quarkus.arc.test.disable-application-lifecycle-observers", "true");
             }
             if (profileInstance.getConfigProfile() != null) {
-                additional.put(ProfileManager.QUARKUS_TEST_PROFILE_PROP, profileInstance.getConfigProfile());
+                additional.put(LaunchMode.TEST.getProfileKey(), profileInstance.getConfigProfile());
             }
             //we just use system properties for now
             //it's a lot simpler

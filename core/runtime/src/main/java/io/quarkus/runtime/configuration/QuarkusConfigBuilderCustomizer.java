@@ -25,7 +25,7 @@ import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 public class QuarkusConfigBuilderCustomizer implements SmallRyeConfigBuilderCustomizer {
     @Override
     public void configBuilder(final SmallRyeConfigBuilder builder) {
-        LaunchMode launchMode = ProfileManager.getLaunchMode();
+        LaunchMode launchMode = LaunchMode.current();
         builder.withDefaultValue(launchMode.getProfileKey(), launchMode.getDefaultProfile());
 
         builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {

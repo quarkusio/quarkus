@@ -69,7 +69,6 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runner.bootstrap.StartupActionImpl;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.PathTestHelper;
@@ -511,7 +510,7 @@ public class QuarkusUnitTest
         TestConfigUtil.cleanUp();
         GroovyClassValue.disable();
         //set the right launch mode in the outer CL, used by the HTTP host config source
-        ProfileManager.setLaunchMode(LaunchMode.TEST);
+        LaunchMode.set(LaunchMode.TEST);
         if (beforeAllCustomizer != null) {
             beforeAllCustomizer.run();
         }

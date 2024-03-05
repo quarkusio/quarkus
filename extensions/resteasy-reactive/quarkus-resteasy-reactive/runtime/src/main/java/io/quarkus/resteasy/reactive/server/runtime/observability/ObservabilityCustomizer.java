@@ -13,9 +13,17 @@ public class ObservabilityCustomizer implements HandlerChainCustomizer {
     public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
             ServerResourceMethod serverResourceMethod) {
         if (phase.equals(Phase.AFTER_MATCH)) {
+            String basePath = resourceClass.getPath();
+            boolean isSubResource = basePath == null;
             ObservabilityHandler observabilityHandler = new ObservabilityHandler();
-            observabilityHandler
-                    .setTemplatePath(resourceClass.getPath() + serverResourceMethod.getPath());
+            if (isSubResource) {
+                observabilityHandler.setTemplatePath(serverResourceMethod.getPath());
+                observabilityHandler.setSubResource(true);
+            } else {
+                observabilityHandler.setTemplatePath(basePath + serverResourceMethod.getPath());
+                observabilityHandler.setSubResource(false);
+            }
+
             return Collections.singletonList(observabilityHandler);
         }
         return Collections.emptyList();

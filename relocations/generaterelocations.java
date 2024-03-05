@@ -18,6 +18,7 @@ import java.util.TreeMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import picocli.CommandLine.Command;
@@ -135,9 +136,7 @@ public class generaterelocations implements Runnable {
     @Override
     public void run() {
         List<String> modules = new ArrayList<>();
-        String publicAsciidoc = "|===\n" + //
-                "|Old name |New name\n";
-        String extensionAsciidoc = publicAsciidoc;
+        Map<String, MigrationGuideAsciidoc> migrationGuides = new LinkedHashMap<>();
 
         for (Entry<String, Function<String, Relocation>> relocationEntry : RELOCATIONS.entrySet()) {
             String originalArtifactId = relocationEntry.getKey();
@@ -166,16 +165,8 @@ public class generaterelocations implements Runnable {
                         migrationGuide
                 ));
 
-                if (originalArtifactId.endsWith("-deployment")
-                        || originalArtifactId.endsWith("-spi")
-                        || originalArtifactId.contains("-spi-")
-                        || originalArtifactId.endsWith("-common")) {
-                    extensionAsciidoc += "\n|" + originalArtifactId + "\n" +
-                            "|" + newCoordinates + "\n";
-                } else {
-                    publicAsciidoc += "\n|" + originalArtifactId + "\n" +
-                            "|" + newCoordinates + "\n";
-                }
+                migrationGuides.computeIfAbsent(migrationGuide, mg -> new MigrationGuideAsciidoc(mg))
+                        .addModule(originalArtifactId, newCoordinates);
 
                 modules.add(originalArtifactId);
             } catch (IOException e) {
@@ -187,11 +178,9 @@ public class generaterelocations implements Runnable {
             return;
         }
 
-        publicAsciidoc += "|===";
-
-        LOG.info("Asciidoc table to include in the migration guide for publicly consumed modules:\n" + publicAsciidoc);
-
-        LOG.info("Asciidoc table to include in the migration guide for extension developers:\n" + extensionAsciidoc);
+        for (MigrationGuideAsciidoc migrationGuideAsciidoc : migrationGuides.values()) {
+            migrationGuideAsciidoc.dump();
+        }
 
         try {
             Path parentPom = Path.of("pom.xml");
@@ -258,6 +247,45 @@ public class generaterelocations implements Runnable {
 
         public String getMigrationGuide() {
             return migrationGuide;
+        }
+    }
+
+    private static class MigrationGuideAsciidoc {
+
+        private String migrationGuide;
+        private String publicAsciidoc = "";
+        private String extensionAsciidoc = "";
+
+        public MigrationGuideAsciidoc(String migrationGuide) {
+            this.migrationGuide = migrationGuide;
+        }
+
+        public void addModule(String originalArtifactId, String newCoordinates) {
+            if (originalArtifactId.endsWith("-deployment")
+                    || originalArtifactId.endsWith("-spi")
+                    || originalArtifactId.contains("-spi-")
+                    || originalArtifactId.endsWith("-common")) {
+                extensionAsciidoc += "\n|" + originalArtifactId + "\n" +
+                        "|" + newCoordinates + "\n";
+            } else {
+                publicAsciidoc += "\n|" + originalArtifactId + "\n" +
+                        "|" + newCoordinates + "\n";
+            }
+        }
+
+        public void dump() {
+            LOG.info("Asciidoc table(s) to include in the migration guide " + migrationGuide);
+
+            if (!publicAsciidoc.isBlank()) {
+                publicAsciidoc = "|===\n" +
+                        "|Old name |New name\n" + publicAsciidoc + "|===";
+                LOG.info("- Asciidoc table for publicly consumed modules:\n" + publicAsciidoc);
+            }
+            if (!extensionAsciidoc.isBlank()) {
+                extensionAsciidoc = "|===\n" +
+                        "|Old name |New name\n" + extensionAsciidoc + "|===";
+                LOG.info("- Asciidoc table for extension developers:\n" + extensionAsciidoc);
+            }
         }
     }
 }

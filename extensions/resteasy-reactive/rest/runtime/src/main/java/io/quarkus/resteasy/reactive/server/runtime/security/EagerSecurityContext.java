@@ -102,7 +102,7 @@ public class EagerSecurityContext {
         final RoutingContext routingContext = requestContext.unwrap(RoutingContext.class);
         if (routingContext == null) {
             throw new IllegalStateException(
-                    "HTTP Security policy applied only on RESTEasy Reactive cannot be run as 'RoutingContext' is null");
+                    "HTTP Security policy applied only on Quarkus REST cannot be run as 'RoutingContext' is null");
         }
         record SecurityCheckWithIdentity(SecurityIdentity identity, HttpSecurityPolicy.CheckResult checkResult) {
         }

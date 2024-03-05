@@ -105,14 +105,14 @@ public class ResteasyReactiveCommonProcessor {
         boolean hasResteasyClassicClient = resteasyClassicDeps.stream()
                 .anyMatch(IS_NOT_TEST_SCOPED.and(IS_RESTEASY_CLASSIC_CLIENT_DEP));
         if (!hasResteasyClassicClient) { // there is no bulletproof way of knowing whether a server specific dependency has been included, so we deduce it by the absence of client dependency
-            throw new DeploymentException("Mixing RESTEasy Reactive and RESTEasy Classic server parts is not supported");
+            throw new DeploymentException("Mixing Quarkus REST and RESTEasy Classic server parts is not supported");
         }
         if (capabilities.isPresent(Capability.REST_CLIENT_REACTIVE)) {
             throw new DeploymentException(
-                    "Mixing RESTEasy Reactive and RESTEasy Classic client parts is not supported");
+                    "Mixing Quarkus REST and RESTEasy Classic client parts is not supported");
         } else {
             LOG.warn(
-                    "Mixing RESTEasy Reactive server and RESTEasy Classic client parts might lead to unexpected results. Consider using 'quarkus-rest-client-reactive' instead.");
+                    "Mixing Quarkus REST server and RESTEasy Classic client parts might lead to unexpected results. Consider using 'quarkus-rest-client' instead of 'quarkus-resteasy-client'.");
         }
     }
 

@@ -28,7 +28,7 @@ public class UserAgentTest {
     @Test
     void testHeadersWithSubresource() {
         Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
-        assertThat(client.call()).isEqualTo("Resteasy Reactive Client");
+        assertThat(client.call()).isEqualTo("Quarkus REST Client");
     }
 
     @Test

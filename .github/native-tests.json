@@ -128,8 +128,8 @@
         },
         {
             "category": "gRPC",
-            "timeout": 70,
-            "test-modules": "grpc-health, grpc-interceptors, grpc-mutual-auth, grpc-plain-text-gzip, grpc-plain-text-mutiny, grpc-proto-v2, grpc-streaming, grpc-tls",
+            "timeout": 75,
+            "test-modules": "grpc-health, grpc-interceptors, grpc-mutual-auth, grpc-plain-text-gzip, grpc-plain-text-mutiny, grpc-proto-v2, grpc-streaming, grpc-tls, grpc-tls-p12",
             "os-name": "ubuntu-latest"
         },
         {

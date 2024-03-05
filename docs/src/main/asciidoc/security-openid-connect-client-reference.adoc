@@ -1031,8 +1031,9 @@ quarkus.oidc-client.credentials.secret=secret
 quarkus.oidc-client.grant.type=exchange
 quarkus.oidc-client.grant-options.exchange.audience=quarkus-app-exchange
 
-quarkus.oidc-token-propagation.exchange-token=true
+quarkus.oidc-token-propagation.exchange-token=true <1>
 ----
+<1> Please note that the `exchange-token` configuration property is ignored when the OidcClient name is set with the `io.quarkus.oidc.token.propagation.AccessToken#exchangeTokenClient` annotation attribute.
 
 Note `AccessTokenRequestReactiveFilter` will use `OidcClient` to exchange the current token, and you can use `quarkus.oidc-client.grant-options.exchange` to set the additional exchange properties expected by your OpenID Connect Provider.
 
@@ -1051,7 +1052,7 @@ quarkus.oidc-client.scopes=https://graph.microsoft.com/user.read,offline_access
 quarkus.oidc-token-propagation-reactive.exchange-token=true
 ----
 
-`AccessTokenRequestReactiveFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-token-propagation-reactive.client-name` configuration property.
+`AccessTokenRequestReactiveFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-token-propagation-reactive.client-name` configuration property or with the `io.quarkus.oidc.token.propagation.AccessToken#exchangeTokenClient` annotation attribute.
 
 [[token-propagation]]
 == Token Propagation

@@ -123,6 +123,10 @@ Quarkus uses smart defaults when determining the media type of Jakarta REST meth
 The difference between `quarkus-resteasy-reactive` and `quarkus-resteasy` is the use of `text/plain` as the default media type instead of `text/html`
 when the method returns a `String`.
 
+=== Injection of `@SessionScoped` beans
+
+`@SessionScoped` beans are currently not supported. Should you really need this functionality, you'll need to use RESTEasy Classic instead of RESTEasy Reactive.
+
 === Servlets
 
 RESTEasy Reactive does **not** support servlets.

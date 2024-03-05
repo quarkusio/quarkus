@@ -8,7 +8,7 @@ include::_attributes.adoc[]
 :diataxis-type: reference
 :categories: security,web
 :topics: security,authorization,http,rest
-:extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-resteasy-reactive,io.quarkus:quarkus-resteasy
+:extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-rest,io.quarkus:quarkus-resteasy
 
 Quarkus incorporates a pluggable web security layer.
 When security is active, the system performs a permission check on all HTTP requests to determine if they should proceed.

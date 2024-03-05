@@ -37,7 +37,7 @@ The solution is located in the `infinispan-client-quickstart` link:{quickstarts-
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: infinispan-client-quickstart
-:create-app-extensions: infinispan-client,resteasy-reactive
+:create-app-extensions: infinispan-client,rest
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a new project, importing the Infinispan Client extension.

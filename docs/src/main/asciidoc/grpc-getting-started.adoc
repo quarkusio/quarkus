@@ -46,21 +46,21 @@ implementation("io.quarkus:quarkus-grpc")
 
 By default, the `quarkus-grpc` extension relies on the reactive programming model.
 In this guide we will follow a reactive approach.
-Under the `dependencies` section of your `pom.xml` file, make sure you have the RESTEasy Reactive dependency:
+Under the `dependencies` section of your `pom.xml` file, make sure you have the Quarkus REST (formerly RESTEasy Reactive) dependency:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive</artifactId>
+    <artifactId>quarkus-rest</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-resteasy-reactive")
+implementation("io.quarkus:quarkus-rest")
 ----
 
 If you are using Maven, make sure you have the `generate-code` goal of `quarkus-maven-plugin` enabled in your `pom.xml`.

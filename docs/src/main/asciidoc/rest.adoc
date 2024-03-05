@@ -3,12 +3,12 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Writing REST Services with RESTEasy Reactive
+= Writing REST Services with Quarkus REST (formerly RESTEasy Reactive)
 include::_attributes.adoc[]
 :categories: web
 :topics: rest,resteasy-reactive,virtual-threads
-:extensions: io.quarkus:quarkus-resteasy-reactive,io.quarkus:quarkus-resteasy-reactive-jackson,io.quarkus:quarkus-resteasy-reactive-jsonb,io.quarkus:quarkus-rest-client-reactive,io.quarkus:quarkus-rest-client-reactive-jackson,io.quarkus:quarkus-rest-client-reactive-jsonb
-:summary: Discover how to develop highly scalable reactive REST services with Jakarta REST and RESTEasy Reactive.
+:extensions: io.quarkus:quarkus-rest,io.quarkus:quarkus-rest-jackson,io.quarkus:quarkus-rest-jsonb,io.quarkus:quarkus-rest-client,io.quarkus:quarkus-rest-client-jackson,io.quarkus:quarkus-rest-client-jsonb
+:summary: Discover how to develop highly scalable reactive REST services with Jakarta REST and Quarkus REST.
 :jaxrsapi: https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/3.1.0/jakarta.ws.rs
 :jaxrsspec: https://jakarta.ee/specifications/restful-ws/3.1/jakarta-restful-ws-spec-3.1.html
 :jdkapi: https://docs.oracle.com/en/java/javase/17/docs/api/java.base
@@ -20,17 +20,17 @@ include::_attributes.adoc[]
 :resteasy-reactive-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive/{quarkus-version}
 :resteasy-reactive-common-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-common/{quarkus-version}
 
-This guide explains how to write REST Services with RESTEasy Reactive in Quarkus.
+This guide explains how to write REST Services with Quarkus REST in Quarkus.
 
 [TIP]
 ====
-This is the reference guide for RESTEasy Reactive.
+This is the reference guide for Quarkus REST.
 For a more lightweight introduction, please refer to the xref:rest-json.adoc[Writing JSON REST services guides].
 ====
 
-== What is RESTEasy Reactive?
+== What is Quarkus REST?
 
-RESTEasy Reactive is a new link:{jaxrsspec}[Jakarta REST (formerly known as JAX-RS)]
+Quarkus REST is a new link:{jaxrsspec}[Jakarta REST (formerly known as JAX-RS)]
 implementation written from the ground up to work on our
 common https://vertx.io/[Vert.x] layer and is thus fully reactive, while also being very tightly integrated with
 Quarkus and consequently moving a lot of work to build time.
@@ -50,14 +50,14 @@ Add the following import to your build file:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive</artifactId>
+    <artifactId>quarkus-rest</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-resteasy-reactive")
+implementation("io.quarkus:quarkus-rest")
 ----
 
 You can now write your first endpoint in the `org.acme.rest.Endpoint` class:
@@ -138,7 +138,7 @@ public static class MyApplication extends Application {
 ----
 
 This will cause all rest endpoints to be resolve relative to `/api`, so the endpoint above with `@Path("rest")` would
-be accessible at `/api/rest/`. You can also set the `quarkus.resteasy-reactive.path` build time property to set the root path if you
+be accessible at `/api/rest/`. You can also set the `quarkus.rest.path` build time property to set the root path if you
 don't want to use an annotation.
 
 === Declaring endpoints: HTTP methods
@@ -331,7 +331,7 @@ See <<parameter-mapping>> for more advanced use-cases.
 
 [NOTE]
 ====
-When an exception occurs in RESTEasy Reactive request parameter handling code, the exception is not printed by default to the log (for security reasons).
+When an exception occurs in Quarkus REST request parameter handling code, the exception is not printed by default to the log (for security reasons).
 This can sometimes make it hard to understand why certain HTTP status codes are returned (as the Jakarta REST mandates the use of non-intuitive error codes in various cases).
 In such cases, users are encouraged to set the logging level for the `org.jboss.resteasy.reactive.server.handlers.ParameterHandler` category to `DEBUG` like so:
 
@@ -595,13 +595,13 @@ public static class Resource {
 
 ==== Handling malformed input
 
-As part of reading the multipart body, RESTEasy Reactive invokes the proper MessageBodyReaderlink:{jaxrsapi}/jakarta/ws/rs/ext/MessageBodyReader.html[`MessageBodyReader`] for each part of the request.
+As part of reading the multipart body, Quarkus REST invokes the proper MessageBodyReaderlink:{jaxrsapi}/jakarta/ws/rs/ext/MessageBodyReader.html[`MessageBodyReader`] for each part of the request.
 If an `IOException` occurs for one of these parts (for example if Jackson was unable to deserialize a JSON part), then a `org.jboss.resteasy.reactive.server.multipart.MultipartPartReadingException` is thrown.
 If this exception is not handled by the application as mentioned in <<exception-mapping>>, an HTTP 400 response is returned by default.
 
 ==== Multipart output
 
-Similarly, RESTEasy Reactive can produce Multipart Form data to allow users download files from the server. For example, we could write a POJO
+Similarly, Quarkus REST can produce Multipart Form data to allow users download files from the server. For example, we could write a POJO
 that will hold the information we want to expose as:
 
 [source,java]
@@ -853,7 +853,7 @@ public class FruitResource {
 
 ==== Using RedirectException
 
-Users can also throw `jakarta.ws.rs.RedirectionException` from a method body to get RESTEasy Reactive to perform the desired redirect.
+Users can also throw `jakarta.ws.rs.RedirectionException` from a method body to get Quarkus REST to perform the desired redirect.
 
 === Async/reactive support
 
@@ -1219,7 +1219,7 @@ Manipulation of the returned HTTP headers and status code is not possible via `R
 
 === Controlling HTTP Caching features
 
-RESTEasy Reactive provides the link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/Cache.html[`@Cache`]
+Quarkus REST provides the link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/Cache.html[`@Cache`]
 and link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/NoCache.html[`@NoCache`] annotations to facilitate
 handling HTTP caching semantics, i.e. setting the 'Cache-Control' HTTP header.
 
@@ -1274,7 +1274,7 @@ method takes parameters of the following type:
 |Advanced: access to instances of endpoints
 
 |link:{resteasy-reactive-api}/org/jboss/resteasy/reactive/server/spi/ServerRequestContext.html[`ServerRequestContext`]
-|Advanced: RESTEasy Reactive access to the current request/response
+|Advanced: Quarkus REST access to the current request/response
 
 |link:{jaxrsapi}/jakarta/ws/rs/sse/Sse.html[`Sse`]
 |Advanced: Complex SSE use-cases
@@ -1374,15 +1374,15 @@ public class Endpoint {
 
 [[json]]
 
-Instead of importing `io.quarkus:quarkus-resteasy-reactive`, you can import either of the following modules to get support for JSON:
+Instead of importing `io.quarkus:quarkus-rest`, you can import either of the following modules to get support for JSON:
 
 |===
 |GAV|Usage
 
-|`io.quarkus:quarkus-resteasy-reactive-jackson`
+|`io.quarkus:quarkus-rest-jackson`
 |https://github.com/FasterXML/jackson[Jackson support]
 
-|`io.quarkus:quarkus-resteasy-reactive-jsonb`
+|`io.quarkus:quarkus-rest-jsonb`
 |https://eclipse-ee4j.github.io/jsonb-api/[JSON-B support]
 
 |===
@@ -1393,12 +1393,12 @@ serialisation>>.
 
 ==== Advanced Jackson-specific features
 
-When using the `quarkus-resteasy-reactive-jackson` extension there are some advanced features that RESTEasy Reactive supports.
+When using the `quarkus-rest-jackson` extension there are some advanced features that Quarkus REST supports.
 
 [[secure-serialization]]
 ===== Secure serialization
 
-When used with Jackson to perform JSON serialization, RESTEasy Reactive provides the ability to limit the set of fields that are serialized based on the roles of the current user.
+When used with Jackson to perform JSON serialization, Quarkus REST provides the ability to limit the set of fields that are serialized based on the roles of the current user.
 This is achieved by simply annotating the fields (or getters) of the POJO being returned with `@io.quarkus.resteasy.reactive.jackson.SecureField`.
 
 A simple example could be the following:
@@ -1537,7 +1537,7 @@ public class User {
 
 Depending on the Jakarta REST method that returns this user, we might want to exclude the `id` field from serialization.
 For example, you might want an insecure method to not expose this field.
-The way we can achieve that in RESTEasy Reactive is shown in the following example:
+The way we can achieve that in Quarkus REST is shown in the following example:
 
 [source,java]
 ----
@@ -1621,12 +1621,12 @@ public static class SupportUnquotedFields implements BiFunction<ObjectMapper, Ty
 
 [[xml]]
 
-To enable XML support, add the `quarkus-resteasy-reactive-jaxb` extension to your project.
+To enable XML support, add the `quarkus-rest-jaxb` extension to your project.
 
 |===
 |GAV|Usage
 
-|`io.quarkus:quarkus-resteasy-reactive-jaxb`
+|`io.quarkus:quarkus-rest-jaxb`
 |https://javaee.github.io/jaxb-v2/[XML support]
 
 |===
@@ -1635,9 +1635,9 @@ Importing this module will allow HTTP message bodies to be read from XML
 and serialised to XML, for <<resource-types,all the types not already registered with a more specific
 serialisation>>.
 
-The JAXB Resteasy Reactive extension will automatically detect the classes that are used in the resources and require JAXB serialization. Then, it will register these classes into the default `JAXBContext` which is internally used by the JAXB message reader and writer.
+The JAXB Quarkus REST extension will automatically detect the classes that are used in the resources and require JAXB serialization. Then, it will register these classes into the default `JAXBContext` which is internally used by the JAXB message reader and writer.
 
-However, in some situations, these classes cause the `JAXBContext` to fail: for example, when you're using the same class name in different java packages. In these cases, the application will fail at build time and print the JAXB exception that caused the issue, so you can properly fix it. Alternatively, you can also exclude the classes that cause the issue by using the property `quarkus.jaxb.exclude-classes`. When excluding classes that are required by any resource, the JAXB resteasy reactive extension will create and cache a custom `JAXBContext` that will include the excluded class, causing a minimal performance degradance.
+However, in some situations, these classes cause the `JAXBContext` to fail: for example, when you're using the same class name in different java packages. In these cases, the application will fail at build time and print the JAXB exception that caused the issue, so you can properly fix it. Alternatively, you can also exclude the classes that cause the issue by using the property `quarkus.jaxb.exclude-classes`. When excluding classes that are required by any resource, the JAXB Quarkus REST extension will create and cache a custom `JAXBContext` that will include the excluded class, causing a minimal performance degradance.
 
 [NOTE]
 ====
@@ -1653,11 +1653,11 @@ For instance, when setting `quarkus.jaxb.exclude-classes=org.acme.one.Model,org.
 
 ==== Advanced JAXB-specific features
 
-When using the `quarkus-resteasy-reactive-jaxb` extension there are some advanced features that RESTEasy Reactive supports.
+When using the `quarkus-resteasy-reactive-jaxb` extension there are some advanced features that Quarkus REST supports.
 
 ===== Inject JAXB components
 
-The JAXB resteasy reactive extension will serialize and unserialize requests and responses transparently for users. However, if you need finer grain control over JAXB components, you can inject either the JAXBContext, Marshaller, or Unmarshaller components into your beans:
+The JAXB Quarkus REST extension will serialize and unserialize requests and responses transparently for users. However, if you need finer grain control over JAXB components, you can inject either the JAXBContext, Marshaller, or Unmarshaller components into your beans:
 
 [source,java]
 ----
@@ -1742,12 +1742,12 @@ Note that if you provide your custom JAXB context instance, you will need to reg
 
 [[links]]
 
-To enable Web Links support, add the `quarkus-resteasy-reactive-links` extension to your project.
+To enable Web Links support, add the `quarkus-rest-links` extension to your project.
 
 |===
 |GAV|Usage
 
-|`io.quarkus:quarkus-resteasy-reactive-links`
+|`io.quarkus:quarkus-rest-links`
 |https://www.w3.org/wiki/LinkHeader[Web Links support]
 
 |===
@@ -1885,7 +1885,7 @@ Using this injected bean of type `RestLinksProvider`, you can get the links by t
 
 The https://tools.ietf.org/id/draft-kelly-json-hal-01.html[HAL] standard is a simple format to represent web links.
 
-To enable the HAL support, add the `quarkus-hal` extension to your project. Also, as HAL needs JSON support, you need to add either the `quarkus-resteasy-reactive-jsonb` or the `quarkus-resteasy-reactive-jackson` extension.
+To enable the HAL support, add the `quarkus-hal` extension to your project. Also, as HAL needs JSON support, you need to add either the `quarkus-rest-jsonb` or the `quarkus-rest-jackson` extension.
 
 |===
 |GAV|Usage
@@ -2040,7 +2040,7 @@ could prove useful for more complex use cases.
 
 [[execution-model]]
 
-RESTEasy Reactive is implemented using two main thread types:
+Quarkus REST is implemented using two main thread types:
 
 - Event-loop threads: which are responsible, among other things, for reading bytes from the HTTP request and
 writing bytes back to the HTTP response
@@ -2050,7 +2050,7 @@ The event-loop threads (also called IO threads) are responsible for actually per
 operations in an asynchronous way, and to trigger any listener interested in the completion of those
 IO operations.
 
-By default, the thread RESTEasy Reactive will run endpoint methods on depends on the signature of the method.
+By default, the thread Quarkus REST will run endpoint methods on depends on the signature of the method.
 If a method returns one of the following types then it is considered non-blocking, and will be run on the IO thread
 by default:
 
@@ -2296,9 +2296,9 @@ It may declare any of the following return types:
 
 [NOTE]
 ====
-When an exception occurs, RESTEasy Reactive does not log it by default (for security reasons).
+When an exception occurs, Quarkus REST does not log it by default (for security reasons).
 This can sometimes make it hard to understand why certain exception handling code was invoked (or not invoked).
-To make RESTEasy Reactive log the actual exception before an exception mapping code is run the `org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext` log category can be set to `DEBUG` like so:
+To make Quarkus REST log the actual exception before an exception mapping code is run the `org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext` log category can be set to `DEBUG` like so:
 
 [source, properties]
 ----
@@ -2491,7 +2491,7 @@ A `ContainerResponseFilter` will also be called for <<exception-mapping, handled
 Whenever your endpoint methods return an object (of when they return a
 link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse<?>`]
 or link:{jaxrsapi}/jakarta/ws/rs/core/Response.html[`Response`] with
-an entity), RESTEasy Reactive will look for a way to map that into an HTTP response body.
+an entity), Quarkus REST will look for a way to map that into an HTTP response body.
 
 Similarly, whenever your endpoint method takes an object as parameter, we will look for
 a way to map the HTTP request body into that object.
@@ -2715,9 +2715,9 @@ public class CheeseIOInterceptor implements ReaderInterceptor, WriterInterceptor
 }
 ----
 
-==== RESTEasy Reactive and REST Client Reactive interactions
+==== Quarkus REST and REST Client interactions
 
-In Quarkus, the RESTEasy Reactive extension and xref:rest-client-reactive.adoc[the REST Client Reactive extension] share the same infrastructure.
+In Quarkus, the Quarkus REST extension and xref:rest-client.adoc[the REST Client extension] share the same infrastructure.
 One important consequence of this consideration is that they share the same list of providers (in the Jakarta REST meaning of the word).
 
 For instance, if you declare a `WriterInterceptor`, it will by default intercept both the servers calls and the client calls,
@@ -2834,7 +2834,7 @@ public class Endpoint {
 
 ==== Handling dates
 
-RESTEasy Reactive supports the use of the implementations of `java.time.Temporal` (like `java.time.LocalDateTime`) as query, path, or form params.
+Quarkus REST supports the use of the implementations of `java.time.Temporal` (like `java.time.LocalDateTime`) as query, path, or form params.
 Furthermore, it provides the `@org.jboss.resteasy.reactive.DateFormat` annotation, which can be used to set a custom expected pattern.
 Otherwise, the JDK's default format for each type is used implicitly.
 
@@ -3156,10 +3156,10 @@ This feature does not work when using native build.
 ====
 
 
-== RESTEasy Reactive client
+== REST Client
 
-In addition to the Server side, RESTEasy Reactive comes with a new MicroProfile REST Client implementation that is non-blocking at its core.
+In addition to the Server side, Quarkus REST comes with a new MicroProfile REST Client implementation that is non-blocking at its core.
 
-Please note that the `quarkus-rest-client` extension may not be used with RESTEasy Reactive, use `quarkus-rest-client-reactive` instead.
+Please note that the `quarkus-resteasy-client` extension may not be used with Quarkus REST, use `quarkus-rest-client` instead.
 
-See the xref:rest-client-reactive.adoc[REST Client Reactive Guide] for more information about the reactive REST client.
+See the xref:rest-client.adoc[REST Client Guide] for more information about the REST client.

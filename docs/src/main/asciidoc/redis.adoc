@@ -41,7 +41,7 @@ The solution is located in the `redis-quickstart` link:{quickstarts-tree-url}/re
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: redis-quickstart
-:create-app-extensions: redis-client,resteasy-reactive-jackson
+:create-app-extensions: redis-client,rest-jackson
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a new project, importing the Redis extension.

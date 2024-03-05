@@ -3,14 +3,14 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-[[resteasy-reactive-virtual-threads]]
+[[rest-virtual-threads]]
 = Use virtual threads in REST applications
 include::_attributes.adoc[]
 :diataxis-type: howto
 :categories: web, core
 :summary: How to use virtual threads in a REST application
 :topics: rest,resteasy-reactive,virtual-threads
-:extensions: io.quarkus:quarkus-resteasy-reactive,io.quarkus:quarkus-resteasy-reactive-jackson,io.quarkus:quarkus-resteasy-reactive-jsonb,io.quarkus:quarkus-rest-client-reactive,io.quarkus:quarkus-rest-client-reactive-jackson,io.quarkus:quarkus-rest-client-reactive-jsonb
+:extensions: io.quarkus:quarkus-rest,io.quarkus:quarkus-rest-jackson,io.quarkus:quarkus-rest-jsonb,io.quarkus:quarkus-rest-client,io.quarkus:quarkus-rest-client-jackson,io.quarkus:quarkus-rest-client-jsonb
 
 In this guide, we see how you can use virtual threads in a REST application.
 Because virtual threads are all about I/O, we will also use the REST client.
@@ -30,10 +30,10 @@ It calls a weather service for two cities (Valence, France, and Athens, Greece) 
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: rest-virtual-threads
-:create-app-extensions: resteasy-reactive-jackson,quarkus-rest-client-reactive-jackson
+:create-app-extensions: rest-jackson,quarkus-rest-client-jackson
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a new project importing the RESTEasy Reactive, Reactive REST client, and https://github.com/FasterXML/jackson[Jackson] extensions,
+This command generates a new project importing the Quarkus REST (formerly RESTEasy Reactive), REST client, and https://github.com/FasterXML/jackson[Jackson] extensions,
 and in particular, adds the following dependencies:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
@@ -41,19 +41,19 @@ and in particular, adds the following dependencies:
 ----
 <dependency>
   <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+  <artifactId>quarkus-rest-jackson</artifactId>
 </dependency>
 <dependency>
   <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
+  <artifactId>quarkus-rest-client-jackson</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
-implementation("quarkus-rest-client-reactive-jackson")
+implementation("io.quarkus:quarkus-rest-jackson")
+implementation("quarkus-rest-client-jackson")
 ----
 
 [NOTE]
@@ -127,7 +127,7 @@ Note that we strongly recommend Java 21.
 
 This section is not about virtual threads.
 Because we need to do some I/O to demonstrate virtual threads usage, we need a client doing I/O operations.
-In addition, the reactive REST client is virtual thread friendly: it does not pin and handle propagation correctly.
+In addition, the REST client is virtual thread friendly: it does not pin and handle propagation correctly.
 
 Create the `src/main/java/org/acme/WeatherService.java` class with the following content:
 
@@ -160,7 +160,7 @@ public interface WeatherService {
 ----
 
 This class models the HTTP interaction with the weather service.
-Read more about the rest client in the dedicated xref:./rest-client-reactive.adoc[guide].
+Read more about the rest client in the dedicated xref:./rest-client.adoc[guide].
 
 == Create the HTTP endpoint
 
@@ -289,13 +289,13 @@ Run the test with either:
 - `./mvnw test`
 
 As you will see, it does not pin - no stack trace.
-It is because the reactive REST client is implemented in a virtual-thread-friendly way.
+It is because the REST client is implemented in a virtual-thread-friendly way.
 
 The same approach can be used with integration tests.
 
 == Conclusion
 
-This guide shows how you can use virtual threads with RESTEasy Reactive and the reactive REST client.
+This guide shows how you can use virtual threads with Quarkus REST and the REST client.
 Learn more about virtual threads support on:
 
 - xref:./messaging-virtual-threads.adoc[@RunOnVirtualThread in messaging applications] (this guide covers Apache Kafka)

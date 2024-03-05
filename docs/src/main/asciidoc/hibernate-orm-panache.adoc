@@ -522,7 +522,7 @@ The repository pattern examples have been omitted for brevity.
 
 == Writing a Jakarta REST resource
 
-First, include one of the RESTEasy Reactive extensions to enable Jakarta REST endpoints, for example, add the `io.quarkus:quarkus-resteasy-reactive-jackson` dependency for Jakarta REST and JSON support.
+First, include one of the Quarkus REST (formerly RESTEasy Reactive) extensions to enable Jakarta REST endpoints, for example, add the `io.quarkus:quarkus-rest-jackson` dependency for Jakarta REST and JSON support.
 
 Then, you can create the following resource to create/read/update/delete your Person entity:
 
@@ -633,14 +633,14 @@ $ curl -w "\n" http://localhost:8080/persons
 [{"id":1,"name":"Emily Brown","birth":"1995-09-12","status":"Alive"}, {"id":2,"name":"William Davis","birth":"1988-07-04","status":"Alive"}]
 ----
 
-NOTE: If you see the Person object as Person<1>, then the object has not been converted. In this case, add the dependency `quarkus-resteasy-reactive-jackson` in `pom.xml`.
+NOTE: If you see the Person object as Person<1>, then the object has not been converted. In this case, add the dependency `quarkus-rest-jackson` in `pom.xml`.
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+    <artifactId>quarkus-rest-jackson</artifactId>
 </dependency>
 ----
 

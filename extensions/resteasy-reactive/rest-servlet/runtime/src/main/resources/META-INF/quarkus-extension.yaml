@@ -13,7 +13,7 @@ metadata:
   - "web"
   status: "experimental"
   codestart:
-    name: "resteasy-reactive"
+    name: "rest"
     kind: "core"
     languages:
       - "java"

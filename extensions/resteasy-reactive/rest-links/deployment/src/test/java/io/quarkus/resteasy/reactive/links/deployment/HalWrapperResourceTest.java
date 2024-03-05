@@ -24,7 +24,7 @@ public class HalWrapperResourceTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(HalWrapperResource.class, TestRecordWithIdAndPersistenceIdAndRestLinkId.class))
             .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-resteasy-reactive-jackson", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-rest-jackson", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-hal", Version.getVersion())));
 
     @TestHTTPResource("hal")

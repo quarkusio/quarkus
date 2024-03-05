@@ -1,7 +1,7 @@
 name: "REST JSON-B"
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
-  short-name: "rest-jsonb"
+  short-name: "resteasy-reactive-jsonb"
   keywords:
     - "rest-jsonb"
     - "resteasy-reactive-json"
@@ -16,7 +16,7 @@ metadata:
   - "reactive"
   status: "stable"
   codestart:
-    name: "resteasy-reactive"
+    name: "rest"
     kind: "core"
     languages:
       - "java"

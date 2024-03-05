@@ -96,7 +96,7 @@ final class LinksProcessor {
                     Capability.RESTEASY_REACTIVE_JSON_JACKSON)) {
 
                 throw new IllegalStateException("Cannot generate HAL endpoints without "
-                        + "either 'quarkus-resteasy-reactive-jsonb' or 'quarkus-resteasy-reactive-jackson'");
+                        + "either 'quarkus-rest-jackson' or 'quarkus-rest-jsonb'");
             }
         }
     }

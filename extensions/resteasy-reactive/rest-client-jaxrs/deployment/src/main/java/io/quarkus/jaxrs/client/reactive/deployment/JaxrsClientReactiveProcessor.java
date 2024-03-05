@@ -801,7 +801,7 @@ public class JaxrsClientReactiveProcessor {
        @formatter:on
 
        A more full example of generated client (with sub-resource) can is at the bottom of
-       extensions/resteasy-reactive/rest-client-reactive/deployment/src/test/java/io/quarkus/rest/client/reactive/subresource/SubResourceTest.java
+       extensions/resteasy-reactive/rest-client/deployment/src/test/java/io/quarkus/rest/client/reactive/subresource/SubResourceTest.java
      */
     private RuntimeValue<BiFunction<WebTarget, List<ParamConverterProvider>, ?>> generateClientInvoker(
             RecorderContext recorderContext,

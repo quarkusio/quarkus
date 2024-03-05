@@ -17,7 +17,7 @@ metadata:
   - "reactive"
   status: "stable"
   codestart:
-    name: "resteasy-reactive"
+    name: "rest"
     languages:
       - "kotlin"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

@@ -1,6 +1,7 @@
 name: "REST Qute"
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
+  short-name: "resteasy-reactive-qute"
   keywords:
     - "templating"
     - "templates"
@@ -10,7 +11,7 @@ metadata:
     - "reactive"
   status: "stable"
   codestart:
-    name: "resteasy-reactive-qute"
+    name: "rest-qute"
     languages:
       - "java"
       - "kotlin"

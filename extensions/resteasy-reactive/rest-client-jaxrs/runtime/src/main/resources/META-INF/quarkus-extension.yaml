@@ -12,7 +12,7 @@ metadata:
   status: "stable"
   unlisted: true
   codestart:
-    name: "resteasy-reactive"
+    name: "rest"
     kind: "core"
     languages:
       - "java"

@@ -17,7 +17,7 @@ public class HalLinksWithJacksonTest extends AbstractHalLinksTest {
                             TestRecordWithIdAndPersistenceId.class, TestRecordWithPersistenceId.class,
                             TestRecordWithRestLinkId.class, TestRecordWithPersistenceIdAndRestLinkId.class))
             .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-resteasy-reactive-jackson", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-rest-jackson", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-hal", Version.getVersion())))
             .setRun(true);
 }

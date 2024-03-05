@@ -256,7 +256,7 @@ public class JarRunnerIT extends MojoTestBase {
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
 
-            assertThat(logs).isNotEmpty().contains("resteasy-reactive");
+            assertThat(logs).isNotEmpty().contains("rest");
 
             // test that the application name and version are properly set
             assertApplicationPropertiesSetCorrectly();
@@ -857,7 +857,7 @@ public class JarRunnerIT extends MojoTestBase {
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
 
-            assertThat(logs).isNotEmpty().contains("resteasy-reactive");
+            assertThat(logs).isNotEmpty().contains("rest");
 
             // test that the application name and version are properly set
             assertApplicationPropertiesSetCorrectly();

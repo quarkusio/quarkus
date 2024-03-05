@@ -17,7 +17,7 @@ public class HalLinksWithJsonbTest extends AbstractHalLinksTest {
                             TestRecordWithIdAndPersistenceId.class, TestRecordWithPersistenceId.class,
                             TestRecordWithRestLinkId.class, TestRecordWithPersistenceIdAndRestLinkId.class))
             .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-resteasy-reactive-jsonb", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-rest-jsonb", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-hal", Version.getVersion())))
             .setRun(true);
 

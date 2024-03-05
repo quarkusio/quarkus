@@ -49,7 +49,7 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
     }
 
     private static boolean isExcluded(String codestart) {
-        if (codestart.contains("resteasy-reactive")) {
+        if (codestart.contains("rest")) {
             return true;
         }
 

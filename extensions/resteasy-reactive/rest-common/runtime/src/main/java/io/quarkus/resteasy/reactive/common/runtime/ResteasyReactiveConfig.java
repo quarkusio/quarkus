@@ -46,7 +46,7 @@ public interface ResteasyReactiveConfig {
     boolean singleDefaultProduces();
 
     /**
-     * When one of the quarkus-resteasy-reactive-jackson or quarkus-resteasy-reactive-jsonb extension are active
+     * When one of the quarkus-rest-jackson or quarkus-rest-jsonb extension are active
      * and the result type of an endpoint is an application class or one of {@code Collection}, {@code List}, {@code Set} or
      * {@code Map},
      * we assume the default return type is "application/json" if this configuration is enabled.

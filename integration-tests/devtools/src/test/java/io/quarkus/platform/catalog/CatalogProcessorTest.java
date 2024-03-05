@@ -43,7 +43,7 @@ public class CatalogProcessorTest extends PlatformAwareTestBase {
                 .map(Extension::getArtifact)
                 .map(ArtifactCoords::getArtifactId)
                 .startsWith("quarkus-resteasy", "quarkus-resteasy-jackson",
-                        "quarkus-resteasy-jsonb", "quarkus-resteasy-reactive");
+                        "quarkus-resteasy-jsonb", "quarkus-rest");
     }
 
     @Test

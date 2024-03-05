@@ -11,9 +11,9 @@ metadata:
   - "web"
   - "reactive"
   status: "stable"
-  guide: "https://quarkus.io/guides/resteasy-reactive"
+  guide: "https://quarkus.io/guides/rest"
   codestart:
-    name: "resteasy-reactive"
+    name: "rest"
     languages:
       - "java"
       - "kotlin"

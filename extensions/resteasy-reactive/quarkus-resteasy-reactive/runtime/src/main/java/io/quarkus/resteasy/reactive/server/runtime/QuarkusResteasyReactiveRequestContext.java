@@ -21,7 +21,25 @@ import io.vertx.ext.web.RoutingContext;
 
 public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactiveRequestContext {
 
+    private static final int MATRIX_PARAM_HANDLER = 0;
+    private static final int SECURITY_CONTEXT_OVERRIDE_HANDLER = 1;
+    private static final int REST_INITIAL_HANDLER = 2;
+    private static final int CLASS_ROUTING_HANDLER = 3;
+    private static final int ABORT_CHAIN_HANDLER = 4;
+    private static final int NON_BLOCKING_HANDLER = 5;
+    private static final int BLOCKING_HANDLER = 6;
+    private static final int RESOURCE_REQUEST_FILTER_HANDLER = 7;
+    private static final int INPUT_HANDLER = 8;
+    private static final int REQUEST_DESERIALIZE_HANDLER = 9;
+    private static final int PARAMETER_HANDLER = 10;
+    private static final int INSTANCE_HANDLER = 11;
+    private static final int INVOCATION_HANDLER = 12;
+    private static final int FIXED_PRODUCES_HANDLER = 13;
+    private static final int RESPONSE_HANDLER = 14;
+    private static final int RESPONSE_WRITER_HANDLER = 15;
+
     final CurrentIdentityAssociation association;
+    private int[] knownHandlerTypeMap;
     boolean userSetup = false;
 
     public QuarkusResteasyReactiveRequestContext(Deployment deployment,
@@ -103,6 +121,20 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
         throw (E) e;
     }
 
+    @Override
+    protected void setHandlers(final ServerRestHandler[] newHandlerChain) {
+        super.setHandlers(newHandlerChain);
+        // recompute the known handler type map, trying to avoid reallocating it if possible
+        var handlers = this.handlers;
+        var handlerTypePerPosition = (knownHandlerTypeMap == null || handlers.length != knownHandlerTypeMap.length)
+                ? new int[newHandlerChain.length]
+                : knownHandlerTypeMap;
+        for (int position = 0; position < handlers.length; position++) {
+            handlerTypePerPosition[position] = knownTypeIdFor(handlers[position]);
+        }
+        this.knownHandlerTypeMap = handlerTypePerPosition;
+    }
+
     /**
      * The implementation looks like it makes no sense, but it in fact does make sense from a performance perspective.
      * The idea is to reduce the use instances of megamorphic calls into a series of instance checks and monomorphic calls.
@@ -113,41 +145,101 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
     @Override
     protected void invokeHandler(int pos) throws Exception {
         var handler = handlers[pos];
+        var handlerType = knownHandlerTypeMap[pos];
+        // The reason why this switch is splitted in two is due to -XX:MinJumpTableSize which is set to 10 by default
+        switch (handlerType) {
+            case MATRIX_PARAM_HANDLER:
+                handler.handle(this);
+                break;
+            case SECURITY_CONTEXT_OVERRIDE_HANDLER:
+                handler.handle(this);
+                break;
+            case REST_INITIAL_HANDLER:
+                handler.handle(this);
+                break;
+            case CLASS_ROUTING_HANDLER:
+                handler.handle(this);
+                break;
+            case ABORT_CHAIN_HANDLER:
+                handler.handle(this);
+                break;
+            case NON_BLOCKING_HANDLER:
+                handler.handle(this);
+                break;
+            case BLOCKING_HANDLER:
+                handler.handle(this);
+                break;
+            case RESOURCE_REQUEST_FILTER_HANDLER:
+                handler.handle(this);
+                break;
+            default:
+                switch (handlerType) {
+                    case INPUT_HANDLER:
+                        handler.handle(this);
+                        break;
+                    case REQUEST_DESERIALIZE_HANDLER:
+                        handler.handle(this);
+                        break;
+                    case PARAMETER_HANDLER:
+                        handler.handle(this);
+                        break;
+                    case INSTANCE_HANDLER:
+                        handler.handle(this);
+                        break;
+                    case INVOCATION_HANDLER:
+                        handler.handle(this);
+                        break;
+                    case FIXED_PRODUCES_HANDLER:
+                        handler.handle(this);
+                        break;
+                    case RESPONSE_HANDLER:
+                        handler.handle(this);
+                        break;
+                    case RESPONSE_WRITER_HANDLER:
+                        handler.handle(this);
+                        break;
+                    default:
+                        // megamorphic call for other handlers
+                        handler.handle(this);
+                }
+        }
+    }
+
+    private static int knownTypeIdFor(Object handler) {
         if (handler instanceof org.jboss.resteasy.reactive.server.handlers.MatrixParamHandler) {
-            handler.handle(this);
+            return MATRIX_PARAM_HANDLER;
         } else if (handler instanceof io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler) {
-            handler.handle(this);
+            return SECURITY_CONTEXT_OVERRIDE_HANDLER;
         } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.RestInitialHandler) {
-            handler.handle(this);
+            return REST_INITIAL_HANDLER;
         } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.ClassRoutingHandler) {
-            handler.handle(this);
+            return CLASS_ROUTING_HANDLER;
         } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.AbortChainHandler) {
-            handler.handle(this);
+            return ABORT_CHAIN_HANDLER;
         } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.NonBlockingHandler) {
-            handler.handle(this);
+            return NON_BLOCKING_HANDLER;
         } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.BlockingHandler) {
-            handler.handle(this);
+            return BLOCKING_HANDLER;
         } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler) {
-            handler.handle(this);
+            return RESOURCE_REQUEST_FILTER_HANDLER;
         } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.InputHandler) {
-            handler.handle(this);
+            return INPUT_HANDLER;
         } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler) {
-            handler.handle(this);
+            return REQUEST_DESERIALIZE_HANDLER;
         } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.ParameterHandler) {
-            handler.handle(this);
+            return PARAMETER_HANDLER;
         } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.InstanceHandler) {
-            handler.handle(this);
+            return INSTANCE_HANDLER;
         } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.InvocationHandler) {
-            handler.handle(this);
+            return INVOCATION_HANDLER;
         } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.FixedProducesHandler) {
-            handler.handle(this);
+            return FIXED_PRODUCES_HANDLER;
         } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.ResponseHandler) {
-            handler.handle(this);
+            return RESPONSE_HANDLER;
         } else if (handler instanceof org.jboss.resteasy.reactive.server.handlers.ResponseWriterHandler) {
-            handler.handle(this);
+            return RESPONSE_WRITER_HANDLER;
         } else {
-            // megamorphic call for other handlers
-            handler.handle(this);
+            return -1;
         }
     }
 }

@@ -44,7 +44,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     private boolean closed = false;
 
     public AbstractResteasyReactiveContext(H[] handlerChain, H[] abortHandlerChain, ThreadSetupAction requestContext) {
-        this.handlers = handlerChain;
+        setHandlers(handlerChain);
         this.abortHandlerChain = abortHandlerChain;
         this.requestContext = requestContext;
     }
@@ -280,8 +280,12 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         restart(newHandlerChain, false);
     }
 
-    public void restart(H[] newHandlerChain, boolean keepTarget) {
+    protected void setHandlers(H[] newHandlerChain) {
         this.handlers = newHandlerChain;
+    }
+
+    public void restart(H[] newHandlerChain, boolean keepTarget) {
+        setHandlers(newHandlerChain);
         position = 0;
         restarted(keepTarget);
     }

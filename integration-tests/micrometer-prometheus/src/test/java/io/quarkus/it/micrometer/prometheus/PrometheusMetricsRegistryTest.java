@@ -98,6 +98,13 @@ class PrometheusMetricsRegistryTest {
 
     @Test
     @Order(11)
+    void testTemplatedPathOnSubResource() {
+        when().get("/root/r1/sub/s2").then().statusCode(200)
+                .body(containsString("r1:s2"));
+    }
+
+    @Test
+    @Order(20)
     void testPrometheusScrapeEndpointTextPlain() {
         RestAssured.given().header("Accept", TextFormat.CONTENT_TYPE_004)
                 .when().get("/q/metrics")
@@ -132,6 +139,9 @@ class PrometheusMetricsRegistryTest {
 
                 .body(containsString(
                         "http_server_requests_seconds_count{dummy=\"value\",env=\"test\",env2=\"test\",foo=\"UNSET\",method=\"GET\",outcome=\"SUCCESS\",registry=\"prometheus\",status=\"200\",uri=\"/template/path/{value}\""))
+
+                .body(containsString(
+                        "http_server_requests_seconds_count{dummy=\"value\",env=\"test\",env2=\"test\",foo=\"UNSET\",method=\"GET\",outcome=\"SUCCESS\",registry=\"prometheus\",status=\"200\",uri=\"/root/{rootParam}/sub/{subParam}\""))
 
                 // Verify Hibernate Metrics
                 .body(containsString(
@@ -195,7 +205,7 @@ class PrometheusMetricsRegistryTest {
     }
 
     @Test
-    @Order(11)
+    @Order(20)
     void testPrometheusScrapeEndpointOpenMetrics() {
         RestAssured.given().header("Accept", TextFormat.CONTENT_TYPE_OPENMETRICS_100)
                 .when().get("/q/metrics")

@@ -12,7 +12,7 @@ import io.smallrye.mutiny.Uni;
 /**
  * This interface represents a connection from a client to a specific {@link WebSocket} endpoint on the server.
  * <p>
- * Quarkus provides a built-in CDI bean of type {@code WebSocketServerConnection} that can be injected in a {@link WebSocket}
+ * Quarkus provides a built-in CDI bean that implements this interface and can be injected in a {@link WebSocket}
  * endpoint and used to interact with the connected client, or all clients connected to the endpoint respectively
  * (broadcasting).
  * <p>
@@ -20,7 +20,7 @@ import io.smallrye.mutiny.Uni;
  * {@link BlockingSender} and {@link Sender} respectively.
  */
 @Experimental("This API is experimental and may change in the future")
-public interface WebSocketServerConnection extends Sender, BlockingSender {
+public interface WebSocketConnection extends Sender, BlockingSender {
 
     /**
      *
@@ -51,14 +51,14 @@ public interface WebSocketServerConnection extends Sender, BlockingSender {
      * @return the broadcast sender
      * @see #getOpenConnections()
      */
-    BroadcastSender broadcast(Predicate<WebSocketServerConnection> filter);
+    BroadcastSender broadcast(Predicate<WebSocketConnection> filter);
 
     /**
      * The returned set also includes the connection this method is called upon.
      *
      * @return the set of open connections to the same endpoint
      */
-    Set<WebSocketServerConnection> getOpenConnections();
+    Set<WebSocketConnection> getOpenConnections();
 
     /**
      * @return {@code true} if the HTTP connection is encrypted via SSL/TLS
@@ -102,7 +102,7 @@ public interface WebSocketServerConnection extends Sender, BlockingSender {
     /**
      * Makes it possible to send messages to all clients connected to the same WebSocket endpoint.
      *
-     * @see WebSocketServerConnection#getOpenConnections()
+     * @see WebSocketConnection#getOpenConnections()
      */
     interface BroadcastSender extends Sender, BlockingSender {
 

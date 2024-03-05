@@ -16,7 +16,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.OnMessage;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
@@ -59,7 +59,7 @@ public class SignatureTest {
     public static class MethodReturningString {
 
         @Inject
-        WebSocketServerConnection connection;
+        WebSocketConnection connection;
 
         @OnMessage
         String process(String message) {
@@ -79,7 +79,7 @@ public class SignatureTest {
     public static class UniWs {
 
         @Inject
-        WebSocketServerConnection connection;
+        WebSocketConnection connection;
 
         @OnMessage
         Uni<String> process(String message) {
@@ -102,7 +102,7 @@ public class SignatureTest {
     public static class MultiWs {
 
         @Inject
-        WebSocketServerConnection connection;
+        WebSocketConnection connection;
 
         @OnMessage
         Multi<String> process(String message) {

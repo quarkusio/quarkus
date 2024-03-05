@@ -12,14 +12,14 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.vertx.UniHelper;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.ext.web.RoutingContext;
 
-class WebSocketServerConnectionImpl implements WebSocketServerConnection {
+class WebSocketConnectionImpl implements WebSocketConnection {
 
     private final String endpoint;
 
@@ -37,7 +37,7 @@ class WebSocketServerConnectionImpl implements WebSocketServerConnection {
 
     private final BroadcastSender defaultBroadcast;
 
-    WebSocketServerConnectionImpl(String endpoint, ServerWebSocket webSocket, ConnectionManager connectionManager,
+    WebSocketConnectionImpl(String endpoint, ServerWebSocket webSocket, ConnectionManager connectionManager,
             Codecs codecs, RoutingContext ctx) {
         this.endpoint = endpoint;
         this.identifier = UUID.randomUUID().toString();
@@ -80,7 +80,7 @@ class WebSocketServerConnectionImpl implements WebSocketServerConnection {
     }
 
     @Override
-    public BroadcastSender broadcast(Predicate<WebSocketServerConnection> filter) {
+    public BroadcastSender broadcast(Predicate<WebSocketConnection> filter) {
         return new BroadcastImpl(Objects.requireNonNull(filter));
     }
 
@@ -100,8 +100,8 @@ class WebSocketServerConnectionImpl implements WebSocketServerConnection {
     }
 
     @Override
-    public Set<WebSocketServerConnection> getOpenConnections() {
-        return connectionManager.getConnections(endpoint).stream().filter(WebSocketServerConnection::isOpen)
+    public Set<WebSocketConnection> getOpenConnections() {
+        return connectionManager.getConnections(endpoint).stream().filter(WebSocketConnection::isOpen)
                 .collect(Collectors.toUnmodifiableSet());
     }
 
@@ -128,7 +128,7 @@ class WebSocketServerConnectionImpl implements WebSocketServerConnection {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        WebSocketServerConnectionImpl other = (WebSocketServerConnectionImpl) obj;
+        WebSocketConnectionImpl other = (WebSocketConnectionImpl) obj;
         return Objects.equals(identifier, other.identifier);
     }
 
@@ -201,20 +201,20 @@ class WebSocketServerConnectionImpl implements WebSocketServerConnection {
 
     }
 
-    private class BroadcastImpl implements WebSocketServerConnection.BroadcastSender {
+    private class BroadcastImpl implements WebSocketConnection.BroadcastSender {
 
-        private final Predicate<WebSocketServerConnection> filter;
+        private final Predicate<WebSocketConnection> filter;
 
-        BroadcastImpl(Predicate<WebSocketServerConnection> filter) {
+        BroadcastImpl(Predicate<WebSocketConnection> filter) {
             this.filter = filter;
         }
 
         @Override
         public Uni<Void> sendText(String message) {
-            return doSend(new Function<WebSocketServerConnection, Uni<Void>>() {
+            return doSend(new Function<WebSocketConnection, Uni<Void>>() {
 
                 @Override
-                public Uni<Void> apply(WebSocketServerConnection c) {
+                public Uni<Void> apply(WebSocketConnection c) {
                     return c.sendText(message);
                 }
             });
@@ -222,10 +222,10 @@ class WebSocketServerConnectionImpl implements WebSocketServerConnection {
 
         @Override
         public <M> Uni<Void> sendText(M message) {
-            return doSend(new Function<WebSocketServerConnection, Uni<Void>>() {
+            return doSend(new Function<WebSocketConnection, Uni<Void>>() {
 
                 @Override
-                public Uni<Void> apply(WebSocketServerConnection c) {
+                public Uni<Void> apply(WebSocketConnection c) {
                     return c.sendText(message);
                 }
             });
@@ -233,18 +233,18 @@ class WebSocketServerConnectionImpl implements WebSocketServerConnection {
 
         @Override
         public Uni<Void> sendBinary(Buffer message) {
-            return doSend(new Function<WebSocketServerConnection, Uni<Void>>() {
+            return doSend(new Function<WebSocketConnection, Uni<Void>>() {
 
                 @Override
-                public Uni<Void> apply(WebSocketServerConnection c) {
+                public Uni<Void> apply(WebSocketConnection c) {
                     return c.sendBinary(message);
                 }
             });
         }
 
-        private Uni<Void> doSend(Function<WebSocketServerConnection, Uni<Void>> function) {
+        private Uni<Void> doSend(Function<WebSocketConnection, Uni<Void>> function) {
             List<Uni<Void>> unis = new ArrayList<>();
-            for (WebSocketServerConnection connection : connectionManager.getConnections(endpoint)) {
+            for (WebSocketConnection connection : connectionManager.getConnections(endpoint)) {
                 if (connection.isOpen() && (filter == null || filter.test(connection))) {
                     unis.add(function.apply(connection));
                 }

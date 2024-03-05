@@ -6,7 +6,7 @@ import jakarta.inject.Inject;
 
 import io.quarkus.websockets.next.OnMessage;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 
@@ -23,7 +23,7 @@ public class Sub {
     public static class SubSub {
 
         @Inject
-        WebSocketServerConnection connection;
+        WebSocketConnection connection;
 
         @OnMessage
         Uni<String> echo(String msg) {
@@ -35,7 +35,7 @@ public class Sub {
         public static class SubSubSub {
 
             @Inject
-            WebSocketServerConnection connection;
+            WebSocketConnection connection;
 
             @OnMessage
             Uni<String> echo(String msg) {

@@ -20,7 +20,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.OnMessage;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
@@ -61,7 +61,7 @@ public class SignatureConsumingMultiTest {
     public static class BiDirectional {
 
         @Inject
-        WebSocketServerConnection connection;
+        WebSocketConnection connection;
 
         @Inject
         RequestScopedBean requestScopedBean;

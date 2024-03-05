@@ -8,7 +8,7 @@ import io.quarkus.websockets.next.OnMessage;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.TextMessage;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Multi;
@@ -20,7 +20,7 @@ import io.vertx.core.json.JsonObject;
 final class WebSocketDotNames {
 
     static final DotName WEB_SOCKET = DotName.createSimple(WebSocket.class);
-    static final DotName WEB_SOCKET_CONNECTION = DotName.createSimple(WebSocketServerConnection.class);
+    static final DotName WEB_SOCKET_CONNECTION = DotName.createSimple(WebSocketConnection.class);
     static final DotName ON_OPEN = DotName.createSimple(OnOpen.class);
     static final DotName ON_MESSAGE = DotName.createSimple(OnMessage.class);
     static final DotName ON_CLOSE = DotName.createSimple(OnClose.class);

@@ -21,7 +21,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.OnMessage;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.vertx.core.Vertx;
 
@@ -59,7 +59,7 @@ public class ServiceConnectionScopeTest {
     public static class MyEndpoint {
 
         @Inject
-        WebSocketServerConnection connection;
+        WebSocketConnection connection;
 
         @OnMessage
         public String onMessage(String message) {
@@ -73,7 +73,7 @@ public class ServiceConnectionScopeTest {
         void testConnectionNotAccessibleOutsideOfWsMethods() {
             assertNull(Arc.container().getActiveContext(SessionScoped.class));
             assertNotNull(Arc.container().getActiveContext(RequestScoped.class));
-            // WebSocketServerConnection is @SessionScoped
+            // WebSocketConnection is @SessionScoped
             assertThrows(ContextNotActiveException.class, () -> connection.id());
         }
 

@@ -11,7 +11,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.quarkus.websockets.next.WebSocket.ExecutionMode;
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.WebSocketsRuntimeConfig;
 import io.quarkus.websockets.next.runtime.ConcurrencyLimiter.PromiseComplete;
 import io.smallrye.mutiny.Multi;
@@ -27,7 +27,7 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
 
     private static final Logger LOG = Logger.getLogger(WebSocketEndpointBase.class);
 
-    protected final WebSocketServerConnection connection;
+    protected final WebSocketConnection connection;
 
     protected final Codecs codecs;
 
@@ -40,7 +40,7 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
 
     private final ContextSupport contextSupport;
 
-    public WebSocketEndpointBase(WebSocketServerConnection connection, Codecs codecs,
+    public WebSocketEndpointBase(WebSocketConnection connection, Codecs codecs,
             WebSocketsRuntimeConfig config, ContextSupport contextSupport) {
         this.connection = connection;
         this.codecs = codecs;

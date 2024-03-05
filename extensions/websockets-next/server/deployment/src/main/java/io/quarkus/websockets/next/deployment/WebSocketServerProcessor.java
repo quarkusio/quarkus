@@ -54,7 +54,7 @@ import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.websockets.next.TextMessageCodec;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.WebSocketsRuntimeConfig;
 import io.quarkus.websockets.next.deployment.WebSocketEndpointBuildItem.Callback;
@@ -192,7 +192,7 @@ public class WebSocketServerProcessor {
     @BuildStep
     @Record(RUNTIME_INIT)
     void syntheticBeans(WebSocketServerRecorder recorder, BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(WebSocketServerConnection.class)
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(WebSocketConnection.class)
                 .scope(SessionScoped.class)
                 .setRuntimeInit()
                 .supplier(recorder.connectionSupplier())
@@ -299,7 +299,7 @@ public class WebSocketServerProcessor {
      *         return WebSocket.ExecutionMode.SERIAL;
      *     }
      *
-     *     public Echo_WebSocketEndpoint(WebSocketServerConnection connection, Codecs codecs,
+     *     public Echo_WebSocketEndpoint(WebSocketConnection connection, Codecs codecs,
      *             WebSocketRuntimeConfig config, ContextSupport contextSupport) {
      *         super(context, connection, codecs, config, contextActivator);
      *     }
@@ -344,10 +344,10 @@ public class WebSocketServerProcessor {
                 .superClass(WebSocketEndpointBase.class)
                 .build();
 
-        MethodCreator constructor = endpointCreator.getConstructorCreator(WebSocketServerConnection.class,
+        MethodCreator constructor = endpointCreator.getConstructorCreator(WebSocketConnection.class,
                 Codecs.class, WebSocketsRuntimeConfig.class, ContextSupport.class);
         constructor.invokeSpecialMethod(
-                MethodDescriptor.ofConstructor(WebSocketEndpointBase.class, WebSocketServerConnection.class,
+                MethodDescriptor.ofConstructor(WebSocketEndpointBase.class, WebSocketConnection.class,
                         Codecs.class, WebSocketsRuntimeConfig.class, ContextSupport.class),
                 constructor.getThis(), constructor.getMethodParam(0), constructor.getMethodParam(1),
                 constructor.getMethodParam(2), constructor.getMethodParam(3));

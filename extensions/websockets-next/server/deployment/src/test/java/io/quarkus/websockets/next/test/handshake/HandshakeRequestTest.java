@@ -13,7 +13,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.OnMessage;
 import io.quarkus.websockets.next.WebSocket;
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.WebSocketConnectOptions;
@@ -54,7 +54,7 @@ public class HandshakeRequestTest {
     public static class Head {
 
         @Inject
-        WebSocketServerConnection connection;
+        WebSocketConnection connection;
 
         @OnMessage
         JsonObject process(String message) throws InterruptedException {

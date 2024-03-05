@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.websockets.next.WebSocketServerConnection;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.smallrye.mutiny.helpers.queues.Queues;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -18,12 +18,12 @@ class ConcurrencyLimiter {
 
     private static final Logger LOG = Logger.getLogger(ConcurrencyLimiter.class);
 
-    private final WebSocketServerConnection connection;
+    private final WebSocketConnection connection;
     private final Queue<Action> queue;
     private final AtomicLong uncompleted;
     private final AtomicLong queueCounter;
 
-    ConcurrencyLimiter(WebSocketServerConnection connection) {
+    ConcurrencyLimiter(WebSocketConnection connection) {
         this.connection = connection;
         this.uncompleted = new AtomicLong();
         this.queueCounter = new AtomicLong();

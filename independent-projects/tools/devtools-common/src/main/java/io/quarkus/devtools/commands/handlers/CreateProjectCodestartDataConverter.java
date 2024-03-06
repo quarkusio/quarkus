@@ -41,8 +41,8 @@ public enum CreateProjectCodestartDataConverter implements DataKey {
     RESTEASY_CODESTART_RESOURCE_PATH(CreateProjectKey.RESOURCE_PATH),
     RESTEASY_CODESTART_RESOURCE_CLASS_NAME(CreateProjectCodestartDataConverter::convertClassName),
 
-    RESTEASY_REACTIVE_CODESTART_RESOURCE_PATH(CreateProjectKey.RESOURCE_PATH),
-    RESTEASY_REACTIVE_CODESTART_RESOURCE_CLASS_NAME(CreateProjectCodestartDataConverter::convertClassName),
+    REST_CODESTART_RESOURCE_PATH(CreateProjectKey.RESOURCE_PATH),
+    REST_CODESTART_RESOURCE_CLASS_NAME(CreateProjectCodestartDataConverter::convertClassName),
 
     SPRING_WEB_CODESTART_RESOURCE_PATH(CreateProjectKey.RESOURCE_PATH),
     SPRING_WEB_CODESTART_RESOURCE_CLASS_NAME(CreateProjectCodestartDataConverter::convertClassName);

@@ -11,14 +11,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
 
-public class DevUIResteastyReactiveJsonRPCTest extends DevUIJsonRPCTest {
+public class DevUIRestJsonRPCTest extends DevUIJsonRPCTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar.addClass(MyResource.class));
 
-    public DevUIResteastyReactiveJsonRPCTest() {
-        super("io.quarkus.quarkus-resteasy-reactive");
+    public DevUIRestJsonRPCTest() {
+        super("io.quarkus.quarkus-rest");
     }
 
     @Test

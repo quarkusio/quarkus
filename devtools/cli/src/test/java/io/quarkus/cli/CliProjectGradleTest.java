@@ -112,8 +112,8 @@ public class CliProjectGradleTest {
         String buildGradleContent = validateBasicGradleGroovyIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID,
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
-        Assertions.assertTrue(buildGradleContent.contains("quarkus-resteasy"),
-                "build/gradle should contain quarkus-resteasy:\n" + buildGradleContent);
+        Assertions.assertTrue(buildGradleContent.contains("quarkus-rest"),
+                "build/gradle should contain quarkus-rest:\n" + buildGradleContent);
 
         CliDriver.valdiateGeneratedSourcePackage(project, "org/acme");
 
@@ -144,8 +144,8 @@ public class CliProjectGradleTest {
         String buildGradleContent = validateBasicGradleKotlinIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID,
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
-        Assertions.assertTrue(buildGradleContent.contains("quarkus-resteasy"),
-                "build/gradle should contain quarkus-resteasy:\n" + buildGradleContent);
+        Assertions.assertTrue(buildGradleContent.contains("quarkus-rest"),
+                "build/gradle should contain quarkus-rest:\n" + buildGradleContent);
 
         Path packagePath = wrapperRoot.resolve("src/main/java/");
         Assertions.assertTrue(packagePath.toFile().isDirectory(),

@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - MicroProfile Config</name>
 
     <properties>
-        <microprofile-config-tck.version>3.0.3</microprofile-config-tck.version>
+        <microprofile-config-tck.version>3.1</microprofile-config-tck.version>
     </properties>
 
     <build>
@@ -43,10 +43,6 @@
                     <systemPropertyVariables>
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
-                        <!-- 1. There is a bug in TCK: -->
-                        <!-- https://github.com/eclipse/microprofile-config/issues/543 -->
-                        <!-- 2. After transformation we get a ClassCastException which is very likely caused by a class loading problem in our Arquillian adapter -->
-                        <quarkus.arc.transform-unproxyable-classes>false</quarkus.arc.transform-unproxyable-classes>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using 
                         the "test" system property -->

@@ -45,15 +45,6 @@ public interface WebSocketConnection extends Sender, BlockingSender {
     BroadcastSender broadcast();
 
     /**
-     * Sends messages to all open clients connected to the same WebSocket endpoint and matching the given filter predicate.
-     *
-     * @param filter
-     * @return the broadcast sender
-     * @see #getOpenConnections()
-     */
-    BroadcastSender broadcast(Predicate<WebSocketConnection> filter);
-
-    /**
      * The returned set also includes the connection this method is called upon.
      *
      * @return the set of open connections to the same endpoint
@@ -105,6 +96,14 @@ public interface WebSocketConnection extends Sender, BlockingSender {
      * @see WebSocketConnection#getOpenConnections()
      */
     interface BroadcastSender extends Sender, BlockingSender {
+
+        /**
+         *
+         * @param predicate
+         * @return a new sender that sends messages to all open clients connected to the same WebSocket endpoint and matching
+         *         the given filter predicate
+         */
+        BroadcastSender filter(Predicate<WebSocketConnection> predicate);
 
     }
 

@@ -74,7 +74,22 @@ class ConcurrencyLimiter {
         }
 
         void failure(Throwable t) {
-            complete();
+            try {
+                promise.fail(t);
+            } finally {
+                if (uncompleted.decrementAndGet() == 0) {
+                    return;
+                }
+                Action queuedAction = queue.poll();
+                assert queuedAction != null;
+                LOG.debugf("Run action %s from queue: %s", queuedAction.queueIndex, connection);
+                queuedAction.context.runOnContext(new Handler<Void>() {
+                    @Override
+                    public void handle(Void event) {
+                        queuedAction.runnable.run();
+                    }
+                });
+            }
         }
 
         void complete() {

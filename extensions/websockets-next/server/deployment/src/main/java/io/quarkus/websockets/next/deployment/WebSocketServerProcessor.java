@@ -43,12 +43,14 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TryBlock;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
@@ -381,8 +383,9 @@ public class WebSocketServerProcessor {
                     MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
                     doOnOpen.getThis(), doOnOpen.load(endpoint.bean.getIdentifier()));
             // Call the business method
-            ResultHandle ret = doOnOpen.invokeVirtualMethod(MethodDescriptor.of(endpoint.onOpen.method), beanInstance);
-            encodeAndReturnResult(doOnOpen, endpoint.onOpen, ret);
+            TryBlock tryBlock = uniFailureTryBlock(doOnOpen);
+            ResultHandle ret = tryBlock.invokeVirtualMethod(MethodDescriptor.of(endpoint.onOpen.method), beanInstance);
+            encodeAndReturnResult(tryBlock, endpoint.onOpen, ret);
 
             MethodCreator onOpenExecutionModel = endpointCreator.getMethodCreator("onOpenExecutionModel",
                     ExecutionModel.class);
@@ -403,9 +406,10 @@ public class WebSocketServerProcessor {
                 args = new ResultHandle[] {};
             }
             // Call the business method
-            ResultHandle ret = doOnMessage.invokeVirtualMethod(MethodDescriptor.of(endpoint.onMessage.method), beanInstance,
+            TryBlock tryBlock = uniFailureTryBlock(doOnMessage);
+            ResultHandle ret = tryBlock.invokeVirtualMethod(MethodDescriptor.of(endpoint.onMessage.method), beanInstance,
                     args);
-            encodeAndReturnResult(doOnMessage, endpoint.onMessage, ret);
+            encodeAndReturnResult(tryBlock, endpoint.onMessage, ret);
 
             MethodCreator onMessageExecutionModel = endpointCreator.getMethodCreator("onMessageExecutionModel",
                     ExecutionModel.class);
@@ -419,8 +423,9 @@ public class WebSocketServerProcessor {
                     MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
                     doOnClose.getThis(), doOnClose.load(endpoint.bean.getIdentifier()));
             // Call the business method
-            ResultHandle ret = doOnClose.invokeVirtualMethod(MethodDescriptor.of(endpoint.onClose.method), beanInstance);
-            encodeAndReturnResult(doOnClose, endpoint.onClose, ret);
+            TryBlock tryBlock = uniFailureTryBlock(doOnClose);
+            ResultHandle ret = tryBlock.invokeVirtualMethod(MethodDescriptor.of(endpoint.onClose.method), beanInstance);
+            encodeAndReturnResult(tryBlock, endpoint.onClose, ret);
 
             MethodCreator onCloseExecutionModel = endpointCreator.getMethodCreator("onCloseExecutionModel",
                     ExecutionModel.class);
@@ -429,6 +434,18 @@ public class WebSocketServerProcessor {
 
         endpointCreator.close();
         return generatedName.replace('/', '.');
+    }
+
+    private TryBlock uniFailureTryBlock(BytecodeCreator method) {
+        TryBlock tryBlock = method.tryBlock();
+        CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
+        // return Uni.createFrom().failure(t);
+        ResultHandle uniCreate = catchBlock
+                .invokeStaticInterfaceMethod(MethodDescriptor.ofMethod(Uni.class, "createFrom", UniCreate.class));
+        catchBlock.returnValue(catchBlock.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(UniCreate.class, "failure", Uni.class, Throwable.class), uniCreate,
+                catchBlock.getCaughtException()));
+        return tryBlock;
     }
 
     private ResultHandle decodeMessage(MethodCreator method, boolean binaryMessage, Type valueType, ResultHandle value,
@@ -501,7 +518,7 @@ public class WebSocketServerProcessor {
         }
     }
 
-    private ResultHandle encodeMessage(MethodCreator method, Callback callback, ResultHandle value) {
+    private ResultHandle encodeMessage(BytecodeCreator method, Callback callback, ResultHandle value) {
         if (callback.producedMessageType == MessageType.BINARY) {
             // ----------------------
             // === Binary message ===
@@ -676,7 +693,7 @@ public class WebSocketServerProcessor {
         return method.invokeVirtualMethod(MethodDescriptor.ofMethod(UniCreate.class, "voidItem", Uni.class), uniCreate);
     }
 
-    private void encodeAndReturnResult(MethodCreator method, Callback callback, ResultHandle result) {
+    private void encodeAndReturnResult(BytecodeCreator method, Callback callback, ResultHandle result) {
         // The result must be always Uni<Void>
         if (callback.isReturnTypeVoid()) {
             // return Uni.createFrom().void()

@@ -640,7 +640,7 @@ public class Profiles {
     public static class SingleTag implements QuarkusTestProfile {
         @Override
         public Set<String> tags() {
-            return List.of("test1");
+            return Set.of("test1");
         }
     }
 

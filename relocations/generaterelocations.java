@@ -31,8 +31,8 @@ public class generaterelocations implements Runnable {
     private static final Map<String, Function<String, Relocation>> RELOCATIONS = new TreeMap<>();
 
     static {
-        Function<String, Relocation> resteasyReactiveRelocationFunction = a -> Relocation.ofArtifactId(a.replace("resteasy-reactive", "rest"),
-                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        Function<String, Relocation> resteasyReactiveRelocationFunction = a -> Relocation.ofArtifactId(a, a.replace("resteasy-reactive", "rest"),
+                "3.9");
         RELOCATIONS.put("quarkus-resteasy-reactive", resteasyReactiveRelocationFunction);
         RELOCATIONS.put("quarkus-resteasy-reactive-deployment", resteasyReactiveRelocationFunction);
         RELOCATIONS.put("quarkus-resteasy-reactive-common", resteasyReactiveRelocationFunction);
@@ -64,8 +64,8 @@ public class generaterelocations implements Runnable {
         RELOCATIONS.put("quarkus-resteasy-reactive-qute", resteasyReactiveRelocationFunction);
         RELOCATIONS.put("quarkus-resteasy-reactive-qute-deployment", resteasyReactiveRelocationFunction);
 
-        Function<String, Relocation>  restClientReactiveRelocation = a -> Relocation.ofArtifactId(a.replace("rest-client-reactive", "rest-client"),
-                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        Function<String, Relocation>  restClientReactiveRelocation = a -> Relocation.ofArtifactId(a, a.replace("rest-client-reactive", "rest-client"),
+                "3.9");
         RELOCATIONS.put("quarkus-rest-client-reactive", restClientReactiveRelocation);
         RELOCATIONS.put("quarkus-rest-client-reactive-deployment", restClientReactiveRelocation);
         RELOCATIONS.put("quarkus-rest-client-reactive-jackson", restClientReactiveRelocation);
@@ -78,54 +78,54 @@ public class generaterelocations implements Runnable {
         RELOCATIONS.put("quarkus-rest-client-reactive-kotlin-serialization", restClientReactiveRelocation);
         RELOCATIONS.put("quarkus-rest-client-reactive-kotlin-serialization-deployment", restClientReactiveRelocation);
 
-        Function<String, Relocation>  jaxrsClientReactiveRelocation = a -> Relocation.ofArtifactId(a.replace("jaxrs-client-reactive", "rest-client-jaxrs"),
-                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        Function<String, Relocation>  jaxrsClientReactiveRelocation = a -> Relocation.ofArtifactId(a, a.replace("jaxrs-client-reactive", "rest-client-jaxrs"),
+                "3.9");
         RELOCATIONS.put("quarkus-jaxrs-client-reactive", jaxrsClientReactiveRelocation);
         RELOCATIONS.put("quarkus-jaxrs-client-reactive-deployment", jaxrsClientReactiveRelocation);
 
-        Function<String, Relocation>  csrfReactiveRelocation = a -> Relocation.ofArtifactId(a.replace("csrf-reactive", "rest-csrf"),
-                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        Function<String, Relocation>  csrfReactiveRelocation = a -> Relocation.ofArtifactId(a, a.replace("csrf-reactive", "rest-csrf"),
+                "3.9");
         RELOCATIONS.put("quarkus-csrf-reactive", csrfReactiveRelocation);
         RELOCATIONS.put("quarkus-csrf-reactive-deployment", csrfReactiveRelocation);
 
-        Function<String, Relocation>  oidcTokenPropagationReactiveRelocation = a -> Relocation.ofArtifactId(a.replace("oidc-token-propagation-reactive", "rest-client-oidc-token-propagation"),
-                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        Function<String, Relocation>  oidcTokenPropagationReactiveRelocation = a -> Relocation.ofArtifactId(a, a.replace("oidc-token-propagation-reactive", "rest-client-oidc-token-propagation"),
+                "3.9");
         RELOCATIONS.put("quarkus-oidc-token-propagation-reactive", oidcTokenPropagationReactiveRelocation);
         RELOCATIONS.put("quarkus-oidc-token-propagation-reactive-deployment", oidcTokenPropagationReactiveRelocation);
 
-        Function<String, Relocation>  oidcTokenPropagationRelocation = a -> Relocation.ofArtifactId(a.replace("oidc-token-propagation", "resteasy-client-oidc-token-propagation"),
-                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        Function<String, Relocation>  oidcTokenPropagationRelocation = a -> Relocation.ofArtifactId(a, a.replace("oidc-token-propagation", "resteasy-client-oidc-token-propagation"),
+                "3.9");
         RELOCATIONS.put("quarkus-oidc-token-propagation", oidcTokenPropagationRelocation);
         RELOCATIONS.put("quarkus-oidc-token-propagation-deployment", oidcTokenPropagationRelocation);
 
-        Function<String, Relocation>  oidcClientFilterRelocation = a -> Relocation.ofArtifactId(a.replace("oidc-client-filter", "resteasy-client-oidc-filter"),
-                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        Function<String, Relocation>  oidcClientFilterRelocation = a -> Relocation.ofArtifactId(a, a.replace("oidc-client-filter", "resteasy-client-oidc-filter"),
+                "3.9");
         RELOCATIONS.put("quarkus-oidc-client-filter", oidcClientFilterRelocation);
         RELOCATIONS.put("quarkus-oidc-client-filter-deployment", oidcClientFilterRelocation);
 
 
-        Function<String, Relocation>  oidcClientReactiveFilterRelocation = a -> Relocation.ofArtifactId(a.replace("oidc-client-reactive-filter", "rest-client-oidc-filter"),
-                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        Function<String, Relocation>  oidcClientReactiveFilterRelocation = a -> Relocation.ofArtifactId(a, a.replace("oidc-client-reactive-filter", "rest-client-oidc-filter"),
+                "3.9");
         RELOCATIONS.put("quarkus-oidc-client-reactive-filter", oidcClientReactiveFilterRelocation);
         RELOCATIONS.put("quarkus-oidc-client-reactive-filter-deployment", oidcClientReactiveFilterRelocation);
 
-        Function<String, Relocation>  keycloakAdminClientRelocation = a -> Relocation.ofArtifactId(a.replace("keycloak-admin-client", "keycloak-admin-resteasy-client"),
-                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        Function<String, Relocation>  keycloakAdminClientRelocation = a -> Relocation.ofArtifactId(a, a.replace("keycloak-admin-client", "keycloak-admin-resteasy-client"),
+                "3.9");
         RELOCATIONS.put("quarkus-keycloak-admin-client", keycloakAdminClientRelocation);
         RELOCATIONS.put("quarkus-keycloak-admin-client-deployment", keycloakAdminClientRelocation);
 
-        Function<String, Relocation>  keycloakAdminClientReactiveRelocation = a -> Relocation.ofArtifactId(a.replace("keycloak-admin-client-reactive", "keycloak-admin-rest-client"),
-                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        Function<String, Relocation>  keycloakAdminClientReactiveRelocation = a -> Relocation.ofArtifactId(a, a.replace("keycloak-admin-client-reactive", "keycloak-admin-rest-client"),
+                "3.9");
         RELOCATIONS.put("quarkus-keycloak-admin-client-reactive", keycloakAdminClientReactiveRelocation);
         RELOCATIONS.put("quarkus-keycloak-admin-client-reactive-deployment", keycloakAdminClientReactiveRelocation);
 
-        Function<String, Relocation>  springWebRESTEasyReactiveRelocation = a -> Relocation.ofArtifactId(a.replace("spring-web-resteasy-reactive", "spring-web-rest"),
-                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        Function<String, Relocation>  springWebRESTEasyReactiveRelocation = a -> Relocation.ofArtifactId(a, a.replace("spring-web-resteasy-reactive", "spring-web-rest"),
+                "3.9");
         RELOCATIONS.put("quarkus-spring-web-resteasy-reactive", springWebRESTEasyReactiveRelocation);
         RELOCATIONS.put("quarkus-spring-web-resteasy-reactive-deployment", springWebRESTEasyReactiveRelocation);
 
-        Function<String, Relocation>  springWebRESTEasyClassicRelocation = a -> Relocation.ofArtifactId(a.replace("spring-web-resteasy-classic", "spring-web-resteasy"),
-                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.9");
+        Function<String, Relocation>  springWebRESTEasyClassicRelocation = a -> Relocation.ofArtifactId(a, a.replace("spring-web-resteasy-classic", "spring-web-resteasy"),
+                "3.9");
         RELOCATIONS.put("quarkus-spring-web-resteasy-classic", springWebRESTEasyClassicRelocation);
         RELOCATIONS.put("quarkus-spring-web-resteasy-classic-deployment", springWebRESTEasyClassicRelocation);
     }
@@ -148,7 +148,7 @@ public class generaterelocations implements Runnable {
             "            <groupId>%2$s</groupId>\n" + //
             "            <artifactId>%3$s</artifactId>\n" + //
             "            <version>%4$s</version>\n" + //
-            "            <message>Update the artifactId in your project build file. Refer to %5$s for more information.</message>\n" + //
+            "            <message>Update the artifactId in your project build file. Refer to https://github.com/quarkusio/quarkus/wiki/Migration-Guide-%5$s for more information.</message>\n" + //
             "        </relocation>\n" + //
             "    </distributionManagement>\n" + //
             "</project>";
@@ -156,7 +156,8 @@ public class generaterelocations implements Runnable {
     @Override
     public void run() {
         List<String> modules = new ArrayList<>();
-        Map<String, MigrationGuideAsciidoc> migrationGuides = new LinkedHashMap<>();
+        Map<String, MigrationGuideAsciidoc> migrationGuides = new TreeMap<>();
+        Map<String, List<Relocation>> relocations = new TreeMap<>();
 
         for (Entry<String, Function<String, Relocation>> relocationEntry : RELOCATIONS.entrySet()) {
             String originalArtifactId = relocationEntry.getKey();
@@ -164,7 +165,7 @@ public class generaterelocations implements Runnable {
             String newGroupId = relocation.getGroupId() != null ? relocation.getGroupId() : "io.quarkus";
             String newArtifactId = relocation.getArtifactId() != null ? relocation.getArtifactId() : originalArtifactId;
             String newVersion = relocation.getVersion() != null ? relocation.getVersion() : "${project.version}";
-            String migrationGuide = relocation.getMigrationGuide();
+            String quarkusVersion = relocation.getQuarkusVersion();
 
             String newCoordinates = (relocation.getGroupId() != null ? relocation.getGroupId() + ":" : "") +
                     (relocation.getArtifactId() != null ? relocation.getArtifactId() : originalArtifactId) +
@@ -182,11 +183,14 @@ public class generaterelocations implements Runnable {
                         newGroupId,
                         newArtifactId,
                         newVersion,
-                        migrationGuide
+                        quarkusVersion
                 ));
 
-                migrationGuides.computeIfAbsent(migrationGuide, mg -> new MigrationGuideAsciidoc(mg))
+                migrationGuides.computeIfAbsent(quarkusVersion, qv -> new MigrationGuideAsciidoc(qv))
                         .addModule(originalArtifactId, newCoordinates);
+
+                relocations.computeIfAbsent(quarkusVersion, qv -> new ArrayList<>())
+                        .add(relocation);
 
                 modules.add(originalArtifactId);
             } catch (IOException e) {
@@ -200,6 +204,28 @@ public class generaterelocations implements Runnable {
 
         for (MigrationGuideAsciidoc migrationGuideAsciidoc : migrationGuides.values()) {
             migrationGuideAsciidoc.dump();
+        }
+
+        for (Entry<String, List<Relocation>> relocationsEntry : relocations.entrySet()) {
+            StringBuilder recipes = new StringBuilder();
+            recipes.append("---\n" +
+                    "type: specs.openrewrite.org/v1beta/recipe\n" +
+                    "name: io.quarkus.updates.core.quarkus" + relocationsEntry.getKey().replace(".", "") + ".Relocations\n" +
+                    "recipeList:\n");
+            for (Relocation relocation : relocationsEntry.getValue()) {
+                recipes.append("  - org.openrewrite.java.dependencies.ChangeDependency:\n" +
+                         "      oldGroupId: io.quarkus\n" +
+                         "      oldArtifactId: " + relocation.getOriginalArtifactId() + "\n");
+                if (relocation.getGroupId() != null && !"io.quarkus".equals(relocation.getGroupId())) {
+                    recipes.append("      newGroupId: " + relocation.getGroupId() +"\n");
+                }
+                recipes.append("      newArtifactId: " + relocation.getArtifactId() + "\n");
+                if (relocation.getVersion() != null) {
+                    recipes.append("      newVersion: " + relocation.getVersion() +"\n");
+                }
+            }
+
+            LOG.info("Recipes to include for " + relocationsEntry.getKey() + "\n\n" + recipes + "\n\n");
         }
 
         try {
@@ -225,32 +251,38 @@ public class generaterelocations implements Runnable {
 
     private static class Relocation {
 
+        private final String originalArtifactId;
         private final String groupId;
         private final String artifactId;
         private final String version;
-        private final String migrationGuide;
+        private final String quarkusVersion;
 
-        private Relocation(String groupId, String artifactId, String version, String migrationGuide) {
+        private Relocation(String originalArtifactId, String groupId, String artifactId, String version, String quarkusVersion) {
+            this.originalArtifactId = originalArtifactId;
             this.groupId = groupId;
             this.artifactId = artifactId;
             this.version = version;
-            this.migrationGuide = migrationGuide;
+            this.quarkusVersion = quarkusVersion;
         }
 
-        public static Relocation ofArtifactId(String artifactId, String migrationGuide) {
-            return new Relocation(null, artifactId, null, migrationGuide);
+        public static Relocation ofArtifactId(String originalArtifactId, String artifactId, String quarkusVersion) {
+            return new Relocation(originalArtifactId, null, artifactId, null, quarkusVersion);
         }
 
-        public static Relocation ofGroupId(String groupId, String migrationGuide) {
-            return new Relocation(groupId, null, null, migrationGuide);
+        public static Relocation ofGroupId(String originalArtifactId, String groupId, String quarkusVersion) {
+            return new Relocation(originalArtifactId, groupId, null, null, quarkusVersion);
         }
 
-        public static Relocation of(String groupId, String artifactId, String migrationGuide) {
-            return new Relocation(groupId, artifactId, null, migrationGuide);
+        public static Relocation of(String originalArtifactId, String groupId, String artifactId, String quarkusVersion) {
+            return new Relocation(originalArtifactId, groupId, artifactId, null, quarkusVersion);
         }
 
-        public static Relocation of(String groupId, String artifactId, String version, String migrationGuide) {
-            return new Relocation(groupId, artifactId, version, migrationGuide);
+        public static Relocation of(String originalArtifactId, String groupId, String artifactId, String version, String quarkusVersion) {
+            return new Relocation(originalArtifactId, groupId, artifactId, version, quarkusVersion);
+        }
+
+        public String getOriginalArtifactId() {
+            return originalArtifactId;
         }
 
         public String getGroupId() {
@@ -265,19 +297,19 @@ public class generaterelocations implements Runnable {
             return version;
         }
 
-        public String getMigrationGuide() {
-            return migrationGuide;
+        public String getQuarkusVersion() {
+            return quarkusVersion;
         }
     }
 
     private static class MigrationGuideAsciidoc {
 
-        private String migrationGuide;
+        private String quarkusVersion;
         private String publicAsciidoc = "";
         private String extensionAsciidoc = "";
 
-        public MigrationGuideAsciidoc(String migrationGuide) {
-            this.migrationGuide = migrationGuide;
+        public MigrationGuideAsciidoc(String quarkusVersion) {
+            this.quarkusVersion = quarkusVersion;
         }
 
         public void addModule(String originalArtifactId, String newCoordinates) {
@@ -294,17 +326,17 @@ public class generaterelocations implements Runnable {
         }
 
         public void dump() {
-            LOG.info("Asciidoc table(s) to include in the migration guide " + migrationGuide);
+            LOG.info("Asciidoc table(s) to include in the migration guide for " + quarkusVersion + " - https://github.com/quarkusio/quarkus/wiki/Migration-Guide-" + quarkusVersion);
 
             if (!publicAsciidoc.isBlank()) {
                 publicAsciidoc = "|===\n" +
                         "|Old name |New name\n" + publicAsciidoc + "|===";
-                LOG.info("- Asciidoc table for publicly consumed modules:\n" + publicAsciidoc);
+                LOG.info("- Asciidoc table for publicly consumed modules:\n" + publicAsciidoc + "\n\n");
             }
             if (!extensionAsciidoc.isBlank()) {
                 extensionAsciidoc = "|===\n" +
                         "|Old name |New name\n" + extensionAsciidoc + "|===";
-                LOG.info("- Asciidoc table for extension developers:\n" + extensionAsciidoc);
+                LOG.info("- Asciidoc table for extension developers:\n" + extensionAsciidoc + "\n\n");
             }
         }
     }

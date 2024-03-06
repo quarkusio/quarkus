@@ -1,20 +1,30 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import java.util.Map;
+import java.util.Optional;
+
 import io.vertx.ext.web.RoutingContext;
 
 /**
  * The request method
  *
  */
-public class RequestMethodAttribute implements ExchangeAttribute {
+public class RequestMethodAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
 
     public static final String REQUEST_METHOD_SHORT = "%m";
     public static final String REQUEST_METHOD = "%{METHOD}";
 
     public static final ExchangeAttribute INSTANCE = new RequestMethodAttribute();
 
+    private static final String NAME = "Request method";
+
     private RequestMethodAttribute() {
 
+    }
+
+    @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
     }
 
     @Override
@@ -24,14 +34,14 @@ public class RequestMethodAttribute implements ExchangeAttribute {
 
     @Override
     public void writeAttribute(final RoutingContext exchange, final String newValue) throws ReadOnlyAttributeException {
-        throw new ReadOnlyAttributeException("Request method", newValue);
+        throw new ReadOnlyAttributeException(NAME, newValue);
     }
 
     public static final class Builder implements ExchangeAttributeBuilder {
 
         @Override
         public String name() {
-            return "Request method";
+            return RequestMethodAttribute.NAME;
         }
 
         @Override

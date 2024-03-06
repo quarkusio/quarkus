@@ -16,6 +16,8 @@ public class ObservabilityHandler implements ServerRestHandler {
     // make mutable to allow for bytecode serialization
     private String templatePath;
 
+    private boolean isSubResource;
+
     public String getTemplatePath() {
         return templatePath;
     }
@@ -24,9 +26,26 @@ public class ObservabilityHandler implements ServerRestHandler {
         this.templatePath = MULTIPLE_SLASH_PATTERN.matcher(templatePath).replaceAll("/");
     }
 
+    public boolean isSubResource() {
+        return isSubResource;
+    }
+
+    public void setSubResource(boolean subResource) {
+        isSubResource = subResource;
+    }
+
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        setUrlPathTemplate(requestContext.unwrap(RoutingContext.class), templatePath);
+        RoutingContext routingContext = requestContext.unwrap(RoutingContext.class);
+        if (isSubResource) {
+            var previous = getUrlPathTemplate(routingContext);
+            if (previous == null) {
+                previous = "";
+            }
+            setUrlPathTemplate(routingContext, previous + templatePath);
+        } else {
+            setUrlPathTemplate(routingContext, templatePath);
+        }
     }
 
 }

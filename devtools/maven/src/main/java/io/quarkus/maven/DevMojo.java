@@ -588,6 +588,13 @@ public class DevMojo extends AbstractMojo {
                 continue;
             }
             for (PluginExecution e : p.getExecutions()) {
+                if (e.getPhase() != null && !PRE_DEV_MODE_PHASES.contains(e.getPhase())) {
+                    // skip executions with phases post quarkus:dev, such as install, deploy, site, etc
+                    if (getLog().isDebugEnabled()) {
+                        getLog().debug("Skipping " + e.getId() + " of " + p.getId());
+                    }
+                    continue;
+                }
                 String goalPrefix = null;
                 if (!e.getGoals().isEmpty()) {
                     goalPrefix = getMojoDescriptor(p, e.getGoals().get(0)).getPluginDescriptor().getGoalPrefix();

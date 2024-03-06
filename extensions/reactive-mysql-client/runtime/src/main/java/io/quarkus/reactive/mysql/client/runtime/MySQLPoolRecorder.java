@@ -215,8 +215,8 @@ public class MySQLPoolRecorder {
                 mysqlConnectOptions.setSslMode(sslMode);
 
                 // If sslMode is verify-identity, we also need a hostname verification algorithm
-                if (sslMode == SslMode.VERIFY_IDENTITY && (!dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm()
-                        .isPresent() || "".equals(dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().get()))) {
+                var algo = dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm();
+                if ("NONE".equalsIgnoreCase(algo) && sslMode == SslMode.VERIFY_IDENTITY) {
                     throw new IllegalArgumentException(
                             "quarkus.datasource.reactive.hostname-verification-algorithm must be specified under verify-identity sslmode");
                 }
@@ -236,8 +236,12 @@ public class MySQLPoolRecorder {
 
             mysqlConnectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval().toMillis());
 
-            dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().ifPresent(
-                    mysqlConnectOptions::setHostnameVerificationAlgorithm);
+            var algo = dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm();
+            if ("NONE".equalsIgnoreCase(algo)) {
+                mysqlConnectOptions.setHostnameVerificationAlgorithm("");
+            } else {
+                mysqlConnectOptions.setHostnameVerificationAlgorithm(algo);
+            }
 
             dataSourceReactiveMySQLConfig.authenticationPlugin().ifPresent(mysqlConnectOptions::setAuthenticationPlugin);
 

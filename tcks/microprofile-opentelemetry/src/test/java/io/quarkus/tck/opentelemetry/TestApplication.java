@@ -8,12 +8,10 @@ import java.net.URL;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.ApplicationPath;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.Response;
 
 import org.jboss.arquillian.container.test.api.Deployment;
@@ -26,8 +24,6 @@ import org.testng.annotations.Test;
 public class TestApplication extends Arquillian {
     @ArquillianResource
     URL url;
-    @Inject
-    HelloBean helloBean;
 
     @Deployment
     public static WebArchive createDeployment() {
@@ -42,12 +38,7 @@ public class TestApplication extends Arquillian {
         assertEquals(response.getStatus(), HttpURLConnection.HTTP_OK);
     }
 
-    @ApplicationPath("/rest")
-    public static class RestApplication extends Application {
-
-    }
-
-    @Path("/")
+    @Path("/rest")
     public static class TestEndpoint {
         @Inject
         HelloBean helloBean;

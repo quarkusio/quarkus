@@ -1,7 +1,5 @@
 package io.quarkus.redis.runtime.client.config;
 
-import java.util.Optional;
-
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.vertx.core.runtime.config.JksConfiguration;
 import io.quarkus.vertx.core.runtime.config.PemKeyCertConfiguration;
@@ -68,8 +66,12 @@ public interface TlsConfig {
 
     /**
      * The hostname verification algorithm to use in case the server's identity should be checked.
-     * Should be HTTPS, LDAPS or an empty string.
+     * Should be {@code HTTPS}, {@code LDAPS} or an {@code NONE} (default).
+     * <p>
+     * If set to {@code NONE}, it does not verify the hostname.
+     * <p>
      */
-    Optional<String> hostnameVerificationAlgorithm();
+    @WithDefault("NONE")
+    String hostnameVerificationAlgorithm();
 
 }

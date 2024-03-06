@@ -7,19 +7,20 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import io.quarkus.runtime.configuration.HyphenateEnumConverter;
+import org.eclipse.microprofile.config.spi.Converter;
+
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigValue;
+import io.smallrye.config.Converters;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
-import io.smallrye.openapi.api.OpenApiConfig;
+import io.smallrye.openapi.api.OpenApiConfig.OperationIdStrategy;
 
 /**
  * Maps config from MicroProfile and SmallRye to Quarkus
  */
 public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
     private static final Map<String, String> RELOCATIONS = relocations();
-    @SuppressWarnings("unchecked")
-    private final HyphenateEnumConverter enumConverter = new HyphenateEnumConverter(OpenApiConfig.OperationIdStrategy.class);
+    private final Converter<OperationIdStrategy> enumConverter = Converters.getImplicitConverter(OperationIdStrategy.class);
 
     public OpenApiConfigMapping() {
         super(RELOCATIONS);
@@ -27,6 +28,7 @@ public class OpenApiConfigMapping extends RelocateConfigSourceInterceptor {
 
     @Override
     public ConfigValue getValue(ConfigSourceInterceptorContext context, String name) {
+        final Converter<OperationIdStrategy> implicitConverter = Converters.getImplicitConverter(OperationIdStrategy.class);
         ConfigValue configValue = super.getValue(context, name);
         // Special case for enum. The converter run after the interceptors, so we have to do this here.
         if (name.equals(io.smallrye.openapi.api.constants.OpenApiConstants.OPERATION_ID_STRAGEGY)) {

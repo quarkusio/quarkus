@@ -12,7 +12,10 @@ import io.quarkus.runtime.util.StringUtil;
 
 /**
  * A converter for hyphenated enums.
+ *
+ * @deprecated Use {@link io.smallrye.config.Converters#getImplicitConverter(Class)} instead.
  */
+@Deprecated(forRemoval = true)
 public final class HyphenateEnumConverter<E extends Enum<E>> implements Converter<E>, Serializable {
     private static final String HYPHEN = "-";
     private static final Pattern PATTERN = Pattern.compile("([-_]+)");

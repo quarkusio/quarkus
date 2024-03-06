@@ -13,4 +13,8 @@ public class MyDeclarativeRoutes {
     void helloRoute(RoutingExchange ex) { 
         ex.ok("Hello " + ex.getParam("name").orElse("Reactive Route") +" !!");
     }
+
+    // Use in IDE: Starts the app for development. Not used in production.
+    public static void main(String... args) { io.quarkus.runtime.Quarkus.run(args); }
+
 }

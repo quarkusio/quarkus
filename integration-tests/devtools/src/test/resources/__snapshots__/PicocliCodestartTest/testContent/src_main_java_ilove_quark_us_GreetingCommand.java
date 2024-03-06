@@ -16,4 +16,7 @@ public class GreetingCommand implements Runnable {
         System.out.printf("Hello %s, go go commando!\n", name);
     }
 
+    // Use in IDE: Starts the app for development. Not used in production.
+    public static void main(String... args) { io.quarkus.runtime.Quarkus.run(args); }
+
 }

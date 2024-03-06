@@ -36,4 +36,8 @@ public class StartWebSocket {
     public void onMessage(String message, @PathParam("name") String name) {
         System.out.println("onMessage> " + name + ": " + message);
     }
+
+    // Use in IDE: Starts the app for development. Not used in production.
+    public static void main(String... args) { io.quarkus.runtime.Quarkus.run(args); }
+
 }

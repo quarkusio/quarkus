@@ -191,7 +191,7 @@ quarkus.http.ssl.certificate.key-store-file=/path/to/keystore
 ----
 
 As an optional hint, the type of keystore can be provided as one of the options listed.
-If the type is not provided, Quarkus will try to deduce it from the file extensions, defaulting to type JKS.
+If the type is not provided, Quarkus will try to deduce it from the file extensions.
 
 [source,properties]
 ----

@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.mutiny.Uni;
 
 public class ResponseExceptionMapperTest {
     @RegisterExtension
@@ -34,8 +35,11 @@ public class ResponseExceptionMapperTest {
 
     @Test
     void shouldInvokeExceptionMapperOnce() {
-        assertThrows(RuntimeException.class, client::get);
+        assertThrows(TestException.class, client::get);
         assertThat(MyExceptionMapper.executionCount.get()).isEqualTo(1);
+
+        assertThrows(TestException.class, () -> client.uniGet().await().indefinitely());
+        assertThat(MyExceptionMapper.executionCount.get()).isEqualTo(2);
     }
 
     @Path("/error")
@@ -51,6 +55,9 @@ public class ResponseExceptionMapperTest {
     public interface Client {
         @GET
         String get();
+
+        @GET
+        Uni<String> uniGet();
     }
 
     @Provider
@@ -61,7 +68,14 @@ public class ResponseExceptionMapperTest {
         @Override
         public Exception toThrowable(Response response) {
             executionCount.incrementAndGet();
-            return new RuntimeException("My exception");
+            return new TestException("My exception");
+        }
+    }
+
+    public static class TestException extends RuntimeException {
+
+        public TestException(String message) {
+            super(message);
         }
     }
 

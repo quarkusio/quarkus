@@ -611,6 +611,16 @@ Message out = Message.of(...).withMetadata(tm);
 The above creates a `TracingMetadata` object we can add to the `Message` being produced,
 which retrieves the OpenTelemetry `Context` to extract the current span for propagation.
 
+=== Quarkus Security Events
+
+Quarkus supports exporting of the xref:security-customization.adoc#observe-security-events[Security events] as OpenTelemetry Span events.
+
+[source,application.properties]
+----
+quarkus.otel.security-events.enabled=true <1>
+----
+<1> Export Quarkus Security events as OpenTelemetry Span events.
+
 == Exporters
 
 === Default

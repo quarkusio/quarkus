@@ -316,10 +316,9 @@ class SmallRyeHealthProcessor {
                 if (target.asClass().declaredAnnotation(JAX_RS_PATH) != null) {
                     containsPath = true;
                 }
-            } else if (target.kind() == Kind.METHOD) {
-                if (target.asMethod().hasAnnotation(JAX_RS_PATH)) {
-                    containsPath = true;
-                }
+            } else if (target.kind() == Kind.METHOD && target.asMethod().hasAnnotation(JAX_RS_PATH)) {
+                containsPath = true;
+
             }
             if (containsPath) {
                 LOG.warnv(

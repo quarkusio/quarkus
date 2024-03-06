@@ -47,10 +47,9 @@ public class ShutdownRecorder {
             for (ShutdownListener i : shutdownListeners) {
                 i.shutdown(new LatchShutdownNotification(shutdown));
             }
-            if (shutdownConfig.timeout.isPresent()) {
-                if (!shutdown.await(shutdownConfig.timeout.get().toMillis(), TimeUnit.MILLISECONDS)) {
-                    log.error("Timed out waiting for graceful shutdown, shutting down anyway.");
-                }
+            if (shutdownConfig.isShutdownTimeoutSet()
+                    && !shutdown.await(shutdownConfig.timeout.get().toMillis(), TimeUnit.MILLISECONDS)) {
+                log.error("Timed out waiting for graceful shutdown, shutting down anyway.");
             }
 
         } catch (Throwable e) {

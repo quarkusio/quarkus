@@ -30,30 +30,40 @@ public class ShutdownRecorder {
     public static void runShutdown() {
         log.debug("Attempting to gracefully shutdown.");
         try {
-            CountDownLatch preShutdown = new CountDownLatch(shutdownListeners.size());
-            for (ShutdownListener i : shutdownListeners) {
-                i.preShutdown(new LatchShutdownNotification(preShutdown));
-            }
-
-            preShutdown.await();
-            if (delayEnabled && shutdownConfig.isDelaySet()) {
-                try {
-                    Thread.sleep(shutdownConfig.delay.get().toMillis());
-                } catch (InterruptedException e) {
-                    log.error("Interrupted while waiting for delay, continuing to shutdown immediately");
-                }
-            }
-            CountDownLatch shutdown = new CountDownLatch(shutdownListeners.size());
-            for (ShutdownListener i : shutdownListeners) {
-                i.shutdown(new LatchShutdownNotification(shutdown));
-            }
-            if (shutdownConfig.isShutdownTimeoutSet()
-                    && !shutdown.await(shutdownConfig.timeout.get().toMillis(), TimeUnit.MILLISECONDS)) {
-                log.error("Timed out waiting for graceful shutdown, shutting down anyway.");
-            }
-
+            executePreShutdown();
+            waitForDelay();
+            executeShutdown();
         } catch (Throwable e) {
             log.error("Graceful shutdown failed", e);
+        }
+    }
+
+    private static void executePreShutdown() throws InterruptedException {
+        CountDownLatch preShutdown = new CountDownLatch(shutdownListeners.size());
+        for (ShutdownListener i : shutdownListeners) {
+            i.preShutdown(new LatchShutdownNotification(preShutdown));
+        }
+        preShutdown.await();
+    }
+
+    private static void waitForDelay() {
+        if (delayEnabled && shutdownConfig.isDelaySet()) {
+            try {
+                Thread.sleep(shutdownConfig.delay.get().toMillis());
+            } catch (InterruptedException e) {
+                log.error("Interrupted while waiting for delay, continuing to shutdown immediately");
+            }
+        }
+    }
+
+    private static void executeShutdown() throws InterruptedException {
+        CountDownLatch shutdown = new CountDownLatch(shutdownListeners.size());
+        for (ShutdownListener i : shutdownListeners) {
+            i.shutdown(new LatchShutdownNotification(shutdown));
+        }
+        if (shutdownConfig.isShutdownTimeoutSet()
+                && !shutdown.await(shutdownConfig.timeout.get().toMillis(), TimeUnit.MILLISECONDS)) {
+            log.error("Timed out waiting for graceful shutdown, shutting down anyway.");
         }
     }
 

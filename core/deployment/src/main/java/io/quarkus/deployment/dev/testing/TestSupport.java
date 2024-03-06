@@ -42,7 +42,7 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.testing.TestWatchedFiles;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathList;
-import io.quarkus.runtime.configuration.HyphenateEnumConverter;
+import io.smallrye.config.Converters;
 
 public class TestSupport implements TestController {
 
@@ -579,7 +579,7 @@ public class TestSupport implements TestController {
                         if (testType == null) {
                             this.testType = TestType.ALL;
                         } else {
-                            this.testType = new HyphenateEnumConverter<>(TestType.class).convert(testType);
+                            this.testType = Converters.getImplicitConverter(TestType.class).convert(testType);
                         }
                     }
                 }

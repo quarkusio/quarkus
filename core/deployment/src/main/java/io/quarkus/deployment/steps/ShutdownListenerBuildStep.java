@@ -1,7 +1,6 @@
 package io.quarkus.deployment.steps;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -16,8 +15,7 @@ public class ShutdownListenerBuildStep {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupShutdown(List<ShutdownListenerBuildItem> listeners, ShutdownBuildTimeConfig shutdownBuildTimeConfig,
             ShutdownRecorder recorder) {
-        recorder.setListeners(
-                listeners.stream().map(ShutdownListenerBuildItem::getShutdownListener).collect(Collectors.toList()),
+        recorder.setListeners(listeners.stream().map(ShutdownListenerBuildItem::getShutdownListener).toList(),
                 shutdownBuildTimeConfig.delayEnabled);
     }
 }

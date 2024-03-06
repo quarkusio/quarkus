@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.Config;
@@ -134,7 +133,7 @@ class SmallRyeHealthProcessor {
                 BRANDING_LOGO_MODULE,
                 BRANDING_STYLE_MODULE,
                 BRANDING_FAVICON_MODULE).map(HotDeploymentWatchedFileBuildItem::new)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @BuildStep

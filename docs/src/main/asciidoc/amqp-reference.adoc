@@ -448,7 +448,7 @@ public AmqpClientOptions getNamedOptions() {
         .setPemKeyCertOptions(keycert)
         .setPemTrustOptions(trust)
         .addEnabledSaslMechanism("EXTERNAL")
-        .setHostnameVerificationAlgorithm("")
+        .setHostnameVerificationAlgorithm("") // Disables the hostname verification. Defaults is "HTTPS"
         .setConnectTimeout(30000)
         .setReconnectInterval(5000)
         .setContainerId("my-container");

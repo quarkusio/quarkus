@@ -34,7 +34,7 @@
         <opentelemetry.version>1.32.0</opentelemetry.version>
         <opentelemetry-alpha.version>1.32.0-alpha</opentelemetry-alpha.version>
         <opentelemetry-semconv.version>1.21.0-alpha</opentelemetry-semconv.version> <!-- keep in sync with opentelemetry-java-instrumentation in the alpha bom-->
-        <quarkus-http.version>5.1.0.Final</quarkus-http.version>
+        <quarkus-http.version>5.2.0.Final</quarkus-http.version>
         <micrometer.version>1.12.2</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
@@ -61,8 +61,8 @@
         <smallrye-context-propagation.version>2.1.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.1</smallrye-reactive-types-converter.version>
-        <smallrye-mutiny-vertx-binding.version>3.9.0</smallrye-mutiny-vertx-binding.version>
-        <smallrye-reactive-messaging.version>4.16.2</smallrye-reactive-messaging.version>
+        <smallrye-mutiny-vertx-binding.version>3.10.0</smallrye-mutiny-vertx-binding.version>
+        <smallrye-reactive-messaging.version>4.18.0</smallrye-reactive-messaging.version>
         <smallrye-stork.version>2.5.0</smallrye-stork.version>
         <jakarta.activation.version>2.1.2</jakarta.activation.version>
         <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
@@ -108,7 +108,7 @@
         <!-- When updating, align hibernate-search.version-for-documentation in docs/pom.xml -->
         <hibernate-search.version>7.0.0.Final</hibernate-search.version>
         <narayana.version>7.0.0.Final</narayana.version>
-        <agroal.version>2.1</agroal.version>
+        <agroal.version>2.3</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>8.11.4</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
@@ -121,7 +121,7 @@
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>2.2.3.Final</wildfly-elytron.version>
         <jboss-threads.version>3.5.1.Final</jboss-threads.version>
-        <vertx.version>4.5.3</vertx.version>
+        <vertx.version>4.5.4</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -141,10 +141,10 @@
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>5.10.1</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
-        <infinispan.version>14.0.24.Final</infinispan.version>
+        <infinispan.version>14.0.25.Final</infinispan.version>
         <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
-        <netty.version>4.1.106.Final</netty.version>
+        <netty.version>4.1.107.Final</netty.version>
         <brotli4j.version>1.14.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
@@ -207,8 +207,8 @@
         <avro.version>1.11.3</avro.version>
         <apicurio-registry.version>2.5.8.Final</apicurio-registry.version>
         <apicurio-common-rest-client.version>0.1.18.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
-        <testcontainers.version>1.19.4</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
-        <docker-java.version>3.3.4</docker-java.version> <!-- must be the version Testcontainers use -->
+        <testcontainers.version>1.19.6</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
+        <docker-java.version>3.3.5</docker-java.version> <!-- must be the version Testcontainers use -->
         <!-- Check the compatibility matrix (https://github.com/opensearch-project/opensearch-testcontainers) before upgrading: -->
         <opensearch-testcontainers.version>2.0.0</opensearch-testcontainers.version>
         <com.dajudge.kindcontainer>1.4.4</com.dajudge.kindcontainer>

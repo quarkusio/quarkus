@@ -72,6 +72,7 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
      */
     public THIS read(BeanConfiguratorBase<?, ?> base) {
         super.read(base);
+        identifier = base.identifier;
         types.clear();
         types.addAll(base.types);
         qualifiers.clear();

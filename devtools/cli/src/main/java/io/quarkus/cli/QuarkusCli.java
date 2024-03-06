@@ -93,6 +93,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
         //When running tests the cli should not prompt for user input.
         boolean interactiveMode = Arrays.stream(args).noneMatch(arg -> arg.equals("--cli-test"));
         Optional<String> testDir = Arrays.stream(args).dropWhile(arg -> !arg.equals("--cli-test-dir")).skip(1).findFirst();
+        boolean noCommand = args.length == 0 || args[0].startsWith("-");
         boolean helpCommand = Arrays.stream(args).anyMatch(arg -> arg.equals("--help"));
         boolean pluginCommand = args.length >= 1 && (args[0].equals("plug") || args[0].equals("plugin"));
 
@@ -103,7 +104,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
             // If the command already exists and is not a help command (that lists subcommands) or plugin command, then just execute
             // without dealing with plugins.
             // The reason that we check if its a plugin command is that plugin commands need PluginManager initialization.
-            if (existingCommand && !helpCommand && !pluginCommand) {
+            if (existingCommand && !noCommand && !helpCommand && !pluginCommand) {
                 return cmd.execute(args);
             }
             PluginCommandFactory pluginCommandFactory = new PluginCommandFactory(output);
@@ -111,14 +112,15 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
             pluginManager.syncIfNeeded();
             Map<String, Plugin> plugins = new HashMap<>(pluginManager.getInstalledPlugins());
             pluginCommandFactory.populateCommands(cmd, plugins);
-            missingCommand.ifPresent(m -> {
+            missingCommand.filter(m -> !plugins.containsKey(m)).ifPresent(m -> {
                 try {
+                    output.info("Command %s is not available, looking for available plugins ...", m);
                     Map<String, Plugin> installable = pluginManager.getInstallablePlugins();
                     if (installable.containsKey(m)) {
                         Plugin candidate = installable.get(m);
                         PluginListItem item = new PluginListItem(false, candidate);
                         PluginListTable table = new PluginListTable(List.of(item));
-                        output.info("Command %s not installed but the following plugin is available:\n%s", m,
+                        output.info("Plugin %s is available:\n%s", m,
                                 table.getContent());
                         if (interactiveMode && Prompt.yesOrNo(true,
                                 "Would you like to install it now?",

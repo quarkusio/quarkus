@@ -220,9 +220,11 @@ public class MSSQLPoolRecorder {
         configureJksKeyCertOptions(mssqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks());
         configurePfxKeyCertOptions(mssqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx());
 
-        if (dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().isPresent()) {
-            mssqlConnectOptions.setHostnameVerificationAlgorithm(
-                    dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().get());
+        var algo = dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm();
+        if ("NONE".equalsIgnoreCase(algo)) {
+            mssqlConnectOptions.setHostnameVerificationAlgorithm("");
+        } else {
+            mssqlConnectOptions.setHostnameVerificationAlgorithm(algo);
         }
 
         dataSourceReactiveRuntimeConfig.additionalProperties().forEach(mssqlConnectOptions::addProperty);

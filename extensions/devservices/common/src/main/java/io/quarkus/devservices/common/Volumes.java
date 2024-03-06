@@ -1,6 +1,5 @@
 package io.quarkus.devservices.common;
 
-import java.net.URL;
 import java.util.Map;
 
 import org.testcontainers.containers.BindMode;
@@ -18,19 +17,12 @@ public final class Volumes {
     public static void addVolumes(GenericContainer<?> container, Map<String, String> volumes) {
         for (Map.Entry<String, String> volume : volumes.entrySet()) {
             String hostLocation = volume.getKey();
-            BindMode bindMode = BindMode.READ_WRITE;
             if (volume.getKey().startsWith(CLASSPATH)) {
-                URL url = Thread.currentThread().getContextClassLoader()
-                        .getResource(hostLocation.replaceFirst(CLASSPATH, EMPTY));
-                if (url == null) {
-                    throw new IllegalStateException("Classpath resource at '" + hostLocation + "' not found!");
-                }
-
-                hostLocation = url.getPath();
-                bindMode = BindMode.READ_ONLY;
+                container.withClasspathResourceMapping(hostLocation.replaceFirst(CLASSPATH, EMPTY), volume.getValue(),
+                        BindMode.READ_ONLY);
+            } else {
+                container.withFileSystemBind(hostLocation, volume.getValue(), BindMode.READ_WRITE);
             }
-
-            container.withFileSystemBind(hostLocation, volume.getValue(), bindMode);
         }
     }
 }

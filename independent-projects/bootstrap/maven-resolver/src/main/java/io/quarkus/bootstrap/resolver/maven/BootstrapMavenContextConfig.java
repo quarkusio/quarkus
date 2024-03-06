@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.apache.maven.model.Model;
+import org.apache.maven.settings.crypto.SettingsDecrypter;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
@@ -28,6 +29,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     protected List<RemoteRepository> remoteRepos;
     protected List<RemoteRepository> remotePluginRepos;
     protected RemoteRepositoryManager remoteRepoManager;
+    protected SettingsDecrypter settingsDecrypter;
     protected String alternatePomName;
     protected File userSettings;
     protected boolean artifactTransferLogging = true;
@@ -187,6 +189,18 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
     @SuppressWarnings("unchecked")
     public T setRemoteRepositoryManager(RemoteRepositoryManager remoteRepoManager) {
         this.remoteRepoManager = remoteRepoManager;
+        return (T) this;
+    }
+
+    /**
+     * Settings decryptor
+     *
+     * @param settingsDecrypter settings decrypter
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public T setSettingsDecrypter(SettingsDecrypter settingsDecrypter) {
+        this.settingsDecrypter = settingsDecrypter;
         return (T) this;
     }
 

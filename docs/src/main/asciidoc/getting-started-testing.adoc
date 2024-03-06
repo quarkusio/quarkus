@@ -843,7 +843,20 @@ So if you need to call methods such as `verify` you should hang on to the mock i
 ==== Further simplification with `@InjectMock`
 
 Building on the features provided by `QuarkusMock`, Quarkus also allows users to effortlessly take advantage of link:https://site.mockito.org/[Mockito] for mocking the beans supported by `QuarkusMock`.
-This functionality is available with the `@io.quarkus.test.InjectMock` annotation if the `quarkus-junit5-mockito` dependency is present.
+
+[IMPORTANT]
+====
+This functionality is available with the `@io.quarkus.test.InjectMock` annotation **only if** the `quarkus-junit5-mockito` dependency is present:
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-junit5-mockito</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+====
 
 Using `@InjectMock`, the previous example could be written as follows:
 

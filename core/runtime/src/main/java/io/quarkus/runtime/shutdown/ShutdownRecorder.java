@@ -1,6 +1,5 @@
 package io.quarkus.runtime.shutdown;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -16,23 +15,19 @@ public class ShutdownRecorder {
     private static final Logger log = Logger.getLogger(ShutdownRecorder.class);
 
     private static volatile List<ShutdownListener> shutdownListeners;
-    private static volatile Optional<Duration> waitTime;
-
-    final ShutdownConfig shutdownConfig;
+    private static volatile ShutdownConfig shutdownConfig;
+    private static volatile boolean delayEnabled;
 
     public ShutdownRecorder(ShutdownConfig shutdownConfig) {
-        this.shutdownConfig = shutdownConfig;
+        ShutdownRecorder.shutdownConfig = shutdownConfig;
     }
 
-    public void setListeners(List<ShutdownListener> listeners) {
-        shutdownListeners = listeners;
-        waitTime = shutdownConfig.timeout;
+    public void setListeners(List<ShutdownListener> listeners, boolean delayEnabled) {
+        shutdownListeners = Optional.ofNullable(listeners).orElseGet(List::of);
+        ShutdownRecorder.delayEnabled = delayEnabled;
     }
 
     public static void runShutdown() {
-        if (shutdownListeners == null) {
-            return;
-        }
         log.debug("Attempting to gracefully shutdown.");
         try {
             CountDownLatch preShutdown = new CountDownLatch(shutdownListeners.size());
@@ -41,12 +36,19 @@ public class ShutdownRecorder {
             }
 
             preShutdown.await();
+            if (delayEnabled && shutdownConfig.isDelaySet()) {
+                try {
+                    Thread.sleep(shutdownConfig.delay.get().toMillis());
+                } catch (InterruptedException e) {
+                    log.error("Interrupted while waiting for delay, continuing to shutdown immediately");
+                }
+            }
             CountDownLatch shutdown = new CountDownLatch(shutdownListeners.size());
             for (ShutdownListener i : shutdownListeners) {
                 i.shutdown(new LatchShutdownNotification(shutdown));
             }
-            if (waitTime.isPresent()) {
-                if (!shutdown.await(waitTime.get().toMillis(), TimeUnit.MILLISECONDS)) {
+            if (shutdownConfig.timeout.isPresent()) {
+                if (!shutdown.await(shutdownConfig.timeout.get().toMillis(), TimeUnit.MILLISECONDS)) {
                     log.error("Timed out waiting for graceful shutdown, shutting down anyway.");
                 }
             }

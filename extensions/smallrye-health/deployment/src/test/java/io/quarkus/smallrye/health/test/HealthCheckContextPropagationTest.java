@@ -23,7 +23,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-public class HealthCheckContextPropagationTest {
+class HealthCheckContextPropagationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -32,7 +32,7 @@ public class HealthCheckContextPropagationTest {
                     .addClasses(RequestScopedBean.class, ContextualHC.class));
 
     @Test
-    public void testContextPropagatedToHealthChecks() {
+    void testContextPropagatedToHealthChecks() {
         try {
             RestAssured.defaultParser = Parser.JSON;
 

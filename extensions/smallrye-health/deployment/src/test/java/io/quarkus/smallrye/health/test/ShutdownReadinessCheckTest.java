@@ -3,7 +3,6 @@ package io.quarkus.smallrye.health.test;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -11,26 +10,23 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-class HealthUnitTest {
+class ShutdownReadinessCheckTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BasicHealthCheck.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+            .overrideConfigKey("quarkus.shutdown.delay-enabled", "true");
 
     @Test
-    void testHealth() {
-        // the health check does not set a content type, so we need to force the parser
+    void testShutdownHealthCheckInclusion() {
         try {
             RestAssured.defaultParser = Parser.JSON;
-            RestAssured.when().get("/q/health/live").then()
+            RestAssured.when().get("/q/health/ready").then()
                     .body("status", is("UP"),
+                            "checks.size()", is(1),
                             "checks.status", contains("UP"),
-                            "checks.name", contains("basic"));
+                            "checks.name", contains("Graceful Shutdown"));
         } finally {
             RestAssured.reset();
         }
     }
-
 }

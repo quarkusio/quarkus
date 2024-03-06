@@ -45,6 +45,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
+import io.quarkus.deployment.shutdown.ShutdownBuildTimeConfig;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
@@ -54,6 +55,7 @@ import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.smallrye.health.runtime.QuarkusAsyncHealthCheckFactory;
+import io.quarkus.smallrye.health.runtime.ShutdownReadinessCheck;
 import io.quarkus.smallrye.health.runtime.ShutdownReadinessListener;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthGroupHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthHandler;
@@ -353,6 +355,17 @@ class SmallRyeHealthProcessor {
                 new KubernetesHealthStartupPathBuildItem(
                         nonApplicationRootPathBuildItem.resolveManagementNestedPath(healthConfig.rootPath,
                                 healthConfig.startupPath)));
+    }
+
+    @BuildStep
+    void shutdownHealthCheck(ShutdownBuildTimeConfig buildTimeConfig,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
+        if (buildTimeConfig.delayEnabled) {
+            additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClass(ShutdownReadinessCheck.class)
+                    .setUnremovable()
+                    .build());
+        }
     }
 
     @BuildStep

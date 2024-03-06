@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class HealthOpenAPITest {
+class HealthOpenAPITest {
 
     private static final String OPEN_API_PATH = "/q/openapi";
 
@@ -22,7 +22,7 @@ public class HealthOpenAPITest {
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
-    public void testOpenApiPathAccessResource() {
+    void testOpenApiPathAccessResource() {
 
         RestAssured.given().header("Accept", "application/json")
                 .when().get(OPEN_API_PATH)

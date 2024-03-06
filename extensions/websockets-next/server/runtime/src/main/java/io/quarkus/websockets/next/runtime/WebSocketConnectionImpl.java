@@ -80,11 +80,6 @@ class WebSocketConnectionImpl implements WebSocketConnection {
     }
 
     @Override
-    public BroadcastSender broadcast(Predicate<WebSocketConnection> filter) {
-        return new BroadcastImpl(Objects.requireNonNull(filter));
-    }
-
-    @Override
     public Uni<Void> close() {
         return UniHelper.toUni(webSocket.close());
     }
@@ -207,6 +202,11 @@ class WebSocketConnectionImpl implements WebSocketConnection {
 
         BroadcastImpl(Predicate<WebSocketConnection> filter) {
             this.filter = filter;
+        }
+
+        @Override
+        public BroadcastSender filter(Predicate<WebSocketConnection> predicate) {
+            return new BroadcastImpl(Objects.requireNonNull(predicate));
         }
 
         @Override

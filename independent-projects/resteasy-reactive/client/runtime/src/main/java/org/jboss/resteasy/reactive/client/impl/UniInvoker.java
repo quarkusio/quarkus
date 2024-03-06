@@ -1,8 +1,10 @@
 package org.jboss.resteasy.reactive.client.impl;
 
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
+import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.GenericType;
 import jakarta.ws.rs.core.Response;
@@ -24,6 +26,14 @@ public class UniInvoker extends AbstractRxInvoker<Uni<?>> {
             @Override
             public CompletionStage<R> get() {
                 return invoker.method(name, entity, responseType);
+            }
+        }).onFailure().transform(new Function<>() {
+            @Override
+            public Throwable apply(Throwable t) {
+                if ((t instanceof ProcessingException) && (t.getCause() != null)) {
+                    return t.getCause();
+                }
+                return t;
             }
         });
     }

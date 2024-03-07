@@ -486,7 +486,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         } else {
             final String nonce = (String) requestData.get(OidcConstants.NONCE);
             return resolveJwksAndVerifyTokenUni(resolvedContext, tokenCred, enforceAudienceVerification,
-                    resolvedContext.oidcConfig.token.isSubjectRequired(), nonce);
+                    resolvedContext.oidcConfig.token.isSubjectRequired(), nonce,
+                    resolvedContext.oidcConfig.token.isAgeRequired());
         }
     }
 
@@ -507,9 +508,9 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
     private Uni<TokenVerificationResult> resolveJwksAndVerifyTokenUni(TenantConfigContext resolvedContext,
             TokenCredential tokenCred,
-            boolean enforceAudienceVerification, boolean subjectRequired, String nonce) {
+            boolean enforceAudienceVerification, boolean subjectRequired, String nonce, boolean ageRequired) {
         return resolvedContext.provider
-                .getKeyResolverAndVerifyJwtToken(tokenCred, enforceAudienceVerification, subjectRequired, nonce)
+                .getKeyResolverAndVerifyJwtToken(tokenCred, enforceAudienceVerification, subjectRequired, nonce, ageRequired)
                 .onFailure(f -> fallbackToIntrospectionIfNoMatchingKey(f, resolvedContext))
                 .recoverWithUni(f -> introspectTokenUni(resolvedContext, tokenCred.getToken(), true));
     }

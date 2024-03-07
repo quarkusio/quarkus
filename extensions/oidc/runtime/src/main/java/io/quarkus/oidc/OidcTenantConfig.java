@@ -1502,6 +1502,15 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<Duration> age = Optional.empty();
 
         /**
+         * Require that the token includes a `iat` (issued at) claim
+         *
+         * Set this property to `false` if your JWT token doesn't contain an `iat` claim,
+         * or you don't want to enable verification of it.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean ageRequired = true;
+
+        /**
          * Name of the claim which contains a principal name. By default, the `upn`, `preferred_username` and `sub`
          * claims are
          * checked.
@@ -1726,6 +1735,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setAge(Duration age) {
             this.age = Optional.of(age);
+        }
+
+        public boolean isAgeRequired() {
+            return ageRequired;
+        }
+
+        public void setAgeRequired(boolean ageRequired) {
+            this.ageRequired = ageRequired;
         }
 
         public Optional<String> getDecryptionKeyLocation() {

@@ -80,7 +80,7 @@ public class RestClientsContainer {
         public RestClientInfo(String interfaceClass, boolean isBean, String configKey) {
             this.interfaceClass = interfaceClass;
             this.isBean = isBean;
-            this.configKey = configKey == null ? "" : String.format("quarkus.rest.client.%s", configKey);
+            this.configKey = configKey == null ? "" : String.format("quarkus.rest-client.%s", configKey);
         }
     }
 

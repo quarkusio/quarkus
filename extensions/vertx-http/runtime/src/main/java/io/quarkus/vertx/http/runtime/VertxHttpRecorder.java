@@ -460,7 +460,8 @@ public class VertxHttpRecorder {
             } else {
                 receiver = new JBossLoggingAccessLogReceiver(accessLog.category);
             }
-            AccessLogHandler handler = new AccessLogHandler(receiver, accessLog.pattern, getClass().getClassLoader(),
+            AccessLogHandler handler = new AccessLogHandler(receiver, accessLog.pattern, accessLog.consolidateReroutedRequests,
+                    getClass().getClassLoader(),
                     accessLog.excludePattern);
             if (rootPath.equals("/") || nonRootPath.equals("/")) {
                 mainRouterRuntimeValue.orElse(httpRouterRuntimeValue).getValue().route()

@@ -158,7 +158,7 @@ public class OidcProvider implements Closeable {
 
     public TokenVerificationResult verifySelfSignedJwtToken(String token) throws InvalidJwtException {
         return verifyJwtTokenInternal(token, true, false, null, SYMMETRIC_ALGORITHM_CONSTRAINTS, new SymmetricKeyResolver(),
-                true);
+                true, oidcConfig.token.isAgeRequired());
     }
 
     public TokenVerificationResult verifyJwtToken(String token, boolean enforceAudienceVerification, boolean subjectRequired,
@@ -166,14 +166,14 @@ public class OidcProvider implements Closeable {
             throws InvalidJwtException {
         return verifyJwtTokenInternal(customizeJwtToken(token), enforceAudienceVerification, subjectRequired, nonce,
                 (requiredAlgorithmConstraints != null ? requiredAlgorithmConstraints : ASYMMETRIC_ALGORITHM_CONSTRAINTS),
-                asymmetricKeyResolver, true);
+                asymmetricKeyResolver, true, oidcConfig.token.isAgeRequired());
     }
 
     public TokenVerificationResult verifyLogoutJwtToken(String token) throws InvalidJwtException {
         final boolean enforceExpReq = !oidcConfig.token.age.isPresent();
         TokenVerificationResult result = verifyJwtTokenInternal(token, true, false, null, ASYMMETRIC_ALGORITHM_CONSTRAINTS,
                 asymmetricKeyResolver,
-                enforceExpReq);
+                enforceExpReq, oidcConfig.token.isAgeRequired());
         if (!enforceExpReq) {
             // Expiry check was skipped during the initial verification but if the logout token contains the exp claim
             // then it must be verified
@@ -191,7 +191,8 @@ public class OidcProvider implements Closeable {
             boolean subjectRequired,
             String nonce,
             AlgorithmConstraints algConstraints,
-            VerificationKeyResolver verificationKeyResolver, boolean enforceExpReq) throws InvalidJwtException {
+            VerificationKeyResolver verificationKeyResolver, boolean enforceExpReq, boolean enforceAgeReq)
+            throws InvalidJwtException {
         JwtConsumerBuilder builder = new JwtConsumerBuilder();
 
         builder.setVerificationKeyResolver(verificationKeyResolver);
@@ -209,7 +210,9 @@ public class OidcProvider implements Closeable {
             builder.registerValidator(new CustomClaimsValidator(Map.of(OidcConstants.NONCE, nonce)));
         }
 
-        builder.setRequireIssuedAt();
+        if (enforceAgeReq) {
+            builder.setRequireIssuedAt();
+        }
 
         if (issuer != null) {
             builder.setExpectedIssuer(issuer);
@@ -308,7 +311,7 @@ public class OidcProvider implements Closeable {
 
     public Uni<TokenVerificationResult> getKeyResolverAndVerifyJwtToken(TokenCredential tokenCred,
             boolean enforceAudienceVerification,
-            boolean subjectRequired, String nonce) {
+            boolean subjectRequired, String nonce, boolean ageRequired) {
         return keyResolverProvider.resolve(tokenCred).onItem()
                 .transformToUni(new Function<VerificationKeyResolver, Uni<? extends TokenVerificationResult>>() {
 
@@ -321,7 +324,7 @@ public class OidcProvider implements Closeable {
                                             subjectRequired, nonce,
                                             (requiredAlgorithmConstraints != null ? requiredAlgorithmConstraints
                                                     : ASYMMETRIC_ALGORITHM_CONSTRAINTS),
-                                            resolver, true));
+                                            resolver, true, ageRequired));
                         } catch (Throwable t) {
                             return Uni.createFrom().failure(t);
                         }

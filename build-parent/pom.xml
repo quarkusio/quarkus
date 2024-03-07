@@ -381,7 +381,7 @@
             <dependency>
                 <groupId>me.escoffier.certs</groupId>
                 <artifactId>certificate-generator-junit5</artifactId>
-                <version>0.4.3</version>
+                <version>0.5.0</version>
                 <scope>test</scope>
             </dependency>
 

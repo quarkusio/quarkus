@@ -208,11 +208,18 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
     }
 
     protected Uni<Void> multiText(Multi<Object> multi, boolean broadcast, Function<Object, Uni<Void>> itemFun) {
-        multi.onFailure().call(connection::close).subscribe().with(
-                m -> {
-                    itemFun.apply(m).subscribe().with(v -> LOG.debugf("Multi >> text message: %s", connection),
-                            t -> LOG.errorf(t, "Unable to send text message from Multi: %s", connection));
-                });
+        multi.onFailure()
+                .call(connection::close)
+                .subscribe().with(
+                        m -> {
+                            itemFun.apply(m)
+                                    .subscribe()
+                                    .with(v -> LOG.debugf("Multi >> text message: %s", connection),
+                                            t -> LOG.errorf(t, "Unable to send text message from Multi: %s", connection));
+                        },
+                        t -> {
+                            LOG.errorf(t, "Unable to send text message from Multi - connection was closed: %s ", connection);
+                        });
         return Uni.createFrom().voidItem();
     }
 
@@ -221,11 +228,18 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
     }
 
     protected Uni<Void> multiBinary(Multi<Object> multi, boolean broadcast, Function<Object, Uni<Void>> itemFun) {
-        multi.onFailure().call(connection::close).subscribe().with(
-                m -> {
-                    itemFun.apply(m).subscribe().with(v -> LOG.debugf("Multi >> binary message: %s", connection),
-                            t -> LOG.errorf(t, "Unable to send binary message from Multi: %s", connection));
-                });
+        multi.onFailure()
+                .call(connection::close)
+                .subscribe().with(
+                        m -> {
+                            itemFun.apply(m)
+                                    .subscribe()
+                                    .with(v -> LOG.debugf("Multi >> binary message: %s", connection),
+                                            t -> LOG.errorf(t, "Unable to send binary message from Multi: %s", connection));
+                        },
+                        t -> {
+                            LOG.errorf(t, "Unable to send text message from Multi - connection was closed: %s ", connection);
+                        });
         return Uni.createFrom().voidItem();
     }
 }

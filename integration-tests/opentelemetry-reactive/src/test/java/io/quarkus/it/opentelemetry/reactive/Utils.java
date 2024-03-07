@@ -1,5 +1,6 @@
 package io.quarkus.it.opentelemetry.reactive;
 
+import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -19,6 +20,14 @@ public final class Utils {
     public static List<Map<String, Object>> getSpans() {
         return when().get("/export").body().as(new TypeRef<>() {
         });
+    }
+
+    public static Map<String, Object> getSpanEventAttrs(String spanName, String eventName) {
+        return given()
+                .queryParam("spanName", spanName)
+                .queryParam("eventName", eventName)
+                .get("/export-event-attributes").body().as(new TypeRef<>() {
+                });
     }
 
     public static List<String> getExceptionEventData() {

@@ -57,7 +57,7 @@ public class BroadcastOnMessageTest {
         WebSocketClient client2 = vertx.createWebSocketClient();
         try {
             CountDownLatch connectedLatch = new CountDownLatch(2);
-            CountDownLatch onMessageLatch = new CountDownLatch(2);
+            CountDownLatch messagesLatch = new CountDownLatch(2);
             AtomicReference<WebSocket> ws1 = new AtomicReference<>();
 
             List<String> messages = new CopyOnWriteArrayList<>();
@@ -68,7 +68,7 @@ public class BroadcastOnMessageTest {
                             WebSocket ws = r.result();
                             ws.textMessageHandler(msg -> {
                                 messages.add(msg);
-                                onMessageLatch.countDown();
+                                messagesLatch.countDown();
                             });
                             // We will use this socket to write a message later on
                             ws1.set(ws);
@@ -84,7 +84,7 @@ public class BroadcastOnMessageTest {
                             WebSocket ws = r.result();
                             ws.textMessageHandler(msg -> {
                                 messages.add(msg);
-                                onMessageLatch.countDown();
+                                messagesLatch.countDown();
                             });
                             connectedLatch.countDown();
                         } else {
@@ -93,8 +93,8 @@ public class BroadcastOnMessageTest {
                     });
             assertTrue(connectedLatch.await(5, TimeUnit.SECONDS));
             ws1.get().writeTextMessage("hello");
-            assertTrue(onMessageLatch.await(5, TimeUnit.SECONDS));
-            assertEquals(2, messages.size());
+            assertTrue(messagesLatch.await(5, TimeUnit.SECONDS), "Messages: " + messages);
+            assertEquals(2, messages.size(), "Messages: " + messages);
             // Both messages come from the first client
             assertEquals("1:HELLO", messages.get(0));
             assertEquals("1:HELLO", messages.get(1));

@@ -86,7 +86,7 @@ public class OidcTokenPropagationReactiveBuildStep {
         OidcTokenPropagationReactiveBuildTimeConfig config;
 
         public boolean getAsBoolean() {
-            return config.enabled;
+            return config.enabled();
         }
     }
 
@@ -94,7 +94,7 @@ public class OidcTokenPropagationReactiveBuildStep {
         OidcTokenPropagationReactiveBuildTimeConfig config;
 
         public boolean getAsBoolean() {
-            return config.enabledDuringAuthentication;
+            return config.enabledDuringAuthentication();
         }
     }
 }

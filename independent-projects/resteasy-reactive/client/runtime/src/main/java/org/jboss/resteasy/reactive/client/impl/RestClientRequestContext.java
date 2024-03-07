@@ -494,6 +494,10 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         return entity != null && ((entity.getEntity() instanceof File) || (entity.getEntity() instanceof Path));
     }
 
+    public boolean isInputStreamUpload() {
+        return entity != null && entity.getEntity() instanceof InputStream;
+    }
+
     public boolean isMultipart() {
         return entity != null && entity.getEntity() instanceof QuarkusMultipartForm;
     }

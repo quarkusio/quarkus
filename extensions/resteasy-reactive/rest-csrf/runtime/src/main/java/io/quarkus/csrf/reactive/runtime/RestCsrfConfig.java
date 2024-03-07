@@ -12,7 +12,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
  * Runtime configuration for CSRF Reactive Filter.
  */
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public class CsrfReactiveConfig {
+public class RestCsrfConfig {
     /**
      * Form field name which keeps a CSRF token.
      */
@@ -88,7 +88,7 @@ public class CsrfReactiveConfig {
      * If you prefer then you can disable this property and compare
      * CSRF form and cookie parameters in the application code using JAX-RS jakarta.ws.rs.FormParam which refers to the
      * {@link #formFieldName}
-     * form property and jakarta.ws.rs.CookieParam which refers to the {@link CsrfReactiveConfig#cookieName} cookie.
+     * form property and jakarta.ws.rs.CookieParam which refers to the {@link RestCsrfConfig#cookieName} cookie.
      *
      * Note that even if the CSRF token verification in the CSRF filter is disabled, the filter will still perform checks to
      * ensure the token

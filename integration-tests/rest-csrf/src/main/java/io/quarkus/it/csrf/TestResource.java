@@ -141,7 +141,7 @@ public class TestResource {
                 + isResteasyReactiveUpload(multiPart.file) + ":"
                 + csrfTokenCookie.getValue().equals(
                         CsrfTokenUtils.signCsrfToken(csrfTokenParam,
-                                ConfigProvider.getConfig().getValue("quarkus.csrf-reactive.token-signature-key",
+                                ConfigProvider.getConfig().getValue("quarkus.rest-csrf.token-signature-key",
                                         String.class)))
                 + ":tokenHeaderIsSet=" + (csrfHeader != null);
     }

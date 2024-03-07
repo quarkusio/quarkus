@@ -40,7 +40,7 @@ public class CsrfRequestResponseReactiveFilter {
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Inject
-    Instance<CsrfReactiveConfig> configInstance;
+    Instance<RestCsrfConfig> configInstance;
 
     public CsrfRequestResponseReactiveFilter() {
     }
@@ -63,7 +63,7 @@ public class CsrfRequestResponseReactiveFilter {
     @ServerRequestFilter
     @WithFormRead
     public void filter(ResteasyReactiveContainerRequestContext requestContext, RoutingContext routing) {
-        final CsrfReactiveConfig config = this.configInstance.get();
+        final RestCsrfConfig config = this.configInstance.get();
 
         String cookieToken = getCookieToken(routing, config);
         if (cookieToken != null) {
@@ -153,7 +153,7 @@ public class CsrfRequestResponseReactiveFilter {
         }
     }
 
-    private void generateNewCsrfToken(RoutingContext routing, CsrfReactiveConfig config) {
+    private void generateNewCsrfToken(RoutingContext routing, RestCsrfConfig config) {
         // Set the CSRF cookie with a randomly generated value
         byte[] tokenBytes = new byte[config.tokenSize];
         secureRandom.nextBytes(tokenBytes);
@@ -162,7 +162,7 @@ public class CsrfRequestResponseReactiveFilter {
     }
 
     private void verifyCsrfToken(ResteasyReactiveContainerRequestContext requestContext, RoutingContext routing,
-            CsrfReactiveConfig config, String cookieToken, String csrfToken) {
+            RestCsrfConfig config, String cookieToken, String csrfToken) {
         if (cookieToken == null) {
             LOG.debug("CSRF cookie is not found");
             requestContext.abortWith(badClientRequest());
@@ -224,7 +224,7 @@ public class CsrfRequestResponseReactiveFilter {
             ContainerResponseContext responseContext, RoutingContext routing) {
         if (routing.get(NEW_COOKIE_REQUIRED) != null) {
 
-            final CsrfReactiveConfig config = configInstance.get();
+            final RestCsrfConfig config = configInstance.get();
 
             String cookieValue = null;
             if (config.tokenSignatureKey.isPresent()) {
@@ -257,7 +257,7 @@ public class CsrfRequestResponseReactiveFilter {
      *
      * @return An Optional containing the token, or an empty Optional if the token cookie is not present or is invalid
      */
-    private static String getCookieToken(RoutingContext routing, CsrfReactiveConfig config) {
+    private static String getCookieToken(RoutingContext routing, RestCsrfConfig config) {
         Cookie cookie = routing.getCookie(config.cookieName);
 
         if (cookie == null) {
@@ -268,12 +268,12 @@ public class CsrfRequestResponseReactiveFilter {
         return cookie.getValue();
     }
 
-    private static boolean isCsrfTokenRequired(RoutingContext routing, CsrfReactiveConfig config) {
+    private static boolean isCsrfTokenRequired(RoutingContext routing, RestCsrfConfig config) {
         return config.createTokenPath
                 .map(value -> value.contains(routing.normalizedPath())).orElse(true);
     }
 
-    private static void createCookie(String cookieTokenValue, RoutingContext routing, CsrfReactiveConfig config) {
+    private static void createCookie(String cookieTokenValue, RoutingContext routing, RestCsrfConfig config) {
 
         ServerCookie cookie = new CookieImpl(config.cookieName, cookieTokenValue);
         cookie.setHttpOnly(config.cookieHttpOnly);

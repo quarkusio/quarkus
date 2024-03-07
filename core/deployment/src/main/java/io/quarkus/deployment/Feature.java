@@ -97,6 +97,7 @@ public enum Feature {
     RESTEASY_MUTINY,
     RESTEASY_QUTE,
     REST,
+    REST_CSRF,
     REST_QUTE,
     REST_JSONB,
     REST_JAXB,

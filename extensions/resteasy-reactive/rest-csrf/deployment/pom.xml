@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-rest-csrf-deployment</artifactId>
-    <name>Quarkus - REST - Cross-Site Request Forgery Filter - Deployment</name>
+    <name>Quarkus - REST - Cross-Site Request Forgery Prevention Filter - Deployment</name>
 
     <dependencies>
         <dependency>

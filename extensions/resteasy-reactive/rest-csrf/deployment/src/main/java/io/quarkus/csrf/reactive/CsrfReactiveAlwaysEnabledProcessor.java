@@ -1,5 +1,6 @@
 package io.quarkus.csrf.reactive;
 
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 
@@ -8,7 +9,7 @@ public class CsrfReactiveAlwaysEnabledProcessor {
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem("csrf-reactive");
+        return new FeatureBuildItem(Feature.REST_CSRF);
     }
 
 }

@@ -7,7 +7,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
  * Build time configuration for CSRF Reactive Filter.
  */
 @ConfigRoot
-public class CsrfReactiveBuildTimeConfig {
+public class RestCsrfBuildTimeConfig {
     /**
      * If filter is enabled.
      */

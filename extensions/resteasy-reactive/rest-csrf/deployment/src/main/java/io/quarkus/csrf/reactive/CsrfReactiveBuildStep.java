@@ -27,7 +27,7 @@ public class CsrfReactiveBuildStep {
     }
 
     public static class IsEnabled implements BooleanSupplier {
-        CsrfReactiveBuildTimeConfig config;
+        RestCsrfBuildTimeConfig config;
 
         public boolean getAsBoolean() {
             return config.enabled;

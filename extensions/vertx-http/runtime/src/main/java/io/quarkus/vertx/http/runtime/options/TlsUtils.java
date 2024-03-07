@@ -114,23 +114,38 @@ public class TlsUtils {
         if (userType.isPresent()) {
             type = userType.get().toLowerCase();
         } else {
-            type = getTypeFromFileName("truststore", singleTrustStoreFile);
+            type = getTruststoreTypeFromFileName(singleTrustStoreFile);
         }
         return type;
     }
 
-    private static String getTypeFromFileName(String keystoreOrTruststore, Path path) {
+    private static String getKeystoreTypeFromFileName(Path path) {
         String name = path.getFileName().toString().toLowerCase();
         if (name.endsWith(".p12") || name.endsWith(".pkcs12") || name.endsWith(".pfx")) {
             return "pkcs12";
-        } else if (name.endsWith(".jks")) {
+        } else if (name.endsWith(".jks") || name.endsWith(".keystore")) {
             return "jks";
         } else if (name.endsWith(".key") || name.endsWith(".crt") || name.endsWith(".pem")) {
             return "pem";
         } else {
-            throw new IllegalArgumentException("Could not determine the " + keystoreOrTruststore
-                    + " type from the file name: " + path
-                    + ". Configure the `quarkus.http.ssl.certificate.[key-store|trust-store]-file-type` property.");
+            throw new IllegalArgumentException("Could not determine the keystore type from the file name: " + path
+                    + ". Configure the `quarkus.http.ssl.certificate.key-store-file-type` property.");
+
+        }
+
+    }
+
+    private static String getTruststoreTypeFromFileName(Path path) {
+        String name = path.getFileName().toString().toLowerCase();
+        if (name.endsWith(".p12") || name.endsWith(".pkcs12") || name.endsWith(".pfx")) {
+            return "pkcs12";
+        } else if (name.endsWith(".jks") || name.endsWith(".truststore")) {
+            return "jks";
+        } else if (name.endsWith(".ca") || name.endsWith(".crt") || name.endsWith(".pem")) {
+            return "pem";
+        } else {
+            throw new IllegalArgumentException("Could not determine the truststore type from the file name: " + path
+                    + ". Configure the `quarkus.http.ssl.certificate.trust-store-file-type` property.");
 
         }
 
@@ -154,7 +169,7 @@ public class TlsUtils {
         if (fileType.isPresent()) {
             type = fileType.get().toLowerCase();
         } else {
-            type = getTypeFromFileName("keystore", path);
+            type = getKeystoreTypeFromFileName(path);
         }
         return type;
     }

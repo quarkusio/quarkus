@@ -30,7 +30,7 @@ public class ResumeOn404ConfigTest {
                             .addClasses(Resource.class, CustomRoute.class);
                 }
             })
-            .overrideRuntimeConfigKey("quarkus.resteasy-reactive.resume-on-404", "true");
+            .overrideRuntimeConfigKey("quarkus.rest.resume-on-404", "true");
 
     @Test
     public void matchingFromResteasyReactive() {

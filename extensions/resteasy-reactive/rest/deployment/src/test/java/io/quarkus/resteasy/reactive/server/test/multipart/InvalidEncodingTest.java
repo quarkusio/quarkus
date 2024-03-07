@@ -31,7 +31,7 @@ public class InvalidEncodingTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(FeedbackBody.class, FeedbackResource.class)
                     .addAsResource(new StringAsset(
-                            "quarkus.resteasy-reactive.multipart.input-part.default-charset=us-ascii"),
+                            "quarkus.rest.multipart.input-part.default-charset=us-ascii"),
                             "application.properties"));
 
     @Test

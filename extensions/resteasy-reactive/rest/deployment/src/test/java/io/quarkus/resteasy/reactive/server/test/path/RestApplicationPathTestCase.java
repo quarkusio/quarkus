@@ -15,13 +15,13 @@ public class RestApplicationPathTestCase {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .withConfigurationResource("empty.properties")
-            .overrideConfigKey("quarkus.resteasy-reactive.path", "/foo")
+            .overrideConfigKey("quarkus.rest.path", "/foo")
             .overrideConfigKey("quarkus.http.root-path", "/app")
             .withApplicationRoot((jar) -> jar
                     .addClasses(HelloResource.class, BarApp.class, BaseApplication.class));
 
     /**
-     * Using @ApplicationPath will overlay/replace `quarkus.resteasy-reactive.path`.
+     * Using @ApplicationPath will overlay/replace `quarkus.rest.path`.
      * Per spec:
      * <quote>
      * Identifies the application path that serves as the base URI for all resource

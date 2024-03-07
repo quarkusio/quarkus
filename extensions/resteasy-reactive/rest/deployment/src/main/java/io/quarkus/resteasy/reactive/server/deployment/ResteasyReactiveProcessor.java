@@ -53,7 +53,6 @@ import jakarta.ws.rs.ext.Providers;
 import jakarta.ws.rs.ext.ReaderInterceptor;
 import jakarta.ws.rs.ext.WriterInterceptor;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -1443,23 +1442,12 @@ public class ResteasyReactiveProcessor {
     }
 
     private org.jboss.resteasy.reactive.common.ResteasyReactiveConfig createRestReactiveConfig(ResteasyReactiveConfig config) {
-        Config mpConfig = ConfigProvider.getConfig();
-
         return new org.jboss.resteasy.reactive.common.ResteasyReactiveConfig(
-                getEffectivePropertyValue("input-buffer-size", config.inputBufferSize().asLongValue(), Long.class, mpConfig),
-                getEffectivePropertyValue("min-chunk-size", config.outputBufferSize(), Integer.class, mpConfig),
-                getEffectivePropertyValue("output-buffer-size", config.outputBufferSize(), Integer.class, mpConfig),
-                getEffectivePropertyValue("single-default-produces", config.singleDefaultProduces(), Boolean.class, mpConfig),
-                getEffectivePropertyValue("default-produces", config.defaultProduces(), Boolean.class, mpConfig));
-    }
-
-    private <T> T getEffectivePropertyValue(String legacyPropertyName, T newPropertyValue, Class<T> propertyType,
-            Config mpConfig) {
-        Optional<T> legacyPropertyValue = mpConfig.getOptionalValue("quarkus.rest." + legacyPropertyName, propertyType);
-        if (legacyPropertyValue.isPresent()) {
-            return legacyPropertyValue.get();
-        }
-        return newPropertyValue;
+                config.inputBufferSize().asLongValue(),
+                config.minChunkSize(),
+                config.outputBufferSize(),
+                config.singleDefaultProduces(),
+                config.defaultProduces());
     }
 
     @BuildStep

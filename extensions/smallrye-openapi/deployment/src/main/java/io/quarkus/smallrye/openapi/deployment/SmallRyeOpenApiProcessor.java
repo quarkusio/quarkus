@@ -986,7 +986,7 @@ public class SmallRyeOpenApiProcessor {
         } else if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
             extensions.add(new RESTEasyExtension(indexView));
             openApiConfig.doAllowNakedPathParameter();
-            appPath = config.getOptionalValue("quarkus.resteasy-reactive.path", String.class).orElse("");
+            appPath = config.getOptionalValue("quarkus.rest.path", String.class).orElse("");
         }
 
         extensions.add(new CustomPathExtension(rootPath, appPath));

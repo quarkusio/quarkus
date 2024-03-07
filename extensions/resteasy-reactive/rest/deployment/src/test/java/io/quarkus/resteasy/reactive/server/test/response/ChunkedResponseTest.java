@@ -37,7 +37,7 @@ public class ChunkedResponseTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(HelloResource.class)
-                    .addAsResource(new StringAsset("quarkus.resteasy-reactive.output-buffer-size = 256"),
+                    .addAsResource(new StringAsset("quarkus.rest.output-buffer-size = 256"),
                             "application.properties"));
 
     @Test

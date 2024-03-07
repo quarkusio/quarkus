@@ -7,7 +7,6 @@ import java.util.function.Function;
 
 import jakarta.ws.rs.Path;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
@@ -42,13 +41,7 @@ public class ResteasyReactiveTestHttpProvider implements TestHttpEndpointProvide
     }
 
     private Optional<String> getAppPath() {
-        Config config = ConfigProvider.getConfig();
-        Optional<String> legacyProperty = config.getOptionalValue("quarkus.rest.path", String.class);
-        if (legacyProperty.isPresent()) {
-            return legacyProperty;
-        }
-
-        return config.getOptionalValue("quarkus.resteasy-reactive.path", String.class);
+        return ConfigProvider.getConfig().getOptionalValue("quarkus.rest.path", String.class);
     }
 
     private String getPath(Class<?> aClass) {

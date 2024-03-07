@@ -12,7 +12,7 @@ public class RestPathTestCase {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .withConfigurationResource("empty.properties")
-            .overrideConfigKey("quarkus.resteasy-reactive.path", "/foo")
+            .overrideConfigKey("quarkus.rest.path", "/foo")
             .overrideConfigKey("quarkus.http.root-path", "/app")
             .withApplicationRoot((jar) -> jar
                     .addClass(HelloResource.class));

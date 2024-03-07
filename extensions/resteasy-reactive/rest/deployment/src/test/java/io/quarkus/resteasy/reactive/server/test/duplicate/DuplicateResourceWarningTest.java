@@ -19,7 +19,7 @@ public class DuplicateResourceWarningTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(GreetingResource.class, GreetingResource2.class, GreetingResource3.class))
-            .overrideConfigKey("quarkus.resteasy-reactive.fail-on-duplicate", "false")
+            .overrideConfigKey("quarkus.rest.fail-on-duplicate", "false")
             .setLogRecordPredicate(item -> item.getLevel().equals(Level.WARNING)
                     && item.getLoggerName().equals("io.quarkus.resteasy.reactive.server"))
             .assertLogRecords(logs -> assertThat(logs.stream().map(LogRecord::getMessage).collect(Collectors.toList()))

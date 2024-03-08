@@ -2177,7 +2177,7 @@ public class QuteProcessor {
                     Path relativePath = rootPath.relativize(file);
                     if (templateRoots.isRoot(relativePath)) {
                         LOGGER.debugf("Found templates dir: %s", file);
-                        scan(file, file, file.getFileName() + "/", watchedPaths, templatePaths,
+                        scan(file, file, relativePath.toString() + File.separatorChar, watchedPaths, templatePaths,
                                 nativeImageResources,
                                 config);
                     } else if (templateRoots.maybeRoot(relativePath)) {

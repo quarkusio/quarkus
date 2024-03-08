@@ -2,7 +2,9 @@ package io.quarkus.qute.deployment.templateroot;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
 
@@ -13,6 +15,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.deployment.TemplateRootBuildItem;
@@ -37,6 +41,29 @@ public class AdditionalTemplateRootTest {
                         context.produce(new TemplateRootBuildItem("web/public"));
                     }
                 }).produces(TemplateRootBuildItem.class)
+                        .build();
+
+                builder.addBuildStep(new BuildStep() {
+                    @Override
+                    public void execute(BuildContext context) {
+                        int found = 0;
+                        List<NativeImageResourceBuildItem> items = context.consumeMulti(NativeImageResourceBuildItem.class);
+                        for (NativeImageResourceBuildItem item : items) {
+                            if (item.getResources().contains("web/public/hello.txt")
+                                    || item.getResources().contains("web\\public\\hello.txt")
+                                    || item.getResources().contains("templates/hi.txt")
+                                    || item.getResources().contains("templates\\hi.txt")) {
+                                found++;
+                            }
+                        }
+                        if (found != 2) {
+                            throw new IllegalStateException(items.stream().flatMap(i -> i.getResources().stream())
+                                    .collect(Collectors.toList()).toString());
+                        }
+                        context.produce(new ServiceStartBuildItem("foo"));
+                    }
+                }).produces(ServiceStartBuildItem.class)
+                        .consumes(NativeImageResourceBuildItem.class)
                         .build();
             }
         };

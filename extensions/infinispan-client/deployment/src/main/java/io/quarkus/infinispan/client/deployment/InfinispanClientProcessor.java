@@ -29,7 +29,6 @@ import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
-import jakarta.inject.Singleton;
 
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
@@ -591,7 +590,7 @@ class InfinispanClientProcessor {
     static <T> SyntheticBeanBuildItem configureAndCreateSyntheticBean(RemoteCacheBean remoteCacheBean, Supplier<T> supplier) {
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(RemoteCache.class)
                 .types(remoteCacheBean.type)
-                .scope(Singleton.class) // Some Infinispan API won't work if this is not a Mock
+                .scope(ApplicationScoped.class)
                 .supplier(supplier)
                 .unremovable()
                 .setRuntimeInit();

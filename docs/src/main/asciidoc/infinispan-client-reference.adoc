@@ -613,8 +613,7 @@ the field, constructor or method. In the below code we utilize field and constru
 If you notice the `RemoteCache` declaration has an additional annotation named `Remote`.
 This is a *qualifier* annotation allowing you to specify which named cache that will be injected. This
 annotation is not required and if it is not supplied, the default cache will be injected.
-The RemoteCacheManager bean scope is `@ApplicationScope`.
-The RemoteCache bean scope is `@Singleton`.
+The RemoteCacheManager and RemoteCache bean scope is `@ApplicationScoped`.
 
 For non default connections, combine the qualifier `@InfinispanClientName` and `@Remote`.
 
@@ -634,6 +633,62 @@ For non default connections, combine the qualifier `@InfinispanClientName` and `
 
 
 NOTE: Other types may be supported for injection, please see other sections for more information
+
+=== Mock Support
+Quarkus supports the use of mock objects using two different approaches. You can either use CDI alternatives to
+mock out a bean for all test classes, or use `QuarkusMock` to mock out beans on a per test basis.
+Check the xref:getting-started-testing.adoc[Getting started with testing guide] for more information.
+
+RemoteCacheManager and RemoteCache can be mocked.
+
+.BookService.java
+[source,java]
+----
+@ApplicationScoped
+public class BookService {
+
+   @Inject
+   @Remote("books")
+   RemoteCache<String, Book> books; //<1>
+
+   public String getBookDescriptionById(String id) {
+      Book book = books.get(id);
+      if (book == null) {
+         return "default";
+      }
+
+      return book.getDescription();
+   }
+}
+----
+<1> Use dependency injection to connect to the books cache
+
+In the test class, the RemoteCache can be mocked.
+
+.BookServiceTest.java
+[source,java]
+----
+@QuarkusTest
+public class BookServiceTest {
+
+    @Inject
+    BookService bookService;
+
+    @InjectMock // <1>
+    @Remote("books")
+    RemoteCache<String, Book> bookRemoteCache;
+
+    @Test
+    public void mockRemoteCache() {
+        Mockito.when(bookRemoteCache.get("harry_potter")).thenReturn(new Book(... "Best saga ever");//<2>
+
+        Assertions.assertThat(bookService.getBookDescriptionById("harry_potter")).isEqualTo("Best saga ever");//<3>
+    }
+}
+----
+<1> Inject a mock instead of the RemoteCache bean
+<2> Use Mockito to mock the call of the RemoteCache
+<3> Assert the service call
 
 === Registering Protobuf Schemas with Infinispan Server
 You need to register the generated Protobuf schemas with Infinispan Server to perform queries or convert from
@@ -782,8 +837,43 @@ public class Book {
 You can use either the Query DSL or the Ickle Query language with the Quarkus Infinispan client
 extension.
 
+.Query.java
+[source,java]
+----
+@Inject
+@Remote("books")
+RemoteCache<String, Book> booksCache; //<1>
+
+Query<Book> query = booksCache.query("from book_sample.Book b where b.authors.name like '%" + name + "%'"); //<2>
+List<Book> list = query.execute().list();
+----
+<1> Inject the books cache
+<2> Perform a full text query on books author name
+
 NOTE: You can read more about https://infinispan.org/docs/stable/titles/query/query.html[querying] in the Infinispan documentation.
 
+[IMPORTANT]
+====
+Prior to Quarkus 3.9 and the Infinispan 15 integration, queries were executed by calling the following code:
+.Query.java
+[source,java]
+----
+QueryFactory queryFactory = Search.getQueryFactory(booksCache); <1>
+Query query = queryFactory.create("from book_sample.Book");
+List<Book> list = query.execute().list();
+----
+<1> Breaking change in 3.9
+
+This code won't work anymore since `RemoteCache` is now an `@ApplicationScoped` proxy bean.
+`Search.getQueryFactory` will raise a ClassCastException.
+Remove the unecessary indirection by using the `query` method in the `RemoteCache` API as follows.
+
+[source,java]
+----
+Query<Book> query = booksCache.<Book>query("from book_sample.Book");
+List<Book> list = query.execute().list();
+----
+====
 
 == Counters
 

@@ -19,7 +19,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.websockets.next.OnMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.test.utils.WSClient;
@@ -61,7 +61,7 @@ public class ServiceConnectionScopeTest {
         @Inject
         WebSocketConnection connection;
 
-        @OnMessage
+        @OnTextMessage
         public String onMessage(String message) {
             assertNotNull(Arc.container().getActiveContext(SessionScoped.class));
             assertNotNull(Arc.container().getActiveContext(RequestScoped.class));

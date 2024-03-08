@@ -56,8 +56,18 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
     }
 
     @Override
-    public Future<Void> onMessage(Object message) {
-        return execute(message, onMessageExecutionModel(), this::doOnMessage, false);
+    public Future<Void> onTextMessage(Object message) {
+        return execute(message, onTextMessageExecutionModel(), this::doOnTextMessage, false);
+    }
+
+    @Override
+    public Future<Void> onBinaryMessage(Object message) {
+        return execute(message, onBinaryMessageExecutionModel(), this::doOnBinaryMessage, false);
+    }
+
+    @Override
+    public Future<Void> onPongMessage(Buffer message) {
+        return execute(message, onPongMessageExecutionModel(), this::doOnPongMessage, false);
     }
 
     @Override
@@ -65,8 +75,8 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
         return execute(null, onCloseExecutionModel(), this::doOnClose, true);
     }
 
-    private Future<Void> execute(Object message, ExecutionModel executionModel,
-            Function<Object, Uni<Void>> action, boolean terminateSession) {
+    private <M> Future<Void> execute(M message, ExecutionModel executionModel,
+            Function<M, Uni<Void>> action, boolean terminateSession) {
         if (executionModel == ExecutionModel.NONE) {
             if (terminateSession) {
                 // Just start and terminate the session context
@@ -93,8 +103,8 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
         return promise.future();
     }
 
-    private Future<Void> doExecute(Context context, Promise<Void> promise, Object message, ExecutionModel executionModel,
-            Function<Object, Uni<Void>> action, boolean terminateSession, Runnable onComplete,
+    private <M> Future<Void> doExecute(Context context, Promise<Void> promise, M message, ExecutionModel executionModel,
+            Function<M, Uni<Void>> action, boolean terminateSession, Runnable onComplete,
             Consumer<? super Throwable> onFailure) {
         Handler<Void> contextSupportEnd = executionModel.isBlocking() ? new Handler<Void>() {
 
@@ -173,7 +183,15 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
         return Uni.createFrom().voidItem();
     }
 
-    protected Uni<Void> doOnMessage(Object message) {
+    protected Uni<Void> doOnTextMessage(Object message) {
+        return Uni.createFrom().voidItem();
+    }
+
+    protected Uni<Void> doOnBinaryMessage(Object message) {
+        return Uni.createFrom().voidItem();
+    }
+
+    protected Uni<Void> doOnPongMessage(Buffer message) {
         return Uni.createFrom().voidItem();
     }
 

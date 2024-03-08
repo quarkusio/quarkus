@@ -31,8 +31,17 @@ public class ConnectionManager {
         }
     }
 
+    /**
+     *
+     * @param endpoint
+     * @return the connections for the given endpoint, never {@code null}
+     */
     Set<WebSocketConnection> getConnections(String endpoint) {
-        return endpointToConnections.get(endpoint);
+        Set<WebSocketConnection> ret = endpointToConnections.get(endpoint);
+        if (ret == null) {
+            return Set.of();
+        }
+        return ret;
     }
 
     @PreDestroy

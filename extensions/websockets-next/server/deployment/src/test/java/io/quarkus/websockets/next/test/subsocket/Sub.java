@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.inject.Inject;
 
-import io.quarkus.websockets.next.OnMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.smallrye.mutiny.Uni;
@@ -13,7 +13,7 @@ import io.vertx.core.Context;
 @WebSocket(path = "/sub")
 public class Sub {
 
-    @OnMessage
+    @OnTextMessage
     Uni<String> echo(String msg) {
         assertTrue(Context.isOnEventLoopThread());
         return Uni.createFrom().item(msg);
@@ -25,7 +25,7 @@ public class Sub {
         @Inject
         WebSocketConnection connection;
 
-        @OnMessage
+        @OnTextMessage
         Uni<String> echo(String msg) {
             assertTrue(Context.isOnEventLoopThread());
             return Uni.createFrom().item(connection.pathParam("id") + ":" + msg);
@@ -37,7 +37,7 @@ public class Sub {
             @Inject
             WebSocketConnection connection;
 
-            @OnMessage
+            @OnTextMessage
             Uni<String> echo(String msg) {
                 assertTrue(Context.isOnEventLoopThread());
                 return Uni.createFrom().item(connection.pathParam("id") + ":" + connection.pathParam("name") + ":" + msg);

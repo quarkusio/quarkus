@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.inject.Inject;
 
-import io.quarkus.websockets.next.OnMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
@@ -15,7 +15,7 @@ public class EchoPojo {
     @Inject
     EchoService echoService;
 
-    @OnMessage
+    @OnTextMessage
     Uni<Message> echo(Message msg) {
         assertTrue(Context.isOnEventLoopThread());
         Message ret = new Message();

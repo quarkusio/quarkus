@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.websockets.next.OnMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.smallrye.mutiny.Uni;
@@ -88,7 +88,7 @@ public class RequestContextTest {
         @Inject
         RequestScopedBean bean;
 
-        @OnMessage
+        @OnTextMessage
         String process(String message) throws InterruptedException {
             return bean.appendId(message);
         }
@@ -100,7 +100,7 @@ public class RequestContextTest {
         @Inject
         RequestScopedBean bean;
 
-        @OnMessage
+        @OnTextMessage
         Uni<String> process(String message) throws InterruptedException {
             return Uni.createFrom().item(() -> bean.appendId(message));
         }

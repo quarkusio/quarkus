@@ -14,7 +14,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.websockets.next.OnMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.test.utils.WSClient;
@@ -61,7 +61,7 @@ public class SignatureTest {
         @Inject
         WebSocketConnection connection;
 
-        @OnMessage
+        @OnTextMessage
         String process(String message) {
             assertThat(Context.isOnEventLoopThread()).isFalse();
             assertThat(Vertx.currentContext()).isNotNull();
@@ -81,7 +81,7 @@ public class SignatureTest {
         @Inject
         WebSocketConnection connection;
 
-        @OnMessage
+        @OnTextMessage
         Uni<String> process(String message) {
             assertThat(Context.isOnEventLoopThread()).isTrue();
             Context context = Vertx.currentContext();
@@ -104,7 +104,7 @@ public class SignatureTest {
         @Inject
         WebSocketConnection connection;
 
-        @OnMessage
+        @OnTextMessage
         Multi<String> process(String message) {
             assertThat(Context.isOnEventLoopThread()).isTrue();
             Context context = Vertx.currentContext();

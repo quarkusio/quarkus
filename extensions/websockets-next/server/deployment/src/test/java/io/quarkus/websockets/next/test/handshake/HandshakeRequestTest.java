@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.websockets.next.OnMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.test.utils.WSClient;
@@ -56,7 +56,7 @@ public class HandshakeRequestTest {
         @Inject
         WebSocketConnection connection;
 
-        @OnMessage
+        @OnTextMessage
         JsonObject process(String message) throws InterruptedException {
             JsonObject headers = new JsonObject();
             connection.handshakeRequest().headers().forEach((k, v) -> headers.put(k, v.get(0)));

@@ -8,7 +8,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -72,6 +72,16 @@ class WebSocketConnectionImpl implements WebSocketConnection {
     @Override
     public <M> Uni<Void> sendText(M message) {
         return UniHelper.toUni(webSocket.writeTextMessage(codecs.textEncode(message, null).toString()));
+    }
+
+    @Override
+    public Uni<Void> sendPing(Buffer data) {
+        return UniHelper.toUni(webSocket.writePing(data));
+    }
+
+    @Override
+    public Uni<Void> sendPong(Buffer data) {
+        return UniHelper.toUni(webSocket.writePong(data));
     }
 
     @Override
@@ -198,6 +208,25 @@ class WebSocketConnectionImpl implements WebSocketConnection {
 
     private class BroadcastImpl implements WebSocketConnection.BroadcastSender {
 
+        private static final BiFunction<WebSocketConnection, String, Uni<Void>> SEND_TEXT_STR = new BiFunction<>() {
+            @Override
+            public Uni<Void> apply(WebSocketConnection c, String s) {
+                return c.sendText(s);
+            }
+        };
+        private static final BiFunction<WebSocketConnection, Object, Uni<Void>> SEND_TEXT_POJO = new BiFunction<>() {
+            @Override
+            public Uni<Void> apply(WebSocketConnection c, Object o) {
+                return c.sendText(o);
+            }
+        };
+        private static final BiFunction<WebSocketConnection, Buffer, Uni<Void>> SEND_BINARY = new BiFunction<>() {
+            @Override
+            public Uni<Void> apply(WebSocketConnection c, Buffer b) {
+                return c.sendBinary(b);
+            }
+        };
+
         private final Predicate<WebSocketConnection> filter;
 
         BroadcastImpl(Predicate<WebSocketConnection> filter) {
@@ -211,42 +240,38 @@ class WebSocketConnectionImpl implements WebSocketConnection {
 
         @Override
         public Uni<Void> sendText(String message) {
-            return doSend(new Function<WebSocketConnection, Uni<Void>>() {
-
-                @Override
-                public Uni<Void> apply(WebSocketConnection c) {
-                    return c.sendText(message);
-                }
-            });
+            return doSend(SEND_TEXT_STR, message);
         }
 
         @Override
         public <M> Uni<Void> sendText(M message) {
-            return doSend(new Function<WebSocketConnection, Uni<Void>>() {
-
-                @Override
-                public Uni<Void> apply(WebSocketConnection c) {
-                    return c.sendText(message);
-                }
-            });
+            return doSend(SEND_TEXT_POJO, message);
         }
 
         @Override
         public Uni<Void> sendBinary(Buffer message) {
-            return doSend(new Function<WebSocketConnection, Uni<Void>>() {
-
-                @Override
-                public Uni<Void> apply(WebSocketConnection c) {
-                    return c.sendBinary(message);
-                }
-            });
+            return doSend(SEND_BINARY, message);
         }
 
-        private Uni<Void> doSend(Function<WebSocketConnection, Uni<Void>> function) {
-            List<Uni<Void>> unis = new ArrayList<>();
-            for (WebSocketConnection connection : connectionManager.getConnections(endpoint)) {
+        @Override
+        public Uni<Void> sendPing(Buffer data) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Uni<Void> sendPong(Buffer data) {
+            throw new UnsupportedOperationException();
+        }
+
+        private <M> Uni<Void> doSend(BiFunction<WebSocketConnection, M, Uni<Void>> function, M message) {
+            Set<WebSocketConnection> connections = connectionManager.getConnections(endpoint);
+            if (connections.isEmpty()) {
+                return Uni.createFrom().voidItem();
+            }
+            List<Uni<Void>> unis = new ArrayList<>(connections.size());
+            for (WebSocketConnection connection : connections) {
                 if (connection.isOpen() && (filter == null || filter.test(connection))) {
-                    unis.add(function.apply(connection));
+                    unis.add(function.apply(connection, message));
                 }
             }
             return unis.isEmpty() ? Uni.createFrom().voidItem() : Uni.join().all(unis).andFailFast().replaceWithVoid();

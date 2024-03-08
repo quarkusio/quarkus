@@ -18,7 +18,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.websockets.next.OnMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.test.utils.WSClient;
@@ -68,7 +68,7 @@ public class SignatureConsumingMultiTest {
 
         volatile Context context = null;
 
-        @OnMessage
+        @OnTextMessage
         Multi<String> process(Multi<String> multi) {
             assertThat(Context.isOnEventLoopThread()).isTrue();
             Context context = Vertx.currentContext();

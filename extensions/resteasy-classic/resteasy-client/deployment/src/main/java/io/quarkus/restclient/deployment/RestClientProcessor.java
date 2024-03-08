@@ -402,6 +402,20 @@ class RestClientProcessor {
         ClassInfo classInfo = entry.getValue();
         Optional<String> scopeConfig = RestClientConfigUtils.findConfiguredScope(config, classInfo, configKey);
 
+        Optional<String> configuredGlobalDefaultScope = RestClientConfigUtils.getDefaultScope(config);
+        BuiltinScope globalDefaultScope;
+
+        if (configuredGlobalDefaultScope.isPresent()) {
+            globalDefaultScope = builtinScopeFromName(DotName.createSimple(configuredGlobalDefaultScope.get()));
+            if (globalDefaultScope == null) {
+                log.warnf("Unable to map the global REST client scope: '%s' to a scope. Using @Dependent",
+                        configuredGlobalDefaultScope.get());
+                globalDefaultScope = BuiltinScope.DEPENDENT;
+            }
+        } else {
+            globalDefaultScope = BuiltinScope.DEPENDENT;
+        }
+
         if (scopeConfig.isPresent()) {
             final DotName scope = DotName.createSimple(scopeConfig.get());
             final BuiltinScope builtinScope = builtinScopeFromName(scope);
@@ -415,9 +429,8 @@ class RestClientProcessor {
 
             if (scopeToUse == null) {
                 log.warn(String.format(
-                        "Unsupported default scope %s provided for rest client %s. Defaulting to @Dependent.",
+                        "Unsupported default scope %s provided for REST client %s. Defaulting to @Dependent.",
                         scope, entry.getKey()));
-                scopeToUse = BuiltinScope.DEPENDENT.getInfo();
             }
         } else {
             final Set<DotName> annotations = classInfo.annotationsMap().keySet();
@@ -435,7 +448,7 @@ class RestClientProcessor {
         }
 
         // Initialize a default @Dependent scope as per the spec
-        return scopeToUse != null ? scopeToUse : BuiltinScope.DEPENDENT.getInfo();
+        return scopeToUse != null ? scopeToUse : globalDefaultScope.getInfo();
     }
 
     private String getAnnotationParameter(ClassInfo classInfo, String parameterName) {

@@ -25,8 +25,6 @@ public class LegacyConfigurationTest {
 
     @Test
     void configurationShouldBeLoaded() {
-        assertThat(configRoot.disableSmartProduces).isPresent();
-        assertThat(configRoot.disableSmartProduces.get()).isTrue();
         assertThat(configRoot.multipartPostEncoderMode).isPresent();
         assertThat(configRoot.multipartPostEncoderMode.get()).isEqualTo("RFC3986");
 

@@ -1,25 +1,14 @@
 package io.quarkus.rest.client.reactive.runtime;
 
-import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
- * Legacy REST client reactive config.
- *
- * @deprecated use {@link RestClientsConfig} instead
+ * Build time REST client config.
  */
-@Deprecated
-@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+@ConfigRoot(name = "rest-client", phase = ConfigPhase.BUILD_TIME)
 public class RestClientReactiveConfig {
-
-    /**
-     * Default scope for Rest Client Reactive. Use `jakarta.enterprise.context.Dependent` for spec-compliant behavior
-     */
-    @Deprecated // Deprecated in favour of RestClientsConfig.scope
-    @ConfigItem(name = "scope", defaultValue = "jakarta.enterprise.context.ApplicationScoped")
-    public String scope;
 
     /**
      * By default, RESTEasy Reactive uses text/plain content type for String values

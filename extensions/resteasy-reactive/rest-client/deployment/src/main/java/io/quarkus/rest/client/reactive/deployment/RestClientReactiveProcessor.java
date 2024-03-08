@@ -119,7 +119,6 @@ class RestClientReactiveProcessor {
     private static final DotName SESSION_SCOPED = DotName.createSimple(SessionScoped.class.getName());
     private static final DotName KOTLIN_METADATA_ANNOTATION = DotName.createSimple("kotlin.Metadata");
 
-    private static final String DISABLE_SMART_PRODUCES_QUARKUS = "quarkus.rest-client.disable-smart-produces";
     private static final String ENABLE_COMPRESSION = "quarkus.http.enable-compression";
     private static final String KOTLIN_INTERFACE_DEFAULT_IMPL_SUFFIX = "$DefaultImpls";
 
@@ -163,9 +162,7 @@ class RestClientReactiveProcessor {
             RestClientReactiveConfig config) {
         consumes.produce(new RestClientDefaultConsumesBuildItem(MediaType.APPLICATION_JSON, 10));
         produces.produce(new RestClientDefaultProducesBuildItem(MediaType.APPLICATION_JSON, 10));
-        Config mpConfig = ConfigProvider.getConfig();
-        Optional<Boolean> disableSmartProducesConfig = mpConfig.getOptionalValue(DISABLE_SMART_PRODUCES_QUARKUS, Boolean.class);
-        if (config.disableSmartProduces || disableSmartProducesConfig.orElse(false)) {
+        if (config.disableSmartProduces) {
             disableSmartProduces.produce(new RestClientDisableSmartDefaultProduces());
         }
     }
@@ -462,7 +459,7 @@ class RestClientReactiveProcessor {
                             key -> configKeys.put(jaxrsInterface.name().toString(), key));
 
                     final ScopeInfo scope = computeDefaultScope(capabilities, ConfigProvider.getConfig(), jaxrsInterface,
-                            configKey, clientConfig);
+                            configKey);
                     // add a scope annotation, e.g. @Singleton
                     classCreator.addAnnotation(scope.getDotName().toString());
                     classCreator.addAnnotation(RestClient.class);
@@ -810,16 +807,21 @@ class RestClientReactiveProcessor {
 
     private ScopeInfo computeDefaultScope(Capabilities capabilities, Config config,
             ClassInfo restClientInterface,
-            Optional<String> configKey,
-            RestClientReactiveConfig mpClientConfig) {
+            Optional<String> configKey) {
         ScopeInfo scopeToUse = null;
 
         Optional<String> scopeConfig = RestClientConfigUtils.findConfiguredScope(config, restClientInterface, configKey);
 
-        BuiltinScope globalDefaultScope = BuiltinScope.from(DotName.createSimple(mpClientConfig.scope));
-        if (globalDefaultScope == null) {
-            log.warnv("Unable to map the global rest client scope: '{0}' to a scope. Using @ApplicationScoped",
-                    mpClientConfig.scope);
+        Optional<String> configuredGlobalDefaultScope = RestClientConfigUtils.getDefaultScope(config);
+        BuiltinScope globalDefaultScope;
+        if (configuredGlobalDefaultScope.isPresent()) {
+            globalDefaultScope = builtinScopeFromName(DotName.createSimple(configuredGlobalDefaultScope.get()));
+            if (globalDefaultScope == null) {
+                log.warnf("Unable to map the global REST client scope: '%s' to a scope. Using @ApplicationScoped",
+                        configuredGlobalDefaultScope.get());
+                globalDefaultScope = BuiltinScope.APPLICATION;
+            }
+        } else {
             globalDefaultScope = BuiltinScope.APPLICATION;
         }
 
@@ -835,9 +837,8 @@ class RestClientReactiveProcessor {
             }
 
             if (scopeToUse == null) {
-                log.warnf("Unsupported default scope {} provided for rest client {}. Defaulting to {}",
+                log.warnf("Unsupported default scope %s provided for REST client %s. Defaulting to %s",
                         scope, restClientInterface.name(), globalDefaultScope.getName());
-                scopeToUse = globalDefaultScope.getInfo();
             }
         } else {
             final Set<DotName> annotations = restClientInterface.annotationsMap().keySet();

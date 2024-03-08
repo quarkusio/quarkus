@@ -87,7 +87,7 @@ public class ServerWebSocketProcessor {
                                 implementor.name(),
                                 codec, index.getIndex()).forEach(
                                         typeParameter -> reflectiveHierarchyBuildItemProducer.produce(
-                                                new ReflectiveHierarchyBuildItem.Builder().type(typeParameter).build()))));
+                                                ReflectiveHierarchyBuildItem.builder(typeParameter).build()))));
     }
 
     @BuildStep

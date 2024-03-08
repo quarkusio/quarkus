@@ -425,22 +425,22 @@ public class JaxbProcessor {
     private void addReflectiveHierarchyClass(ClassInfo classInfo,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             IndexView index) {
-        Type jandexType = Type.create(classInfo.name(), Type.Kind.CLASS);
+        final var name = classInfo.name();
 
-        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                .type(jandexType)
+        reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
+                .builder(name)
                 .index(index)
                 .ignoreTypePredicate(t -> ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(t)
                         || IGNORE_TYPES.contains(t))
                 .ignoreFieldPredicate(JaxbProcessor::isFieldIgnored)
                 .ignoreMethodPredicate(JaxbProcessor::isMethodIgnored)
-                .source(getClass().getSimpleName() + " > " + jandexType.name().toString())
+                .source(getClass().getSimpleName() + " > " + name)
                 .build());
     }
 
     private void addReflectiveClass(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, boolean methods, boolean fields,
             String... className) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(methods, fields, className));
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods(methods).fields(fields).build());
     }
 
     private void addResourceBundle(BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle, String bundle) {

@@ -61,6 +61,44 @@ public class OpenTelemetryReactiveTest {
     }
 
     @Test
+    void helloGetUniDelayTest() {
+        given()
+                .when()
+                .get("/reactive/hello-get-uni-delay")
+                .then()
+                .statusCode(200)
+                .body(equalTo("helloGetUniDelay"));
+
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 2);
+        Map<String, Object> parent = getSpanByKindAndParentId(getSpans(), SERVER, "0000000000000000");
+        assertEquals("GET /reactive/hello-get-uni-delay", parent.get("name"));
+
+        Map<String, Object> child = getSpanByKindAndParentId(getSpans(), INTERNAL, parent.get("spanId"));
+        assertEquals("helloGetUniDelay", child.get("name"));
+
+        assertEquals(child.get("traceId"), parent.get("traceId"));
+    }
+
+    @Test
+    void helloGetUniExecutorTest() {
+        given()
+                .when()
+                .get("/reactive/hello-get-uni-executor")
+                .then()
+                .statusCode(200)
+                .body(equalTo("helloGetUniExecutor"));
+
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 2);
+        Map<String, Object> parent = getSpanByKindAndParentId(getSpans(), SERVER, "0000000000000000");
+        assertEquals("GET /reactive/hello-get-uni-executor", parent.get("name"));
+
+        Map<String, Object> child = getSpanByKindAndParentId(getSpans(), INTERNAL, parent.get("spanId"));
+        assertEquals("helloGetUniExecutor", child.get("name"));
+
+        assertEquals(child.get("traceId"), parent.get("traceId"));
+    }
+
+    @Test
     void blockingException() {
         given()
                 .when()

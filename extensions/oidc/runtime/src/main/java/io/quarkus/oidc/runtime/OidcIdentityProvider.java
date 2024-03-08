@@ -509,7 +509,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             TokenCredential tokenCred,
             boolean enforceAudienceVerification, boolean subjectRequired, String nonce) {
         return resolvedContext.provider
-                .getKeyResolverAndVerifyJwtToken(tokenCred, enforceAudienceVerification, subjectRequired, nonce)
+                .getKeyResolverAndVerifyJwtToken(tokenCred, enforceAudienceVerification, subjectRequired, nonce,
+                        (tokenCred instanceof IdTokenCredential))
                 .onFailure(f -> fallbackToIntrospectionIfNoMatchingKey(f, resolvedContext))
                 .recoverWithUni(f -> introspectTokenUni(resolvedContext, tokenCred.getToken(), true));
     }

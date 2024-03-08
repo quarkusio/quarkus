@@ -318,6 +318,13 @@ public class OidcRecorder {
             }
         }
 
+        if (!oidcConfig.token.isIssuedAtRequired() && oidcConfig.token.getAge().isPresent()) {
+            throw new ConfigurationException(
+                    "The 'token.issued-at-required' can only be set to false if 'token.age' is not set." +
+                            " Either set 'token.issued-at-required' to true or do not set 'token.age'.",
+                    Set.of("quarkus.oidc.token.issued-at-required", "quarkus.oidc.token.age"));
+        }
+
         return createOidcProvider(oidcConfig, tlsConfig, vertx)
                 .onItem().transform(new Function<OidcProvider, TenantConfigContext>() {
                     @Override

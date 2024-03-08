@@ -1,10 +1,12 @@
 package io.quarkus.oidc.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Base64;
 
 import jakarta.json.Json;
@@ -15,6 +17,8 @@ import org.jose4j.jwk.EcJwkGenerator;
 import org.jose4j.jwk.EllipticCurveJsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
+import org.jose4j.jws.AlgorithmIdentifiers;
+import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.keys.EllipticCurves;
 import org.jose4j.lang.UnresolvableKeyException;
@@ -106,7 +110,6 @@ public class OidcProviderTest {
 
     @Test
     public void testSubject() throws Exception {
-
         RsaJsonWebKey rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
         rsaJsonWebKey.setKeyId("k1");
         JsonWebKeySet jwkSet = new JsonWebKeySet("{\"keys\": [" + rsaJsonWebKey.toJson() + "]}");
@@ -134,7 +137,6 @@ public class OidcProviderTest {
 
     @Test
     public void testNonce() throws Exception {
-
         RsaJsonWebKey rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
         rsaJsonWebKey.setKeyId("k1");
         JsonWebKeySet jwkSet = new JsonWebKeySet("{\"keys\": [" + rsaJsonWebKey.toJson() + "]}");
@@ -156,6 +158,45 @@ public class OidcProviderTest {
                 fail("InvalidJwtException expected");
             } catch (InvalidJwtException ex) {
                 assertTrue(ex.getMessage().contains("claim nonce is missing"));
+            }
+        }
+    }
+
+    @Test
+    public void testAge() throws Exception {
+        String tokenPayload = "{\n" +
+                "  \"exp\":  " + Instant.now().plusSeconds(1000).getEpochSecond() + "\n" +
+                "}";
+
+        JsonWebSignature jws = new JsonWebSignature();
+        jws.setPayload(tokenPayload);
+        jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
+
+        RsaJsonWebKey rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
+
+        jws.setKey(rsaJsonWebKey.getPrivateKey());
+
+        String token = jws.getCompactSerialization();
+
+        JsonWebKeySet jwkSet = new JsonWebKeySet("{\"keys\": [" + rsaJsonWebKey.toJson() + "]}");
+
+        OidcTenantConfig oidcConfig = new OidcTenantConfig();
+        oidcConfig.token.issuedAtRequired = false;
+
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null)) {
+            TokenVerificationResult result = provider.verifyJwtToken(token, false, false, null);
+            assertNull(result.localVerificationResult.getString(Claims.iat.name()));
+        }
+
+        OidcTenantConfig oidcConfigRequireAge = new OidcTenantConfig();
+        oidcConfigRequireAge.token.issuedAtRequired = true;
+
+        try (OidcProvider provider = new OidcProvider(null, oidcConfigRequireAge, jwkSet, null, null)) {
+            try {
+                provider.verifyJwtToken(token, false, false, null);
+                fail("InvalidJwtException expected");
+            } catch (InvalidJwtException ex) {
+                assertTrue(ex.getMessage().contains("No Issued At (iat) claim present."));
             }
         }
     }

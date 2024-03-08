@@ -80,6 +80,12 @@ public class GrpcSslUtils {
                     if (sslConfig.keyStorePassword.isPresent()) {
                         o.setPassword(sslConfig.keyStorePassword.get());
                     }
+                    if (sslConfig.keyStoreAlias.isPresent()) {
+                        o.setAlias(sslConfig.keyStoreAlias.get());
+                        if (sslConfig.keyStoreAliasPassword.isPresent()) {
+                            o.setAliasPassword(sslConfig.keyStoreAliasPassword.get());
+                        }
+                    }
                     options.setPfxKeyCertOptions(o);
                     break;
                 }
@@ -88,6 +94,12 @@ public class GrpcSslUtils {
                             .setValue(Buffer.buffer(data));
                     if (sslConfig.keyStorePassword.isPresent()) {
                         o.setPassword(sslConfig.keyStorePassword.get());
+                    }
+                    if (sslConfig.keyStoreAlias.isPresent()) {
+                        o.setAlias(sslConfig.keyStoreAlias.get());
+                        if (sslConfig.keyStoreAliasPassword.isPresent()) {
+                            o.setAliasPassword(sslConfig.keyStoreAliasPassword.get());
+                        }
                     }
                     options.setKeyStoreOptions(o);
                     break;

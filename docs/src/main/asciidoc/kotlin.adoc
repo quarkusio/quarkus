@@ -492,7 +492,7 @@ The following extensions provide support for Kotlin Coroutines by allowing the u
 |`quarkus-rest-client`
 |Support is provided for REST Client interface methods
 
-|`quarkus-smallrye-reactive-messaging`
+|`quarkus-messaging`
 |Support is provided for Reactive messaging methods
 
 |`quarkus-scheduler`

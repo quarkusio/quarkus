@@ -51,7 +51,7 @@
         <!-- Pulsar -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging-pulsar</artifactId>
+            <artifactId>quarkus-messaging-pulsar</artifactId>
         </dependency>
         <!-- GRPC for Protobuf -->
         <dependency>
@@ -158,7 +158,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging-pulsar-deployment</artifactId>
+            <artifactId>quarkus-messaging-pulsar-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

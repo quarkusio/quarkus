@@ -193,7 +193,7 @@ public class MqttDevServicesProcessor {
         Map<String, String> configMap = new HashMap<>();
         configMap.put("mp.messaging.connector.smallrye-mqtt.host", host);
         configMap.put("mp.messaging.connector.smallrye-mqtt.port", String.valueOf(port));
-        return new RunningDevService(Feature.SMALLRYE_REACTIVE_MESSAGING_MQTT.getName(),
+        return new RunningDevService(Feature.MESSAGING_MQTT.getName(),
                 containerId, closeable, configMap);
     }
 

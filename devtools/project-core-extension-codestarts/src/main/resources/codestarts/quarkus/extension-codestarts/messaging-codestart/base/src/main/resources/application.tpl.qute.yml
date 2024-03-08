@@ -1,0 +1,26 @@
+{#each input.selected-extensions-ga}
+{#switch it}
+{#case 'io.quarkus:quarkus-messaging-kafka'}
+mp:
+  messaging:
+    outgoing:
+      words-out:
+        topic: words
+    incoming:
+      words-in:
+        topic: words
+        auto:
+          offset:
+            reset: earliest
+
+{#case 'io.quarkus:quarkus-messaging-amqp'}
+mp:
+  messaging:
+    outgoing:
+      words-out:
+        address: words
+    incoming:
+      words-in:
+        address: words
+{/switch}
+{/each}

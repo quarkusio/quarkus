@@ -128,6 +128,22 @@ public class generaterelocations implements Runnable {
                 "3.9");
         RELOCATIONS.put("quarkus-spring-web-resteasy-classic", springWebRESTEasyClassicRelocation);
         RELOCATIONS.put("quarkus-spring-web-resteasy-classic-deployment", springWebRESTEasyClassicRelocation);
+
+        Function<String, Relocation>  smallryeReactiveMessagingRelocation = a -> Relocation.ofArtifactId(a, a.replace("smallrye-reactive-messaging", "messaging"),
+                "3.9");
+        RELOCATIONS.put("quarkus-smallrye-reactive-messaging", smallryeReactiveMessagingRelocation);
+        RELOCATIONS.put("quarkus-smallrye-reactive-messaging-kotlin", smallryeReactiveMessagingRelocation);
+        RELOCATIONS.put("quarkus-smallrye-reactive-messaging-deployment", smallryeReactiveMessagingRelocation);
+        RELOCATIONS.put("quarkus-smallrye-reactive-messaging-kafka", smallryeReactiveMessagingRelocation);
+        RELOCATIONS.put("quarkus-smallrye-reactive-messaging-kafka-deployment", smallryeReactiveMessagingRelocation);
+        RELOCATIONS.put("quarkus-smallrye-reactive-messaging-pulsar", smallryeReactiveMessagingRelocation);
+        RELOCATIONS.put("quarkus-smallrye-reactive-messaging-pulsar-deployment", smallryeReactiveMessagingRelocation);
+        RELOCATIONS.put("quarkus-smallrye-reactive-messaging-amqp", smallryeReactiveMessagingRelocation);
+        RELOCATIONS.put("quarkus-smallrye-reactive-messaging-amqp-deployment", smallryeReactiveMessagingRelocation);
+        RELOCATIONS.put("quarkus-smallrye-reactive-messaging-mqtt", smallryeReactiveMessagingRelocation);
+        RELOCATIONS.put("quarkus-smallrye-reactive-messaging-mqtt-deployment", smallryeReactiveMessagingRelocation);
+        RELOCATIONS.put("quarkus-smallrye-reactive-messaging-rabbitmq", smallryeReactiveMessagingRelocation);
+        RELOCATIONS.put("quarkus-smallrye-reactive-messaging-rabbitmq-deployment", smallryeReactiveMessagingRelocation);
     }
 
     private static final String RELOCATION_POM_TEMPLATE = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + //

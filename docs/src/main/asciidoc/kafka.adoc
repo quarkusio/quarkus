@@ -6,14 +6,14 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Apache Kafka Reference Guide
 include::_attributes.adoc[]
 :categories: messaging
-:summary: This reference guide provides an in-depth look on Apache Kafka and Smallrye Reactive Messaging framework.
+:summary: This reference guide provides an in-depth look on Apache Kafka and Quarkus Messaging extensions.
 :numbered:
 :sectnums:
 :sectnumlevels: 4
 :topics: messaging,kafka,reactive-messaging
-:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-kafka
+:extensions: io.quarkus:quarkus-messaging-kafka
 
-This reference guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with Apache Kafka.
+This reference guide demonstrates how your Quarkus application can utilize Quarkus Messaging to interact with Apache Kafka.
 
 == Introduction
 
@@ -35,12 +35,12 @@ Based on Eclipse MicroProfile Reactive Messaging specification 2.0, it proposes 
 [NOTE]
 ====
 This guide provides an in-depth look on Apache Kafka and SmallRye Reactive Messaging framework.
-For a quick start take a look at xref:kafka-reactive-getting-started.adoc[Getting Started to SmallRye Reactive Messaging with Apache Kafka].
+For a quick start take a look at xref:kafka-getting-started.adoc[Getting Started to Quarkus Messaging with Apache Kafka].
 ====
 
-You can add the `smallrye-reactive-messaging-kafka` extensions to your project by running the following command in your project base directory:
+You can add the `messaging-kafka` extension to your project by running the following command in your project base directory:
 
-:add-extension-extensions: smallrye-reactive-messaging-kafka
+:add-extension-extensions: messaging-kafka
 include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
@@ -50,14 +50,14 @@ This will add the following to your build file:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+    <artifactId>quarkus-messaging-kafka</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-smallrye-reactive-messaging-kafka")
+implementation("io.quarkus:quarkus-messaging-kafka")
 ----
 
 [NOTE]
@@ -98,7 +98,7 @@ This auto-attachment can be disabled using:
 
 [source, properties]
 ----
-quarkus.reactive-messaging.auto-connector-attachment=false
+quarkus.messaging.auto-connector-attachment=false
 ----
 ====
 
@@ -1888,7 +1888,7 @@ This is described in a dedicated guide: xref:kafka-schema-registry-json-schema.a
 [[serialization-autodetection]]
 == Serializer/deserializer autodetection
 
-When using SmallRye Reactive Messaging with Kafka (`io.quarkus:quarkus-smallrye-reactive-messaging-kafka`), Quarkus can often automatically detect the correct serializer and deserializer class.
+When using Quarkus Messaging with Kafka (`io.quarkus:quarkus-messaging-kafka`), Quarkus can often automatically detect the correct serializer and deserializer class.
 This autodetection is based on declarations of `@Incoming` and `@Outgoing` methods, as well as injected ``@Channel``s.
 
 For example, if you declare
@@ -1953,7 +1953,7 @@ The full set of types supported by the serializer/deserializer autodetection is:
 
 If a serializer/deserializer is set by configuration, it won't be replaced by the autodetection.
 
-In case you have any issues with serializer autodetection, you can switch it off completely by setting `quarkus.reactive-messaging.kafka.serializer-autodetection.enabled=false`.
+In case you have any issues with serializer autodetection, you can switch it off completely by setting `quarkus.messaging.kafka.serializer-autodetection.enabled=false`.
 If you find you need to do this, please file a bug in the link:https://github.com/quarkusio/quarkus/issues[Quarkus issue tracker] so we can fix whatever problem you have.
 
 [[serialization-generation]]
@@ -1969,7 +1969,7 @@ This generation can be disabled using:
 
 [source, properties]
 ----
-quarkus.reactive-messaging.kafka.serializer-generation.enabled=false
+quarkus.messaging.kafka.serializer-generation.enabled=false
 ----
 
 IMPORTANT: Generation does not support collections such as `List<Fruit>`.
@@ -3380,6 +3380,6 @@ The configuration properties necessary to access the Kafka and Schema Registry i
 == Going further
 
 This guide has shown how you can interact with Kafka using Quarkus.
-It utilizes SmallRye Reactive Messaging to build data streaming applications.
+It utilizes Quarkus Messaging to build data streaming applications.
 
 If you want to go further, check the documentation of https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging], the implementation used in Quarkus.

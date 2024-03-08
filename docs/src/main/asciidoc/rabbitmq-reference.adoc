@@ -8,7 +8,7 @@ include::_attributes.adoc[]
 :extension-status: preview
 :categories: messaging
 :topics: messaging,reactive-messaging,rabbitmq,dev-services,testing,dev-mode
-:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-rabbitmq
+:extensions: io.quarkus:quarkus-messaging-rabbitmq
 
 This guide is the companion from the xref:rabbitmq.adoc[Getting Started with RabbitMQ].
 It explains in more details the configuration and usage of the RabbitMQ connector for reactive messaging.
@@ -27,13 +27,13 @@ include::{includes}/extension-status.adoc[]
 
 == RabbitMQ connector extension
 
-To use the connector, you need to add the `quarkus-smallrye-reactive-messaging-rabbitmq` extension.
+To use the connector, you need to add the `quarkus-messaging-rabbitmq` extension.
 
 You can add the extension to your project using:
 
 [source, bash]
 ----
-> ./mvnw quarkus:add-extensions -Dextensions="quarkus-smallrye-reactive-messaging-rabbitmq"
+> ./mvnw quarkus:add-extensions -Dextensions="quarkus-messaging-rabbitmq"
 ----
 
 Or just add the following dependency to your project:
@@ -42,7 +42,7 @@ Or just add the following dependency to your project:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq</artifactId>
+    <artifactId>quarkus-messaging-rabbitmq</artifactId>
 </dependency>
 ----
 

@@ -597,9 +597,9 @@ public void tracedWork() {
 }
 ----
 
-=== SmallRye Reactive Messaging - Kafka
+=== Quarkus Messaging - Kafka
 
-When using the SmallRye Reactive Messaging extension for Kafka,
+When using the Quarkus Messaging extension for Kafka,
 we are able to propagate the span into the Kafka Record with:
 
 [source,java]
@@ -645,7 +645,7 @@ Additional exporters will be available in the Quarkiverse https://github.com/qua
 * https://quarkus.io/guides/resteasy-client[`quarkus-resteasy-client`]
 * https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
 * https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
-* https://quarkus.io/extensions/io.quarkus/quarkus-smallrye-reactive-messaging[`quarkus-smallrye-reactive-messaging`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-messaging[`quarkus-messaging`]
 ** AMQP 1.0
 ** RabbitMQ
 ** Kafka

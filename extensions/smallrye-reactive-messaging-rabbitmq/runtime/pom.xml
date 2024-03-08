@@ -6,12 +6,12 @@
 
     <parent>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq-parent</artifactId>
+        <artifactId>quarkus-messaging-rabbitmq-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq</artifactId>
-    <name>Quarkus - SmallRye Reactive Messaging - RabbitMQ 1.0 - Runtime</name>
+    <artifactId>quarkus-messaging-rabbitmq</artifactId>
+    <name>Quarkus - Messaging - RabbitMQ 1.0 - Runtime</name>
     <description>Connect to RabbitMQ with Reactive Messaging</description>
     <dependencies>
         <dependency>
@@ -24,7 +24,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging</artifactId>
+            <artifactId>quarkus-messaging</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

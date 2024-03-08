@@ -34,7 +34,7 @@ import io.vertx.core.Vertx;
 public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientRequestFilter {
     private static final Logger LOG = Logger.getLogger(AccessTokenRequestReactiveFilter.class);
     private static final String BEARER_SCHEME_WITH_SPACE = "Bearer ";
-    private static final String ERROR_MSG = "OIDC Token Propagation Reactive requires a safe (isolated) Vert.x sub-context because configuration property 'quarkus.oidc-token-propagation-reactive.enabled-during-authentication' has been set to true, but the current context hasn't been flagged as such.";
+    private static final String ERROR_MSG = "OIDC Token Propagation Reactive requires a safe (isolated) Vert.x sub-context because configuration property 'quarkus.rest-client-oidc-token-propagation.enabled-during-authentication' has been set to true, but the current context hasn't been flagged as such.";
     private final boolean enabledDuringAuthentication;
     private final Instance<TokenCredential> accessToken;
 
@@ -71,7 +71,7 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
 
     protected boolean isExchangeToken() {
         return ConfigProvider.getConfig()
-                .getValue("quarkus.oidc-token-propagation-reactive.exchange-token", boolean.class);
+                .getValue("quarkus.rest-client-oidc-token-propagation.exchange-token", boolean.class);
     }
 
     @Override
@@ -112,7 +112,7 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
     protected String getClientName() {
         return ConfigProvider
                 .getConfig()
-                .getOptionalValue("quarkus.oidc-token-propagation-reactive.client-name", String.class)
+                .getOptionalValue("quarkus.rest-client-oidc-token-propagation.client-name", String.class)
                 .orElse(null);
     }
 

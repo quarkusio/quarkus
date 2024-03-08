@@ -6,7 +6,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(name = "oidc-token-propagation", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+@ConfigRoot(name = "resteasy-client-oidc-token-propagation", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class OidcTokenPropagationConfig {
     /**
      * Enable either AccessTokenRequestFilter or JsonWebTokenRequestFilter for all the injected MP RestClient implementations.

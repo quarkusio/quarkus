@@ -20,7 +20,7 @@ public class JsonWebTokenRequestFilter extends AbstractTokenRequestFilter {
     Instance<org.eclipse.microprofile.jwt.JsonWebToken> jwtAccessToken;
 
     @Inject
-    @ConfigProperty(name = "quarkus.oidc-token-propagation.secure-json-web-token")
+    @ConfigProperty(name = "quarkus.resteasy-client-oidc-token-propagation.secure-json-web-token")
     boolean resignToken;
 
     @Override

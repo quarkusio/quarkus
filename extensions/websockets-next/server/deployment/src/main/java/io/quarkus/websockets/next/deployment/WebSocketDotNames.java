@@ -2,11 +2,11 @@ package io.quarkus.websockets.next.deployment;
 
 import org.jboss.jandex.DotName;
 
-import io.quarkus.websockets.next.BinaryMessage;
+import io.quarkus.websockets.next.OnBinaryMessage;
 import io.quarkus.websockets.next.OnClose;
-import io.quarkus.websockets.next.OnMessage;
 import io.quarkus.websockets.next.OnOpen;
-import io.quarkus.websockets.next.TextMessage;
+import io.quarkus.websockets.next.OnPongMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.smallrye.common.annotation.Blocking;
@@ -22,7 +22,9 @@ final class WebSocketDotNames {
     static final DotName WEB_SOCKET = DotName.createSimple(WebSocket.class);
     static final DotName WEB_SOCKET_CONNECTION = DotName.createSimple(WebSocketConnection.class);
     static final DotName ON_OPEN = DotName.createSimple(OnOpen.class);
-    static final DotName ON_MESSAGE = DotName.createSimple(OnMessage.class);
+    static final DotName ON_TEXT_MESSAGE = DotName.createSimple(OnTextMessage.class);
+    static final DotName ON_BINARY_MESSAGE = DotName.createSimple(OnBinaryMessage.class);
+    static final DotName ON_PONG_MESSAGE = DotName.createSimple(OnPongMessage.class);
     static final DotName ON_CLOSE = DotName.createSimple(OnClose.class);
     static final DotName UNI = DotName.createSimple(Uni.class);
     static final DotName MULTI = DotName.createSimple(Multi.class);
@@ -33,6 +35,4 @@ final class WebSocketDotNames {
     static final DotName JSON_OBJECT = DotName.createSimple(JsonObject.class);
     static final DotName JSON_ARRAY = DotName.createSimple(JsonArray.class);
     static final DotName VOID = DotName.createSimple(Void.class);
-    static final DotName BINARY_MESSAGE = DotName.createSimple(BinaryMessage.class);
-    static final DotName TEXT_MESSAGE = DotName.createSimple(TextMessage.class);
 }

@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.websockets.next.OnClose;
-import io.quarkus.websockets.next.OnMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.test.utils.WSClient;
@@ -65,7 +65,7 @@ public class ConnectionCloseTest {
         @Inject
         WebSocketConnection connection;
 
-        @OnMessage
+        @OnTextMessage
         public Uni<Void> onMessage(String message) {
             return connection.close();
         }
@@ -85,7 +85,7 @@ public class ConnectionCloseTest {
         @Inject
         WebSocketConnection connection;
 
-        @OnMessage
+        @OnTextMessage
         public void onMessage(String message) {
             connection.closeAndAwait();
         }

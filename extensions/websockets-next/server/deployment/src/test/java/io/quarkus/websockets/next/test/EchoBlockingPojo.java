@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.inject.Inject;
 
-import io.quarkus.websockets.next.OnMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.vertx.core.Context;
 
@@ -14,7 +14,7 @@ public class EchoBlockingPojo {
     @Inject
     EchoService echoService;
 
-    @OnMessage
+    @OnTextMessage
     Message echo(Message msg) {
         assertTrue(Context.isOnWorkerThread());
         Message ret = new Message();

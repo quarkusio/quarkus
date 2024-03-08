@@ -6,10 +6,21 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Singleton;
+
 import io.smallrye.common.annotation.Experimental;
 
 /**
  * Denotes a WebSocket endpoint.
+ * <p>
+ * An endpoint must declare a method annotated with {@link OnTextMessage}, {@link OnBinaryMessage}, {@link OnPongMessage} or
+ * {@link OnOpen}. An endpoint may declare a method annotated with {@link OnClose}.
+ *
+ * <h2>Lifecycle and concurrency</h2>
+ * Endpoint implementation class must be a CDI bean. If no scope annotation is defined then {@link Singleton} is used.
+ * {@link ApplicationScoped} and {@link Singleton} endpoints are shared accross all WebSocket connections. Therefore,
+ * implementations should be either stateless or thread-safe.
  */
 @Retention(RUNTIME)
 @Target(TYPE)

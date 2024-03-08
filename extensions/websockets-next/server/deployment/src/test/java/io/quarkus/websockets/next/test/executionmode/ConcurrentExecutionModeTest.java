@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.websockets.next.OnMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.vertx.core.Vertx;
@@ -51,7 +51,7 @@ public class ConcurrentExecutionModeTest {
 
         private final CountDownLatch latch = new CountDownLatch(4);
 
-        @OnMessage
+        @OnTextMessage
         String process(String message) throws InterruptedException {
             latch.countDown();
             // Now wait for other messages to arrive

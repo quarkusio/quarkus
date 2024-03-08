@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.websockets.next.OnMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketServerException;
 
@@ -25,7 +25,7 @@ public class TooManyOnMessageInSubEndpointTest {
     @WebSocket(path = "/ws")
     public static class ParentEndpoint {
 
-        @OnMessage
+        @OnTextMessage
         public void onMessage(String message) {
             // Ignored.
         }
@@ -33,12 +33,12 @@ public class TooManyOnMessageInSubEndpointTest {
         @WebSocket(path = "/sub")
         public static class SubEndpointWithTooManyOnMessage {
 
-            @OnMessage
+            @OnTextMessage
             public void onMessage(String message) {
                 // Ignored.
             }
 
-            @OnMessage
+            @OnTextMessage
             public void onMessage2(String message) {
                 // Ignored.
             }

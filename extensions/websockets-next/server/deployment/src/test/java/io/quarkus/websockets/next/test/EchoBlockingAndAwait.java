@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.inject.Inject;
 
-import io.quarkus.websockets.next.OnMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.vertx.core.Context;
@@ -18,7 +18,7 @@ public class EchoBlockingAndAwait {
     @Inject
     WebSocketConnection connection;
 
-    @OnMessage
+    @OnTextMessage
     void echo(String msg) {
         assertTrue(Context.isOnWorkerThread());
         connection.sendTextAndAwait(echoService.echo(msg));

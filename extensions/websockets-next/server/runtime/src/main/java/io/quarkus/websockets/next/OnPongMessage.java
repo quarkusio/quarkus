@@ -9,14 +9,15 @@ import java.lang.annotation.Target;
 import io.smallrye.common.annotation.Experimental;
 
 /**
- * A method of an {@link WebSocket} endpoint annotated with this annotation is invoked when the client disconnects from the
- * socket.
+ * A {@link WebSocket} endpoint method annotated with this annotation consumes pong messages.
  * <p>
  * An endpoint may declare at most one method annotated with this annotation.
+ * <p>
+ * A pong message is always represented as a {@link io.vertx.core.buffer.Buffer}.
  */
 @Retention(RUNTIME)
 @Target(METHOD)
 @Experimental("This API is experimental and may change in the future")
-public @interface OnClose {
+public @interface OnPongMessage {
 
 }

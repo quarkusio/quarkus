@@ -7,8 +7,7 @@ import java.util.List;
 import jakarta.annotation.Priority;
 import jakarta.inject.Singleton;
 
-import io.quarkus.websockets.next.OnMessage;
-import io.quarkus.websockets.next.TextMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.TextMessageCodec;
 import io.quarkus.websockets.next.WebSocket;
 import io.vertx.core.json.JsonArray;
@@ -18,8 +17,7 @@ import io.vertx.core.json.JsonObject;
 public class FindInputCodec extends AbstractFind {
 
     // The codec is used for both input/output
-    @TextMessage(inputCodec = MyInputCodec.class)
-    @OnMessage
+    @OnTextMessage(codec = MyInputCodec.class)
     Item find(List<Item> items) {
         return super.find(items);
     }

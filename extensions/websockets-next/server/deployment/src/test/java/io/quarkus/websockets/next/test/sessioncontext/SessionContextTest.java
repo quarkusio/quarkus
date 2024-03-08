@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.websockets.next.OnMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.vertx.core.Vertx;
@@ -65,7 +65,7 @@ public class SessionContextTest {
         @Inject
         SessionScopedBean bean;
 
-        @OnMessage
+        @OnTextMessage
         String process(String message) throws InterruptedException {
             return bean.appendAndGet(message);
         }

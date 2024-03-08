@@ -5,7 +5,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.websockets.next.OnClose;
-import io.quarkus.websockets.next.OnMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketServerException;
 
@@ -26,7 +26,7 @@ public class TooManyOnCloseInSubEndpointTest {
     @WebSocket(path = "/ws")
     public static class ParentEndpoint {
 
-        @OnMessage
+        @OnTextMessage
         public void onMessage(String message) {
             // Ignored.
         }
@@ -34,7 +34,7 @@ public class TooManyOnCloseInSubEndpointTest {
         @WebSocket(path = "/sub")
         public static class SubEndpointWithTooManyOnClose {
 
-            @OnMessage
+            @OnTextMessage
             public void onMessage(String message) {
                 // Ignored.
             }

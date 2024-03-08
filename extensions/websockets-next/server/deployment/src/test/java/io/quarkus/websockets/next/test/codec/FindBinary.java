@@ -7,9 +7,8 @@ import java.util.List;
 
 import jakarta.inject.Singleton;
 
-import io.quarkus.websockets.next.BinaryMessage;
 import io.quarkus.websockets.next.BinaryMessageCodec;
-import io.quarkus.websockets.next.OnMessage;
+import io.quarkus.websockets.next.OnBinaryMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
@@ -18,10 +17,8 @@ import io.vertx.core.json.JsonObject;
 @WebSocket(path = "/find-binary")
 public class FindBinary extends AbstractFind {
 
-    // Force binary message format
     // There's no binary codec available out of the box so the codecs below are needed
-    @BinaryMessage
-    @OnMessage
+    @OnBinaryMessage
     Item find(List<Item> items) {
         return super.find(items);
     }

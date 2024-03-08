@@ -2,19 +2,25 @@ package io.quarkus.websockets.next.runtime;
 
 import java.lang.reflect.Type;
 
-import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.WebSocket;
 import io.vertx.core.Future;
+import io.vertx.core.buffer.Buffer;
 
 /**
  * Internal representation of a WebSocket endpoint.
  * <p>
- * A new instance is created for each client connection. {@link #onOpen()}, {@link #onMessage(Object)} and {@link OnClose} are
- * always executed on a new vertx duplicated context.
+ * A new instance is created for each client connection.
  */
 public interface WebSocketEndpoint {
 
+    /**
+     *
+     * @see WebSocket#executionMode()
+     * @return the execution mode
+     */
     WebSocket.ExecutionMode executionMode();
+
+    // @OnOpen
 
     Future<Void> onOpen();
 
@@ -22,28 +28,52 @@ public interface WebSocketEndpoint {
         return ExecutionModel.NONE;
     }
 
-    Future<Void> onMessage(Object message);
+    // @OnTextMessage
 
-    default ExecutionModel onMessageExecutionModel() {
+    Future<Void> onTextMessage(Object message);
+
+    default ExecutionModel onTextMessageExecutionModel() {
         return ExecutionModel.NONE;
     }
+
+    default Type consumedTextMultiType() {
+        return null;
+    }
+
+    default Object decodeTextMultiItem(Object message) {
+        throw new UnsupportedOperationException();
+    }
+
+    // @OnBinaryMessage
+
+    Future<Void> onBinaryMessage(Object message);
+
+    default ExecutionModel onBinaryMessageExecutionModel() {
+        return ExecutionModel.NONE;
+    }
+
+    default Type consumedBinaryMultiType() {
+        return null;
+    }
+
+    default Object decodeBinaryMultiItem(Object message) {
+        throw new UnsupportedOperationException();
+    }
+
+    // @OnPongMessage
+
+    Future<Void> onPongMessage(Buffer message);
+
+    default ExecutionModel onPongMessageExecutionModel() {
+        return ExecutionModel.NONE;
+    }
+
+    // @OnClose
 
     Future<Void> onClose();
 
     default ExecutionModel onCloseExecutionModel() {
         return ExecutionModel.NONE;
-    }
-
-    default MessageType consumedMessageType() {
-        return MessageType.NONE;
-    }
-
-    default Type consumedMultiType() {
-        return null;
-    }
-
-    default Object decodeMultiItem(Object message) {
-        throw new UnsupportedOperationException();
     }
 
     enum ExecutionModel {
@@ -57,9 +87,4 @@ public interface WebSocketEndpoint {
         }
     }
 
-    enum MessageType {
-        NONE,
-        TEXT,
-        BINARY
-    }
 }

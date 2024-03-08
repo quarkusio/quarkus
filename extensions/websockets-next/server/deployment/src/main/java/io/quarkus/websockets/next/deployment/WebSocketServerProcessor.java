@@ -20,6 +20,7 @@ import org.jboss.jandex.ClassInfo.NestingType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
@@ -60,13 +61,12 @@ import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.WebSocketsRuntimeConfig;
 import io.quarkus.websockets.next.deployment.WebSocketEndpointBuildItem.Callback;
+import io.quarkus.websockets.next.deployment.WebSocketEndpointBuildItem.Callback.MessageType;
 import io.quarkus.websockets.next.runtime.Codecs;
 import io.quarkus.websockets.next.runtime.ConnectionManager;
 import io.quarkus.websockets.next.runtime.ContextSupport;
 import io.quarkus.websockets.next.runtime.JsonTextMessageCodec;
-import io.quarkus.websockets.next.runtime.WebSocketEndpoint;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint.ExecutionModel;
-import io.quarkus.websockets.next.runtime.WebSocketEndpoint.MessageType;
 import io.quarkus.websockets.next.runtime.WebSocketEndpointBase;
 import io.quarkus.websockets.next.runtime.WebSocketServerRecorder;
 import io.quarkus.websockets.next.runtime.WebSocketSessionContext;
@@ -123,20 +123,29 @@ public class WebSocketServerProcessor {
                 }
                 Callback onOpen = findCallback(beanArchiveIndex.getIndex(), beanClass, WebSocketDotNames.ON_OPEN,
                         this::validateOnOpen);
-                Callback onMessage = findCallback(beanArchiveIndex.getIndex(), beanClass, WebSocketDotNames.ON_MESSAGE,
-                        this::validateOnMessage);
+                Callback onTextMessage = findCallback(beanArchiveIndex.getIndex(), beanClass, WebSocketDotNames.ON_TEXT_MESSAGE,
+                        this::validateOnTextMessage);
+                Callback onBinaryMessage = findCallback(beanArchiveIndex.getIndex(), beanClass,
+                        WebSocketDotNames.ON_BINARY_MESSAGE,
+                        this::validateOnBinaryMessage);
+                Callback onPongMessage = findCallback(beanArchiveIndex.getIndex(), beanClass, WebSocketDotNames.ON_PONG_MESSAGE,
+                        this::validateOnPongMessage);
                 Callback onClose = findCallback(beanArchiveIndex.getIndex(), beanClass, WebSocketDotNames.ON_CLOSE,
                         this::validateOnClose);
-                if (onOpen == null && onMessage == null) {
+                if (onOpen == null && onTextMessage == null && onBinaryMessage == null && onPongMessage == null) {
                     throw new WebSocketServerException(
-                            "The endpoint must declare at least one method annotated with @OnMessage or @OnOpen: " + beanClass);
+                            "The endpoint must declare at least one method annotated with @OnTextMessage, @OnBinaryMessage, @OnPongMessage or @OnOpen: "
+                                    + beanClass);
                 }
                 AnnotationValue executionMode = webSocketAnnotation.value("executionMode");
                 endpoints.produce(new WebSocketEndpointBuildItem(bean, path,
                         executionMode != null ? WebSocket.ExecutionMode.valueOf(executionMode.asEnum())
                                 : WebSocket.ExecutionMode.SERIAL,
                         onOpen,
-                        onMessage, onClose));
+                        onTextMessage,
+                        onBinaryMessage,
+                        onPongMessage,
+                        onClose));
             }
         }
     }
@@ -237,21 +246,6 @@ public class WebSocketServerProcessor {
         return sb.toString();
     }
 
-    private void validateCallback(MethodInfo callback) {
-        if (callback.hasDeclaredAnnotation(WebSocketDotNames.BINARY_MESSAGE)
-                && callback.hasDeclaredAnnotation(WebSocketDotNames.TEXT_MESSAGE)) {
-            throw new WebSocketServerException(
-                    "Either @BinaryMessage or @TextMessage can be declared on a callback: " + callbackToString(callback));
-        }
-    }
-
-    private void validateOnMessage(MethodInfo callback) {
-        if (callback.parameters().size() != 1) {
-            throw new WebSocketServerException(
-                    "@OnMessage callback must accept exactly one parameter: " + callbackToString(callback));
-        }
-    }
-
     private String callbackToString(MethodInfo callback) {
         return callback.declaringClass().name() + "#" + callback.name() + "()";
     }
@@ -280,8 +274,34 @@ public class WebSocketServerProcessor {
         }
     }
 
+    private void validateOnTextMessage(MethodInfo callback) {
+        if (callback.parameters().size() != 1) {
+            throw new WebSocketServerException(
+                    "@OnTextMessage callback must accept exactly one parameter: " + callbackToString(callback));
+        }
+    }
+
+    private void validateOnBinaryMessage(MethodInfo callback) {
+        if (callback.parameters().size() != 1) {
+            throw new WebSocketServerException(
+                    "@OnTextMessage callback must accept exactly one parameter: " + callbackToString(callback));
+        }
+    }
+
+    private void validateOnPongMessage(MethodInfo callback) {
+        if (callback.returnType().kind() != Kind.VOID && !WebSocketServerProcessor.isUniVoid(callback.returnType())) {
+            throw new WebSocketServerException(
+                    "@OnPongMessage callback must return void or Uni<Void>: " + callbackToString(callback));
+        }
+        if (callback.parameters().size() != 1 || !callback.parameterType(0).name().equals(WebSocketDotNames.BUFFER)) {
+            throw new WebSocketServerException(
+                    "@OnPongMessage callback must accept exactly one parameter of type io.vertx.core.buffer.Buffer: "
+                            + callbackToString(callback));
+        }
+    }
+
     private void validateOnClose(MethodInfo callback) {
-        if (callback.returnType().kind() != Kind.VOID && !Callback.isUniVoid(callback.returnType())) {
+        if (callback.returnType().kind() != Kind.VOID && !WebSocketServerProcessor.isUniVoid(callback.returnType())) {
             throw new WebSocketServerException(
                     "@OnClose callback must return void or Uni<Void>: " + callbackToString(callback));
         }
@@ -306,11 +326,7 @@ public class WebSocketServerProcessor {
      *         super(context, connection, codecs, config, contextActivator);
      *     }
      *
-     *     public WebSocketEndpoint.MessageType consumedMessageType() {
-     *         return MessageType.TEXT;
-     *     }
-     *
-     *     public Uni doOnMessage(Object message) {
+     *     public Uni doOnTextMessage(String message) {
      *         Uni uni = ((Echo) super.beanInstance("MTd91f3oxHtG8gnznR7XcZBCLdE")).echo((String) message);
      *         if (uni != null) {
      *             // The lambda is implemented as a generated function: Echo_WebSocketEndpoint$$function$$1
@@ -320,7 +336,7 @@ public class WebSocketServerProcessor {
      *         }
      *     }
      *
-     *     public WebSocketEndpoint.ExecutionModel onMessageExecutionModel() {
+     *     public WebSocketEndpoint.ExecutionModel onTextMessageExecutionModel() {
      *         return ExecutionModel.EVENT_LOOP;
      *     }
      * }
@@ -358,24 +374,6 @@ public class WebSocketServerProcessor {
         MethodCreator executionMode = endpointCreator.getMethodCreator("executionMode", WebSocket.ExecutionMode.class);
         executionMode.returnValue(executionMode.load(endpoint.executionMode));
 
-        if (endpoint.onMessage != null && endpoint.onMessage.acceptsMessage()) {
-            MethodCreator messageType = endpointCreator.getMethodCreator("consumedMessageType",
-                    WebSocketEndpoint.MessageType.class);
-            messageType.returnValue(messageType.load(endpoint.onMessage.consumedMessageType()));
-        }
-
-        if (endpoint.onMessage != null && endpoint.onMessage.acceptsMulti()) {
-            Type multiItemType = endpoint.onMessage.messageParamType().asParameterizedType().arguments().get(0);
-            MethodCreator consumedMultiType = endpointCreator.getMethodCreator("consumedMultiType",
-                    java.lang.reflect.Type.class);
-            consumedMultiType.returnValue(Types.getTypeHandle(consumedMultiType, multiItemType));
-
-            MethodCreator decodeMultiItem = endpointCreator.getMethodCreator("decodeMultiItem",
-                    Object.class, Object.class);
-            decodeMultiItem.returnValue(decodeMessage(decodeMultiItem, endpoint.onMessage.acceptsBinaryMessage(),
-                    multiItemType, decodeMultiItem.getMethodParam(0), endpoint.onMessage));
-        }
-
         if (endpoint.onOpen != null) {
             MethodCreator doOnOpen = endpointCreator.getMethodCreator("doOnOpen", Uni.class, Object.class);
             // Foo foo = beanInstance("foo");
@@ -392,29 +390,9 @@ public class WebSocketServerProcessor {
             onOpenExecutionModel.returnValue(onOpenExecutionModel.load(endpoint.onOpen.executionModel));
         }
 
-        if (endpoint.onMessage != null) {
-            MethodCreator doOnMessage = endpointCreator.getMethodCreator("doOnMessage", Uni.class, Object.class);
-            // Foo foo = beanInstance("foo");
-            ResultHandle beanInstance = doOnMessage.invokeSpecialMethod(
-                    MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
-                    doOnMessage.getThis(), doOnMessage.load(endpoint.bean.getIdentifier()));
-            ResultHandle[] args;
-            if (endpoint.onMessage.acceptsMessage()) {
-                args = new ResultHandle[] { decodeMessage(doOnMessage, endpoint.onMessage.acceptsBinaryMessage(),
-                        endpoint.onMessage.method.parameterType(0), doOnMessage.getMethodParam(0), endpoint.onMessage) };
-            } else {
-                args = new ResultHandle[] {};
-            }
-            // Call the business method
-            TryBlock tryBlock = uniFailureTryBlock(doOnMessage);
-            ResultHandle ret = tryBlock.invokeVirtualMethod(MethodDescriptor.of(endpoint.onMessage.method), beanInstance,
-                    args);
-            encodeAndReturnResult(tryBlock, endpoint.onMessage, ret);
-
-            MethodCreator onMessageExecutionModel = endpointCreator.getMethodCreator("onMessageExecutionModel",
-                    ExecutionModel.class);
-            onMessageExecutionModel.returnValue(onMessageExecutionModel.load(endpoint.onMessage.executionModel));
-        }
+        generateOnMessage(endpointCreator, endpoint, endpoint.onBinaryMessage);
+        generateOnMessage(endpointCreator, endpoint, endpoint.onTextMessage);
+        generateOnMessage(endpointCreator, endpoint, endpoint.onPongMessage);
 
         if (endpoint.onClose != null) {
             MethodCreator doOnClose = endpointCreator.getMethodCreator("doOnClose", Uni.class, Object.class);
@@ -434,6 +412,64 @@ public class WebSocketServerProcessor {
 
         endpointCreator.close();
         return generatedName.replace('/', '.');
+    }
+
+    private void generateOnMessage(ClassCreator endpointCreator, WebSocketEndpointBuildItem endpoint, Callback callback) {
+        if (callback == null) {
+            return;
+        }
+        String messageType;
+        Class<?> methodParameterType;
+        switch (callback.messageType()) {
+            case BINARY:
+                messageType = "Binary";
+                methodParameterType = Object.class;
+                break;
+            case TEXT:
+                messageType = "Text";
+                methodParameterType = Object.class;
+                break;
+            case PONG:
+                messageType = "Pong";
+                methodParameterType = Buffer.class;
+                break;
+            default:
+                throw new IllegalArgumentException();
+        }
+        MethodCreator doOnMessage = endpointCreator.getMethodCreator("doOn" + messageType + "Message", Uni.class,
+                methodParameterType);
+        // Foo foo = beanInstance("foo");
+        ResultHandle beanInstance = doOnMessage.invokeSpecialMethod(
+                MethodDescriptor.ofMethod(WebSocketEndpointBase.class, "beanInstance", Object.class, String.class),
+                doOnMessage.getThis(), doOnMessage.load(endpoint.bean.getIdentifier()));
+        ResultHandle[] args;
+        if (callback.acceptsMessage()) {
+            args = new ResultHandle[] { decodeMessage(doOnMessage, callback.acceptsBinaryMessage(),
+                    callback.method.parameterType(0), doOnMessage.getMethodParam(0), callback) };
+        } else {
+            args = new ResultHandle[] {};
+        }
+        // Call the business method
+        TryBlock tryBlock = uniFailureTryBlock(doOnMessage);
+        ResultHandle ret = tryBlock.invokeVirtualMethod(MethodDescriptor.of(callback.method), beanInstance,
+                args);
+        encodeAndReturnResult(tryBlock, callback, ret);
+
+        MethodCreator onMessageExecutionModel = endpointCreator.getMethodCreator("on" + messageType + "MessageExecutionModel",
+                ExecutionModel.class);
+        onMessageExecutionModel.returnValue(onMessageExecutionModel.load(callback.executionModel));
+
+        if (callback.acceptsMulti() && callback.messageType != MessageType.PONG) {
+            Type multiItemType = callback.messageParamType().asParameterizedType().arguments().get(0);
+            MethodCreator consumedMultiType = endpointCreator.getMethodCreator("consumed" + messageType + "MultiType",
+                    java.lang.reflect.Type.class);
+            consumedMultiType.returnValue(Types.getTypeHandle(consumedMultiType, multiItemType));
+
+            MethodCreator decodeMultiItem = endpointCreator.getMethodCreator("decode" + messageType + "MultiItem",
+                    Object.class, Object.class);
+            decodeMultiItem.returnValue(decodeMessage(decodeMultiItem, callback.acceptsBinaryMessage(),
+                    multiItemType, decodeMultiItem.getMethodParam(0), callback));
+        }
     }
 
     private TryBlock uniFailureTryBlock(BytecodeCreator method) {
@@ -457,7 +493,7 @@ public class WebSocketServerProcessor {
             // Binary message
             if (WebSocketDotNames.BUFFER.equals(valueType.name())) {
                 return value;
-            } else if (Callback.isByteArray(valueType)) {
+            } else if (WebSocketServerProcessor.isByteArray(valueType)) {
                 // byte[] message = buffer.getBytes();
                 return method.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Buffer.class, "getBytes", byte[].class), value);
@@ -500,7 +536,7 @@ public class WebSocketServerProcessor {
                 // Buffer message = Buffer.buffer(string);
                 return method.invokeStaticInterfaceMethod(
                         MethodDescriptor.ofMethod(Buffer.class, "buffer", Buffer.class, String.class), value);
-            } else if (Callback.isByteArray(valueType)) {
+            } else if (WebSocketServerProcessor.isByteArray(valueType)) {
                 // byte[] message = Buffer.buffer(string).getBytes();
                 ResultHandle buffer = method.invokeStaticInterfaceMethod(
                         MethodDescriptor.ofMethod(Buffer.class, "buffer", Buffer.class, byte[].class), value);
@@ -519,7 +555,7 @@ public class WebSocketServerProcessor {
     }
 
     private ResultHandle encodeMessage(BytecodeCreator method, Callback callback, ResultHandle value) {
-        if (callback.producedMessageType == MessageType.BINARY) {
+        if (callback.acceptsBinaryMessage()) {
             // ----------------------
             // === Binary message ===
             // ----------------------
@@ -636,7 +672,7 @@ public class WebSocketServerProcessor {
         ResultHandle buffer;
         if (messageType.name().equals(WebSocketDotNames.BUFFER)) {
             buffer = value;
-        } else if (Callback.isByteArray(messageType)) {
+        } else if (WebSocketServerProcessor.isByteArray(messageType)) {
             buffer = method.invokeStaticInterfaceMethod(
                     MethodDescriptor.ofMethod(Buffer.class, "buffer", Buffer.class, byte[].class), value);
         } else if (messageType.name().equals(WebSocketDotNames.STRING)) {
@@ -664,7 +700,7 @@ public class WebSocketServerProcessor {
         if (messageType.name().equals(WebSocketDotNames.BUFFER)) {
             text = method.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(Buffer.class, "toString", String.class), value);
-        } else if (Callback.isByteArray(messageType)) {
+        } else if (WebSocketServerProcessor.isByteArray(messageType)) {
             ResultHandle buffer = method.invokeStaticInterfaceMethod(
                     MethodDescriptor.ofMethod(Buffer.class, "buffer", Buffer.class, byte[].class), value);
             text = method.invokeInterfaceMethod(
@@ -726,7 +762,6 @@ public class WebSocketServerProcessor {
         } else if (annotations.size() == 1) {
             AnnotationInstance annotation = annotations.get(0);
             MethodInfo method = annotation.target().asMethod();
-            validateCallback(method);
             validator.accept(method);
             return new Callback(annotation, method, executionModel(method));
         }
@@ -755,6 +790,15 @@ public class WebSocketServerProcessor {
             default:
                 throw new WebSocketServerException("Unsupported return type:" + callbackToString(method));
         }
+    }
+
+    static boolean isUniVoid(Type type) {
+        return WebSocketDotNames.UNI.equals(type.name())
+                && type.asParameterizedType().arguments().get(0).name().equals(WebSocketDotNames.VOID);
+    }
+
+    static boolean isByteArray(Type type) {
+        return type.kind() == Kind.ARRAY && PrimitiveType.BYTE.equals(type.asArrayType().constituent());
     }
 
 }

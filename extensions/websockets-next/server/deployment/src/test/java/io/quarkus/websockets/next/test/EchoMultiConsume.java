@@ -2,7 +2,7 @@ package io.quarkus.websockets.next.test;
 
 import jakarta.inject.Inject;
 
-import io.quarkus.websockets.next.OnMessage;
+import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.smallrye.mutiny.Multi;
@@ -14,7 +14,7 @@ public class EchoMultiConsume {
     @Inject
     WebSocketConnection connection;
 
-    @OnMessage
+    @OnTextMessage
     Uni<Void> echo(Multi<String> multi) {
         multi.subscribe().with(msg -> {
             connection.sendText(msg).subscribe().with(v -> {

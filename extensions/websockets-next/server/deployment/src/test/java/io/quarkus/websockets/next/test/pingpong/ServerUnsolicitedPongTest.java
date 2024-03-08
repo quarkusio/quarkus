@@ -1,10 +1,8 @@
 package io.quarkus.websockets.next.test.pingpong;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -16,14 +14,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.WebSocket;
+import io.quarkus.websockets.next.WebSocketConnection;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.WebSocketClient;
 
-public class ClientPingServerAutomaticPongTest {
+public class ServerUnsolicitedPongTest {
 
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
@@ -41,41 +39,31 @@ public class ClientPingServerAutomaticPongTest {
     void testPingPong() throws InterruptedException, ExecutionException {
         WebSocketClient client = vertx.createWebSocketClient();
         try {
-            Buffer ping = Buffer.buffer("ping");
             LinkedBlockingDeque<Buffer> message = new LinkedBlockingDeque<>();
             client
                     .connect(endUri.getPort(), endUri.getHost(), endUri.getPath())
                     .onComplete(r -> {
                         if (r.succeeded()) {
                             r.result().pongHandler(pong -> message.add(pong));
-                            r.result().writePing(ping);
                         } else {
                             throw new IllegalStateException(r.cause());
                         }
                     });
-            assertTrue(Endpoint.OPENED.await(5, TimeUnit.SECONDS));
-            // The pong message should be sent by the server automatically and should be identical to the ping message
-            assertEquals(ping, message.poll(10, TimeUnit.SECONDS));
+            assertEquals(Buffer.buffer("pong"), message.poll(10, TimeUnit.SECONDS));
         } finally {
             client.close().toCompletionStage().toCompletableFuture().get();
-            assertTrue(Endpoint.CLOSED.await(5, TimeUnit.SECONDS));
         }
     }
 
     @WebSocket(path = "/endpoint")
     public static class Endpoint {
 
-        static final CountDownLatch OPENED = new CountDownLatch(1);
-        static final CountDownLatch CLOSED = new CountDownLatch(1);
+        @Inject
+        WebSocketConnection connection;
 
         @OnOpen
         void open() {
-            OPENED.countDown();
-        }
-
-        @OnClose
-        void close() {
-            CLOSED.countDown();
+            connection.sendPongAndAwait(Buffer.buffer("pong"));
         }
 
     }

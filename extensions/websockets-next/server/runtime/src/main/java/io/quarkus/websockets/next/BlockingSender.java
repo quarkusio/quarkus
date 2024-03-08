@@ -50,7 +50,7 @@ public interface BlockingSender extends Sender {
 
     /**
      * Send a ping message and waits for the completion.
-     * 
+     *
      * @param data May be at most 125 bytes
      */
     default void sendPingAndAwait(Buffer data) {
@@ -58,12 +58,12 @@ public interface BlockingSender extends Sender {
     }
 
     /**
-     * Send an unsolicited pong message.
+     * Send an unsolicited pong message and waits for the completion.
      * <p>
      * Note that the server automatically responds to a ping message sent from the client. However, the RFC 6455
      * <a href="https://tools.ietf.org/html/rfc6455#section-5.5.3">section 5.5.3</a> states that unsolicited pong may serve as a
      * unidirectional heartbeat.
-     * 
+     *
      * @param data May be at most 125 bytes
      */
     default void sendPongAndAwait(Buffer data) {

@@ -95,10 +95,10 @@ public class CliImageGradleTest {
         // 1 image --dry-run
         result = CliDriver.execute(project, "image", "--dry-run");
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
-        assertFalse(result.getStdout().contains("-Dquarkus.package.type=native"));
+        assertFalse(result.getStdout().contains("-Dquarkus.native.enabled=true"));
         result = CliDriver.execute(project, "image", "--native", "--dry-run");
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
-        assertTrue(result.getStdout().contains("-Dquarkus.package.type=native"));
+        assertTrue(result.getStdout().contains("-Dquarkus.native.enabled=true"));
 
         // 2 image build --dry-run
         result = CliDriver.execute(project, "image", "build", "--dry-run");
@@ -132,7 +132,7 @@ public class CliImageGradleTest {
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.group=mygroup"));
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.name=myname"));
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.tag=1.0"));
-        assertTrue(result.getStdout().contains("-Dquarkus.package.type=native"));
+        assertTrue(result.getStdout().contains("-Dquarkus.native.enabled=true"));
 
         // 3 image push --dry-run
         result = CliDriver.execute(project, "image", "push", "--dry-run");

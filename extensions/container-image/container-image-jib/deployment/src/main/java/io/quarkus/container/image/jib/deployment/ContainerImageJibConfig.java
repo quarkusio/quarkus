@@ -56,7 +56,7 @@ public class ContainerImageJibConfig {
      * <ul>
      * <li>Entrypoint "INHERIT" means to inherit entrypoint from base image, {@code jvmArguments} field is used for
      * arguments</li>
-     * <li>A valid entrypoint is jar package specific (see {@code quarkus.package.type})</li>
+     * <li>A valid entrypoint is jar package specific (see {@code quarkus.package.jar.type})</li>
      * <li>A valid entrypoint depends on the location of both the launching scripts and the application jar file. To that
      * end it's helpful to remember that when {@code fast-jar} packaging is used (the default), all necessary application
      * jars are added to the {@code /work} directory and that the same

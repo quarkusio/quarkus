@@ -37,7 +37,7 @@ It is not a good idea to do re-augmentation at runtime unless you miss the good 
 == How to re-augment a Quarkus application
 
 In order to run the augmentation steps you need the deployment JARs of the used Quarkus extensions.
-These JARs are only present in the `mutable-jar` distribution. This means that you need to build your application with `quarkus.package.type=mutable-jar`.
+These JARs are only present in the `mutable-jar` distribution. This means that you need to build your application with `quarkus.package.jar.type=mutable-jar`.
 The `mutable-jar` distribution is the same as the `fast-jar` distribution, except for the additional folder `quarkus-app/lib/deployment`
 which contains the deployment JARs and their dependencies (and some class-loader configuration).
 
@@ -54,7 +54,7 @@ configuration files.
 
 [source,bash]
 ----
-mvn clean install -Dquarkus.package.type=mutable-jar
+mvn clean install -Dquarkus.package.jar.type=mutable-jar
 ----
 
 === 2. Re-augment your application with a different build time configuration

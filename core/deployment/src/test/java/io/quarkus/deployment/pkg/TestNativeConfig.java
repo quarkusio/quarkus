@@ -22,6 +22,14 @@ public class TestNativeConfig implements NativeConfig {
         this.builderImage = new TestBuildImageConfig(builderImage, builderImagePull);
     }
 
+    public boolean enabled() {
+        return true;
+    }
+
+    public boolean sourcesOnly() {
+        return true;
+    }
+
     @Override
     public Optional<List<String>> additionalBuildArgs() {
         return Optional.empty();

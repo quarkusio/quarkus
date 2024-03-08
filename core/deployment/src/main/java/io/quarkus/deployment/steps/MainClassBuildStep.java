@@ -376,12 +376,12 @@ public class MainClassBuildStep {
         }
 
         MethodInfo mainClassMethod = null;
-        if (packageConfig.mainClass.isPresent()) {
-            String mainAnnotationClass = quarkusMainAnnotations.get(packageConfig.mainClass.get());
+        if (packageConfig.mainClass().isPresent()) {
+            String mainAnnotationClass = quarkusMainAnnotations.get(packageConfig.mainClass().get());
             if (mainAnnotationClass != null) {
                 mainClassName = mainAnnotationClass;
             } else {
-                mainClassName = packageConfig.mainClass.get();
+                mainClassName = packageConfig.mainClass().get();
             }
         } else if (quarkusMainAnnotations.containsKey("")) {
             mainClassName = quarkusMainAnnotations.get("");

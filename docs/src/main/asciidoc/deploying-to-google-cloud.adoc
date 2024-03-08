@@ -74,7 +74,7 @@ App Engine Standard does not support the default Quarkus' specific packaging lay
 
 [source, properties]
 ----
-quarkus.package.type=uber-jar
+quarkus.package.jar.type=uber-jar
 ----
 
 Then, you can choose to build the application manually or delegating that responsibility to `gcloud` or the Google Cloud Maven plugin.

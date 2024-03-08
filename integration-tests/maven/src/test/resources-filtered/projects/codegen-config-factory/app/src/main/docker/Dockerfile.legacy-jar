@@ -3,7 +3,7 @@
 #
 # Before building the container image run:
 #
-# ./mvnw package -Dquarkus.package.type=legacy-jar
+# ./mvnw package -Dquarkus.package.jar.type=legacy-jar
 #
 # Then, build the image with:
 #

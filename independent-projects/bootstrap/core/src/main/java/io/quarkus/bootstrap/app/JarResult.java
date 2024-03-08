@@ -7,14 +7,14 @@ public final class JarResult {
     private final Path path;
     private final Path originalArtifact;
     private final Path libraryDir;
-    private final String type;
+    private final boolean mutable;
     private final String classifier;
 
-    public JarResult(Path path, Path originalArtifact, Path libraryDir, String type, String classifier) {
+    public JarResult(Path path, Path originalArtifact, Path libraryDir, boolean mutable, String classifier) {
         this.path = path;
         this.originalArtifact = originalArtifact;
         this.libraryDir = libraryDir;
-        this.type = type;
+        this.mutable = mutable;
         this.classifier = classifier;
     }
 
@@ -34,8 +34,8 @@ public final class JarResult {
         return originalArtifact;
     }
 
-    public String getType() {
-        return type;
+    public boolean mutable() {
+        return mutable;
     }
 
     public String getClassifier() {

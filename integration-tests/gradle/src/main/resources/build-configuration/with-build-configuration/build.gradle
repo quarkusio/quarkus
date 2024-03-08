@@ -26,7 +26,7 @@ version '1.0.0-SNAPSHOT'
 
 quarkus {
     properties {
-        set("package.type", "uber-jar")
+        set("package.jar.type", "uber-jar")
         set("package.output-directory", "build-gradle-output-dir")
     }
 }

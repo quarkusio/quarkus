@@ -37,7 +37,6 @@ import io.quarkus.deployment.dev.remote.DefaultRemoteDevClient;
 import io.quarkus.deployment.dev.remote.RemoteDevClient;
 import io.quarkus.deployment.dev.remote.RemoteDevClientProvider;
 import io.quarkus.deployment.mutability.DevModeTask;
-import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 import io.quarkus.deployment.steps.ClassTransformingBuildStep;
 import io.quarkus.dev.spi.DeploymentFailedStartHandler;
@@ -90,7 +89,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
             //ok, we have resolved all the deps
             try {
                 AugmentResult start = augmentAction.createProductionApplication();
-                if (!start.getJar().getType().equalsIgnoreCase(PackageConfig.BuiltInType.MUTABLE_JAR.getValue())) {
+                if (!start.getJar().mutable()) {
                     throw new RuntimeException(
                             "remote-dev can only be used with mutable applications i.e. " +
                                     "using the mutable-jar package type");

@@ -36,8 +36,8 @@ import io.smallrye.config.SmallRyeConfig;
 public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
     static final String CLASS_LOADING_REMOVED_ARTIFACTS = "quarkus.class-loading.removed-artifacts";
     static final String CLASS_LOADING_PARENT_FIRST_ARTIFACTS = "quarkus.class-loading.parent-first-artifacts";
-    static final String FILTER_OPTIONAL_DEPENDENCIES = "quarkus.package.filter-optional-dependencies";
-    static final String INCLUDED_OPTIONAL_DEPENDENCIES = "quarkus.package.included-optional-dependencies";
+    static final String FILTER_OPTIONAL_DEPENDENCIES = "quarkus.package.jar.filter-optional-dependencies";
+    static final String INCLUDED_OPTIONAL_DEPENDENCIES = "quarkus.package.jar.included-optional-dependencies";
 
     @Inject
     public QuarkusBuildDependencies() {
@@ -48,28 +48,28 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
     /**
      * Points to {@code build/quarkus-build/dep}.
      */
+    @SuppressWarnings("deprecation") // legacy JAR
     @OutputDirectories
     public Map<String, File> getOutputDirectories() {
         Map<String, File> outputs = new HashMap<>();
-        PackageConfig.BuiltInType packageType = packageType();
-        switch (packageType) {
-            case JAR:
-            case FAST_JAR:
-            case NATIVE:
-            case LEGACY_JAR:
-            case LEGACY:
+        if (nativeEnabled()) {
+            if (nativeSourcesOnly()) {
+                // nothing
+            } else {
                 outputs.put("dependencies-dir", depBuildDir().toFile());
-                break;
-            case MUTABLE_JAR:
-            case UBER_JAR:
-            case NATIVE_SOURCES:
-                break;
-            default:
-                throw new GradleException("Unsupported package type " + packageType);
+            }
+        } else {
+            PackageConfig.JarConfig.JarType packageType = jarType();
+            switch (packageType) {
+                case FAST_JAR, LEGACY_JAR -> outputs.put("dependencies-dir", depBuildDir().toFile());
+                case MUTABLE_JAR, UBER_JAR -> {
+                }
+            }
         }
         return outputs;
     }
 
+    @SuppressWarnings("deprecation") // legacy JAR
     @TaskAction
     public void collectDependencies() {
         Path depDir = depBuildDir();
@@ -78,26 +78,22 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
         // checks work against "clean" outputs, considering that the outputs depend on the package-type.
         getFileSystemOperations().delete(delete -> delete.delete(depDir));
 
-        PackageConfig.BuiltInType packageType = packageType();
-        switch (packageType) {
-            case JAR:
-            case FAST_JAR:
-            case NATIVE:
-                fastJarDependencies();
-                break;
-            case LEGACY_JAR:
-            case LEGACY:
-                legacyJarDependencies();
-                break;
-            case MUTABLE_JAR:
-            case UBER_JAR:
-            case NATIVE_SOURCES:
+        if (nativeEnabled()) {
+            if (nativeSourcesOnly()) {
                 getLogger().info(
-                        "Falling back to 'full quarkus application build' for package type {}, this task's output is empty for this package type",
+                        "Falling back to 'full quarkus application build' for native sources, this task's output is empty for this build type");
+            } else {
+                fastJarDependencies();
+            }
+        } else {
+            PackageConfig.JarConfig.JarType packageType = jarType();
+            switch (packageType) {
+                case FAST_JAR -> fastJarDependencies();
+                case LEGACY_JAR -> legacyJarDependencies();
+                case MUTABLE_JAR, UBER_JAR -> getLogger().info(
+                        "Falling back to 'full quarkus application build' for JAR type {}, this task's output is empty for this build type",
                         packageType);
-                break;
-            default:
-                throw new GradleException("Unsupported package type " + packageType);
+            }
         }
     }
 
@@ -129,8 +125,16 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
     private void jarDependencies(Path libBoot, Path libMain) {
         Path depDir = depBuildDir();
 
-        getLogger().info("Placing Quarkus application dependencies for package type {} in {}", packageType(),
-                depDir);
+        if (nativeEnabled()) {
+            if (nativeSourcesOnly()) {
+                getLogger().info("Placing Quarkus application dependencies for native sources build in {}", depDir);
+            } else {
+                getLogger().info("Placing Quarkus application dependencies for native build in {}", depDir);
+            }
+        } else {
+            getLogger().info("Placing Quarkus application dependencies for JAR type {} in {}", jarType(),
+                    depDir);
+        }
 
         try {
             Files.createDirectories(libBoot);

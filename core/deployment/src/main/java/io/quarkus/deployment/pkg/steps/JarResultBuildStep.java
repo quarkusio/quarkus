@@ -1,5 +1,6 @@
 package io.quarkus.deployment.pkg.steps;
 
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.*;
 import static io.quarkus.fs.util.ZipUtils.wrapForJDK8232879;
 
 import java.io.BufferedInputStream;
@@ -158,13 +159,13 @@ public class JarResultBuildStep {
 
     @BuildStep
     OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst, PackageConfig packageConfig) {
-        String name = packageConfig.outputName.orElseGet(bst::getBaseName);
-        Path path = packageConfig.outputDirectory.map(s -> bst.getOutputDirectory().resolve(s))
+        String name = packageConfig.outputName().orElseGet(bst::getBaseName);
+        Path path = packageConfig.outputDirectory().map(s -> bst.getOutputDirectory().resolve(s))
                 .orElseGet(bst::getOutputDirectory);
         Optional<Set<ArtifactKey>> includedOptionalDependencies;
-        if (packageConfig.filterOptionalDependencies) {
-            includedOptionalDependencies = Optional.of(packageConfig.includedOptionalDependencies
-                    .map(set -> set.stream().map(s -> ArtifactKey.fromString(s)).collect(Collectors.toSet()))
+        if (packageConfig.jar().filterOptionalDependencies()) {
+            includedOptionalDependencies = Optional.of(packageConfig.jar().includedOptionalDependencies()
+                    .map(set -> set.stream().map(ArtifactKey.class::cast).collect(Collectors.toSet()))
                     .orElse(Collections.emptySet()));
         } else {
             includedOptionalDependencies = Optional.empty();
@@ -176,13 +177,14 @@ public class JarResultBuildStep {
     @BuildStep(onlyIf = JarRequired.class)
     ArtifactResultBuildItem jarOutput(JarBuildItem jarBuildItem) {
         if (jarBuildItem.getLibraryDir() != null) {
-            return new ArtifactResultBuildItem(jarBuildItem.getPath(), PackageConfig.JAR,
+            return new ArtifactResultBuildItem(jarBuildItem.getPath(), "jar",
                     Collections.singletonMap("library-dir", jarBuildItem.getLibraryDir().toString()));
         } else {
-            return new ArtifactResultBuildItem(jarBuildItem.getPath(), PackageConfig.JAR, Collections.emptyMap());
+            return new ArtifactResultBuildItem(jarBuildItem.getPath(), "jar", Collections.emptyMap());
         }
     }
 
+    @SuppressWarnings("deprecation") // JarType#LEGACY_JAR
     @BuildStep
     public JarBuildItem buildRunnerJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
@@ -211,18 +213,19 @@ public class JarResultBuildStep {
         }
 
         if (legacyJarRequired.isEmpty() && (!uberJarRequired.isEmpty()
-                || packageConfig.type.equalsIgnoreCase(PackageConfig.BuiltInType.UBER_JAR.getValue()))) {
+                || packageConfig.jar().type() == UBER_JAR)) {
             return buildUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, uberJarMergedResourceBuildItems,
                     uberJarIgnoredResourceBuildItems, mainClassBuildItem, classLoadingConfig);
-        } else if (!legacyJarRequired.isEmpty() || packageConfig.isLegacyJar()) {
+        } else if (!legacyJarRequired.isEmpty() || packageConfig.jar().type() == LEGACY_JAR) {
             return buildLegacyThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem,
                     packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem,
                     classLoadingConfig);
         } else {
             return buildThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
-                    packageConfig, classLoadingConfig, applicationInfo, generatedClasses, generatedResources,
+                    packageConfig, classLoadingConfig, applicationInfo, generatedClasses,
+                    generatedResources,
                     additionalApplicationArchiveBuildItems, mainClassBuildItem);
         }
     }
@@ -270,7 +273,7 @@ public class JarResultBuildStep {
 
         //we use the -runner jar name, unless we are building both types
         final Path runnerJar = outputTargetBuildItem.getOutputDirectory()
-                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix() + DOT_JAR);
+                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.computedRunnerSuffix() + DOT_JAR);
 
         // If the runner jar appears to exist already we create a new one with a tmp suffix.
         // Deleting an existing runner jar may result in deleting the original (non-runner) jar (in case the runner suffix is empty)
@@ -278,7 +281,7 @@ public class JarResultBuildStep {
         final Path tmpRunnerJar;
         if (Files.exists(runnerJar)) {
             tmpRunnerJar = outputTargetBuildItem.getOutputDirectory()
-                    .resolve(outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix() + ".tmp");
+                    .resolve(outputTargetBuildItem.getBaseName() + packageConfig.computedRunnerSuffix() + ".tmp");
             Files.deleteIfExists(tmpRunnerJar);
         } else {
             tmpRunnerJar = runnerJar;
@@ -308,8 +311,8 @@ public class JarResultBuildStep {
                 .resolve(outputTargetBuildItem.getOriginalBaseName() + DOT_JAR);
         final Path originalJar = Files.exists(standardJar) ? standardJar : null;
 
-        return new JarBuildItem(runnerJar, originalJar, null, PackageConfig.BuiltInType.UBER_JAR.getValue(),
-                suffixToClassifier(packageConfig.getRunnerSuffix()));
+        return new JarBuildItem(runnerJar, originalJar, null, UBER_JAR,
+                suffixToClassifier(packageConfig.computedRunnerSuffix()));
     }
 
     private String suffixToClassifier(String suffix) {
@@ -342,7 +345,7 @@ public class JarResultBuildStep {
             final Set<ArtifactKey> removed = getRemovedKeys(classLoadingConfig);
 
             Set<String> ignoredEntries = new HashSet<>();
-            packageConfig.userConfiguredIgnoredEntries.ifPresent(ignoredEntries::addAll);
+            packageConfig.jar().userConfiguredIgnoredEntries().ifPresent(ignoredEntries::addAll);
             ignoredResources.stream()
                     .map(UberJarIgnoredResourceBuildItem::getPath)
                     .forEach(ignoredEntries::add);
@@ -525,7 +528,7 @@ public class JarResultBuildStep {
             ClassLoadingConfig classLoadingConfig) throws Exception {
 
         Path runnerJar = outputTargetBuildItem.getOutputDirectory()
-                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix() + DOT_JAR);
+                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.computedRunnerSuffix() + DOT_JAR);
         Path libDir = outputTargetBuildItem.getOutputDirectory().resolve("lib");
         Files.deleteIfExists(runnerJar);
         IoUtils.createOrEmptyDir(libDir);
@@ -541,8 +544,8 @@ public class JarResultBuildStep {
         }
         runnerJar.toFile().setReadable(true, false);
 
-        return new JarBuildItem(runnerJar, null, libDir, PackageConfig.BuiltInType.LEGACY_JAR.getValue(),
-                suffixToClassifier(packageConfig.getRunnerSuffix()));
+        return new JarBuildItem(runnerJar, null, libDir, packageConfig.jar().type(),
+                suffixToClassifier(packageConfig.computedRunnerSuffix()));
     }
 
     @SuppressWarnings("deprecation")
@@ -562,7 +565,7 @@ public class JarResultBuildStep {
 
         Path buildDir;
 
-        if (packageConfig.outputDirectory.isPresent()) {
+        if (packageConfig.outputDirectory().isPresent()) {
             buildDir = outputTargetBuildItem.getOutputDirectory();
         } else {
             buildDir = outputTargetBuildItem.getOutputDirectory().resolve(DEFAULT_FAST_JAR_DIRECTORY_NAME);
@@ -578,8 +581,8 @@ public class JarResultBuildStep {
         Path appDir = buildDir.resolve(APP);
         Path quarkus = buildDir.resolve(QUARKUS);
         Path userProviders = null;
-        if (packageConfig.userProvidersDirectory.isPresent()) {
-            userProviders = buildDir.resolve(packageConfig.userProvidersDirectory.get());
+        if (packageConfig.jar().userProvidersDirectory().isPresent()) {
+            userProviders = buildDir.resolve(packageConfig.jar().userProvidersDirectory().get());
         }
         if (!rebuild) {
             IoUtils.createOrEmptyDir(buildDir);
@@ -604,17 +607,13 @@ public class JarResultBuildStep {
         Path decompiledOutputDir = null;
         boolean wasDecompiledSuccessfully = true;
         Decompiler decompiler = null;
-        if (packageConfig.vineflower.enabled.orElse(false) || packageConfig.decompiler.enabled.orElse(false)) {
-            Optional<String> jarDirectoryStrOpt = packageConfig.vineflower.enabled.orElse(false)
-                    ? packageConfig.vineflower.jarDirectory
-                    : packageConfig.decompiler.jarDirectory;
-            String jarDirectoryStr = jarDirectoryStrOpt.orElse(System.getProperty("user.home") + "/.quarkus");
-
+        PackageConfig.DecompilerConfig decompilerConfig = packageConfig.jar().decompiler();
+        if (decompilerConfig.enabled()) {
             decompiledOutputDir = buildDir.getParent().resolve("decompiled");
             FileUtil.deleteDirectory(decompiledOutputDir);
             Files.createDirectory(decompiledOutputDir);
             decompiler = new Decompiler.VineflowerDecompiler();
-            Path jarDirectory = Paths.get(jarDirectoryStr);
+            Path jarDirectory = Paths.get(decompilerConfig.jarDirectory());
             if (!Files.exists(jarDirectory)) {
                 Files.createDirectory(jarDirectory);
             }
@@ -752,7 +751,7 @@ public class JarResultBuildStep {
 
         runnerJar.toFile().setReadable(true, false);
         Path initJar = buildDir.resolve(QUARKUS_RUN_JAR);
-        boolean mutableJar = packageConfig.type.equalsIgnoreCase(PackageConfig.BuiltInType.MUTABLE_JAR.getValue());
+        boolean mutableJar = packageConfig.jar().type() == MUTABLE_JAR;
         if (mutableJar) {
             //we output the properties in a reproducible manner, so we remove the date comment
             //and sort them
@@ -797,7 +796,7 @@ public class JarResultBuildStep {
                 MutableJarApplicationModel model = new MutableJarApplicationModel(outputTargetBuildItem.getBaseName(),
                         relativePaths,
                         curateOutcomeBuildItem.getApplicationModel(),
-                        packageConfig.userProvidersDirectory.orElse(null), buildDir.relativize(runnerJar).toString());
+                        packageConfig.jar().userProvidersDirectory().orElse(null), buildDir.relativize(runnerJar).toString());
                 Path appmodelDat = deploymentLib.resolve(APPMODEL_DAT);
                 try (OutputStream out = Files.newOutputStream(appmodelDat)) {
                     ObjectOutputStream obj = new ObjectOutputStream(out);
@@ -824,7 +823,7 @@ public class JarResultBuildStep {
                 }
             }
 
-            if (packageConfig.includeDependencyList) {
+            if (packageConfig.jar().includeDependencyList()) {
                 Path deplist = buildDir.resolve(QUARKUS_APP_DEPS);
                 List<String> lines = new ArrayList<>();
                 for (ResolvedDependency i : curateOutcomeBuildItem.getApplicationModel().getRuntimeDependencies()) {
@@ -844,7 +843,7 @@ public class JarResultBuildStep {
                 }
             });
         }
-        return new JarBuildItem(initJar, null, libDir, packageConfig.type, null);
+        return new JarBuildItem(initJar, null, libDir, packageConfig.jar().type(), null);
     }
 
     /**
@@ -1000,7 +999,7 @@ public class JarResultBuildStep {
         copyJsonConfigFiles(applicationArchivesBuildItem, targetDirectory);
 
         Path runnerJar = targetDirectory
-                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.getRunnerSuffix() + DOT_JAR);
+                .resolve(outputTargetBuildItem.getBaseName() + packageConfig.computedRunnerSuffix() + DOT_JAR);
         Path libDir = targetDirectory.resolve(LIB);
         Files.createDirectories(libDir);
 
@@ -1296,42 +1295,40 @@ public class JarResultBuildStep {
         Attributes attributes = manifest.getMainAttributes();
         attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
 
-        if (config.manifest.attributes.size() > 0) {
-            for (Map.Entry<String, String> attribute : config.manifest.attributes.entrySet()) {
-                attributes.putValue(attribute.getKey(), attribute.getValue());
-            }
+        for (Map.Entry<String, String> attribute : config.jar().manifest().attributes().entrySet()) {
+            attributes.putValue(attribute.getKey(), attribute.getValue());
         }
         if (attributes.containsKey(Attributes.Name.CLASS_PATH)) {
             log.warn(
-                    "A CLASS_PATH entry was already defined in your MANIFEST.MF or using the property quarkus.package.manifest.attributes.\"Class-Path\". Quarkus has overwritten this existing entry.");
+                    "A CLASS_PATH entry was already defined in your MANIFEST.MF or using the property quarkus.package.jar.manifest.attributes.\"Class-Path\". Quarkus has overwritten this existing entry.");
         }
         attributes.put(Attributes.Name.CLASS_PATH, classPath);
         if (attributes.containsKey(Attributes.Name.MAIN_CLASS)) {
             String existingMainClass = attributes.getValue(Attributes.Name.MAIN_CLASS);
             if (!mainClassName.equals(existingMainClass)) {
                 log.warn(
-                        "A MAIN_CLASS entry was already defined in your MANIFEST.MF or using the property quarkus.package.manifest.attributes.\"Main-Class\". Quarkus has overwritten your existing entry.");
+                        "A MAIN_CLASS entry was already defined in your MANIFEST.MF or using the property quarkus.package.jar.manifest.attributes.\"Main-Class\". Quarkus has overwritten your existing entry.");
             }
         }
         attributes.put(Attributes.Name.MAIN_CLASS, mainClassName);
-        if (config.manifest.addImplementationEntries && !attributes.containsKey(Attributes.Name.IMPLEMENTATION_TITLE)) {
+        if (config.jar().manifest().addImplementationEntries()
+                && !attributes.containsKey(Attributes.Name.IMPLEMENTATION_TITLE)) {
             String name = ApplicationInfoBuildItem.UNSET_VALUE.equals(applicationInfo.getName())
                     ? appArtifact.getArtifactId()
                     : applicationInfo.getName();
             attributes.put(Attributes.Name.IMPLEMENTATION_TITLE, name);
         }
-        if (config.manifest.addImplementationEntries && !attributes.containsKey(Attributes.Name.IMPLEMENTATION_VERSION)) {
+        if (config.jar().manifest().addImplementationEntries()
+                && !attributes.containsKey(Attributes.Name.IMPLEMENTATION_VERSION)) {
             String version = ApplicationInfoBuildItem.UNSET_VALUE.equals(applicationInfo.getVersion())
                     ? appArtifact.getVersion()
                     : applicationInfo.getVersion();
             attributes.put(Attributes.Name.IMPLEMENTATION_VERSION, version);
         }
-        if (config.manifest.manifestSections.size() > 0) {
-            for (String sectionName : config.manifest.manifestSections.keySet()) {
-                for (Map.Entry<String, String> entry : config.manifest.manifestSections.get(sectionName).entrySet()) {
-                    Attributes attribs = manifest.getEntries().computeIfAbsent(sectionName, k -> new Attributes());
-                    attribs.putValue(entry.getKey(), entry.getValue());
-                }
+        for (String sectionName : config.jar().manifest().sections().keySet()) {
+            for (Map.Entry<String, String> entry : config.jar().manifest().sections().get(sectionName).entrySet()) {
+                Attributes attribs = manifest.getEntries().computeIfAbsent(sectionName, k -> new Attributes());
+                attribs.putValue(entry.getKey(), entry.getValue());
             }
         }
         try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(manifestPath))) {
@@ -1439,7 +1436,7 @@ public class JarResultBuildStep {
 
         @Override
         public boolean getAsBoolean() {
-            return packageConfig.isAnyJarType();
+            return packageConfig.jar().enabled();
         }
     }
 
@@ -1455,23 +1452,7 @@ public class JarResultBuildStep {
     }
 
     private Predicate<String> getThinJarIgnoredEntriesPredicate(PackageConfig packageConfig) {
-        if (packageConfig.userConfiguredIgnoredEntries.isEmpty()) {
-            return new Predicate<String>() {
-                @Override
-                public boolean test(String path) {
-                    return false;
-                }
-            };
-        }
-
-        Set<String> ignoredEntries = new HashSet<>(packageConfig.userConfiguredIgnoredEntries.get());
-        Predicate<String> ignoredEntriesPredicate = new Predicate<String>() {
-            @Override
-            public boolean test(String path) {
-                return ignoredEntries.contains(path);
-            }
-        };
-        return ignoredEntriesPredicate;
+        return packageConfig.jar().userConfiguredIgnoredEntries().map(Set::copyOf).orElse(Set.of())::contains;
     }
 
     private static class IsEntryIgnoredForUberJarPredicate implements Predicate<String> {
@@ -1663,7 +1644,7 @@ public class JarResultBuildStep {
     }
 
     private static FileSystem createNewZip(Path runnerJar, PackageConfig config) throws IOException {
-        boolean useUncompressedJar = config.compressJar.map(o -> !o).orElse(false);
+        boolean useUncompressedJar = !config.jar().compress();
         if (useUncompressedJar) {
             return ZipUtils.newZip(runnerJar, Map.of("compressionMethod", "STORED"));
         }

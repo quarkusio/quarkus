@@ -71,7 +71,7 @@ public class QuarkusEntryPoint {
             InvocationTargetException, NoSuchMethodException {
         if (!Files.exists(appRoot.resolve(LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT))) {
             System.out.println("[ERROR] Re-augmentation was requested, " +
-                    "but the application wasn't built with 'quarkus.package.type=mutable-jar'");
+                    "but the application wasn't built with 'quarkus.package.jar.type=mutable-jar'");
             return;
         }
         try (ObjectInputStream in = new ObjectInputStream(

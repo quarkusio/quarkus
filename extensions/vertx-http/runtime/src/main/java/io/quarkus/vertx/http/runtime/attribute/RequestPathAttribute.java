@@ -1,21 +1,27 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import io.quarkus.vertx.http.runtime.filters.OriginalRequestContext;
 import io.vertx.ext.web.RoutingContext;
 
 public class RequestPathAttribute implements ExchangeAttribute {
 
     public static final String REQUEST_PATH = "%{REQUEST_PATH}";
     public static final String REQUEST_PATH_SHORT = "%R";
+    public static final String ORIGINAL_REQUEST_PATH = "%{<REQUEST_PATH}";
+    public static final String ORIGINAL_REQUEST_PATH_SHORT = "%<R";
 
-    public static final ExchangeAttribute INSTANCE = new RequestPathAttribute();
+    public static final ExchangeAttribute INSTANCE = new RequestPathAttribute(false);
+    public static final ExchangeAttribute INSTANCE_ORIGINAL_REQUEST = new RequestPathAttribute(true);
 
-    private RequestPathAttribute() {
+    private final boolean useOriginalRequest;
 
+    private RequestPathAttribute(boolean useOriginalRequest) {
+        this.useOriginalRequest = useOriginalRequest;
     }
 
     @Override
     public String readAttribute(final RoutingContext exchange) {
-        return exchange.request().path();
+        return useOriginalRequest ? OriginalRequestContext.getPath(exchange) : exchange.request().path();
     }
 
     @Override
@@ -32,6 +38,9 @@ public class RequestPathAttribute implements ExchangeAttribute {
 
         @Override
         public ExchangeAttribute build(final String token) {
+            if (token.equals(ORIGINAL_REQUEST_PATH) || token.equals(ORIGINAL_REQUEST_PATH_SHORT)) {
+                return INSTANCE_ORIGINAL_REQUEST;
+            }
             return token.equals(REQUEST_PATH) || token.equals(REQUEST_PATH_SHORT) ? INSTANCE : null;
         }
 

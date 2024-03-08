@@ -442,6 +442,21 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-confi
 |Vert.x MDC data (e.g. 'traceId' for OpenTelemetry)                           |          | `%{X,mdc-key}`
 |===
 
+Set `quarkus.http.access-log.consolidate-rerouted-requests=true` to enable support for the modifier `<`. This modifier can be used for requests that have been internally redirected to consult the original request.
+The following attributes support this modifier:
+
+
+[frame="topbot",options="header"]
+|===
+|Attribute                                                                    |Short Form|Long Form
+|First line of the request                                                    | `%<r`    | `%{<REQUEST_LINE}`
+|Request method                                                               | `%<m`    | `%{<METHOD}`
+|Request relative path                                                        | `%<R`    | `%{<REQUEST_PATH}`
+|Requested URL path                                                           | `%<U`    | `%{<REQUEST_URL}`
+|Query string (prepended with a '?' if it exists, otherwise an empty string)  | `%<q`    | `%{<QUERY_STRING}`
+|Query parameter                                                              |          | `%{<q,query_param_name}`
+|===
+
 [NOTE]
 ====
 Set `quarkus.http.record-request-start-time=true` to enable recording request start times when using any of the attributes related to logging request processing times.

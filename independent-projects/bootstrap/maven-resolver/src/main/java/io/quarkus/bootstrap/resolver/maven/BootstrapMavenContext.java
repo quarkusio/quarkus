@@ -1002,7 +1002,7 @@ public class BootstrapMavenContext {
         if (Files.isDirectory(path)) {
             path = path.resolve(LocalProject.POM_XML);
         }
-        return Files.exists(path) ? path : null;
+        return Files.exists(path) ? path.normalize() : null;
     }
 
     public Path getCurrentProjectBaseDir() {

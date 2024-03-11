@@ -85,6 +85,8 @@ updates:
       - dependency-name: net.revelc.code:impsort-maven-plugin
       - dependency-name: org.apache.maven.plugins:maven-invoker-plugin
       - dependency-name: org.codehaus.mojo:build-helper-maven-plugin
+      - dependency-name: org.codehaus.mojo:build-helper-maven-plugin
+      - dependency-name: org.bsc.maven:maven-processor-plugin
       # Narayana
       - dependency-name: org.jboss.narayana.jta:*
       - dependency-name: org.jboss.narayana.jts:*
@@ -213,6 +215,10 @@ updates:
       # Only use dependabot for micros (patch versions).
       - dependency-name: org.hibernate.*:*
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "org.bsc.maven:maven-processor-plugin"
+        # We require JDK 11, so we don't want to upgrade the "-jdk8" versions.
+        # Apparently patterns using wildcards are not supported here. Hopefully this will last until they drop these silly -jdk8 versions.
+        versions: [ "5.0-jdk8", "5.1-jdk8", "5.2-jdk8", "5.3-jdk8", "5.4-jdk8", "5.5-jdk8", "5.6-jdk8", "5.7-jdk8", "5.8-jdk8", "5.9-jdk8" ]
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/devtools/gradle"

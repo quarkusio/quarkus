@@ -373,57 +373,43 @@ Here is an example of how the preceding classes should be changed:
 .Author.java
 [source,java]
 ----
-    @ProtoFactory
-    public Author(String name, String surname) {
-        this.name = Objects.requireNonNull(name);
-        this.surname = Objects.requireNonNull(surname);
-    }
-
-    @ProtoField(number = 1)
-    public String getName() {
-        return name;
-    }
-
-    @ProtoField(number = 2)
-    public String getSurname() {
-        return surname;
-    }
+@Proto //<1>
+public record Author(String name, String surname) { //<2>
+}
 ----
+<1> Since Protostream 5.0, a single annotation is needed to generate a default mapping
+<2> Since Protostream 5.0, records are supported
+
+.Type.java
+[source,java]
+----
+@Proto
+public enum Type { //<1>
+    FANTASY,
+    PROGRAMMING
+}
+----
+<1> Enums are supported
 
 .Book.java
 [source,java]
 ----
-    @ProtoFactory
-    public Book(String title, String description, int publicationYear, Set<Author> authors) {
-        this.title = Objects.requireNonNull(title);
-        this.description = Objects.requireNonNull(description);
-        this.publicationYear = publicationYear;
-        this.authors = Objects.requireNonNull(authors);
-    }
-
-    @ProtoField(number = 1)
-    public String getTitle() {
-        return title;
-    }
-
-    @ProtoField(number = 2)
-    public String getDescription() {
-        return description;
-    }
-
-    @ProtoField(number = 3, defaultValue = "-1")
-    public int getPublicationYear() {
-        return publicationYear;
-    }
-
-    @ProtoField(number = 4)
-    public Set<Author> getAuthors() {
-        return authors;
-    }
+@Proto
+@Indexed // <1>
+public record Book(@Text String title, //<2>
+                   @Keyword(projectable = true, sortable = true, normalizer = "lowercase", indexNullAs = "unnamed", norms = false) //<3>
+                   String description,
+                   int publicationYear,
+                   Set<Author> authors, // <4>
+                   Type bookType,
+                   BigDecimal price) { // <5>
+}
 ----
-
-If your classes have only mutable fields, then the `ProtoFactory` annotation
-is not required, assuming your class has a no arg constructor.
+<1> Indicates that the entity will be indexed. Necessary to perform distributed full-text query operations.
+<2> Indicates the `title` should be indexed as text
+<3> Indicates the `description` field field should be indexed as a Keyword.
+<4> Collections are supported
+<5> Protostream provides default Protobuf mappers for commonly used types as `BigDecimal`, included in the `org.infinispan.protostream.types` package.
 
 Then all that is required is a very simple `GeneratedSchema` interface with an annotation
 on it to specify configuration settings
@@ -432,23 +418,24 @@ on it to specify configuration settings
 [source,java]
 ----
 import org.infinispan.protostream.GeneratedSchema;
-import org.infinispan.protostream.annotations.AutoProtoSchemaBuilder;
+import org.infinispan.protostream.annotations.ProtoSchema;
 import org.infinispan.protostream.types.java.math.BigDecimalAdapter;
 
-@AutoProtoSchemaBuilder(includeClasses = { Book.class, Author.class, BigDecimalAdapter.class }, schemaPackageName = "book_sample")
+@ProtoSchema(includeClasses = { Book.class, Author.class, BigDecimalAdapter.class }, schemaPackageName = "book_sample")
 interface BookStoreSchema extends GeneratedSchema {
 }
 ----
 
 [TIP]
 ====
-Protostream provides default Protobuf mappers for commonly used types as `BigDecimal`, included in the `org.infinispan.protostream.types` package.
+You can use the `basePackages` property to scan a full package containing your classes.
+You can override the default marshalling by using the `@Protofield` annotation.
 ====
 
 So in this case we will automatically generate the marshaller and schemas for the included classes and
 place them in the schema package automatically. The package does not have to be provided, but if you use Infinispan search capabilities, you must know the generated package.
 
-NOTE: In Quarkus the `schemaFileName` and `schemaFilePath` attributes should NOT be set on the `AutoProtoSchemaBuilder` annotation. Setting either attributes causes native runtime errors.
+NOTE: In Quarkus the `schemaFileName` and `schemaFilePath` attributes should NOT be set on the `ProtoSchema` annotation. Setting either attributes causes native runtime errors.
 
 === Custom serialization
 

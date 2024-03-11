@@ -142,7 +142,7 @@
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>5.10.2</junit.jupiter.version>
         <infinispan.version>15.0.0.CR1</infinispan.version>
-        <infinispan.protostream.version>5.0.0.CR2</infinispan.protostream.version>
+        <infinispan.protostream.version>5.0.1.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
         <netty.version>4.1.107.Final</netty.version>
         <brotli4j.version>1.14.0</brotli4j.version>

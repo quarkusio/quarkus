@@ -79,7 +79,7 @@ public class TestServlet {
     @Produces(MediaType.TEXT_PLAIN)
     public String getCachedValue(@PathParam("id") String id) {
         Book book = cache.get(id);
-        return book != null ? book.getTitle() : "NULL";
+        return book != null ? book.title() : "NULL";
     }
 
     @Path("query/{id}")
@@ -96,9 +96,9 @@ public class TestServlet {
         }
 
         return list.stream()
-                .map(Book::getAuthors)
+                .map(Book::authors)
                 .flatMap(Set::stream)
-                .map(author -> author.getName() + " " + author.getSurname())
+                .map(author -> author.name() + " " + author.surname())
                 .sorted()
                 .collect(Collectors.joining(",", "[", "]"));
     }
@@ -114,9 +114,9 @@ public class TestServlet {
             return "No one found for " + name;
         }
         return list.stream()
-                .map(Book::getAuthors)
+                .map(Book::authors)
                 .flatMap(Set::stream)
-                .map(author -> author.getName() + " " + author.getSurname())
+                .map(author -> author.name() + " " + author.surname())
                 .sorted()
                 .collect(Collectors.joining(",", "[", "]"));
     }
@@ -160,9 +160,10 @@ public class TestServlet {
     @Produces(MediaType.TEXT_PLAIN)
     public String continuousQuery() {
         return cacheSetup.getMatches().values().stream()
-                .mapToInt(Book::getPublicationYear)
+                .mapToInt(Book::publicationYear)
                 .mapToObj(Integer::toString)
                 .collect(Collectors.joining(","));
+
     }
 
     @Path("nearcache")
@@ -268,8 +269,8 @@ public class TestServlet {
     @Path("create-cache-default-config/authors")
     @GET
     public String magazineQuery() {
-        List<String> names1 = authorsCacheDefault.values().stream().map(a -> a.getName()).collect(Collectors.toList());
-        List<String> names2 = authorsCacheAnother.values().stream().map(a -> a.getName())
+        List<String> names1 = authorsCacheDefault.values().stream().map(a -> a.name()).collect(Collectors.toList());
+        List<String> names2 = authorsCacheAnother.values().stream().map(a -> a.name())
                 .collect(Collectors.toList());
 
         names1.addAll(names2);

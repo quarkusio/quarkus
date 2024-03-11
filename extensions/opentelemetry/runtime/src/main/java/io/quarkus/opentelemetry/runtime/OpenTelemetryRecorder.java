@@ -21,6 +21,7 @@ import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.DurationConverter;
+import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
 import io.vertx.core.Vertx;
 
@@ -85,22 +86,33 @@ public class OpenTelemetryRecorder {
                 // instruct OTel that we are using the AutoConfiguredOpenTelemetrySdk
                 oTelConfigs.put("otel.java.global-autoconfigure.enabled", "true");
 
+                Map<String, String> otel = new HashMap<>();
+                Map<String, String> quarkus = new HashMap<>();
                 // load new properties
                 for (String propertyName : config.getPropertyNames()) {
                     if (propertyName.startsWith("quarkus.otel.")) {
-                        String value = getValue(config, propertyName);
-                        oTelConfigs.put(propertyName.substring(8), value);
+                        String value = config.getValue(propertyName, String.class);
+                        if (propertyName.endsWith("timeout") || propertyName.endsWith("delay")) {
+                            value = OTelDurationConverter.INSTANCE.convert(value);
+                        }
+                        quarkus.put(propertyName.substring(8), value);
+                    } else if (propertyName.startsWith("otel.")) {
+                        ConfigValue value = config.getConfigValue(propertyName);
+                        if (value.getValue() != null) {
+                            otel.put(propertyName, value.getValue());
+                        }
                     }
                 }
-                return oTelConfigs;
-            }
 
-            private String getValue(SmallRyeConfig config, String propertyName) {
-                if (propertyName.endsWith("timeout") || propertyName.endsWith("delay")) {
-                    return config.getValue(propertyName, OTelDurationConverter.INSTANCE);
+                if (oTelRuntimeConfig.mpCompatibility()) {
+                    oTelConfigs.putAll(quarkus);
+                    oTelConfigs.putAll(otel);
                 } else {
-                    return config.getValue(propertyName, String.class);
+                    oTelConfigs.putAll(otel);
+                    oTelConfigs.putAll(quarkus);
                 }
+
+                return oTelConfigs;
             }
         };
     }

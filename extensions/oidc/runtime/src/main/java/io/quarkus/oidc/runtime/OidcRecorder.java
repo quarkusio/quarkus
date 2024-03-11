@@ -36,6 +36,7 @@ import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.TenantIdentityProvider;
 import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
@@ -487,8 +488,11 @@ public class OidcRecorder {
             metadataUni = Uni.createFrom().item(createLocalMetadata(oidcConfig, authServerUriString));
         } else {
             final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
+            OidcRequestContextProperties contextProps = new OidcRequestContextProperties(
+                    Map.of(OidcUtils.TENANT_ID_ATTRIBUTE, oidcConfig.getTenantId().orElse(OidcUtils.DEFAULT_TENANT_ID)));
             metadataUni = OidcCommonUtils
-                    .discoverMetadata(client, oidcRequestFilters, authServerUriString, connectionDelayInMillisecs, mutinyVertx,
+                    .discoverMetadata(client, oidcRequestFilters, contextProps, authServerUriString, connectionDelayInMillisecs,
+                            mutinyVertx,
                             oidcConfig.useBlockingDnsLookup)
                     .onItem()
                     .transform(new Function<JsonObject, OidcConfigurationMetadata>() {

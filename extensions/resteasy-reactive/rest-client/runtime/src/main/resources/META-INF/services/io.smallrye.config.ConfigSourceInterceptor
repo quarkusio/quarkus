@@ -1,1 +1,2 @@
 io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfigFallbackInterceptor
+io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfigRelocateInterceptor

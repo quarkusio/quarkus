@@ -12,12 +12,10 @@ metadata:
   status: "stable"
   guide: "https://quarkus.io/guides/rest-client"
   codestart:
-    name: "rest"
-    kind: "core"
+    name: "rest-client"
     languages:
       - "java"
       - "kotlin"
-      - "scala"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   config:
   - "quarkus.rest-client-reactive."

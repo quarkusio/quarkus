@@ -358,7 +358,7 @@ One important note is that according to the https://www.rfc-editor.org/rfc/rfc26
 == Async Support
 
 The rest client supports asynchronous rest calls.
-Async support comes in 2 flavors: you can return a `CompletionStage` or a `Uni` (requires the `quarkus-rest-client-mutiny` extension).
+Async support comes in 2 flavors: you can return a `CompletionStage` or a `Uni` (requires the `quarkus-resteasy-client-mutiny` extension).
 Let's see it in action by adding a `getByIdAsync` method in our `ExtensionsService` REST interface. The code should look like:
 
 [source, java]

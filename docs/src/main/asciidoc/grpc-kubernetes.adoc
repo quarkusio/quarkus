@@ -84,7 +84,7 @@ implementation("io.quarkus:quarkus-smallrye-health")
 
 TIP: More information about the health extension can be found in xref:smallrye-health.adoc[the SmallRye Health guide].
 
-By the default, this extension will configure the probes to use the HTTP server (which is provided by some extensions like the Quarkus RESTEasy reactive extension). Internally, this probe will also use xref:grpc-service-implementation.adoc#health[the generated gRPC Health services].
+By default, this extension will configure the probes to use the HTTP server (which is provided by some extensions like the Quarkus REST (formerly RESTEasy Reactive) extension). Internally, this probe will also use xref:grpc-service-implementation.adoc#health[the generated gRPC Health services].
 
 If your application does not use any Quarkus extension that exposes an HTTP server, you can still configure the probes to directly use the gRPC Health service by adding the property `quarkus.kubernetes.readiness-probe.grpc-action-enabled=true` into your configuration:
 

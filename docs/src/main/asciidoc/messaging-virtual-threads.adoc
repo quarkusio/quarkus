@@ -84,7 +84,7 @@ or to use the Quarkus Dev mode, insert the following to the `quarkus-maven-plugi
 ----
 
 Then you can start using the annotation `@RunOnVirtualThread` on your consumer methods also annotated with `@Incoming`.
-In the following example we'll use the xref:rest-client-reactive.adoc[RESTEasy Reactive REST Client] to make a blocking call to a REST endpoint:
+In the following example we'll use the xref:rest-client.adoc[REST Client] to make a blocking call to a REST endpoint:
 
 [source, java]
 ----

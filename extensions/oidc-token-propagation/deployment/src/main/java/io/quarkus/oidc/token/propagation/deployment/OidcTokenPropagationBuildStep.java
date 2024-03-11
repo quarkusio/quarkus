@@ -82,7 +82,8 @@ public class OidcTokenPropagationBuildStep {
         }
 
         throw new ConfigurationException(
-                "Configuration property 'quarkus.oidc-token-propagation.enabled-during-authentication' is set to " +
+                "Configuration property 'quarkus.resteasy-client-oidc-token-propagation.enabled-during-authentication' is set to "
+                        +
                         "'true', however this configuration property is only supported when either 'quarkus-oidc' or " +
                         "'quarkus-smallrye-jwt' extensions are present.");
     }

@@ -27,7 +27,7 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
     // note: We can't use constructor injection for these fields because they are registered by RESTEasy
     // which doesn't know about CDI at the point of registration
 
-    private static final String ERROR_MSG = "OIDC Token Propagation requires a safe (isolated) Vert.x sub-context because configuration property 'quarkus.oidc-token-propagation.enabled-during-authentication' has been set to true, but the current context hasn't been flagged as such.";
+    private static final String ERROR_MSG = "OIDC Token Propagation requires a safe (isolated) Vert.x sub-context because configuration property 'quarkus.resteasy-client-oidc-token-propagation.enabled-during-authentication' has been set to true, but the current context hasn't been flagged as such.";
     private final boolean enabledDuringAuthentication;
     private final Instance<TokenCredential> accessToken;
 
@@ -63,7 +63,8 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
     }
 
     protected boolean isExchangeToken() {
-        return ConfigProvider.getConfig().getValue("quarkus.oidc-token-propagation.exchange-token", boolean.class);
+        return ConfigProvider.getConfig().getValue("quarkus.resteasy-client-oidc-token-propagation.exchange-token",
+                boolean.class);
     }
 
     @Override
@@ -88,7 +89,8 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
     }
 
     protected String getClientName() {
-        return ConfigProvider.getConfig().getOptionalValue("quarkus.oidc-token-propagation.client-name", String.class)
+        return ConfigProvider.getConfig()
+                .getOptionalValue("quarkus.resteasy-client-oidc-token-propagation.client-name", String.class)
                 .orElse(null);
     }
 

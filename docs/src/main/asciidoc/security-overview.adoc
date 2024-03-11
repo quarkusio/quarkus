@@ -62,7 +62,7 @@ For more information about the CORS filter Quarkus provides, see the xref:securi
 [[csrf-prevention]]
 === Cross-Site Request Forgery (CSRF) prevention
 
-Quarkus Security provides a RESTEasy Reactive filter that can protect your applications against a https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery] attack.
+Quarkus Security provides a Quarkus REST (formerly RESTEasy Reactive) filter that can protect your applications against a https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery] attack.
 For more information, see the Quarkus xref:security-csrf-prevention.adoc[Cross-Site Request Forgery Prevention] guide.
 
 [[samesite-cookies]]
@@ -85,8 +85,8 @@ For more information, see the Quarkus xref:config.adoc#secrets-in-environment-pr
 [[secure-serialization]]
 === Secure serialization
 
-If your Quarkus Security architecture includes RESTEasy Reactive and Jackson, Quarkus can limit the fields included in JSON serialization based on the configured security.
-For more information, see the xref:resteasy-reactive.adoc#secure-serialization[JSON serialization] section of the Quarkus “Writing REST services with RESTEasy Reactive” guide.
+If your Quarkus Security architecture includes Quarkus REST (formerly RESTEasy Reactive) and Jackson, Quarkus can limit the fields included in JSON serialization based on the configured security.
+For more information, see the xref:rest.adoc#secure-serialization[JSON serialization] section of the Quarkus “Writing REST services with Quarkus REST (formerly RESTEasy Reactive)” guide.
 
 
 [[rest-data-panache]]

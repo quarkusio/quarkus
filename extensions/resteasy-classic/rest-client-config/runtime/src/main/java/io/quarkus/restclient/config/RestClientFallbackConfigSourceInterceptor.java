@@ -47,8 +47,6 @@ public class RestClientFallbackConfigSourceInterceptor extends FallbackConfigSou
         GLOBAL_PROPERTIES = new HashMap<>();
         GLOBAL_PROPERTIES.put("quarkus.rest-client.multipart-post-encoder-mode",
                 "quarkus.rest.client.multipart-post-encoder-mode");
-        GLOBAL_PROPERTIES.put("quarkus.rest-client.disable-smart-produces",
-                "quarkus.rest-client-reactive.disable-smart-produces");
 
         GLOBAL_PROPERTIES_INVERSE = inverseMap(GLOBAL_PROPERTIES);
     }

@@ -6,7 +6,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 /**
  * Build time configuration for OIDC Token Propagation Reactive.
  */
-@ConfigRoot
+@ConfigRoot(name = "rest-client-oidc-token-propagation")
 public class OidcTokenPropagationReactiveBuildTimeConfig {
     /**
      * If the OIDC Token Reactive Propagation is enabled.

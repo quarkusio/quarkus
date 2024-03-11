@@ -6,7 +6,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(name = "oidc-token-propagation-reactive", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+@ConfigRoot(name = "rest-client-oidc-token-propagation", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class OidcTokenPropagationReactiveConfig {
     /**
      * Exchange the current token with OpenId Connect Provider for a new token using either

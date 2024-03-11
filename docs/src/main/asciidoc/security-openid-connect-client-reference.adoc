@@ -14,8 +14,8 @@ You can use Quarkus extensions for OpenID Connect and OAuth 2.0 access token man
 
 This includes the following:
 
- - Using `quarkus-oidc-client`, `quarkus-oidc-client-reactive-filter` and `quarkus-oidc-client-filter` extensions to acquire and refresh access tokens from OpenID Connect and OAuth 2.0 compliant Authorization Servers such as link:https://www.keycloak.org[Keycloak].
- - Using `quarkus-oidc-token-propagation-reactive` and `quarkus-oidc-token-propagation` extensions to propagate the current `Bearer` or `Authorization Code Flow` access tokens.
+ - Using `quarkus-oidc-client`, `quarkus-rest-client-oidc-filter` and `quarkus-resteasy-client-oidc-filter` extensions to acquire and refresh access tokens from OpenID Connect and OAuth 2.0 compliant Authorization Servers such as link:https://www.keycloak.org[Keycloak].
+ - Using `quarkus-rest-client-oidc-token-propagation` and `quarkus-resteasy-client-oidc-token-propagation` extensions to propagate the current `Bearer` or `Authorization Code Flow` access tokens.
 
 The access tokens managed by these extensions can be used as HTTP Authorization Bearer tokens to access the remote services.
 
@@ -191,7 +191,7 @@ public class OidcClientResource {
 
         Tokens tokens = currentTokens;
         if (tokens.isAccessTokenExpired()) {
-            // Add @Blocking method annotation if this code is used with Reactive RestClient
+            // Add @Blocking method annotation if this code is used with the REST Client
             tokens = client.refreshTokens(tokens.getRefreshToken()).await().indefinitely();
             currentTokens = tokens;
         }
@@ -378,7 +378,7 @@ public class OidcClientRequestCustomFilter implements ClientRequestFilter {
 }
 ----
 
-[[oidc-client-reactive-filter]]
+[[rest-client-oidc-filter]]
 === Use OidcClient in RestClient Reactive ClientFilter
 
 Add the following Maven Dependency:
@@ -387,15 +387,15 @@ Add the following Maven Dependency:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-oidc-client-reactive-filter</artifactId>
+    <artifactId>quarkus-rest-client-oidc-filter</artifactId>
 </dependency>
 ----
 
 Note it will also bring `io.quarkus:quarkus-oidc-client`.
 
-`quarkus-oidc-client-reactive-filter` extension provides `io.quarkus.oidc.client.filter.OidcClientRequestReactiveFilter`.
+`quarkus-rest-client-oidc-filter` extension provides `io.quarkus.oidc.client.filter.OidcClientRequestReactiveFilter`.
 
-It works similarly to the way `OidcClientRequestFilter` does (see <<oidc-client-filter,Use OidcClient in MicroProfile RestClient client filter>>) - it uses `OidcClient` to acquire the access token, refresh it if needed, and set it as an HTTP `Authorization` `Bearer` scheme value. The difference is that it works with xref:rest-client-reactive.adoc[Reactive RestClient] and implements a non-blocking client filter that does not block the current IO thread when acquiring or refreshing the tokens.
+It works similarly to the way `OidcClientRequestFilter` does (see <<resteasy-client-oidc-filter,Use OidcClient in MicroProfile RestClient client filter>>) - it uses `OidcClient` to acquire the access token, refresh it if needed, and set it as an HTTP `Authorization` `Bearer` scheme value. The difference is that it works with xref:rest-client.adoc[Reactive RestClient] and implements a non-blocking client filter that does not block the current IO thread when acquiring or refreshing the tokens.
 
 `OidcClientRequestReactiveFilter` delays an initial token acquisition until it is executed to avoid blocking an IO thread.
 
@@ -437,8 +437,8 @@ public interface ProtectedResourceService {
 }
 ----
 
-`OidcClientRequestReactiveFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-client-reactive-filter.client-name` configuration property.
-You can also select `OidcClient` by setting the `value` attribute of the `@OidcClientFilter` annotation. The client name set through annotation has higher priority than the `quarkus.oidc-client-reactive-filter.client-name` configuration property.
+`OidcClientRequestReactiveFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.rest-client-oidc-filter.client-name` configuration property.
+You can also select `OidcClient` by setting the `value` attribute of the `@OidcClientFilter` annotation. The client name set through annotation has higher priority than the `quarkus.rest-client-oidc-filter.client-name` configuration property.
 For example, given <<use-oidc-clients,this>> `jwt-secret` named OIDC client declaration, you can refer to this client like this:
 
 [source,java]
@@ -458,7 +458,7 @@ public interface ProtectedResourceService {
 }
 ----
 
-[[oidc-client-filter]]
+[[resteasy-client-oidc-filter]]
 === Use OidcClient in RestClient ClientFilter
 
 Add the following Maven Dependency:
@@ -467,13 +467,13 @@ Add the following Maven Dependency:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-oidc-client-filter</artifactId>
+    <artifactId>quarkus-resteasy-client-oidc-filter</artifactId>
 </dependency>
 ----
 
 Note it will also bring `io.quarkus:quarkus-oidc-client`.
 
-`quarkus-oidc-client-filter` extension provides `io.quarkus.oidc.client.filter.OidcClientRequestFilter` Jakarta REST ClientRequestFilter which uses `OidcClient` to acquire the access token, refresh it if needed, and set it as an HTTP `Authorization` `Bearer` scheme value.
+`quarkus-resteasy-client-oidc-filter` extension provides `io.quarkus.oidc.client.filter.OidcClientRequestFilter` Jakarta REST ClientRequestFilter which uses `OidcClient` to acquire the access token, refresh it if needed, and set it as an HTTP `Authorization` `Bearer` scheme value.
 
 By default, this filter will get `OidcClient` to acquire the first pair of access and refresh tokens at its initialization time. If the access tokens are short-lived and refresh tokens are unavailable, then the token acquisition should be delayed with `quarkus.oidc-client.early-tokens-acquisition=false`.
 
@@ -512,10 +512,10 @@ public interface ProtectedResourceService {
 }
 ----
 
-Alternatively, `OidcClientRequestFilter` can be registered automatically with all MP Rest or Jakarta REST clients if the `quarkus.oidc-client-filter.register-filter=true` property is set.
+Alternatively, `OidcClientRequestFilter` can be registered automatically with all MP Rest or Jakarta REST clients if the `quarkus.resteasy-client-oidc-filter.register-filter=true` property is set.
 
-`OidcClientRequestFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-client-filter.client-name` configuration property.
-You can also select `OidcClient` by setting the `value` attribute of the `@OidcClientFilter` annotation. The client name set through annotation has higher priority than the `quarkus.oidc-client-filter.client-name` configuration property.
+`OidcClientRequestFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.resteasy-client-oidc-filter.client-name` configuration property.
+You can also select `OidcClient` by setting the `value` attribute of the `@OidcClientFilter` annotation. The client name set through annotation has higher priority than the `quarkus.resteasy-client-oidc-filter.client-name` configuration property.
 For example, given <<use-oidc-clients,this>> `jwt-secret` named OIDC client declaration, you can refer to this client like this:
 
 [source,java]
@@ -721,7 +721,7 @@ You can use `OidcClient` methods for acquiring or refreshing tokens which accept
 
 If you work work with the OIDC client filters then you must register a custom filter which will provide this assertion.
 
-Here is an example of the RestEasy Reactive custom filter:
+Here is an example of the Quarkus REST (formerly RESTEasy Reactive) custom filter:
 
 [source,java]
 ----
@@ -981,7 +981,7 @@ public class OidcRequestCustomizer implements OidcRequestFilter {
 [[token-propagation-reactive]]
 == Token Propagation Reactive
 
-The `quarkus-oidc-token-propagation-reactive` extension provides a RestEasy Reactive Client, `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter`, that simplifies the propagation of authentication information. This client propagates the xref:security-oidc-bearer-token-authentication.adoc[bearer token] present in the currently active request or the token acquired from the xref:security-oidc-code-flow-authentication.adoc[authorization code flow mechanism] as the HTTP `Authorization` header's `Bearer` scheme value.
+The `quarkus-rest-client-oidc-token-propagation` extension provides a REST Client, `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter`, that simplifies the propagation of authentication information. This client propagates the xref:security-oidc-bearer-token-authentication.adoc[bearer token] present in the currently active request or the token acquired from the xref:security-oidc-code-flow-authentication.adoc[authorization code flow mechanism] as the HTTP `Authorization` header's `Bearer` scheme value.
 
 You can selectively register `AccessTokenRequestReactiveFilter` by using either `io.quarkus.oidc.token.propagation.AccessToken` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotation, for example:
 
@@ -1049,7 +1049,7 @@ quarkus.oidc-client.grant.type=jwt
 quarkus.oidc-client.grant-options.jwt.requested_token_use=on_behalf_of
 quarkus.oidc-client.scopes=https://graph.microsoft.com/user.read,offline_access
 
-quarkus.oidc-token-propagation-reactive.exchange-token=true
+quarkus.oidc-token-propagation.exchange-token=true
 ----
 
 `AccessTokenRequestReactiveFilter` uses a default `OidcClient` by default. A named `OidcClient` can be selected with a `quarkus.oidc-token-propagation-reactive.client-name` configuration property or with the `io.quarkus.oidc.token.propagation.AccessToken#exchangeTokenClient` annotation attribute.
@@ -1057,7 +1057,7 @@ quarkus.oidc-token-propagation-reactive.exchange-token=true
 [[token-propagation]]
 == Token Propagation
 
-The `quarkus-oidc-token-propagation` extension provides two Jakarta REST `jakarta.ws.rs.client.ClientRequestFilter` class implementations that simplify the propagation of authentication information.
+The `quarkus-resteasy-client-oidc-token-propagation` extension provides two Jakarta REST `jakarta.ws.rs.client.ClientRequestFilter` class implementations that simplify the propagation of authentication information.
 `io.quarkus.oidc.token.propagation.AccessTokenRequestFilter` propagates the xref:security-oidc-bearer-token-authentication.adoc[Bearer token] present in the current active request or the token acquired from the xref:security-oidc-code-flow-authentication.adoc[Authorization code flow mechanism], as the HTTP `Authorization` header's `Bearer` scheme value.
 The `io.quarkus.oidc.token.propagation.JsonWebTokenRequestFilter` provides the same functionality but, in addition, provides support for JWT tokens.
 
@@ -1183,7 +1183,7 @@ public interface ProtectedResourceService {
 }
 ----
 
-Alternatively, `JsonWebTokenRequestFilter` can be registered automatically with all MicroProfile REST or Jakarta REST clients if both `quarkus.oidc-token-propagation.register-filter` and `quarkus.oidc-token-propagation.json-web-token` properties are set to `true`.
+Alternatively, `JsonWebTokenRequestFilter` can be registered automatically with all MicroProfile REST or Jakarta REST clients if both `quarkus.oidc-token-propagation.register-filter` and `quarkus.resteasy-client-oidc-token-propagation.json-web-token` properties are set to `true`.
 
 ==== Update token before propagation
 
@@ -1191,7 +1191,7 @@ If the injected token needs to have its `iss` (issuer) or `aud` (audience) claim
 
 [source,properties]
 ----
-quarkus.oidc-token-propagation.secure-json-web-token=true
+quarkus.resteasy-client-oidc-token-propagation.secure-json-web-token=true
 smallrye.jwt.sign.key.location=/privateKey.pem
 # Set a new issuer
 smallrye.jwt.new-token.issuer=http://frontend-resource
@@ -1207,7 +1207,7 @@ As mentioned, use `AccessTokenRequestFilter` if you work with Keycloak or an Ope
 === Testing
 
 You can generate the tokens as described in xref:security-oidc-bearer-token-authentication.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] section.
-Prepare the REST test endpoints. You can have the test front-end endpoint, which uses the injected MP REST client with a registered token propagation filter, call the downstream endpoint. For example, see the `integration-tests/oidc-token-propagation` in the `main` Quarkus repository.
+Prepare the REST test endpoints. You can have the test front-end endpoint, which uses the injected MP REST client with a registered token propagation filter, call the downstream endpoint. For example, see the `integration-tests/resteasy-client-oidc-token-propagation` in the `main` Quarkus repository.
 
 [[reactive-token-propagation]]
 == Token Propagation Reactive
@@ -1218,13 +1218,13 @@ Add the following Maven Dependency:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-oidc-token-propagation-reactive</artifactId>
+    <artifactId>quarkus-rest-client-resteasy-client-oidc-token-propagation</artifactId>
 </dependency>
 ----
 
-The `quarkus-oidc-token-propagation-reactive` extension provides `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter` which can be used to propagate the current `Bearer` or `Authorization Code Flow` access tokens.
+The `quarkus-rest-client-resteasy-client-oidc-token-propagation` extension provides `io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter` which can be used to propagate the current `Bearer` or `Authorization Code Flow` access tokens.
 
-The `quarkus-oidc-token-propagation-reactive` extension (as opposed to the non-reactive `quarkus-oidc-token-propagation` extension) does not currently support the exchanging or resigning of the tokens before the propagation.
+The `quarkus-rest-client-resteasy-client-oidc-token-propagation` extension (as opposed to the non-reactive `quarkus-resteasy-client-oidc-token-propagation` extension) does not currently support the exchanging or resigning of the tokens before the propagation.
 However, these features might be added in the future.
 
 [[oidc-client-graphql-client]]

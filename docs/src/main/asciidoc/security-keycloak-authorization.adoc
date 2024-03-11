@@ -82,7 +82,7 @@ First, we need a new project.
 Create a new project with the following command:
 
 :create-app-artifact-id: security-keycloak-authorization-quickstart
-:create-app-extensions: oidc,keycloak-authorization,resteasy-reactive-jackson
+:create-app-extensions: oidc,keycloak-authorization,rest-jackson
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a project, importing the `keycloak-authorization` extension.

@@ -34,7 +34,7 @@ The solution is located in the `config-quickstart` link:{quickstarts-tree-url}/c
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: config-quickstart
-:create-app-extensions: resteasy-reactive
+:create-app-extensions: rest
 include::{includes}/devtools/create-app.adoc[]
 
 It generates:

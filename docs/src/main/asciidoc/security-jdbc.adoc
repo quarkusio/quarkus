@@ -43,7 +43,7 @@ The solution is located in the `security-jdbc-quickstart` link:{quickstarts-tree
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-jdbc-quickstart
-:create-app-extensions: elytron-security-jdbc,jdbc-postgresql,resteasy-reactive
+:create-app-extensions: elytron-security-jdbc,jdbc-postgresql,rest
 include::{includes}/devtools/create-app.adoc[]
 
 [NOTE]

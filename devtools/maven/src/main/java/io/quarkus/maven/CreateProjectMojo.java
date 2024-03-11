@@ -117,8 +117,8 @@ public class CreateProjectMojo extends AbstractMojo {
     private String javaVersion;
 
     /**
-     * The {@link #path} will define the REST path of the generated code when picking only one of those extensions resteasy,
-     * resteasy-reactive and spring-web.
+     * The {@link #path} will define the REST path of the generated code when picking only one of those extensions REST,
+     * RESTEasy Classic and Spring-Web.
      * <br />
      * If more than one of those extensions are picked, this parameter will be ignored.
      * <br />
@@ -130,8 +130,8 @@ public class CreateProjectMojo extends AbstractMojo {
     private String path;
 
     /**
-     * The {@link #className} will define the generated class names when picking only one of those extensions resteasy,
-     * resteasy-reactive and spring-web.
+     * The {@link #className} will define the generated class names when picking only one of those extensions REST,
+     * RESTEasy Classic and Spring-Web.
      * <br />
      * If more than one of those extensions are picked, then only the package name part will be used as {@link #packageName}
      * <br />

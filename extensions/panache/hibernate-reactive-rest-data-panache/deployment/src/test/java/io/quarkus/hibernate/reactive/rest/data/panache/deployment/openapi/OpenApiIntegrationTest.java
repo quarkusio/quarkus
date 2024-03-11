@@ -41,7 +41,7 @@ class OpenApiIntegrationTest {
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-smallrye-openapi-deployment", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-reactive-pg-client-deployment", Version.getVersion()),
-                    Dependency.of("io.quarkus", "quarkus-resteasy-reactive-jsonb-deployment", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-rest-jsonb-deployment", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-security-deployment", Version.getVersion())))
             .setRun(true);
 

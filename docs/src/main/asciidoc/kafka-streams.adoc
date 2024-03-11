@@ -233,11 +233,11 @@ which will run the Kafka Streams pipeline.
 Create another project like so:
 
 :create-app-artifact-id: kafka-streams-quickstart-aggregator
-:create-app-extensions: kafka-streams,resteasy-reactive-jackson
+:create-app-extensions: kafka-streams,rest-jackson
 :create-app-post-command: mv kafka-streams-quickstart-aggregator aggregator
 include::{includes}/devtools/create-app.adoc[]
 
-This creates the `aggregator` project with the Quarkus extension for Kafka Streams and with the Jackson support for RESTEasy Reactive.
+This creates the `aggregator` project with the Quarkus extension for Kafka Streams and with the Jackson support for Quarkus REST (formerly RESTEasy Reactive).
 
 If you already have your Quarkus project configured, you can add the `kafka-streams` extension
 to your project by running the following command in your project base directory:

@@ -75,7 +75,7 @@ You can use either Hibernate ORM or Hibernate Reactive.
 ** To create the Maven project with Hibernate ORM, use the following command:
 
 :create-app-artifact-id: security-jpa-quickstart
-:create-app-extensions: security-jpa,jdbc-postgresql,resteasy-reactive,hibernate-orm-panache
+:create-app-extensions: security-jpa,jdbc-postgresql,rest,hibernate-orm-panache
 include::{includes}/devtools/create-app.adoc[]
 
 * To add the Jakarta Persistence extension to an existing Maven project, complete one of the following steps:

@@ -39,18 +39,6 @@ public class RestClientsConfig {
     private final Map<String, RestClientConfig> configs = new ConcurrentHashMap<>();
 
     /**
-     * By default, REST Client Reactive uses text/plain content type for String values
-     * and application/json for everything else.
-     * <p>
-     * MicroProfile Rest Client spec requires the implementations to always default to application/json.
-     * This build item disables the "smart" behavior of RESTEasy Reactive to comply to the spec.
-     * <p>
-     * This property is applicable to reactive REST clients only.
-     */
-    @ConfigItem(defaultValue = "false")
-    public Optional<Boolean> disableSmartProduces;
-
-    /**
      * Mode in which the form data are encoded. Possible values are `HTML5`, `RFC1738` and `RFC3986`.
      * The modes are described in the
      * <a href="https://netty.io/4.1/api/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.EncoderMode.html">Netty
@@ -58,7 +46,7 @@ public class RestClientsConfig {
      * <p>
      * By default, Rest Client Reactive uses RFC1738.
      * <p>
-     * This property is applicable to reactive REST clients only.
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigItem
     public Optional<String> multipartPostEncoderMode;
@@ -77,7 +65,7 @@ public class RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      * <p>
-     * This property is applicable to reactive REST clients only.
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigItem
     public Optional<String> proxyUser;
@@ -87,7 +75,7 @@ public class RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      * <p>
-     * This property is applicable to reactive REST clients only.
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigItem
     public Optional<String> proxyPassword;
@@ -98,7 +86,7 @@ public class RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      * <p>
-     * This property is applicable to reactive REST clients only.
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigItem
     public Optional<String> nonProxyHosts;
@@ -127,7 +115,7 @@ public class RestClientsConfig {
      * If true, the REST clients will not provide additional contextual information (like REST client class and method
      * names) when exception occurs during a client invocation.
      * <p>
-     * This property is applicable to reactive REST clients only.
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigItem(defaultValue = "false")
     public boolean disableContextualErrorMessages;
@@ -137,7 +125,7 @@ public class RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      * <p>
-     * This property is applicable to reactive REST clients only.
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigItem
     public Optional<String> userAgent;
@@ -186,7 +174,7 @@ public class RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      * <p>
-     * This property is applicable to reactive REST clients only.
+     * This property is not applicable to the RESTEasy Client.
      */
     @ConfigItem
     public Optional<Integer> maxRedirects;

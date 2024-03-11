@@ -43,10 +43,11 @@ public final class RestClientConfigUtils {
                     String.format(QUARKUS_REST_SCOPE_FORMAT, restClientInterface.simpleName()),
                     String.class);
         }
-        if (scopeConfig.isEmpty()) { // "global" rest-config property as a fallback
-            scopeConfig = config.getOptionalValue(GLOBAL_REST_SCOPE_FORMAT, String.class);
-        }
         return scopeConfig;
+    }
+
+    public static Optional<String> getDefaultScope(Config config) {
+        return config.getOptionalValue(GLOBAL_REST_SCOPE_FORMAT, String.class);
     }
 
 }

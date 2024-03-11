@@ -6,7 +6,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(name = "oidc-client-reactive-filter", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+@ConfigRoot(name = "rest-client-oidc-filter", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class OidcClientReactiveFilterConfig {
 
     /**

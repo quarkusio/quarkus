@@ -85,7 +85,7 @@ In Quarkus, the support of virtual thread is implemented using the link:{runonvt
 This section briefly overviews the rationale and how to use it.
 There are dedicated guides for extensions supporting that annotation, such as:
 
-- xref:./resteasy-reactive-virtual-threads.adoc[Virtual threads in REST applications]
+- xref:./rest-virtual-threads.adoc[Virtual threads in REST applications]
 - xref:./messaging-virtual-threads.adoc[Virtual threads in reactive messaging applications]
 - xref:./grpc-virtual-threads.adoc[Virtual threads in gRPC services]
 - xref:./scheduler-reference.adoc#virtual_threads[Execute periodic tasks on virtual threads]
@@ -160,7 +160,7 @@ For each of them, the object stored in the `ThreadLocal` is created (often large
 This problem leads to high memory usage.
 Unfortunately, it requires sophisticated code changes in the libraries themselves.
 
-=== Use @RunOnVirtualThread with RESTEasy Reactive
+=== Use @RunOnVirtualThread with Quarkus REST (formerly RESTEasy Reactive)
 
 This section shows a brief example of using the link:{runonvthread}[@RunOnVirtualThread] annotation.
 It also explains the various development and execution models offered by Quarkus.
@@ -168,18 +168,18 @@ It also explains the various development and execution models offered by Quarkus
 The `@RunOnVirtualThread` annotation instructs Quarkus to invoke the annotated method on a **new** virtual thread instead of the current one.
 Quarkus handles the creation of the virtual thread and the offloading.
 
-Since virtual threads are disposable entities, the fundamental idea of `@RunOnVirtualThread` is to offload the execution of an endpoint handler on a new virtual thread instead of running it on an event-loop or worker thread (in the case of RESTEasy Reactive).
+Since virtual threads are disposable entities, the fundamental idea of `@RunOnVirtualThread` is to offload the execution of an endpoint handler on a new virtual thread instead of running it on an event-loop or worker thread (in the case of Quarkus REST).
 
 To do so, it suffices to add the link:{runonvthread}[@RunOnVirtualThread] annotation to the endpoint.
 If the Java Virtual Machine used to **run** the application provides virtual thread support (so Java 21 or later versions), then the endpoint execution is offloaded to a virtual thread.
 It will then be possible to perform blocking operations without blocking the platform thread upon which the virtual thread is mounted.
 
-In the case of RESTEasy Reactive, this annotation can only be used on endpoints annotated with link:{blockingannotation}[@Blocking] or
+In the case of Quarkus REST, this annotation can only be used on endpoints annotated with link:{blockingannotation}[@Blocking] or
 considered blocking because of their signature.
-You can visit xref:resteasy-reactive.adoc#execution-model-blocking-non-blocking[Execution model, blocking, non-blocking]
+You can visit xref:rest.adoc#execution-model-blocking-non-blocking[Execution model, blocking, non-blocking]
 for more information.
 
-==== Get started with virtual threads with RESTEasy Reactive
+==== Get started with virtual threads with Quarkus REST
 
 Add the following dependency to your build file:
 
@@ -188,14 +188,14 @@ Add the following dependency to your build file:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive</artifactId>
+    <artifactId>quarkus-rest</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-resteasy-reactive")
+implementation("io.quarkus:quarkus-rest")
 ----
 
 Then, you also need to make sure that you are using Java 21+, this can be enforced in your pom.xml file with the following:
@@ -301,7 +301,7 @@ Mutiny, the reactive programming library used in Quarkus, and the Vert.x Mutiny 
 As a result:
 
 1. Quarkus extensions providing blocking APIs on top of reactive APIs can be used in virtual threads.
-This includes the reactive rest client, the redis client, the mailer...
+This includes the REST Client, the Redis client, the mailer...
 2. API returning `Uni` can be used directly using `uni.await().atMost(...)`. It blocks the virtual thread, without blocking the carrier thread, and also improves the resilience of your application with an easy (non-blocking) timeout support.
 3. If you use a https://smallrye.io/smallrye-mutiny-vertx-bindings/latest/[Vert.x client using the Mutiny bindings], use the `andAwait()` methods which block until you get the result without pinning the carrier thread. It includes all the reactive SQL drivers.
 

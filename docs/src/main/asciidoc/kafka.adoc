@@ -211,7 +211,7 @@ in this example exposing it as a Server-Sent Events endpoint.
 [NOTE]
 ====
 When consuming messages with `@Channel`, the application code is responsible for the subscription.
-In the example above, the RESTEasy Reactive endpoint handles that for you.
+In the example above, the Quarkus REST (formerly RESTEasy Reactive) endpoint handles that for you.
 ====
 
 Following types can be injected as channels:
@@ -2944,7 +2944,7 @@ This makes sure that managed entity is not impacted by the Kafka serialization.
 
 To send to Kafka entities managed by Hibernate Reactive, we recommend using:
 
-* RESTEasy Reactive to serve HTTP requests
+* Quarkus REST to serve HTTP requests
 * A `MutinyEmitter` to send message to a channel, so it can be easily integrated with the Mutiny API exposed by Hibernate Reactive or Hibernate Reactive with Panache.
 
 The following example demonstrates how to receive a payload, store it in the database using Hibernate Reactive with Panache, and send the persisted entity to Kafka:
@@ -3050,7 +3050,7 @@ perform database updates and commit the Kafka transaction only if the database t
 
 The following example demonstrates:
 
-* Receive a payload by serving HTTP requests using RESTEasy Reactive,
+* Receive a payload by serving HTTP requests using Quarkus REST,
 * Limit concurrency of that HTTP endpoint using Smallrye Fault Tolerance,
 * Start a Kafka transaction and send the payload to Kafka record,
 * Store the payload in the database using Hibernate Reactive with Panache,

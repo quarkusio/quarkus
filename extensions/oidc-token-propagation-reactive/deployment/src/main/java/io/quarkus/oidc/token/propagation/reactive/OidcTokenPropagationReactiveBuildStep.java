@@ -77,7 +77,7 @@ public class OidcTokenPropagationReactiveBuildStep {
         }
 
         throw new ConfigurationException(
-                "Configuration property 'quarkus.oidc-token-propagation-reactive.enabled-during-authentication' is set to " +
+                "Configuration property 'quarkus.rest-client-oidc-token-propagation.enabled-during-authentication' is set to " +
                         "'true', however this configuration property is only supported when either 'quarkus-oidc' or " +
                         "'quarkus-smallrye-jwt' extensions are present.");
     }

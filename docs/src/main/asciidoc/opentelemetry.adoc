@@ -47,7 +47,7 @@ The solution is located in the `opentelemetry-quickstart` link:{quickstarts-tree
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: opentelemetry-quickstart
-:create-app-extensions: resteasy-reactive,quarkus-opentelemetry
+:create-app-extensions: rest,quarkus-opentelemetry
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates the Maven project and imports the `quarkus-opentelemetry` extension,
@@ -639,10 +639,10 @@ Additional exporters will be available in the Quarkiverse https://github.com/qua
 
 * https://quarkus.io/extensions/io.quarkus/quarkus-agroal[`quarkus-agroal`]
 * https://quarkus.io/guides/grpc-getting-started[`quarkus-grpc`]
-* https://quarkus.io/extensions/io.quarkus/quarkus-jaxrs-client-reactive[`quarkus-jaxrs-client-reactive`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-rest-client-jaxrs[`quarkus-rest-client-jaxrs`]
+* https://quarkus.io/guides/rest[`quarkus-rest`]
 * https://quarkus.io/guides/resteasy[`quarkus-resteasy-jackson`]
-* https://quarkus.io/guides/resteasy-reactive[`quarkus-resteasy-reactive`]
-* https://quarkus.io/guides/rest-client[`quarkus-resteasy-client`]
+* https://quarkus.io/guides/resteasy-client[`quarkus-resteasy-client`]
 * https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
 * https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
 * https://quarkus.io/extensions/io.quarkus/quarkus-smallrye-reactive-messaging[`quarkus-smallrye-reactive-messaging`]

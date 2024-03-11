@@ -476,7 +476,7 @@ __  ____  __  _____   ___  __ ____  ______
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
 2023-02-09 18:02:32,794 INFO  [io.quarkus] (main) code-with-quarkus 1.0.0-SNAPSHOT native (powered by Quarkus 2.16.1.Final) started in 0.011s. Listening on: http://0.0.0.0:8080
 2023-02-09 18:02:32,794 INFO  [io.quarkus] (main) Profile prod activated.
-2023-02-09 18:02:32,794 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, smallrye-context-propagation, vertx]
+2023-02-09 18:02:32,794 INFO  [io.quarkus] (main) Installed features: [cdi, rest, smallrye-context-propagation, vertx]
 ----
 
 Once the startup has complete,
@@ -566,7 +566,7 @@ Open a terminal and run the following command:
 For Linux & MacOS users
 
 :create-app-artifact-id: debugging-native
-:create-app-extensions: resteasy-reactive,container-image-docker
+:create-app-extensions: rest,container-image-docker
 :create-app-code:
 include::{includes}/devtools/create-app.adoc[]
 

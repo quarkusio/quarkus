@@ -237,7 +237,7 @@ public class PriceResource {
 [NOTE]
 ====
 When consuming messages with `@Channel`, the application code is responsible for the subscription.
-In the example above, the RESTEasy Reactive endpoint handles that for you.
+In the example above, the Quarkus REST (formerly RESTEasy Reactive) endpoint handles that for you.
 ====
 
 Following types can be injected as channels:

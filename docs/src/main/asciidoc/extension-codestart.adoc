@@ -62,7 +62,7 @@ Each codestart consists of:
 
 - In the Quarkus core repository, the extension codestarts are all in the same https://github.com/quarkusio/quarkus/tree/main/devtools/project-core-extension-codestarts/src/main/resources/codestarts/quarkus/extension-codestarts[module, window="_blank"].
 
-- RESTEasy Reactive, RESTEasy and Spring Web extension codestarts are part of https://github.com/quarkusio/quarkus/tree/main/independent-projects/tools/base-codestarts/src/main/resources/codestarts/quarkus/extension-codestarts[the base codestarts, window="_blank"].
+- Quarkus REST (formerly RESTEasy Reactive), RESTEasy and Spring Web extension codestarts are part of https://github.com/quarkusio/quarkus/tree/main/independent-projects/tools/base-codestarts/src/main/resources/codestarts/quarkus/extension-codestarts[the base codestarts, window="_blank"].
 
 - For other extensions, the codestart will typically be located in the runtime module (with special instruction in the `pom.xml` to generate a separate codestart artifact).
 
@@ -316,7 +316,7 @@ public class AlohaCodestartTest {
 
 * The codestarts are all grouped in a https://github.com/quarkusio/quarkus/tree/main/devtools/project-core-extension-codestarts/src/main/resources/codestarts/quarkus/extension-codestarts[specific module, window="_blank"].
 * No extra Maven configuration is needed.
-* The https://github.com/quarkusio/quarkus/blob/main/extensions/resteasy-reactive/quarkus-resteasy-reactive-qute/runtime/src/main/resources/META-INF/quarkus-extension.yaml#L18[extension metadata, window="_blank"] references the artifact containing all the core codestarts.
+* The https://github.com/quarkusio/quarkus/blob/main/extensions/resteasy-reactive/rest-qute/runtime/src/main/resources/META-INF/quarkus-extension.yaml#L18[extension metadata, window="_blank"] references the artifact containing all the core codestarts.
 * The tests are also https://github.com/quarkusio/quarkus/tree/main/integration-tests/devtools/src/test/java/io/quarkus/devtools/codestarts/quarkus[grouped, window="_blank"]. You don't need to test the build as there is a specific grouped https://github.com/quarkusio/quarkus/blob/main/integration-tests/devtools/src/test/java/io/quarkus/devtools/codestarts/quarkus/QuarkusCodestartBuildIT.java[test, window="_blank"] for it. e.g.:
 +
 [source,java]

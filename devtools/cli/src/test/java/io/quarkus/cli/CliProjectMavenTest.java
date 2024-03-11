@@ -54,8 +54,8 @@ public class CliProjectMavenTest {
         String pomContent = validateBasicIdentifiers(CreateProjectHelper.DEFAULT_GROUP_ID,
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
-        Assertions.assertTrue(pomContent.contains("<artifactId>quarkus-resteasy-reactive</artifactId>"),
-                "pom.xml should contain quarkus-resteasy-reactive:\n" + pomContent);
+        Assertions.assertTrue(pomContent.contains("<artifactId>quarkus-rest</artifactId>"),
+                "pom.xml should contain quarkus-rest:\n" + pomContent);
 
         // check that the project doesn't have a <description> (a <name> is defined in the profile, it's harder to test)
         Assertions.assertFalse(pomContent.contains("<description>"),
@@ -91,14 +91,14 @@ public class CliProjectMavenTest {
 
         List<String> configs = Arrays.asList("custom.app.config1=val1",
                 "custom.app.config2=val2", "lib.config=val3");
-        List<String> data = Arrays.asList("resteasy-reactive-codestart.resource.response=An awesome response");
+        List<String> data = Arrays.asList("rest-codestart.resource.response=An awesome response");
 
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--verbose", "-e", "-B",
                 "--no-wrapper", "--package-name=custom.pkg",
                 "--output-directory=" + nested,
                 "--app-config=" + String.join(",", configs),
                 "--data=" + String.join(",", data),
-                "-x resteasy-reactive,micrometer-registry-prometheus",
+                "-x rest,micrometer-registry-prometheus",
                 "silly:my-project:0.1.0");
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
@@ -108,8 +108,8 @@ public class CliProjectMavenTest {
         Assertions.assertFalse(project.resolve("mvnw").toFile().exists(),
                 "Wrapper should not exist when specifying --no-wrapper");
         String pomContent = validateBasicIdentifiers("silly", "my-project", "0.1.0");
-        Assertions.assertTrue(pomContent.contains("<artifactId>quarkus-resteasy-reactive</artifactId>"),
-                "pom.xml should contain quarkus-resteasy-reactive:\n" + pomContent);
+        Assertions.assertTrue(pomContent.contains("<artifactId>quarkus-rest</artifactId>"),
+                "pom.xml should contain quarkus-rest:\n" + pomContent);
 
         CliDriver.valdiateGeneratedSourcePackage(project, "custom/pkg");
         CliDriver.validateApplicationProperties(project, configs);
@@ -332,7 +332,7 @@ public class CliProjectMavenTest {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create",
                 "--verbose", "-e", "-B",
                 "--dryrun", "--no-wrapper", "--package-name=custom.pkg",
-                "-x resteasy-reactive",
+                "-x rest",
                 "-x micrometer",
                 "--output-directory=" + nested,
                 "silly:my-project:0.1.0");

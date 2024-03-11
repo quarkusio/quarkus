@@ -42,12 +42,12 @@ class NarayanaLRAProcessor {
 
         if (!isResteasyClassicAvailable && !isResteasyReactiveAvailable) {
             throw new IllegalStateException(
-                    "'quarkus-narayana-lra' can only work if 'quarkus-resteasy-jackson' or 'quarkus-resteasy-reactive-jackson' is present");
+                    "'quarkus-narayana-lra' can only work if 'quarkus-rest-jackson' or 'quarkus-resteasy-jackson' is present");
         }
 
         if (!capabilities.isCapabilityWithPrefixPresent(Capability.REST_CLIENT)) {
             throw new IllegalStateException(
-                    "'quarkus-narayana-lra' can only work if 'quarkus-resteasy-client' or 'quarkus-rest-client-reactive' is present");
+                    "'quarkus-narayana-lra' can only work if 'quarkus-rest-client' or 'quarkus-resteasy-client' is present");
         }
 
         feature.produce(new FeatureBuildItem(Feature.NARAYANA_LRA));

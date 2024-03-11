@@ -144,10 +144,9 @@
         <module>oidc-db-token-state-manager</module>
         <module>keycloak-authorization</module>
         <module>keycloak-admin-client-common</module>
-        <module>keycloak-admin-client</module>
-        <module>keycloak-admin-client-reactive</module>
+        <module>keycloak-admin-rest-client</module>
+        <module>keycloak-admin-resteasy-client</module>
         <module>credentials</module>
-        <module>csrf-reactive</module>
 
         <!-- Infinispan -->
         <module>infinispan-client</module>

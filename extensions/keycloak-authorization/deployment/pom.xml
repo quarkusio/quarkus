@@ -31,7 +31,7 @@
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-keycloak-admin-client-deployment</artifactId>
+            <artifactId>quarkus-keycloak-admin-resteasy-client-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

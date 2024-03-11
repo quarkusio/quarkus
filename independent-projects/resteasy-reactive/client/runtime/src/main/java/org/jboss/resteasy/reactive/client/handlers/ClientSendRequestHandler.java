@@ -172,6 +172,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     MultivaluedMap<String, String> headerMap = requestContext.getRequestHeaders()
                             .asMap();
                     updateRequestHeadersFromConfig(requestContext, headerMap);
+                    setVertxHeaders(httpClientRequest, headerMap);
                     Future<HttpClientResponse> sent = httpClientRequest.send(
                             new InputStreamReadStream(
                                     Vertx.currentContext().owner(), (InputStream) requestContext.getEntity().getEntity(),

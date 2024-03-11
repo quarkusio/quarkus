@@ -26,8 +26,8 @@
             <artifactId>quarkus-elasticsearch-rest-client-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.hibernate.search</groupId>
-            <artifactId>hibernate-search-backend-elasticsearch</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-search-backend-elasticsearch</artifactId>
         </dependency>
         <dependency>
             <groupId>org.hibernate.search</groupId>
@@ -56,6 +56,35 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.bsc.maven</groupId>
+                <artifactId>maven-processor-plugin</artifactId>
+                <executions>
+                    <!-- Run annotation processors on quarkus-hibernate-search-backend-elasticsearch,
+                         just to generate the necessary metadata/documentation for config
+                         that we embed in this extension's own config.
+                         Without this, the build would simply fail. -->
+                    <execution>
+                        <id>process-quarkus-hibernate-search-backend-elasticsearch</id>
+                        <goals>
+                            <goal>process</goal>
+                        </goals>
+                        <phase>process-sources</phase>
+                        <configuration>
+                            <addCompileSourceRoots>false</addCompileSourceRoots>
+                            <includes>io/quarkus/hibernate/search/backend/elasticsearch/**/*.java</includes>
+                            <processSourceArtifacts>io.quarkus:quarkus-hibernate-search-backend-elasticsearch:${quarkus.version}</processSourceArtifacts>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-extension-processor</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-maven-plugin</artifactId>

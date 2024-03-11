@@ -15,3 +15,5 @@ metadata:
       - "java"
       - "kotlin"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
+  config:
+  - "quarkus.rest-client."

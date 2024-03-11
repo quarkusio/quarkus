@@ -8,4 +8,5 @@ metadata:
   - "security"
   status: "preview"
   config:
+  - "quarkus.rest-csrf."
   - "quarkus.csrf-reactive."

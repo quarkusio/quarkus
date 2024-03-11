@@ -18,4 +18,5 @@ metadata:
       - "kotlin"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   config:
+  - "quarkus.rest-client."
   - "quarkus.rest-client-reactive."

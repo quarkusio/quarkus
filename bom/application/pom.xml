@@ -229,6 +229,7 @@
         <prometheus.version>0.16.0</prometheus.version>
         <!-- Dev UI -->
         <importmap.version>1.0.10</importmap.version>
+        <loomania.version>2.0</loomania.version>
     </properties>
 
     <dependencyManagement>
@@ -6266,6 +6267,11 @@
                 <groupId>io.github.crac</groupId>
                 <artifactId>org-crac</artifactId>
                 <version>${org-crac.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.dmlloyd</groupId>
+                <artifactId>loomania</artifactId>
+                <version>${loomania.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.dajudge.kindcontainer</groupId>

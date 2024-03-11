@@ -45,4 +45,30 @@ public class DevServicesBuildTimeConfig {
     @ConfigItem
     public Map<String, String> containerEnv;
 
+    /**
+     * Indicates if the Mongo server managed by Quarkus Dev Services is shared.
+     * When shared, Quarkus looks for running containers using label-based service discovery.
+     * If a matching container is found, it is used, and so a second one is not started.
+     * Otherwise, Dev Services for Mongo starts a new container.
+     * <p>
+     * The discovery uses the {@code quarkus-dev-service-mongo} label.
+     * The value is configured using the {@code service-name} property.
+     * <p>
+     * Container sharing is only used in dev mode.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean shared;
+
+    /**
+     * The value of the {@code quarkus-dev-service-mongo} label attached to the started container.
+     * This property is used when {@code shared} is set to {@code true}.
+     * In this case, before starting a container, Dev Services for Mongo looks for a container with the
+     * {@code quarkus-dev-service-mongo} label
+     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise it
+     * starts a new container with the {@code quarkus-dev-service-mongo} label set to the specified value.
+     * <p>
+     */
+    @ConfigItem(defaultValue = "mongo")
+    public String serviceName;
+
 }

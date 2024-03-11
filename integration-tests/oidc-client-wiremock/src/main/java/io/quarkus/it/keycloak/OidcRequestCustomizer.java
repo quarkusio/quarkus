@@ -19,6 +19,7 @@ public class OidcRequestCustomizer implements OidcRequestFilter {
     public void filter(HttpRequest<Buffer> request, Buffer buffer, OidcRequestContextProperties contextProps) {
         String uri = request.uri();
         if (uri.endsWith("/non-standard-tokens")) {
+            request.putHeader("client-id", contextProps.getString("client-id"));
             request.putHeader("GrantType", getGrantType(buffer.toString()));
         }
     }

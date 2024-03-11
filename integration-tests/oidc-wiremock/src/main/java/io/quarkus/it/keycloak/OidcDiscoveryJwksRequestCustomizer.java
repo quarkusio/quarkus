@@ -8,6 +8,7 @@ import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcEndpoint.Type;
 import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 
@@ -23,6 +24,7 @@ public class OidcDiscoveryJwksRequestCustomizer implements OidcRequestFilter {
             throw new OIDCException("Filter is applied to the wrong endpoint: " + request.uri());
         }
         request.putHeader("Filter", "OK");
+        request.putHeader(OidcUtils.TENANT_ID_ATTRIBUTE, contextProps.getString(OidcUtils.TENANT_ID_ATTRIBUTE));
     }
 
     private boolean isJwksRequest(HttpRequest<Buffer> request) {

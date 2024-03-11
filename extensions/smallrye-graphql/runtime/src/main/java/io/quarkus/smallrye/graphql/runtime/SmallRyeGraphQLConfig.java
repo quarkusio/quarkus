@@ -7,7 +7,6 @@ import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.smallrye.graphql.schema.helper.TypeAutoNameStrategy;
 import io.smallrye.graphql.spi.config.LogPayloadOption;
 
 @ConfigRoot(name = "smallrye-graphql", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
@@ -71,9 +70,10 @@ public class SmallRyeGraphQLConfig {
 
     /**
      * Change the type naming strategy.
+     * All possible strategies are: default, merge-inner-class, full
      */
     @ConfigItem(defaultValue = "Default")
-    public TypeAutoNameStrategy autoNameStrategy;
+    public String autoNameStrategy;
 
     /**
      * List of extension fields that should be included in the error response.

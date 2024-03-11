@@ -4409,7 +4409,13 @@
                 <version>${graal-sdk.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.graalvm.js</groupId>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>js-community</artifactId>
+                <version>${graal-sdk.version}</version>
+            </dependency>
+            <!-- Same but for GraalVM Enterprise -->
+            <dependency>
+                <groupId>org.graalvm.polyglot</groupId>
                 <artifactId>js</artifactId>
                 <version>${graal-sdk.version}</version>
             </dependency>

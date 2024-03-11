@@ -42,6 +42,7 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
@@ -496,6 +497,11 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     public boolean isInputStreamUpload() {
         return entity != null && entity.getEntity() instanceof InputStream;
+    }
+
+    public boolean isMultiBufferUpload() {
+        // we don't check the generic because Multi<Buffer> is checked at build time
+        return entity != null && entity.getEntity() instanceof Multi;
     }
 
     public boolean isMultipart() {

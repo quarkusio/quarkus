@@ -46,6 +46,7 @@ import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.vertx.ReadStreamSubscriber;
 import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -177,6 +178,20 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                             new InputStreamReadStream(
                                     Vertx.currentContext().owner(), (InputStream) requestContext.getEntity().getEntity(),
                                     httpClientRequest));
+                    attachSentHandlers(sent, httpClientRequest, requestContext);
+                } else if (requestContext.isMultiBufferUpload()) {
+                    MultivaluedMap<String, String> headerMap = requestContext.getRequestHeaders()
+                            .asMap();
+                    updateRequestHeadersFromConfig(requestContext, headerMap);
+                    setVertxHeaders(httpClientRequest, headerMap);
+                    Future<HttpClientResponse> sent = httpClientRequest.send(ReadStreamSubscriber.asReadStream(
+                            (Multi<io.vertx.mutiny.core.buffer.Buffer>) requestContext.getEntity().getEntity(),
+                            new Function<>() {
+                                @Override
+                                public Buffer apply(io.vertx.mutiny.core.buffer.Buffer buffer) {
+                                    return buffer.getDelegate();
+                                }
+                            }));
                     attachSentHandlers(sent, httpClientRequest, requestContext);
                 } else {
                     Future<HttpClientResponse> sent;

@@ -30,7 +30,11 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.core.http.HttpClient;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -683,6 +687,85 @@ public class BearerTokenAuthorizationTest {
                 .when().get("/tenant-opaque/tenant-oidc/api/admin-permission")
                 .then()
                 .statusCode(403);
+    }
+
+    @Test
+    public void testResolveStaticTenantsByPathPatterns() {
+        // default tenant path pattern is more specific, therefore it wins over tenant-b pattern that is also matched
+        assertStaticTenantSuccess("a", "default", "tenant-b/default");
+        assertStaticTenantFailure("a", "tenant-b/default-b");
+        assertStaticTenantFailure("a", "tenant-b/default-b/");
+        assertStaticTenantFailure("b", "tenant-b/default");
+        assertStaticTenantFailure("b", "tenant-b/default/");
+        assertStaticTenantSuccess("b", "tenant-b", "tenant-b");
+        assertStaticTenantSuccess("b", "tenant-b", "tenant-b/");
+        assertStaticTenantSuccess("b", "tenant-b", "tenant-b/default-b");
+        assertStaticTenantSuccess("b", "tenant-b", "tenant-b/default-b/");
+        assertStaticTenantSuccess("b", "tenant-b", "tenant-b/public-key");
+        assertStaticTenantSuccess("b", "tenant-b", "tenant-b/public-key");
+        assertStaticTenantFailure("public-key", "tenant-b/public-key");
+        assertStaticTenantFailure("public-key", "tenant-b/public-key/");
+        assertStaticTenantSuccess("public-key", "public-key", "tenant-c/public-key");
+        assertStaticTenantSuccess("public-key", "public-key", "tenant-c/public-key/");
+        assertStaticTenantSuccess("public-key", "public-key", "public-key/match");
+        assertStaticTenantSuccess("public-key", "public-key", "public-key/match/");
+        assertStaticTenantFailure("b", "public-key/match");
+        assertStaticTenantFailure("b", "public-key/match/");
+        assertStaticTenantFailure("public-key", "public-key-c/match");
+        assertStaticTenantFailure("public-key", "public-key-c/match/");
+        assertStaticTenantSuccess("a", "public-key", "public-key-c/match");
+
+        // assert path is normalized and tenant is selected by path-matching pattern before HTTP perms are checked
+        Vertx vertx = Vertx.vertx();
+        HttpClient httpClient = null;
+        try {
+            httpClient = vertx.createHttpClient();
+            httpClient
+                    .request(HttpMethod.GET, RestAssured.port, URI.create(RestAssured.baseURI).getHost(),
+                            "/api/tenant-paths///public-key//match")
+                    .flatMap(r -> r.putHeader("Authorization", "Bearer " + getAccessToken("public-key")).send())
+                    .flatMap(r -> {
+                        assertEquals(200, r.statusCode());
+                        return r.body();
+                    })
+                    .map(Buffer::toString)
+                    .invoke(b -> assertEquals("public-key", b))
+                    .await().indefinitely();
+            httpClient
+                    .request(HttpMethod.GET, RestAssured.port, URI.create(RestAssured.baseURI).getHost(),
+                            "/api/tenant-paths///public-key//match")
+                    .flatMap(r -> r.putHeader("Authorization", "Bearer " + getAccessToken("b")).send())
+                    .invoke(r -> assertEquals(401, r.statusCode()))
+                    .await().indefinitely();
+        } finally {
+            if (httpClient != null) {
+                httpClient.closeAndAwait();
+            }
+            vertx.closeAndAwait();
+        }
+    }
+
+    private void assertStaticTenantSuccess(String clientId, String tenant, String subPath) {
+        // tenant is resolved based on path pattern and access token is valid
+        final String accessToken = getAccessToken(clientId);
+        RestAssured.given().auth().oauth2(accessToken).when().get("/api/tenant-paths/" + subPath).then().statusCode(200)
+                .body(equalTo(tenant));
+    }
+
+    private String getAccessToken(String clientId) {
+        final String accessToken;
+        if ("public-key".equals(clientId)) {
+            accessToken = AnnotationBasedTenantTest.getTokenWithRole();
+        } else {
+            accessToken = getAccessToken("alice", clientId);
+        }
+        return accessToken;
+    }
+
+    private void assertStaticTenantFailure(String clientId, String subPath) {
+        // tenant is not resolved based on path pattern or access token is not valid
+        final String accessToken = getAccessToken(clientId);
+        RestAssured.given().auth().oauth2(accessToken).when().get("/api/tenant-paths/" + subPath).then().statusCode(401);
     }
 
     private String getAccessToken(String userName, String clientId) {

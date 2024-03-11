@@ -80,7 +80,7 @@ public class AnnotationBasedTenantTest {
                 .body(Matchers.equalTo(("tenant-id=tenant-public-key, static.tenant.id=tenant-public-key, name=alice")));
     }
 
-    private static String getTokenWithRole(String... roles) {
+    static String getTokenWithRole(String... roles) {
         return Jwt.claim("scope", "read:data").preferredUserName("alice").groups(Set.of(roles)).sign();
     }
 }

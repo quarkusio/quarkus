@@ -49,7 +49,6 @@ jobs:
             -Dno-test-modules \
             -Dgradle.cache.local.enabled=false \
             -Ddokka \
-            -DskipDocs \
             clean deploy
       - name: Delete Local Artifacts From Cache
         shell: bash

@@ -4434,6 +4434,11 @@
                 <version>${graal-sdk.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.graalvm.sdk</groupId>
+                <artifactId>nativeimage</artifactId>
+                <version>${graal-sdk.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.graalvm.polyglot</groupId>
                 <artifactId>js-community</artifactId>
                 <version>${graal-sdk.version}</version>

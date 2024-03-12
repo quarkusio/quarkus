@@ -13,4 +13,5 @@ metadata:
   - "security"
   status: "stable"
   config:
+  - "quarkus.resteasy-client-oidc-filter."
   - "quarkus.oidc-client."

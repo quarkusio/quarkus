@@ -101,15 +101,15 @@ class QuarkusCodestartGenerationTest {
         checkMaven(projectDir);
         assertThatMatchSnapshot(testInfo, projectDir, "pom.xml")
                 .satisfies(checkContains("<dependency>\n" +
-                        "      <groupId>commons-io</groupId>\n" +
-                        "      <artifactId>commons-io</artifactId>\n" +
-                        "      <version>2.5</version>\n" +
-                        "    </dependency>\n"))
+                        "            <groupId>io.quarkus</groupId>\n" +
+                        "            <artifactId>quarkus-resteasy</artifactId>\n" +
+                        "            <version>1.8</version>\n" +
+                        "        </dependency>"))
                 .satisfies(checkContains("<dependency>\n" +
-                        "      <groupId>io.quarkus</groupId>\n" +
-                        "      <artifactId>quarkus-resteasy</artifactId>\n" +
-                        "      <version>1.8</version>\n" +
-                        "    </dependency>\n"));
+                        "            <groupId>io.quarkus</groupId>\n" +
+                        "            <artifactId>quarkus-resteasy</artifactId>\n" +
+                        "            <version>1.8</version>\n" +
+                        "        </dependency>"));
     }
 
     @Test

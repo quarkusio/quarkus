@@ -417,6 +417,18 @@ public ClientMultipartForm buildClientMultipartForm(MultiPartPayloadFormData inp
 <2> Adding attribute `jsonPayload` directly to `ClientMultipartForm`
 <3> Adding `FileUpload` objects to `ClientMultipartForm` as binaryFileUpload with contentType.
 
+=== Sending large payloads
+
+The REST Client is capable of sending arbitrarily large HTTP bodies without buffering the contents in memory, if one of the following types is used:
+
+* `InputStream`
+* `Multi<io.vertx.mutiny.core.buffer.Buffer>`
+
+Furthermore, the client can also send arbitrarily large files if one of the following types is used:
+
+* `File`
+* `Path`
+
 
 == Create the configuration
 

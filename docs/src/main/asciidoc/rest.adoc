@@ -2360,6 +2360,9 @@ on the same event-loop thread.
 If however a filter needs to be run on the event-loop despite the fact that the method servicing the request will be
 run on a worker thread, then `@ServerRequestFilter(nonBlocking=true)` can be used.
 Note however, that these filters need to be run before **any** filter that does not use that setting and would run on a worker thread.
+
+Keep in mind however that the information above does **not** apply to pre-matching filters (`@ServerRequestFilter(preMatching = true)`).
+These filters are *always* run on an event-loop thread.
 ====
 
 Similarly, response filters can be declared with the

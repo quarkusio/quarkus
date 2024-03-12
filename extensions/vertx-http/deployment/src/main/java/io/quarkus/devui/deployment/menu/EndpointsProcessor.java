@@ -52,6 +52,12 @@ public class EndpointsProcessor {
                 .icon("font-awesome-solid:plug")
                 .componentLink("qwc-endpoints.js"));
 
+        endpointsPage.addPage(Page.webComponentPageBuilder()
+                .namespace("devui-endpoints")
+                .title("Routes")
+                .icon("font-awesome-solid:route")
+                .componentLink("qwc-routes.js"));
+
         return endpointsPage;
     }
 }

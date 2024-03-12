@@ -21,7 +21,7 @@ public abstract class PageBuilder<T> {
     protected String componentLink;
     protected Map<String, String> metadata = new HashMap<>();
     protected boolean embed = true; // default
-    protected boolean includeInSubMenu = true; // default
+    protected boolean includeInMenu = true; // default
     protected boolean internalComponent = false; // default
     protected String namespace = null;
     protected String namespaceLabel = null;
@@ -84,6 +84,11 @@ public abstract class PageBuilder<T> {
         return (T) this;
     }
 
+    public T excludeFromMenu() {
+        this.includeInMenu = false;
+        return (T) this;
+    }
+
     @SuppressWarnings("unchecked")
     public T extension(String extension) {
         this.extensionId = extension.toLowerCase().replaceAll(SPACE, DASH);
@@ -129,7 +134,7 @@ public abstract class PageBuilder<T> {
                 componentLink,
                 metadata,
                 embed,
-                includeInSubMenu,
+                includeInMenu,
                 internalComponent,
                 namespace,
                 namespaceLabel,

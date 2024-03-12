@@ -517,7 +517,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
                         "        </dependency>"));
 
         runAndCheck();
-        assertThat(devModeClient.getHttpResponse("/q/openapi", true)).contains("Resource not found");
+        assertThat(devModeClient.getHttpResponse("/q/openapi", true)).contains("Resource Not Found");
         shutdownTheApp();
 
         runAndCheck("-f", alternatePomName);

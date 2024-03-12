@@ -592,9 +592,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
         String resp = devModeClient.getHttpResponse();
 
-        assertThat(resp).containsIgnoringCase("Congratulations!").containsIgnoringCase("application")
-                .containsIgnoringCase("org.acme")
-                .containsIgnoringCase("1.0.0-SNAPSHOT");
+        assertThat(resp).containsIgnoringCase("Dev UI");
 
         String greeting = devModeClient.getHttpResponse("/hello");
         assertThat(greeting).containsIgnoringCase("hello");

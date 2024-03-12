@@ -3,6 +3,8 @@ package io.quarkus.resteasy.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -28,6 +30,7 @@ import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.resteasy.runtime.AuthenticationCompletionExceptionMapper;
 import io.quarkus.resteasy.runtime.AuthenticationFailedExceptionMapper;
 import io.quarkus.resteasy.runtime.AuthenticationRedirectExceptionMapper;
+import io.quarkus.resteasy.runtime.NonJaxRsClassMappings;
 import io.quarkus.resteasy.runtime.ResteasyVertxConfig;
 import io.quarkus.resteasy.runtime.standalone.ResteasyStandaloneRecorder;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
@@ -94,6 +97,7 @@ public class ResteasyStandaloneBuildStep {
             HttpBuildTimeConfig vertxConfig,
             ResteasyStandaloneBuildItem standalone,
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
+            Optional<NonJaxRsClassBuildItem> nonJaxRsClassBuildItem,
             ExecutorBuildItem executorBuildItem,
             ResteasyVertxConfig resteasyVertxConfig,
             HttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
@@ -105,8 +109,12 @@ public class ResteasyStandaloneBuildStep {
 
         // Handler used for both the default and non-default deployment path (specified as application path or resteasyConfig.path)
         // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before the resteasy one
+        Map<String, NonJaxRsClassMappings> nonJaxRsClassNameToMethodPaths = Collections.emptyMap();
+        if (nonJaxRsClassBuildItem.isPresent()) {
+            nonJaxRsClassNameToMethodPaths = nonJaxRsClassBuildItem.get().nonJaxRsPaths;
+        }
         Handler<RoutingContext> handler = recorder.vertxRequestHandler(vertx.getVertx(),
-                executorBuildItem.getExecutorProxy(), resteasyVertxConfig, httpBuildTimeConfig);
+                executorBuildItem.getExecutorProxy(), nonJaxRsClassNameToMethodPaths, resteasyVertxConfig, httpBuildTimeConfig);
 
         final boolean noCustomAuthCompletionExMapper;
         final boolean noCustomAuthFailureExMapper;

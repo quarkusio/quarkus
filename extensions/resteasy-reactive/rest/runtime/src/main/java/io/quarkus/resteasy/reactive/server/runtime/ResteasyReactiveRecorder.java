@@ -1,10 +1,15 @@
 package io.quarkus.resteasy.reactive.server.runtime;
 
-import static io.quarkus.resteasy.reactive.server.runtime.NotFoundExceptionMapper.classMappers;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.extractRootCause;
 
 import java.io.Closeable;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -12,12 +17,14 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.core.SingletonBeanFactory;
 import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
+import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.BlockingOperationSupport;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.Deployment;
@@ -28,6 +35,8 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.core.startup.RuntimeDeploymentManager;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
+import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
+import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvokerFactory;
@@ -59,6 +68,9 @@ import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundHandler;
+import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
+import io.quarkus.vertx.http.runtime.devmode.RouteMethodDescription;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
@@ -95,11 +107,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             ShutdownContext shutdownContext, HttpBuildTimeConfig vertxConfig,
             RequestContextFactory contextFactory,
             BeanFactory<ResteasyReactiveInitialiser> initClassFactory,
-            LaunchMode launchMode, boolean resumeOn404) {
-
-        if (resumeOn404) {
-            info.setResumeOn404(true);
-        }
+            LaunchMode launchMode) {
 
         CurrentRequestManager
                 .setCurrentRequestInstance(new QuarkusCurrentRequest(beanContainer.beanInstance(CurrentVertxRequest.class)));
@@ -145,8 +153,10 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         currentDeployment = deployment;
 
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
-            classMappers = deployment.getClassMappers();
-            RuntimeResourceVisitor.visitRuntimeResources(classMappers, ScoreSystem.ScoreVisitor);
+            // For Not Found Screen
+            ResourceNotFoundHandler.runtimeRoutes = fromClassMappers(deployment.getClassMappers());
+            // For Dev UI Screen
+            RuntimeResourceVisitor.visitRuntimeResources(deployment.getClassMappers(), ScoreSystem.ScoreVisitor);
         }
         return new RuntimeValue<>(deployment);
     }
@@ -353,6 +363,47 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                 }
             }
         };
+    }
+
+    private List<RouteDescription> fromClassMappers(
+            List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers) {
+        Map<String, RouteDescription> descriptions = new HashMap<>();
+        RuntimeResourceVisitor.visitRuntimeResources(classMappers, new RuntimeResourceVisitor() {
+
+            private RouteDescription description;
+
+            @Override
+            public void visitRuntimeResource(String httpMethod, String fullPath, RuntimeResource runtimeResource) {
+                ServerMediaType serverMediaType = runtimeResource.getProduces();
+                List<MediaType> produces = Collections.emptyList();
+                if (serverMediaType != null) {
+                    if ((serverMediaType.getSortedOriginalMediaTypes() != null)
+                            && serverMediaType.getSortedOriginalMediaTypes().length >= 1) {
+                        produces = Arrays.asList(serverMediaType.getSortedOriginalMediaTypes());
+                    }
+                }
+                description.addCall(new RouteMethodDescription(httpMethod, fullPath, mostPreferredOrNull(produces),
+                        mostPreferredOrNull(runtimeResource.getConsumes())));
+            }
+
+            @Override
+            public void visitBasePath(String basePath) {
+                description = descriptions.get(basePath);
+                if (description == null) {
+                    description = new RouteDescription(basePath);
+                    descriptions.put(basePath, description);
+                }
+            }
+        });
+        return new LinkedList<>(descriptions.values());
+    }
+
+    private String mostPreferredOrNull(List<MediaType> mediaTypes) {
+        if (mediaTypes == null || mediaTypes.isEmpty()) {
+            return null;
+        } else {
+            return mediaTypes.get(0).toString();
+        }
     }
 
     private static final class FailingDefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {

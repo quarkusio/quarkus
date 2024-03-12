@@ -217,6 +217,7 @@ public class ClientImpl implements Client {
         if (closeVertx) {
             vertx.close();
         }
+        log.debug("Client is closed");
     }
 
     void abortIfClosed() {

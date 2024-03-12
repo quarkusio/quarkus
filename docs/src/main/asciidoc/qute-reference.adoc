@@ -1677,8 +1677,8 @@ class MyService {
 }
 ----
 
-NOTE: When using `quarkus-resteasy-qute` the content negotiation is performed automatically.
-For more information, see the <<resteasy_integration>> section.
+NOTE: When using `quarkus-rest-qute` or `quarkus-resteasy-qute` the content negotiation is performed automatically.
+For more information, see the <<rest_integration>> section.
 
 [[injecting-beans-directly-in-templates]]
 === Injecting Beans Directly In Templates
@@ -1812,7 +1812,7 @@ There are two ways to define a type-safe template:
 
 ==== Nested Type-safe Templates
 
-If using <<resteasy_integration,templates in Jakarta REST resources>>, you can rely on the following convention:
+If using <<rest_integration,templates in Jakarta REST resources>>, you can rely on the following convention:
 
 - Organise your template files in the `/src/main/resources/templates` directory, by grouping them into one directory per resource class. So, if
   your `ItemResource` class references two templates `hello` and `goodbye`, place them at `/src/main/resources/templates/ItemResource/hello.txt`
@@ -2537,27 +2537,28 @@ There are several ways to solve this problem:
 * Annotate the model class with `@io.quarkus.runtime.annotations.RegisterForReflection` to make the reflection-based value resolver work
 
 
-[[resteasy_integration]]
-=== RESTEasy Integration
+[[rest_integration]]
+=== [[resteasy_integration]] REST Integration
 
 If you want to use Qute in your Jakarta REST application, then depending on which Jakarta REST stack you are using, you'll need to register the proper extension first.
-If you are using the traditional `quakus-resteasy` extension, then in your `pom.xml` file, add:
 
-[source,xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-qute</artifactId>
-</dependency>
-----
-
-If instead you are using Quarkus REST (formerly RESTEasy Reactive) via the `quarkus-rest` extension, then in your `pom.xml` file, add:
+If you are using Quarkus REST (formerly RESTEasy Reactive) via the `quarkus-rest` extension, then in your `pom.xml` file, add:
 
 [source,xml]
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-rest-qute</artifactId>
+</dependency>
+----
+
+If instead you are using the legacy RESTEasy Classic-based `quarkus-resteasy` extension, then in your `pom.xml` file, add:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-qute</artifactId>
 </dependency>
 ----
 
@@ -2833,7 +2834,7 @@ public class MyBean {
 <1> You can set a `Locale` instance or a locale tag string (IETF).
 
 
-NOTE: When using <<resteasy_integration,quarkus-resteasy-qute>> the `locale` attribute is derived from the `Accept-Language` header if not set by a user.
+NOTE: When using <<rest_integration,`quarkus-rest-qute`>> (or `quarkus-resteasy-qute`) the `locale` attribute is derived from the `Accept-Language` header if not set by a user.
 
 The `@Localized` qualifier can be used to inject a localized message bundle interface.
 

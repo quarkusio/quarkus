@@ -64,7 +64,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(Feature.SMALLRYE_REACTIVE_MESSAGING_KAFKA);
+        return new FeatureBuildItem(Feature.MESSAGING_KAFKA);
     }
 
     @BuildStep

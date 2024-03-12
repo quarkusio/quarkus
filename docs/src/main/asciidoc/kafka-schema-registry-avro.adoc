@@ -8,7 +8,7 @@ include::_attributes.adoc[]
 :categories: messaging
 :summary: Use Apache Kafka, Avro serialized records, and connect to a schema registry.
 :topics: messaging,kafka,apicurio,registry
-:extensions: io.quarkus:quarkus-apicurio-registry-avro,io.quarkus:quarkus-smallrye-reactive-messaging-kafka
+:extensions: io.quarkus:quarkus-apicurio-registry-avro,io.quarkus:quarkus-messaging-kafka
 
 This guide shows how your Quarkus application can use Apache Kafka, https://avro.apache.org/docs/current/[Avro] serialized
 records, and connect to a schema registry (such as the https://docs.confluent.io/platform/current/schema-registry/index.html[Confluent Schema Registry] or https://www.apicur.io/registry/[Apicurio Registry]).
@@ -49,7 +49,7 @@ The solution is located in the `kafka-avro-schema-quickstart` link:{quickstarts-
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: kafka-avro-schema-quickstart
-:create-app-extensions: rest-jackson,smallrye-reactive-messaging-kafka,apicurio-registry-avro
+:create-app-extensions: rest-jackson,messaging-kafka,apicurio-registry-avro
 include::{includes}/devtools/create-app.adoc[]
 
 [TIP]
@@ -247,7 +247,7 @@ See xref:kafka-dev-services.adoc[Dev Services for Kafka] and xref:apicurio-regis
 [TIP]
 ====
 You might have noticed that we didn't configure the schema registry URL anywhere.
-This is because Dev Services for Apicurio Registry configures all Kafka channels in SmallRye Reactive Messaging to use the automatically started registry instance.
+This is because Dev Services for Apicurio Registry configures all Kafka channels in Quarkus Messaging to use the automatically started registry instance.
 
 Apicurio Registry, in addition to its native API, also exposes an endpoint that is API-compatible with Confluent Schema Registry.
 Therefore, this automatic configuration works both for Apicurio Registry serde and Confluent Schema Registry serde.

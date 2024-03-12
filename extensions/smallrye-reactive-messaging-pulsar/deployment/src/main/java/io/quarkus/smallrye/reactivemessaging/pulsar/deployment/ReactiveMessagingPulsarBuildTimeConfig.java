@@ -4,7 +4,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(name = "reactive-messaging.pulsar", phase = ConfigPhase.BUILD_TIME)
+@ConfigRoot(name = "messaging.pulsar", phase = ConfigPhase.BUILD_TIME)
 public class ReactiveMessagingPulsarBuildTimeConfig {
     /**
      * Whether or not Pulsar Schema auto-detection is enabled.

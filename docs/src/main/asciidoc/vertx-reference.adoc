@@ -83,8 +83,8 @@ Check the associated documentation to learn how to use them.
 |Documentation
 
 |AMQP Client
-|`io.quarkus:quarkus-smallrye-reactive-messaging-amqp` (extension)
-|xref:amqp.adoc[Getting Started to SmallRye Reactive Messaging with AMQP]
+|`io.quarkus:quarkus-messaging-amqp` (extension)
+|xref:amqp.adoc[Getting Started to Quarkus Messaging with AMQP]
 
 |Circuit Breaker
 |`io.smallrye.reactive:smallrye-mutiny-vertx-circuit-breaker` (external dependency)
@@ -99,7 +99,7 @@ Check the associated documentation to learn how to use them.
 |xref:reactive-sql-clients.adoc[Reactive SQL Clients]
 
 |Kafka Client
-|`io.quarkus:quarkus-smallrye-reactive-messaging-kafka` (extension)
+|`io.quarkus:quarkus-messaging-kafka` (extension)
 |xref:kafka.adoc[Apache Kafka Reference Guide]
 
 |Mail Client
@@ -107,7 +107,7 @@ Check the associated documentation to learn how to use them.
 |xref:mailer.adoc[Sending emails using SMTP]
 
 |MQTT Client
-|`io.quarkus:quarkus-smallrye-reactive-messaging-mqtt` (extension)
+|`io.quarkus:quarkus-messaging-mqtt` (extension)
 |No guide yet
 
 |MS SQL Client

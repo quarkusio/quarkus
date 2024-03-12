@@ -7,6 +7,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 public class SmallRyeReactiveMessagingMqttProcessor {
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(Feature.SMALLRYE_REACTIVE_MESSAGING_MQTT);
+        return new FeatureBuildItem(Feature.MESSAGING_MQTT);
     }
 }

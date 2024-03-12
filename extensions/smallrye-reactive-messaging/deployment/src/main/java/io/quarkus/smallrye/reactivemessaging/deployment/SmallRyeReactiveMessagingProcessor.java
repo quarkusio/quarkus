@@ -103,7 +103,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(Feature.SMALLRYE_REACTIVE_MESSAGING);
+        return new FeatureBuildItem(Feature.MESSAGING);
     }
 
     @BuildStep

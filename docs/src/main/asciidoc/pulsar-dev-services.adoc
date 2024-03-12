@@ -7,9 +7,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: messaging
 :topics: messaging,reactive-messaging,pulsar,dev-services,testing,dev-mode
-:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-pulsar
+:extensions: io.quarkus:quarkus-messaging-pulsar
 
-With Quarkus Smallrye Reactive Messaging Pulsar extension (`quarkus-smallrye-reactive-messaging-pulsar`)
+With Quarkus Messaging Pulsar extension (`quarkus-messaging-pulsar`)
 Dev Services for Pulsar automatically starts a Pulsar broker in dev mode and when running tests.
 So, you don't have to start a broker manually.
 The application is configured automatically.

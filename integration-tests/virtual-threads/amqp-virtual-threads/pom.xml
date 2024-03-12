@@ -20,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging-amqp</artifactId>
+            <artifactId>quarkus-messaging-amqp</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -76,7 +76,7 @@
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging-amqp-deployment</artifactId>
+            <artifactId>quarkus-messaging-amqp-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

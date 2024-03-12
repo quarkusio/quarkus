@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: messaging
 :topics: messaging,reactive-messaging,rabbitmq,dev-services,testing,dev-mode
-:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-rabbitmq
+:extensions: io.quarkus:quarkus-messaging-rabbitmq
 
 Dev Services for RabbitMQ automatically starts a RabbitMQ broker in dev mode and when running tests.
 So, you don't have to start a broker manually.

@@ -87,6 +87,19 @@
         <module>quarkus-spring-web-resteasy-reactive-deployment</module>
         <module>quarkus-spring-web-resteasy-classic</module>
         <module>quarkus-spring-web-resteasy-classic-deployment</module>
+        <module>quarkus-smallrye-reactive-messaging</module>
+        <module>quarkus-smallrye-reactive-messaging-amqp</module>
+        <module>quarkus-smallrye-reactive-messaging-amqp-deployment</module>
+        <module>quarkus-smallrye-reactive-messaging-deployment</module>
+        <module>quarkus-smallrye-reactive-messaging-kafka</module>
+        <module>quarkus-smallrye-reactive-messaging-kafka-deployment</module>
+        <module>quarkus-smallrye-reactive-messaging-kotlin</module>
+        <module>quarkus-smallrye-reactive-messaging-mqtt</module>
+        <module>quarkus-smallrye-reactive-messaging-mqtt-deployment</module>
+        <module>quarkus-smallrye-reactive-messaging-pulsar</module>
+        <module>quarkus-smallrye-reactive-messaging-pulsar-deployment</module>
+        <module>quarkus-smallrye-reactive-messaging-rabbitmq</module>
+        <module>quarkus-smallrye-reactive-messaging-rabbitmq-deployment</module>
     </modules>
 
 </project>

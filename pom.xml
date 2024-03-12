@@ -54,7 +54,7 @@
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
-        <gitflow-incremental-builder.version>4.5.1</gitflow-incremental-builder.version>
+        <gitflow-incremental-builder.version>4.5.3</gitflow-incremental-builder.version>
         <quarkus-platform-bom-plugin.version>0.0.102</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>

@@ -148,6 +148,12 @@ It prints it in the log, so you can check that what was about to be sent.
 NOTE: This section used the _imperative_ mailer API.
 It blocks the caller thread until the mail is sent.
 
+[TIP]
+====
+The https://github.com/quarkiverse/quarkus-mailpit[Quarkus Mailpit] extension is very handy for testing emails.
+It provides Dev Services for https://github.com/axllent/mailpit[Mailpit], a nice UI for testing and debugging email sending.
+====
+
 == Using the reactive mailer
 
 The last section use the _imperative_ mailer.

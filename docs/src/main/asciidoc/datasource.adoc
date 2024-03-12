@@ -23,7 +23,7 @@ Applications use datasources to access relational databases.
 Quarkus provides a unified configuration model to define datasources for Java Database Connectivity (JDBC) and Reactive database drivers.
 
 Quarkus uses link:https://agroal.github.io/[Agroal] and link:https://vertx.io/[Vert.x] to provide high-performance, scalable data source connection pooling for JDBC and reactive drivers.
-The `jdbc-\*` and `reactive-*` extensions provide build time optimizations and integrate configured data sources with Quarkus features like security, health checks, and metrics.
+The `quarkus-jdbc-\*` and `quarkus-reactive-*-client` extensions provide build time optimizations and integrate configured data sources with Quarkus features like security, health checks, and metrics.
 
 For more information about consuming and using a reactive datasource, see the Quarkus xref:reactive-sql-clients.adoc[Reactive SQL clients] guide.
 
@@ -62,14 +62,14 @@ For more details and optional configurations, see xref:databases-dev-services.ad
 
 . Add the correct JDBC extension for the database of your choice.
 
-* `jdbc-db2`
-* `jdbc-derby`
-* `jdbc-h2`
-* `jdbc-mariadb`
-* `jdbc-mssql`
-* `jdbc-mysql`
-* `jdbc-oracle`
-* `jdbc-postgresql`
+* `quarkus-jdbc-db2`
+* `quarkus-jdbc-derby`
+* `quarkus-jdbc-h2`
+* `quarkus-jdbc-mariadb`
+* `quarkus-jdbc-mssql`
+* `quarkus-jdbc-mysql`
+* `quarkus-jdbc-oracle`
+* `quarkus-jdbc-postgresql`
 
 . Configure your JDBC datasource:
 +
@@ -101,11 +101,11 @@ For more information about pool size adjustment properties, see the <<jdbc-confi
 
 . Add the correct reactive extension for the database of your choice.
 
-* `reactive-db2-client`
-* `reactive-mssql-client`
-* `reactive-mysql-client`
-* `reactive-oracle-client`
-* `reactive-pg-client`
+* `quarkus-reactive-db2-client`
+* `quarkus-reactive-mssql-client`
+* `quarkus-reactive-mysql-client`
+* `quarkus-reactive-oracle-client`
+* `quarkus-reactive-pg-client`
 
 . Configure your reactive datasource:
 +
@@ -185,8 +185,8 @@ JDBC is the most common database connection pattern, typically needed when used 
 
 .. For use with a built-in JDBC driver, choose and add the Quarkus extension for your relational database driver from the list below:
 +
-* Derby - `jdbc-derby`
-* H2 - `jdbc-h2`
+* Derby - `quarkus-jdbc-derby`
+* H2 - `quarkus-jdbc-h2`
 +
 [NOTE]
 ====
@@ -194,12 +194,12 @@ H2 and Derby databases can be configured to run in "embedded mode"; however, the
 
 Read <<in-memory-databases,Testing with in-memory databases>> for suggestions regarding integration testing.
 ====
-* DB2 - `jdbc-db2`
-* MariaDB - `jdbc-mariadb`
-* Microsoft SQL Server - `jdbc-mssql`
-* MySQL - `jdbc-mysql`
-* Oracle - `jdbc-oracle`
-* PostgreSQL - `jdbc-postgresql`
+* DB2 - `quarkus-jdbc-db2`
+* MariaDB - `quarkus-jdbc-mariadb`
+* Microsoft SQL Server - `quarkus-jdbc-mssql`
+* MySQL - `quarkus-jdbc-mysql`
+* Oracle - `quarkus-jdbc-oracle`
+* PostgreSQL - `quarkus-jdbc-postgresql`
 * Other JDBC extensions, such as link:https://github.com/quarkiverse/quarkus-jdbc-sqlite[SQLite] and its link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-jdbc-sqlite/dev/index.html[documentation], can be found in the https://github.com/quarkiverse[Quarkiverse].
 +
 For example, to add the PostgreSQL driver dependency:

@@ -79,7 +79,7 @@
         </dependency>
         <dependency>
             <groupId>org.graalvm.sdk</groupId>
-            <artifactId>graal-sdk</artifactId>
+            <artifactId>nativeimage</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -156,7 +156,7 @@
                         <parentFirstArtifact>io.smallrye.common:smallrye-common-net</parentFirstArtifact>
                         <parentFirstArtifact>io.smallrye.common:smallrye-common-os</parentFirstArtifact>
                         <parentFirstArtifact>io.smallrye.common:smallrye-common-ref</parentFirstArtifact>
-                        <parentFirstArtifact>org.graalvm.sdk:graal-sdk</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.sdk:nativeimage</parentFirstArtifact>
                         <!-- support for GraalVM js -->
                         <parentFirstArtifact>org.graalvm.polyglot:js-community</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.js:js-language</parentFirstArtifact>
@@ -170,7 +170,6 @@
                         <parentFirstArtifact>org.graalvm.shadowed:icu4j</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.sdk:jniutils</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.sdk:word</parentFirstArtifact>
-                        <parentFirstArtifact>org.graalvm.sdk:native-image</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.sdk:native-bridge</parentFirstArtifact>
                         <!-- /support for GraalVM js -->
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-core</parentFirstArtifact>
@@ -217,7 +216,7 @@
                         <parentFirstArtifact>org.jboss.byteman:byteman</parentFirstArtifact>
                     </parentFirstArtifacts>
                     <runnerParentFirstArtifacts>
-                        <runnerParentFirstArtifact>org.graalvm.sdk:graal-sdk</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.sdk:nativeimage</runnerParentFirstArtifact>
                         <!-- support for GraalVM js -->
                         <runnerParentFirstArtifact>org.graalvm.polyglot:js-community</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.graalvm.js:js-language</runnerParentFirstArtifact>
@@ -231,7 +230,6 @@
                         <runnerParentFirstArtifact>org.graalvm.shadowed:icu4j</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.graalvm.sdk:jniutils</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.graalvm.sdk:word</runnerParentFirstArtifact>
-                        <runnerParentFirstArtifact>org.graalvm.sdk:native-image</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.graalvm.sdk:native-bridge</runnerParentFirstArtifact>
                         <!-- /support for GraalVM js -->
                         <runnerParentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</runnerParentFirstArtifact>

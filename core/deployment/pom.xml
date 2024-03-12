@@ -110,7 +110,7 @@
         </dependency>
         <dependency>
             <groupId>org.graalvm.sdk</groupId>
-            <artifactId>graal-sdk</artifactId>
+            <artifactId>nativeimage</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

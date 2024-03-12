@@ -793,21 +793,21 @@ Some OpenID Connect Providers require that a client is authenticated as part of 
 
 [source,properties]
 ----
-quarkus.oidc.tls.verification=certificate-validation
+quarkus.oidc-client.tls.verification=certificate-validation
 
 # Keystore configuration
-quarkus.oidc.client.tls.key-store-file=client-keystore.jks
-quarkus.oidc.client.tls.key-store-password=${key-store-password}
+quarkus.oidc-client.tls.key-store-file=client-keystore.jks
+quarkus.oidc-client.tls.key-store-password=${key-store-password}
 
 # Add more keystore properties if needed:
-#quarkus.oidc.client.tls.key-store-alias=keyAlias
-#quarkus.oidc.client.tls.key-store-alias-password=keyAliasPassword
+#quarkus.oidc-client.tls.key-store-alias=keyAlias
+#quarkus.oidc-client.tls.key-store-alias-password=keyAliasPassword
 
 # Truststore configuration
 quarkus.oidc-client.tls.trust-store-file=client-truststore.jks
 quarkus.oidc-client.tls.trust-store-password=${trust-store-password}
 # Add more truststore properties if needed:
-#quarkus.oidc.client.tls.trust-store-alias=certAlias
+#quarkus.oidc-client.tls.trust-store-alias=certAlias
 ----
 
 [[integration-testing-oidc-client]]

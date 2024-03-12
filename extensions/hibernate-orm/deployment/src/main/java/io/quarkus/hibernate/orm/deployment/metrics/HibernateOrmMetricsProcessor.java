@@ -5,6 +5,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import java.util.List;
 import java.util.Optional;
 
+import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -28,6 +29,7 @@ public final class HibernateOrmMetricsProcessor {
     public void metrics(HibernateOrmConfig config,
             HibernateMetricsRecorder metricsRecorder,
             List<PersistenceProviderSetUpBuildItem> persistenceUnitsStarted,
+            List<JdbcDataSourceSchemaReadyBuildItem> jdbcDataSourceSchemaReadyBuildItems,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             BuildProducer<MetricsFactoryConsumerBuildItem> datasourceMetrics) {
 

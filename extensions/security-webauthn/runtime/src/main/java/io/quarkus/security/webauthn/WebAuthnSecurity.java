@@ -36,41 +36,41 @@ public class WebAuthnSecurity {
         // create the webauthn security object
         WebAuthnOptions options = new WebAuthnOptions();
         RelyingParty relyingParty = new RelyingParty();
-        if (config.relyingParty.id.isPresent()) {
-            relyingParty.setId(config.relyingParty.id.get());
+        if (config.relyingParty().id().isPresent()) {
+            relyingParty.setId(config.relyingParty().id().get());
         }
         // this is required
-        relyingParty.setName(config.relyingParty.name);
+        relyingParty.setName(config.relyingParty().name());
         options.setRelyingParty(relyingParty);
-        if (config.attestation.isPresent()) {
-            options.setAttestation(config.attestation.get());
+        if (config.attestation().isPresent()) {
+            options.setAttestation(config.attestation().get());
         }
-        if (config.authenticatorAttachment.isPresent()) {
-            options.setAuthenticatorAttachment(config.authenticatorAttachment.get());
+        if (config.authenticatorAttachment().isPresent()) {
+            options.setAuthenticatorAttachment(config.authenticatorAttachment().get());
         }
-        if (config.challengeLength.isPresent()) {
-            options.setChallengeLength(config.challengeLength.getAsInt());
+        if (config.challengeLength().isPresent()) {
+            options.setChallengeLength(config.challengeLength().getAsInt());
         }
-        if (config.pubKeyCredParams.isPresent()) {
-            options.setPubKeyCredParams(config.pubKeyCredParams.get());
+        if (config.pubKeyCredParams().isPresent()) {
+            options.setPubKeyCredParams(config.pubKeyCredParams().get());
         }
-        if (config.requireResidentKey.isPresent()) {
-            options.setRequireResidentKey(config.requireResidentKey.get());
+        if (config.requireResidentKey().isPresent()) {
+            options.setRequireResidentKey(config.requireResidentKey().get());
         }
-        if (config.timeout.isPresent()) {
-            options.setTimeoutInMilliseconds(config.timeout.get().toMillis());
+        if (config.timeout().isPresent()) {
+            options.setTimeoutInMilliseconds(config.timeout().get().toMillis());
         }
-        if (config.transports.isPresent()) {
-            options.setTransports(config.transports.get());
+        if (config.transports().isPresent()) {
+            options.setTransports(config.transports().get());
         }
-        if (config.userVerification.isPresent()) {
-            options.setUserVerification(config.userVerification.get());
+        if (config.userVerification().isPresent()) {
+            options.setUserVerification(config.userVerification().get());
         }
         webAuthn = WebAuthn.create(vertx, options)
                 // where to load/update authenticators data
                 .authenticatorFetcher(database::fetcher)
                 .authenticatorUpdater(database::updater);
-        origin = config.origin.orElse(null);
+        origin = config.origin().orElse(null);
         if (origin != null) {
             Origin o = Origin.parse(origin);
             domain = o.host();

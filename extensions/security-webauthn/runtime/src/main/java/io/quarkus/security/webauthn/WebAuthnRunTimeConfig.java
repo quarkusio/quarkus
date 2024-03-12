@@ -5,10 +5,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 import io.vertx.ext.auth.webauthn.Attestation;
 import io.vertx.ext.auth.webauthn.AuthenticatorAttachment;
 import io.vertx.ext.auth.webauthn.AuthenticatorTransport;
@@ -18,13 +20,14 @@ import io.vertx.ext.auth.webauthn.UserVerification;
 /**
  * Webauthn runtime configuration object.
  */
-@ConfigRoot(name = "webauthn", phase = ConfigPhase.RUN_TIME)
-public class WebAuthnRunTimeConfig {
+@ConfigMapping(prefix = "quarkus.webauthn")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface WebAuthnRunTimeConfig {
 
     /**
      * SameSite attribute values for the session cookie.
      */
-    public enum CookieSameSite {
+    enum CookieSameSite {
         STRICT,
         LAX,
         NONE
@@ -42,8 +45,7 @@ public class WebAuthnRunTimeConfig {
      * Please note that WebAuthn API will not work on pages loaded over HTTP, unless it is localhost,
      * which is considered secure context.
      */
-    @ConfigItem
-    public Optional<String> origin;
+    Optional<String> origin();
 
     /**
      * Authenticator Transports allowed by the application. Authenticators can interact with the user web browser
@@ -62,15 +64,14 @@ public class WebAuthnRunTimeConfig {
      * <li>{@code INTERNAL} - Hardware security chips (e.g.: Intel TPM2.0)</li>
      * </ul>
      */
-    @ConfigItem(defaultValueDocumentation = "USB,NFC,BLE,INTERNAL")
-    public Optional<List<AuthenticatorTransport>> transports;
+    @ConfigDocDefault("USB,NFC,BLE,INTERNAL")
+    Optional<List<AuthenticatorTransport>> transports();
 
     /**
      * Your application is a relying party. In order for the user browser to correctly present you to the user, basic
      * information should be provided that will be presented during the user verification popup messages.
      */
-    @ConfigItem
-    public RelyingPartyConfig relyingParty;
+    RelyingPartyConfig relyingParty();
 
     /**
      * Kind of Authenticator Attachment allowed. Authenticators can connect to your device in two forms:
@@ -83,15 +84,14 @@ public class WebAuthnRunTimeConfig {
      * For security reasons your application may choose to restrict to a specific attachment mode. If omitted, then
      * any mode is permitted.
      */
-    @ConfigItem
-    public Optional<AuthenticatorAttachment> authenticatorAttachment;
+    Optional<AuthenticatorAttachment> authenticatorAttachment();
 
     /**
      * Resident key required. A resident (private) key, is a key that cannot leave your authenticator device, this
      * means that you cannot reuse the authenticator to log into a second computer.
      */
-    @ConfigItem(defaultValueDocumentation = "false")
-    public Optional<Boolean> requireResidentKey;
+    @ConfigDocDefault("false")
+    Optional<Boolean> requireResidentKey();
 
     /**
      * User Verification requirements. Webauthn applications may choose {@code REQUIRED} verification to assert that
@@ -104,16 +104,16 @@ public class WebAuthnRunTimeConfig {
      * <li>{@code DISCOURAGED} - User should avoid interact with the browser</li>
      * </ul>
      */
-    @ConfigItem(defaultValueDocumentation = "REQUIRED")
-    public Optional<UserVerification> userVerification;
+    @ConfigDocDefault("REQUIRED")
+    Optional<UserVerification> userVerification();
 
     /**
      * Non-negative User Verification timeout. Authentication must occur within the timeout, this will prevent the user
      * browser from being blocked with a pop-up required user verification, and the whole ceremony must be completed
      * within the timeout period. After the timeout, any previously issued challenge is automatically invalidated.
      */
-    @ConfigItem(defaultValueDocumentation = "60s")
-    public Optional<Duration> timeout;
+    @ConfigDocDefault("60s")
+    Optional<Duration> timeout();
 
     /**
      * Device Attestation Preference. During registration, applications may want to attest the device. Attestation is a
@@ -133,8 +133,8 @@ public class WebAuthnRunTimeConfig {
      * unaltered.</li>
      * </ul>
      */
-    @ConfigItem(defaultValueDocumentation = "NONE")
-    public Optional<Attestation> attestation;
+    @ConfigDocDefault("NONE")
+    Optional<Attestation> attestation();
 
     /**
      * Allowed Public Key Credential algorithms by preference order. Webauthn mandates that all authenticators must
@@ -145,15 +145,15 @@ public class WebAuthnRunTimeConfig {
      * Note that the use of stronger algorithms, e.g.: {@code EdDSA} may require Java 15 or a cryptographic {@code JCE}
      * provider that implements the algorithms.
      */
-    @ConfigItem(defaultValueDocumentation = "ES256,RS256")
-    public Optional<List<PublicKeyCredential>> pubKeyCredParams;
+    @ConfigDocDefault("ES256,RS256")
+    Optional<List<PublicKeyCredential>> pubKeyCredParams();
 
     /**
      * Length of the challenges exchanged between the application and the browser.
      * Challenges must be at least 32 bytes.
      */
-    @ConfigItem(defaultValueDocumentation = "64")
-    public OptionalInt challengeLength;
+    @ConfigDocDefault("64")
+    OptionalInt challengeLength();
 
     /**
      * Extensions are optional JSON blobs that can be used during registration or authentication that can enhance the
@@ -178,18 +178,17 @@ public class WebAuthnRunTimeConfig {
     //private List<X509CRL> rootCrls;
 
     @ConfigGroup
-    public static class RelyingPartyConfig {
+    interface RelyingPartyConfig {
         /**
          * The id (or domain name of your server)
          */
-        @ConfigItem
-        public Optional<String> id;
+        Optional<String> id();
 
         /**
          * A user friendly name for your server
          */
-        @ConfigItem(defaultValue = "Quarkus server")
-        public String name;
+        @WithDefault("Quarkus server")
+        String name();
     }
 
     // FIXME: merge with form config?
@@ -197,16 +196,16 @@ public class WebAuthnRunTimeConfig {
     /**
      * The login page
      */
-    @ConfigItem(defaultValue = "/login.html")
-    public String loginPage;
+    @WithDefault("/login.html")
+    String loginPage();
 
     /**
      * The inactivity (idle) timeout
      *
      * When inactivity timeout is reached, cookie is not renewed and a new login is enforced.
      */
-    @ConfigItem(defaultValue = "PT30M")
-    public Duration sessionTimeout;
+    @WithDefault("PT30M")
+    Duration sessionTimeout();
 
     /**
      * How old a cookie can get before it will be replaced with a new cookie with an updated timeout, also
@@ -223,24 +222,24 @@ public class WebAuthnRunTimeConfig {
      * That is, no timeout is tracked on the server side; the timestamp is encoded and encrypted in the cookie
      * itself, and it is decrypted and parsed with each request.
      */
-    @ConfigItem(defaultValue = "PT1M")
-    public Duration newCookieInterval;
+    @WithDefault("PT1M")
+    Duration newCookieInterval();
 
     /**
      * The cookie that is used to store the persistent session
      */
-    @ConfigItem(defaultValue = "quarkus-credential")
-    public String cookieName;
+    @WithDefault("quarkus-credential")
+    String cookieName();
 
     /**
      * SameSite attribute for the session cookie.
      */
-    @ConfigItem(defaultValue = "strict")
-    public CookieSameSite cookieSameSite = CookieSameSite.STRICT;
+    @WithDefault("strict")
+    CookieSameSite cookieSameSite();
 
     /**
      * The cookie path for the session cookies.
      */
-    @ConfigItem(defaultValue = "/")
-    public Optional<String> cookiePath = Optional.of("/");
+    @WithDefault("/")
+    Optional<String> cookiePath();
 }

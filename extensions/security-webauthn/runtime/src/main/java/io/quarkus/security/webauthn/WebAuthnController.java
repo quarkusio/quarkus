@@ -41,7 +41,7 @@ public class WebAuthnController {
     public WebAuthnController(WebAuthnSecurity security, WebAuthnRunTimeConfig config,
             IdentityProviderManager identityProviderManager,
             WebAuthnAuthenticationMechanism authMech) {
-        origin = config.origin.orElse(null);
+        origin = config.origin().orElse(null);
         if (origin != null) {
             Origin o = Origin.parse(origin);
             domain = o.host();

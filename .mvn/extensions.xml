@@ -7,7 +7,7 @@
     <extension>
         <groupId>com.gradle</groupId>
         <artifactId>common-custom-user-data-maven-extension</artifactId>
-        <version>1.12.5</version>
+        <version>1.13</version>
     </extension>
     <extension>
         <groupId>com.gradle</groupId>

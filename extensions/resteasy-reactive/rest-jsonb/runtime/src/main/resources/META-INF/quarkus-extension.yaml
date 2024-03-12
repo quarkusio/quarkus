@@ -15,6 +15,7 @@ metadata:
   - "web"
   - "reactive"
   status: "stable"
+  guide: "https://quarkus.io/guides/rest#json-serialisation"
   codestart:
     name: "rest"
     kind: "core"
@@ -24,4 +25,5 @@ metadata:
       - "scala"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   config:
+  - "quarkus.rest."
   - "quarkus.resteasy-reactive."

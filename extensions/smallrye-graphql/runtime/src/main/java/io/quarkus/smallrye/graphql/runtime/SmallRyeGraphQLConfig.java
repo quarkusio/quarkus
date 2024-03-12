@@ -7,7 +7,6 @@ import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.smallrye.graphql.schema.helper.TypeAutoNameStrategy;
 import io.smallrye.graphql.spi.config.LogPayloadOption;
 
 @ConfigRoot(name = "smallrye-graphql", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
@@ -71,9 +70,10 @@ public class SmallRyeGraphQLConfig {
 
     /**
      * Change the type naming strategy.
+     * All possible strategies are: default, merge-inner-class, full
      */
     @ConfigItem(defaultValue = "Default")
-    public TypeAutoNameStrategy autoNameStrategy;
+    public String autoNameStrategy;
 
     /**
      * List of extension fields that should be included in the error response.
@@ -221,4 +221,12 @@ public class SmallRyeGraphQLConfig {
      */
     @ConfigItem
     public Optional<List<ExtraScalar>> extraScalars;
+
+    /**
+     * Excludes all the 'null' fields in the GraphQL response's <code>data</code> field,
+     * except for the non-successfully resolved fields (errors).
+     * Disabled by default.
+     */
+    @ConfigItem
+    public Optional<Boolean> excludeNullFieldsInResponses;
 }

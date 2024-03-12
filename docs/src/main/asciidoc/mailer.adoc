@@ -223,7 +223,7 @@ The xref:mailer-reference.adoc[mailer reference guide] provides more details abo
 * xref:mailer-reference.adoc#html[how to format the email as HTML and use inline attachments]
 * xref:mailer-reference.adoc#templates[how to use Qute templates]
 * xref:mailer-reference.adoc#testing[how to test applications sending emails]
-* xref:mailer-reference.adoc#gmail-specific-configuration[how to configure the mailer to send emails with GMAIL]
+* xref:mailer-reference.adoc#popular[how to configure the mailer for popular email services (e.g. Gmail, AWS SES)]
 
 
 

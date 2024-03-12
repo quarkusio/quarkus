@@ -132,6 +132,8 @@ public class ImmutablePathMatcher<T> {
         private final Map<String, T> additionalExactPathMatches = new HashMap<>();
         private final Map<String, Path<T>> pathsWithWildcard = new HashMap<>();
         private BiConsumer<T, T> handlerAccumulator;
+        private String rootPath;
+        private boolean empty = true;
 
         private ImmutablePathMatcherBuilder() {
         }
@@ -146,9 +148,22 @@ public class ImmutablePathMatcher<T> {
             return this;
         }
 
+        public boolean hasPaths() {
+            return !empty;
+        }
+
+        /**
+         * @param rootPath Path to which relative patterns (paths not starting with a separator) are linked.
+         * @return ImmutablePathMatcherBuilder
+         */
+        public ImmutablePathMatcherBuilder<T> rootPath(String rootPath) {
+            this.rootPath = rootPath;
+            return this;
+        }
+
         public ImmutablePathMatcher<T> build() {
             T defaultHandler = null;
-            SubstringMap<T> paths = new SubstringMap<>();
+            var paths = ImmutableSubstringMap.<T> builder();
             boolean hasPathWithInnerWildcard = false;
             // process paths with a wildcard first, that way we only create inner path matcher when really needed
             for (Path<T> p : pathsWithWildcard.values()) {
@@ -200,7 +215,7 @@ public class ImmutablePathMatcher<T> {
                 exactPathMatches.putIfAbsent(e.getKey(), e.getValue());
             }
             int[] lengths = buildLengths(paths.keys());
-            return new ImmutablePathMatcher<>(defaultHandler, paths.asImmutableMap(), exactPathMatches, lengths,
+            return new ImmutablePathMatcher<>(defaultHandler, paths.build(), exactPathMatches, lengths,
                     hasPathWithInnerWildcard);
         }
 
@@ -227,6 +242,13 @@ public class ImmutablePathMatcher<T> {
          * @return self
          */
         public ImmutablePathMatcherBuilder<T> addPath(String path, T handler) {
+            if (empty) {
+                empty = false;
+            }
+            path = path.trim();
+            if (rootPath != null && !path.startsWith("/")) {
+                path = rootPath + path;
+            }
             return addPath(path, path, handler);
         }
 
@@ -363,13 +385,6 @@ public class ImmutablePathMatcher<T> {
         }
     }
 
-    private static class PathWithInnerWildcard<T> {
-        private final String remaining;
-        private final T handler;
-
-        private PathWithInnerWildcard(String remaining, T handler) {
-            this.remaining = remaining;
-            this.handler = handler;
-        }
+    private record PathWithInnerWildcard<T>(String remaining, T handler) {
     }
 }

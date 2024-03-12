@@ -1,5 +1,8 @@
 package io.quarkus.it.keycloak;
 
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.oidc.TenantResolver;
@@ -9,11 +12,14 @@ import io.vertx.ext.web.RoutingContext;
 @ApplicationScoped
 public class CustomTenantResolver implements TenantResolver {
 
+    private static final Predicate<String> USE_DEFAULT_STATIC_RESOLVER = path -> Stream
+            .of("/api/tenant-echo", "/api/tenant-paths/")
+            .anyMatch(path::contains);
+
     @Override
     public String resolve(RoutingContext context) {
-        if (context.request().path().contains("/api/tenant-echo")) {
-            // do what DefaultStaticTenantResolver does so that we can test @Tenant
-            return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+        if (USE_DEFAULT_STATIC_RESOLVER.test(context.request().path())) {
+            return null;
         }
         // Make sure this resolver is called only once during a given request
         if (context.get("static_config_resolved") != null) {

@@ -93,6 +93,17 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public Optional<String> endSessionPath = Optional.empty();
 
     /**
+     * The paths which must be secured by this tenant. Tenant with the most specific path wins.
+     * Please see the xref:security-openid-connect-multitenancy.adoc#configuration-based-tenant-resolver[Resolve with
+     * configuration]
+     * section of the OIDC multitenancy guide for explanation of allowed path patterns.
+     *
+     * @asciidoclet
+     */
+    @ConfigItem
+    public Optional<List<String>> tenantPaths = Optional.empty();
+
+    /**
      * The public key for the local JWT token verification.
      * OIDC server connection is not created when this property is set.
      */

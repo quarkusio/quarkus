@@ -157,11 +157,22 @@
                         <parentFirstArtifact>io.smallrye.common:smallrye-common-os</parentFirstArtifact>
                         <parentFirstArtifact>io.smallrye.common:smallrye-common-ref</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.sdk:graal-sdk</parentFirstArtifact>
-                        <parentFirstArtifact>org.graalvm.js:js</parentFirstArtifact>
+                        <!-- support for GraalVM js -->
+                        <parentFirstArtifact>org.graalvm.polyglot:js-community</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.js:js-language</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.polyglot:js</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.polyglot:polyglot</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.regex:regex</parentFirstArtifact>
                         <parentFirstArtifact>org.graalvm.truffle:truffle-api</parentFirstArtifact>
-                        <parentFirstArtifact>org.graalvm.nativeimage:svm</parentFirstArtifact>
-                        <parentFirstArtifact>com.ibm.icu:icu4j</parentFirstArtifact> <!-- dependency of org.graalvm.js:js -->
+                        <parentFirstArtifact>org.graalvm.truffle:truffle-runtime</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.truffle:truffle-compiler</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.truffle:truffle-enterprise</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.shadowed:icu4j</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.sdk:jniutils</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.sdk:word</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.sdk:native-image</parentFirstArtifact>
+                        <parentFirstArtifact>org.graalvm.sdk:native-bridge</parentFirstArtifact>
+                        <!-- /support for GraalVM js -->
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-core</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-development-mode-spi</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-app-model</parentFirstArtifact>
@@ -207,10 +218,22 @@
                     </parentFirstArtifacts>
                     <runnerParentFirstArtifacts>
                         <runnerParentFirstArtifact>org.graalvm.sdk:graal-sdk</runnerParentFirstArtifact>
-                        <runnerParentFirstArtifact>org.graalvm.js:js</runnerParentFirstArtifact>
+                        <!-- support for GraalVM js -->
+                        <runnerParentFirstArtifact>org.graalvm.polyglot:js-community</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.js:js-language</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.polyglot:js</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.polyglot:polyglot</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.graalvm.regex:regex</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>org.graalvm.truffle:truffle-api</runnerParentFirstArtifact>
-                        <runnerParentFirstArtifact>com.ibm.icu:icu4j</runnerParentFirstArtifact> <!-- dependency of org.graalvm.js:js -->
+                        <runnerParentFirstArtifact>org.graalvm.truffle:truffle-runtime</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.truffle:truffle-compiler</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.truffle:truffle-enterprise</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.shadowed:icu4j</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.sdk:jniutils</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.sdk:word</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.sdk:native-image</runnerParentFirstArtifact>
+                        <runnerParentFirstArtifact>org.graalvm.sdk:native-bridge</runnerParentFirstArtifact>
+                        <!-- /support for GraalVM js -->
                         <runnerParentFirstArtifact>io.quarkus:quarkus-bootstrap-runner</runnerParentFirstArtifact>
                         <runnerParentFirstArtifact>io.quarkus:quarkus-development-mode-spi</runnerParentFirstArtifact>
                         <!-- logging dependencies always need to be loaded by the JDK ClassLoader -->

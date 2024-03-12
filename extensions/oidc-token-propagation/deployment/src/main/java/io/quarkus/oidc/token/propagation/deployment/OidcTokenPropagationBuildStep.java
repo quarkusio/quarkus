@@ -53,8 +53,8 @@ public class OidcTokenPropagationBuildStep {
         reflectiveClass
                 .produce(ReflectiveClassBuildItem.builder(JsonWebTokenRequestFilter.class).methods().fields().build());
 
-        if (config.registerFilter) {
-            Class<?> filterClass = config.jsonWebToken ? JsonWebTokenRequestFilter.class : AccessTokenRequestFilter.class;
+        if (config.registerFilter()) {
+            Class<?> filterClass = config.jsonWebToken() ? JsonWebTokenRequestFilter.class : AccessTokenRequestFilter.class;
             jaxrsProviders.produce(new ResteasyJaxrsProviderBuildItem(filterClass.getName()));
         } else {
             restAnnotationProvider.produce(new RestClientAnnotationProviderBuildItem(JWT_ACCESS_TOKEN_CREDENTIAL,

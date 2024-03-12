@@ -211,8 +211,9 @@ abstract class QuarkusBuildTask extends QuarkusTask {
         SmallRyeConfig config = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).getConfig();
         Map<String, String> quarkusProperties = Expressions.withoutExpansion(() -> {
             Map<String, String> values = new HashMap<>();
-            config.getValues("quarkus", String.class, String.class)
-                    .forEach((key, value) -> values.put("quarkus." + key, value));
+            for (String key : config.getMapKeys("quarkus").values()) {
+                values.put(key, config.getConfigValue(key).getValue());
+            }
             return values;
         });
 

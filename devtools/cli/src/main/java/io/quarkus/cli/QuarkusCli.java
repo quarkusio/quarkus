@@ -172,7 +172,8 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
                 missingCommand.append(currentParseResult.commandSpec().name());
 
                 List<String> unmatchedSubcommands = currentParseResult.unmatched().stream()
-                        .filter(u -> !u.startsWith("-")).collect(Collectors.toList());
+                        .takeWhile(u -> !u.startsWith("-"))
+                        .collect(Collectors.toList());
                 if (!unmatchedSubcommands.isEmpty()) {
                     missingCommand.append("-").append(unmatchedSubcommands.get(0));
                     return Optional.of(missingCommand.toString());

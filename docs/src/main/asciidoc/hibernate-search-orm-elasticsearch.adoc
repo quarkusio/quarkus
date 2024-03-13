@@ -486,6 +486,9 @@ quarkus.hibernate-search-orm.elasticsearch.analysis.configurer=bean:myAnalysisCo
 ----
 ====
 
+For more information about configuring analyzers,
+see link:{hibernate-search-docs-url}#backend-elasticsearch-analysis[this section of the reference documentation].
+
 == Adding full text capabilities to our REST service
 
 In our existing `LibraryResource`, we just need to inject the `SearchSession`:
@@ -888,6 +891,9 @@ xref:hibernate-orm.adoc#multiple-persistence-units-attaching-model-classes[confi
 [[multiple-persistence-units-attaching-cdi]]
 == CDI integration
 
+[[injecting-entry-points]]
+=== Injecting entry points
+
 You can inject Hibernate Search's main entry points, `SearchSession` and `SearchMapping`, using CDI:
 
 [source,java]
@@ -918,7 +924,60 @@ You can inject the `SearchMapping` of a named persistence unit using the exact s
 SearchMapping searchMapping;
 ----
 
+[[plugging-in-custom-components]]
+=== Plugging in custom components
 
+The Quarkus extension for Hibernate Search with Hibernate ORM will automatically
+inject components annotated with `@SearchExtension` into Hibernate Search.
+
+The annotation can optionally target a specific persistence unit (`@SearchExtension(persistenceUnit = "nameOfYourPU")`),
+backend (`@SearchExtension(backend = "nameOfYourBackend")`), index (`@SearchExtension(index = "nameOfYourIndex")`),
+or a combination of those
+(`@SearchExtension(persistenceUnit = "nameOfYourPU", backend = "nameOfYourBackend", index = "nameOfYourIndex")`),
+when it makes sense for the type of the component being injected.
+
+This feature is available for the following component types:
+
+`org.hibernate.search.engine.reporting.FailureHandler`::
+A component that should be notified of any failure occurring in a background process
+(mainly index operations).
++
+Scope: one per persistence unit.
++
+See link:{hibernate-search-docs-url}#configuration-background-failure-handling[this section of the reference documentation]
+for more information.
+`org.hibernate.search.mapper.orm.mapping.HibernateOrmSearchMappingConfigurer`::
+A component used to configure the Hibernate Search mapping, in particular programmatically.
++
+Scope: one or more per persistence unit.
++
+See <<programmatic-mapping,this section of this guide>> for more information.
+`org.hibernate.search.mapper.pojo.work.IndexingPlanSynchronizationStrategy`::
+A component used to configure how to synchronize between application threads and indexing.
++
+Scope: one per persistence unit.
++
+Can also be set to built-in implementations through
+<<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-indexing-plan-synchronization-strategy,`quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy`>>.
++
+See link:{hibernate-search-docs-url}#indexing-plan-synchronization[this section of the reference documentation]
+for more information.
+`org.hibernate.search.backend.elasticsearch.analysis.ElasticsearchAnalysisConfigurer`::
+A component used to configure full text analysis (e.g. analyzers, normalizers).
++
+Scope: one or more per backend.
++
+See <<analysis-configurer,this section of this guide>> for more information.
+`org.hibernate.search.backend.elasticsearch.index.layout.IndexLayoutStrategy`::
+A component used to configure the Elasticsearch layout: index names, index aliases, ...
++
+Scope: one per backend.
++
+Can also be set to built-in implementations through
+<<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-elasticsearch-layout-strategy,`quarkus.hibernate-search-orm.elasticsearch.layout.strategy`>>.
++
+See link:{hibernate-search-docs-url}#backend-elasticsearch-indexlayout[this section of the reference documentation]
+for more information.
 
 [[offline-startup]]
 == Offline startup
@@ -1184,9 +1243,12 @@ include::{generated-dir}/config/quarkus-hibernate-search-orm-elasticsearch.adoc[
 [[bean-reference-note-anchor]]
 .About bean references
 ====
-When referencing beans using a string value in configuration properties, that string is parsed.
+First, be aware that referencing beans in configuration properties is optional and, in fact, discouraged:
+you can achieve the same results by annotating your beans with `@SearchExtension`.
+See <<plugging-in-custom-components,this section>> for more information.
 
-Here are the most common formats:
+If you really do want to reference beans using a string value in configuration properties
+know that string is parsed; here are the most common formats:
 
 * `bean:` followed by the name of a `@Named` CDI bean.
 For example `bean:myBean`.

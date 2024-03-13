@@ -139,16 +139,16 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
                 .collect(Collectors.toCollection(ArrayList::new));
 
         // include default codestarts depending on the versions and the extensions being chosen or not
-        Optional<ExtensionCodestart> selectedDefaultCodeStart = getSelectedDefaultCodeStart(projectInput);
+        Optional<String> selectedDefaultCodeStart = getSelectedDefaultCodeStart(projectInput);
 
         if (projectInput.getAppContent().contains(CODE)
                 && selectedDefaultCodeStart.isPresent()
                 && projectCodestarts.stream()
                         .noneMatch(c -> c.getType() == CodestartType.CODE && !c.getSpec().isPreselected())) {
             final Codestart defaultCodestart = codestarts.stream()
-                    .filter(c -> c.matches(selectedDefaultCodeStart.get().key()))
+                    .filter(c -> c.matches(selectedDefaultCodeStart.get()))
                     .findFirst().orElseThrow(() -> new CodestartStructureException(
-                            selectedDefaultCodeStart.get().key() + " codestart not found"));
+                            selectedDefaultCodeStart.get() + " codestart not found"));
             final String languageName = findLanguageName(projectCodestarts);
             if (defaultCodestart.implementsLanguage(languageName)) {
                 projectCodestarts.add(defaultCodestart);
@@ -178,7 +178,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         return projectCodestarts;
     }
 
-    private Optional<ExtensionCodestart> getSelectedDefaultCodeStart(QuarkusCodestartProjectInput projectInput) {
+    private Optional<String> getSelectedDefaultCodeStart(QuarkusCodestartProjectInput projectInput) {
         // This is very hackyish, we need a better data structure to do better
         Optional<ArtifactCoords> quarkusBom = projectInput.getBoms().stream()
                 .map(ArtifactCoords::fromString)
@@ -195,13 +195,17 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
             if (projectInput.getExtensions().isEmpty() ||
                     (projectInput.getExtensions().size() == 1
                             && isLanguageExtension(projectInput.getExtensions().iterator().next()))) {
-                return Optional.of(ExtensionCodestart.REST);
+                var defaultCodestart = projectInput.getDefaultCodestart();
+                if (defaultCodestart == null) {
+                    defaultCodestart = QuarkusCodestartCatalog.ExtensionCodestart.REST.key();
+                }
+                return Optional.of(defaultCodestart);
             }
 
             return Optional.empty();
         }
 
-        return Optional.of(ExtensionCodestart.RESTEASY);
+        return Optional.of(ExtensionCodestart.RESTEASY.key());
     }
 
     private boolean isCoreBom(ArtifactCoords artifactCoords) {

@@ -27,6 +27,7 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
     Set<AppContent> appContent = new HashSet<>(FULL_CONTENT);
     String example;
     BuildTool buildTool = BuildTool.MAVEN;
+    String defaultCodestart;
 
     QuarkusCodestartProjectInputBuilder() {
         super();
@@ -143,6 +144,13 @@ public class QuarkusCodestartProjectInputBuilder extends CodestartProjectInputBu
             return this;
         }
         this.buildTool = buildTool;
+        return this;
+    }
+
+    public QuarkusCodestartProjectInputBuilder defaultCodestart(String defaultCodestart) {
+        if (defaultCodestart != null) {
+            this.defaultCodestart = defaultCodestart;
+        }
         return this;
     }
 

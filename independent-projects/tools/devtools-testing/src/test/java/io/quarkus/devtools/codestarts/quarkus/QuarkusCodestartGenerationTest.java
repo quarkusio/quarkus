@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.testing.FakeExtensionCatalog;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTesting;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -38,7 +39,7 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     void generateDefault(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .noCode()
                 .noDockerfiles()
                 .noBuildToolWrapper()
@@ -60,9 +61,13 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/java")).exists().isEmptyDirectory();
     }
 
+    private static QuarkusCodestartProjectInputBuilder newInputBuilder() {
+        return QuarkusCodestartProjectInput.builder().defaultCodestart(FakeExtensionCatalog.getDefaultCodestart());
+    }
+
     @Test
     void generateRESTEasyJavaCustom(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addData(getGenerationTestInputData())
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .putData(PROJECT_PACKAGE_NAME.key(), "com.andy")
@@ -101,7 +106,7 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     void generateMavenWithCustomDep(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addData(getGenerationTestInputData())
                 .addBoms(QuarkusCodestartTesting.getPlatformBoms())
                 .addExtension(ArtifactCoords.fromString("io.quarkus:quarkus-resteasy:1.8"))
@@ -127,7 +132,7 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     void generateRESTEasyKotlinCustom(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addData(getGenerationTestInputData())
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-kotlin"))
@@ -160,7 +165,7 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     void generateRESTEasyScalaCustom(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addData(getGenerationTestInputData())
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-scala"))
@@ -193,7 +198,7 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     void generateMavenDefaultJava(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addData(getGenerationTestInputData())
                 .build();
         final Path projectDir = testDirPath.resolve("maven-default-java");
@@ -211,7 +216,7 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     void generateGradleDefaultJava(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .buildTool(BuildTool.GRADLE)
                 .addData(getGenerationTestInputData())
                 .build();
@@ -230,7 +235,7 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     void generateMavenResteasyJava(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
                 .addData(getGenerationTestInputData())
                 .build();
@@ -249,7 +254,7 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     void generateMavenConfigYamlJava(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-config-yaml"))
                 .addData(getGenerationTestInputData())
                 .build();
@@ -264,7 +269,7 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     public void generateGradleWrapperGithubAction(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .buildTool(BuildTool.GRADLE)
                 .addData(getGenerationTestInputData())
                 .addCodestarts(Collections.singletonList("tooling-github-action"))
@@ -280,7 +285,7 @@ class QuarkusCodestartGenerationTest {
 
     @Test
     public void generateGradleNoWrapperGithubAction(TestInfo testInfo) throws Throwable {
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+        final QuarkusCodestartProjectInput input = newInputBuilder()
                 .buildTool(BuildTool.GRADLE)
                 .noBuildToolWrapper()
                 .addData(getGenerationTestInputData())

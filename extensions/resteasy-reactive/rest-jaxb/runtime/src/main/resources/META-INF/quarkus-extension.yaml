@@ -16,6 +16,7 @@ metadata:
     - "reactive"
     - "serialization"
   status: "stable"
+  guide: "https://quarkus.io/guides/resteasy-reactive#xml-serialisation"
   codestart:
     name: "rest"
     kind: "core"
@@ -25,4 +26,5 @@ metadata:
       - "scala"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   config:
+    - "quarkus.rest."
     - "quarkus.resteasy-reactive."

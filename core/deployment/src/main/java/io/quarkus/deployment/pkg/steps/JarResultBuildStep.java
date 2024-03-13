@@ -1,5 +1,7 @@
 package io.quarkus.deployment.pkg.steps;
 
+import static io.quarkus.deployment.pkg.steps.GraalVM.Version.CURRENT;
+import static io.quarkus.deployment.pkg.steps.GraalVM.Version.VERSION_23_1_0;
 import static io.quarkus.fs.util.ZipUtils.wrapForJDK8232879;
 
 import java.io.BufferedInputStream;
@@ -74,8 +76,11 @@ import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
+import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
+import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarIgnoredResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarMergedResourceBuildItem;
 import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
@@ -970,7 +975,10 @@ public class JarResultBuildStep {
             List<GeneratedNativeImageClassBuildItem> nativeImageResources,
             List<GeneratedResourceBuildItem> generatedResources,
             MainClassBuildItem mainClassBuildItem,
-            ClassLoadingConfig classLoadingConfig) throws Exception {
+            ClassLoadingConfig classLoadingConfig,
+            NativeImageRunnerBuildItem nativeImageRunnerBuildItem,
+            Optional<ProcessInheritIODisabled> processInheritIODisabled,
+            Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem) throws Exception {
         Path targetDirectory = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
         IoUtils.createOrEmptyDir(targetDirectory);
@@ -983,7 +991,7 @@ public class JarResultBuildStep {
         return buildNativeImageThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                 applicationArchivesBuildItem,
                 applicationInfo, packageConfig, allClasses, generatedResources, mainClassBuildItem, targetDirectory,
-                classLoadingConfig);
+                classLoadingConfig, nativeImageRunnerBuildItem, processInheritIODisabled, processInheritIODisabledBuildItem);
     }
 
     private NativeImageSourceJarBuildItem buildNativeImageThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -996,7 +1004,10 @@ public class JarResultBuildStep {
             List<GeneratedResourceBuildItem> generatedResources,
             MainClassBuildItem mainClassBuildItem,
             Path targetDirectory,
-            ClassLoadingConfig classLoadingConfig) throws Exception {
+            ClassLoadingConfig classLoadingConfig,
+            NativeImageRunnerBuildItem nativeImageRunnerBuildItem,
+            Optional<ProcessInheritIODisabled> processInheritIODisabled,
+            Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem) throws Exception {
         copyJsonConfigFiles(applicationArchivesBuildItem, targetDirectory);
 
         Path runnerJar = targetDirectory
@@ -1018,6 +1029,21 @@ public class JarResultBuildStep {
             removedArtifacts.add("org.graalvm.sdk:nativeimage");
             removedArtifacts.add("org.graalvm.sdk:word");
             removedArtifacts.add("org.graalvm.sdk:collections");
+
+            nativeImageRunnerBuildItem.getBuildRunner()
+                    .setup(processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
+            final GraalVM.Version v;
+            if (nativeImageRunnerBuildItem.getBuildRunner() instanceof NoopNativeImageBuildRunner) {
+                v = CURRENT;
+                log.warnf("native-image is not installed. " +
+                        "Using the default %s version as a reference to build native image thin jar.", v.getVersionAsString());
+            } else {
+                v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
+            }
+
+            if (v.compareTo(VERSION_23_1_0) < 0) {
+                removedArtifacts.add("org.graalvm.polyglot:polyglot");
+            }
 
             doLegacyThinJarGeneration(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem, applicationInfo, packageConfig, generatedResources, libDir, allClasses,

@@ -25,12 +25,14 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
+import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
@@ -47,6 +49,8 @@ public class PathMatchingHttpSecurityPolicyTest {
             quarkus.http.auth.permission.public.policy=permit
             quarkus.http.auth.permission.foo.paths=/api/foo/bar
             quarkus.http.auth.permission.foo.policy=authenticated
+            quarkus.http.auth.permission.unsecured.paths=/api/public
+            quarkus.http.auth.permission.unsecured.policy=permit
             quarkus.http.auth.permission.inner-wildcard.paths=/api/*/bar
             quarkus.http.auth.permission.inner-wildcard.policy=authenticated
             quarkus.http.auth.permission.inner-wildcard2.paths=/api/next/*/prev
@@ -80,6 +84,9 @@ public class PathMatchingHttpSecurityPolicyTest {
             quarkus.http.auth.permission.shared2.paths=/*
             quarkus.http.auth.permission.shared2.shared=true
             quarkus.http.auth.permission.shared2.policy=custom
+            quarkus.http.auth.roles-mapping.root1=admin,user
+            quarkus.http.auth.roles-mapping.admin1=admin
+            quarkus.http.auth.roles-mapping.public1=public2
             """;
     private static WebClient client;
 
@@ -98,7 +105,10 @@ public class PathMatchingHttpSecurityPolicyTest {
                 .add("test", "test", "test")
                 .add("admin", "admin", "admin")
                 .add("user", "user", "user")
-                .add("root", "root", "root");
+                .add("admin1", "admin1", "admin1")
+                .add("root1", "root1", "root1")
+                .add("root", "root", "root")
+                .add("public1", "public1", "public1");
     }
 
     @AfterAll
@@ -223,15 +233,20 @@ public class PathMatchingHttpSecurityPolicyTest {
         assurePath("/secured/all", 401, null, null, null);
         assurePath("/secured/all", 200, null, "test", null);
         assurePath("/secured/all", 200, null, "root", null);
+        assurePath("/secured/all", 200, null, "root1", null);
         assurePath("/secured/all", 200, null, "admin", null);
         assurePath("/secured/user", 403, null, "test", null);
         assurePath("/secured/user", 403, null, "admin", null);
+        assurePath("/secured/user", 403, null, "admin1", null);
         assurePath("/secured/user", 200, null, "root", null);
+        assurePath("/secured/user", 200, null, "root1", null);
         assurePath("/secured/user", 200, null, "user", null);
         assurePath("/secured/admin", 403, null, "user", null);
         assurePath("/secured/admin", 403, null, "test", null);
         assurePath("/secured/admin", 200, null, "admin", null);
+        assurePath("/secured/admin", 200, null, "admin1", null);
         assurePath("/secured/admin", 200, null, "root", null);
+        assurePath("/secured/admin", 200, null, "root1", null);
     }
 
     @Test
@@ -240,10 +255,26 @@ public class PathMatchingHttpSecurityPolicyTest {
         assurePath("/secured/user", 403, null, "root", "deny-header");
     }
 
+    @Test
+    public void testRolesMappingOnPublicPath() {
+        // here no HTTP Security policy that requires authentication is applied, and we want to check that identity
+        // is still augmented
+        assurePath("/api/public", 200, null, "public1", null);
+        assurePath("/api/public", 403, null, "root1", null);
+    }
+
     @ApplicationScoped
     public static class RouteHandler {
         public void setup(@Observes Router router) {
             router.route("/api/baz").order(-1).handler(rc -> rc.response().end("/api/baz response"));
+            router.route("/api/public").order(-1).handler(rc -> {
+                if (rc.user() instanceof QuarkusHttpUser user && user.getSecurityIdentity() != null
+                        && user.getSecurityIdentity().hasRole("public2")) {
+                    rc.response().end("/api/public");
+                } else {
+                    rc.fail(new ForbiddenException());
+                }
+            });
         }
     }
 

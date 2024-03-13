@@ -78,6 +78,13 @@ public class AnnotationBasedTenantTest {
                 .when().get("/api/tenant-echo/hr-identity-augmentation")
                 .then().statusCode(200)
                 .body(Matchers.equalTo(("tenant-id=tenant-public-key, static.tenant.id=tenant-public-key, name=alice")));
+
+        // test mapped role can be used by a roles policy
+        token = getTokenWithRole("role4");
+        RestAssured.given().auth().oauth2(token)
+                .when().get("/api/tenant-echo/hr-identity-augmentation")
+                .then().statusCode(200)
+                .body(Matchers.equalTo(("tenant-id=tenant-public-key, static.tenant.id=tenant-public-key, name=alice")));
     }
 
     static String getTokenWithRole(String... roles) {

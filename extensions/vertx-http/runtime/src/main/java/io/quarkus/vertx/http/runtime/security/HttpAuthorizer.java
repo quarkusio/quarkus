@@ -15,6 +15,7 @@ import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 
 /**
  * Class that is responsible for running the HTTP based permission checks
@@ -26,9 +27,10 @@ public class HttpAuthorizer extends AbstractHttpAuthorizer {
             AuthorizationController controller, Instance<HttpSecurityPolicy> installedPolicies,
             BlockingSecurityExecutor blockingExecutor, BeanManager beanManager,
             Event<AuthorizationFailureEvent> authZFailureEvent, Event<AuthorizationSuccessEvent> authZSuccessEvent,
-            @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
+            @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
+            HttpConfiguration httpConfig) {
         super(httpAuthenticator, identityProviderManager, controller, toList(installedPolicies), beanManager, blockingExecutor,
-                authZFailureEvent, authZSuccessEvent, securityEventsEnabled);
+                authZFailureEvent, authZSuccessEvent, securityEventsEnabled, httpConfig.auth.rolesMapping);
     }
 
     private static List<HttpSecurityPolicy> toList(Instance<HttpSecurityPolicy> installedPolicies) {

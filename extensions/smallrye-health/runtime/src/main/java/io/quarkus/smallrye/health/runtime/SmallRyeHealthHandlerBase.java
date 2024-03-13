@@ -20,7 +20,7 @@ import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
-abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContext> {
+public abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContext> {
 
     protected abstract Uni<SmallRyeHealth> getHealth(SmallRyeHealthReporter reporter, RoutingContext routingContext);
 
@@ -47,27 +47,30 @@ abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContext> {
         }
         SmallRyeHealthReporter reporter = Arc.container().instance(SmallRyeHealthReporter.class).get();
         Context context = Vertx.currentContext();
-        getHealth(reporter, ctx).emitOn(MutinyHelper.executor(context))
-                .subscribe().with(health -> {
-                    if (requestContext != null) {
-                        requestContext.terminate();
-                    }
-                    HttpServerResponse resp = ctx.response();
-                    if (health.isDown()) {
-                        resp.setStatusCode(503);
-                    }
-                    resp.headers().set(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
-                    Buffer buffer = Buffer.buffer(256); // this size seems to cover the basic health checks
-                    try (BufferOutputStream outputStream = new BufferOutputStream(buffer);) {
-                        reporter.reportHealth(outputStream, health);
-                        resp.end(buffer);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                }, failure -> {
-                    if (requestContext != null) {
-                        requestContext.terminate();
-                    }
-                });
+        Uni<SmallRyeHealth> healthUni = getHealth(reporter, ctx);
+        if (context != null) {
+            healthUni = healthUni.emitOn(MutinyHelper.executor(context));
+        }
+        healthUni.subscribe().with(health -> {
+            if (requestContext != null) {
+                requestContext.terminate();
+            }
+            HttpServerResponse resp = ctx.response();
+            if (health.isDown()) {
+                resp.setStatusCode(503);
+            }
+            resp.headers().set(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
+            Buffer buffer = Buffer.buffer(256); // this size seems to cover the basic health checks
+            try (BufferOutputStream outputStream = new BufferOutputStream(buffer);) {
+                reporter.reportHealth(outputStream, health);
+                resp.end(buffer);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }, failure -> {
+            if (requestContext != null) {
+                requestContext.terminate();
+            }
+        });
     }
 }

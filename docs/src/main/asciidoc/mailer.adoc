@@ -148,6 +148,12 @@ It prints it in the log, so you can check that what was about to be sent.
 NOTE: This section used the _imperative_ mailer API.
 It blocks the caller thread until the mail is sent.
 
+[TIP]
+====
+The https://github.com/quarkiverse/quarkus-mailpit[Quarkus Mailpit] extension is very handy for testing emails.
+It provides Dev Services for https://github.com/axllent/mailpit[Mailpit], a nice UI for testing and debugging email sending.
+====
+
 == Using the reactive mailer
 
 The last section use the _imperative_ mailer.
@@ -223,7 +229,7 @@ The xref:mailer-reference.adoc[mailer reference guide] provides more details abo
 * xref:mailer-reference.adoc#html[how to format the email as HTML and use inline attachments]
 * xref:mailer-reference.adoc#templates[how to use Qute templates]
 * xref:mailer-reference.adoc#testing[how to test applications sending emails]
-* xref:mailer-reference.adoc#gmail-specific-configuration[how to configure the mailer to send emails with GMAIL]
+* xref:mailer-reference.adoc#popular[how to configure the mailer for popular email services (e.g. Gmail, AWS SES)]
 
 
 

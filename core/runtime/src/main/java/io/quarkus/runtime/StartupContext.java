@@ -1,11 +1,8 @@
 package io.quarkus.runtime;
 
 import java.io.Closeable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
@@ -21,8 +18,8 @@ public class StartupContext implements Closeable {
     // this is done to distinguish between the value having never been set and having been set as null
     private boolean lastValueSet = false;
     // the initial capacity was determined experimentally for a standard set of extensions
-    private final List<Runnable> shutdownTasks = new ArrayList<>(9);
-    private final List<Runnable> lastShutdownTasks = new ArrayList<>(7);
+    private final Deque<Runnable> shutdownTasks = new ConcurrentLinkedDeque<>();
+    private final Deque<Runnable> lastShutdownTasks = new ConcurrentLinkedDeque<>();
     private String[] commandLineArgs;
     private String currentBuildStepName;
 
@@ -30,12 +27,20 @@ public class StartupContext implements Closeable {
         ShutdownContext shutdownContext = new ShutdownContext() {
             @Override
             public void addShutdownTask(Runnable runnable) {
-                shutdownTasks.add(runnable);
+                try {
+                    shutdownTasks.addFirst(runnable);
+                } catch (Throwable e) {
+                    LOG.error("Error adding shutdown event", e);
+                }
             }
 
             @Override
             public void addLastShutdownTask(Runnable runnable) {
-                lastShutdownTasks.add(runnable);
+                try {
+                    lastShutdownTasks.addFirst(runnable);
+                } catch (Throwable e) {
+                    LOG.error("Error adding last shutdown event", e);
+                }
             }
         };
         values.put(ShutdownContext.class.getName(), shutdownContext);
@@ -76,14 +81,14 @@ public class StartupContext implements Closeable {
         lastShutdownTasks.clear();
     }
 
-    private void runAllInReverseOrder(List<Runnable> tasks) {
-        List<Runnable> toClose = new ArrayList<>(tasks);
-        Collections.reverse(toClose);
-        for (Runnable r : toClose) {
+    private void runAllInReverseOrder(Deque<Runnable> tasks) {
+        Deque<Runnable> toClose = new ArrayDeque<>(tasks);
+        while (toClose.peek() != null) {
             try {
-                r.run();
-            } catch (Throwable e) {
-                LOG.error("Running a shutdown task failed", e);
+                var runnable = toClose.poll();
+                runnable.run();
+            } catch (Throwable ex) {
+                LOG.error("Running a shutdown task failed", ex);
             }
         }
     }

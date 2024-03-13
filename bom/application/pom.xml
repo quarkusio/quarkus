@@ -120,7 +120,7 @@
         <h2.version>2.1.214</h2.version>
         <postgresql-jdbc.version>42.5.1</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.0.8</mariadb-jdbc.version>
-        <mysql-jdbc.version>8.0.30</mysql-jdbc.version>
+        <mysql-jdbc.version>8.2.0</mysql-jdbc.version>
         <mssql-jdbc.version>11.2.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>21.5.0.0</oracle-jdbc.version>
@@ -4974,8 +4974,8 @@
                 <version>${mariadb-jdbc.version}</version>
             </dependency>
             <dependency>
-                <groupId>mysql</groupId>
-                <artifactId>mysql-connector-java</artifactId>
+                <groupId>com.mysql</groupId>
+                <artifactId>mysql-connector-j</artifactId>
                 <version>${mysql-jdbc.version}</version>
                 <exclusions>
                     <exclusion>

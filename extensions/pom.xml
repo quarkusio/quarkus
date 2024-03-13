@@ -14,8 +14,9 @@
     <name>Quarkus - Extensions - Parent pom</name>
     <packaging>pom</packaging>
     <modules>
-        <!-- Netty loom adaptor-->
         <module>virtual-threads</module>
+        <module>tls-registry</module>
+
         <!-- Plumbing -->
         <module>arc</module>
         <module>scheduler</module>

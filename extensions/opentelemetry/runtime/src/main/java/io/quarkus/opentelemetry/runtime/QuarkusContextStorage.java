@@ -71,7 +71,7 @@ public enum QuarkusContextStorage implements ContextStorage {
             @Override
             public void close() {
                 if (getContext(vertxContext) != toAttach) {
-                    log.warn("Context in storage not the expected context, Scope.close was not called correctly");
+                    log.info("Context in storage not the expected context, Scope.close was not called correctly");
                 }
 
                 if (beforeAttach == null) {

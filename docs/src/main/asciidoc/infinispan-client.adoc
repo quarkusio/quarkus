@@ -75,21 +75,12 @@ Create the `src/main/java/org/acme/infinispan/client/Greeting.java` file, with t
 ----
 package org.acme.infinispan.client;
 
-import org.infinispan.protostream.annotations.ProtoFactory;
-import org.infinispan.protostream.annotations.ProtoField;
+import org.infinispan.protostream.annotations.Proto;
 
-public class Greeting { // <1>
-   @ProtoField(number = 1) // <2>
-   public String name;
-
-   @ProtoField(number = 2) // <3>
-   public String message;
-}
+@Proto //<1>
+public record Greeting(String name, String message) {} //<2>
 ----
-<1> If your classes have only mutable fields, then the `ProtoFactory` annotation is not required
-is not required, assuming your class has a no arg constructor
-<2> `@ProtoField` annotation to add the name field as string in the generated Protobuf schema
-<3> `@ProtoField` annotation to add the message field as string in the generated Protobuf schema
+<1> You only need an annotation to tag the record to be marshalled by Protostream
 
 Note that we are not going to use Java serialization. https://github.com/infinispan/protostream[Protostream] is
 a serialization library based on Protobuf data format part of Infinispan. Using an annotation based API, we
@@ -104,13 +95,13 @@ Create the `src/main/java/org/acme/infinispan/client/GreetingSchema.java` file, 
 package org.acme.infinispan.client;
 
 import org.infinispan.protostream.GeneratedSchema;
-import org.infinispan.protostream.annotations.AutoProtoSchemaBuilder;
+import org.infinispan.protostream.annotations.ProtoSchema;
 
-@AutoProtoSchemaBuilder(includeClasses = Greeting.class) // <1>
+@ProtoSchema(includeClasses = Greeting.class) // <1>
 public interface GreetingSchema extends GeneratedSchema { // <2>
 }
 ----
-<1> Includes the `Greeting` pojo with the `@AutoProtoSchemaBuilder` annotation
+<1> Includes the `Greeting` pojo with the `@ProtoSchema` annotation
 <2> Extends `GeneratedSchema` Protostream API interface
 
 The Protobuf Schema that will be generated and used both on client and Infinispan Server side, will have
@@ -121,7 +112,7 @@ the following content:
 // File name: GreetingSchema.proto
 // Generated from : org.acme.infinispan.client.GreetingSchema
 
-syntax = "proto2";
+syntax = "proto3";
 
 message Greeting {
 

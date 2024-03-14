@@ -1,5 +1,8 @@
 package io.quarkus.csrf.reactive.runtime;
 
+import java.util.function.Function;
+
+import io.quarkus.runtime.util.StringUtil;
 import io.smallrye.config.FallbackConfigSourceInterceptor;
 
 /**
@@ -10,16 +13,15 @@ public class CsrfReactiveConfigFallbackInterceptor extends FallbackConfigSourceI
 
     private static final String OLD_PREFIX = "quarkus.csrf-reactive.";
     private static final String NEW_PREFIX = "quarkus.rest-csrf.";
+    private static final Function<String, String> RENAME_FUNCTION = new Function<String, String>() {
+        @Override
+        public String apply(String s) {
+            return StringUtil.changePrefix(s, NEW_PREFIX, OLD_PREFIX);
+        }
+    };
 
     public CsrfReactiveConfigFallbackInterceptor() {
-        super(CsrfReactiveConfigFallbackInterceptor::rename);
+        super(RENAME_FUNCTION);
     }
 
-    private static String rename(String originalName) {
-        if (!originalName.startsWith(NEW_PREFIX)) {
-            return originalName;
-        }
-
-        return originalName.replaceFirst(NEW_PREFIX, OLD_PREFIX);
-    }
 }

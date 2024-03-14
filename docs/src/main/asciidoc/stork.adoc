@@ -70,10 +70,10 @@ image::stork-process.png[Discovery and Selection of services,width=50%, align=ce
 
 == Bootstrapping the project
 
-Create a Quarkus project importing the quarkus-rest-client-reactive and quarkus-resteasy-reactive extensions using your favorite approach:
+Create a Quarkus project importing the quarkus-rest-client and quarkus-rest extensions using your favorite approach:
 
 :create-app-artifact-id: stork-quickstart
-:create-app-extensions: quarkus-rest-client-reactive,quarkus-resteasy-reactive
+:create-app-extensions: quarkus-rest-client,quarkus-rest
 include::{includes}/devtools/create-app.adoc[]
 
 In the generated project, also add the following dependencies:
@@ -227,7 +227,7 @@ Both registration uses the same name (`my-service`), but different ids to indica
 
 So far, we didn't use Stork; we just scaffolded the services we will be discovering, selecting, and calling.
 
-We will call the services using the Reactive REST Client.
+We will call the services using the REST Client.
 Create the `src/main/java/org/acme/MyService.java` file with the following content:
 
 [source, java]

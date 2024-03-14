@@ -54,6 +54,7 @@ import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCompressionHandler;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
+import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundHandler;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.undertow.httpcore.BufferAllocator;
 import io.undertow.httpcore.StatusCodes;
@@ -276,6 +277,9 @@ public class UndertowDeploymentRecorder {
         ServletInfo sv = info.getValue().getServlets().get(name);
         if (sv != null) {
             sv.addMapping(mapping);
+            if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+                ResourceNotFoundHandler.addServlet(mapping);
+            }
         }
     }
 

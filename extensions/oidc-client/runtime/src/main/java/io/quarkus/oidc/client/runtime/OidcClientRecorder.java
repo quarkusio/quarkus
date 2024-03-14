@@ -19,6 +19,7 @@ import io.quarkus.oidc.client.OidcClientException;
 import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.Tokens;
 import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -35,6 +36,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 public class OidcClientRecorder {
 
     private static final Logger LOG = Logger.getLogger(OidcClientRecorder.class);
+    private static final String CLIENT_ID_ATTRIBUTE = "client-id";
     private static final String DEFAULT_OIDC_CLIENT_ID = "Default";
 
     public OidcClients setup(OidcClientsConfig oidcClientsConfig, TlsConfig tlsConfig, Supplier<Vertx> vertx) {
@@ -122,7 +124,8 @@ public class OidcClientRecorder {
 
         OidcCommonUtils.setHttpClientOptions(oidcConfig, tlsConfig, options);
 
-        WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx.get()), options);
+        var mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx.get());
+        WebClient client = WebClient.create(mutinyVertx, options);
 
         Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcCommonUtils.getOidcRequestFilters();
 
@@ -139,7 +142,8 @@ public class OidcClientRecorder {
                                 OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.tokenPath),
                                 OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.revokePath)));
             } else {
-                tokenUrisUni = discoverTokenUris(client, oidcRequestFilters, authServerUriString.toString(), oidcConfig);
+                tokenUrisUni = discoverTokenUris(client, oidcRequestFilters, authServerUriString.toString(), oidcConfig,
+                        mutinyVertx);
             }
         }
         return tokenUrisUni.onItemOrFailure()
@@ -220,9 +224,13 @@ public class OidcClientRecorder {
 
     private static Uni<OidcConfigurationMetadata> discoverTokenUris(WebClient client,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters,
-            String authServerUrl, OidcClientConfig oidcConfig) {
+            String authServerUrl, OidcClientConfig oidcConfig, io.vertx.mutiny.core.Vertx vertx) {
         final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
-        return OidcCommonUtils.discoverMetadata(client, oidcRequestFilters, authServerUrl, connectionDelayInMillisecs)
+        OidcRequestContextProperties contextProps = new OidcRequestContextProperties(
+                Map.of(CLIENT_ID_ATTRIBUTE, oidcConfig.getId().orElse(DEFAULT_OIDC_CLIENT_ID)));
+        return OidcCommonUtils
+                .discoverMetadata(client, oidcRequestFilters, contextProps, authServerUrl, connectionDelayInMillisecs, vertx,
+                        oidcConfig.useBlockingDnsLookup)
                 .onItem().transform(json -> new OidcConfigurationMetadata(json.getString("token_endpoint"),
                         json.getString("revocation_endpoint")));
     }

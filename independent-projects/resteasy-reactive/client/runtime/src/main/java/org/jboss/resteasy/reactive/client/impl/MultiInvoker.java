@@ -318,7 +318,11 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
                             if (start < end) {
                                 ByteArrayInputStream in = new ByteArrayInputStream(bytes, start, end);
-                                R item = restClientRequestContext.readEntity(in, responseType, mediaType,
+                                R item = restClientRequestContext.readEntity(
+                                        in,
+                                        responseType,
+                                        mediaType,
+                                        restClientRequestContext.getMethodDeclaredAnnotationsSafe(),
                                         response.getMetadata());
                                 multiRequest.emitter.emit(item);
                             }
@@ -326,7 +330,11 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                         }
                     } else {
                         ByteArrayInputStream in = new ByteArrayInputStream(bytes);
-                        R item = restClientRequestContext.readEntity(in, responseType, mediaType,
+                        R item = restClientRequestContext.readEntity(
+                                in,
+                                responseType,
+                                mediaType,
+                                restClientRequestContext.getMethodDeclaredAnnotationsSafe(),
                                 response.getMetadata());
                         multiRequest.emitter.emit(item);
                     }
@@ -360,7 +368,10 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
                 ByteArrayInputStream in = new ByteArrayInputStream(chunk.getBytes());
                 try {
-                    R item = restClientRequestContext.readEntity(in, responseType, response.getMediaType(),
+                    R item = restClientRequestContext.readEntity(in,
+                            responseType,
+                            response.getMediaType(),
+                            restClientRequestContext.getMethodDeclaredAnnotationsSafe(),
                             response.getMetadata());
                     multiRequest.emit(item);
                 } catch (IOException e) {

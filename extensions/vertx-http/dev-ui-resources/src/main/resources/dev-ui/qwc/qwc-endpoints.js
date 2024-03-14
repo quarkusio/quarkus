@@ -51,7 +51,7 @@ export class QwcEndpoints extends LitElement {
     }
         
     async load() {
-        const response = await fetch(basepath + "/endpoints.json");
+        const response = await fetch(basepath + "/endpoints/endpoints.json");
         const data = await response.json();
         this._info = data;
     }

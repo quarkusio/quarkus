@@ -34,7 +34,7 @@ The solution is located in the `spring-web-quickstart` link:{quickstarts-tree-ur
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-web-quickstart
-:create-app-extensions: spring-web,resteasy-reactive-jackson
+:create-app-extensions: spring-web,rest-jackson
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a project which imports the `spring-web` extension.
@@ -42,7 +42,7 @@ This command generates a project which imports the `spring-web` extension.
 If you already have your Quarkus project configured, you can add the `spring-web` extension
 to your project by running the following command in your project base directory:
 
-:add-extension-extensions: spring-web,resteasy-reactive-jackson
+:add-extension-extensions: spring-web,rest-jackson
 include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
@@ -56,7 +56,7 @@ This will add the following to your build file:
 </dependency>
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+    <artifactId>quarkus-rest-jackson</artifactId>
 </dependency>
 ----
 
@@ -64,12 +64,12 @@ This will add the following to your build file:
 .build.gradle
 ----
 implementation("io.quarkus:quarkus-spring-web")
-implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
+implementation("io.quarkus:quarkus-rest-jackson")
 ----
 
 [IMPORTANT]
 ====
-`quarkus-spring-web` needs to be complemented with either `quarkus-resteasy-reactive-jackson` or `quarkus-resteasy-jackson` in order to work.
+`quarkus-spring-web` needs to be complemented with either `quarkus-rest-jackson` or `quarkus-resteasy-jackson` in order to work.
 ====
 
 == GreetingController
@@ -202,7 +202,7 @@ public class GreetingControllerTest {
 }
 ----
 
-It should be noted that when using the Spring Web support in Quarkus, link:https://github.com/FasterXML/jackson[Jackson] is automatically added to the classpath and properly setup.
+It should be noted that when using the Spring Web support in Quarkus, link:https://github.com/FasterXML/jackson[Jackson] is automatically added to the classpath and properly set up.
 
 == Adding OpenAPI and Swagger-UI
 

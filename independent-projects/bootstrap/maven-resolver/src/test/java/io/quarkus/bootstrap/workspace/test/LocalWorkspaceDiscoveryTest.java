@@ -667,6 +667,26 @@ public class LocalWorkspaceDiscoveryTest {
         assertEquals(parentDir.resolve("custom-target").resolve("test-classes"), parent.getTestClassesDir());
     }
 
+    @Test
+    public void warnOnFailingWorkspaceModules() throws Exception {
+        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("invalid-module");
+        assertNotNull(moduleUrl);
+        final Path moduleDir = Path.of(moduleUrl.toURI());
+        assertNotNull(moduleUrl);
+
+        final LocalWorkspace ws = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .setOffline(true)
+                .setEffectiveModelBuilder(true)
+                .setWarnOnFailedWorkspaceModules(true)
+                .setCurrentProject(moduleDir.toString()))
+                .getWorkspace();
+
+        assertNotNull(ws.getProject("io.playground", "asm"));
+        assertNotNull(ws.getProject("io.playground", "module"));
+        assertEquals(2, ws.getProjects().size());
+    }
+
     private void testMavenCiFriendlyVersion(String placeholder, String testResourceDirName, String expectedResolvedVersion,
             boolean resolvesFromWorkspace) throws Exception {
         final URL module1Url = Thread.currentThread().getContextClassLoader()

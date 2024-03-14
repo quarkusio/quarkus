@@ -81,6 +81,42 @@ The resulting digest is used as a key for AES-256 encryption of the cookie value
 The cookie contains an expiry time as part of the encrypted value, so all nodes in the cluster must have their clocks synchronized.
 At one-minute intervals, a new cookie gets generated with an updated expiry time if the session is in use.
 
+To get started with form authentication, you should have similar settings as described in xref:security-basic-authentication-howto.adoc[Enable Basic authentication] and property `quarkus.http.auth.form.enabled` must be set to `true`.
+
+Simple `application.properties` with form-base authentication can look similar to this:
+[source,properties]
+----
+quarkus.http.auth.form.enabled=true
+
+quarkus.http.auth.form.login-page=login.html
+quarkus.http.auth.form.landing-page=hello
+quarkus.http.auth.form.error-page=
+
+# Define testing user
+quarkus.security.users.embedded.enabled=true
+quarkus.security.users.embedded.plain-text=true
+quarkus.security.users.embedded.users.alice=alice 
+quarkus.security.users.embedded.roles.alice=user
+----
+
+[IMPORTANT]
+====
+Configuring user names, secrets, and roles in the application.properties file is appropriate only for testing scenarios. For securing a production application, it is crucial to use a database or LDAP to store this information. For more information you can take a look at xref:security-jpa.adoc[Quarkus Security with Jakarta Persistence] or other mentioned in xref:security-basic-authentication-howto.adoc[Enable Basic authentication].
+====
+
+and application login page will contain HTML form similar to this:
+
+[source,html]
+----
+<form action="/j_security_check" method="post">
+    <label>Username</label>
+    <input type="text" placeholder="Username" name="j_username" required>
+    <label>Password</label>
+    <input type="password" placeholder="Password" name="j_password" required>
+    <button type="submit">Login</button>
+</form>
+----
+
 With single-page applications (SPA), you typically want to avoid redirects by removing default page paths, as shown in the following example:
 
 [source,properties]
@@ -308,7 +344,7 @@ The `quarkus-oidc-client` extension provides `OidcClient` for acquiring and refr
 * `password`
 * `refresh_token`
 
-The `quarkus-oidc-client-filter` extension requires the `quarkus-oidc-client` extension.
+The `quarkus-resteasy-client-oidc-filter` extension requires the `quarkus-oidc-client` extension.
 It provides JAX-RS RESTful Web Services `OidcClientRequestFilter`, which sets the access token acquired by `OidcClient` as the `Bearer` scheme value of the HTTP `Authorization` header.
 This filter can be registered with MicroProfile REST client implementations injected into the current Quarkus endpoint, but it is not related to the authentication requirements of this service endpoint.
 For example, it can be a public endpoint or be protected with mTLS.
@@ -318,7 +354,7 @@ For example, it can be a public endpoint or be protected with mTLS.
 In this scenario, you do not need to protect your Quarkus endpoint by using the Quarkus OpenID Connect adapter.
 ====
 
-The `quarkus-oidc-token-propagation` extension requires the `quarkus-oidc` extension.
+The `quarkus-resteasy-client-oidc-token-propagation` extension requires the `quarkus-oidc` extension.
 It provides Jakarta REST `TokenCredentialRequestFilter`, which sets the OpenID Connect Bearer token or Authorization Code Flow access token as the `Bearer` scheme value of the HTTP `Authorization` header.
 This filter can be registered with MicroProfile REST client implementations injected into the current Quarkus endpoint, which must be protected by using the Quarkus OIDC adapter.
 This filter can propagate the access token to the downstream services.

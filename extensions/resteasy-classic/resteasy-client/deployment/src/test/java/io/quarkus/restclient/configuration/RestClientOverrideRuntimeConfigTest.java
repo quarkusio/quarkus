@@ -1,10 +1,11 @@
 package io.quarkus.restclient.configuration;
 
+import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.StreamSupport;
 
 import jakarta.inject.Inject;
@@ -16,6 +17,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
@@ -35,6 +37,8 @@ public class RestClientOverrideRuntimeConfigTest {
     EchoClient echoClient;
     @Inject
     SmallRyeConfig config;
+    @Inject
+    RestClientsConfig restClientsConfig;
 
     @Test
     void overrideConfig() {
@@ -45,9 +49,6 @@ public class RestClientOverrideRuntimeConfigTest {
                 .contains("io.quarkus.restclient.configuration.EchoClient/mp-rest/url"));
         assertEquals("http://nohost",
                 specifiedDefaultValues.get().getValue("io.quarkus.restclient.configuration.EchoClient/mp-rest/url"));
-        // This config key comes from the interceptor. It is available in propertyNames, but is not recorded
-        assertNull(specifiedDefaultValues.get()
-                .getValue("quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url"));
         assertTrue(StreamSupport.stream(config.getPropertyNames().spliterator(), false).anyMatch(
                 property -> property.equals("quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url")));
 
@@ -58,10 +59,43 @@ public class RestClientOverrideRuntimeConfigTest {
                 .getConfigValue("quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url");
         assertEquals(mpValue.getValue(), quarkusValue.getValue());
         assertEquals(RestClientRunTimeConfigSource.class.getName(), quarkusValue.getConfigSourceName());
-        // The MP name has priority over the Quarkus one, so it is the name we get (even when we look up the quarkus one)
+        // There is no relocate for MP names, so it keeps the same name
         assertEquals(mpValue.getName(), "io.quarkus.restclient.configuration.EchoClient/mp-rest/url");
-        assertEquals(quarkusValue.getName(), "io.quarkus.restclient.configuration.EchoClient/mp-rest/url");
+        // We use the Quarkus name, because that is the one that has priority
+        assertEquals(quarkusValue.getName(), "quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url");
 
+        assertTrue(restClientsConfig.getConfigKeys().contains("io.quarkus.restclient.configuration.EchoClient"));
+        Optional<String> url = restClientsConfig.getClientConfig("io.quarkus.restclient.configuration.EchoClient").url;
+        assertTrue(url.isPresent());
+        assertEquals(url.get(), mpValue.getValue());
+        assertEquals(url.get(), quarkusValue.getValue());
+
+        // overrides nohost -> localhost so the invoke succeeds
         assertEquals("Hi", echoClient.echo("Hi"));
+    }
+
+    @Test
+    void buildTime() {
+        Set<String> properties = StreamSupport.stream(config.getPropertyNames().spliterator(), false).collect(toSet());
+        // MP/mp-rest/url - This one exists at build time
+        assertTrue(properties.contains("BT-MP/mp-rest/url"));
+        // quarkus.rest-client.MP.url - Is not set, but it is rewritten as a fallback in names
+        assertTrue(properties.contains("quarkus.rest-client.BT-MP.url"));
+
+        // Both will provide the same value
+        assertEquals("from-mp", config.getRawValue("BT-MP/mp-rest/url"));
+        assertEquals("from-mp", config.getRawValue("quarkus.rest-client.BT-MP.url"));
+
+        // Both properties exist
+        assertTrue(properties.contains("BT-QUARKUS-MP/mp-rest/url"));
+        assertTrue(properties.contains("quarkus.rest-client.BT-QUARKUS-MP.url"));
+
+        // There is no relocate for the MP property (only fallback), so each will get their own value
+        ConfigValue mpValue = config.getConfigValue("BT-QUARKUS-MP/mp-rest/url");
+        assertEquals("BT-QUARKUS-MP/mp-rest/url", mpValue.getName());
+        assertEquals("from-mp", mpValue.getValue());
+        ConfigValue quarkusValue = config.getConfigValue("quarkus.rest-client.BT-QUARKUS-MP.url");
+        assertEquals("quarkus.rest-client.BT-QUARKUS-MP.url", quarkusValue.getName());
+        assertEquals("from-quarkus", quarkusValue.getValue());
     }
 }

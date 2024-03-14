@@ -430,6 +430,9 @@ public class SwaggerUiProcessor {
             String preauthorizeApiKeyApiKeyValue = swaggerUiConfig.preauthorizeApiKeyApiKeyValue.get();
             options.put(Option.preauthorizeApiKeyApiKeyValue, preauthorizeApiKeyApiKeyValue);
         }
+        if (swaggerUiConfig.tryItOutEnabled) {
+            options.put(Option.tryItOutEnabled, "true");
+        }
 
         return IndexHtmlCreator.createIndexHtml(urlsMap, swaggerUiConfig.urlsPrimaryName.orElse(null), options);
     }

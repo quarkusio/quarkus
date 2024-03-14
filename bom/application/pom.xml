@@ -14,7 +14,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <angus-activation.version>2.0.1</angus-activation.version>
+        <angus-activation.version>2.0.2</angus-activation.version>
         <bouncycastle.version>1.77</bouncycastle.version>
         <bouncycastle.fips.version>1.0.2.4</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.18</bouncycastle.tls.fips.version>
@@ -25,7 +25,7 @@
         <javax.inject.version>1</javax.inject.version>
         <parsson.version>1.1.5</parsson.version>
         <resteasy-microprofile.version>2.1.5.Final</resteasy-microprofile.version>
-        <resteasy-spring-web.version>3.1.1.Final</resteasy-spring-web.version>
+        <resteasy-spring-web.version>3.1.2.Final</resteasy-spring-web.version>
         <resteasy.version>6.2.7.Final</resteasy.version>
         <opentracing.version>0.33.0</opentracing.version>
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
@@ -34,11 +34,11 @@
         <opentelemetry.version>1.32.0</opentelemetry.version>
         <opentelemetry-alpha.version>1.32.0-alpha</opentelemetry-alpha.version>
         <opentelemetry-semconv.version>1.21.0-alpha</opentelemetry-semconv.version> <!-- keep in sync with opentelemetry-java-instrumentation in the alpha bom-->
-        <quarkus-http.version>5.1.0.Final</quarkus-http.version>
-        <micrometer.version>1.12.3</micrometer.version><!-- keep in sync with hdrhistogram -->
+        <quarkus-http.version>5.2.1.Final</quarkus-http.version>
+        <micrometer.version>1.12.4</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
-        <graphql-java.version>21.1</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
+        <graphql-java.version>21.3</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
         <microprofile-config-api.version>3.0.3</microprofile-config-api.version>
         <microprofile-health-api.version>4.0.1</microprofile-health-api.version>
         <microprofile-metrics-api.version>4.0.1</microprofile-metrics-api.version>
@@ -51,20 +51,20 @@
         <microprofile-lra.version>2.0</microprofile-lra.version>
         <microprofile-openapi.version>3.1.1</microprofile-openapi.version>
         <smallrye-common.version>2.3.0</smallrye-common.version>
-        <smallrye-config.version>3.5.4</smallrye-config.version>
+        <smallrye-config.version>3.6.1</smallrye-config.version>
         <smallrye-health.version>4.1.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
-        <smallrye-open-api.version>3.9.0</smallrye-open-api.version>
-        <smallrye-graphql.version>2.7.0</smallrye-graphql.version>
+        <smallrye-open-api.version>3.10.0</smallrye-open-api.version>
+        <smallrye-graphql.version>2.8.0</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.2.6</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.4.0</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.1.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.1</smallrye-reactive-types-converter.version>
-        <smallrye-mutiny-vertx-binding.version>3.9.0</smallrye-mutiny-vertx-binding.version>
-        <smallrye-reactive-messaging.version>4.17.0</smallrye-reactive-messaging.version>
-        <smallrye-stork.version>2.5.0</smallrye-stork.version>
-        <jakarta.activation.version>2.1.2</jakarta.activation.version>
+        <smallrye-mutiny-vertx-binding.version>3.10.0</smallrye-mutiny-vertx-binding.version>
+        <smallrye-reactive-messaging.version>4.18.0</smallrye-reactive-messaging.version>
+        <smallrye-stork.version>2.6.0</smallrye-stork.version>
+        <jakarta.activation.version>2.1.3</jakarta.activation.version>
         <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
         <jakarta.authentication-api>3.0.0</jakarta.authentication-api>
         <jakarta.authorization-api.version>2.1.0</jakarta.authorization-api.version>
@@ -83,13 +83,14 @@
         <jakarta.websocket-api.version>2.1.1</jakarta.websocket-api.version>
         <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
         <jakarta.xml.bind-api.version>4.0.1</jakarta.xml.bind-api.version>
-        <jaxb-runtime.version>4.0.4</jaxb-runtime.version>
+        <jaxb-runtime.version>4.0.5</jaxb-runtime.version>
         <asm.version>9.6</asm.version>
         <commons-io.version>2.15.1</commons-io.version>
         <jboss-metadata-web.version>16.0.0.Final</jboss-metadata-web.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
-        <graal-sdk.version>23.0.1</graal-sdk.version>
+        <!-- GraalVM sdk 23.1.2 has a minimum JDK requirement of 17+ at runtime -->
+        <graal-sdk.version>23.1.2</graal-sdk.version>
         <gizmo.version>1.8.0</gizmo.version>
         <jackson-bom.version>2.16.1</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
@@ -106,11 +107,11 @@
         <hibernate-reactive.version>2.2.2.Final</hibernate-reactive.version>
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
         <!-- When updating, align hibernate-search.version-for-documentation in docs/pom.xml -->
-        <hibernate-search.version>7.1.0.CR1</hibernate-search.version>
-        <narayana.version>7.0.0.Final</narayana.version>
-        <agroal.version>2.1</agroal.version>
+        <hibernate-search.version>7.1.0.Final</hibernate-search.version>
+        <narayana.version>7.0.1.Final</narayana.version>
+        <agroal.version>2.3</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>8.12.1</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>8.12.2</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.Final</wildfly.openssl-linux.version>
@@ -121,7 +122,7 @@
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>2.3.1.Final</wildfly-elytron.version>
         <jboss-threads.version>3.5.1.Final</jboss-threads.version>
-        <vertx.version>4.5.3</vertx.version>
+        <vertx.version>4.5.4</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -129,9 +130,9 @@
         <quartz.version>2.3.2</quartz.version>
         <h2.version>2.2.224</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions -->
         <postgresql-jdbc.version>42.7.2</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.3.2</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.3.3</mariadb-jdbc.version>
         <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
-        <mssql-jdbc.version>12.4.2.jre11</mssql-jdbc.version>
+        <mssql-jdbc.version>12.6.1.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
         <oracle-jdbc.version>23.3.0.23.09</oracle-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
@@ -140,27 +141,26 @@
         <rest-assured.version>5.4.0</rest-assured.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>5.10.2</junit.jupiter.version>
-        <junit-pioneer.version>1.5.0</junit-pioneer.version>
-        <infinispan.version>14.0.24.Final</infinispan.version>
-        <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
+        <infinispan.version>15.0.0.CR1</infinispan.version>
+        <infinispan.protostream.version>5.0.1.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
-        <netty.version>4.1.106.Final</netty.version>
-        <brotli4j.version>1.12.0</brotli4j.version>
+        <netty.version>4.1.107.Final</netty.version>
+        <brotli4j.version>1.14.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
-        <mutiny.version>2.5.6</mutiny.version>
-        <kafka3.version>3.6.1</kafka3.version>
+        <mutiny.version>2.5.8</mutiny.version>
+        <kafka3.version>3.7.0</kafka3.version>
         <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
         <snappy.version>1.1.10.5</snappy.version>
         <strimzi-test-container.version>0.100.0</strimzi-test-container.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
-        <scala.version>2.13.12</scala.version>
+        <scala.version>2.13.13</scala.version>
         <aws-lambda-java.version>1.2.3</aws-lambda-java.version>
         <aws-lambda-java-events.version>3.11.3</aws-lambda-java-events.version>
         <aws-xray.version>2.15.1</aws-xray.version>
         <azure-functions-java-library.version>2.2.0</azure-functions-java-library.version>
         <azure-functions-java-spi.version>1.0.0</azure-functions-java-spi.version>
-        <kotlin.version>1.9.22</kotlin.version>
+        <kotlin.version>1.9.23</kotlin.version>
         <kotlin.coroutine.version>1.8.0</kotlin.coroutine.version>
         <azure.toolkit-lib.version>0.27.0</azure.toolkit-lib.version>
         <kotlin-serialization.version>1.6.2</kotlin-serialization.version>
@@ -185,37 +185,37 @@
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.4.Final</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
-        <mockito.version>5.10.0</mockito.version>
+        <mockito.version>5.11.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.13.0</antlr.version><!-- needs to align with same property in build-parent/pom.xml -->
         <quarkus-security.version>2.0.3.Final</quarkus-security.version>
-        <keycloak.version>23.0.6</keycloak.version>
+        <keycloak.version>23.0.7</keycloak.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
         <checker-qual.version>3.42.0</checker-qual.version>
         <error-prone-annotations.version>2.25.0</error-prone-annotations.version>
-        <jib-core.version>0.25.0</jib-core.version>
+        <jib-core.version>0.26.0</jib-core.version>
         <google-http-client.version>1.44.1</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
         <picocli.version>4.7.5</picocli.version>
         <google-cloud-functions.version>1.1.0</google-cloud-functions.version>
-        <commons-compress.version>1.26.0</commons-compress.version>
+        <commons-compress.version>1.26.1</commons-compress.version> <!-- Please check with Java Operator SDK / Fabric8 team before updating -->
         <commons-text.version>1.11.0</commons-text.version>
         <gson.version>2.10.1</gson.version>
         <log4j2-jboss-logmanager.version>1.1.2.Final</log4j2-jboss-logmanager.version>
-        <log4j2-api.version>2.22.1</log4j2-api.version>
+        <log4j2-api.version>2.23.0</log4j2-api.version>
         <log4j-jboss-logmanager.version>1.3.0.Final</log4j-jboss-logmanager.version>
         <avro.version>1.11.3</avro.version>
-        <apicurio-registry.version>2.5.8.Final</apicurio-registry.version>
+        <apicurio-registry.version>2.5.9.Final</apicurio-registry.version>
         <apicurio-common-rest-client.version>0.1.18.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
-        <testcontainers.version>1.19.4</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
-        <docker-java.version>3.3.4</docker-java.version> <!-- must be the version Testcontainers use -->
+        <testcontainers.version>1.19.7</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
+        <docker-java.version>3.3.5</docker-java.version> <!-- must be the version Testcontainers use -->
         <!-- Check the compatibility matrix (https://github.com/opensearch-project/opensearch-testcontainers) before upgrading: -->
         <opensearch-testcontainers.version>2.0.0</opensearch-testcontainers.version>
-        <com.dajudge.kindcontainer>1.4.4</com.dajudge.kindcontainer>
+        <com.dajudge.kindcontainer>1.4.5</com.dajudge.kindcontainer>
         <aesh.version>2.7</aesh.version>
         <aesh-readline.version>2.4</aesh-readline.version>
         <jansi.version>2.4.0</jansi.version> <!-- Keep in sync with aesh-readline and dekorate -->
-        <jgit.version>6.8.0.202311291450-r</jgit.version>
+        <jgit.version>6.9.0.202403050737-r</jgit.version>
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.14.0</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>9.37.3</strimzi-oauth.nimbus.version>
@@ -255,7 +255,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            
+
              <!-- Dev UI -->
             <dependency>
                 <groupId>io.quarkus</groupId>
@@ -264,7 +264,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            
+
             <!-- External BOMs -->
 
             <!-- Netty dependencies, imported as a BOM -->
@@ -634,12 +634,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-kotlin-serialization</artifactId>
+                <artifactId>quarkus-rest-kotlin-serialization</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-kotlin-serialization-deployment</artifactId>
+                <artifactId>quarkus-rest-kotlin-serialization-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -837,12 +837,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-csrf-reactive</artifactId>
+                <artifactId>quarkus-rest-csrf</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-csrf-reactive-deployment</artifactId>
+                <artifactId>quarkus-rest-csrf-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -877,22 +877,22 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-oidc-client-filter</artifactId>
+                <artifactId>quarkus-resteasy-client-oidc-filter</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-oidc-client-filter-deployment</artifactId>
+                <artifactId>quarkus-resteasy-client-oidc-filter-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-oidc-client-reactive-filter</artifactId>
+                <artifactId>quarkus-rest-client-oidc-filter</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-oidc-client-reactive-filter-deployment</artifactId>
+                <artifactId>quarkus-rest-client-oidc-filter-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -907,12 +907,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-oidc-token-propagation</artifactId>
+                <artifactId>quarkus-resteasy-client-oidc-token-propagation</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-oidc-token-propagation-deployment</artifactId>
+                <artifactId>quarkus-resteasy-client-oidc-token-propagation-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -927,12 +927,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-oidc-token-propagation-reactive</artifactId>
+                <artifactId>quarkus-rest-client-oidc-token-propagation</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-oidc-token-propagation-reactive-deployment</artifactId>
+                <artifactId>quarkus-rest-client-oidc-token-propagation-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -957,22 +957,22 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-keycloak-admin-client</artifactId>
+                <artifactId>quarkus-keycloak-admin-resteasy-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-keycloak-admin-client-deployment</artifactId>
+                <artifactId>quarkus-keycloak-admin-resteasy-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-keycloak-admin-client-reactive</artifactId>
+                <artifactId>quarkus-keycloak-admin-rest-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-keycloak-admin-client-reactive-deployment</artifactId>
+                <artifactId>quarkus-keycloak-admin-rest-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1522,67 +1522,67 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-messaging</artifactId>
+                <artifactId>quarkus-messaging</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-messaging-kotlin</artifactId>
+                <artifactId>quarkus-messaging-kotlin</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-messaging-deployment</artifactId>
+                <artifactId>quarkus-messaging-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+                <artifactId>quarkus-messaging-kafka</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-messaging-kafka-deployment</artifactId>
+                <artifactId>quarkus-messaging-kafka-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-messaging-pulsar</artifactId>
+                <artifactId>quarkus-messaging-pulsar</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-messaging-pulsar-deployment</artifactId>
+                <artifactId>quarkus-messaging-pulsar-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-messaging-amqp</artifactId>
+                <artifactId>quarkus-messaging-amqp</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-messaging-amqp-deployment</artifactId>
+                <artifactId>quarkus-messaging-amqp-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-messaging-mqtt</artifactId>
+                <artifactId>quarkus-messaging-mqtt</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-messaging-mqtt-deployment</artifactId>
+                <artifactId>quarkus-messaging-mqtt-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq</artifactId>
+                <artifactId>quarkus-messaging-rabbitmq</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq-deployment</artifactId>
+                <artifactId>quarkus-messaging-rabbitmq-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2077,6 +2077,16 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-websockets-next</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-websockets-next-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-undertow-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -2167,22 +2177,22 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-spring-web-resteasy-classic</artifactId>
+                <artifactId>quarkus-spring-web-resteasy</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-spring-web-resteasy-classic-deployment</artifactId>
+                <artifactId>quarkus-spring-web-resteasy-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-spring-web-resteasy-reactive</artifactId>
+                <artifactId>quarkus-spring-web-rest</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-spring-web-resteasy-reactive-deployment</artifactId>
+                <artifactId>quarkus-spring-web-rest-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2372,197 +2382,197 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-common</artifactId>
+                <artifactId>quarkus-rest-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-common-deployment</artifactId>
+                <artifactId>quarkus-rest-common-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive</artifactId>
+                <artifactId>quarkus-rest</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-kotlin</artifactId>
+                <artifactId>quarkus-rest-kotlin</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-kotlin-deployment</artifactId>
+                <artifactId>quarkus-rest-kotlin-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-spi-deployment</artifactId>
+                <artifactId>quarkus-rest-spi-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-server-spi-deployment</artifactId>
+                <artifactId>quarkus-rest-server-spi-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+                <artifactId>quarkus-rest-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-servlet-deployment</artifactId>
+                <artifactId>quarkus-rest-servlet-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-servlet</artifactId>
+                <artifactId>quarkus-rest-servlet</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-jaxrs-client-reactive</artifactId>
+                <artifactId>quarkus-rest-client-jaxrs</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-jaxrs-client-reactive-deployment</artifactId>
+                <artifactId>quarkus-rest-client-jaxrs-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-reactive</artifactId>
+                <artifactId>quarkus-rest-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-reactive-deployment</artifactId>
+                <artifactId>quarkus-rest-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-reactive-spi-deployment</artifactId>
+                <artifactId>quarkus-rest-client-spi-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
+                <artifactId>quarkus-rest-client-jackson</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-reactive-jackson-deployment</artifactId>
+                <artifactId>quarkus-rest-client-jackson-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-reactive-jaxb</artifactId>
+                <artifactId>quarkus-rest-client-jaxb</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-reactive-jaxb-deployment</artifactId>
+                <artifactId>quarkus-rest-client-jaxb-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-reactive-jsonb</artifactId>
+                <artifactId>quarkus-rest-client-jsonb</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-reactive-jsonb-deployment</artifactId>
+                <artifactId>quarkus-rest-client-jsonb-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-kotlin-serialization-common</artifactId>
+                <artifactId>quarkus-rest-kotlin-serialization-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-kotlin-serialization-common-deployment</artifactId>
+                <artifactId>quarkus-rest-kotlin-serialization-common-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-reactive-kotlin-serialization</artifactId>
+                <artifactId>quarkus-rest-client-kotlin-serialization</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-reactive-kotlin-serialization-deployment</artifactId>
+                <artifactId>quarkus-rest-client-kotlin-serialization-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-qute</artifactId>
+                <artifactId>quarkus-rest-qute</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-qute-deployment</artifactId>
+                <artifactId>quarkus-rest-qute-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-jsonb</artifactId>
+                <artifactId>quarkus-rest-jsonb</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-jsonb-deployment</artifactId>
+                <artifactId>quarkus-rest-jsonb-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-jsonb-common</artifactId>
+                <artifactId>quarkus-rest-jsonb-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-jsonb-common-deployment</artifactId>
+                <artifactId>quarkus-rest-jsonb-common-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-jaxb</artifactId>
+                <artifactId>quarkus-rest-jaxb</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-jaxb-deployment</artifactId>
+                <artifactId>quarkus-rest-jaxb-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+                <artifactId>quarkus-rest-jackson</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-jackson-deployment</artifactId>
+                <artifactId>quarkus-rest-jackson-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-jackson-common</artifactId>
+                <artifactId>quarkus-rest-jackson-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-jackson-common-deployment</artifactId>
+                <artifactId>quarkus-rest-jackson-common-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-links</artifactId>
+                <artifactId>quarkus-rest-links</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-links-deployment</artifactId>
+                <artifactId>quarkus-rest-links-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -3593,11 +3603,6 @@
                 <artifactId>hamcrest</artifactId>
                 <version>${hamcrest.version}</version>
             </dependency>
-            <dependency>
-                <groupId>me.escoffier.certs</groupId>
-                <artifactId>certificate-generator-junit5</artifactId>
-                <version>0.3.0</version>
-            </dependency>
 
             <dependency>
                 <groupId>org.antlr</groupId>
@@ -3910,6 +3915,16 @@
             <dependency>
                 <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-graphql-client-implementation-vertx</artifactId>
+                <version>${smallrye-graphql.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-graphql-client-model-builder</artifactId>
+                <version>${smallrye-graphql.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-graphql-client-model</artifactId>
                 <version>${smallrye-graphql.version}</version>
             </dependency>
             <dependency>
@@ -4419,7 +4434,18 @@
                 <version>${graal-sdk.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.graalvm.js</groupId>
+                <groupId>org.graalvm.sdk</groupId>
+                <artifactId>nativeimage</artifactId>
+                <version>${graal-sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>js-community</artifactId>
+                <version>${graal-sdk.version}</version>
+            </dependency>
+            <!-- Same but for GraalVM Enterprise -->
+            <dependency>
+                <groupId>org.graalvm.polyglot</groupId>
                 <artifactId>js</artifactId>
                 <version>${graal-sdk.version}</version>
             </dependency>
@@ -5247,11 +5273,6 @@
                 <version>${elasticsearch-opensource-components.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.junit-pioneer</groupId>
-                <artifactId>junit-pioneer</artifactId>
-                <version>${junit-pioneer.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.jacoco</groupId>
                 <artifactId>org.jacoco.core</artifactId>
                 <version>${jacoco.version}</version>
@@ -5410,7 +5431,7 @@
             </dependency>
             <dependency>
                 <groupId>org.infinispan</groupId>
-                <artifactId>infinispan-client-hotrod-jakarta</artifactId>
+                <artifactId>infinispan-client-hotrod</artifactId>
                 <version>${infinispan.version}</version>
             </dependency>
             <dependency>
@@ -5453,7 +5474,7 @@
             </dependency>
             <dependency>
                 <groupId>org.infinispan</groupId>
-                <artifactId>infinispan-commons-jakarta</artifactId>
+                <artifactId>infinispan-commons</artifactId>
                 <version>${infinispan.version}</version>
             </dependency>
             <dependency>
@@ -6222,63 +6243,375 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client</artifactId>
-
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-jackson</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-jackson-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-jaxb</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-jaxb-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-jsonb</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-jsonb-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-mutiny</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-mutiny-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-search-orm-coordination-outbox-polling</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-search-orm-coordination-outbox-polling-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <!-- RESTEasy Reactive renaming -->
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-kotlin-serialization</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-kotlin-serialization-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-common-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-kotlin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-kotlin-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-spi-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-server-spi-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-servlet-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-servlet</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jaxrs-client-reactive</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jaxrs-client-reactive-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-rest-client-reactive</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-rest-client-reactive-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-rest-client-reactive-spi-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-rest-client-reactive-jackson-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-rest-client-reactive-jaxb</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-rest-client-reactive-jaxb-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-rest-client-reactive-jsonb</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-rest-client-reactive-jsonb-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-kotlin-serialization-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-kotlin-serialization-common-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-rest-client-reactive-kotlin-serialization</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-rest-client-reactive-kotlin-serialization-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-qute</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-qute-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-jsonb</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-jsonb-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-jsonb-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-jsonb-common-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-jaxb</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-jaxb-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-jackson-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-jackson-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-jackson-common-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-links</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-links-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-csrf-reactive</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-csrf-reactive-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-oidc-token-propagation-reactive</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-oidc-token-propagation-reactive-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-oidc-token-propagation</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-oidc-token-propagation-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-oidc-client-filter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-oidc-client-filter-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-oidc-client-reactive-filter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-oidc-client-reactive-filter-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak-admin-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak-admin-client-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak-admin-client-reactive</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-keycloak-admin-client-reactive-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-web-resteasy-reactive</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-web-resteasy-reactive-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-web-resteasy-classic</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-web-resteasy-classic-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- SmallRye Reactive Messaging -->
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-kotlin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-kafka-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-pulsar</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-pulsar-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-amqp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-amqp-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-mqtt</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-mqtt-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- End of Relocations, please put new extensions above this list -->

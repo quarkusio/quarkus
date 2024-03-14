@@ -8,7 +8,7 @@ include::_attributes.adoc[]
 :categories: miscellaneous
 :summary: Learn more about how you can use templating in your applications with the Qute template engine.
 :topics: templating,qute
-:extensions: io.quarkus:quarkus-qute,io.quarkus:quarkus-resteasy-qute,io.quarkus:quarkus-resteasy-reactive-qute
+:extensions: io.quarkus:quarkus-qute,io.quarkus:quarkus-resteasy-qute,io.quarkus:quarkus-rest-qute
 
 Qute is a templating engine designed specifically to meet the Quarkus needs.
 The usage of reflection is minimized to reduce the size of native images.
@@ -30,21 +30,21 @@ The solution is located in the `qute-quickstart` link:{quickstarts-tree-url}/qut
 
 If you want to use Qute in your Jakarta REST application, you need to add an extension first:
 
-* either `quarkus-resteasy-reactive-qute` if you are using RESTEasy Reactive:
+* either `quarkus-rest-qute` if you are using Quarkus REST (formerly RESTEasy Reactive):
 +
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive-qute</artifactId>
+    <artifactId>quarkus-rest-qute</artifactId>
 </dependency>
 ----
 +
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-resteasy-reactive-qute")
+implementation("io.quarkus:quarkus-rest-qute")
 ----
 
 * or `quarkus-resteasy-qute` if you are using RESTEasy Classic:
@@ -298,7 +298,7 @@ public class ItemResource {
 <1> Declare a method that gives us a `TemplateInstance` for `templates/ItemResource/item.html` and declare its `Item item` parameter so we can validate the template.
 <2> Make the `Item` object accessible in the template.
 
-NOTE: When the `--parameters` compiler argument is enabled, RESTEasy Reactive may infer the parameter names from the method argument names, making the `@PathParam("id")` annotation optional in this case.
+NOTE: When the `--parameters` compiler argument is enabled, Quarkus REST may infer the parameter names from the method argument names, making the `@PathParam("id")` annotation optional in this case.
 
 === Template parameter declaration inside the template itself
 

@@ -60,8 +60,15 @@ public class GrpcClientConfiguration {
 
     /**
      * The SSL/TLS config.
+     * Only use this if you want to use the old Java gRPC client.
      */
     public SslClientConfig ssl;
+
+    /**
+     * The TLS config.
+     * Only use this if you want to use the Quarkus gRPC client.
+     */
+    public TlsClientConfig tls;
 
     /**
      * Use a name resolver. Defaults to dns.

@@ -264,7 +264,7 @@ Note that does not mean that the message is delivered, just that it's been sent 
 
 Because it is very inconvenient to send emails during development and testing, you can set the `quarkus.mailer.mock` boolean
 configuration to `true` to prevent the actual sending of emails but instead print them on stdout and collect them in a `MockMailbox` bean instead.
-This is the default if you are running Quarkus in `DEV` or `TEST` mode.
+This is the default if you are running Quarkus in dev or test mode.
 
 You can then write tests to verify that your emails were sent, for example, by a REST endpoint:
 
@@ -304,6 +304,9 @@ class MailTest {
     }
 }
 ----
+
+Another option is to use the  https://github.com/quarkiverse/quarkus-mailpit[Quarkus Mailpit] extension
+which provides Dev Services for https://github.com/axllent/mailpit[Mailpit], a nice UI for testing and debugging email sending.
 
 == Using the underlying Vert.x Mail Client
 

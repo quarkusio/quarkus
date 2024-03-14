@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -22,6 +23,7 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.gradle.QuarkusPlugin;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * Just show the effective configuration and settings.
@@ -45,21 +47,26 @@ public abstract class QuarkusShowEffectiveConfig extends QuarkusBuildTask {
     @TaskAction
     public void dumpEffectiveConfiguration() {
         try {
-            EffectiveConfig effective = extension()
+            EffectiveConfig effectiveConfig = extension()
                     .buildEffectiveConfiguration(extension().getApplicationModel().getAppArtifact());
-            Map<String, String> configMap = effective.configMap();
+            SmallRyeConfig config = effectiveConfig.getConfig();
             List<String> sourceNames = new ArrayList<>();
-            effective.config().getConfigSources().forEach(configSource -> sourceNames.add(configSource.getName()));
+            config.getConfigSources().forEach(configSource -> sourceNames.add(configSource.getName()));
 
-            String config = configMap.entrySet().stream()
-                    .filter(e -> e.getKey().startsWith("quarkus."))
+            Map<String, String> values = new HashMap<>();
+            for (String key : config.getMapKeys("quarkus").values()) {
+                values.put(key, config.getConfigValue(key).getValue());
+            }
+
+            String quarkusConfig = values
+                    .entrySet()
+                    .stream()
                     .map(e -> format("%s=%s", e.getKey(), e.getValue())).sorted()
                     .collect(Collectors.joining("\n    ", "\n    ", "\n"));
-
-            getLogger().lifecycle("Effective Quarkus configuration options: {}", config);
+            getLogger().lifecycle("Effective Quarkus configuration options: {}", quarkusConfig);
 
             String finalName = extension().finalName();
-            String packageType = configMap.getOrDefault(QuarkusPlugin.QUARKUS_PACKAGE_TYPE, "fast-jar");
+            String packageType = config.getOptionalValue(QuarkusPlugin.QUARKUS_PACKAGE_TYPE, String.class).orElse("fast-jar");
             File fastJar = fastJar();
             getLogger().lifecycle(
                     "Quarkus package type:          {}\n" +
@@ -79,7 +86,7 @@ public abstract class QuarkusShowEffectiveConfig extends QuarkusBuildTask {
 
             if (getSaveConfigProperties().get()) {
                 Properties props = new Properties();
-                props.putAll(configMap);
+                props.putAll(effectiveConfig.getValues());
                 Path file = buildDir.toPath().resolve(finalName + ".quarkus-build.properties");
                 try (BufferedWriter writer = newBufferedWriter(file)) {
                     props.store(writer, format("Quarkus build properties with package type %s", packageType));

@@ -36,7 +36,7 @@ The solution is located in the `openapi-swaggerui-quickstart` link:{quickstarts-
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: openapi-swaggerui-quickstart
-:create-app-extensions: resteasy-reactive-jackson
+:create-app-extensions: rest-jackson
 include::{includes}/devtools/create-app.adoc[]
 
 == Expose a REST Resource

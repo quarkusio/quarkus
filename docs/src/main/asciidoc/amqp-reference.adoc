@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Reactive Messaging AMQP 1.0 Connector Reference Documentation
 include::_attributes.adoc[]
 :categories: messaging
-:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-amqp
+:extensions: io.quarkus:quarkus-messaging-amqp
 :topics: messaging,amqp
 
 This guide is the companion from the xref:amqp.adoc[Getting Started with AMQP 1.0].
@@ -22,11 +22,11 @@ Check <<using-rabbitmq,Using RabbitMQ>> to get more details.
 
 == AMQP connector extension
 
-To use the connector, you need to add the `quarkus-smallrye-reactive-messaging-amqp` extension.
+To use the connector, you need to add the `quarkus-messaging-amqp` extension.
 
 You can add the extension to your project using:
 
-:add-extension-extensions: quarkus-smallrye-reactive-messaging-amqp
+:add-extension-extensions: quarkus-messaging-amqp
 include::{includes}/devtools/extension-add.adoc[]
 
 Or just add the following dependency to your project:
@@ -36,14 +36,14 @@ Or just add the following dependency to your project:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-smallrye-reactive-messaging-amqp</artifactId>
+    <artifactId>quarkus-messaging-amqp</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-smallrye-reactive-messaging-amqp")
+implementation("io.quarkus:quarkus-messaging-amqp")
 ----
 
 Once added to your project, you can map _channels_ to AMQP addresses by configuring the `connector` attribute:
@@ -68,7 +68,7 @@ This auto-attachment can be disabled using:
 
 [source, properties]
 ----
-quarkus.reactive-messaging.auto-connector-attachment=false
+quarkus.messaging.auto-connector-attachment=false
 ----
 ====
 
@@ -448,7 +448,7 @@ public AmqpClientOptions getNamedOptions() {
         .setPemKeyCertOptions(keycert)
         .setPemTrustOptions(trust)
         .addEnabledSaslMechanism("EXTERNAL")
-        .setHostnameVerificationAlgorithm("")
+        .setHostnameVerificationAlgorithm("") // Disables the hostname verification. Defaults is "HTTPS"
         .setConnectTimeout(30000)
         .setReconnectInterval(5000)
         .setContainerId("my-container");

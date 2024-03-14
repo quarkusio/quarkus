@@ -357,4 +357,9 @@ public class SwaggerUiConfig {
     @ConfigItem(defaultValue = "false")
     boolean queryConfigEnabled;
 
+    /**
+     * If try it out should be enabled by default
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean tryItOutEnabled;
 }

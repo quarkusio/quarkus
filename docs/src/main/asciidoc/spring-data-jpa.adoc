@@ -31,7 +31,7 @@ The solution is located in the `spring-data-jpa-quickstart` link:{quickstarts-tr
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-data-jpa-quickstart
-:create-app-extensions: resteasy-reactive-jackson,spring-data-jpa,quarkus-jdbc-postgresql
+:create-app-extensions: rest-jackson,spring-data-jpa,quarkus-jdbc-postgresql
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven project and imports the `spring-data-jpa` extension.

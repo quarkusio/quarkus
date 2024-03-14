@@ -640,7 +640,7 @@ public class Profiles {
     public static class SingleTag implements QuarkusTestProfile {
         @Override
         public Set<String> tags() {
-            return List.of("test1");
+            return Set.of("test1");
         }
     }
 
@@ -843,7 +843,20 @@ So if you need to call methods such as `verify` you should hang on to the mock i
 ==== Further simplification with `@InjectMock`
 
 Building on the features provided by `QuarkusMock`, Quarkus also allows users to effortlessly take advantage of link:https://site.mockito.org/[Mockito] for mocking the beans supported by `QuarkusMock`.
-This functionality is available with the `@io.quarkus.test.InjectMock` annotation if the `quarkus-junit5-mockito` dependency is present.
+
+[IMPORTANT]
+====
+This functionality is available with the `@io.quarkus.test.InjectMock` annotation **only if** the `quarkus-junit5-mockito` dependency is present:
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-junit5-mockito</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+====
 
 Using `@InjectMock`, the previous example could be written as follows:
 
@@ -1666,10 +1679,13 @@ The fields annotated with `@Inject` and `@InjectMock` are injected after a test 
 Finally, the CDI request context is activated and terminated per each test method.
 
 === Injection
+
 Test class fields annotated with `@jakarta.inject.Inject` and `@io.quarkus.test.InjectMock` are injected after a test instance is created.
 Dependent beans injected into these fields are correctly destroyed before a test instance is destroyed.
 Parameters of a test method for which a matching bean exists are resolved unless annotated with `@io.quarkus.test.component.SkipInject`.
 Dependent beans injected into the test method arguments are correctly destroyed after the test method completes.
+
+NOTE: Arguments of a `@ParameterizedTest` method that are provided by an `ArgumentsProvider`, for example with `@org.junit.jupiter.params.provider.ValueArgumentsProvider`, must be annotated with `@SkipInject`. 
 
 === Auto Mocking Unsatisfied Dependencies
 

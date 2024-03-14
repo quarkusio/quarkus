@@ -8,5 +8,5 @@ class GreetingResource {
 
     @GET
     @Produces(Array[String](MediaType.TEXT_PLAIN))
-    def hello() = "Hello from RESTEasy Reactive"
+    def hello() = "Hello from Quarkus REST"
 }

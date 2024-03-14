@@ -1,0 +1,5 @@
+# Optional tests
+org.eclipse.microprofile.telemetry.tracing.tck.rest.JaegerPropagationTest
+org.eclipse.microprofile.telemetry.tracing.tck.rest.B3MultiPropagationTest
+org.eclipse.microprofile.telemetry.tracing.tck.rest.B3PropagationTest
+org.eclipse.microprofile.telemetry.tracing.tck.async.JaxRsServerAsyncTest

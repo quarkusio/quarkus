@@ -45,10 +45,10 @@ The solution is located in the `cache-quickstart` link:{quickstarts-tree-url}/ca
 First, we need to create a new Quarkus project with the following command:
 
 :create-app-artifact-id: cache-quickstart
-:create-app-extensions: cache,resteasy-reactive-jackson
+:create-app-extensions: cache,rest-jackson
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates the project and imports the `cache` and `resteasy-reactive-jackson` extensions.
+This command generates the project and imports the `cache` and `rest-jackson` extensions.
 
 If you already have your Quarkus project configured, you can add the `cache` extension
 to your project by running the following command in your project base directory:

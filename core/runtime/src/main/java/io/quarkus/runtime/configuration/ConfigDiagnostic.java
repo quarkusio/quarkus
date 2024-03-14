@@ -25,6 +25,7 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.ImageMode;
+import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.common.utils.StringUtil;
 
@@ -90,8 +91,9 @@ public final class ConfigDiagnostic {
      * @param properties the set of possible unused properties
      */
     public static void unknownProperties(Set<String> properties) {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         Set<String> usedProperties = new HashSet<>();
-        for (String property : ConfigProvider.getConfig().getPropertyNames()) {
+        for (String property : config.getPropertyNames()) {
             if (properties.contains(property)) {
                 continue;
             }
@@ -114,7 +116,10 @@ public final class ConfigDiagnostic {
                 }
             }
             if (!found) {
-                unknown(property);
+                ConfigValue configValue = config.getConfigValue(property);
+                if (property.equals(configValue.getName())) {
+                    unknown(property);
+                }
             }
         }
     }

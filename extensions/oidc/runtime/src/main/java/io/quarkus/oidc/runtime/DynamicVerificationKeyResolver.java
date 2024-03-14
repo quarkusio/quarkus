@@ -1,8 +1,10 @@
 package io.quarkus.oidc.runtime;
 
 import java.security.Key;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import jakarta.enterprise.event.Observes;
@@ -24,6 +26,9 @@ import io.vertx.core.json.JsonObject;
 
 public class DynamicVerificationKeyResolver {
     private static final Logger LOG = Logger.getLogger(DynamicVerificationKeyResolver.class);
+    private static final Set<String> KEY_HEADERS = Set.of(HeaderParameterNames.KEY_ID,
+            HeaderParameterNames.X509_CERTIFICATE_SHA256_THUMBPRINT,
+            HeaderParameterNames.X509_CERTIFICATE_THUMBPRINT);
 
     private final OidcProviderClient client;
     private final MemoryCache<Key> cache;
@@ -45,6 +50,12 @@ public class DynamicVerificationKeyResolver {
         Key key = findKeyInTheCache(headers);
         if (key != null) {
             return Uni.createFrom().item(new SingleKeyVerificationKeyResolver(key));
+        }
+        if (chainResolverFallback != null && headers.containsKey(HeaderParameterNames.X509_CERTIFICATE_CHAIN)
+                && Collections.disjoint(KEY_HEADERS, headers.fieldNames())) {
+            // If none of the key headers is available which can be used to resolve JWK then do
+            // not try to get another JWK set but delegate to the chain resolver fallback if it is available
+            return getChainResolver();
         }
 
         return client.getJsonWebKeySet(new OidcRequestContextProperties(
@@ -105,9 +116,7 @@ public class DynamicVerificationKeyResolver {
                         }
 
                         if (newKey == null && chainResolverFallback != null) {
-                            LOG.debug("JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set,"
-                                    + " falling back to the certificate chain resolver");
-                            return Uni.createFrom().item(chainResolverFallback);
+                            return getChainResolver();
                         }
 
                         if (newKey == null) {
@@ -119,6 +128,12 @@ public class DynamicVerificationKeyResolver {
                     }
 
                 });
+    }
+
+    private Uni<VerificationKeyResolver> getChainResolver() {
+        LOG.debug("JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set,"
+                + " falling back to the certificate chain resolver");
+        return Uni.createFrom().item(chainResolverFallback);
     }
 
     private static Key getKeyWithId(JsonWebKeySet jwks, String kid) {

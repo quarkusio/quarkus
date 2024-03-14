@@ -101,36 +101,6 @@
         </excludes>
       </testResource>
     </testResources>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>com.gradle</groupId>
-          <artifactId>gradle-enterprise-maven-extension</artifactId>
-          <configuration>
-            <gradleEnterprise>
-              <normalization>
-                <systemProperties>
-                  <ignoredKeys combine.children="append">
-                    <ignore>classpathEntriesRecordingFile</ignore>
-                  </ignoredKeys>
-                </systemProperties>
-                <runtimeClassPath>
-                  <propertiesNormalizations combine.children="append">
-                    <propertiesNormalization>
-                      <path>application.properties</path>
-                      <ignoredProperties>
-                        <ignore>quarkus.bt.classpath-recording.record-file</ignore>
-                        <ignore>%test.quarkus.bt.classpath-recording.record-file</ignore>
-                      </ignoredProperties>
-                    </propertiesNormalization>
-                  </propertiesNormalizations>
-                </runtimeClassPath>
-              </normalization>
-            </gradleEnterprise>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>io.quarkus</groupId>

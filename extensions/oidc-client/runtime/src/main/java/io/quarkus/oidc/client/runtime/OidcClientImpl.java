@@ -37,7 +37,8 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 public class OidcClientImpl implements OidcClient {
 
     private static final Logger LOG = Logger.getLogger(OidcClientImpl.class);
-
+    private static final String CLIENT_ID_ATTRIBUTE = "client-id";
+    private static final String DEFAULT_OIDC_CLIENT_ID = "Default";
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
 
     private final WebClient client;
@@ -279,7 +280,8 @@ public class OidcClientImpl implements OidcClient {
 
     private HttpRequest<Buffer> filter(OidcEndpoint.Type endpointType, HttpRequest<Buffer> request, Buffer body) {
         if (!filters.isEmpty()) {
-            OidcRequestContextProperties props = new OidcRequestContextProperties();
+            OidcRequestContextProperties props = new OidcRequestContextProperties(
+                    Map.of(CLIENT_ID_ATTRIBUTE, oidcConfig.getId().orElse(DEFAULT_OIDC_CLIENT_ID)));
             for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(filters, endpointType)) {
                 filter.filter(request, body, props);
             }

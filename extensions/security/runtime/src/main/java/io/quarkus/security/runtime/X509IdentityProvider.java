@@ -60,7 +60,7 @@ public class X509IdentityProvider implements IdentityProvider<CertificateAuthent
         return Set.of();
     }
 
-    private static String getCommonName(X500Principal principal) {
+    public static String getCommonName(X500Principal principal) {
         try {
             LdapName ldapDN = new LdapName(principal.getName());
 

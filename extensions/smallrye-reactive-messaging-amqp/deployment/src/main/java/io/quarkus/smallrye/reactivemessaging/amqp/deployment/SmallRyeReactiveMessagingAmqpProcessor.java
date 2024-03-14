@@ -8,7 +8,7 @@ public class SmallRyeReactiveMessagingAmqpProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(Feature.SMALLRYE_REACTIVE_MESSAGING_AMQP);
+        return new FeatureBuildItem(Feature.MESSAGING_AMQP);
     }
 
 }

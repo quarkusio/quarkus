@@ -6,11 +6,11 @@ import java.util.function.Supplier;
 
 import io.quarkus.arc.ContextInstanceHandle;
 
-class ComputingCacheContextInstances implements ContextInstances {
+public class ComputingCacheContextInstances implements ContextInstances {
 
     protected final ComputingCache<String, ContextInstanceHandle<?>> instances;
 
-    ComputingCacheContextInstances() {
+    public ComputingCacheContextInstances() {
         instances = new ComputingCache<>();
     }
 

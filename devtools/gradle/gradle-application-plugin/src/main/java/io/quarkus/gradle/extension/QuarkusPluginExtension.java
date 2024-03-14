@@ -1,5 +1,7 @@
 package io.quarkus.gradle.extension;
 
+import static io.quarkus.runtime.LaunchMode.*;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,6 +40,7 @@ import io.quarkus.gradle.tasks.QuarkusBuild;
 import io.quarkus.gradle.tasks.QuarkusGradleUtils;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.config.SmallRyeConfig;
 
 public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     private final SourceSetExtension sourceSetExtension;
@@ -67,10 +70,14 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
 
     public void beforeTest(Test task) {
         try {
-            final Map<String, Object> props = task.getSystemProperties();
+            Map<String, Object> props = task.getSystemProperties();
+            ApplicationModel appModel = getApplicationModel(TEST);
 
-            final ApplicationModel appModel = getApplicationModel(LaunchMode.TEST);
-            final Path serializedModel = ToolingUtils.serializeAppModel(appModel, task, true);
+            SmallRyeConfig config = buildEffectiveConfiguration(appModel.getAppArtifact()).getConfig();
+            config.getOptionalValue(TEST.getProfileKey(), String.class)
+                    .ifPresent(value -> props.put(TEST.getProfileKey(), value));
+
+            Path serializedModel = ToolingUtils.serializeAppModel(appModel, task, true);
             props.put(BootstrapConstants.SERIALIZED_TEST_APP_MODEL, serializedModel.toString());
 
             StringJoiner outputSourcesDir = new StringJoiner(",");
@@ -79,10 +86,10 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
             }
             props.put(BootstrapConstants.OUTPUT_SOURCES_DIR, outputSourcesDir.toString());
 
-            final SourceSetContainer sourceSets = getSourceSets();
-            final SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+            SourceSetContainer sourceSets = getSourceSets();
+            SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
-            final File outputDirectoryAsFile = getLastFile(mainSourceSet.getOutput().getClassesDirs());
+            File outputDirectoryAsFile = getLastFile(mainSourceSet.getOutput().getClassesDirs());
 
             Path projectDirPath = projectDir.toPath();
 
@@ -167,7 +174,7 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     }
 
     public AppModelResolver getAppModelResolver() {
-        return getAppModelResolver(LaunchMode.NORMAL);
+        return getAppModelResolver(NORMAL);
     }
 
     public AppModelResolver getAppModelResolver(LaunchMode mode) {
@@ -175,7 +182,7 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     }
 
     public ApplicationModel getApplicationModel() {
-        return getApplicationModel(LaunchMode.NORMAL);
+        return getApplicationModel(NORMAL);
     }
 
     public ApplicationModel getApplicationModel(LaunchMode mode) {

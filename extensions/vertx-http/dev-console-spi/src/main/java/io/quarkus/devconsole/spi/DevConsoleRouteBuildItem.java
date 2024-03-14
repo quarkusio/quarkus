@@ -14,7 +14,7 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * A route for handling requests in the dev console.
  * <p>
- * Routes are registered under /q/dev-v1/{groupId}.{artifactId}/
+ * Routes are registered under /q/dev-ui/{groupId}.{artifactId}/
  * <p>
  * The route is registered:
  * <ul>

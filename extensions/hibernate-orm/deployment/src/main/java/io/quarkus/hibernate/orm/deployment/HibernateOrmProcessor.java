@@ -36,11 +36,9 @@ import javax.xml.namespace.QName;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
-import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.SharedCacheMode;
 import jakarta.persistence.ValidationMode;
 import jakarta.persistence.spi.PersistenceUnitTransactionType;
-import jakarta.transaction.TransactionManager;
 import jakarta.xml.bind.JAXBElement;
 
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
@@ -66,7 +64,6 @@ import org.jboss.logmanager.Level;
 
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
@@ -120,15 +117,11 @@ import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
-import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
-import io.quarkus.hibernate.orm.runtime.RequestScopedStatelessSessionHolder;
-import io.quarkus.hibernate.orm.runtime.TransactionSessions;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.boot.xml.JAXBElementSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.QNameSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
-import io.quarkus.hibernate.orm.runtime.cdi.QuarkusArcBeanContainer;
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevIntegrator;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
@@ -592,36 +585,6 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    @BuildStep
-    void registerBeans(HibernateOrmConfig hibernateOrmConfig,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            Capabilities capabilities,
-            CombinedIndexBuildItem combinedIndex,
-            List<PersistenceUnitDescriptorBuildItem> descriptors,
-            JpaModelBuildItem jpaModel) {
-        if (!hasEntities(jpaModel)) {
-            return;
-        }
-
-        List<Class<?>> unremovableClasses = new ArrayList<>();
-        if (capabilities.isPresent(Capability.TRANSACTIONS)) {
-            unremovableClasses.add(TransactionManager.class);
-            unremovableClasses.add(TransactionSessions.class);
-        }
-        unremovableClasses.add(RequestScopedSessionHolder.class);
-        unremovableClasses.add(RequestScopedStatelessSessionHolder.class);
-        unremovableClasses.add(QuarkusArcBeanContainer.class);
-
-        additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                .addBeanClasses(unremovableClasses.toArray(new Class<?>[unremovableClasses.size()]))
-                .build());
-
-        // Some user-injectable beans are retrieved programmatically and shouldn't be removed
-        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(AttributeConverter.class));
-        unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(jpaModel.getPotentialCdiBeanClassNames()));
-    }
-
     @Consume(InterceptedStaticMethodsTransformersRegisteredBuildItem.class)
     @BuildStep
     @SuppressWarnings("deprecation")
@@ -801,7 +764,7 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    private boolean hasEntities(JpaModelBuildItem jpaModel) {
+    static boolean hasEntities(JpaModelBuildItem jpaModel) {
         return !jpaModel.getEntityClassNames().isEmpty();
     }
 

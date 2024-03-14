@@ -22,10 +22,15 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <!-- TODO - Because of PropagatorSpiTest, which contains multiple Application classes - needs to be fixed in the TCK -->
+                    <systemPropertyVariables>
+                        <quarkus.otel.mp.compatibility>true</quarkus.otel.mp.compatibility>
+                        <quarkus.resteasy.ignore-application-classes>true</quarkus.resteasy.ignore-application-classes>
+                    </systemPropertyVariables>
                     <dependenciesToScan>
-                        <!--  brunobat: Otel 1.23.x breaks the current version of the MP TCK                      -->
-                        <!--  <dependency>org.eclipse.microprofile.telemetry.tracing:microprofile-telemetry-tracing-tck</dependency>-->
+                        <dependency>org.eclipse.microprofile.telemetry.tracing:microprofile-telemetry-tracing-tck</dependency>
                     </dependenciesToScan>
+                    <excludesFile>src/test/resources/exclusions.txt</excludesFile>
                 </configuration>
             </plugin>
         </plugins>

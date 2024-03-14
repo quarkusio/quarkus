@@ -36,6 +36,7 @@ import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.TenantIdentityProvider;
 import io.quarkus.oidc.common.OidcEndpoint;
+import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
@@ -318,6 +319,13 @@ public class OidcRecorder {
             }
         }
 
+        if (!oidcConfig.token.isIssuedAtRequired() && oidcConfig.token.getAge().isPresent()) {
+            throw new ConfigurationException(
+                    "The 'token.issued-at-required' can only be set to false if 'token.age' is not set." +
+                            " Either set 'token.issued-at-required' to true or do not set 'token.age'.",
+                    Set.of("quarkus.oidc.token.issued-at-required", "quarkus.oidc.token.age"));
+        }
+
         return createOidcProvider(oidcConfig, tlsConfig, vertx)
                 .onItem().transform(new Function<OidcProvider, TenantConfigContext>() {
                     @Override
@@ -470,8 +478,8 @@ public class OidcRecorder {
         WebClientOptions options = new WebClientOptions();
 
         OidcCommonUtils.setHttpClientOptions(oidcConfig, tlsConfig, options);
-
-        WebClient client = WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
+        var mutinyVertx = new io.vertx.mutiny.core.Vertx(vertx);
+        WebClient client = WebClient.create(mutinyVertx, options);
 
         Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters = OidcCommonUtils.getOidcRequestFilters();
 
@@ -480,8 +488,12 @@ public class OidcRecorder {
             metadataUni = Uni.createFrom().item(createLocalMetadata(oidcConfig, authServerUriString));
         } else {
             final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
+            OidcRequestContextProperties contextProps = new OidcRequestContextProperties(
+                    Map.of(OidcUtils.TENANT_ID_ATTRIBUTE, oidcConfig.getTenantId().orElse(OidcUtils.DEFAULT_TENANT_ID)));
             metadataUni = OidcCommonUtils
-                    .discoverMetadata(client, oidcRequestFilters, authServerUriString, connectionDelayInMillisecs)
+                    .discoverMetadata(client, oidcRequestFilters, contextProps, authServerUriString, connectionDelayInMillisecs,
+                            mutinyVertx,
+                            oidcConfig.useBlockingDnsLookup)
                     .onItem()
                     .transform(new Function<JsonObject, OidcConfigurationMetadata>() {
                         @Override

@@ -89,6 +89,7 @@ import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildIt
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.smallrye.openapi.OpenApiFilter;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoRolesAllowedFilter;
@@ -565,6 +566,9 @@ public class SmallRyeOpenApiProcessor {
             Map<String, List<String>> rolesAllowedMethodReferences = getRolesAllowedMethodReferences(
                     apiFilteredIndexViewBuildItem);
 
+            getPermissionsAllowedMethodReferences(apiFilteredIndexViewBuildItem)
+                    .forEach(k -> rolesAllowedMethodReferences.putIfAbsent(k, List.of()));
+
             List<String> authenticatedMethodReferences = getAuthenticatedMethodReferences(
                     apiFilteredIndexViewBuildItem);
 
@@ -628,6 +632,17 @@ public class SmallRyeOpenApiProcessor {
                             }
                             return v1;
                         }));
+    }
+
+    private List<String> getPermissionsAllowedMethodReferences(
+            OpenApiFilteredIndexViewBuildItem indexViewBuildItem) {
+        return indexViewBuildItem.getIndex()
+                .getAnnotations(DotName.createSimple(PermissionsAllowed.class))
+                .stream()
+                .flatMap(SmallRyeOpenApiProcessor::getMethods)
+                .map(e -> JandexUtil.createUniqueMethodReference(e.getKey().declaringClass(), e.getKey()))
+                .distinct()
+                .toList();
     }
 
     private List<String> getAuthenticatedMethodReferences(OpenApiFilteredIndexViewBuildItem indexViewBuildItem) {
@@ -971,7 +986,7 @@ public class SmallRyeOpenApiProcessor {
         } else if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
             extensions.add(new RESTEasyExtension(indexView));
             openApiConfig.doAllowNakedPathParameter();
-            appPath = config.getOptionalValue("quarkus.resteasy-reactive.path", String.class).orElse("");
+            appPath = config.getOptionalValue("quarkus.rest.path", String.class).orElse("");
         }
 
         extensions.add(new CustomPathExtension(rootPath, appPath));

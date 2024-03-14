@@ -149,10 +149,10 @@ public class DevUIJsonRPCTest {
     }
 
     private JsonNode objectResultFromJsonRPC(int id, int loopCount) throws InterruptedException, JsonProcessingException {
-        if (MESSAGES.containsKey(id)) {
-            String response = MESSAGES.remove(id);
+        if (RESPONSES.containsKey(id)) {
+            WebSocketResponse response = RESPONSES.remove(id);
             if (response != null) {
-                ObjectNode json = (ObjectNode) new ObjectMapper().readTree(response);
+                ObjectNode json = (ObjectNode) new ObjectMapper().readTree(response.message());
                 JsonNode result = json.get("result");
                 if (result != null) {
                     return result.get("object");
@@ -212,25 +212,48 @@ public class DevUIJsonRPCTest {
                 socket.frameHandler((e) -> {
                     Buffer b = accumulatedBuffer.appendBuffer(e.binaryData());
                     if (e.isFinal()) {
-                        MESSAGES.put(id, b.toString());
+                        RESPONSES.put(id, new WebSocketResponse(b.toString()));
                     }
                 });
 
                 socket.writeTextMessage(request);
 
                 socket.exceptionHandler((e) -> {
-                    e.printStackTrace();
+                    RESPONSES.put(id, new WebSocketResponse(e));
                     vertx.close();
                 });
                 socket.closeHandler(v -> {
                     vertx.close();
                 });
             } else {
+                RESPONSES.put(id, new WebSocketResponse(ar.cause()));
                 vertx.close();
             }
         });
         return id;
     }
 
-    private static final ConcurrentHashMap<Integer, String> MESSAGES = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Integer, WebSocketResponse> RESPONSES = new ConcurrentHashMap<>();
+
+    private static class WebSocketResponse {
+        private final String message;
+        private final Throwable throwable;
+
+        public WebSocketResponse(String message) {
+            this.message = message;
+            this.throwable = null;
+        }
+
+        public WebSocketResponse(Throwable throwable) {
+            this.message = null;
+            this.throwable = throwable;
+        }
+
+        String message() {
+            if (throwable != null) {
+                throw new IllegalStateException("Request failed: " + throwable.getMessage(), throwable);
+            }
+            return message;
+        }
+    }
 }

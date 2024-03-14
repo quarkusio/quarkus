@@ -29,7 +29,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
+            <artifactId>quarkus-rest-client-jackson</artifactId>
         </dependency>
 
         <dependency>
@@ -88,7 +88,7 @@
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-client-reactive-jackson-deployment</artifactId>
+            <artifactId>quarkus-rest-client-jackson-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -147,32 +147,6 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>com.gradle</groupId>
-                    <artifactId>gradle-enterprise-maven-extension</artifactId>
-                    <configuration>
-                        <gradleEnterprise>
-                            <normalization>
-                                <runtimeClassPath combine.children="append">
-                                    <propertiesNormalizations>
-                                        <propertiesNormalization>
-                                            <path>application.properties</path>
-                                            <ignoredProperties>
-                                                <ignore>quarkus.rest-client.self-signed.trust-store</ignore>
-                                                <ignore>quarkus.rest-client.wrong-host.trust-store</ignore>
-                                                <ignore>quarkus.rest-client.wrong-host-rejected.trust-store</ignore>
-                                            </ignoredProperties>
-                                        </propertiesNormalization>
-                                    </propertiesNormalizations>
-                                </runtimeClassPath>
-                            </normalization>
-                        </gradleEnterprise>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>

@@ -28,9 +28,9 @@ First, we need to create a new Quarkus project with the following command:
 include::{includes}/devtools/create-app.adoc[]
 
 NOTE: The suggested project creation command lines disable the codestarts to avoid including a REST server. Similarly, if you use code.quarkus.io to generate a
-project, you need to go to *MORE OPTIONS -> Starter Code* and select *No* to avoid adding the RESTEasy Reactive extension.
+project, you need to go to *MORE OPTIONS -> Starter Code* and select *No* to avoid adding the Quarkus REST (formerly RESTEasy Reactive) extension.
 
-The RESTEasy Reactive extension is added automatically only if you ask for codestarts and you didn't specify any extensions.
+The Quarkus REST extension is added automatically only if you ask for codestarts and you didn't specify any extensions.
 
 
 == Writing Command Mode Applications

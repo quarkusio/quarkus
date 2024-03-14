@@ -10,7 +10,10 @@ import org.eclipse.microprofile.graphql.Source;
 
 import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLSchema;
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.graphql.api.Context;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Just a test endpoint
@@ -49,6 +52,30 @@ public class TestResource {
     @Query
     public TestPojo businesserror() throws BusinessException {
         throw new BusinessException("Some invalid case");
+    }
+
+    @Query
+    @NonBlocking
+    public Uni<String> failureUniNonBlocking() {
+        return Uni.createFrom().failure(new BusinessException("boom"));
+    }
+
+    @Query
+    @Blocking
+    public Uni<String> failureUniBlocking() {
+        return Uni.createFrom().failure(new BusinessException("boom"));
+    }
+
+    @Query
+    @NonBlocking
+    public String failureSyncNonBlocking() throws BusinessException {
+        throw new BusinessException("boom");
+    }
+
+    @Query
+    @Blocking
+    public String failureSyncBlocking() throws BusinessException {
+        throw new BusinessException("boom");
     }
 
     @Query

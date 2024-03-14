@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -63,6 +64,7 @@ import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.RepetitionInfo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -79,6 +81,7 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
 
 import io.quarkus.arc.All;
 import io.quarkus.arc.Arc;
@@ -269,7 +272,7 @@ public class QuarkusComponentTestExtension
         // Target is empty for constructor or static method
         parameterContext.getTarget().isPresent()
                 // Only test methods are supported
-                && parameterContext.getDeclaringExecutable().isAnnotationPresent(Test.class)
+                && isTestMethod(parameterContext.getDeclaringExecutable())
                 // A method/param annotated with @SkipInject is never supported
                 && !parameterContext.isAnnotated(SkipInject.class)
                 && !parameterContext.getDeclaringExecutable().isAnnotationPresent(SkipInject.class)
@@ -999,7 +1002,7 @@ public class QuarkusComponentTestExtension
     }
 
     private List<Parameter> findInjectParams(Class<?> testClass) {
-        List<Method> testMethods = findMethods(testClass, m -> m.isAnnotationPresent(Test.class));
+        List<Method> testMethods = findMethods(testClass, QuarkusComponentTestExtension::isTestMethod);
         List<Parameter> ret = new ArrayList<>();
         for (Method method : testMethods) {
             for (Parameter param : method.getParameters()) {
@@ -1015,7 +1018,7 @@ public class QuarkusComponentTestExtension
     }
 
     private List<Parameter> findInjectMockParams(Class<?> testClass) {
-        List<Method> testMethods = findMethods(testClass, m -> m.isAnnotationPresent(Test.class));
+        List<Method> testMethods = findMethods(testClass, QuarkusComponentTestExtension::isTestMethod);
         List<Parameter> ret = new ArrayList<>();
         for (Method method : testMethods) {
             for (Parameter param : method.getParameters()) {
@@ -1026,6 +1029,12 @@ public class QuarkusComponentTestExtension
             }
         }
         return ret;
+    }
+
+    static boolean isTestMethod(Executable method) {
+        return method.isAnnotationPresent(Test.class)
+                || method.isAnnotationPresent(ParameterizedTest.class)
+                || method.isAnnotationPresent(RepeatedTest.class);
     }
 
     private List<Field> findFields(Class<?> testClass, List<Class<? extends Annotation>> annotations) {

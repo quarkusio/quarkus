@@ -107,7 +107,7 @@ As SSL is de facto the standard nowadays, we decided to enable its support autom
  * the Reactive client for Microsoft SQL Server extension (`quarkus-reactive-mssql-client`),
  * the Redis client extension (`quarkus-redis-client`),
  * the RESTEasy Classic REST Client extension (`quarkus-resteasy-client`),
- * the REST Client Reactive extension (`quarkus-rest-client-reactive`),
+ * the REST Client extension (`quarkus-rest-client`),
  * the SmallRye GraphQL Client extension (`quarkus-smallrye-graphql-client`),
  * the Spring Cloud Config client extension (`quarkus-spring-cloud-config-client`),
  * the Vault extension (`quarkus-vault`),

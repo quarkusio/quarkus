@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.Config;
@@ -45,6 +44,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
+import io.quarkus.deployment.shutdown.ShutdownBuildTimeConfig;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
@@ -54,6 +54,7 @@ import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.smallrye.health.runtime.QuarkusAsyncHealthCheckFactory;
+import io.quarkus.smallrye.health.runtime.ShutdownReadinessCheck;
 import io.quarkus.smallrye.health.runtime.ShutdownReadinessListener;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthGroupHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthHandler;
@@ -81,6 +82,8 @@ import io.vertx.ext.web.RoutingContext;
 
 class SmallRyeHealthProcessor {
     private static final Logger LOG = Logger.getLogger(SmallRyeHealthProcessor.class);
+
+    private static final String CONFIG_KEY_HEALTH_MANAGEMENT_ENABLED = "quarkus.smallrye-health.management.enabled";
 
     private static final DotName LIVENESS = DotName.createSimple(Liveness.class.getName());
     private static final DotName READINESS = DotName.createSimple(Readiness.class.getName());
@@ -132,7 +135,7 @@ class SmallRyeHealthProcessor {
                 BRANDING_LOGO_MODULE,
                 BRANDING_STYLE_MODULE,
                 BRANDING_FAVICON_MODULE).map(HotDeploymentWatchedFileBuildItem::new)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @BuildStep
@@ -211,7 +214,7 @@ class SmallRyeHealthProcessor {
 
         // Register the health handler
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management("quarkus.smallrye-health.management.enabled")
+                .management(CONFIG_KEY_HEALTH_MANAGEMENT_ENABLED)
                 .route(healthConfig.rootPath)
                 .routeConfigKey("quarkus.smallrye-health.root-path")
                 .handler(new SmallRyeHealthHandler())
@@ -220,7 +223,7 @@ class SmallRyeHealthProcessor {
 
         // Register the liveness handler
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management("quarkus.smallrye-health.management.enabled")
+                .management(CONFIG_KEY_HEALTH_MANAGEMENT_ENABLED)
                 .nestedRoute(healthConfig.rootPath, healthConfig.livenessPath)
                 .handler(new SmallRyeLivenessHandler())
                 .displayOnNotFoundPage()
@@ -228,7 +231,7 @@ class SmallRyeHealthProcessor {
 
         // Register the readiness handler
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management("quarkus.smallrye-health.management.enabled")
+                .management(CONFIG_KEY_HEALTH_MANAGEMENT_ENABLED)
                 .nestedRoute(healthConfig.rootPath, healthConfig.readinessPath)
                 .handler(new SmallRyeReadinessHandler())
                 .displayOnNotFoundPage()
@@ -236,7 +239,7 @@ class SmallRyeHealthProcessor {
 
         // Register the health group handlers
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management("quarkus.smallrye-health.management.enabled")
+                .management(CONFIG_KEY_HEALTH_MANAGEMENT_ENABLED)
                 .nestedRoute(healthConfig.rootPath, healthConfig.groupPath)
                 .handler(new SmallRyeHealthGroupHandler())
                 .displayOnNotFoundPage()
@@ -244,7 +247,7 @@ class SmallRyeHealthProcessor {
 
         SmallRyeIndividualHealthGroupHandler handler = new SmallRyeIndividualHealthGroupHandler();
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management("quarkus.smallrye-health.management.enabled")
+                .management(CONFIG_KEY_HEALTH_MANAGEMENT_ENABLED)
                 .nestedRoute(healthConfig.rootPath, healthConfig.groupPath + "/*")
                 .handler(handler)
                 .displayOnNotFoundPage()
@@ -252,7 +255,7 @@ class SmallRyeHealthProcessor {
 
         // Register the wellness handler
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management("quarkus.smallrye-health.management.enabled")
+                .management(CONFIG_KEY_HEALTH_MANAGEMENT_ENABLED)
                 .nestedRoute(healthConfig.rootPath, healthConfig.wellnessPath)
                 .handler(new SmallRyeWellnessHandler())
                 .displayOnNotFoundPage()
@@ -260,7 +263,7 @@ class SmallRyeHealthProcessor {
 
         // Register the startup handler
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management("quarkus.smallrye-health.management.enabled")
+                .management(CONFIG_KEY_HEALTH_MANAGEMENT_ENABLED)
                 .nestedRoute(healthConfig.rootPath, healthConfig.startupPath)
                 .handler(new SmallRyeStartupHandler())
                 .displayOnNotFoundPage()
@@ -314,10 +317,9 @@ class SmallRyeHealthProcessor {
                 if (target.asClass().declaredAnnotation(JAX_RS_PATH) != null) {
                     containsPath = true;
                 }
-            } else if (target.kind() == Kind.METHOD) {
-                if (target.asMethod().hasAnnotation(JAX_RS_PATH)) {
-                    containsPath = true;
-                }
+            } else if (target.kind() == Kind.METHOD && target.asMethod().hasAnnotation(JAX_RS_PATH)) {
+                containsPath = true;
+
             }
             if (containsPath) {
                 LOG.warnv(
@@ -353,6 +355,17 @@ class SmallRyeHealthProcessor {
                 new KubernetesHealthStartupPathBuildItem(
                         nonApplicationRootPathBuildItem.resolveManagementNestedPath(healthConfig.rootPath,
                                 healthConfig.startupPath)));
+    }
+
+    @BuildStep
+    void shutdownHealthCheck(ShutdownBuildTimeConfig buildTimeConfig,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
+        if (buildTimeConfig.delayEnabled) {
+            additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClass(ShutdownReadinessCheck.class)
+                    .setUnremovable()
+                    .build());
+        }
     }
 
     @BuildStep
@@ -413,7 +426,6 @@ class SmallRyeHealthProcessor {
             LaunchModeBuildItem launchMode,
             SmallRyeHealthConfig healthConfig,
             BuildProducer<SmallRyeHealthBuildItem> smallryeHealthBuildProducer, ShutdownContextBuildItem shutdownContext) {
-
         WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem.byArtifactKey(HEALTH_UI_WEBJAR_ARTIFACT_KEY);
         if (result == null) {
             return;
@@ -428,7 +440,7 @@ class SmallRyeHealthProcessor {
                     healthUiPath, result.getWebRootConfigurations(), runtimeConfig, shutdownContext);
 
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    .management("quarkus.smallrye-health.management.enabled")
+                    .management(CONFIG_KEY_HEALTH_MANAGEMENT_ENABLED)
                     .route(healthConfig.ui.rootPath)
                     .displayOnNotFoundPage("Health UI")
                     .routeConfigKey("quarkus.smallrye-health.ui.root-path")
@@ -436,7 +448,7 @@ class SmallRyeHealthProcessor {
                     .build());
 
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    .management("quarkus.smallrye-health.management.enabled")
+                    .management(CONFIG_KEY_HEALTH_MANAGEMENT_ENABLED)
                     .route(healthConfig.ui.rootPath + "*")
                     .handler(handler)
                     .build());

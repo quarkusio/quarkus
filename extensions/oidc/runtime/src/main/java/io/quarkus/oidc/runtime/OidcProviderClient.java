@@ -36,6 +36,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 public class OidcProviderClient implements Closeable {
     private static final Logger LOG = Logger.getLogger(OidcProviderClient.class);
 
+    private static final String TENANT_ID_ATTRIBUTE = "oidc-tenant-id";
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
     private static final String CONTENT_TYPE_HEADER = String.valueOf(HttpHeaders.CONTENT_TYPE);
     private static final String ACCEPT_HEADER = String.valueOf(HttpHeaders.ACCEPT);
@@ -84,16 +85,22 @@ public class OidcProviderClient implements Closeable {
     }
 
     public Uni<JsonWebKeySet> getJsonWebKeySet(OidcRequestContextProperties contextProperties) {
-        return filter(OidcEndpoint.Type.JWKS, client.getAbs(metadata.getJsonWebKeySetUri()), null, contextProperties).send()
+        return OidcCommonUtils
+                .sendRequest(vertx,
+                        filter(OidcEndpoint.Type.JWKS, client.getAbs(metadata.getJsonWebKeySetUri()), null, contextProperties),
+                        oidcConfig.useBlockingDnsLookup)
                 .onItem()
                 .transform(resp -> getJsonWebKeySet(resp));
     }
 
     public Uni<UserInfo> getUserInfo(String token) {
         LOG.debugf("Get UserInfo on: %s auth: %s", metadata.getUserInfoUri(), OidcConstants.BEARER_SCHEME + " " + token);
-        return filter(OidcEndpoint.Type.USERINFO, client.getAbs(metadata.getUserInfoUri()), null, null)
-                .putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + token)
-                .send().onItem().transform(resp -> getUserInfo(resp));
+        return OidcCommonUtils
+                .sendRequest(vertx,
+                        filter(OidcEndpoint.Type.USERINFO, client.getAbs(metadata.getUserInfoUri()), null, null)
+                                .putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + token),
+                        oidcConfig.useBlockingDnsLookup)
+                .onItem().transform(resp -> getUserInfo(resp));
     }
 
     public Uni<TokenIntrospection> introspectToken(String token) {
@@ -259,6 +266,7 @@ public class OidcProviderClient implements Closeable {
         if (!filters.isEmpty()) {
             Map<String, Object> newProperties = contextProperties == null ? new HashMap<>()
                     : new HashMap<>(contextProperties.getAll());
+            newProperties.put(OidcUtils.TENANT_ID_ATTRIBUTE, oidcConfig.getTenantId().orElse(OidcUtils.DEFAULT_TENANT_ID));
             newProperties.put(OidcConfigurationMetadata.class.getName(), metadata);
             OidcRequestContextProperties newContextProperties = new OidcRequestContextProperties(newProperties);
             for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(filters, endpointType)) {

@@ -62,7 +62,7 @@ The solution is located in the `getting-started-dev-services` {quickstarts-tree-
 The easiest way to create a new Quarkus project is to open a terminal and run the following command:
 
 :create-app-artifact-id: getting-started-dev-services
-:create-app-extensions: resteasy-reactive
+:create-app-extensions: rest
 :create-app-code:
 include::{includes}/devtools/create-app.adoc[]
 
@@ -74,7 +74,7 @@ Launch the application in dev mode
 
 include::{includes}/devtools/dev.adoc[]
 
-Once the application is up, visit http://localhost:8080/hello. It should show a "Hello from RESTEasy Reactive" message.
+Once the application is up, visit http://localhost:8080/hello. It should show a "Hello from Quarkus REST" message.
 
 === Accepting user input
 
@@ -105,7 +105,7 @@ and replace
 
 [source, java]
 ----
-             .body(is("Hello from RESTEasy Reactive"));
+             .body(is("Hello from Quarkus REST"));
 ----
 
 with

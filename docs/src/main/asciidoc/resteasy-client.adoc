@@ -14,9 +14,9 @@ include::_attributes.adoc[]
 ====
 This guide is about the REST Client compatible with https://resteasy.dev[RESTEasy Classic] which used to be the default Jakarta REST (formerly known as JAX-RS) implementation until Quarkus 2.8.
 
-It is now recommended to use RESTEasy Reactive, which supports equally well traditional blocking workloads and reactive workloads.
-For more information about RESTEasy Reactive,
-please see the xref:rest-client-reactive.adoc[REST Client Reactive guide] and, for the server side, the xref:rest-json.adoc[introductory REST JSON guide] or the more detailed xref:resteasy-reactive.adoc[RESTEasy Reactive guide].
+It is now recommended to use Quarkus REST (formerly RESTEasy Reactive), which supports equally well traditional blocking workloads and reactive workloads.
+For more information about Quarkus REST,
+please see the xref:rest-client.adoc[REST Client guide] and, for the server side, the xref:rest-json.adoc[introductory REST JSON guide] or the more detailed xref:rest.adoc[Quarkus REST guide].
 ====
 
 This guide explains how to use the RESTEasy REST Client in order to interact with REST APIs
@@ -358,7 +358,7 @@ One important note is that according to the https://www.rfc-editor.org/rfc/rfc26
 == Async Support
 
 The rest client supports asynchronous rest calls.
-Async support comes in 2 flavors: you can return a `CompletionStage` or a `Uni` (requires the `quarkus-rest-client-mutiny` extension).
+Async support comes in 2 flavors: you can return a `CompletionStage` or a `Uni` (requires the `quarkus-resteasy-client-mutiny` extension).
 Let's see it in action by adding a `getByIdAsync` method in our `ExtensionsService` REST interface. The code should look like:
 
 [source, java]
@@ -664,7 +664,7 @@ In some cases you may want to mock the remote endpoint - the HTTP server - inste
 This may be especially useful for native tests, or for programmatically created clients.
 
 You can easily mock an HTTP Server with Wiremock.
-The xref:rest-client-reactive.adoc#using-a-mock-http-server-for-tests[Wiremock section of the Quarkus - Using the REST Client]
+The xref:rest-client.adoc#using-a-mock-http-server-for-tests[Wiremock section of the Quarkus - Using the REST Client]
 describes how to set it up in detail.
 
 == Further reading

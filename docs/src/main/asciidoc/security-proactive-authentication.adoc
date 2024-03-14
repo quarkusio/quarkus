@@ -39,7 +39,7 @@ Then, you can subscribe to the resulting `Uni` to be notified when authenticatio
 
 [NOTE]
 ====
-You can still access `SecurityIdentity` synchronously with `public SecurityIdentity getIdentity()` in xref:resteasy-reactive.adoc[RESTEasy Reactive] from endpoints that are annotated with `@RolesAllowed`, `@Authenticated`, or with respective configuration authorization checks because authentication has already happened.
+You can still access `SecurityIdentity` synchronously with `public SecurityIdentity getIdentity()` in xref:rest.adoc[Quarkus REST (formerly RESTEasy Reactive)] from endpoints that are annotated with `@RolesAllowed`, `@Authenticated`, or with respective configuration authorization checks because authentication has already happened.
 The same is also valid for xref:reactive-routes.adoc[Reactive routes] if a route response is synchronous.
 ====
 

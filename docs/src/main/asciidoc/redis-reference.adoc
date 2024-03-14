@@ -225,6 +225,8 @@ To use TLS, you need to:
 1. Set the `quarkus.redis.tls.enabled=true` property
 2. Make sure that your URL starts with `rediss://` (with two `s`)
 
+IMPORTANT: The default hostname verifier is set to `NONE`, meaning it does not verify the host name. You can change this behavior by setting the `quarkus.redis.tls.hostname-verification-algorithm` property, to `HTTPS` for example.
+
 === Configure the authentication
 
 The Redis password can be set in the `redis://` URL or with the `quarkus.redis.password` property.

@@ -196,7 +196,7 @@ Apr 13 12:48:19 bd71f39642c8 java[853]:  -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
 Apr 13 12:48:19 bd71f39642c8 java[853]: --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
 Apr 13 12:48:19 bd71f39642c8 java[853]: 2023-04-13 12:48:19,284 INFO  [io.quarkus] (main) getting-started 1.0.0-SNAPSHOT on JVM (powered by Quarkus 2.16.6.Final) started in 0.607s. Listening on: http://0.0.0.0:8080
 Apr 13 12:48:19 bd71f39642c8 java[853]: 2023-04-13 12:48:19,309 INFO  [io.quarkus] (main) Profile prod activated.
-Apr 13 12:48:19 bd71f39642c8 java[853]: 2023-04-13 12:48:19,310 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, smallrye-context-propagation, vertx]
+Apr 13 12:48:19 bd71f39642c8 java[853]: 2023-04-13 12:48:19,310 INFO  [io.quarkus] (main) Installed features: [cdi, rest, smallrye-context-propagation, vertx]
 ----
 
 Manually, you can also test if the app is reachable:

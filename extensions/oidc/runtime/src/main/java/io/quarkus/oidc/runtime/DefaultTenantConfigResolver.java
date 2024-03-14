@@ -28,6 +28,7 @@ import io.quarkus.oidc.UserInfoCache;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
+import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -38,8 +39,12 @@ public class DefaultTenantConfigResolver {
     private static final String CURRENT_STATIC_TENANT_ID = "static.tenant.id";
     private static final String CURRENT_STATIC_TENANT_ID_NULL = "static.tenant.id.null";
     private static final String CURRENT_DYNAMIC_TENANT_CONFIG = "dynamic.tenant.config";
-
-    private DefaultStaticTenantResolver defaultStaticTenantResolver = new DefaultStaticTenantResolver();
+    private final ConcurrentHashMap<String, BackChannelLogoutTokenCache> backChannelLogoutTokens = new ConcurrentHashMap<>();
+    private final DefaultStaticTenantResolver defaultStaticTenantResolver = new DefaultStaticTenantResolver();
+    private final TenantResolver pathMatchingTenantResolver;
+    private final BlockingTaskRunner<OidcTenantConfig> blockingRequestContext;
+    private final boolean securityEventObserved;
+    private final TenantConfigBean tenantConfigBean;
 
     @Inject
     Instance<TenantResolver> tenantResolver;
@@ -49,9 +54,6 @@ public class DefaultTenantConfigResolver {
 
     @Inject
     Instance<JavaScriptRequestChecker> javaScriptRequestChecker;
-
-    @Inject
-    TenantConfigBean tenantConfigBean;
 
     @Inject
     Instance<TokenStateManager> tokenStateManager;
@@ -69,17 +71,15 @@ public class DefaultTenantConfigResolver {
     @ConfigProperty(name = "quarkus.http.proxy.enable-forwarded-prefix")
     boolean enableHttpForwardedPrefix;
 
-    private final BlockingTaskRunner<OidcTenantConfig> blockingRequestContext;
-
-    private final boolean securityEventObserved;
-
-    private ConcurrentHashMap<String, BackChannelLogoutTokenCache> backChannelLogoutTokens = new ConcurrentHashMap<>();
-
-    public DefaultTenantConfigResolver(BlockingSecurityExecutor blockingExecutor, BeanManager beanManager,
-            @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
+    DefaultTenantConfigResolver(BlockingSecurityExecutor blockingExecutor, BeanManager beanManager,
+            @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
+            @ConfigProperty(name = "quarkus.http.root-path") String rootPath, TenantConfigBean tenantConfigBean) {
         this.blockingRequestContext = new BlockingTaskRunner<OidcTenantConfig>(blockingExecutor);
         this.securityEventObserved = SecurityEventHelper.isEventObserved(new SecurityEvent(null, (SecurityIdentity) null),
                 beanManager, securityEventsEnabled);
+        this.tenantConfigBean = tenantConfigBean;
+        this.pathMatchingTenantResolver = PathMatchingTenantResolver.of(tenantConfigBean.getStaticTenantsConfig(), rootPath,
+                tenantConfigBean.getDefaultTenant());
     }
 
     @PostConstruct
@@ -152,30 +152,48 @@ public class DefaultTenantConfigResolver {
     }
 
     private TenantConfigContext getStaticTenantContext(RoutingContext context) {
-
         String tenantId = context.get(CURRENT_STATIC_TENANT_ID);
-
         if (tenantId == null && context.get(CURRENT_STATIC_TENANT_ID_NULL) == null) {
-            if (tenantResolver.isResolvable()) {
-                tenantId = tenantResolver.get().resolve(context);
+            tenantId = resolveStaticTenantId(context);
+            if (tenantId != null) {
+                context.put(CURRENT_STATIC_TENANT_ID, tenantId);
+            } else {
+                context.put(CURRENT_STATIC_TENANT_ID_NULL, true);
             }
-
-            if (tenantId == null && tenantConfigBean.getStaticTenantsConfig().size() > 0) {
-                tenantId = defaultStaticTenantResolver.resolve(context);
-            }
-
-            if (tenantId == null) {
-                tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
-            }
-        }
-
-        if (tenantId != null) {
-            context.put(CURRENT_STATIC_TENANT_ID, tenantId);
-        } else {
-            context.put(CURRENT_STATIC_TENANT_ID_NULL, true);
         }
 
         return getStaticTenantContext(tenantId);
+    }
+
+    private String resolveStaticTenantId(RoutingContext context) {
+        String tenantId;
+        if (tenantResolver.isResolvable()) {
+            tenantId = tenantResolver.get().resolve(context);
+
+            if (tenantId != null) {
+                return tenantId;
+            }
+        }
+
+        tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+
+        if (tenantId != null) {
+            return tenantId;
+        }
+
+        if (pathMatchingTenantResolver != null) {
+            tenantId = pathMatchingTenantResolver.resolve(context);
+
+            if (tenantId != null) {
+                return tenantId;
+            }
+        }
+
+        if (!tenantConfigBean.getStaticTenantsConfig().isEmpty()) {
+            tenantId = defaultStaticTenantResolver.resolve(context);
+        }
+
+        return tenantId;
     }
 
     private TenantConfigContext getStaticTenantContext(String tenantId) {
@@ -274,10 +292,6 @@ public class DefaultTenantConfigResolver {
 
         @Override
         public String resolve(RoutingContext context) {
-            String tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
-            if (tenantId != null) {
-                return tenantId;
-            }
             String[] pathSegments = context.request().path().split("/");
             if (pathSegments.length > 0) {
                 String lastPathSegment = pathSegments[pathSegments.length - 1];
@@ -287,7 +301,44 @@ public class DefaultTenantConfigResolver {
             }
             return null;
         }
+    }
 
+    private static class PathMatchingTenantResolver implements TenantResolver {
+        private static final String DEFAULT_TENANT = "PathMatchingTenantResolver#DefaultTenant";
+        private final ImmutablePathMatcher<String> staticTenantPaths;
+
+        private PathMatchingTenantResolver(ImmutablePathMatcher<String> staticTenantPaths) {
+            this.staticTenantPaths = staticTenantPaths;
+        }
+
+        private static PathMatchingTenantResolver of(Map<String, TenantConfigContext> staticTenantsConfig, String rootPath,
+                TenantConfigContext defaultTenant) {
+            final var builder = ImmutablePathMatcher.<String> builder().rootPath(rootPath);
+            addPath(DEFAULT_TENANT, defaultTenant.oidcConfig, builder);
+            for (Map.Entry<String, TenantConfigContext> e : staticTenantsConfig.entrySet()) {
+                addPath(e.getKey(), e.getValue().oidcConfig, builder);
+            }
+            return builder.hasPaths() ? new PathMatchingTenantResolver(builder.build()) : null;
+        }
+
+        @Override
+        public String resolve(RoutingContext context) {
+            String tenantId = staticTenantPaths.match(context.normalizedPath()).getValue();
+            if (tenantId != null && tenantId != DEFAULT_TENANT) {
+                return tenantId;
+            }
+            return null;
+        }
+
+        private static ImmutablePathMatcher.ImmutablePathMatcherBuilder<String> addPath(String tenant, OidcTenantConfig config,
+                ImmutablePathMatcher.ImmutablePathMatcherBuilder<String> builder) {
+            if (config != null && config.tenantPaths.isPresent()) {
+                for (String path : config.tenantPaths.get()) {
+                    builder.addPath(path, tenant);
+                }
+            }
+            return builder;
+        }
     }
 
 }

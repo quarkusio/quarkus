@@ -43,10 +43,10 @@ The elements are stored in Elasticsearch.
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: elasticsearch-quickstart
-:create-app-extensions: resteasy-reactive-jackson,elasticsearch-rest-client
+:create-app-extensions: rest-jackson,elasticsearch-rest-client
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a Maven structure importing the RESTEasy Reactive, Jackson, and Elasticsearch low level REST client extensions.
+This command generates a Maven structure importing the Quarkus REST (formerly RESTEasy Reactive), Jackson, and Elasticsearch low level REST client extensions.
 
 The Elasticsearch low level REST client comes with the `quarkus-elasticsearch-rest-client` extension
 that has been added to your build file.
@@ -55,7 +55,7 @@ If you want to use the Elasticsearch Java client instead, replace the `quarkus-e
 
 [NOTE]
 ====
-We use the `resteasy-reactive-jackson` extension here and not the JSON-B variant because we will use the Vert.x `JsonObject` helper
+We use the `rest-jackson` extension here and not the JSON-B variant because we will use the Vert.x `JsonObject` helper
 to serialize/deserialize our objects to/from Elasticsearch and it uses Jackson under the hood.
 ====
 

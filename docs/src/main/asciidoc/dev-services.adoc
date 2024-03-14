@@ -28,7 +28,7 @@ If you don't have Docker installed you will need to configure your services norm
 
 == AMQP
 
-The AMQP Dev Service will be enabled when the `quarkus-smallrye-reactive-messaging-amqp` extension is present in your application, and
+The AMQP Dev Service will be enabled when the `quarkus-messaging-amqp` extension is present in your application, and
 the broker address has not been explicitly configured. More information can be found in the
 xref:amqp-dev-services.adoc[AMQP Dev Services Guide].
 
@@ -94,11 +94,17 @@ include::{generated-dir}/config/quarkus-mongodb-config-group-dev-services-build-
 
 == RabbitMQ
 
-The RabbitMQ Dev Service will be enabled when the `quarkus-smallrye-reactive-messaging-rabbitmq` extension is present in your application, and
+The RabbitMQ Dev Service will be enabled when the `quarkus-messaging-rabbitmq` extension is present in your application, and
 the broker address has not been explicitly configured. More information can be found in the
 xref:rabbitmq-dev-services.adoc[RabbitMQ Dev Services Guide].
 
 include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-rabbitmq-config-group-rabbit-mq-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+
+== Pulsar
+
+The Pulsar Dev Service will be enabled when the `quarkus-messaging-pulsar` extension is present in your application, and
+the broker address has not been explicitly configured. More information can be found in the
+xref:pulsar-dev-services.adoc[Pulsar Dev Services Guide].
 
 == Redis
 

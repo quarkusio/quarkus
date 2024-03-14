@@ -28,7 +28,7 @@ public class RestResponseBuilderImpl<T> extends AbstractRestResponseBuilder<T> {
                 try {
                     String host = req.getRequestHost();
                     int port = -1;
-                    int index = host.indexOf(":");
+                    int index = host.lastIndexOf(":");
                     if (index > -1) {
                         port = Integer.parseInt(host.substring(index + 1));
                         host = host.substring(0, index);
@@ -69,7 +69,7 @@ public class RestResponseBuilderImpl<T> extends AbstractRestResponseBuilder<T> {
                 try {
                     String host = req.getRequestHost();
                     int port = -1;
-                    int index = host.indexOf(":");
+                    int index = host.lastIndexOf(":");
                     if (index > -1) {
                         port = Integer.parseInt(host.substring(index + 1));
                         host = host.substring(0, index);

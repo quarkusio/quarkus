@@ -172,6 +172,7 @@ public class KnownOidcProviders {
 
         ret.getToken().setVerifyAccessTokenWithUserInfo(true);
         ret.getCredentials().getClientSecret().setMethod(Method.QUERY);
+        ret.getAuthentication().setScopeSeparator(",");
 
         return ret;
     }

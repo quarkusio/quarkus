@@ -19,8 +19,8 @@ and a reactive style of interaction with the database.
 Hibernate Reactive is not a replacement for xref:hibernate-orm.adoc[Hibernate ORM] or the future of Hibernate ORM.
 It is a different stack tailored for reactive use cases where you need high-concurrency.
 
-Also, using RESTEasy Reactive, our default REST layer, does not require the use of Hibernate Reactive.
-It is perfectly valid to use RESTEasy Reactive with Hibernate ORM,
+Also, using Quarkus REST (formerly RESTEasy Reactive), our default REST layer, does not require the use of Hibernate Reactive.
+It is perfectly valid to use Quarkus REST with Hibernate ORM,
 and if you do not need high-concurrency, or are not accustomed to the reactive paradigm, it is recommended to use Hibernate ORM.
 ====
 

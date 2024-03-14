@@ -7,4 +7,5 @@ import io.quarkus.test.junit.TestProfile;
 @QuarkusTest
 @TestProfile(VertxGRPCTestProfile.class)
 class VertxHelloWorldTlsEndpointTest extends HelloWorldTlsEndpointTestBase {
+
 }

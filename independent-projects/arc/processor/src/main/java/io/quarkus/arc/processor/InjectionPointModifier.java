@@ -3,6 +3,7 @@ package io.quarkus.arc.processor;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -28,7 +29,8 @@ public class InjectionPointModifier {
         this.transformers = transformers;
     }
 
-    public Set<AnnotationInstance> applyTransformers(Type type, AnnotationTarget target, Set<AnnotationInstance> qualifiers) {
+    public Set<AnnotationInstance> applyTransformers(Type type, AnnotationTarget target, Integer paramPosition,
+            Set<AnnotationInstance> qualifiers) {
         // with no transformers, we just immediately return original set of qualifiers
         if (transformers.isEmpty()) {
             return qualifiers;
@@ -39,7 +41,18 @@ public class InjectionPointModifier {
                 transformer.transform(transformationContext);
             }
         }
-        return transformationContext.getQualifiers();
+        if (paramPosition != null && AnnotationTarget.Kind.METHOD.equals(target.kind())) {
+            // only return set of qualifiers related to the given method parameter
+            return transformationContext.getQualifiers().stream().filter(
+                    annotationInstance -> target.asMethod().parameters().get(paramPosition).equals(annotationInstance.target()))
+                    .collect(Collectors.toSet());
+        } else {
+            return transformationContext.getQualifiers();
+        }
+    }
+
+    public Set<AnnotationInstance> applyTransformers(Type type, AnnotationTarget target, Set<AnnotationInstance> qualifiers) {
+        return applyTransformers(type, target, null, qualifiers);
     }
 
     static class TransformationContextImpl extends AnnotationsTransformationContext<Set<AnnotationInstance>>

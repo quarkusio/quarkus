@@ -14,6 +14,7 @@ import io.smallrye.config.ConfigValue;
 import io.smallrye.config.FallbackConfigSourceInterceptor;
 import io.smallrye.config.Priorities;
 
+@Deprecated(forRemoval = true, since = "3.9")
 @Priority(Priorities.LIBRARY + 300 + 5)
 public class OTelFallbackConfigSourceInterceptor extends FallbackConfigSourceInterceptor {
     private final static Map<String, String> FALLBACKS = new HashMap<>();

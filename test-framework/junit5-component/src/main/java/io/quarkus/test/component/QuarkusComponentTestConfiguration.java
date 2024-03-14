@@ -18,7 +18,6 @@ import jakarta.inject.Inject;
 import jakarta.inject.Provider;
 
 import org.jboss.logging.Logger;
-import org.junit.jupiter.api.Test;
 
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.processor.AnnotationsTransformer;
@@ -98,7 +97,7 @@ class QuarkusComponentTestConfiguration {
             // - not annotated with @InjectMock
             // - not annotated with @SkipInject
             for (Method method : current.getDeclaredMethods()) {
-                if (method.isAnnotationPresent(Test.class)) {
+                if (QuarkusComponentTestExtension.isTestMethod(method)) {
                     for (Parameter param : method.getParameters()) {
                         if (QuarkusComponentTestExtension.BUILTIN_PARAMETER.test(param)
                                 || param.isAnnotationPresent(InjectMock.class)

@@ -1246,7 +1246,7 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             Instance<? extends Job> instance = jobs.select(jobClass);
             if (instance.isResolvable()) {
                 // This is a job backed by a CDI bean
-                return jobWithSpanWrapper(new CdiAwareJob(instance.getHandle()));
+                return jobWithSpanWrapper(new CdiAwareJob(instance));
             }
             // Instantiate a plain job class
             return jobWithSpanWrapper(super.newJob(bundle, Scheduler));

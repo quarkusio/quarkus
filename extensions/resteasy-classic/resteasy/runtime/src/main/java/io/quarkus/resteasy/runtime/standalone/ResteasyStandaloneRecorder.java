@@ -2,18 +2,33 @@ package io.quarkus.resteasy.runtime.standalone;
 
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler.extractRootCause;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
+
+import org.jboss.resteasy.core.ResourceMethodInvoker;
+import org.jboss.resteasy.core.ResourceMethodRegistry;
 import org.jboss.resteasy.specimpl.ResteasyUriInfo;
+import org.jboss.resteasy.spi.Registry;
+import org.jboss.resteasy.spi.ResourceInvoker;
 import org.jboss.resteasy.spi.ResteasyConfiguration;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.quarkus.resteasy.runtime.NonJaxRsClassMappings;
 import io.quarkus.resteasy.runtime.ResteasyVertxConfig;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -25,6 +40,9 @@ import io.quarkus.security.ForbiddenException;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpCompressionHandler;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundHandler;
+import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
+import io.quarkus.vertx.http.runtime.devmode.RouteMethodDescription;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Handler;
@@ -73,6 +91,7 @@ public class ResteasyStandaloneRecorder {
     }
 
     public Handler<RoutingContext> vertxRequestHandler(Supplier<Vertx> vertx, Executor executor,
+            Map<String, NonJaxRsClassMappings> nonJaxRsClassNameToMethodPaths,
             ResteasyVertxConfig config, HttpBuildTimeConfig httpBuildTimeConfig) {
         if (deployment != null) {
             Handler<RoutingContext> handler = new VertxRequestHandler(vertx.get(), deployment, contextPath,
@@ -84,6 +103,13 @@ public class ResteasyStandaloneRecorder {
                 // If compression is enabled and the set of compressed media types is not empty then wrap the standalone handler
                 handler = new HttpCompressionHandler(handler, compressMediaTypes);
             }
+
+            if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
+                // For Not Found Screen
+                Registry registry = deployment.getRegistry();
+                ResourceNotFoundHandler.runtimeRoutes = fromBoundResourceInvokers(registry, nonJaxRsClassNameToMethodPaths);
+            }
+
             return handler;
         }
         return null;
@@ -187,6 +213,104 @@ public class ResteasyStandaloneRecorder {
                 event.next();
             }
         };
+    }
+
+    private List<RouteDescription> fromBoundResourceInvokers(Registry registry,
+            Map<String, NonJaxRsClassMappings> nonJaxRsClassNameToMethodPaths) {
+        Set<Map.Entry<String, List<ResourceInvoker>>> bound = getBounded(registry).entrySet();
+        Map<String, RouteDescription> descriptionMap = new HashMap<>();
+
+        for (Map.Entry<String, List<ResourceInvoker>> entry : bound) {
+            for (ResourceInvoker invoker : entry.getValue()) {
+                // skip those for now
+                if (!(invoker instanceof ResourceMethodInvoker)) {
+                    continue;
+                }
+                ResourceMethodInvoker method = (ResourceMethodInvoker) invoker;
+                Class<?> resourceClass = method.getResourceClass();
+                String resourceClassName = resourceClass.getName();
+                String basePath = null;
+                NonJaxRsClassMappings nonJaxRsClassMappings = null;
+                Path path = resourceClass.getAnnotation(Path.class);
+                if (path == null) {
+                    nonJaxRsClassMappings = nonJaxRsClassNameToMethodPaths.get(resourceClassName);
+                    if (nonJaxRsClassMappings != null) {
+                        basePath = nonJaxRsClassMappings.getBasePath();
+                    }
+                } else {
+                    basePath = path.value();
+                }
+
+                if (basePath == null) {
+                    continue;
+                }
+
+                RouteDescription description = descriptionMap.get(basePath);
+                if (description == null) {
+                    description = new RouteDescription(basePath);
+                    descriptionMap.put(basePath, description);
+                }
+
+                String subPath = "";
+                for (Annotation annotation : method.getMethodAnnotations()) {
+                    if (annotation.annotationType().equals(Path.class)) {
+                        subPath = ((Path) annotation).value();
+                        break;
+                    }
+                }
+                // attempt to find a mapping in the non JAX-RS paths
+                if (subPath.isEmpty() && (nonJaxRsClassMappings != null)) {
+                    String methodName = method.getMethod().getName();
+                    String subPathFromMethodName = nonJaxRsClassMappings.getMethodNameToPath().get(methodName);
+                    if (subPathFromMethodName != null) {
+                        subPath = subPathFromMethodName;
+                    }
+                }
+
+                String fullPath = basePath;
+                if (!subPath.isEmpty()) {
+                    if (basePath.endsWith("/")) {
+                        fullPath += subPath;
+                    } else {
+                        fullPath = basePath + (subPath.startsWith("/") ? "" : "/") + subPath;
+                    }
+                }
+
+                String produces = mostPreferredOrNull(method.getProduces());
+                String consumes = mostPreferredOrNull(method.getConsumes());
+
+                for (String verb : method.getHttpMethods()) {
+                    description.addCall(new RouteMethodDescription(verb, fullPath, produces, consumes));
+                }
+            }
+        }
+
+        List<RouteDescription> descriptions = new ArrayList<>(descriptionMap.values());
+        return descriptions;
+    }
+
+    private String mostPreferredOrNull(MediaType[] mediaTypes) {
+        if (mediaTypes == null || mediaTypes.length < 1) {
+            return null;
+        } else {
+            return mediaTypes[0].toString();
+        }
+    }
+
+    private Map<String, List<ResourceInvoker>> getBounded(Registry registry) {
+        Map<String, List<ResourceInvoker>> bounded = null;
+        if (registry instanceof ResourceMethodRegistry) {
+            bounded = ((ResourceMethodRegistry) registry).getBounded();
+        } else if (Proxy.isProxyClass(registry.getClass())
+                && registry.toString().startsWith(ResourceMethodRegistry.class.getName())) {
+            try {
+                bounded = (Map<String, List<ResourceInvoker>>) Proxy.getInvocationHandler(registry).invoke(registry,
+                        ResourceMethodRegistry.class.getMethod("getBounded"), new Object[0]);
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
+        }
+        return bounded;
     }
 
     private static class ResteasyVertxAllocator implements BufferAllocator {

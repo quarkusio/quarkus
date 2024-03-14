@@ -13,7 +13,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-public class DefaultHealthGroupTest {
+class DefaultHealthGroupTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -23,7 +23,7 @@ public class DefaultHealthGroupTest {
             .overrideConfigKey("quarkus.smallrye-health.default-health-group", "my-default-health-group");
 
     @Test
-    public void testDefaultHealthGroup() {
+    void testDefaultHealthGroup() {
         try {
             RestAssured.defaultParser = Parser.JSON;
             RestAssured.when().get("/q/health/group/my-default-health-group").then()

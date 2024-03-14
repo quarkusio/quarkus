@@ -77,7 +77,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
 
     public enum ExtensionCodestart implements DataKey {
         RESTEASY,
-        RESTEASY_REACTIVE,
+        REST,
         SPRING_WEB
     }
 
@@ -195,7 +195,7 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
             if (projectInput.getExtensions().isEmpty() ||
                     (projectInput.getExtensions().size() == 1
                             && isLanguageExtension(projectInput.getExtensions().iterator().next()))) {
-                return Optional.of(ExtensionCodestart.RESTEASY_REACTIVE);
+                return Optional.of(ExtensionCodestart.REST);
             }
 
             return Optional.empty();

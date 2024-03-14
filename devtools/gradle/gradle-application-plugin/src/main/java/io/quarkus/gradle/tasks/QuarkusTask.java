@@ -61,8 +61,13 @@ public abstract class QuarkusTask extends DefaultTask {
     private void configureProcessWorkerSpec(ProcessWorkerSpec processWorkerSpec, Map<String, String> configMap,
             List<Action<? super JavaForkOptions>> customizations) {
         JavaForkOptions forkOptions = processWorkerSpec.getForkOptions();
-
         customizations.forEach(a -> a.execute(forkOptions));
+
+        // Propagate user.dir to load config sources that use it (instead of the worker user.dir)
+        String userDir = configMap.get("user.dir");
+        if (userDir != null) {
+            forkOptions.systemProperty("user.dir", userDir);
+        }
 
         String quarkusWorkerMaxHeap = System.getProperty("quarkus.gradle-worker.max-heap");
         if (quarkusWorkerMaxHeap != null && forkOptions.getAllJvmArgs().stream().noneMatch(arg -> arg.startsWith("-Xmx"))) {

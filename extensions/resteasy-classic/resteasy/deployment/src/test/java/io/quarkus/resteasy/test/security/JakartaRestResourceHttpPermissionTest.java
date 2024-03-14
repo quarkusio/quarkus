@@ -33,6 +33,8 @@ public class JakartaRestResourceHttpPermissionTest {
             "quarkus.http.auth.permission.bar.policy=authenticated\n" +
             "quarkus.http.auth.permission.baz-fum-pub.paths=/api/baz/fum\n" +
             "quarkus.http.auth.permission.baz-fum-pub.policy=permit\n" +
+            "quarkus.http.auth.permission.baz-fum-deny.paths=/api/baz/fum/\n" +
+            "quarkus.http.auth.permission.baz-fum-deny.policy=authenticated\n" +
             "quarkus.http.auth.permission.baz-fum.paths=/api/baz/fum*\n" +
             "quarkus.http.auth.permission.baz-fum.policy=authenticated\n" +
             "quarkus.http.auth.permission.root.paths=/\n" +

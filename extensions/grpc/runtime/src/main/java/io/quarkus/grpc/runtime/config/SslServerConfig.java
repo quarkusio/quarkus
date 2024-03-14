@@ -43,10 +43,22 @@ public class SslServerConfig {
     public Optional<String> keyStoreType;
 
     /**
-     * A parameter to specify the password of the keystore file. If not given, the default ("password") is used.
+     * A parameter to specify the password of the keystore file.
      */
     @ConfigItem
     public Optional<String> keyStorePassword;
+
+    /**
+     * A parameter to specify the alias of the keystore file.
+     */
+    @ConfigItem
+    public Optional<String> keyStoreAlias;
+
+    /**
+     * A parameter to specify the alias password of the keystore file.
+     */
+    @ConfigItem
+    public Optional<String> keyStoreAliasPassword;
 
     /**
      * An optional trust store which holds the certificate information of the certificates to trust

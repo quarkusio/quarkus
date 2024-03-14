@@ -31,9 +31,11 @@ public class OidcTokenPropagationWithSecurityIdentityAugmentorLazyAuthTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
                     .addAsResource("application.properties")
-                    .addAsResource(new StringAsset("quarkus.oidc-token-propagation.enabled-during-authentication=true\n" +
-                            "quarkus.rest-client.\"roles\".uri=http://localhost:8081/roles\n" +
-                            "quarkus.http.auth.proactive=false\n"),
+                    .addAsResource(
+                            new StringAsset(
+                                    "quarkus.resteasy-client-oidc-token-propagation.enabled-during-authentication=true\n" +
+                                            "quarkus.rest-client.\"roles\".uri=http://localhost:8081/roles\n" +
+                                            "quarkus.http.auth.proactive=false\n"),
                             "META-INF/microprofile-config.properties"));
 
     @Test

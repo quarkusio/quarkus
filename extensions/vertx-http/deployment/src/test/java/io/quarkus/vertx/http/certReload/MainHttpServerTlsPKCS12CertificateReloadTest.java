@@ -8,8 +8,10 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.net.ssl.SSLHandshakeException;
 
@@ -52,9 +54,11 @@ public class MainHttpServerTlsPKCS12CertificateReloadTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClasses(MyBean.class))
-            .overrideConfigKey("quarkus.http.ssl.insecure-requests", "redirect")
+            .overrideConfigKey("quarkus.http.insecure-requests", "redirect")
             .overrideConfigKey("quarkus.http.ssl.certificate.reload-period", "30s")
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-file", temp.getAbsolutePath() + "/tls.p12")
+            .overrideConfigKey("quarkus.http.ssl.certificate.key-store-password", "password")
+
             .overrideConfigKey("loc", temp.getAbsolutePath())
             .setBeforeAllCustomizer(() -> {
                 try {
@@ -82,7 +86,7 @@ public class MainHttpServerTlsPKCS12CertificateReloadTest {
     File certs;
 
     @Test
-    void test() throws IOException {
+    void test() throws IOException, ExecutionException, InterruptedException, TimeoutException {
         var options = new HttpClientOptions()
                 .setSsl(true)
                 .setDefaultPort(url.getPort())
@@ -102,7 +106,7 @@ public class MainHttpServerTlsPKCS12CertificateReloadTest {
                 new File(certs, "/tls.p12").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
         // Trigger the reload
-        TlsCertificateReloader.reload().await().atMost(Duration.ofSeconds(10));
+        TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
 
         // The client truststore is not updated, thus it should fail.
         assertThatThrownBy(() -> vertx.createHttpClient(options)
@@ -126,7 +130,7 @@ public class MainHttpServerTlsPKCS12CertificateReloadTest {
         assertThat(response1).isNotEqualTo(response2); // Because cert duration are different.
 
         // Trigger another reload
-        TlsCertificateReloader.reload().await().atMost(Duration.ofSeconds(10));
+        TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
 
         var response3 = vertx.createHttpClient(options2)
                 .request(HttpMethod.GET, "/hello")

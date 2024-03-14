@@ -215,7 +215,7 @@ public class RabbitMQDevServicesProcessor {
         configMap.put(RABBITMQ_HTTP_PORT_PROP, String.valueOf(httpPort));
         configMap.put(RABBITMQ_USERNAME_PROP, username);
         configMap.put(RABBITMQ_PASSWORD_PROP, password);
-        return new RunningDevService(Feature.SMALLRYE_REACTIVE_MESSAGING_RABBITMQ.getName(),
+        return new RunningDevService(Feature.MESSAGING_RABBITMQ.getName(),
                 containerId, closeable, configMap);
     }
 

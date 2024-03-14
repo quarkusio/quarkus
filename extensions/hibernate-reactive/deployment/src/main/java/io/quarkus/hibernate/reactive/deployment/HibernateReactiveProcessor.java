@@ -93,13 +93,19 @@ public final class HibernateReactiveProcessor {
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans, CombinedIndexBuildItem combinedIndex,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaModelBuildItem jpaModel) {
+        if (!hasEntities(jpaModel)) {
+            LOG.warnf("Skip registration of the %s bean - no JPA entities were found",
+                    ReactiveSessionFactoryProducer.class.getSimpleName());
+            return;
+        }
         if (descriptors.size() == 1) {
             // Only register the bean if their EMF dependency is also available, so use the same guard as the ORM extension
             additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveSessionFactoryProducer.class));
         } else {
-            LOG.warnf(
-                    "Skipping registration of %s bean because exactly one persistence unit is required for their registration",
-                    ReactiveSessionFactoryProducer.class.getSimpleName());
+            throw new ConfigurationException(
+                    "The Hibernate Reactive extension requires exactly one persistence unit configured: " + descriptors
+                            .stream()
+                            .map(PersistenceUnitDescriptorBuildItem::getPersistenceUnitName).collect(Collectors.toList()));
         }
     }
 
@@ -172,7 +178,12 @@ public final class HibernateReactiveProcessor {
                         .orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources()),
                 curateOutcomeBuildItem);
 
-        if (dbKindOptional.isPresent()) {
+        if (dbKindOptional.isEmpty()) {
+            throw new ConfigurationException(
+                    "The default datasource must be configured for Hibernate Reactive. Refer to https://quarkus.io/guides/datasource for guidance.",
+                    Set.of("quarkus.datasource.db-kind", "quarkus.datasource.username",
+                            "quarkus.datasource.password"));
+        } else {
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit();
             ParsedPersistenceXmlDescriptor reactivePU = generateReactivePersistenceUnit(
                     hibernateOrmConfig, index, persistenceUnitConfig, jpaModel,

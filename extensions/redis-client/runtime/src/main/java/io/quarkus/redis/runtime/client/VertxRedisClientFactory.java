@@ -116,7 +116,14 @@ public class VertxRedisClientFactory {
         tcp.alpn().ifPresent(net::setUseAlpn);
         tcp.applicationLayerProtocols().ifPresent(net::setApplicationLayerProtocols);
         tcp.connectionTimeout().ifPresent(d -> net.setConnectTimeout((int) d.toMillis()));
-        tls.hostnameVerificationAlgorithm().ifPresent(net::setHostnameVerificationAlgorithm);
+
+        String verificationAlgorithm = tls.hostnameVerificationAlgorithm();
+        if ("NONE".equalsIgnoreCase(verificationAlgorithm)) {
+            net.setHostnameVerificationAlgorithm("");
+        } else {
+            net.setHostnameVerificationAlgorithm(verificationAlgorithm);
+        }
+
         tcp.idleTimeout().ifPresent(d -> net.setIdleTimeout((int) d.toSeconds()));
 
         tcp.keepAlive().ifPresent(b -> net.setTcpKeepAlive(true));
@@ -162,8 +169,6 @@ public class VertxRedisClientFactory {
         tcp.fastOpen().ifPresent(net::setTcpFastOpen);
         tcp.quickAck().ifPresent(net::setTcpQuickAck);
         tcp.writeIdleTimeout().ifPresent(d -> net.setWriteIdleTimeout((int) d.toSeconds()));
-
-        tls.hostnameVerificationAlgorithm().ifPresent(net::setHostnameVerificationAlgorithm);
 
         return net;
     }

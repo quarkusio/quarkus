@@ -24,7 +24,7 @@ include::{includes}/prerequisites.adoc[]
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-cache-quickstart
-:create-app-extensions: resteasy-reactive,spring-di,spring-cache
+:create-app-extensions: rest,spring-di,spring-cache
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a project which imports the `spring-cache` and `spring-di` extensions.

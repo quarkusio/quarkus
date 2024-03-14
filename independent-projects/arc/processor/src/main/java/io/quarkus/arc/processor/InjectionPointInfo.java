@@ -100,7 +100,7 @@ public class InjectionPointInfo {
             }
             Type type = resolveType(paramType, beanClass, method.declaringClass(), beanDeployment);
             injectionPoints.add(new InjectionPointInfo(type,
-                    transformer.applyTransformers(type, method, paramQualifiers),
+                    transformer.applyTransformers(type, method, position, paramQualifiers),
                     method, position, contains(paramAnnotations, DotNames.TRANSIENT_REFERENCE),
                     contains(paramAnnotations, DotNames.DELEGATE)));
         }

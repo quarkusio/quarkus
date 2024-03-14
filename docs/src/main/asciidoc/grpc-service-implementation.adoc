@@ -374,8 +374,8 @@ Please note that your application needs to expose the "normal" HTTP port for the
                     <artifactId>quarkus-vertx-http</artifactId>
                 </dependency>
             </dependencies>
-        </profiles>
-    </profile>
+        </profile>
+    </profiles>
 ----
 Having it, you can run the dev mode with: `mvn quarkus:dev -Pdevelopment`.
 

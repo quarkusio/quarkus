@@ -23,18 +23,16 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import org.infinispan.client.hotrod.RemoteCache;
-import org.infinispan.client.hotrod.Search;
 import org.infinispan.client.hotrod.jmx.RemoteCacheClientStatisticsMXBean;
 import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
+import org.infinispan.commons.api.query.Query;
 import org.infinispan.counter.api.CounterConfiguration;
 import org.infinispan.counter.api.CounterManager;
 import org.infinispan.counter.api.CounterType;
 import org.infinispan.counter.api.Storage;
 import org.infinispan.counter.api.StrongCounter;
 import org.infinispan.counter.api.WeakCounter;
-import org.infinispan.query.dsl.Query;
-import org.infinispan.query.dsl.QueryFactory;
 
 import io.quarkus.infinispan.client.InfinispanClientName;
 import io.quarkus.infinispan.client.Remote;
@@ -79,26 +77,23 @@ public class TestServlet {
     @Produces(MediaType.TEXT_PLAIN)
     public String getCachedValue(@PathParam("id") String id) {
         Book book = cache.get(id);
-        return book != null ? book.getTitle() : "NULL";
+        return book != null ? book.title() : "NULL";
     }
 
     @Path("query/{id}")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String queryAuthorSurname(@PathParam("id") String name) {
-        QueryFactory queryFactory = Search.getQueryFactory(cache);
-        Query query = queryFactory.from(Book.class)
-                .having("authors.name").like("%" + name + "%")
-                .build();
+        Query<Book> query = cache.query("from book_sample.Book b where b.authors.name like '%" + name + "%'");
         List<Book> list = query.execute().list();
         if (list.isEmpty()) {
             return "No one found for " + name;
         }
 
         return list.stream()
-                .map(Book::getAuthors)
+                .map(Book::authors)
                 .flatMap(Set::stream)
-                .map(author -> author.getName() + " " + author.getSurname())
+                .map(author -> author.name() + " " + author.surname())
                 .sorted()
                 .collect(Collectors.joining(",", "[", "]"));
     }
@@ -107,16 +102,15 @@ public class TestServlet {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String ickleQueryAuthorSurname(@PathParam("id") String name) {
-        QueryFactory queryFactory = Search.getQueryFactory(cache);
-        Query query = queryFactory.create("from book_sample.Book b where b.authors.name like '%" + name + "%'");
+        Query<Book> query = cache.query("from book_sample.Book b where b.authors.name like '%" + name + "%'");
         List<Book> list = query.execute().list();
         if (list.isEmpty()) {
             return "No one found for " + name;
         }
         return list.stream()
-                .map(Book::getAuthors)
+                .map(Book::authors)
                 .flatMap(Set::stream)
-                .map(author -> author.getName() + " " + author.getSurname())
+                .map(author -> author.name() + " " + author.surname())
                 .sorted()
                 .collect(Collectors.joining(",", "[", "]"));
     }
@@ -160,9 +154,10 @@ public class TestServlet {
     @Produces(MediaType.TEXT_PLAIN)
     public String continuousQuery() {
         return cacheSetup.getMatches().values().stream()
-                .mapToInt(Book::getPublicationYear)
+                .mapToInt(Book::publicationYear)
                 .mapToObj(Integer::toString)
                 .collect(Collectors.joining(","));
+
     }
 
     @Path("nearcache")
@@ -254,8 +249,8 @@ public class TestServlet {
     @Path("magazinequery/{id}")
     @GET
     public String magazineQuery(@PathParam("id") String name) {
-        QueryFactory queryFactory = Search.getQueryFactory(magazineCache);
-        Query query = queryFactory.create("from magazine_sample.Magazine m where m.name like '%" + name + "%'");
+        Query<Magazine> query = magazineCache.query(
+                "from magazine_sample.Magazine m where m.name like '%" + name + "%'");
         List<Magazine> list = query.execute().list();
         if (list.isEmpty()) {
             return "No one found for " + name;
@@ -268,8 +263,8 @@ public class TestServlet {
     @Path("create-cache-default-config/authors")
     @GET
     public String magazineQuery() {
-        List<String> names1 = authorsCacheDefault.values().stream().map(a -> a.getName()).collect(Collectors.toList());
-        List<String> names2 = authorsCacheAnother.values().stream().map(a -> a.getName())
+        List<String> names1 = authorsCacheDefault.values().stream().map(a -> a.name()).collect(Collectors.toList());
+        List<String> names2 = authorsCacheAnother.values().stream().map(a -> a.name())
                 .collect(Collectors.toList());
 
         names1.addAll(names2);

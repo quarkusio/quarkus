@@ -49,7 +49,7 @@ public class ExchangeAttributeParser {
      * <p>
      * Tokens are created according to the following rules:
      * <p>
-     * %a - % followed by single character. %% is an escape for a literal %
+     * %<?a - % followed by an optional < and a single character. %% is an escape for a literal %
      * %{.*}a? - % plus curly braces with any amount of content inside, followed by an optional character
      * ${.*} - $ followed by a curly braces to reference an item from the predicate context
      *
@@ -59,7 +59,7 @@ public class ExchangeAttributeParser {
     public ExchangeAttribute parse(final String valueString) {
         final List<ExchangeAttribute> attributes = new ArrayList<>();
         int pos = 0;
-        int state = 0; //0 = literal, 1 = %, 2 = %{, 3 = $, 4 = ${
+        int state = 0; //0 = literal, 1 = %, 2 = %{, 3 = $, 4 = ${, 5 = %<
         for (int i = 0; i < valueString.length(); ++i) {
             char c = valueString.charAt(i);
             switch (state) {
@@ -80,6 +80,8 @@ public class ExchangeAttributeParser {
                 case 1: {
                     if (c == '{') {
                         state = 2;
+                    } else if (c == '<') {
+                        state = 5;
                     } else if (c == '%') {
                         //literal percent
                         attributes.add(wrap(new ConstantExchangeAttribute("%")));
@@ -123,13 +125,20 @@ public class ExchangeAttributeParser {
                     }
                     break;
                 }
+                case 5: {
+                    attributes.add(wrap(parseSingleToken(valueString.substring(pos, i + 1))));
+                    pos = i + 1;
+                    state = 0;
+                    break;
+                }
 
             }
         }
         switch (state) {
             case 0:
             case 1:
-            case 3: {
+            case 3:
+            case 5: {
                 if (pos != valueString.length()) {
                     attributes.add(wrap(parseSingleToken(valueString.substring(pos))));
                 }

@@ -69,7 +69,7 @@
     <!-- Test -->
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+      <artifactId>quarkus-rest-deployment</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

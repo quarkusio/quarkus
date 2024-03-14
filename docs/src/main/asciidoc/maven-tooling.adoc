@@ -427,7 +427,7 @@ $ ./mvnw verify -Dnative
 [INFO] Running org.acme.quickstart.GreetingResourceIT
 Executing [/Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/getting-started-native/target/quarkus-quickstart-runner, -Dquarkus.http.port=8081, -Dtest.url=http://localhost:8081, -Dquarkus.log.file.path=target/quarkus.log]
 2019-02-28 16:52:42,020 INFO  [io.quarkus] (main) Quarkus started in 0.007s. Listening on: http://localhost:8080
-2019-02-28 16:52:42,021 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive]
+2019-02-28 16:52:42,021 INFO  [io.quarkus] (main) Installed features: [cdi, rest]
 [INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.081 s - in org.acme.quickstart.GreetingResourceIT
 [INFO]
 [INFO] Results:
@@ -1052,8 +1052,6 @@ the `-f` argument, if it was specified.
 [[project-info]]
 == Quarkus project info
 
-NOTE: This goal was introduced in Quarkus Maven plugin 2.7.0.Final and can be used in projects that are based on Quarkus version 2.0.0.Final or later.
-
 The Quarkus Maven plugin includes a goal called `info` (currently marked as 'experimental') that logs Quarkus-specific information about the project, such as: the imported Quarkus platform BOMs and the Quarkus extensions found among the project dependencies.
 In a multi-module project `quarkus:info` will assume that the current module, in which it is executed, is the main module of the application.
 
@@ -1076,13 +1074,13 @@ Here is an example `info` output for a simple project:
 [INFO]   {quarkus-platform-groupid}:quarkus-camel-bom:pom:{quarkus-version}
 [INFO]
 [INFO] Extensions from {quarkus-platform-groupid}:quarkus-bom: <2>
-[INFO]   io.quarkus:quarkus-resteasy-reactive
+[INFO]   io.quarkus:quarkus-rest
 [INFO]
 [INFO] Extensions from {quarkus-platform-groupid}:quarkus-camel-bom: <3>
 [INFO]   org.apache.camel.quarkus:camel-quarkus-rabbitmq
 [INFO]
 [INFO] Extensions from registry.quarkus.io: <4>
-[INFO]   io.quarkiverse.prettytime:quarkus-prettytime:0.2.1
+[INFO]   io.quarkiverse.prettytime:quarkus-prettytime:2.0.1
 ----
 
 <1> Quarkus platform BOMs imported in the project (BOMs imported by parent POMs will also be reported)
@@ -1095,7 +1093,7 @@ NOTE: `quarkus:info` will also report Quarkus extensions that aren't found in th
 [[project-info-misaligned]]
 === Highlighting misaligned versions
 
-`quarkus:info` will also highlight basic Quarkus dependency version misalignments, in case they are detected. For example, if we modify the project mentioned above by removing the `camel-quarkus-rabbitmq` extension from the dependencies and adding a `2.6.3.Final` `<version>` element to the `quarkus-resteasy-reactive` dependency that is managed by the `quarkus-bom` and then run `quarkus:info` again, we'll see something like:
+`quarkus:info` will also highlight basic Quarkus dependency version misalignments, in case they are detected. For example, if we modify the project mentioned above by removing the `camel-quarkus-rabbitmq` extension from the dependencies and adding a `2.6.3.Final` `<version>` element to the `quarkus-rest` dependency that is managed by the `quarkus-bom` and then run `quarkus:info` again, we'll see something like:
 
 [source,text,subs=attributes+]
 ----
@@ -1112,7 +1110,7 @@ NOTE: `quarkus:info` will also report Quarkus extensions that aren't found in th
 [INFO]   org.apache.camel.quarkus:camel-quarkus-rabbitmq
 [INFO]
 [INFO] Extensions from registry.quarkus.io:
-[INFO]   io.quarkiverse.prettytime:quarkus-prettytime:0.2.1
+[INFO]   io.quarkiverse.prettytime:quarkus-prettytime:2.0.1
 [INFO]
 [WARNING] Non-recommended Quarkus platform BOM and/or extension versions were found. For more details, please, execute 'mvn quarkus:update -Drectify'
 ----
@@ -1121,8 +1119,6 @@ NOTE: `quarkus:info` will also report Quarkus extensions that aren't found in th
 
 [[project-update]]
 == Quarkus project update
-
-NOTE: This goal was introduced in Quarkus Maven plugin 2.7.0.Final and can be used in projects that are based on Quarkus version 2.0.0.Final or later.
 
 The `quarkus:update` goal (currently marked as 'experimental') provided by the Quarkus Maven plugin can be used to check whether there are Quarkus-related updates available for a project, such as: new releases of the relevant Quarkus platform BOMs and non-platform Quarkus extensions present in the project. In a multi-module project the `update` goal is meant to be executed from the main Quarkus application module.
 

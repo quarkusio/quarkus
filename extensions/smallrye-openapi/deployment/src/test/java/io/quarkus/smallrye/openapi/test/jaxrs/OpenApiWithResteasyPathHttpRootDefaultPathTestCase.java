@@ -16,7 +16,7 @@ public class OpenApiWithResteasyPathHttpRootDefaultPathTestCase {
             .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiResource.class, ResourceBean.class)
                     .addAsResource(new StringAsset("quarkus.http.root-path=/http-root-path\n" +
-                            "quarkus.resteasy-reactive.path=/resteasy-path"),
+                            "quarkus.rest.path=/resteasy-path"),
                             "application.properties"));
 
     @Test

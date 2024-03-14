@@ -34,7 +34,7 @@ class QuarkusCodestartCatalogTest {
                 .extracting(Codestart::getImplementedLanguages)
                 .allSatisfy(s -> assertThat(s.isEmpty() || s.size() == 3).isTrue());
 
-        assertThat(catalog.getCodestarts()).filteredOn("ref", "resteasy-reactive")
+        assertThat(catalog.getCodestarts()).filteredOn("ref", "rest")
                 .extracting(Codestart::getImplementedLanguages)
                 .hasSize(1)
                 .allSatisfy(s -> assertThat(s).containsExactlyInAnyOrder("java", "kotlin", "scala"));

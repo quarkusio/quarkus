@@ -8,8 +8,10 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.net.ssl.SSLHandshakeException;
 
@@ -89,7 +91,7 @@ public class MainHttpServerTlsCertificateReloadTest {
     File certs;
 
     @Test
-    void test() throws IOException {
+    void test() throws IOException, ExecutionException, InterruptedException, TimeoutException {
         var options = new HttpClientOptions()
                 .setSsl(true)
                 .setDefaultPort(url.getPort())
@@ -110,7 +112,7 @@ public class MainHttpServerTlsCertificateReloadTest {
                 new File(certs, "/tls.key").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
         // Trigger the reload
-        TlsCertificateReloader.reload().await().atMost(Duration.ofSeconds(10));
+        TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
 
         // The client truststore is not updated, thus it should fail.
         assertThatThrownBy(() -> vertx.createHttpClient(options)
@@ -133,7 +135,7 @@ public class MainHttpServerTlsCertificateReloadTest {
         assertThat(response1).isNotEqualTo(response2); // Because cert duration are different.
 
         // Trigger another reload
-        TlsCertificateReloader.reload().await().atMost(Duration.ofSeconds(10));
+        TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
 
         var response3 = vertx.createHttpClient(options2)
                 .request(HttpMethod.GET, "/hello")

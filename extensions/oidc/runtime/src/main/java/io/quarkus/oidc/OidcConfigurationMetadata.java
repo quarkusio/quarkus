@@ -8,14 +8,14 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public class OidcConfigurationMetadata {
-    private static final String ISSUER = "issuer";
-    private static final String TOKEN_ENDPOINT = "token_endpoint";
-    private static final String INTROSPECTION_ENDPOINT = "introspection_endpoint";
-    private static final String AUTHORIZATION_ENDPOINT = "authorization_endpoint";
-    private static final String JWKS_ENDPOINT = "jwks_uri";
-    private static final String USERINFO_ENDPOINT = "userinfo_endpoint";
-    private static final String END_SESSION_ENDPOINT = "end_session_endpoint";
-    private static final String SCOPES_SUPPORTED = "scopes_supported";
+    public static final String ISSUER = "issuer";
+    public static final String TOKEN_ENDPOINT = "token_endpoint";
+    public static final String INTROSPECTION_ENDPOINT = "introspection_endpoint";
+    public static final String AUTHORIZATION_ENDPOINT = "authorization_endpoint";
+    public static final String JWKS_ENDPOINT = "jwks_uri";
+    public static final String USERINFO_ENDPOINT = "userinfo_endpoint";
+    public static final String END_SESSION_ENDPOINT = "end_session_endpoint";
+    public static final String SCOPES_SUPPORTED = "scopes_supported";
 
     private final String discoveryUri;
     private final String tokenUri;

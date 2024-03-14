@@ -13,10 +13,10 @@ include::_attributes.adoc[]
 ====
 This guide is about https://resteasy.dev[RESTEasy Classic], which used to be the default Jakarta REST (formerly known as JAX-RS) implementation until Quarkus 2.8.
 
-It is now recommended to use RESTEasy Reactive, which supports both traditional blocking workloads and reactive workloads equally well.
+It is now recommended to use Quarkus REST (formerly RESTEasy Reactive), which supports both traditional blocking workloads and reactive workloads equally well.
 
-For more information about RESTEasy Reactive,
-please see the xref:rest-json.adoc[introductory REST JSON guide] or the xref:resteasy-reactive.adoc[RESTEasy Reactive reference documentation].
+For more information about Quarkus REST,
+please see the xref:rest-json.adoc[introductory REST JSON guide] or the xref:rest.adoc[Quarkus REST reference documentation].
 ====
 
 TIP: There is another guide if you need a xref:resteasy-client.adoc[REST client based on RESTEasy Classic] (including support for JSON).
@@ -598,7 +598,7 @@ This time, you can see our list of legumes.
 
 [WARNING]
 ====
-For reactive workloads, please always use xref:resteasy-reactive.adoc[RESTEasy Reactive].
+For reactive workloads, please always use xref:rest.adoc[Quarkus REST].
 ====
 
 You can return _reactive types_ to handle asynchronous processing.

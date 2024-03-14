@@ -788,7 +788,7 @@ Edsger W. Dijkstra
 ==== Debugging your application build
 
 Since your extension deployment is made during the application build, this process is triggered by your build tool.
-That means if you want to debug this phase you need to launch your build tool with the remote debug mode switched one.
+That means if you want to debug this phase you need to launch your build tool with the remote debug mode switched on.
 
 ===== Maven
 

@@ -20,7 +20,7 @@ import io.smallrye.health.api.HealthGroup;
 @Startup
 @HealthGroup("group1")
 @HealthGroup("group2")
-public class FailingHealthCheck implements HealthCheck {
+class FailingHealthCheck implements HealthCheck {
 
     @Override
     public HealthCheckResponse call() {

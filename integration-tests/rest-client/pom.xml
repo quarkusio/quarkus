@@ -200,27 +200,6 @@
                 </configuration>
             </plugin>
         </plugins>
-
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>com.gradle</groupId>
-                    <artifactId>gradle-enterprise-maven-extension</artifactId>
-                    <configuration>
-                        <gradleEnterprise>
-                            <normalization>
-                                <systemProperties>
-                                    <ignoredKeys combine.children="append">
-                                        <ignore>javax.net.ssl.trustStore</ignore>
-                                        <ignore>rest-client.trustStore</ignore>
-                                    </ignoredKeys>
-                                </systemProperties>
-                            </normalization>
-                        </gradleEnterprise>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
 
     <profiles>

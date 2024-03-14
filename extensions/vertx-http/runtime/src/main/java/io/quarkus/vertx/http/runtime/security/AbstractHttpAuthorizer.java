@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime.security;
 
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_FAILURE;
 import static io.quarkus.security.spi.runtime.SecurityEventHelper.AUTHORIZATION_SUCCESS;
+import static io.quarkus.vertx.http.runtime.security.QuarkusHttpUser.setIdentity;
 
 import java.io.IOException;
 import java.util.List;
@@ -41,11 +42,13 @@ abstract class AbstractHttpAuthorizer {
     private final List<HttpSecurityPolicy> policies;
     private final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> securityEventHelper;
     private final HttpSecurityPolicy.AuthorizationRequestContext context;
+    private final RolesMapping rolesMapping;
 
     AbstractHttpAuthorizer(HttpAuthenticator httpAuthenticator, IdentityProviderManager identityProviderManager,
             AuthorizationController controller, List<HttpSecurityPolicy> policies, BeanManager beanManager,
             BlockingSecurityExecutor blockingExecutor, Event<AuthorizationFailureEvent> authZFailureEvent,
-            Event<AuthorizationSuccessEvent> authZSuccessEvent, boolean securityEventsEnabled) {
+            Event<AuthorizationSuccessEvent> authZSuccessEvent, boolean securityEventsEnabled,
+            Map<String, List<String>> rolesMapping) {
         this.httpAuthenticator = httpAuthenticator;
         this.identityProviderManager = identityProviderManager;
         this.controller = controller;
@@ -53,6 +56,7 @@ abstract class AbstractHttpAuthorizer {
         this.context = new HttpSecurityPolicy.DefaultAuthorizationRequestContext(blockingExecutor);
         this.securityEventHelper = new SecurityEventHelper<>(authZSuccessEvent, authZFailureEvent, AUTHORIZATION_SUCCESS,
                 AUTHORIZATION_FAILURE, beanManager, securityEventsEnabled);
+        this.rolesMapping = RolesMapping.of(rolesMapping);
     }
 
     /**
@@ -65,8 +69,28 @@ abstract class AbstractHttpAuthorizer {
             return;
         }
         //check their permissions
-        doPermissionCheck(routingContext, QuarkusHttpUser.getSecurityIdentity(routingContext, identityProviderManager), 0, null,
-                policies);
+        doPermissionCheck(routingContext, augmentAndGetIdentity(routingContext), 0, null, policies);
+    }
+
+    private Uni<SecurityIdentity> augmentAndGetIdentity(RoutingContext routingContext) {
+        if (rolesMapping != null) {
+            var identity = routingContext.user() == null ? null
+                    : ((QuarkusHttpUser) routingContext.user()).getSecurityIdentity();
+            if (identity == null) {
+                // make sure augmented identity is used no matter when the authentication happens
+                return setIdentity(
+                        QuarkusHttpUser.getSecurityIdentity(routingContext, identityProviderManager)
+                                .onItem()
+                                .ifNotNull()
+                                .transform(rolesMapping.withRoutingContext(routingContext)),
+                        routingContext);
+            } else {
+                // augment right now as someone downstream could use user instead of deferred identity
+                return Uni.createFrom().item(rolesMapping.withRoutingContext(routingContext).apply(identity));
+            }
+        }
+
+        return QuarkusHttpUser.getSecurityIdentity(routingContext, identityProviderManager);
     }
 
     private void doPermissionCheck(RoutingContext routingContext,
@@ -78,8 +102,7 @@ abstract class AbstractHttpAuthorizer {
             if (augmentedIdentity != null) {
                 if (!augmentedIdentity.isAnonymous()
                         && (currentUser == null || currentUser.getSecurityIdentity() != augmentedIdentity)) {
-                    routingContext.setUser(new QuarkusHttpUser(augmentedIdentity));
-                    routingContext.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, Uni.createFrom().item(augmentedIdentity));
+                    setIdentity(augmentedIdentity, routingContext);
                 }
                 if (securityEventHelper.fireEventOnSuccess()) {
                     securityEventHelper.fireSuccessEvent(new AuthorizationSuccessEvent(augmentedIdentity,

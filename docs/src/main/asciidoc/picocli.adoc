@@ -337,10 +337,6 @@ metadata:
   name: app
 spec:
   completionMode: NonIndexed
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: app
-      app.kubernetes.io/version: 0.1-SNAPSHOT
   suspend: false
   template:
     metadata:

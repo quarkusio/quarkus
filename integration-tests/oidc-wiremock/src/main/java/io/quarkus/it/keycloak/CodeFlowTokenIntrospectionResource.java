@@ -4,6 +4,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -20,6 +22,10 @@ public class CodeFlowTokenIntrospectionResource {
 
     @GET
     public String access() {
-        return identity.getPrincipal().getName() + ":" + tokenIntrospection.getUsername();
+        if (identity.getPrincipal() instanceof JsonWebToken) {
+            return identity.getPrincipal().getName();
+        } else {
+            return identity.getPrincipal().getName() + ":" + tokenIntrospection.getUsername();
+        }
     }
 }

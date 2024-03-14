@@ -8,9 +8,9 @@ include::_attributes.adoc[]
 :categories: messaging
 :summary: Dev UI extension for Apache Kafka for development purposes.
 :topics: messaging,kafka,dev-ui,dev-mode
-:extensions: io.quarkus:quarkus-kafka-client,io.quarkus:quarkus-smallrye-reactive-messaging-kafka
+:extensions: io.quarkus:quarkus-kafka-client,io.quarkus:quarkus-messaging-kafka
 
-If any Kafka-related extension is present (e.g. `quarkus-smallrye-reactive-messaging-kafka`),
+If any Kafka-related extension is present (e.g. `quarkus-messaging-kafka`),
 the Quarkus Dev UI is extended with a Kafka broker management UI.
 It is connected automatically to the Kafka broker configured for the application.
 

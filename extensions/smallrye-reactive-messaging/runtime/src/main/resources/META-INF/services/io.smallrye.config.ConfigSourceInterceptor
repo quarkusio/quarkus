@@ -1,0 +1,2 @@
+io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfigRelocateInterceptor
+io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfigFallbackInterceptor

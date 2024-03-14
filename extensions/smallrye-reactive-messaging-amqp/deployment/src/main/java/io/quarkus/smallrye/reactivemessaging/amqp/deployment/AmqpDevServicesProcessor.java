@@ -210,7 +210,7 @@ public class AmqpDevServicesProcessor {
         configMap.put(AMQP_MAPPED_PORT_PROP, String.valueOf(mappedPort));
         configMap.put(AMQP_USER_PROP, DEFAULT_USER);
         configMap.put(AMQP_PASSWORD_PROP, DEFAULT_PASSWORD);
-        return new RunningDevService(Feature.SMALLRYE_REACTIVE_MESSAGING_AMQP.getName(), containerId, closeable, configMap);
+        return new RunningDevService(Feature.MESSAGING_AMQP.getName(), containerId, closeable, configMap);
     }
 
     private boolean hasAmqpChannelWithoutHostAndPort() {

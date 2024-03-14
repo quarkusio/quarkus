@@ -10,9 +10,8 @@ import '@vaadin/icon';
  * It creates the menuItems during build and dynamically add the routes and import the relevant components
  */
 export class QwcMenu extends observeState(LitElement) {
-    
-    storageControl = new StorageController(this);
     routerController = new RouterController(this);
+    storageControl = new StorageController(this);
     
     static styles = css`
             .left {
@@ -80,6 +79,10 @@ export class QwcMenu extends observeState(LitElement) {
                 background-color: var(--lumo-primary-color-10pct);
             }
 
+            .hidden {
+                display:none;
+            }
+
             .quarkusVersion {
                 padding-bottom: 10px;
                 padding-left: 15px;
@@ -134,12 +137,14 @@ export class QwcMenu extends observeState(LitElement) {
         let currentPage = this.routerController.getCurrentPage();
         this._selectedPageLabel = currentPage.title;
         this._selectedPage = currentPage.namespace;
+        this._selectedPageIsMax = !currentPage.includeInMenu; // TODO: introduce new property called isMaxView ?
     }
 
     render() {
         this._customMenuNamespaces = [];
+        let classnames = this._getClassNamesForMenu();
         return html`
-            <div class="left">
+            <div class="${classnames}">
                 <div class="menu" style="width: ${this._width}px;" @dblclick=${this._doubleClicked}>
                     ${devuiState.menu.map((menuItem, index) =>
                         html`${this._renderItem(menuItem, index)}`
@@ -166,7 +171,7 @@ export class QwcMenu extends observeState(LitElement) {
         if(index===0)defaultSelection = true;
         import(page.componentRef);
         this.routerController.addRouteForMenu(page, defaultSelection);
-
+        
         // Each namespace has one place on the menu
         if(!this._customMenuNamespaces.includes(page.namespace)){
             this._customMenuNamespaces.push(page.namespace);
@@ -181,7 +186,7 @@ export class QwcMenu extends observeState(LitElement) {
         
             let pageRef = this.routerController.getPageUrlFor(page);
             
-            let classnames = this._getClassNames(page, index);
+            let classnames = this._getClassNamesForMenuItem(page, index);
             return html`
             <a class="${classnames}" href="${pageRef}">
                 <vaadin-icon icon="${page.icon}"></vaadin-icon>
@@ -191,7 +196,17 @@ export class QwcMenu extends observeState(LitElement) {
         }
     }
 
-    _getClassNames(page, index){
+    _getClassNamesForMenu(){
+        if(this._selectedPageIsMax){
+            return "hidden";
+        }
+        return "left";
+    }
+
+    _getClassNamesForMenuItem(page, index){
+        if(!page.includeInMenu ){
+            return "hidden";
+        }
         
         const selected = this._selectedPage == page.namespace;
         if(selected){

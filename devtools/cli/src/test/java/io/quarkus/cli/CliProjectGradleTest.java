@@ -112,8 +112,8 @@ public class CliProjectGradleTest {
         String buildGradleContent = validateBasicGradleGroovyIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID,
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
-        Assertions.assertTrue(buildGradleContent.contains("quarkus-resteasy"),
-                "build/gradle should contain quarkus-resteasy:\n" + buildGradleContent);
+        Assertions.assertTrue(buildGradleContent.contains("quarkus-rest"),
+                "build/gradle should contain quarkus-rest:\n" + buildGradleContent);
 
         CliDriver.valdiateGeneratedSourcePackage(project, "org/acme");
 
@@ -144,8 +144,8 @@ public class CliProjectGradleTest {
         String buildGradleContent = validateBasicGradleKotlinIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID,
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
-        Assertions.assertTrue(buildGradleContent.contains("quarkus-resteasy"),
-                "build/gradle should contain quarkus-resteasy:\n" + buildGradleContent);
+        Assertions.assertTrue(buildGradleContent.contains("quarkus-rest"),
+                "build/gradle should contain quarkus-rest:\n" + buildGradleContent);
 
         Path packagePath = wrapperRoot.resolve("src/main/java/");
         Assertions.assertTrue(packagePath.toFile().isDirectory(),
@@ -168,7 +168,7 @@ public class CliProjectGradleTest {
                 "--package-name=custom.pkg",
                 "--output-directory=" + nested,
                 "--app-config=" + String.join(",", configs),
-                "-x resteasy-reactive",
+                "-x rest",
                 "silly:my-project:0.1.0");
 
         // TODO: would love a test that doesn't use a wrapper, but CI path..
@@ -180,8 +180,8 @@ public class CliProjectGradleTest {
         Assertions.assertTrue(project.resolve("gradlew").toFile().exists(),
                 "Wrapper should exist by default");
         String buildGradleContent = validateBasicGradleGroovyIdentifiers(project, "silly", "my-project", "0.1.0");
-        Assertions.assertTrue(buildGradleContent.contains("quarkus-resteasy-reactive"),
-                "build.gradle should contain quarkus-resteasy-reactive:\n" + buildGradleContent);
+        Assertions.assertTrue(buildGradleContent.contains("quarkus-rest"),
+                "build.gradle should contain quarkus-rest:\n" + buildGradleContent);
 
         CliDriver.valdiateGeneratedSourcePackage(project, "custom/pkg");
         CliDriver.validateApplicationProperties(project, configs);

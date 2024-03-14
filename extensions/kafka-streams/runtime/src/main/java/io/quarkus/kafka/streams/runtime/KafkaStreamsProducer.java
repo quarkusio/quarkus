@@ -109,18 +109,22 @@ public class KafkaStreamsProducer {
         this.executorService = executorService;
 
         this.topicsTimeout = runtimeConfig.topicsTimeout;
-        this.trimmedTopics = runtimeConfig.getTrimmedTopics();
+        this.trimmedTopics = isTopicsCheckEnabled() ? runtimeConfig.getTrimmedTopics() : Collections.emptyList();
         this.streamsConfig = new StreamsConfig(kafkaStreamsProperties);
         this.kafkaStreams = initializeKafkaStreams(streamsConfig, topology.get(),
                 kafkaClientSupplier, stateListener, globalStateRestoreListener, uncaughtExceptionHandlerListener);
         this.kafkaStreamsTopologyManager = new KafkaStreamsTopologyManager(kafkaAdminClient);
     }
 
+    private boolean isTopicsCheckEnabled() {
+        return topicsTimeout.compareTo(Duration.ZERO) > 0;
+    }
+
     public void onStartup(@Observes StartupEvent event, Event<KafkaStreams> kafkaStreamsEvent) {
         if (kafkaStreams != null) {
             kafkaStreamsEvent.fire(kafkaStreams);
             executorService.execute(() -> {
-                if (topicsTimeout.compareTo(Duration.ZERO) > 0) {
+                if (isTopicsCheckEnabled()) {
                     try {
                         waitForTopicsToBeCreated(kafkaAdminClient, trimmedTopics, topicsTimeout);
                     } catch (InterruptedException e) {

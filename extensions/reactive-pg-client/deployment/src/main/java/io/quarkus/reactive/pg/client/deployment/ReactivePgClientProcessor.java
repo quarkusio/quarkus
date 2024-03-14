@@ -66,10 +66,13 @@ import io.vertx.sqlclient.Pool;
 
 class ReactivePgClientProcessor {
 
-    private static final ParameterizedType POOL_INJECTION_TYPE = ParameterizedType.create(DotName.createSimple(Instance.class),
+    private static final ParameterizedType POOL_CREATOR_INJECTION_TYPE = ParameterizedType.create(
+            DotName.createSimple(Instance.class),
             new Type[] { ClassType.create(DotName.createSimple(PgPoolCreator.class.getName())) }, null);
     private static final AnnotationInstance[] EMPTY_ANNOTATIONS = new AnnotationInstance[0];
     private static final DotName REACTIVE_DATASOURCE = DotName.createSimple(ReactiveDataSource.class);
+    private static final DotName VERTX_PG_POOL = DotName.createSimple(PgPool.class);
+    private static final Type VERTX_PG_POOL_TYPE = Type.create(VERTX_PG_POOL, Type.Kind.CLASS);
 
     @BuildStep
     NativeImageConfigBuildItem config() {
@@ -213,7 +216,7 @@ class ReactivePgClientProcessor {
                 .defaultBean()
                 .addType(Pool.class)
                 .scope(ApplicationScoped.class)
-                .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
+                .addInjectionPoint(POOL_CREATOR_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
                 .addInjectionPoint(ClassType.create(DataSourceSupport.class))
                 .createWith(poolFunction)
                 .unremovable()
@@ -223,14 +226,15 @@ class ReactivePgClientProcessor {
 
         syntheticBeans.produce(pgPoolBeanConfigurator.done());
 
+        // the Mutiny pool is created by using the Vertx pool
         ExtendedBeanConfigurator mutinyPgPoolConfigurator = SyntheticBeanBuildItem
                 .configure(io.vertx.mutiny.pgclient.PgPool.class)
                 .defaultBean()
                 .addType(io.vertx.mutiny.sqlclient.Pool.class)
                 .scope(ApplicationScoped.class)
-                .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
+                .addInjectionPoint(VERTX_PG_POOL_TYPE, injectionPointAnnotations(dataSourceName))
                 .addInjectionPoint(ClassType.create(DataSourceSupport.class))
-                .createWith(recorder.mutinyPgPool(poolFunction))
+                .createWith(recorder.mutinyPgPool(dataSourceName))
                 .unremovable()
                 .setRuntimeInit();
 

@@ -92,4 +92,13 @@ public class FrontendResource {
                 .onItem().transform(t -> Response.ok(t.getAccessToken()).build())
                 .onFailure(OidcClientException.class).recoverWithItem(t -> Response.status(400).entity(t.getMessage()).build());
     }
+
+    @GET
+    @Path("device-code-grant")
+    @Produces("text/plain")
+    public Uni<Response> deviceCodeGrant(@QueryParam("deviceCode") String deviceCode) {
+        return clients.getClient("device-code-grant").getTokens(Map.of("device_code", deviceCode))
+                .onItem().transform(t -> Response.ok(t.getAccessToken()).build())
+                .onFailure(OidcClientException.class).recoverWithItem(t -> Response.status(401).build());
+    }
 }

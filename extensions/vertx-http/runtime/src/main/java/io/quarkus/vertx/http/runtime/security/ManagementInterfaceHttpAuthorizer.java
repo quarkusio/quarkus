@@ -14,6 +14,7 @@ import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceConfiguration;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -28,7 +29,8 @@ public class ManagementInterfaceHttpAuthorizer extends AbstractHttpAuthorizer {
             AuthorizationController controller, ManagementPathMatchingHttpSecurityPolicy installedPolicy,
             BlockingSecurityExecutor blockingExecutor, Event<AuthorizationFailureEvent> authZFailureEvent,
             Event<AuthorizationSuccessEvent> authZSuccessEvent, BeanManager beanManager,
-            @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
+            @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
+            ManagementInterfaceConfiguration runTimeConfig) {
         super(httpAuthenticator, identityProviderManager, controller,
                 List.of(new HttpSecurityPolicy() {
 
@@ -38,6 +40,7 @@ public class ManagementInterfaceHttpAuthorizer extends AbstractHttpAuthorizer {
                         return installedPolicy.checkPermission(request, identity, requestContext);
                     }
 
-                }), beanManager, blockingExecutor, authZFailureEvent, authZSuccessEvent, securityEventsEnabled);
+                }), beanManager, blockingExecutor, authZFailureEvent, authZSuccessEvent, securityEventsEnabled,
+                runTimeConfig.auth.rolesMapping);
     }
 }

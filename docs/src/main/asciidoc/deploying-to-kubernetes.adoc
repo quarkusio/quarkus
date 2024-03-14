@@ -28,7 +28,7 @@ include::{includes}/prerequisites.adoc[]
 Let's create a new project that contains both the Kubernetes and Jib extensions:
 
 :create-app-artifact-id: kubernetes-quickstart
-:create-app-extensions: resteasy-reactive,kubernetes,jib
+:create-app-extensions: rest,kubernetes,jib
 :create-app-code:
 include::{includes}/devtools/create-app.adoc[]
 
@@ -39,7 +39,7 @@ This added the following dependencies to the build file:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive</artifactId>
+    <artifactId>quarkus-rest</artifactId>
 </dependency>
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -54,7 +54,7 @@ This added the following dependencies to the build file:
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-resteasy-reactive")
+implementation("io.quarkus:quarkus-rest")
 implementation("io.quarkus:quarkus-kubernetes")
 implementation("io.quarkus:quarkus-container-image-jib")
 ----
@@ -1508,7 +1508,7 @@ To enable Service Binding for supported extensions, add the `quarkus-kubernetes-
 * `quarkus-mongodb-client`
 
 * `quarkus-kafka-client`
-* `quarkus-smallrye-reactive-messaging-kafka`
+* `quarkus-messaging-kafka`
 
 * `quarkus-reactive-db2-client`
 * `quarkus-reactive-mssql-client`

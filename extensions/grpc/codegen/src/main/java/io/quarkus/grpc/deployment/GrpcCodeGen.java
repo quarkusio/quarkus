@@ -5,7 +5,10 @@ import static java.lang.Boolean.TRUE;
 import static java.util.Arrays.asList;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -61,6 +64,8 @@ public class GrpcCodeGen implements CodeGenProvider {
     private static final String DESCRIPTOR_SET_OUTPUT_DIR = "quarkus.generate-code.grpc.descriptor-set.output-dir";
     private static final String DESCRIPTOR_SET_FILENAME = "quarkus.generate-code.grpc.descriptor-set.name";
 
+    private static final String USE_ARG_FILE = "quarkus.generate-code.grpc.use-arg-file";
+
     private Executables executables;
     private String input;
 
@@ -103,6 +108,9 @@ public class GrpcCodeGen implements CodeGenProvider {
         Path workDir = context.workDir();
         Path inputDir = CodeGenProvider.resolve(context.inputDir());
         Set<String> protoDirs = new LinkedHashSet<>();
+
+        boolean useArgFile = context.config().getOptionalValue(USE_ARG_FILE, Boolean.class).orElse(false);
+
         try {
             List<String> protoFiles = new ArrayList<>();
             if (Files.isDirectory(inputDir)) {
@@ -160,6 +168,21 @@ public class GrpcCodeGen implements CodeGenProvider {
 
                 command.addAll(protoFiles);
 
+                // Estimate command length to avoid command line too long error
+                int commandLength = command.stream().mapToInt(String::length).sum();
+                // 8191 is the maximum command line length for Windows
+                if (useArgFile || (commandLength > 8190 && OS.determineOS() == OS.WINDOWS)) {
+                    File argFile = File.createTempFile("grpc-protoc-params", ".txt");
+                    argFile.deleteOnExit();
+
+                    try (PrintWriter writer = new PrintWriter(argFile, StandardCharsets.UTF_8)) {
+                        for (int i = 1; i < command.size(); i++) {
+                            writer.println(command.get(i));
+                        }
+                    }
+
+                    command = new ArrayList<>(Arrays.asList(command.get(0), "@" + argFile.getAbsolutePath()));
+                }
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
 
                 final Process process = ProcessUtil.launchProcess(processBuilder, context.shouldRedirectIO());
@@ -170,6 +193,7 @@ public class GrpcCodeGen implements CodeGenProvider {
                 }
                 postprocessing(context, outDir);
                 log.info("Successfully finished generating and post-processing sources from proto files");
+
                 return true;
             }
         } catch (IOException | InterruptedException e) {

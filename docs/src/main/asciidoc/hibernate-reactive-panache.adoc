@@ -21,8 +21,8 @@ Hibernate Reactive with Panache focuses on making your entities trivial and fun 
 Hibernate Reactive is not a replacement for xref:hibernate-orm-panache.adoc[Hibernate ORM] or the future of Hibernate ORM.
 It is a different stack tailored for reactive use cases where you need high-concurrency.
 
-Furthermore, using RESTEasy Reactive, our default REST layer, does not require the use of Hibernate Reactive.
-It is perfectly valid to use RESTEasy Reactive with Hibernate ORM,
+Furthermore, using Quarkus REST (formerly RESTEasy Reactive), our default REST layer, does not require the use of Hibernate Reactive.
+It is perfectly valid to use Quarkus REST with Hibernate ORM,
 and if you do not need high-concurrency, or are not accustomed to the reactive paradigm, it is recommended to use Hibernate ORM.
 ====
 
@@ -769,7 +769,7 @@ Hibernate Reactive in Quarkus currently does not support multiple persistence un
 
 First of all, most of the methods of a Panache entity must be invoked within the scope of a reactive `Mutiny.Session`.
 In some cases, the session is opened automatically on demand.
-For example, if a Panache entity method is invoked in a Jakarta REST resource method in an application that includes the `quarkus-resteasy-reactive` extension.
+For example, if a Panache entity method is invoked in a Jakarta REST resource method in an application that includes the `quarkus-rest` extension.
 For other cases, there are both a declarative and a programmatic way to ensure the session is opened.
 You can annotate a CDI business method that returns `Uni` with the `@WithSession` annotation.
 The method will be intercepted and the returned `Uni` will be triggered within a scope of a reactive session.

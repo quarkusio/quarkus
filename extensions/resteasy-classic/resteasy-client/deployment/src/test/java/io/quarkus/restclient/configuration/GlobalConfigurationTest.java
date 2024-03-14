@@ -50,7 +50,6 @@ public class GlobalConfigurationTest {
     @Test
     void checkGlobalConfigValues() {
         // global properties:
-        assertThat(configRoot.disableSmartProduces.get()).isTrue();
         assertThat(configRoot.multipartPostEncoderMode.get()).isEqualTo("HTML5");
         assertThat(configRoot.disableContextualErrorMessages).isTrue();
 

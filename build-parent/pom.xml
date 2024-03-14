@@ -20,8 +20,8 @@
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>3.12.1</compiler-plugin.version>
-        <kotlin.version>1.9.22</kotlin.version>
-        <dokka.version>1.9.10</dokka.version>
+        <kotlin.version>1.9.23</kotlin.version>
+        <dokka.version>1.9.20</dokka.version>
         <scala.version>2.13.12</scala.version>
         <scala-maven-plugin.version>4.8.1</scala-maven-plugin.version>
         <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
@@ -91,6 +91,7 @@
         <opensearch-server.version>2.11.1</opensearch-server.version>
         <opensearch.image>docker.io/opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
         <opensearch.protocol>http</opensearch.protocol>
+        <junit-pioneer.version>2.2.0</junit-pioneer.version>
 
         <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
         <postgres.image>docker.io/postgres:14</postgres.image>
@@ -106,7 +107,7 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update bom/application/pom.xml and KeycloakBuildTimeConfig/DevServicesConfig in quarkus-oidc/deployment to match the version -->
-        <keycloak.version>23.0.6</keycloak.version>
+        <keycloak.version>23.0.7</keycloak.version>
         <keycloak.wildfly.version>19.0.3</keycloak.wildfly.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
@@ -232,7 +233,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+                <artifactId>quarkus-rest-deployment</artifactId>
                 <version>${project.version}</version>
                 <scope>test</scope>
                 <type>test-jar</type>
@@ -287,6 +288,12 @@
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
                 <version>${assertj.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit-pioneer</groupId>
+                <artifactId>junit-pioneer</artifactId>
+                <version>${junit-pioneer.version}</version>
                 <scope>test</scope>
             </dependency>
 
@@ -369,6 +376,13 @@
                         <artifactId>artemis-server</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>me.escoffier.certs</groupId>
+                <artifactId>certificate-generator-junit5</artifactId>
+                <version>0.5.0</version>
+                <scope>test</scope>
             </dependency>
 
         </dependencies>
@@ -624,7 +638,7 @@
                         <dependency>
                             <groupId>org.apache.groovy</groupId>
                             <artifactId>groovy</artifactId>
-                            <version>4.0.18</version>
+                            <version>4.0.19</version>
                         </dependency>
                     </dependencies>
                 </plugin>

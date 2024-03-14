@@ -150,7 +150,16 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                     HttpResponse response = (HttpResponse) o;
                                     routingContext.response().setStatusCode(response.getStatusCode());
                                     routingContext.response().putHeader("Content-Type", "application/json");
-                                    routingContext.response().end(new ObjectMapper().writeValueAsString(response.getBody()));
+                                    if (response.hasHeaders()) {
+                                        response.getHeaders().forEach((hK, hV) -> {
+                                            routingContext.response().putHeader(hK, hV);
+                                        });
+                                    }
+                                    if(response.hasBody()){
+                                        routingContext.response().end(new ObjectMapper().writeValueAsString(response.getBody()));
+                                    } else {
+                                        routingContext.response().end();
+                                    }
                                 } else {
                                     routingContext.response().setStatusCode(200);
                                     routingContext.response().putHeader("Content-Type", "application/json");

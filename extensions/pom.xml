@@ -96,8 +96,10 @@
         <module>hibernate-reactive</module>
         <module>hibernate-validator</module>
         <module>panache</module>
+        <module>hibernate-search-backend-elasticsearch</module>
         <module>hibernate-search-orm-elasticsearch</module>
         <module>hibernate-search-orm-outbox-polling</module>
+        <module>hibernate-search-standalone-elasticsearch</module>
         <module>elasticsearch-rest-client-common</module>
         <module>elasticsearch-rest-client</module>
         <module>elasticsearch-java-client</module>

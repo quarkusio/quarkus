@@ -218,7 +218,7 @@ public class ConfigGenerationBuildStep {
             defaultValues.put(e.getKey(), e.getValue());
         }
         // Recorded values from build time from any other source (higher ordinal then defaults, so override)
-        String[] profiles = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getProfiles().toArray(new String[] {});
+        String[] profiles = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getProfiles().toArray(String[]::new);
         for (Map.Entry<String, String> entry : configItem.getReadResult().getRunTimeValues().entrySet()) {
             // Runtime values may contain active profiled names that override sames names in defaults
             // We need to keep the original name definition in case a different profile is used to run the app

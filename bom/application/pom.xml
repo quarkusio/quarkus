@@ -4428,10 +4428,22 @@
                 <artifactId>jakarta.ws.rs-api</artifactId>
                 <version>${jakarta.ws.rs-api.version}</version>
             </dependency>
+            <!-- graal-sdk should be avoided, keeping it temporarily for compatibility reasons -->
             <dependency>
                 <groupId>org.graalvm.sdk</groupId>
                 <artifactId>graal-sdk</artifactId>
                 <version>${graal-sdk.version}</version>
+                <!--
+                  This is used as a workaround to avoid having polyglot in the classpath when graal-sdk is added.
+                  Polyglot wasn't around until now with the old graal-sdk so it should be relatively safe
+                  until we drop graal-sdk entirely from the BOM.
+                -->
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.graalvm.polyglot</groupId>
+                        <artifactId>polyglot</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.graalvm.sdk</groupId>

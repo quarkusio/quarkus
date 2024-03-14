@@ -1,7 +1,10 @@
 package io.quarkus.runtime;
 
 import java.io.Closeable;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Supplier;
 

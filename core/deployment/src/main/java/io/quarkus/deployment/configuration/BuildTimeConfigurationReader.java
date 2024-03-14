@@ -1109,7 +1109,7 @@ public final class BuildTimeConfigurationReader {
                         }
                     });
 
-            String[] profiles = config.getProfiles().toArray(new String[] {});
+            String[] profiles = config.getProfiles().toArray(String[]::new);
             for (String property : builder.build().getPropertyNames()) {
                 properties.add(ProfileConfigSourceInterceptor.activeName(property, profiles));
             }

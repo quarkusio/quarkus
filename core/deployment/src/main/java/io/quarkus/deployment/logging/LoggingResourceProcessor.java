@@ -82,7 +82,6 @@ import io.quarkus.deployment.console.SetCompleter;
 import io.quarkus.deployment.dev.ExceptionNotificationBuildItem;
 import io.quarkus.deployment.dev.testing.MessageFormat;
 import io.quarkus.deployment.dev.testing.TestSetupBuildItem;
-import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
@@ -367,7 +366,7 @@ public final class LoggingResourceProcessor {
     @Produce(TestSetupBuildItem.class)
     @Produce(LogConsoleFormatBuildItem.class)
     @Consume(ConsoleInstalledBuildItem.class)
-    void setupStackTraceFormatter(ApplicationArchivesBuildItem item, EffectiveIdeBuildItem ideSupport,
+    void setupStackTraceFormatter(ApplicationArchivesBuildItem item,
             BuildSystemTargetBuildItem buildSystemTargetBuildItem,
             List<ExceptionNotificationBuildItem> exceptionNotificationBuildItems,
             CuratedApplicationShutdownBuildItem curatedApplicationShutdownBuildItem) {

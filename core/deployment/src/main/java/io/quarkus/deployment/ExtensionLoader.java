@@ -496,7 +496,14 @@ public final class ExtensionLoader {
                         final Class<? extends SimpleBuildItem> buildItemClass = parameterClass
                                 .asSubclass(SimpleBuildItem.class);
                         methodStepConfig = methodStepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
-                        methodParamFns.add((bc, bri) -> bc.consume(buildItemClass));
+                        methodParamFns.add((bc, bri) -> {
+                            SimpleBuildItem bi = bc.consume(buildItemClass);
+                            if (bi == null) {
+                                throw reportError(parameter,
+                                        "Cannot consume 'null' build item, use java.util.Optional build step method parameter instead");
+                            }
+                            return bi;
+                        });
                     } else if (isAnEmptyBuildItemConsumer(parameterType)) {
                         throw reportError(parameter,
                                 "Cannot consume an empty build item, use @Consume(class) on the build step method instead");

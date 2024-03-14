@@ -7,6 +7,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -125,8 +126,8 @@ public class ConsoleProcessor {
     @Consume(ConsoleInstalledBuildItem.class)
     @BuildStep
     void setupExceptionHandler(BuildProducer<ExceptionNotificationBuildItem> exceptionNotificationBuildItem,
-            EffectiveIdeBuildItem ideSupport, LaunchModeBuildItem launchModeBuildItem) {
-        if (launchModeBuildItem.isAuxiliaryApplication()) {
+            Optional<EffectiveIdeBuildItem> ideSupport, LaunchModeBuildItem launchModeBuildItem) {
+        if (launchModeBuildItem.isAuxiliaryApplication() || ideSupport.isEmpty()) {
             return;
         }
         final AtomicReference<StackTraceElement> lastUserCode = new AtomicReference<>();
@@ -162,7 +163,7 @@ public class ConsoleProcessor {
                             public void run() {
                                 StackTraceElement throwable = lastUserCode.get();
                                 if (throwable == null) {
-                                    launchInIDE(ideSupport.getIde(), List.of("."));
+                                    launchInIDE(ideSupport.get().getIde(), List.of("."));
                                     return;
                                 }
                                 String className = throwable.getClassName();
@@ -177,10 +178,10 @@ public class ConsoleProcessor {
                                     log.error("Unable to find file: " + file);
                                     return;
                                 }
-                                List<String> args = ideSupport.getIde().createFileOpeningArgs(
+                                List<String> args = ideSupport.get().getIde().createFileOpeningArgs(
                                         fileName.toAbsolutePath().toString(),
                                         "" + throwable.getLineNumber());
-                                launchInIDE(ideSupport.getIde(), args);
+                                launchInIDE(ideSupport.get().getIde(), args);
                             }
                         }));
     }

@@ -76,8 +76,8 @@ public class IdeProcessor {
 
     @BuildStep
     public EffectiveIdeBuildItem effectiveIde(LaunchModeBuildItem launchModeBuildItem, IdeConfig ideConfig,
-            IdeFileBuildItem ideFile,
-            IdeRunningProcessBuildItem ideRunningProcess) {
+            Optional<IdeFileBuildItem> ideFile,
+            Optional<IdeRunningProcessBuildItem> ideRunningProcess) {
         if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
             return null;
         }
@@ -86,26 +86,27 @@ public class IdeProcessor {
 
             // the idea here is to auto-detect the special files that IDEs create
             // and also the running IDE process if need be
-
-            if (ideFile.getDetectedIDEs().size() == 1) {
-                result = ideFile.getDetectedIDEs().iterator().next();
-            } else {
-                Set<Ide> runningIdes = ideRunningProcess.getDetectedIDEs();
-                if (runningIdes.size() == 1) {
-                    result = runningIdes.iterator().next();
-                } else {
-                    List<Ide> matches = new ArrayList<>();
-                    for (Ide file : ideFile.getDetectedIDEs()) {
-                        for (Ide process : runningIdes) {
-                            if (file == process) {
-                                matches.add(file);
+            if (ideFile.isPresent()) {
+                if (ideFile.get().getDetectedIDEs().size() == 1) {
+                    result = ideFile.get().getDetectedIDEs().iterator().next();
+                } else if (ideRunningProcess.isPresent()) {
+                    Set<Ide> runningIdes = ideRunningProcess.get().getDetectedIDEs();
+                    if (runningIdes.size() == 1) {
+                        result = runningIdes.iterator().next();
+                    } else {
+                        List<Ide> matches = new ArrayList<>();
+                        for (Ide file : ideFile.get().getDetectedIDEs()) {
+                            for (Ide process : runningIdes) {
+                                if (file == process) {
+                                    matches.add(file);
+                                }
                             }
                         }
-                    }
-                    if ((matches.size() == 0 && runningIdes.size() > 0)) {
-                        result = runningIdes.iterator().next();
-                    } else if (matches.size() >= 1) {
-                        result = matches.get(0);
+                        if ((matches.size() == 0 && runningIdes.size() > 0)) {
+                            result = runningIdes.iterator().next();
+                        } else if (matches.size() >= 1) {
+                            result = matches.get(0);
+                        }
                     }
                 }
             }

@@ -78,6 +78,7 @@ import io.smallrye.config.Converters;
 import io.smallrye.config.EnvConfigSource;
 import io.smallrye.config.KeyMap;
 import io.smallrye.config.KeyMapBackedConfigSource;
+import io.smallrye.config.ProfileConfigSourceInterceptor;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SecretKeys;
 import io.smallrye.config.SmallRyeConfig;
@@ -640,7 +641,7 @@ public final class BuildTimeConfigurationReader {
                     unknownBuildProperties.remove(property);
                     ConfigValue value = config.getConfigValue(property);
                     if (value != null && value.getRawValue() != null) {
-                        allBuildTimeValues.put(property, value.getRawValue());
+                        allBuildTimeValues.put(value.getNameProfiled(), value.getRawValue());
                     }
                 }
             }
@@ -652,8 +653,8 @@ public final class BuildTimeConfigurationReader {
                     unknownBuildProperties.remove(property);
                     ConfigValue value = config.getConfigValue(property);
                     if (value != null && value.getRawValue() != null) {
-                        allBuildTimeValues.put(property, value.getRawValue());
-                        buildTimeRunTimeValues.put(property, value.getRawValue());
+                        allBuildTimeValues.put(value.getNameProfiled(), value.getRawValue());
+                        buildTimeRunTimeValues.put(value.getNameProfiled(), value.getRawValue());
                     }
                 }
             }
@@ -665,7 +666,7 @@ public final class BuildTimeConfigurationReader {
                     unknownBuildProperties.remove(property);
                     ConfigValue value = config.getConfigValue(property);
                     if (value != null && value.getRawValue() != null) {
-                        runTimeValues.put(property, value.getRawValue());
+                        runTimeValues.put(value.getNameProfiled(), value.getRawValue());
                     }
                 }
             }
@@ -1073,8 +1074,7 @@ public final class BuildTimeConfigurationReader {
 
             Set<String> properties = new HashSet<>();
 
-            // We build a new Config to also apply the interceptor chain, this includes the active profile. A property
-            // may only exist in its profiled name format, but it requires recording in the unprofiled name
+            // We build a new Config to also apply the interceptor chain to generate any additional properties.
             SmallRyeConfigBuilder builder = ConfigUtils.emptyConfigBuilder();
             builder.getSources().clear();
             builder.getSourceProviders().clear();
@@ -1108,8 +1108,10 @@ public final class BuildTimeConfigurationReader {
                             return Collections.emptySet();
                         }
                     });
+
+            String[] profiles = config.getProfiles().toArray(String[]::new);
             for (String property : builder.build().getPropertyNames()) {
-                properties.add(property);
+                properties.add(ProfileConfigSourceInterceptor.activeName(property, profiles));
             }
 
             return properties;

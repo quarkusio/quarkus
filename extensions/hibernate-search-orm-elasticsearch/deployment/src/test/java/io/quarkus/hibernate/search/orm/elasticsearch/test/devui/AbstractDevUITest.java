@@ -1,4 +1,4 @@
-package io.quarkus.test.devui;
+package io.quarkus.hibernate.search.orm.elasticsearch.test.devui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -13,15 +13,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 
 /**
- * All tests test the same api call, with different configuration and different expected results.
+ * All DevUI tests check the same api call, with different configuration and different expected results.
  * This abstract class reduces the code in each test.
  */
-public abstract class AbstractDevUIHibernateSearchTest extends DevUIJsonRPCTest {
+public abstract class AbstractDevUITest extends DevUIJsonRPCTest {
 
     private final String expectedPersistenceUnitName;
     private final String expectedClassName;
 
-    public AbstractDevUIHibernateSearchTest(String expectedPersistenceUnitName, String expectedClassName) {
+    public AbstractDevUITest(String expectedPersistenceUnitName, String expectedClassName) {
         super("io.quarkus.quarkus-hibernate-search-orm-elasticsearch");
         this.expectedPersistenceUnitName = expectedPersistenceUnitName;
         this.expectedClassName = expectedClassName;

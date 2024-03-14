@@ -33,11 +33,18 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
      *
      * The referenced bean must implement `FailureHandler`.
      *
+     * See
+     * link:{hibernate-search-docs-url}#configuration-background-failure-handling[this section of the reference documentation]
+     * for more information.
+     *
      * [NOTE]
      * ====
      * Instead of setting this configuration property,
      * you can simply annotate your custom `FailureHandler` implementation with `@SearchExtension`
      * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
+     * See xref:hibernate-search-orm-elasticsearch.adoc#plugging-in-custom-components[this section]
+     * for more information.
+     *
      * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
      * ====
      *
@@ -118,7 +125,7 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * When analysis is configured both through an analysis configurer and these custom settings, the behavior is undefined;
          * it should not be relied upon.
          *
-         * See https://docs.jboss.org/hibernate/stable/search/reference/en-US/html_single/#backend-elasticsearch-configuration-index-settings[this section of the reference documentation]
+         * See link:{hibernate-search-docs-url}#backend-elasticsearch-configuration-index-settings[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet
@@ -134,7 +141,7 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * The file does not need to (and generally shouldn't) contain the full mapping:
          * Hibernate Search will automatically inject missing properties (index fields) in the given mapping.
          *
-         * See https://docs.jboss.org/hibernate/stable/search/reference/en-US/html_single/#backend-elasticsearch-mapping-custom[this section of the reference documentation]
+         * See link:{hibernate-search-docs-url}#backend-elasticsearch-mapping-custom[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet
@@ -160,6 +167,9 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * Instead of setting this configuration property,
          * you can simply annotate your custom `ElasticsearchAnalysisConfigurer` implementations with `@SearchExtension`
          * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
+         * See xref:hibernate-search-orm-elasticsearch.adoc#plugging-in-custom-components[this section]
+         * for more information.
+         *
          * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
          * ====
          *
@@ -172,7 +182,7 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     interface LayoutConfig {
         /**
          * A xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean reference] to the component
-         * used to configure layout (e.g. index names, index aliases).
+         * used to configure the Elasticsearch layout: index names, index aliases, ...
          *
          * The referenced bean must implement `IndexLayoutStrategy`.
          *
@@ -196,6 +206,9 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * Instead of setting this configuration property,
          * you can simply annotate your custom `IndexLayoutStrategy` implementation with `@SearchExtension`
          * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
+         * See xref:hibernate-search-orm-elasticsearch.adoc#plugging-in-custom-components[this section]
+         * for more information.
+         *
          * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
          * ====
          *
@@ -223,7 +236,8 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     interface MappingConfig {
         /**
          * One or more xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean references]
-         * to the component(s) used to configure Hibernate Search mapping.
+         * to the component(s) used to configure the Hibernate Search mapping,
+         * in particular programmatically.
          *
          * The referenced beans must implement `HibernateOrmSearchMappingConfigurer`.
          *
@@ -235,6 +249,9 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * Instead of setting this configuration property,
          * you can simply annotate your custom `HibernateOrmSearchMappingConfigurer` implementations with `@SearchExtension`
          * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
+         * See xref:hibernate-search-orm-elasticsearch.adoc#plugging-in-custom-components[this section]
+         * for more information.
+         *
          * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
          * ====
          *

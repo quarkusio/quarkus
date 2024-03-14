@@ -347,6 +347,9 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * Instead of setting this configuration property,
          * you can simply annotate your custom `IndexingPlanSynchronizationStrategy` implementation with `@SearchExtension`
          * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
+         * See xref:hibernate-search-orm-elasticsearch.adoc#plugging-in-custom-components[this section]
+         * for more information.
+         *
          * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
          * ====
          *
@@ -481,7 +484,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * Also, drop indexes and their schema on shutdown.
          * !===
          *
-         * See https://docs.jboss.org/hibernate/stable/search/reference/en-US/html_single/#mapper-orm-schema-management-strategy[this section of the reference documentation]
+         * See link:{hibernate-search-docs-url}#mapper-orm-schema-management-strategy[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet

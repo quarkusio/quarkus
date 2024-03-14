@@ -82,7 +82,7 @@
         <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
         <jakarta.websocket-api.version>2.1.1</jakarta.websocket-api.version>
         <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
-        <jakarta.xml.bind-api.version>4.0.1</jakarta.xml.bind-api.version>
+        <jakarta.xml.bind-api.version>4.0.2</jakarta.xml.bind-api.version>
         <jaxb-runtime.version>4.0.5</jaxb-runtime.version>
         <asm.version>9.6</asm.version>
         <commons-io.version>2.15.1</commons-io.version>
@@ -178,14 +178,14 @@
         <mongo-client.version>4.11.1</mongo-client.version>
         <mongo-crypt.version>1.8.0</mongo-crypt.version>
         <proton-j.version>0.34.1</proton-j.version>
-        <javaparser.version>3.25.8</javaparser.version>
+        <javaparser.version>3.25.9</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.3.0</hibernate-quarkus-local-cache.version>
         <flapdoodle.mongo.version>4.12.2</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP7</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.4.Final</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
-        <mockito.version>5.10.0</mockito.version>
+        <mockito.version>5.11.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.13.0</antlr.version><!-- needs to align with same property in build-parent/pom.xml -->
         <quarkus-security.version>2.0.3.Final</quarkus-security.version>
@@ -202,7 +202,7 @@
         <commons-text.version>1.11.0</commons-text.version>
         <gson.version>2.10.1</gson.version>
         <log4j2-jboss-logmanager.version>1.1.2.Final</log4j2-jboss-logmanager.version>
-        <log4j2-api.version>2.23.0</log4j2-api.version>
+        <log4j2-api.version>2.23.1</log4j2-api.version>
         <log4j-jboss-logmanager.version>1.3.0.Final</log4j-jboss-logmanager.version>
         <avro.version>1.11.3</avro.version>
         <apicurio-registry.version>2.5.9.Final</apicurio-registry.version>
@@ -4431,6 +4431,11 @@
             <dependency>
                 <groupId>org.graalvm.sdk</groupId>
                 <artifactId>graal-sdk</artifactId>
+                <version>${graal-sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.sdk</groupId>
+                <artifactId>nativeimage</artifactId>
                 <version>${graal-sdk.version}</version>
             </dependency>
             <dependency>

@@ -23,11 +23,6 @@
             <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.graalvm.sdk</groupId>
-            <artifactId>graal-sdk</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>com.google.cloud.functions</groupId>
             <artifactId>functions-framework-api</artifactId>
             <scope>provided</scope>

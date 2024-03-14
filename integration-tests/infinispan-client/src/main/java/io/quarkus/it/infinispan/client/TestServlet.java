@@ -23,18 +23,16 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import org.infinispan.client.hotrod.RemoteCache;
-import org.infinispan.client.hotrod.Search;
 import org.infinispan.client.hotrod.jmx.RemoteCacheClientStatisticsMXBean;
 import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
+import org.infinispan.commons.api.query.Query;
 import org.infinispan.counter.api.CounterConfiguration;
 import org.infinispan.counter.api.CounterManager;
 import org.infinispan.counter.api.CounterType;
 import org.infinispan.counter.api.Storage;
 import org.infinispan.counter.api.StrongCounter;
 import org.infinispan.counter.api.WeakCounter;
-import org.infinispan.query.dsl.Query;
-import org.infinispan.query.dsl.QueryFactory;
 
 import io.quarkus.infinispan.client.InfinispanClientName;
 import io.quarkus.infinispan.client.Remote;
@@ -86,10 +84,7 @@ public class TestServlet {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String queryAuthorSurname(@PathParam("id") String name) {
-        QueryFactory queryFactory = Search.getQueryFactory(cache);
-        Query query = queryFactory.from(Book.class)
-                .having("authors.name").like("%" + name + "%")
-                .build();
+        Query<Book> query = cache.query("from book_sample.Book b where b.authors.name like '%" + name + "%'");
         List<Book> list = query.execute().list();
         if (list.isEmpty()) {
             return "No one found for " + name;
@@ -107,8 +102,7 @@ public class TestServlet {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String ickleQueryAuthorSurname(@PathParam("id") String name) {
-        QueryFactory queryFactory = Search.getQueryFactory(cache);
-        Query query = queryFactory.create("from book_sample.Book b where b.authors.name like '%" + name + "%'");
+        Query<Book> query = cache.query("from book_sample.Book b where b.authors.name like '%" + name + "%'");
         List<Book> list = query.execute().list();
         if (list.isEmpty()) {
             return "No one found for " + name;
@@ -255,8 +249,8 @@ public class TestServlet {
     @Path("magazinequery/{id}")
     @GET
     public String magazineQuery(@PathParam("id") String name) {
-        QueryFactory queryFactory = Search.getQueryFactory(magazineCache);
-        Query query = queryFactory.create("from magazine_sample.Magazine m where m.name like '%" + name + "%'");
+        Query<Magazine> query = magazineCache.query(
+                "from magazine_sample.Magazine m where m.name like '%" + name + "%'");
         List<Magazine> list = query.execute().list();
         if (list.isEmpty()) {
             return "No one found for " + name;

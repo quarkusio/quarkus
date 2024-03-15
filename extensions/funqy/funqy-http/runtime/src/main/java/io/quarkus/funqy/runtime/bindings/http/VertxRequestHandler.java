@@ -155,8 +155,9 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                                             routingContext.response().putHeader(hK, hV);
                                         });
                                     }
-                                    if(response.hasBody()){
-                                        routingContext.response().end(new ObjectMapper().writeValueAsString(response.getBody()));
+                                    if (response.hasBody()) {
+                                        routingContext.response()
+                                                .end(new ObjectMapper().writeValueAsString(response.getBody()));
                                     } else {
                                         routingContext.response().end();
                                     }

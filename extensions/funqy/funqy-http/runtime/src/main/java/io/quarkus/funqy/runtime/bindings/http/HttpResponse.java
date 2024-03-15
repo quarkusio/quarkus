@@ -37,6 +37,10 @@ public class HttpResponse {
         return body;
     }
 
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
     public boolean hasHeaders() {
         return headers != null;
     }

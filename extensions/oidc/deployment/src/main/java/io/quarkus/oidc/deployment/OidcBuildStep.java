@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.jwt.Claim;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
@@ -26,6 +27,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.QualifierRegistrarBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.InjectionPointInfo;
@@ -40,11 +42,14 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.oidc.IdToken;
 import io.quarkus.oidc.Tenant;
 import io.quarkus.oidc.TenantFeature;
 import io.quarkus.oidc.TenantIdentityProvider;
 import io.quarkus.oidc.TokenIntrospectionCache;
+import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.UserInfoCache;
 import io.quarkus.oidc.runtime.BackChannelLogoutHandler;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
@@ -77,6 +82,9 @@ public class OidcBuildStep {
     private static final DotName TENANT_FEATURE_NAME = DotName.createSimple(TenantFeature.class);
     private static final DotName TENANT_IDENTITY_PROVIDER_NAME = DotName.createSimple(TenantIdentityProvider.class);
     private static final Logger LOG = Logger.getLogger(OidcBuildStep.class);
+    private static final DotName USER_INFO_NAME = DotName.createSimple(UserInfo.class);
+    private static final DotName JSON_WEB_TOKEN_NAME = DotName.createSimple(JsonWebToken.class);
+    private static final DotName ID_TOKEN_NAME = DotName.createSimple(IdToken.class);
 
     @BuildStep
     public void provideSecurityInformation(BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
@@ -287,6 +295,35 @@ public class OidcBuildStep {
                 });
             }
         }
+    }
+
+    @BuildStep
+    void detectUserInfoRequired(BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfigDefaultProducer) {
+        if (isInjected(beanRegistrationPhaseBuildItem, USER_INFO_NAME, null)) {
+            runtimeConfigDefaultProducer.produce(
+                    new RunTimeConfigurationDefaultBuildItem("quarkus.oidc.authentication.user-info-required", "true"));
+        }
+    }
+
+    @BuildStep
+    void detectAccessTokenVerificationRequired(BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfigDefaultProducer) {
+        if (isInjected(beanRegistrationPhaseBuildItem, JSON_WEB_TOKEN_NAME, ID_TOKEN_NAME)) {
+            runtimeConfigDefaultProducer.produce(
+                    new RunTimeConfigurationDefaultBuildItem("quarkus.oidc.authentication.verify-access-token", "true"));
+        }
+    }
+
+    private static boolean isInjected(BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem, DotName requiredType,
+            DotName withoutQualifier) {
+        for (InjectionPointInfo injectionPoint : beanRegistrationPhaseBuildItem.getInjectionPoints()) {
+            if (requiredType.equals(injectionPoint.getRequiredType().name())
+                    && (withoutQualifier == null || injectionPoint.getRequiredQualifier(withoutQualifier) == null)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String toTargetName(AnnotationTarget target) {

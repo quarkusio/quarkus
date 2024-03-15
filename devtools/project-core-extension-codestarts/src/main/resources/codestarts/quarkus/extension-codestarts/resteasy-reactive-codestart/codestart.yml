@@ -1,3 +1,4 @@
+# We need this for compat with older CLI versions
 name: resteasy-reactive-codestart
 ref: resteasy-reactive
 type: code

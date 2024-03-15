@@ -13,7 +13,7 @@ public class RESTClientCodestartTest {
 
     @RegisterExtension
     public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("rest-client")
+            .codestarts("resteasy-client")
             .languages(JAVA, KOTLIN)
             .build();
 

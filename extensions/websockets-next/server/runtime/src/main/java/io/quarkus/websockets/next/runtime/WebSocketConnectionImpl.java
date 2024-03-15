@@ -1,5 +1,6 @@
 package io.quarkus.websockets.next.runtime;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +38,8 @@ class WebSocketConnectionImpl implements WebSocketConnection {
 
     private final BroadcastSender defaultBroadcast;
 
+    private final Instant creationTime;
+
     WebSocketConnectionImpl(String endpoint, ServerWebSocket webSocket, ConnectionManager connectionManager,
             Codecs codecs, RoutingContext ctx) {
         this.endpoint = endpoint;
@@ -47,6 +50,7 @@ class WebSocketConnectionImpl implements WebSocketConnection {
         this.defaultBroadcast = new BroadcastImpl(null);
         this.codecs = codecs;
         this.handshakeRequest = new HandshakeRequestImpl(ctx);
+        this.creationTime = Instant.now();
     }
 
     @Override
@@ -113,6 +117,11 @@ class WebSocketConnectionImpl implements WebSocketConnection {
     @Override
     public HandshakeRequest handshakeRequest() {
         return handshakeRequest;
+    }
+
+    @Override
+    public Instant creationTime() {
+        return creationTime;
     }
 
     @Override

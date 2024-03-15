@@ -1019,6 +1019,14 @@ public class JarResultBuildStep {
             removedArtifacts.add("org.graalvm.sdk:word");
             removedArtifacts.add("org.graalvm.sdk:collections");
 
+            // complain if graal-sdk is present as a dependency as nativeimage should be preferred
+            if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream()
+                    .anyMatch(d -> d.getGroupId().equals("org.graalvm.sdk") && d.getArtifactId().equals("graal-sdk"))) {
+                log.warn("org.graalvm.sdk:graal-sdk is present in the classpath. "
+                        + "From Quarkus 3.8 and onwards, org.graalvm.sdk:nativeimage should be preferred. "
+                        + "Make sure you report the issue to the maintainers of the extensions that bring it.");
+            }
+
             doLegacyThinJarGeneration(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem, applicationInfo, packageConfig, generatedResources, libDir, allClasses,
                     runnerZipFs, mainClassBuildItem, classLoadingConfig);

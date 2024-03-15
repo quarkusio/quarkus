@@ -416,7 +416,7 @@
             </dependency>
             <dependency>
                 <groupId>org.graalvm.sdk</groupId>
-                <artifactId>graal-sdk</artifactId>
+                <artifactId>nativeimage</artifactId>
                 <version>${graal-sdk.version}</version>
             </dependency>
             <dependency>

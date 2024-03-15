@@ -4,11 +4,13 @@ import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 import static io.quarkus.reactive.datasource.runtime.UnitisedTime.unitised;
 
+import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
 
@@ -41,7 +43,7 @@ import io.vertx.sqlclient.impl.Utils;
 @Recorder
 public class OraclePoolRecorder {
 
-    private static final TypeLiteral<Instance<OraclePoolCreator>> TYPE_LITERAL = new TypeLiteral<>() {
+    private static final TypeLiteral<Instance<OraclePoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
 
     private static final Logger log = Logger.getLogger(OraclePoolRecorder.class);
@@ -71,14 +73,28 @@ public class OraclePoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<io.vertx.mutiny.oracleclient.OraclePool>, io.vertx.mutiny.oracleclient.OraclePool> mutinyOraclePool(
-            Function<SyntheticCreationalContext<OraclePool>, OraclePool> function) {
+            String dataSourceName) {
         return new Function<>() {
             @SuppressWarnings("unchecked")
             @Override
             public io.vertx.mutiny.oracleclient.OraclePool apply(SyntheticCreationalContext context) {
-                return io.vertx.mutiny.oracleclient.OraclePool.newInstance(function.apply(context));
+                DataSourceSupport datasourceSupport = (DataSourceSupport) context.getInjectedReference(DataSourceSupport.class);
+                if (datasourceSupport.getInactiveNames().contains(dataSourceName)) {
+                    throw DataSourceUtil.dataSourceInactive(dataSourceName);
+                }
+                return io.vertx.mutiny.oracleclient.OraclePool.newInstance(
+                        (OraclePool) context.getInjectedReference(OraclePool.class,
+                                getReactiveDataSourceQualifier(dataSourceName)));
             }
         };
+    }
+
+    private static Annotation getReactiveDataSourceQualifier(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return Default.Literal.INSTANCE;
+        }
+
+        return new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName);
     }
 
     private OraclePool initialize(VertxInternal vertx,
@@ -211,9 +227,9 @@ public class OraclePoolRecorder {
             SyntheticCreationalContext<OraclePool> context) {
         Instance<OraclePoolCreator> instance;
         if (DataSourceUtil.isDefault(dataSourceName)) {
-            instance = context.getInjectedReference(TYPE_LITERAL);
+            instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL);
         } else {
-            instance = context.getInjectedReference(TYPE_LITERAL,
+            instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL,
                     new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
         }
         if (instance.isResolvable()) {

@@ -45,7 +45,7 @@
 
         <dependency>
             <groupId>org.graalvm.sdk</groupId>
-            <artifactId>graal-sdk</artifactId>
+            <artifactId>nativeimage</artifactId>
             <scope>provided</scope>
         </dependency>
 
@@ -69,7 +69,6 @@
         <dependency>
             <groupId>com.aayushatharva.brotli4j</groupId>
             <artifactId>brotli4j</artifactId>
-            <version>1.7.1</version> <!-- TODO Extract this version -->
         </dependency>
     </dependencies>
 

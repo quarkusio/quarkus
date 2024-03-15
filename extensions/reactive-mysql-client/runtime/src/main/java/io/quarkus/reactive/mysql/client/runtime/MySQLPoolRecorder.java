@@ -10,6 +10,7 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOpt
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
 
@@ -47,7 +49,7 @@ import io.vertx.sqlclient.impl.Utils;
 @Recorder
 public class MySQLPoolRecorder {
 
-    private static final TypeLiteral<Instance<MySQLPoolCreator>> TYPE_LITERAL = new TypeLiteral<>() {
+    private static final TypeLiteral<Instance<MySQLPoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
 
     public Function<SyntheticCreationalContext<MySQLPool>, MySQLPool> configureMySQLPool(RuntimeValue<Vertx> vertx,
@@ -75,14 +77,28 @@ public class MySQLPoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<io.vertx.mutiny.mysqlclient.MySQLPool>, io.vertx.mutiny.mysqlclient.MySQLPool> mutinyMySQLPool(
-            Function<SyntheticCreationalContext<MySQLPool>, MySQLPool> function) {
+            String dataSourceName) {
         return new Function<>() {
             @Override
             @SuppressWarnings("unchecked")
             public io.vertx.mutiny.mysqlclient.MySQLPool apply(SyntheticCreationalContext context) {
-                return io.vertx.mutiny.mysqlclient.MySQLPool.newInstance(function.apply(context));
+                DataSourceSupport datasourceSupport = (DataSourceSupport) context.getInjectedReference(DataSourceSupport.class);
+                if (datasourceSupport.getInactiveNames().contains(dataSourceName)) {
+                    throw DataSourceUtil.dataSourceInactive(dataSourceName);
+                }
+                return io.vertx.mutiny.mysqlclient.MySQLPool.newInstance(
+                        (MySQLPool) context.getInjectedReference(MySQLPool.class,
+                                getReactiveDataSourceQualifier(dataSourceName)));
             }
         };
+    }
+
+    private static Annotation getReactiveDataSourceQualifier(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return Default.Literal.INSTANCE;
+        }
+
+        return new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName);
     }
 
     private MySQLPool initialize(VertxInternal vertx,
@@ -262,9 +278,9 @@ public class MySQLPoolRecorder {
             SyntheticCreationalContext<MySQLPool> context) {
         Instance<MySQLPoolCreator> instance;
         if (DataSourceUtil.isDefault(dataSourceName)) {
-            instance = context.getInjectedReference(TYPE_LITERAL);
+            instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL);
         } else {
-            instance = context.getInjectedReference(TYPE_LITERAL,
+            instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL,
                     new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
         }
         if (instance.isResolvable()) {

@@ -6,6 +6,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
 
 import jakarta.annotation.Priority;
 import jakarta.interceptor.AroundInvoke;
@@ -21,9 +24,13 @@ import io.opentelemetry.instrumentation.api.annotation.support.MethodSpanAttribu
 import io.opentelemetry.instrumentation.api.annotation.support.ParameterAttributeNamesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
+import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.util.SpanNames;
 import io.quarkus.arc.ArcInvocationContext;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Functions;
 
 @SuppressWarnings("CdiInterceptorInspection")
 @Interceptor
@@ -43,7 +50,12 @@ public class WithSpanInterceptor {
                 MethodRequest::getArgs);
 
         this.instrumenter = builder.addAttributesExtractor(attributesExtractor)
-                .buildInstrumenter(methodRequest -> spanKindFromMethod(methodRequest.getAnnotationBindings()));
+                .buildInstrumenter(new SpanKindExtractor<MethodRequest>() {
+                    @Override
+                    public SpanKind extract(MethodRequest methodRequest) {
+                        return spanKindFromMethod(methodRequest.getAnnotationBindings());
+                    }
+                });
     }
 
     @AroundInvoke
@@ -53,33 +65,106 @@ public class WithSpanInterceptor {
                 invocationContext.getParameters(),
                 invocationContext.getInterceptorBindings());
 
+        final Class<?> returnType = invocationContext.getMethod().getReturnType();
         Context parentContext = Context.current();
-        Context spanContext = null;
-        Scope scope = null;
         boolean shouldStart = instrumenter.shouldStart(parentContext, methodRequest);
-        if (shouldStart) {
-            spanContext = instrumenter.start(parentContext, methodRequest);
-            scope = spanContext.makeCurrent();
+
+        if (!shouldStart) {
+            return invocationContext.proceed();
         }
 
-        try {
-            Object result = invocationContext.proceed();
+        if (isUni(returnType)) {
+            final Context currentSpanContext = instrumenter.start(parentContext, methodRequest);
+            final Scope currentScope = currentSpanContext.makeCurrent();
+            return ((Uni<Object>) invocationContext.proceed()).onTermination()
+                    .invoke(new Functions.TriConsumer<Object, Throwable, Boolean>() {
+                        @Override
+                        public void accept(Object o, Throwable throwable, Boolean isCancelled) {
+                            try {
+                                if (isCancelled) {
+                                    instrumenter.end(currentSpanContext, methodRequest, null,
+                                            new CancellationException());
+                                } else if (throwable != null) {
+                                    instrumenter.end(currentSpanContext, methodRequest, null, throwable);
+                                } else {
+                                    instrumenter.end(currentSpanContext, methodRequest, null, null);
+                                }
+                            } finally {
+                                if (currentScope != null) {
+                                    currentScope.close();
+                                }
+                            }
+                        }
+                    });
+        } else if (isMulti(returnType)) {
+            final Context currentSpanContext = instrumenter.start(parentContext, methodRequest);
+            final Scope currentScope = currentSpanContext.makeCurrent();
 
-            if (shouldStart) {
-                instrumenter.end(spanContext, methodRequest, null, null);
-            }
-
-            return result;
-        } catch (Throwable t) {
-            if (shouldStart) {
-                instrumenter.end(spanContext, methodRequest, null, t);
-            }
-            throw t;
-        } finally {
-            if (scope != null) {
-                scope.close();
+            return ((Multi<Object>) invocationContext.proceed()).onTermination().invoke(new BiConsumer<Throwable, Boolean>() {
+                @Override
+                public void accept(Throwable throwable, Boolean isCancelled) {
+                    try {
+                        if (isCancelled) {
+                            instrumenter.end(currentSpanContext, methodRequest, null, new CancellationException());
+                        } else if (throwable != null) {
+                            instrumenter.end(currentSpanContext, methodRequest, null, throwable);
+                        } else {
+                            instrumenter.end(currentSpanContext, methodRequest, null, null);
+                        }
+                    } finally {
+                        if (currentScope != null) {
+                            currentScope.close();
+                        }
+                    }
+                }
+            });
+        } else if (isCompletionStage(returnType)) {
+            final Context currentSpanContext = instrumenter.start(parentContext, methodRequest);
+            final Scope currentScope = currentSpanContext.makeCurrent();
+            return ((CompletionStage<?>) invocationContext.proceed()).whenComplete(new BiConsumer<Object, Throwable>() {
+                @Override
+                public void accept(Object o, Throwable throwable) {
+                    try {
+                        if (throwable != null) {
+                            instrumenter.end(currentSpanContext, methodRequest, null, throwable);
+                        } else {
+                            instrumenter.end(currentSpanContext, methodRequest, null, null);
+                        }
+                    } finally {
+                        if (currentScope != null) {
+                            currentScope.close();
+                        }
+                    }
+                }
+            });
+        } else {
+            final Context currentSpanContext = instrumenter.start(parentContext, methodRequest);
+            final Scope currentScope = currentSpanContext.makeCurrent();
+            try {
+                Object result = invocationContext.proceed();
+                instrumenter.end(currentSpanContext, methodRequest, null, null);
+                return result;
+            } catch (Throwable t) {
+                instrumenter.end(currentSpanContext, methodRequest, null, t);
+                throw t;
+            } finally {
+                if (currentScope != null) {
+                    currentScope.close();
+                }
             }
         }
+    }
+
+    private static boolean isUni(Class<?> clazz) {
+        return Uni.class.isAssignableFrom(clazz);
+    }
+
+    private static boolean isMulti(Class<?> clazz) {
+        return Multi.class.isAssignableFrom(clazz);
+    }
+
+    private static boolean isCompletionStage(Class<?> clazz) {
+        return CompletionStage.class.isAssignableFrom(clazz);
     }
 
     private static SpanKind spanKindFromMethod(Set<Annotation> annotations) {

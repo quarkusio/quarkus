@@ -2,7 +2,7 @@ package io.quarkus.arc.test.synthetic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -98,10 +98,20 @@ public class SyntheticBeanBuildItemProxyTest {
     public void testBeans() {
         List<InstanceHandle<SynthBean>> beans = Arc.container().listAll(SynthBean.class);
         assertEquals(2, beans.size());
+        int countOk = 0;
+        int countNok = 0;
         for (InstanceHandle<SynthBean> handle : beans) {
             String val = handle.get().getValue();
-            assertTrue("ok".equals(val) || "nok".equals(val));
+            if ("ok".equals(val)) {
+                countOk++;
+            } else if ("nok".equals(val)) {
+                countNok++;
+            } else {
+                fail("Expected 'ok' or 'nok'");
+            }
         }
+        assertEquals(1, countOk);
+        assertEquals(1, countNok);
     }
 
     @Vetoed

@@ -137,6 +137,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                     .addData(toCodestartData(invocation.getValues()))
                     .addData(invocation.getValue(DATA, Collections.emptyMap()))
                     .messageWriter(invocation.log())
+                    .defaultCodestart(getDefaultCodestart(mainCatalog))
                     .build();
             invocation.log().info("-----------");
             if (!extensionsToAdd.isEmpty()) {
@@ -248,5 +249,21 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
             throw new QuarkusCommandException(String
                     .format("Some extensions are not compatible with the selected Java version (%s):\n %s", javaVersion, list));
         }
+    }
+
+    private static String getDefaultCodestart(ExtensionCatalog catalog) {
+        var map = catalog.getMetadata();
+        if (map != null && !map.isEmpty()) {
+            var projectMetadata = map.get("project");
+            if (projectMetadata instanceof Map) {
+                var defaultCodestart = ((Map<?, ?>) projectMetadata).get("default-codestart");
+                if (defaultCodestart != null) {
+                    if (defaultCodestart instanceof String) {
+                        return defaultCodestart.toString();
+                    }
+                }
+            }
+        }
+        return null;
     }
 }

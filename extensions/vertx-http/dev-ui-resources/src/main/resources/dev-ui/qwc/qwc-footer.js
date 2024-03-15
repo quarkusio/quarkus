@@ -101,9 +101,13 @@ export class QwcFooter extends observeState(LitElement) {
         } 
         
         vaadin-menu-bar-button {
-            background: var(--lumo-contrast-5pct);
+            background-color: transparent;
         }
         
+        vaadin-menu-bar-button:hover {
+            background-color: transparent;
+        }
+    
         .dragOpen:hover {
             background: var(--quarkus-blue);
         }

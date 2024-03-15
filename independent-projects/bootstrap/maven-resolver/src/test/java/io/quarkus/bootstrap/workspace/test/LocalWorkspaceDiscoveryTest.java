@@ -3,6 +3,7 @@
  */
 package io.quarkus.bootstrap.workspace.test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -20,7 +21,6 @@ import java.util.Properties;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Parent;
-import org.assertj.core.api.Assertions;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -122,6 +122,30 @@ public class LocalWorkspaceDiscoveryTest {
     @AfterAll
     public static void cleanup() {
         IoUtils.recursiveDelete(workDir);
+    }
+
+    /**
+     * This test is making sure the current module isn't overridden by another module
+     * from the workspace that happens to have the same group and artifact IDs
+     *
+     * @throws Exception
+     */
+    @Test
+    public void workspaceWithDuplicateModuleGroupIdAndArtifactId() throws Exception {
+        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("duplicate-ga/test/case");
+        assertNotNull(moduleUrl);
+        final Path moduleDir = Path.of(moduleUrl.toURI());
+        assertNotNull(moduleUrl);
+
+        final LocalWorkspace ws = LocalProject.loadWorkspace(moduleDir).getWorkspace();
+
+        LocalProject project = ws.getProject("org.acme", "acme-lib");
+        assertNotNull(project);
+        assertThat(project.getDir()).isEqualTo(moduleDir);
+
+        assertNotNull(ws.getProject("org.acme", "acme-parent"));
+        assertEquals(2, ws.getProjects().size());
     }
 
     @Test
@@ -716,15 +740,15 @@ public class LocalWorkspaceDiscoveryTest {
         assertEquals(new File(rootPomUrl.toURI()), root);
 
         final WorkspaceModule wsModule = module1.toWorkspaceModule();
-        Assertions.assertThat(wsModule.getModuleDir()).isEqualTo(module1Dir.toFile());
-        Assertions.assertThat(wsModule.getBuildDir()).isEqualTo(module1Dir.resolve("target").toFile());
+        assertThat(wsModule.getModuleDir()).isEqualTo(module1Dir.toFile());
+        assertThat(wsModule.getBuildDir()).isEqualTo(module1Dir.resolve("target").toFile());
         SourceDir src = wsModule.getMainSources().getResourceDirs().iterator().next();
         PathTree sourceTree = src.getSourceTree();
-        Assertions.assertThat(sourceTree).isNotNull();
+        assertThat(sourceTree).isNotNull();
         Collection<Path> roots = sourceTree.getRoots();
-        Assertions.assertThat(roots).hasSize(1);
-        Assertions.assertThat(roots.iterator().next()).isEqualTo(module1Dir.resolve("build"));
-        Assertions.assertThat(src.getOutputDir()).isEqualTo(module1Dir.resolve("target/classes/META-INF/resources"));
+        assertThat(roots).hasSize(1);
+        assertThat(roots.iterator().next()).isEqualTo(module1Dir.resolve("build"));
+        assertThat(src.getOutputDir()).isEqualTo(module1Dir.resolve("target/classes/META-INF/resources"));
     }
 
     private void assertCompleteWorkspace(final LocalProject project) {

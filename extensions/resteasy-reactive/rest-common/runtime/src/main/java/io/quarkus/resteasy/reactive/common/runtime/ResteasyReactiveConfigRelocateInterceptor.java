@@ -1,5 +1,8 @@
 package io.quarkus.resteasy.reactive.common.runtime;
 
+import java.util.function.Function;
+
+import io.quarkus.runtime.util.StringUtil;
 import io.smallrye.config.RelocateConfigSourceInterceptor;
 
 /**
@@ -10,16 +13,14 @@ public class ResteasyReactiveConfigRelocateInterceptor extends RelocateConfigSou
 
     private static final String OLD_PREFIX = "quarkus.resteasy-reactive.";
     private static final String NEW_PREFIX = "quarkus.rest.";
+    private static final Function<String, String> RENAME_FUNCTION = new Function<String, String>() {
+        @Override
+        public String apply(String s) {
+            return StringUtil.changePrefix(s, OLD_PREFIX, NEW_PREFIX);
+        }
+    };
 
     public ResteasyReactiveConfigRelocateInterceptor() {
-        super(ResteasyReactiveConfigRelocateInterceptor::rename);
-    }
-
-    private static String rename(String originalName) {
-        if (!originalName.startsWith(OLD_PREFIX)) {
-            return originalName;
-        }
-
-        return originalName.replaceFirst(OLD_PREFIX, NEW_PREFIX);
+        super(RENAME_FUNCTION);
     }
 }

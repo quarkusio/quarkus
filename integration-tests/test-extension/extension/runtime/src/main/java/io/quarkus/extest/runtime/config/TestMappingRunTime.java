@@ -22,6 +22,9 @@ public interface TestMappingRunTime {
     /** Record values from env test **/
     Optional<String> record();
 
+    /** Record values with named profile **/
+    Optional<String> recordProfiled();
+
     interface Group {
         /**
          * A Group value.

@@ -98,4 +98,12 @@ public class StringUtilTestCase {
         result = join(withoutSuffix(lowerCase(camelHumpsIterator("SomeRootClass")), "config", "class"));
         assertEquals("someroot", result);
     }
+
+    @Test
+    public void testChangePrefix() {
+        assertEquals("quarkus.new-prefix.configuration-property", StringUtil
+                .changePrefix("quarkus.old-prefix.configuration-property", "quarkus.old-prefix.", "quarkus.new-prefix."));
+        assertEquals("quarkus.other-prefix.configuration-property", StringUtil
+                .changePrefix("quarkus.other-prefix.configuration-property", "quarkus.old-prefix.", "quarkus.new-prefix."));
+    }
 }

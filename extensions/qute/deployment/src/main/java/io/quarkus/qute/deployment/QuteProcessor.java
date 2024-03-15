@@ -2194,7 +2194,9 @@ public class QuteProcessor {
                     Path relativePath = rootPath.relativize(file);
                     if (templateRoots.isRoot(relativePath)) {
                         LOGGER.debugf("Found templates dir: %s", file);
-                        scan(file, file, relativePath.toString() + File.separatorChar, watchedPaths, templatePaths,
+                        // The base path is an OS-specific path relative to the template root
+                        String basePath = relativePath.toString() + File.separatorChar;
+                        scan(file, file, basePath, watchedPaths, templatePaths,
                                 nativeImageResources,
                                 config);
                     } else if (templateRoots.maybeRoot(relativePath)) {
@@ -3389,15 +3391,21 @@ public class QuteProcessor {
         if (filePath.isEmpty()) {
             return;
         }
-        String fullPath = basePath + filePath;
-        LOGGER.debugf("Produce template build items [filePath: %s, fullPath: %s, originalPath: %s", filePath, fullPath,
+        // OS-specific full path, i.e. templates\foo.html
+        String osSpecificPath = basePath + filePath;
+        // OS-agnostic full path, i.e. templates/foo.html
+        String osAgnosticPath = osSpecificPath;
+        if (File.separatorChar != '/') {
+            osAgnosticPath = osAgnosticPath.replace(File.separatorChar, '/');
+        }
+        LOGGER.debugf("Produce template build items [filePath: %s, fullPath: %s, originalPath: %s", filePath, osSpecificPath,
                 originalPath);
         boolean restartNeeded = true;
         if (config.devMode.noRestartTemplates.isPresent()) {
-            restartNeeded = !config.devMode.noRestartTemplates.get().matcher(fullPath).matches();
+            restartNeeded = !config.devMode.noRestartTemplates.get().matcher(osAgnosticPath).matches();
         }
-        watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(fullPath, restartNeeded));
-        nativeImageResources.produce(new NativeImageResourceBuildItem(fullPath));
+        watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(osAgnosticPath, restartNeeded));
+        nativeImageResources.produce(new NativeImageResourceBuildItem(osSpecificPath));
         templatePaths.produce(
                 new TemplatePathBuildItem(filePath, originalPath, readTemplateContent(originalPath, config.defaultCharset)));
     }

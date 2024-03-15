@@ -217,7 +217,8 @@ public class OidcRecorder {
                                 .item(new TenantConfigContext(new OidcProvider(null, null, null, null), oidcConfig));
                     }
                 }
-                throw new ConfigurationException("'quarkus.oidc.auth-server-url' property must be configured");
+                throw new ConfigurationException(
+                        "'" + getConfigPropertyForTenant(tenantId, "auth-server-url") + "' property must be configured");
             }
             OidcCommonUtils.verifyEndpointUrl(oidcConfig.getAuthServerUrl().get());
             OidcCommonUtils.verifyCommonConfiguration(oidcConfig, OidcUtils.isServiceApp(oidcConfig), true);
@@ -242,10 +243,13 @@ public class OidcRecorder {
         if (!oidcConfig.discoveryEnabled.orElse(true)) {
             if (!OidcUtils.isServiceApp(oidcConfig)) {
                 if (!oidcConfig.authorizationPath.isPresent() || !oidcConfig.tokenPath.isPresent()) {
+                    String authorizationPathProperty = getConfigPropertyForTenant(tenantId, "authorization-path");
+                    String tokenPathProperty = getConfigPropertyForTenant(tenantId, "token-path");
                     throw new ConfigurationException(
-                            "'web-app' applications must have 'authorization-path' and 'token-path' properties "
+                            "'web-app' applications must have '" + authorizationPathProperty + "' and '" + tokenPathProperty
+                                    + "' properties "
                                     + "set when the discovery is disabled.",
-                            Set.of("quarkus.oidc.authorization-path", "quarkus.oidc.token-path"));
+                            Set.of(authorizationPathProperty, tokenPathProperty));
                 }
             }
             // JWK and introspection endpoints have to be set for both 'web-app' and 'service' applications
@@ -260,31 +264,35 @@ public class OidcRecorder {
                 }
             }
             if (oidcConfig.authentication.userInfoRequired.orElse(false) && !oidcConfig.userInfoPath.isPresent()) {
+                String configProperty = getConfigPropertyForTenant(tenantId, "user-info-path");
                 throw new ConfigurationException(
-                        "UserInfo is required but 'quarkus.oidc.user-info-path' is not configured.",
-                        Set.of("quarkus.oidc.user-info-path"));
+                        "UserInfo is required but '" + configProperty + "' is not configured.",
+                        Set.of(configProperty));
             }
         }
 
         if (OidcUtils.isServiceApp(oidcConfig)) {
             if (oidcConfig.token.refreshExpired) {
                 throw new ConfigurationException(
-                        "The 'token.refresh-expired' property can only be enabled for " + ApplicationType.WEB_APP
+                        "The '" + getConfigPropertyForTenant(tenantId, "token.refresh-expired")
+                                + "' property can only be enabled for " + ApplicationType.WEB_APP
                                 + " application types");
             }
             if (!oidcConfig.token.refreshTokenTimeSkew.isEmpty()) {
                 throw new ConfigurationException(
-                        "The 'token.refresh-token-time-skew' property can only be enabled for " + ApplicationType.WEB_APP
+                        "The '" + getConfigPropertyForTenant(tenantId, "token.refresh-token-time-skew")
+                                + "' property can only be enabled for " + ApplicationType.WEB_APP
                                 + " application types");
             }
             if (oidcConfig.logout.path.isPresent()) {
                 throw new ConfigurationException(
-                        "The 'logout.path' property can only be enabled for " + ApplicationType.WEB_APP
-                                + " application types");
+                        "The '" + getConfigPropertyForTenant(tenantId, "logout.path") + "' property can only be enabled for "
+                                + ApplicationType.WEB_APP + " application types");
             }
             if (oidcConfig.roles.source.isPresent() && oidcConfig.roles.source.get() == Source.idtoken) {
                 throw new ConfigurationException(
-                        "The 'roles.source' property can only be set to 'idtoken' for " + ApplicationType.WEB_APP
+                        "The '" + getConfigPropertyForTenant(tenantId, "roles.source")
+                                + "' property can only be set to 'idtoken' for " + ApplicationType.WEB_APP
                                 + " application types");
             }
         } else {
@@ -320,10 +328,12 @@ public class OidcRecorder {
         }
 
         if (!oidcConfig.token.isIssuedAtRequired() && oidcConfig.token.getAge().isPresent()) {
+            String tokenIssuedAtRequired = getConfigPropertyForTenant(tenantId, "token.issued-at-required");
+            String tokenAge = getConfigPropertyForTenant(tenantId, "token.age");
             throw new ConfigurationException(
-                    "The 'token.issued-at-required' can only be set to false if 'token.age' is not set." +
-                            " Either set 'token.issued-at-required' to true or do not set 'token.age'.",
-                    Set.of("quarkus.oidc.token.issued-at-required", "quarkus.oidc.token.age"));
+                    "The '" + tokenIssuedAtRequired + "' can only be set to false if '" + tokenAge + "' is not set." +
+                            " Either set '" + tokenIssuedAtRequired + "' to true or do not set '" + tokenAge + "'.",
+                    Set.of(tokenIssuedAtRequired, tokenAge));
         }
 
         return createOidcProvider(oidcConfig, tlsConfig, vertx)
@@ -333,6 +343,14 @@ public class OidcRecorder {
                         return new TenantConfigContext(p, oidcConfig);
                     }
                 });
+    }
+
+    private static String getConfigPropertyForTenant(String tenantId, String configSubKey) {
+        if (DEFAULT_TENANT_ID.equals(tenantId)) {
+            return "quarkus.oidc." + configSubKey;
+        } else {
+            return "quarkus.oidc." + tenantId + "." + configSubKey;
+        }
     }
 
     private static boolean enableUserInfo(OidcTenantConfig oidcConfig) {

@@ -239,7 +239,7 @@ public class CodeFlowAuthorizationTest {
     @Test
     public void testCodeFlowUserInfo() throws Exception {
         defineCodeFlowAuthorizationOauth2TokenStub();
-
+        wireMockServer.resetRequests();
         doTestCodeFlowUserInfo("code-flow-user-info-only", 300);
         clearCache();
         doTestCodeFlowUserInfo("code-flow-user-info-github", 25200);
@@ -315,6 +315,7 @@ public class CodeFlowAuthorizationTest {
     private void doTestCodeFlowUserInfo(String tenantId, long internalIdTokenLifetime) throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
+            wireMockServer.verify(0, getRequestedFor(urlPathMatching("/auth/realms/quarkus/protocol/openid-connect/userinfo")));
             HtmlPage page = webClient.getPage("http://localhost:8081/" + tenantId);
 
             HtmlForm form = page.getFormByName("form");
@@ -344,6 +345,7 @@ public class CodeFlowAuthorizationTest {
             assertTrue(date.toInstant().getEpochSecond() - issuedAt <= internalIdTokenLifetime + 3);
 
             webClient.getCookieManager().clearCookies();
+            wireMockServer.resetRequests();
         }
     }
 

@@ -282,8 +282,10 @@ public class OpenTelemetryProcessor {
                 || capabilities.isPresent(Capability.REACTIVE_MYSQL_CLIENT)
                 || capabilities.isPresent(Capability.REACTIVE_ORACLE_CLIENT)
                 || capabilities.isPresent(Capability.REACTIVE_PG_CLIENT);
+        boolean redisClientAvailable = capabilities.isPresent(Capability.REDIS_CLIENT);
         recorder.setupVertxTracer(beanContainerBuildItem.getValue(),
                 sqlClientAvailable,
+                redisClientAvailable,
                 ConfigProvider.getConfig()
                         .getConfigValue(QUARKUS_OTEL_SEMCONV_STABILITY_OPT_IN)
                         .getValue());

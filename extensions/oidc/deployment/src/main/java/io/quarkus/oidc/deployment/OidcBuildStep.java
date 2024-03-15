@@ -303,6 +303,8 @@ public class OidcBuildStep {
         if (isInjected(beanRegistrationPhaseBuildItem, USER_INFO_NAME, null)) {
             runtimeConfigDefaultProducer.produce(
                     new RunTimeConfigurationDefaultBuildItem("quarkus.oidc.authentication.user-info-required", "true"));
+            runtimeConfigDefaultProducer.produce(
+                    new RunTimeConfigurationDefaultBuildItem("quarkus.oidc.*.authentication.user-info-required", "true"));
         }
     }
 
@@ -312,6 +314,8 @@ public class OidcBuildStep {
         if (isInjected(beanRegistrationPhaseBuildItem, JSON_WEB_TOKEN_NAME, ID_TOKEN_NAME)) {
             runtimeConfigDefaultProducer.produce(
                     new RunTimeConfigurationDefaultBuildItem("quarkus.oidc.authentication.verify-access-token", "true"));
+            runtimeConfigDefaultProducer.produce(
+                    new RunTimeConfigurationDefaultBuildItem("quarkus.oidc.*.authentication.verify-access-token", "true"));
         }
     }
 

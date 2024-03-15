@@ -21,7 +21,7 @@ import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
-import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 /**
  * Split package (same package coming from multiple app archives) is considered a bad practice and
@@ -105,9 +105,9 @@ public class SplitPackageProcessor {
                 Set<String> splitPackages = new TreeSet<>();
                 while (iterator.hasNext()) {
                     final ApplicationArchive next = iterator.next();
-                    final ArtifactKey a = next.getKey();
+                    ResolvedDependency dep = next.getResolvedDependency();
                     // can be null for instance in test mode where all application classes go under target/classes
-                    if (a == null) {
+                    if (dep == null) {
                         if (archivesBuildItem.getRootArchive().equals(next)) {
                             // the archive we found is a root archive, e.g. application classes
                             splitPackages.add("application classes");
@@ -122,8 +122,8 @@ public class SplitPackageProcessor {
                             }
                         }
                     } else {
-                        // Generates an app archive information in form of groupId:artifactId:classifier:type
-                        splitPackages.add(a.toString());
+                        // Generates an app archive information in form of groupId:artifactId[:classifier][:type]:version
+                        splitPackages.add(dep.toCompactCoords());
                     }
                 }
                 splitPackagesWarning.append(splitPackages.stream().collect(Collectors.joining(", ", "[", "]")));

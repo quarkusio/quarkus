@@ -76,6 +76,9 @@ public final class OidcUtils {
     public static final String USER_INFO_ATTRIBUTE = "userinfo";
     public static final String INTROSPECTION_ATTRIBUTE = "introspection";
     public static final String TENANT_ID_ATTRIBUTE = "tenant-id";
+    public static final String TENANT_ID_SET_BY_ANNOTATION = "tenant-id-set-by-annotation";
+    public static final String TENANT_ID_SET_BY_SESSION_COOKIE = "tenant-id-set-by-session-cookie";
+    public static final String TENANT_ID_SET_BY_STATE_COOKIE = "tenant-id-set-by-state-cookie";
     public static final String DEFAULT_TENANT_ID = "Default";
     public static final String SESSION_COOKIE_NAME = "q_session";
     public static final String SESSION_COOKIE_CHUNK = "_chunk_";

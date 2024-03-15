@@ -240,11 +240,11 @@ public class CodeFlowAuthorizationTest {
     public void testCodeFlowUserInfo() throws Exception {
         defineCodeFlowAuthorizationOauth2TokenStub();
         wireMockServer.resetRequests();
-        doTestCodeFlowUserInfo("code-flow-user-info-only", 300);
+        doTestCodeFlowUserInfo("code-flow-user-info-only", 300, false);
         clearCache();
-        doTestCodeFlowUserInfo("code-flow-user-info-github", 25200);
+        doTestCodeFlowUserInfo("code-flow-user-info-github", 25200, false);
         clearCache();
-        doTestCodeFlowUserInfo("code-flow-user-info-dynamic-github", 301);
+        doTestCodeFlowUserInfo("code-flow-user-info-dynamic-github", 301, true);
         clearCache();
     }
 
@@ -261,7 +261,7 @@ public class CodeFlowAuthorizationTest {
 
             TextPage textPage = form.getInputByValue("login").click();
 
-            assertEquals("alice:alice:alice, cache size: 0", textPage.getContent());
+            assertEquals("alice:alice:alice, cache size: 0, TenantConfigResolver: false", textPage.getContent());
 
             JsonObject idTokenClaims = decryptIdToken(webClient, "code-flow-user-info-github-cached-in-idtoken");
             assertNotNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
@@ -269,7 +269,7 @@ public class CodeFlowAuthorizationTest {
             // refresh
             Thread.sleep(3000);
             textPage = webClient.getPage("http://localhost:8081/code-flow-user-info-github-cached-in-idtoken");
-            assertEquals("alice:alice:bob, cache size: 0", textPage.getContent());
+            assertEquals("alice:alice:bob, cache size: 0, TenantConfigResolver: false", textPage.getContent());
 
             webClient.getCookieManager().clearCookies();
         }
@@ -281,7 +281,7 @@ public class CodeFlowAuthorizationTest {
                 .when().get("/code-flow-user-info-github-cached-in-idtoken")
                 .then()
                 .statusCode(200)
-                .body(Matchers.equalTo("alice:alice:alice-certificate, cache size: 0"));
+                .body(Matchers.equalTo("alice:alice:alice-certificate, cache size: 0, TenantConfigResolver: false"));
 
         clearCache();
     }
@@ -312,7 +312,8 @@ public class CodeFlowAuthorizationTest {
         clearCache();
     }
 
-    private void doTestCodeFlowUserInfo(String tenantId, long internalIdTokenLifetime) throws Exception {
+    private void doTestCodeFlowUserInfo(String tenantId, long internalIdTokenLifetime,
+            boolean tenantConfigResolver) throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
             wireMockServer.verify(0, getRequestedFor(urlPathMatching("/auth/realms/quarkus/protocol/openid-connect/userinfo")));
@@ -324,11 +325,14 @@ public class CodeFlowAuthorizationTest {
 
             TextPage textPage = form.getInputByValue("login").click();
 
-            assertEquals("alice:alice:alice, cache size: 1", textPage.getContent());
+            assertEquals("alice:alice:alice, cache size: 1, TenantConfigResolver: " + tenantConfigResolver,
+                    textPage.getContent());
             textPage = webClient.getPage("http://localhost:8081/" + tenantId);
-            assertEquals("alice:alice:alice, cache size: 1", textPage.getContent());
+            assertEquals("alice:alice:alice, cache size: 1, TenantConfigResolver: " + tenantConfigResolver,
+                    textPage.getContent());
             textPage = webClient.getPage("http://localhost:8081/" + tenantId);
-            assertEquals("alice:alice:alice, cache size: 1", textPage.getContent());
+            assertEquals("alice:alice:alice, cache size: 1, TenantConfigResolver: " + tenantConfigResolver,
+                    textPage.getContent());
 
             wireMockServer.verify(1, getRequestedFor(urlPathMatching("/auth/realms/quarkus/protocol/openid-connect/userinfo")));
             wireMockServer.resetRequests();

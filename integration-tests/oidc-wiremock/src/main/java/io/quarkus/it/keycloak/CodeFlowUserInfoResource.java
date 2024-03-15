@@ -11,6 +11,7 @@ import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.vertx.ext.web.RoutingContext;
 
 @Path("/")
 @Authenticated
@@ -34,9 +35,11 @@ public class CodeFlowUserInfoResource {
     @GET
     @Path("/code-flow-user-info-only")
     public String access() {
+        RoutingContext routingContext = identity.getAttribute(RoutingContext.class.getName());
         return identity.getPrincipal().getName() + ":" + userInfo.getPreferredUserName() + ":" + accessToken.getName()
                 + ", cache size: "
-                + tokenCache.getCacheSize();
+                + tokenCache.getCacheSize()
+                + ", TenantConfigResolver: " + Boolean.valueOf(routingContext.get("tenant-config-resolver"));
     }
 
     @GET

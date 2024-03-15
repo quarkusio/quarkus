@@ -110,6 +110,20 @@ public class DefaultTenantConfigResolver {
                     @Override
                     public OidcTenantConfig apply(OidcTenantConfig tenantConfig) {
                         if (tenantConfig == null) {
+
+                            final String tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+
+                            if (tenantId != null && !isTenantSetByAnnotation(context, tenantId)) {
+                                TenantConfigContext tenantContext = tenantConfigBean.getDynamicTenantsConfig().get(tenantId);
+                                if (tenantContext != null) {
+                                    // Dynamic map may contain the static contexts initialized on demand,
+                                    if (tenantConfigBean.getStaticTenantsConfig().containsKey(tenantId)) {
+                                        context.put(CURRENT_STATIC_TENANT_ID, tenantId);
+                                    }
+                                    return tenantContext.getOidcTenantConfig();
+                                }
+                            }
+
                             TenantConfigContext tenant = getStaticTenantContext(context);
                             if (tenant != null) {
                                 tenantConfig = tenant.oidcConfig;
@@ -121,19 +135,19 @@ public class DefaultTenantConfigResolver {
     }
 
     Uni<TenantConfigContext> resolveContext(String tenantId) {
-        return initializeTenantIfContextNotReady(getStaticTenantContext(tenantId));
+        return initializeStaticTenantIfContextNotReady(getStaticTenantContext(tenantId));
     }
 
     Uni<TenantConfigContext> resolveContext(RoutingContext context) {
         return getDynamicTenantContext(context).onItem().ifNull().switchTo(new Supplier<Uni<? extends TenantConfigContext>>() {
             @Override
             public Uni<? extends TenantConfigContext> get() {
-                return initializeTenantIfContextNotReady(getStaticTenantContext(context));
+                return initializeStaticTenantIfContextNotReady(getStaticTenantContext(context));
             }
         });
     }
 
-    private Uni<TenantConfigContext> initializeTenantIfContextNotReady(TenantConfigContext tenantContext) {
+    private Uni<TenantConfigContext> initializeStaticTenantIfContextNotReady(TenantConfigContext tenantContext) {
         if (tenantContext != null && !tenantContext.ready) {
 
             // check if the connection has already been created
@@ -166,19 +180,17 @@ public class DefaultTenantConfigResolver {
     }
 
     private String resolveStaticTenantId(RoutingContext context) {
-        String tenantId;
+        String tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+        if (isTenantSetByAnnotation(context, tenantId)) {
+            return tenantId;
+        }
+
         if (tenantResolver.isResolvable()) {
             tenantId = tenantResolver.get().resolve(context);
 
             if (tenantId != null) {
                 return tenantId;
             }
-        }
-
-        tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
-
-        if (tenantId != null) {
-            return tenantId;
         }
 
         if (pathMatchingTenantResolver != null) {
@@ -193,7 +205,14 @@ public class DefaultTenantConfigResolver {
             tenantId = defaultStaticTenantResolver.resolve(context);
         }
 
+        if (tenantId == null) {
+            tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+        }
         return tenantId;
+    }
+
+    private static boolean isTenantSetByAnnotation(RoutingContext context, String tenantId) {
+        return tenantId != null && context.get(OidcUtils.TENANT_ID_SET_BY_ANNOTATION) != null;
     }
 
     private TenantConfigContext getStaticTenantContext(String tenantId) {
@@ -233,6 +252,11 @@ public class DefaultTenantConfigResolver {
         if (tenantConfigResolver.isResolvable()) {
             Uni<OidcTenantConfig> oidcConfig = context.get(CURRENT_DYNAMIC_TENANT_CONFIG);
             if (oidcConfig == null) {
+
+                if (isTenantSetByAnnotation(context, context.get(OidcUtils.TENANT_ID_ATTRIBUTE))) {
+                    return Uni.createFrom().nullItem();
+                }
+
                 oidcConfig = tenantConfigResolver.get().resolve(context, blockingRequestContext);
                 if (oidcConfig == null) {
                     //shouldn't happen, but guard against it anyway
@@ -266,6 +290,14 @@ public class DefaultTenantConfigResolver {
                     } else {
                         return Uni.createFrom().item(tenantContext);
                     }
+                } else {
+                    final String tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+                    if (tenantId != null && !isTenantSetByAnnotation(context, tenantId)) {
+                        TenantConfigContext tenantContext = tenantConfigBean.getDynamicTenantsConfig().get(tenantId);
+                        if (tenantContext != null) {
+                            return Uni.createFrom().item(tenantContext);
+                        }
+                    }
                 }
                 return Uni.createFrom().nullItem();
             }
@@ -296,6 +328,8 @@ public class DefaultTenantConfigResolver {
             if (pathSegments.length > 0) {
                 String lastPathSegment = pathSegments[pathSegments.length - 1];
                 if (tenantConfigBean.getStaticTenantsConfig().containsKey(lastPathSegment)) {
+                    LOG.debugf(
+                            "Tenant id '%s' is selected on the '%s' request path", lastPathSegment, context.normalizedPath());
                     return lastPathSegment;
                 }
             }
@@ -325,6 +359,8 @@ public class DefaultTenantConfigResolver {
         public String resolve(RoutingContext context) {
             String tenantId = staticTenantPaths.match(context.normalizedPath()).getValue();
             if (tenantId != null && tenantId != DEFAULT_TENANT) {
+                LOG.debugf(
+                        "Tenant id '%s' is selected on the '%s' request path", tenantId, context.normalizedPath());
                 return tenantId;
             }
             return null;

@@ -8,6 +8,7 @@ import java.util.Set;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
@@ -83,7 +84,8 @@ public class AnnotationBasedTenantTest {
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo")
                     .then().statusCode(200)
-                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=hr, name=alice")));
+                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=hr, name=alice, "
+                            + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=hr")));
 
         } finally {
             server.stop();
@@ -112,7 +114,8 @@ public class AnnotationBasedTenantTest {
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo2/hr")
                     .then().statusCode(200)
-                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=hr, name=alice")));
+                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=hr, name=alice, "
+                            + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=hr")));
 
             // UNANNOTATED ENDPOINT
             token = OidcWiremockTestResource.getAccessToken("alice", new HashSet<>(Arrays.asList("user", "admin")));
@@ -120,7 +123,8 @@ public class AnnotationBasedTenantTest {
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo2/default")
                     .then().statusCode(200)
-                    .body(Matchers.equalTo(("tenant-id=null, static.tenant.id=null, name=alice")));
+                    .body(Matchers.equalTo(("tenant-id=null, static.tenant.id=null, name=alice, "
+                            + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=null")));
         } finally {
             server.stop();
         }
@@ -143,7 +147,8 @@ public class AnnotationBasedTenantTest {
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo/hr-jax-rs-perm-check")
                     .then().statusCode(200)
-                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=hr, name=alice")));
+                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=hr, name=alice, "
+                            + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=hr")));
 
             token = getTokenWithRole("wrong-role");
             RestAssured.given().auth().oauth2(token)
@@ -171,7 +176,8 @@ public class AnnotationBasedTenantTest {
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo2/hr-jax-rs-perm-check")
                     .then().statusCode(200)
-                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=hr, name=alice")));
+                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=hr, name=alice, "
+                            + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=hr")));
 
             token = getTokenWithRole("wrong-role");
             RestAssured.given().auth().oauth2(token)
@@ -199,7 +205,8 @@ public class AnnotationBasedTenantTest {
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo2/hr-classic-perm-check")
                     .then().statusCode(200)
-                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=null, name=alice")));
+                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=null, name=alice, "
+                            + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=hr")));
 
             token = getTokenWithRole("wrong-role");
             RestAssured.given().auth().oauth2(token)
@@ -245,7 +252,8 @@ public class AnnotationBasedTenantTest {
                     .when().get("/api/tenant-echo/hr-classic-and-jaxrs-perm-check")
                     .then().statusCode(200)
                     // static tenant is null as the permission check "combined-part1" happened before @Tenant
-                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=null, name=alice")));
+                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=null, name=alice, "
+                            + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=hr")));
         } finally {
             server.stop();
         }
@@ -281,7 +289,8 @@ public class AnnotationBasedTenantTest {
                     .when().get("/api/tenant-echo2/hr-classic-and-jaxrs-perm-check")
                     .then().statusCode(200)
                     // static tenant is null as the permission check "combined-part1" happened before @Tenant
-                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=null, name=alice")));
+                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=null, name=alice, "
+                            + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=hr")));
         } finally {
             server.stop();
         }
@@ -302,13 +311,15 @@ public class AnnotationBasedTenantTest {
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo/hr-identity-augmentation")
                     .then().statusCode(200)
-                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=hr, name=alice")));
+                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=hr, name=alice, "
+                            + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=hr")));
 
             token = getTokenWithRole("role4");
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo/hr-identity-augmentation")
                     .then().statusCode(200)
-                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=hr, name=alice")));
+                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=hr, name=alice, "
+                            + OidcUtils.TENANT_ID_SET_BY_ANNOTATION + "=hr")));
         } finally {
             server.stop();
         }

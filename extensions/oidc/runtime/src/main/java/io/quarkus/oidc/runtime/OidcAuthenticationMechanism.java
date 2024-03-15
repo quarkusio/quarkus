@@ -117,24 +117,30 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     private static void setTenantIdAttribute(RoutingContext context) {
         for (String cookieName : context.cookieMap().keySet()) {
             if (OidcUtils.isSessionCookie(cookieName)) {
-                setTenantIdAttribute(context, OidcUtils.SESSION_COOKIE_NAME, cookieName);
+                setTenantIdAttribute(context, OidcUtils.SESSION_COOKIE_NAME, cookieName, true);
             } else if (cookieName.startsWith(OidcUtils.STATE_COOKIE_NAME)) {
-                setTenantIdAttribute(context, OidcUtils.STATE_COOKIE_NAME, cookieName);
+                setTenantIdAttribute(context, OidcUtils.STATE_COOKIE_NAME, cookieName, false);
             }
         }
     }
 
-    private static void setTenantIdAttribute(RoutingContext context, String cookiePrefix, String cookieName) {
+    private static void setTenantIdAttribute(RoutingContext context, String cookiePrefix, String cookieName,
+            boolean sessionCookie) {
         // It has already been checked the cookieName starts with the cookiePrefix
+        String tenantId;
         if (cookieName.length() == cookiePrefix.length()) {
-            context.put(OidcUtils.TENANT_ID_ATTRIBUTE, OidcUtils.DEFAULT_TENANT_ID);
+            tenantId = OidcUtils.DEFAULT_TENANT_ID;
+            context.put(OidcUtils.TENANT_ID_ATTRIBUTE, tenantId);
         } else {
             String suffix = cookieName.substring(cookiePrefix.length() + 1);
             // It can be either a tenant_id, or a tenant_id and cookie suffix property, example, q_session_github or q_session_github_test
             int index = suffix.indexOf("_");
-            String tenantId = index == -1 ? suffix : suffix.substring(0, index);
+            tenantId = index == -1 ? suffix : suffix.substring(0, index);
             context.put(OidcUtils.TENANT_ID_ATTRIBUTE, tenantId);
         }
+        context.put(sessionCookie ? OidcUtils.TENANT_ID_SET_BY_SESSION_COOKIE : OidcUtils.TENANT_ID_SET_BY_STATE_COOKIE,
+                tenantId);
+        LOG.debugf("%s cookie set a '%s' tenant id on the %s request path", cookieName, tenantId, context.request().path());
     }
 
     @Override

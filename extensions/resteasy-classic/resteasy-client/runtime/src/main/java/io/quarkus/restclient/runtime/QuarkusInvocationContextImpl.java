@@ -158,7 +158,7 @@ public class QuarkusInvocationContextImpl implements ArcInvocationContext {
     }
 
     @Override
-    public <T extends Annotation> T findIterceptorBinding(Class<T> annotationType) {
+    public <T extends Annotation> T getInterceptorBinding(Class<T> annotationType) {
         for (Annotation annotation : getInterceptorBindings()) {
             if (annotation.annotationType().equals(annotationType)) {
                 return (T) annotation;
@@ -168,7 +168,7 @@ public class QuarkusInvocationContextImpl implements ArcInvocationContext {
     }
 
     @Override
-    public <T extends Annotation> List<T> findIterceptorBindings(Class<T> annotationType) {
+    public <T extends Annotation> List<T> getInterceptorBindings(Class<T> annotationType) {
         List<T> found = new ArrayList<>();
         for (Annotation annotation : getInterceptorBindings()) {
             if (annotation.annotationType().equals(annotationType)) {

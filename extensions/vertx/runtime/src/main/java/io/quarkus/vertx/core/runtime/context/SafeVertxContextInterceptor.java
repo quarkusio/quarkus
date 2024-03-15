@@ -30,7 +30,7 @@ public class SafeVertxContextInterceptor {
             return ic.proceed();
         }
 
-        var annotation = ic.findIterceptorBinding(SafeVertxContext.class);
+        var annotation = ic.getInterceptorBinding(SafeVertxContext.class);
         boolean unsafe = VertxContextSafetyToggle.isExplicitlyMarkedAsUnsafe(current);
         if (unsafe && annotation.force()) {
             LOGGER.debugf("Force the duplicated context as `safe` while is was explicitly marked as `unsafe` in %s.%s",

@@ -35,7 +35,7 @@ class TimedInterceptor {
     }
 
     Object time(ArcInvocationContext context, String methodName) throws Exception {
-        Timed annotation = context.findIterceptorBinding(Timed.class);
+        Timed annotation = context.getInterceptorBinding(Timed.class);
         if (annotation != null) {
             MpMetadata metadata = new MpMetadata(annotation.name().replace("<method>", methodName),
                     annotation.description().replace("<method>", methodName),

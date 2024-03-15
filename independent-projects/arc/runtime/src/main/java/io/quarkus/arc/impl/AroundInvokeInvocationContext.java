@@ -138,13 +138,13 @@ class AroundInvokeInvocationContext extends AbstractInvocationContext {
         }
 
         @Override
-        public <T extends Annotation> T findIterceptorBinding(Class<T> annotationType) {
-            return AroundInvokeInvocationContext.this.findIterceptorBinding(annotationType);
+        public <T extends Annotation> T getInterceptorBinding(Class<T> annotationType) {
+            return AroundInvokeInvocationContext.this.getInterceptorBinding(annotationType);
         }
 
         @Override
-        public <T extends Annotation> List<T> findIterceptorBindings(Class<T> annotationType) {
-            return AroundInvokeInvocationContext.this.findIterceptorBindings(annotationType);
+        public <T extends Annotation> List<T> getInterceptorBindings(Class<T> annotationType) {
+            return AroundInvokeInvocationContext.this.getInterceptorBindings(annotationType);
         }
 
     }

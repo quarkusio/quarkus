@@ -86,7 +86,7 @@ public class MicrometerTimedInterceptor {
     }
 
     private List<Sample> getSamples(ArcInvocationContext context) {
-        List<Timed> timed = context.findIterceptorBindings(Timed.class);
+        List<Timed> timed = context.getInterceptorBindings(Timed.class);
         if (timed.isEmpty()) {
             return Collections.emptyList();
         }

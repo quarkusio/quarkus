@@ -24,10 +24,10 @@ public class ArcContextInterceptor {
         if (bindings == null) {
             throw new IllegalArgumentException("No bindings found");
         }
-        if (ctx.findIterceptorBinding(SomeBinding.class) == null) {
+        if (ctx.getInterceptorBinding(SomeBinding.class) == null) {
             throw new IllegalArgumentException("No bindings found");
         }
-        if (ctx.findIterceptorBindings(SomeBinding.class).isEmpty()) {
+        if (ctx.getInterceptorBindings(SomeBinding.class).isEmpty()) {
             throw new IllegalArgumentException("No bindings found");
         }
         return "" + ctx.proceed() + ArcContextInterceptor.class.getSimpleName();

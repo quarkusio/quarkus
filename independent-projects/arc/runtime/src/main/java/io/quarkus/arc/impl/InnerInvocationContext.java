@@ -73,13 +73,13 @@ abstract class InnerInvocationContext implements ArcInvocationContext {
     }
 
     @Override
-    public <T extends Annotation> T findIterceptorBinding(Class<T> annotationType) {
-        return delegate.findIterceptorBinding(annotationType);
+    public <T extends Annotation> T getInterceptorBinding(Class<T> annotationType) {
+        return delegate.getInterceptorBinding(annotationType);
     }
 
     @Override
-    public <T extends Annotation> List<T> findIterceptorBindings(Class<T> annotationType) {
-        return delegate.findIterceptorBindings(annotationType);
+    public <T extends Annotation> List<T> getInterceptorBindings(Class<T> annotationType) {
+        return delegate.getInterceptorBindings(annotationType);
     }
 
     @Override
@@ -146,13 +146,13 @@ abstract class InnerInvocationContext implements ArcInvocationContext {
         }
 
         @Override
-        public <T extends Annotation> T findIterceptorBinding(Class<T> annotationType) {
-            return InnerInvocationContext.this.findIterceptorBinding(annotationType);
+        public <T extends Annotation> T getInterceptorBinding(Class<T> annotationType) {
+            return InnerInvocationContext.this.getInterceptorBinding(annotationType);
         }
 
         @Override
-        public <T extends Annotation> List<T> findIterceptorBindings(Class<T> annotationType) {
-            return InnerInvocationContext.this.findIterceptorBindings(annotationType);
+        public <T extends Annotation> List<T> getInterceptorBindings(Class<T> annotationType) {
+            return InnerInvocationContext.this.getInterceptorBindings(annotationType);
         }
 
     }

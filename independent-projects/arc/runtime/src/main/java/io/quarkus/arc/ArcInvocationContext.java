@@ -28,14 +28,14 @@ public interface ArcInvocationContext extends InvocationContext {
      * @param annotationType
      * @return the first interceptor binding found, or {@code null}
      */
-    <T extends Annotation> T findIterceptorBinding(Class<T> annotationType);
+    <T extends Annotation> T getInterceptorBinding(Class<T> annotationType);
 
     /**
      *
      * @param annotationType
      * @return the list of interceptor bindings of the given annotation type
      */
-    <T extends Annotation> List<T> findIterceptorBindings(Class<T> annotationType);
+    <T extends Annotation> List<T> getInterceptorBindings(Class<T> annotationType);
 
     /**
      *
@@ -43,9 +43,9 @@ public interface ArcInvocationContext extends InvocationContext {
      * @param annotationType
      * @return the first interceptor binding found, or {@code null}
      */
-    static <T extends Annotation> T findIterceptorBinding(InvocationContext context, Class<T> annotationType) {
+    static <T extends Annotation> T getInterceptorBinding(InvocationContext context, Class<T> annotationType) {
         if (context instanceof ArcInvocationContext) {
-            return ((ArcInvocationContext) context).findIterceptorBinding(annotationType);
+            return ((ArcInvocationContext) context).getInterceptorBinding(annotationType);
         }
         return null;
     }
@@ -56,9 +56,9 @@ public interface ArcInvocationContext extends InvocationContext {
      * @param annotationType
      * @return the list of interceptor bindings of the given annotation type
      */
-    static <T extends Annotation> List<T> findIterceptorBindings(InvocationContext context, Class<T> annotationType) {
+    static <T extends Annotation> List<T> getInterceptorBindings(InvocationContext context, Class<T> annotationType) {
         if (context instanceof ArcInvocationContext) {
-            return ((ArcInvocationContext) context).findIterceptorBindings(annotationType);
+            return ((ArcInvocationContext) context).getInterceptorBindings(annotationType);
         }
         return Collections.emptyList();
     }

@@ -33,7 +33,7 @@ class ConcurrentGaugeInterceptor {
     }
 
     Object cGauge(ArcInvocationContext context, String methodName) throws Exception {
-        ConcurrentGauge annotation = context.findIterceptorBinding(ConcurrentGauge.class);
+        ConcurrentGauge annotation = context.getInterceptorBinding(ConcurrentGauge.class);
         if (annotation != null) {
             MpMetadata metadata = new MpMetadata(annotation.name().replace("<method>", methodName),
                     annotation.description().replace("<method>", methodName),

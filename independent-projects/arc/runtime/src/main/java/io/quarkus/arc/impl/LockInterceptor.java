@@ -105,7 +105,7 @@ public class LockInterceptor {
     }
 
     Lock getLock(ArcInvocationContext ctx) {
-        Lock lock = ctx.findIterceptorBinding(Lock.class);
+        Lock lock = ctx.getInterceptorBinding(Lock.class);
         if (lock == null) {
             // This should never happen
             throw new LockException("@Lock binding not found on business method " + ctx.getMethod());

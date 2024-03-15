@@ -58,7 +58,7 @@ public class MicrometerCountedInterceptor {
     @AroundInvoke
     @SuppressWarnings("unchecked")
     Object countedMethod(ArcInvocationContext context) throws Exception {
-        MicrometerCounted counted = context.findIterceptorBinding(MicrometerCounted.class);
+        MicrometerCounted counted = context.getInterceptorBinding(MicrometerCounted.class);
         if (counted == null) {
             return context.proceed();
         }

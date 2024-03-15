@@ -635,6 +635,7 @@ Additional exporters will be available in the Quarkiverse https://github.com/qua
 
 * https://quarkus.io/extensions/io.quarkus/quarkus-agroal[`quarkus-agroal`]
 * https://quarkus.io/guides/grpc-getting-started[`quarkus-grpc`]
+* https://quarkus.io/guides/redis[`quarkus-redis-client`]
 * https://quarkus.io/extensions/io.quarkus/quarkus-rest-client-jaxrs[`quarkus-rest-client-jaxrs`]
 * https://quarkus.io/guides/rest[`quarkus-rest`]
 * https://quarkus.io/guides/resteasy[`quarkus-resteasy-jackson`]

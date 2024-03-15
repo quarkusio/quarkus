@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.jar.Manifest;
 
-import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.OpenPathTree;
 
 public class FilteredClassPathElement implements ClassPathElement {
@@ -23,8 +23,8 @@ public class FilteredClassPathElement implements ClassPathElement {
     }
 
     @Override
-    public ArtifactKey getDependencyKey() {
-        return delegate.getDependencyKey();
+    public ResolvedDependency getResolvedDependency() {
+        return delegate.getResolvedDependency();
     }
 
     @Override

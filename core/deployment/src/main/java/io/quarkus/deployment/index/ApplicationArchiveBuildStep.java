@@ -120,7 +120,7 @@ public class ApplicationArchiveBuildStep {
 
         return new ApplicationArchivesBuildItem(
                 new ApplicationArchiveImpl(appindex.getIndex(), tree,
-                        curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getKey()),
+                        curateOutcomeBuildItem.getApplicationModel().getAppArtifact()),
                 applicationArchives);
     }
 
@@ -187,7 +187,7 @@ public class ApplicationArchiveBuildStep {
                             && !root.getResolvedPaths().contains(path)
                             && indexedDeps.add(path)) {
                         try {
-                            appArchives.add(createApplicationArchive(buildCloseables, indexCache, path, dep.getKey(),
+                            appArchives.add(createApplicationArchive(buildCloseables, indexCache, path, dep,
                                     removedResources));
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
@@ -199,10 +199,11 @@ public class ApplicationArchiveBuildStep {
     }
 
     private static ApplicationArchive createApplicationArchive(QuarkusBuildCloseablesBuildItem buildCloseables,
-            IndexCache indexCache, Path dep, ArtifactKey artifactKey, Map<ArtifactKey, Set<String>> removedResources)
+            IndexCache indexCache, Path dep, ResolvedDependency resolvedDependency,
+            Map<ArtifactKey, Set<String>> removedResources)
             throws IOException {
         LOGGER.debugf("Indexing dependency: %s", dep);
-        final Set<String> removed = removedResources.get(artifactKey);
+        final Set<String> removed = resolvedDependency != null ? removedResources.get(resolvedDependency.getKey()) : null;
         final OpenPathTree openTree;
         final IndexView index;
         if (Files.isDirectory(dep)) {
@@ -212,7 +213,7 @@ public class ApplicationArchiveBuildStep {
             openTree = buildCloseables.add(PathTree.ofArchive(dep).open());
             index = handleJarPath(dep, indexCache, removed);
         }
-        return new ApplicationArchiveImpl(index, openTree, artifactKey);
+        return new ApplicationArchiveImpl(index, openTree, resolvedDependency);
     }
 
     private static void addMarkerFilePaths(Set<String> applicationArchiveMarkers,
@@ -253,7 +254,7 @@ public class ApplicationArchiveBuildStep {
                             }
                             indexCache.cache.put(rootPath, index);
                         }
-                        appArchives.add(new ApplicationArchiveImpl(index, tree, dependencyKey));
+                        appArchives.add(new ApplicationArchiveImpl(index, tree, cpe.getResolvedDependency()));
                         return null;
                     }
 
@@ -267,7 +268,7 @@ public class ApplicationArchiveBuildStep {
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }
-                        return new ApplicationArchiveImpl(index, tree, dependencyKey);
+                        return new ApplicationArchiveImpl(index, tree, cpe.getResolvedDependency());
                     });
                     if (archive != null) {
                         appArchives.add(archive);

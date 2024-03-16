@@ -12,10 +12,12 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Providers;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.UnmarshalException;
 import jakarta.xml.bind.Unmarshaller;
 
 import org.jboss.resteasy.reactive.common.util.StreamUtil;
@@ -73,6 +75,8 @@ public class ServerJaxbMessageBodyReader implements ServerMessageBodyReader<Obje
             JAXBElement<Object> item = getUnmarshall(type)
                     .unmarshal(new StreamSource(entityStream), type);
             return item.getValue();
+        } catch (UnmarshalException e) {
+            throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
         } catch (JAXBException e) {
             throw new RuntimeException(e);
         }

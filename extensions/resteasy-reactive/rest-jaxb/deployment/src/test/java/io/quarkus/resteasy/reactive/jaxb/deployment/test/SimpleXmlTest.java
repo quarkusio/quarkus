@@ -76,6 +76,17 @@ public class SimpleXmlTest {
     }
 
     @Test
+    public void testInvalidXml() {
+        RestAssured
+                .with()
+                .body("<person><first>Bob</first></invalid>")
+                .contentType("application/xml")
+                .post("/simple/person")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
     public void testLargeXmlPost() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 10000; ++i) {

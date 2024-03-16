@@ -16,7 +16,6 @@ import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.SIM
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.TIMER_INTERFACE;
 
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,7 +26,6 @@ import java.util.function.Predicate;
 
 import jakarta.enterprise.context.Dependent;
 
-import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.MetricType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -72,11 +70,8 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.smallrye.metrics.deployment.jandex.JandexBeanInfoAdapter;
 import io.quarkus.smallrye.metrics.deployment.jandex.JandexMemberInfoAdapter;
-import io.quarkus.smallrye.metrics.deployment.spi.MetricBuildItem;
 import io.quarkus.smallrye.metrics.deployment.spi.MetricsConfigurationBuildItem;
-import io.quarkus.smallrye.metrics.runtime.MetadataHolder;
 import io.quarkus.smallrye.metrics.runtime.SmallRyeMetricsRecorder;
-import io.quarkus.smallrye.metrics.runtime.TagHolder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
@@ -555,28 +550,8 @@ public class SmallRyeMetricsProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     void extensionMetrics(SmallRyeMetricsRecorder recorder,
-            List<MetricBuildItem> additionalMetrics,
-            List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+            List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems) {
         if (metrics.extensionsEnabled) {
-            if (!additionalMetrics.isEmpty()) {
-                unremovableBeans.produce(new UnremovableBeanBuildItem(
-                        new UnremovableBeanBuildItem.BeanClassNameExclusion(MetricRegistry.class.getName())));
-                unremovableBeans.produce(new UnremovableBeanBuildItem(
-                        new UnremovableBeanBuildItem.BeanClassNameExclusion(MetricRegistries.class.getName())));
-            }
-            for (MetricBuildItem additionalMetric : additionalMetrics) {
-                if (additionalMetric.isEnabled()) {
-                    TagHolder[] tags = Arrays.stream(additionalMetric.getTags())
-                            .map(TagHolder::from)
-                            .toArray(TagHolder[]::new);
-                    recorder.registerMetric(additionalMetric.getRegistryType(),
-                            MetadataHolder.from(additionalMetric.getMetadata()),
-                            tags,
-                            additionalMetric.getImplementor());
-                }
-            }
-
             for (MetricsFactoryConsumerBuildItem item : metricsFactoryConsumerBuildItems) {
                 if (item.executionTime() == STATIC_INIT) {
                     recorder.registerMetrics(item.getConsumer());

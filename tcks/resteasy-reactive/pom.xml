@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-tck-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>3.8.999-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -73,7 +73,7 @@
                         </goals>
                         <configuration>
                             <executable>${maven.multiModuleProjectDirectory}/mvnw</executable>
-                            <commandlineArgs>-e -B --settings ${session.request.userSettingsFile.path} clean install ${resteasy-reactive-testsuite.mvn.args}</commandlineArgs>
+                            <commandlineArgs>-e -B --settings ${session.request.userSettingsFile.path} clean install ${resteasy-reactive-testsuite.mvn.args} -Dquarkus.platform.version=${project.version} -Dquarkus-plugin.version=${project.version}</commandlineArgs>
                             <skip>${resteasy-reactive-testsuite.test.skip}</skip>
                         </configuration>
                     </execution>

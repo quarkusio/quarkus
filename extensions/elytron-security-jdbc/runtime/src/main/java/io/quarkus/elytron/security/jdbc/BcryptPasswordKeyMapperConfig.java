@@ -36,7 +36,7 @@ public class BcryptPasswordKeyMapperConfig implements PasswordKeyMapperConfig {
     /**
      * The index (1 based numbering) of the column containing the Bcrypt salt
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "-1")
     public int saltIndex;
 
     /**
@@ -48,7 +48,7 @@ public class BcryptPasswordKeyMapperConfig implements PasswordKeyMapperConfig {
     /**
      * The index (1 based numbering) of the column containing the Bcrypt iteration count
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "-1")
     public int iterationCountIndex;
 
     @Override

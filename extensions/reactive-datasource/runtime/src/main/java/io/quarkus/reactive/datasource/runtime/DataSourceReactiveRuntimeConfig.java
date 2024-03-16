@@ -111,9 +111,11 @@ public interface DataSourceReactiveRuntimeConfig {
 
     /**
      * The hostname verification algorithm to use in case the server's identity should be checked.
-     * Should be HTTPS, LDAPS or an empty string.
+     * Should be {@code HTTPS}, {@code LDAPS} or {@code NONE}.
+     * {@code NONE} is the default value and disables the verification.
      */
-    Optional<String> hostnameVerificationAlgorithm();
+    @WithDefault("NONE")
+    String hostnameVerificationAlgorithm();
 
     /**
      * The maximum time a connection remains unused in the pool before it is closed.

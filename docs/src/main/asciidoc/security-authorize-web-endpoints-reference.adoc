@@ -8,7 +8,7 @@ include::_attributes.adoc[]
 :diataxis-type: reference
 :categories: security,web
 :topics: security,authorization,http,rest
-:extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-resteasy-reactive,io.quarkus:quarkus-resteasy
+:extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-rest,io.quarkus:quarkus-resteasy
 
 Quarkus incorporates a pluggable web security layer.
 When security is active, the system performs a permission check on all HTTP requests to determine if they should proceed.
@@ -392,10 +392,20 @@ These roles are then applicable for endpoint authorization by using the @RolesAl
 [source,properties]
 ----
 quarkus.http.auth.policy.admin-policy1.roles.admin=Admin1 <1>
-quarkus.http.auth.permission.roles1.paths=/*
+quarkus.http.auth.permission.roles1.paths=/* <2>
 quarkus.http.auth.permission.roles1.policy=admin-policy1
 ----
 <1> Map the `admin` role to `Admin1` role. The `SecurityIdentity` will have both `admin` and `Admin1` roles.
+<2> The `/*` path is secured, only authenticated HTTP requests are granted access.
+
+If all that you need is to map the `SecurityIdentity` roles to the deployment-specific roles regardless of a path, you can also do this:
+
+[source,properties]
+----
+quarkus.http.auth.roles-mapping.admin=Admin1 <1> <2>
+----
+<1> Map the `admin` role to `Admin1` role. The `SecurityIdentity` will have both `admin` and `Admin1` roles.
+<2> The `/*` path is not secured. You must secure your endpoints with standard security annotations or define HTTP permissions in addition to this configuration property.
 
 === Shared permission checks
 

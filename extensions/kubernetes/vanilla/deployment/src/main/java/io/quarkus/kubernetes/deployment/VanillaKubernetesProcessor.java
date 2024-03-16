@@ -1,8 +1,6 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_GROUP;
-import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_VERSION;
 import static io.quarkus.kubernetes.deployment.Constants.INGRESS;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.LIVENESS_PROBE;
@@ -76,22 +74,24 @@ public class VanillaKubernetesProcessor {
             KubernetesConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
-        String kind = config.getDeploymentResourceKind(capabilities).kind;
+        DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind(capabilities);
 
         List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getConfiguredDeploymentTargets();
         if (userSpecifiedDeploymentTargets.isEmpty() || userSpecifiedDeploymentTargets.contains(KUBERNETES)) {
             // when nothing was selected by the user, we enable vanilla Kubernetes by default
-            deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, kind, DEPLOYMENT_GROUP,
-                    DEPLOYMENT_VERSION, VANILLA_KUBERNETES_PRIORITY, true, config.deployStrategy));
+            deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES,
+                    deploymentResourceKind.getKind(), deploymentResourceKind.getGroup(), deploymentResourceKind.getVersion(),
+                    VANILLA_KUBERNETES_PRIORITY, true, config.deployStrategy));
 
             String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-            resourceMeta.produce(new KubernetesResourceMetadataBuildItem(KUBERNETES, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
-                    kind, name));
+            resourceMeta.produce(new KubernetesResourceMetadataBuildItem(KUBERNETES, deploymentResourceKind.getGroup(),
+                    deploymentResourceKind.getVersion(), deploymentResourceKind.getKind(), name));
 
         } else {
             deploymentTargets
-                    .produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, kind, DEPLOYMENT_GROUP,
-                            DEPLOYMENT_VERSION, VANILLA_KUBERNETES_PRIORITY, false, config.deployStrategy));
+                    .produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, deploymentResourceKind.getKind(),
+                            deploymentResourceKind.getGroup(),
+                            deploymentResourceKind.getVersion(), VANILLA_KUBERNETES_PRIORITY, false, config.deployStrategy));
         }
     }
 
@@ -166,16 +166,15 @@ public class VanillaKubernetesProcessor {
                 livenessPath, readinessPath, startupPath,
                 roles, clusterRoles, serviceAccounts, roleBindings));
 
-        KubernetesConfig.DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
-        if (deploymentKind != KubernetesConfig.DeploymentResourceKind.Deployment) {
+        DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
+        if (deploymentKind != DeploymentResourceKind.Deployment) {
             result.add(new DecoratorBuildItem(KUBERNETES, new RemoveDeploymentResourceDecorator(name)));
         }
-
-        if (deploymentKind == KubernetesConfig.DeploymentResourceKind.StatefulSet) {
+        if (deploymentKind == DeploymentResourceKind.StatefulSet) {
             result.add(new DecoratorBuildItem(KUBERNETES, new AddStatefulSetResourceDecorator(name, config)));
-        } else if (deploymentKind == KubernetesConfig.DeploymentResourceKind.Job) {
+        } else if (deploymentKind == DeploymentResourceKind.Job) {
             result.add(new DecoratorBuildItem(KUBERNETES, new AddJobResourceDecorator(name, config.job)));
-        } else if (deploymentKind == KubernetesConfig.DeploymentResourceKind.CronJob) {
+        } else if (deploymentKind == DeploymentResourceKind.CronJob) {
             result.add(new DecoratorBuildItem(KUBERNETES, new AddCronJobResourceDecorator(name, config.cronJob)));
         }
 

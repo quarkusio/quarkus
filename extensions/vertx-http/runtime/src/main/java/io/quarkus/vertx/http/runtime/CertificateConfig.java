@@ -104,9 +104,32 @@ public class CertificateConfig {
      * An optional parameter to select a specific key in the keystore.
      * When SNI is disabled, and the keystore contains multiple
      * keys and no alias is specified; the behavior is undefined.
+     *
+     * @deprecated Use {@link #keyStoreAlias} instead.
      */
     @ConfigItem
+    @Deprecated
     public Optional<String> keyStoreKeyAlias;
+
+    /**
+     * An optional parameter to select a specific key in the keystore.
+     * When SNI is disabled, and the keystore contains multiple
+     * keys and no alias is specified; the behavior is undefined.
+     */
+    @ConfigItem
+    public Optional<String> keyStoreAlias;
+
+    /**
+     * An optional parameter to define the password for the key,
+     * in case it is different from {@link #keyStorePassword}
+     * If not given, it might be retrieved from {@linkplain CredentialsProvider}.
+     *
+     * @see {@link #credentialsProvider}.
+     * @deprecated Use {@link #keyStoreAliasPassword} instead.
+     */
+    @Deprecated
+    @ConfigItem
+    public Optional<String> keyStoreKeyPassword;
 
     /**
      * An optional parameter to define the password for the key,
@@ -116,22 +139,40 @@ public class CertificateConfig {
      * @see {@link #credentialsProvider}.
      */
     @ConfigItem
-    public Optional<String> keyStoreKeyPassword;
+    public Optional<String> keyStoreAliasPassword;
 
     /**
      * A parameter to specify a {@linkplain CredentialsProvider} property key,
-     * which can be used to get the password for the key from {@linkplain CredentialsProvider}.
+     * which can be used to get the password for the alias from {@linkplain CredentialsProvider}.
+     *
+     * @see {@link #credentialsProvider}
+     * @deprecated Use {@link #keyStoreAliasPasswordKey} instead.
+     */
+    @ConfigItem
+    @Deprecated
+    public Optional<String> keyStoreKeyPasswordKey;
+
+    /**
+     * A parameter to specify a {@linkplain CredentialsProvider} property key,
+     * which can be used to get the password for the alias from {@linkplain CredentialsProvider}.
      *
      * @see {@link #credentialsProvider}
      */
     @ConfigItem
-    public Optional<String> keyStoreKeyPasswordKey;
+    public Optional<String> keyStoreAliasPasswordKey;
 
     /**
      * An optional trust store that holds the certificate information of the trusted certificates.
      */
     @ConfigItem
     public Optional<Path> trustStoreFile;
+
+    /**
+     * An optional list of trusted certificates using the PEM format.
+     * If you pass multiple files, you must use the PEM format.
+     */
+    @ConfigItem
+    public Optional<List<Path>> trustStoreFiles;
 
     /**
      * An optional parameter to specify the type of the trust store file.

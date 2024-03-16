@@ -114,12 +114,25 @@ public class JarResource implements ClassLoadingResource {
                 // first create a URI which includes both the jar file path and the relative resource name
                 // and then invoke a toURL on it. The URI reconstruction allows for any encoding to be done
                 // for the "path" which includes the "realName"
-                final URL resUrl = new URI(jarUri.getScheme(), jarUri.getPath() + "!/" + realName, null).toURL();
+                var ssp = new StringBuilder(jarUri.getPath().length() + realName.length() + 2);
+                ssp.append(jarUri.getPath());
+                ssp.append("!/");
+                ssp.append(realName);
+                final URL resUrl = new URI(jarUri.getScheme(), ssp.toString(), null).toURL();
                 // wrap it up into a "jar" protocol URL
                 //horrible hack to deal with '?' characters in the URL
                 //seems to be the only way, the URI constructor just does not let you handle them in a sane way
-                return new URL("jar", null, resUrl.getProtocol() + ':' + resUrl.getPath()
-                        + (resUrl.getQuery() == null ? "" : ("%3F" + resUrl.getQuery())));
+                var file = new StringBuilder((resUrl.getProtocol() == null ? 4 : resUrl.getProtocol().length()) + 1 +
+                        resUrl.getPath().length() + (resUrl.getQuery() == null ? 0 : 3 + resUrl.getQuery().length()));
+                // protocol shouldn't be null, but let's be safe
+                file.append(resUrl.getProtocol());
+                file.append(':');
+                file.append(resUrl.getPath());
+                if (resUrl.getQuery() != null) {
+                    file.append("%3F");
+                    file.append(resUrl.getQuery());
+                }
+                return new URL("jar", null, file.toString());
             } catch (MalformedURLException | URISyntaxException e) {
                 throw new RuntimeException(e);
             }

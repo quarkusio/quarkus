@@ -47,7 +47,7 @@ The solution is located in the `opentelemetry-quickstart` link:{quickstarts-tree
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: opentelemetry-quickstart
-:create-app-extensions: resteasy-reactive,quarkus-opentelemetry
+:create-app-extensions: rest,quarkus-opentelemetry
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates the Maven project and imports the `quarkus-opentelemetry` extension,
@@ -597,9 +597,9 @@ public void tracedWork() {
 }
 ----
 
-=== SmallRye Reactive Messaging - Kafka
+=== Quarkus Messaging - Kafka
 
-When using the SmallRye Reactive Messaging extension for Kafka,
+When using the Quarkus Messaging extension for Kafka,
 we are able to propagate the span into the Kafka Record with:
 
 [source,java]
@@ -610,6 +610,16 @@ Message out = Message.of(...).withMetadata(tm);
 
 The above creates a `TracingMetadata` object we can add to the `Message` being produced,
 which retrieves the OpenTelemetry `Context` to extract the current span for propagation.
+
+=== Quarkus Security Events
+
+Quarkus supports exporting of the xref:security-customization.adoc#observe-security-events[Security events] as OpenTelemetry Span events.
+
+[source,application.properties]
+----
+quarkus.otel.security-events.enabled=true <1>
+----
+<1> Export Quarkus Security events as OpenTelemetry Span events.
 
 == Exporters
 
@@ -629,13 +639,13 @@ Additional exporters will be available in the Quarkiverse https://github.com/qua
 
 * https://quarkus.io/extensions/io.quarkus/quarkus-agroal[`quarkus-agroal`]
 * https://quarkus.io/guides/grpc-getting-started[`quarkus-grpc`]
-* https://quarkus.io/extensions/io.quarkus/quarkus-jaxrs-client-reactive[`quarkus-jaxrs-client-reactive`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-rest-client-jaxrs[`quarkus-rest-client-jaxrs`]
+* https://quarkus.io/guides/rest[`quarkus-rest`]
 * https://quarkus.io/guides/resteasy[`quarkus-resteasy-jackson`]
-* https://quarkus.io/guides/resteasy-reactive[`quarkus-resteasy-reactive`]
-* https://quarkus.io/guides/rest-client[`quarkus-resteasy-client`]
+* https://quarkus.io/guides/resteasy-client[`quarkus-resteasy-client`]
 * https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
 * https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
-* https://quarkus.io/extensions/io.quarkus/quarkus-smallrye-reactive-messaging[`quarkus-smallrye-reactive-messaging`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-messaging[`quarkus-messaging`]
 ** AMQP 1.0
 ** RabbitMQ
 ** Kafka

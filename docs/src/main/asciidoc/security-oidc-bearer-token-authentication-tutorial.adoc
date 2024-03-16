@@ -64,7 +64,7 @@ Complete one of the following commands:
 To create a new Maven project, use the following command:
 
 :create-app-artifact-id: security-openid-connect-quickstart
-:create-app-extensions: oidc,resteasy-reactive-jackson
+:create-app-extensions: oidc,rest-jackson
 include::{includes}/devtools/create-app.adoc[]
 
 If you already have your Quarkus project configured, you can add the `oidc` extension to your project by running the following command in your project base directory:
@@ -231,7 +231,7 @@ For more information, see the Keycloak documentation about link:https://www.keyc
 
 [NOTE]
 ====
-If you want to use the Keycloak Admin Client to configure your server from your application, you need to include either the `quarkus-keycloak-admin-client` or the `quarkus-keycloak-admin-client-reactive` (if the application uses `quarkus-rest-client-reactive`) extension.
+If you want to use the Keycloak Admin Client to configure your server from your application, you need to include either the `quarkus-keycloak-admin-rest-client` or the `quarkus-keycloak-admin-resteasy-client` (if the application uses `quarkus-rest-client`) extension.
 For more information, see the xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client] guide.
 
 ====

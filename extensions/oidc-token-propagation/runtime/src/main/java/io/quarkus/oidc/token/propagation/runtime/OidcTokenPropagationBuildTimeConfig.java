@@ -6,7 +6,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 /**
  * Build time configuration for OIDC Token Propagation.
  */
-@ConfigRoot
+@ConfigRoot(name = "resteasy-client-oidc-token-propagation")
 public class OidcTokenPropagationBuildTimeConfig {
     /**
      * If the OIDC Token Propagation is enabled.

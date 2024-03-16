@@ -164,6 +164,7 @@ public class BootstrapMavenContext {
         this.remoteRepos = config.remoteRepos;
         this.remotePluginRepos = config.remotePluginRepos;
         this.remoteRepoManager = config.remoteRepoManager;
+        this.settingsDecrypter = config.settingsDecrypter;
         this.cliOptions = config.cliOptions;
         this.excludeSisuBeanPackages = config.getExcludeSisuBeanPackages();
         this.includeSisuBeanPackages = config.getIncludeSisuBeanPackages();
@@ -312,7 +313,7 @@ public class BootstrapMavenContext {
         return remotePluginRepos == null ? remotePluginRepos = resolveRemotePluginRepos() : remotePluginRepos;
     }
 
-    private SettingsDecrypter getSettingsDecrypter() {
+    public SettingsDecrypter getSettingsDecrypter() {
         if (settingsDecrypter == null) {
             initRepoSystemAndManager();
         }
@@ -1001,7 +1002,7 @@ public class BootstrapMavenContext {
         if (Files.isDirectory(path)) {
             path = path.resolve(LocalProject.POM_XML);
         }
-        return Files.exists(path) ? path : null;
+        return Files.exists(path) ? path.normalize() : null;
     }
 
     public Path getCurrentProjectBaseDir() {

@@ -12,7 +12,7 @@ language:
       resource:
         class-name: GreetingResource
         path: "/hello"
-        response: "Hello from RESTEasy Reactive"
+        response: "Hello from Quarkus REST"
     dependencies:
       - io.quarkus:quarkus-resteasy-reactive
     test-dependencies:

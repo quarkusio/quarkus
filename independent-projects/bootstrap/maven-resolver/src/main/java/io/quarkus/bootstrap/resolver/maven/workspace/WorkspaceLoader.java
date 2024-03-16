@@ -186,7 +186,6 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
         if (rawModule.model == null) {
             return;
         }
-        newModules.add(rawModule);
 
         var added = loadedModules.putIfAbsent(
                 new GAV(ModelUtils.getGroupId(rawModule.model), rawModule.model.getArtifactId(),
@@ -195,6 +194,8 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
         if (added != null) {
             return;
         }
+        newModules.add(rawModule);
+
         for (var module : rawModule.model.getModules()) {
             queueModule(rawModule.model.getProjectDirectory().toPath().resolve(module));
         }

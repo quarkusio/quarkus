@@ -16,9 +16,6 @@ import io.vertx.ext.web.RoutingContext;
 @ApplicationScoped
 public class DefaultTokenStateManager implements TokenStateManager {
 
-    private static final String SESSION_AT_COOKIE_NAME = OidcUtils.SESSION_COOKIE_NAME + "_at";
-    private static final String SESSION_RT_COOKIE_NAME = OidcUtils.SESSION_COOKIE_NAME + "_rt";
-
     @Override
     public Uni<String> createTokenState(RoutingContext routingContext, OidcTenantConfig oidcConfig,
             AuthorizationCodeTokens tokens, OidcRequestContext<String> requestContext) {
@@ -137,12 +134,12 @@ public class DefaultTokenStateManager implements TokenStateManager {
 
     private static String getAccessTokenCookieName(OidcTenantConfig oidcConfig) {
         String cookieSuffix = OidcUtils.getCookieSuffix(oidcConfig);
-        return SESSION_AT_COOKIE_NAME + cookieSuffix;
+        return OidcUtils.SESSION_AT_COOKIE_NAME + cookieSuffix;
     }
 
     private static String getRefreshTokenCookieName(OidcTenantConfig oidcConfig) {
         String cookieSuffix = OidcUtils.getCookieSuffix(oidcConfig);
-        return SESSION_RT_COOKIE_NAME + cookieSuffix;
+        return OidcUtils.SESSION_RT_COOKIE_NAME + cookieSuffix;
     }
 
     private String encryptToken(String token, RoutingContext context, OidcTenantConfig oidcConfig) {

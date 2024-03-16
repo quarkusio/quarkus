@@ -186,7 +186,7 @@ public class GrpcServerRecorder {
 
         initHealthStorage();
 
-        LOGGER.info("Starting new Vert.x gRPC server ...");
+        LOGGER.info("Starting new Quarkus gRPC server (using Vert.x transport)...");
         Route route = routerSupplier.getValue().route().handler(ctx -> {
             if (!isGrpc(ctx)) {
                 ctx.next();

@@ -6,14 +6,14 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Apache Pulsar Reference Guide
 include::_attributes.adoc[]
 :categories: messaging
-:summary: This reference guide provides an in-depth look on Apache Pulsar and Smallrye Reactive Messaging framework.
+:summary: This reference guide provides an in-depth look on Apache Pulsar and the Quarkus Messaging extensions.
 :numbered:
 :sectnums:
 :sectnumlevels: 4
 :topics: messaging,reactive-messaging,pulsar
-:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-pulsar
+:extensions: io.quarkus:quarkus-messaging-pulsar
 
-This reference guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with Apache Pulsar.
+This reference guide demonstrates how your Quarkus application can utilize Quarkus Messaging to interact with Apache Pulsar.
 
 == Introduction
 
@@ -41,12 +41,12 @@ Based on Eclipse MicroProfile Reactive Messaging specification 3.0, it proposes 
 [NOTE]
 ====
 This guide provides an in-depth look on Apache Pulsar and SmallRye Reactive Messaging framework.
-For a quick start take a look at xref:pulsar-getting-started.adoc[Getting Started to SmallRye Reactive Messaging with Apache Pulsar].
+For a quick start take a look at xref:pulsar-getting-started.adoc[Getting Started to Quarkus Messaging with Apache Pulsar].
 ====
 
-You can add the `smallrye-reactive-messaging-pulsar` extensions to your project by running the following command in your project base directory:
+You can add the `messaging-pulsar` extensions to your project by running the following command in your project base directory:
 
-:add-extension-extensions: smallrye-reactive-messaging-pulsar
+:add-extension-extensions: messaging-pulsar
 include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
@@ -56,14 +56,14 @@ This will add the following to your build file:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-smallrye-reactive-messaging-pulsar</artifactId>
+    <artifactId>quarkus-messaging-pulsar</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-smallrye-reactive-messaging-pulsar")
+implementation("io.quarkus:quarkus-messaging-pulsar")
 ----
 
 [NOTE]
@@ -71,9 +71,9 @@ implementation("io.quarkus:quarkus-smallrye-reactive-messaging-pulsar")
 The extension includes `pulsar-clients-original` version 3.0.0 as a transitive dependency and is compatible with Pulsar brokers version 2.10.x.
 ====
 
-== Configuring Smallrye Pulsar Connector
+== Configuring SmallRye Pulsar Connector
 
-Because Smallrye Reactive Messaging framework supports different messaging backends like Apache Kafka, Apache Pulsar, AMQP, Apache Camel, JMS, MQTT, etc., it employs a generic vocabulary:
+Because SmallRye Reactive Messaging framework supports different messaging backends like Apache Kafka, Apache Pulsar, AMQP, Apache Camel, JMS, MQTT, etc., it employs a generic vocabulary:
 
 - Applications send and receive *messages*. https://javadoc.io/doc/io.smallrye.reactive/smallrye-reactive-messaging-api/latest/org/eclipse/microprofile/reactive/messaging/Message.html[`Message`] wraps a _payload_ and can be extended with some _metadata_.
 This should not be confused with a Pulsar https://javadoc.io/doc/org.apache.pulsar/pulsar-client-api/latest/org/apache/pulsar/client/api/Message.html[`Message`], which consists of value, key
@@ -113,7 +113,7 @@ This auto-attachment can be disabled using:
 
 [source, properties]
 ----
-quarkus.reactive-messaging.auto-connector-attachment=false
+quarkus.messaging.auto-connector-attachment=false
 ----
 ====
 
@@ -237,7 +237,7 @@ public class PriceResource {
 [NOTE]
 ====
 When consuming messages with `@Channel`, the application code is responsible for the subscription.
-In the example above, the RESTEasy Reactive endpoint handles that for you.
+In the example above, the Quarkus REST (formerly RESTEasy Reactive) endpoint handles that for you.
 ====
 
 Following types can be injected as channels:
@@ -883,7 +883,7 @@ If no schema information is provided incoming channels will use `Schema.AUTO_CON
 
 === Auto Schema Discovery
 
-When using SmallRye Reactive Messaging Pulsar (`io.quarkus:quarkus-smallrye-reactive-messaging-pulsar`), Quarkus can often automatically detect the correct Pulsar Schema to configure.
+When using Quarkus Messaging Pulsar (`io.quarkus:quarkus-messaging-pulsar`), Quarkus can often automatically detect the correct Pulsar Schema to configure.
 This autodetection is based on declarations of `@Incoming` and `@Outgoing` methods, as well as injected ``@Channel``s.
 
 For example, if you declare
@@ -955,7 +955,7 @@ a Schema will be generated using the Jackson `ObjectMapper`, without enforcing a
 
 If a `schema` is set by configuration, it won't be replaced by the auto-detection.
 
-In case you have any issues with serializer auto-detection, you can switch it off completely by setting `quarkus.reactive-messaging.pulsar.serializer-autodetection.enabled=false`.
+In case you have any issues with serializer auto-detection, you can switch it off completely by setting `quarkus.messaging.pulsar.serializer-autodetection.enabled=false`.
 If you find you need to do this, please file a bug in the link:https://github.com/quarkusio/quarkus/issues[Quarkus issue tracker] so we can fix whatever problem you have.
 
 [[pulsar-dev-services]]
@@ -1311,6 +1311,6 @@ Configuration properties not configurable in configuration files (non-serializab
 == Going further
 
 This guide has shown how you can interact with Pulsar using Quarkus.
-It utilizes SmallRye Reactive Messaging to build data streaming applications.
+It utilizes Quarkus Messaging to build data streaming applications.
 
 If you want to go further, check the documentation of https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging], the implementation used in Quarkus.

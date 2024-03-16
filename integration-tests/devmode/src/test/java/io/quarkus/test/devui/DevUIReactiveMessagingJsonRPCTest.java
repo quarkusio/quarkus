@@ -24,7 +24,7 @@ public class DevUIReactiveMessagingJsonRPCTest extends DevUIJsonRPCTest {
                             "application.properties"));
 
     public DevUIReactiveMessagingJsonRPCTest() {
-        super("io.quarkus.quarkus-smallrye-reactive-messaging");
+        super("io.quarkus.quarkus-messaging");
     }
 
     @Test

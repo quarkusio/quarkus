@@ -40,7 +40,7 @@ The solution is located in the `scheduler-quickstart` link:{quickstarts-tree-url
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: scheduler-quickstart
-:create-app-extensions: resteasy-reactive,scheduler
+:create-app-extensions: rest,scheduler
 include::{includes}/devtools/create-app.adoc[]
 
 It generates a new project including:
@@ -49,7 +49,7 @@ It generates a new project including:
 * example `Dockerfile` files for both `native` and `jvm` modes
 * the application configuration file
 
-The project also imports the RESTEasy Reactive and scheduler extensions.
+The project also imports the Quarkus REST (formerly RESTEasy Reactive) and scheduler extensions.
 
 If you already have your Quarkus project configured, you can add the `scheduler` extension
 to your project by running the following command in your project base directory:

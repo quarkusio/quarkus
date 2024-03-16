@@ -34,7 +34,8 @@ The solution is located in the `lifecycle-quickstart` link:{quickstarts-tree-url
 
 == Creating the Maven project
 
-First, we need a new project. Create a new project with the following command:
+First, we need a new project.
+Create a new project with the following command:
 
 :create-app-artifact-id: lifecycle-quickstart
 include::{includes}/devtools/create-app.adoc[]
@@ -47,8 +48,8 @@ It generates:
 
 == The main method
 
-By default, Quarkus will automatically generate a main method, that will bootstrap Quarkus and then just wait for
-shutdown to be initiated. Let's provide our own main method:
+By default, Quarkus will automatically generate a main method, that will bootstrap Quarkus and then just wait for shutdown to be initiated.
+Let's provide our own main method:
 [source,java]
 ----
 package com.acme;
@@ -68,20 +69,17 @@ public class Main {
 <1> This annotation tells Quarkus to use this as the main method, unless it is overridden in the config
 <2> This launches Quarkus
 
-This main class will bootstrap Quarkus and run it until it stops. This is no different to the automatically
-generated main class, but has the advantage that you can just launch it directly from the IDE without needing
-to run a Maven or Gradle command.
+This main class will bootstrap Quarkus and run it until it stops.
+This is no different to the automatically generated main class, but has the advantage that you can just launch it directly from the IDE without needing to run a Maven or Gradle command.
 
-WARNING: It is not recommenced to do any business logic in this main method, as Quarkus has not been set up yet,
-and Quarkus may run in a different ClassLoader. If you want to perform logic on startup use an `io.quarkus.runtime.QuarkusApplication`
-as described below.
+WARNING: It is not recommenced to do any business logic in this main method, as Quarkus has not been set up yet, and Quarkus may run in a different ClassLoader.
+If you want to perform logic on startup use an `io.quarkus.runtime.QuarkusApplication` as described below.
 
-If we want to actually perform business logic on startup (or write applications that complete a task and then exit)
-we need to supply a `io.quarkus.runtime.QuarkusApplication` class to the run method. After Quarkus has been started
-the `run` method of the application will be invoked. When this method returns the Quarkus application will exit.
+If we want to actually perform business logic on startup (or write applications that complete a task and then exit) we need to supply a `io.quarkus.runtime.QuarkusApplication` class to the run method.
+After Quarkus has been started the `run` method of the application will be invoked.
+When this method returns the Quarkus application will exit.
 
-If you want to perform logic on startup you should call `Quarkus.waitForExit()`, this method will wait until a shutdown
-is requested (either from an external signal like when you press `Ctrl+C` or because a thread has called `Quarkus.asyncExit()`).
+If you want to perform logic on startup you should call `Quarkus.waitForExit()`, this method will wait until a shutdown is requested (either from an external signal like when you press `Ctrl+C` or because a thread has called `Quarkus.asyncExit()`).
 
 An example of what this looks like is below:
 
@@ -176,8 +174,7 @@ include::{includes}/devtools/dev-parameters.adoc[]
 
 == Listening for startup and shutdown events
 
-Create a new class named `AppLifecycleBean` (or pick another name) in the `org.acme.lifecycle` package, and copy the
-following content:
+Create a new class named `AppLifecycleBean` (or pick another name) in the `org.acme.lifecycle` package, and copy the following content:
 
 [source,java]
 ----
@@ -210,7 +207,8 @@ public class AppLifecycleBean {
 
 TIP: The events are also called in _dev mode_ between each redeployment.
 
-NOTE: The methods can access injected beans. Check the link:{quickstarts-blob-url}/lifecycle-quickstart/src/main/java/org/acme/lifecycle/AppLifecycleBean.java[AppLifecycleBean.java] class for details.
+NOTE: The methods can access injected beans.
+Check the link:{quickstarts-blob-url}/lifecycle-quickstart/src/main/java/org/acme/lifecycle/AppLifecycleBean.java[AppLifecycleBean.java] class for details.
 
 === What is the difference from `@Initialized(ApplicationScoped.class)` and `@Destroyed(ApplicationScoped.class)`
 
@@ -322,19 +320,24 @@ include::{includes}/devtools/build-native.adoc[]
 
 == Launch Modes
 
-Quarkus has 3 different launch modes, `NORMAL` (i.e. production), `DEVELOPMENT` and `TEST`. If you are running `quarkus:dev`
-then the mode will be `DEVELOPMENT`, if you are running a JUnit test it will be `TEST`, otherwise it will be `NORMAL`.
+Quarkus has 3 different launch modes, `NORMAL` (i.e. production), `DEVELOPMENT` and `TEST`.
+If you are running `quarkus:dev` then the mode will be `DEVELOPMENT`, if you are running a JUnit test it will be `TEST`, otherwise it will be `NORMAL`.
 
-Your application can get the launch mode by injecting the `io.quarkus.runtime.LaunchMode` enum into a CDI bean,
-or by invoking the static method `io.quarkus.runtime.LaunchMode.current()`.
+Your application can get the launch mode by injecting the `io.quarkus.runtime.LaunchMode` enum into a CDI bean, or by invoking the static method `io.quarkus.runtime.LaunchMode.current()`.
 
 == Graceful Shutdown
 
-Quarkus includes support for graceful shutdown, this allows Quarkus to wait for running requests to finish, up
-till a set timeout. By default, this is disabled, however you can configure this by setting the `quarkus.shutdown.timeout`
-config property. When this is set shutdown will not happen until all running requests have completed, or until
-this timeout has elapsed. This config property is a duration, and can be set using the standard
-`java.time.Duration` format, if only a number is specified it is interpreted as seconds.
+Quarkus includes support for graceful shutdown, this allows Quarkus to wait for running requests to finish, up till a set timeout.
+By default, this is disabled, however you can configure this by setting the `quarkus.shutdown.timeout` config property.
+When this is set shutdown will not happen until all running requests have completed, or until this timeout has elapsed.
 
-Extensions that accept requests need to add support for this on an individual basis. At the moment only the
-HTTP extension supports this, so shutdown may still happen when messaging requests are active.
+Extensions that accept requests need to add support for this on an individual basis.
+At the moment only the HTTP extension supports this, so shutdown may still happen when messaging requests are active.
+
+Quarkus supports a delay time, where the application instance still responds to requests, but the readiness probe fails.
+This gives the infrastructure time to recognize that the instance is shutting down and stop routing traffic to the instance.
+This feature can be enabled by setting the build-time property `quarkus.shutdown.delay-enabled` to `true`.
+The delay can then be configured by setting the runtime property `quarkus.shutdown.delay`.
+It is not set by default, thus no delay is applied.
+
+include::{includes}/duration-format-note.adoc[]

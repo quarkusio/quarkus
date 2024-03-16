@@ -32,7 +32,7 @@ NOTE: This section is not an explanation of the reactive model. Refer to that xr
 Under the hood, Quarkus uses a reactive engine.
 This engine provides the efficiency and concurrency to cope with modern, containerized, and cloud-native applications.
 
-For example, when you use RESTEasy Reactive or gRPC, Quarkus can invoke your business logic on I/O threads.
+For example, when you use Quarkus REST (formerly RESTEasy Reactive) or gRPC, Quarkus can invoke your business logic on I/O threads.
 These threads are named https://en.wikipedia.org/wiki/Event_loop[event loops] and implement a https://en.wikipedia.org/wiki/Reactor_pattern[multi-reactor pattern].
 
 When using the imperative model, Quarkus associates a worker thread to each processing unit (like an HTTP request or a gRPC invocation).
@@ -176,7 +176,7 @@ You can mark a context _safe_.
 It is meant for other extensions to integrate with to help identify which contexts are isolated and guarantee access by a unique thread.
 Hibernate Reactive uses this feature to check if the current context is safe to store the currently opened session to protect users from mistakenly interleaving multiple reactive operations that could unintentionally share the same session.
 
-Vert.x web will create a new duplicated context for each http web request; Quarkus RESTEasy Reactive will mark such contexts as safe.
+Vert.x web will create a new duplicated context for each http web request; Quarkus REST will mark such contexts as safe.
 Other extensions should follow a similar pattern when they are setting up a new context that is safe to be used for a local context guaranteeing sequential use, non-concurrent access, and scoped to the current reactive chain as a convenience not to have to pass a "context" object along explicitly.
 
 In other cases, it might be helpful to mark the current context as not safe instead explicitly; for example, if an existing context needs to be shared across multiple workers to process some operations in parallel: by marking and un-marking appropriately the same
@@ -203,11 +203,11 @@ In general, Quarkus invokes reactive code on duplicated contexts.
 So it can safely access the local data.
 It is the case with:
 
-- RESTEasy Reactive
+- Quarkus REST
 - gRPC
 - Reactive Routes
 - Vert.x Event Bus `@ConsumeEvent`
-- Reactive REST Client
+- REST Client
 - Reactive Messaging (Kafka, AMQP)
 - Funqy
 - Quarkus scheduler and Quartz

@@ -13,7 +13,7 @@ public class KeycloakAdminClientConfigUtil {
      */
     public static void validate(KeycloakAdminClientConfig config) {
 
-        if (config.serverUrl.isEmpty()) {
+        if (config.serverUrl().isEmpty()) {
             LOG.debug(
                     "Configuration property 'server-url' is not set, 'Keycloak' admin client injection will fail, "
                             + "use org.keycloak.admin.client.KeycloakBuilder to create it instead");
@@ -21,12 +21,12 @@ public class KeycloakAdminClientConfigUtil {
         }
 
         // client id is also required in both cases, but since it's not nullable, we can skip its validation
-        if (config.grantType == PASSWORD) {
-            if (config.password.isEmpty() || config.username.isEmpty()) {
+        if (config.grantType() == PASSWORD) {
+            if (config.password().isEmpty() || config.username().isEmpty()) {
                 throw new KeycloakAdminClientException("grant type 'password' requires username and password");
             }
         } else {
-            if (config.clientSecret.isEmpty()) {
+            if (config.clientSecret().isEmpty()) {
                 throw new KeycloakAdminClientException("grant type 'client_credentials' requires client secret");
             }
         }

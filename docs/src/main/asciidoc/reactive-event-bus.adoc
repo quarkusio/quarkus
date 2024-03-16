@@ -30,7 +30,7 @@ This mechanism uses the Vert.x EventBus, so you need to enable the `vertx` exten
 If you are creating a new project, set the `extensions` parameter as follows:
 
 :create-app-artifact-id: vertx-quickstart
-:create-app-extensions: vertx,resteasy-reactive
+:create-app-extensions: vertx,rest
 include::{includes}/devtools/create-app.adoc[]
 
 If you have an already created project, the `vertx` extension can be added to an existing Quarkus project with
@@ -297,7 +297,7 @@ This message is consumed by another bean and the response is sent using the _rep
 First create a new project using:
 
 :create-app-artifact-id: vertx-http-quickstart
-:create-app-extensions: vertx,resteasy-reactive
+:create-app-extensions: vertx,rest
 include::{includes}/devtools/create-app.adoc[]
 
 You can already start the application in _dev mode_ using:

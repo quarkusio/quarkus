@@ -21,7 +21,10 @@ public class RestClientBuildTimeConfigSource extends MapBackedConfigSource {
     private int propertyNamesCallCount = 0;
 
     private static final Map<String, String> PROPERTIES = Map.of(
-            "io.quarkus.restclient.configuration.EchoClient/mp-rest/url", "http://nohost:${quarkus.http.test-port:8081}");
+            "io.quarkus.restclient.configuration.EchoClient/mp-rest/url", "http://nohost",
+            "BT-MP/mp-rest/url", "from-mp",
+            "BT-QUARKUS-MP/mp-rest/url", "from-mp",
+            "quarkus.rest-client.BT-QUARKUS-MP.url", "from-quarkus");
 
     public RestClientBuildTimeConfigSource() {
         super(RestClientBuildTimeConfigSource.class.getName(), new HashMap<>());
@@ -29,12 +32,12 @@ public class RestClientBuildTimeConfigSource extends MapBackedConfigSource {
 
     @Override
     public String getValue(final String propertyName) {
-        if (!propertyName.equals("io.quarkus.restclient.configuration.EchoClient/mp-rest/url")) {
+        if (!PROPERTIES.containsKey(propertyName)) {
             return null;
         }
 
         if (isBuildTime()) {
-            return "http://nohost";
+            return PROPERTIES.get(propertyName);
         }
 
         return null;

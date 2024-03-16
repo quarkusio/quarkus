@@ -1,4 +1,4 @@
-import { LitElement, html, css} from 'lit';
+import { QwcAbstractLogElement, html, css} from 'qwc-abstract-log-element';
 import { repeat } from 'lit/directives/repeat.js';
 import { LogController } from 'log-controller';
 import { StorageController } from 'storage-controller';
@@ -6,7 +6,7 @@ import { StorageController } from 'storage-controller';
 /**
  * This component represent the Dev UI Json RPC Message log
  */
-export class QwcJsonrpcMessages extends LitElement {
+export class QwcJsonrpcMessages extends QwcAbstractLogElement {
     
     logControl = new LogController(this);
     storageControl = new StorageController(this);
@@ -44,7 +44,7 @@ export class QwcJsonrpcMessages extends LitElement {
         _zoom: {state:true},
         _increment: {state: false},
         _followLog: {state: false},
-        _isOn: {state: false},
+        _isOn: {state: false}
     };
     
     constructor() {
@@ -83,8 +83,8 @@ export class QwcJsonrpcMessages extends LitElement {
     }
     
     disconnectedCallback() {
-        super.disconnectedCallback();
         this._toggleOnOff(false);
+        super.disconnectedCallback();
     }
     
     render() {
@@ -106,6 +106,8 @@ export class QwcJsonrpcMessages extends LitElement {
     _renderLogEntry(message){
         if(message.isLine){
             return html`<hr class="line"/>`;
+        }else if(message.isBlank){
+            return html`<br/>`;
         }else{
             return html`
                 ${this._renderTimestamp(message.time)}
@@ -201,6 +203,30 @@ export class QwcJsonrpcMessages extends LitElement {
     _zoomIn(){
         this._zoom = parseFloat(parseFloat(this._zoom) + parseFloat(this._increment)).toFixed(2);
     }
+    
+    hotReload(){
+        
+    }
+    
+    _handleZoomIn(event){
+        this._zoomIn();
+    }
+    
+    _handleZoomOut(event){
+        this._zoomOut();
+    }
+    
+    _handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            // Create a blank line in the console.
+            var blankEntry = new Object();
+            blankEntry.id = Math.floor(Math.random() * 999999);
+            blankEntry.isBlank = true;
+            this._addLogEntry(blankEntry);
+        }
+    }
+    
+    
 }
 
 customElements.define('qwc-jsonrpc-messages', QwcJsonrpcMessages);

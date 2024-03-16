@@ -490,6 +490,10 @@ public final class TestProcessor {
     @BuildStep
     void recordProperty(BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfigurationDefault) {
         runTimeConfigurationDefault.produce(new RunTimeConfigurationDefaultBuildItem("recorded.property", "from-build-step"));
+        runTimeConfigurationDefault
+                .produce(new RunTimeConfigurationDefaultBuildItem("recorded.profiled.property", "should-not-be-recorded"));
+        runTimeConfigurationDefault.produce(
+                new RunTimeConfigurationDefaultBuildItem("quarkus.mapping.rt.record-profiled", "should-not-be-recorded"));
     }
 
     public static final class Never implements BooleanSupplier {

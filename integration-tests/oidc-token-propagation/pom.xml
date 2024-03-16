@@ -10,9 +10,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-oidc-token-propagation</artifactId>
-    <name>Quarkus - Integration Tests - OpenID Connect Token Propagation</name>
-    <description>Module that contains OpenID Connect Token Propagation tests</description>
+    <artifactId>quarkus-integration-test-resteasy-client-oidc-token-propagation</artifactId>
+    <name>Quarkus - Integration Tests - RESTEasy Client OpenID Connect Token Propagation</name>
 
     <dependencies>
         <dependency>
@@ -67,11 +66,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc-token-propagation</artifactId>
+            <artifactId>quarkus-resteasy-client-oidc-token-propagation</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc-token-propagation-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-oidc-token-propagation-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -84,11 +83,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc-client-filter</artifactId>
+            <artifactId>quarkus-resteasy-client-oidc-filter</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-oidc-client-filter-deployment</artifactId>
+            <artifactId>quarkus-resteasy-client-oidc-filter-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

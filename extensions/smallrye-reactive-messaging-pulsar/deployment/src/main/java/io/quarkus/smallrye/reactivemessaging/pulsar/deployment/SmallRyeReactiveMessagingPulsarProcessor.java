@@ -37,7 +37,7 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(Feature.SMALLRYE_REACTIVE_MESSAGING_PULSAR);
+        return new FeatureBuildItem(Feature.MESSAGING_PULSAR);
     }
 
     @BuildStep
@@ -135,7 +135,7 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ExtensionSslNativeSupportBuildItem> nativeSslSupport) {
-        nativeSslSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.SMALLRYE_REACTIVE_MESSAGING_PULSAR));
+        nativeSslSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.MESSAGING_PULSAR));
         reflectiveClass.produce(ReflectiveClassBuildItem
                 .builder(ClientConfigurationData.class.getName(),
                         ProducerConfigurationData.class.getName(),

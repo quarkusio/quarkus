@@ -190,7 +190,7 @@ public class ConfigInstantiator {
         // hopefully this is enough
         Class<?> rawType = rawTypeOf(type);
         if (Enum.class.isAssignableFrom(rawType)) {
-            return new HyphenateEnumConverter(rawType);
+            return Converters.getImplicitConverter(rawType);
         } else if (rawType == Optional.class) {
             return Converters.newOptionalConverter(getConverterFor(typeOfParameter(type, 0), config));
         } else if (rawType == List.class) {

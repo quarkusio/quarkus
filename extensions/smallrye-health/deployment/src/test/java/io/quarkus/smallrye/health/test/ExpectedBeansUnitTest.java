@@ -17,7 +17,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.health.SmallRyeHealthReporter;
 import io.smallrye.health.api.HealthGroup;
 
-public class ExpectedBeansUnitTest {
+class ExpectedBeansUnitTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -39,7 +39,7 @@ public class ExpectedBeansUnitTest {
      * Test that SmallRye Health Reporter is registered and unique
      */
     @Test
-    public void testReporterIsUnique() {
+    void testReporterIsUnique() {
         Assertions.assertTrue(isUnique(reporters));
     }
 
@@ -47,7 +47,7 @@ public class ExpectedBeansUnitTest {
      * Test that HealthCheck procedure beans are registered once
      */
     @Test
-    public void testHealthCheckIsUnique() {
+    void testHealthCheckIsUnique() {
         Assertions.assertTrue(isUnique(checks));
     }
 
@@ -55,7 +55,7 @@ public class ExpectedBeansUnitTest {
      * Test metadata on HealthCheck procedure beans
      */
     @Test
-    public void testHealthCheckMetadata() {
+    void testHealthCheckMetadata() {
         Instance<HealthCheck> selects;
 
         selects = checks.select(Liveness.Literal.INSTANCE);

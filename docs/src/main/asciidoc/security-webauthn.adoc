@@ -90,7 +90,7 @@ The solution is located in the `security-webauthn-quickstart` link:{quickstarts-
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: security-webauthn-quickstart
-:create-app-extensions: security-webauthn,jdbc-postgresql,resteasy-reactive,hibernate-orm-panache
+:create-app-extensions: security-webauthn,jdbc-postgresql,rest,hibernate-orm-panache
 include::{includes}/devtools/create-app.adoc[]
 
 [NOTE]

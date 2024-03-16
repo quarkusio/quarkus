@@ -54,7 +54,8 @@ public class ConfiguredBeanTest {
                     .addClasses(ConfiguredBean.class)
                     // Don't change this to types, because of classloader class cast exception.
                     .addAsServiceProvider("org.eclipse.microprofile.config.spi.ConfigSource",
-                            "io.quarkus.extest.runtime.config.OverrideBuildTimeConfigSource")
+                            "io.quarkus.extest.runtime.config.OverrideBuildTimeConfigSource\n" +
+                                    "io.quarkus.extest.runtime.config.RecordQuarkusSystemPropertiesConfigSource")
                     .addAsResource("application.properties"));
 
     @Inject
@@ -363,6 +364,11 @@ public class ConfiguredBeanTest {
         assertEquals("5678", defaultValues.getValue("%dev.my.prop"));
         assertEquals("1234", defaultValues.getValue("%test.my.prop"));
         assertEquals("1234", config.getValue("my.prop", String.class));
+        assertNull(defaultValues.getValue("should.not.be.recorded"));
+        assertNull(defaultValues.getValue("SHOULD_NOT_BE_RECORDED"));
+        assertEquals("value", defaultValues.getValue("quarkus.mapping.rt.record"));
+        assertEquals("prod", defaultValues.getValue("%prod.quarkus.mapping.rt.record"));
+        assertEquals("dev", defaultValues.getValue("%dev.quarkus.mapping.rt.record"));
     }
 
     @Test

@@ -1,0 +1,13 @@
+name: resteasy-client-codestart
+ref: resteasy-client
+type: code
+tags: extension-codestart
+metadata:
+  title: RESTEasy Client
+  description: Invoke different services through REST with JSON
+  related-guide-section: https://quarkus.io/guides/resteasy-client
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-resteasy-client
+      - io.quarkus:quarkus-resteasy-client-jackson

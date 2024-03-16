@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.client.handlers;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -21,6 +22,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Variant;
+import jakarta.ws.rs.ext.WriterInterceptor;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.AsyncResultUni;
@@ -28,6 +30,7 @@ import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
+import org.jboss.resteasy.reactive.client.impl.InputStreamReadStream;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
@@ -43,6 +46,7 @@ import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.vertx.ReadStreamSubscriber;
 import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
@@ -165,6 +169,30 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                             attachSentHandlers(sent, httpClientRequest, requestContext);
                                         }
                                     });
+                } else if (requestContext.isInputStreamUpload() && !hasWriterInterceptors(requestContext)) {
+                    MultivaluedMap<String, String> headerMap = requestContext.getRequestHeaders()
+                            .asMap();
+                    updateRequestHeadersFromConfig(requestContext, headerMap);
+                    setVertxHeaders(httpClientRequest, headerMap);
+                    Future<HttpClientResponse> sent = httpClientRequest.send(
+                            new InputStreamReadStream(
+                                    Vertx.currentContext().owner(), (InputStream) requestContext.getEntity().getEntity(),
+                                    httpClientRequest));
+                    attachSentHandlers(sent, httpClientRequest, requestContext);
+                } else if (requestContext.isMultiBufferUpload()) {
+                    MultivaluedMap<String, String> headerMap = requestContext.getRequestHeaders()
+                            .asMap();
+                    updateRequestHeadersFromConfig(requestContext, headerMap);
+                    setVertxHeaders(httpClientRequest, headerMap);
+                    Future<HttpClientResponse> sent = httpClientRequest.send(ReadStreamSubscriber.asReadStream(
+                            (Multi<io.vertx.mutiny.core.buffer.Buffer>) requestContext.getEntity().getEntity(),
+                            new Function<>() {
+                                @Override
+                                public Buffer apply(io.vertx.mutiny.core.buffer.Buffer buffer) {
+                                    return buffer.getDelegate();
+                                }
+                            }));
+                    attachSentHandlers(sent, httpClientRequest, requestContext);
                 } else {
                     Future<HttpClientResponse> sent;
                     Buffer actualEntity;
@@ -505,8 +533,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             // no need to set the entity.getMediaType, it comes from the variant
             setEntityRelatedHeaders(headerMap, entity);
 
-            actualEntity = state.writeEntity(entity, headerMap,
-                    state.getConfiguration().getWriterInterceptors().toArray(Serialisers.NO_WRITER_INTERCEPTOR));
+            actualEntity = state.writeEntity(entity, headerMap, getWriterInterceptors(state));
         } else {
             // some servers don't like the fact that a POST or PUT does not have a method body if there is no content-length header associated
             if (state.getHttpMethod().equals("POST") || state.getHttpMethod().equals("PUT")) {
@@ -516,6 +543,15 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         // set the Vertx headers after we've run the interceptors because they can modify them
         setVertxHeaders(httpClientRequest, headerMap);
         return actualEntity;
+    }
+
+    private WriterInterceptor[] getWriterInterceptors(RestClientRequestContext context) {
+        return context.getConfiguration().getWriterInterceptors().toArray(Serialisers.NO_WRITER_INTERCEPTOR);
+    }
+
+    private boolean hasWriterInterceptors(RestClientRequestContext context) {
+        WriterInterceptor[] interceptors = getWriterInterceptors(context);
+        return interceptors != null && interceptors.length > 0;
     }
 
     private void adaptRequest(HttpClientRequest request) {

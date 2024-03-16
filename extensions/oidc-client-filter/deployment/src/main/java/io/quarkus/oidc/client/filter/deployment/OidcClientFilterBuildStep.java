@@ -47,7 +47,7 @@ public class OidcClientFilterBuildStep {
         final Set<String> namedFilterClientClasses = namedOidcClientFilterBuildItem.namedFilterClientClasses;
 
         // register default request filter provider against the rest of the clients (client != namedFilterClientClasses)
-        if (config.registerFilter) {
+        if (config.registerFilter()) {
             if (namedFilterClientClasses.isEmpty()) {
                 // register default request filter as global rest client provider
                 jaxrsProviders.produce(new ResteasyJaxrsProviderBuildItem(OidcClientRequestFilter.class.getName()));
@@ -101,7 +101,7 @@ public class OidcClientFilterBuildStep {
             final String clientName = OidcClientFilterDeploymentHelper.getClientName(instance);
             // do not create & register named filter for the OidcClient registered through configuration property
             // as default request filter got it covered
-            if (clientName != null && !clientName.equals(config.clientName.orElse(null))) {
+            if (clientName != null && !clientName.equals(config.clientName().orElse(null))) {
 
                 // create named filter class for named OidcClient
                 // we generate exactly one custom filter for each named client specified through annotation

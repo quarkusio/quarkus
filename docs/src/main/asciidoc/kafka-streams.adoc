@@ -87,10 +87,10 @@ include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Maven project, importing the Reactive Messaging and Kafka connector extensions.
 
-If you already have your Quarkus project configured, you can add the `smallrye-reactive-messaging-kafka` extension
+If you already have your Quarkus project configured, you can add the `messaging-kafka` extension
 to your project by running the following command in your project base directory:
 
-:add-extension-extensions: quarkus-smallrye-reactive-messaging-kafka
+:add-extension-extensions: quarkus-messaging-kafka
 include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
@@ -100,14 +100,14 @@ This will add the following to your build file:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+    <artifactId>quarkus-messaging-kafka</artifactId>
 </dependency>
 ----
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkus:quarkus-smallrye-reactive-messaging-kafka")
+implementation("io.quarkus:quarkus-messaging-kafka")
 ----
 
 === The Temperature Value Producer
@@ -233,11 +233,11 @@ which will run the Kafka Streams pipeline.
 Create another project like so:
 
 :create-app-artifact-id: kafka-streams-quickstart-aggregator
-:create-app-extensions: kafka-streams,resteasy-reactive-jackson
+:create-app-extensions: kafka-streams,rest-jackson
 :create-app-post-command: mv kafka-streams-quickstart-aggregator aggregator
 include::{includes}/devtools/create-app.adoc[]
 
-This creates the `aggregator` project with the Quarkus extension for Kafka Streams and with the Jackson support for RESTEasy Reactive.
+This creates the `aggregator` project with the Quarkus extension for Kafka Streams and with the Jackson support for Quarkus REST (formerly RESTEasy Reactive).
 
 If you already have your Quarkus project configured, you can add the `kafka-streams` extension
 to your project by running the following command in your project base directory:

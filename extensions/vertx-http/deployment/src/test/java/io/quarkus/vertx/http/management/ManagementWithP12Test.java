@@ -21,20 +21,26 @@ import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.restassured.RestAssured;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
+import me.escoffier.certs.Format;
+import me.escoffier.certs.junit5.Certificate;
+import me.escoffier.certs.junit5.Certificates;
 
+@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-management-interface-test", password = "secret", formats = {
+        Format.JKS, Format.PKCS12, Format.PEM }))
 public class ManagementWithP12Test {
-    private static final String APP_PROPS = "" +
-            "quarkus.management.enabled=true\n" +
-            "quarkus.management.root-path=/management\n" +
-            "quarkus.management.ssl.certificate.key-store-file=server-keystore.p12\n" +
-            "quarkus.management.ssl.certificate.key-store-password=secret\n";
+    private static final String configuration = """
+            quarkus.management.enabled=true
+            quarkus.management.root-path=/management
+            quarkus.management.ssl.certificate.key-store-file=server-keystore.p12
+            quarkus.management.ssl.certificate.key-store-password=secret
+            """;
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties")
-                    .addAsResource(new File("src/test/resources/conf/server-keystore.p12"), "server-keystore.p12")
-                    .addClasses(MyObserver.class))
+                    .addAsResource(new StringAsset(configuration), "application.properties")
+                    .addAsResource(new File("target/certs/ssl-management-interface-test-keystore.p12"), "server-keystore.p12")
+                    .addClasses(ManagementWithJksTest.MyObserver.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -72,7 +78,7 @@ public class ManagementWithP12Test {
     @Test
     public void testSslWithP12() {
         RestAssured.given()
-                .relaxedHTTPSValidation()
+                .trustStore(new File("target/certs/ssl-management-interface-test-truststore.jks"), "secret")
                 .get("https://0.0.0.0:9001/management/my-route")
                 .then().statusCode(200).body(Matchers.equalTo("ssl"));
     }

@@ -24,12 +24,12 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-web-resteasy-classic-deployment</artifactId>
+            <artifactId>quarkus-spring-web-resteasy-deployment</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-spring-web-resteasy-reactive-deployment</artifactId>
+            <artifactId>quarkus-spring-web-rest-deployment</artifactId>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -38,7 +38,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-reactive-spi-deployment</artifactId>
+            <artifactId>quarkus-rest-spi-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

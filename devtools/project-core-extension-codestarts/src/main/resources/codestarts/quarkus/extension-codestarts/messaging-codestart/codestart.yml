@@ -1,0 +1,10 @@
+name: messaging-codestart
+ref: messaging
+tags: extension-codestart
+type: code
+metadata:
+  title: Messaging codestart
+  description: Use Quarkus Messaging
+language:
+  base:
+    dependencies:

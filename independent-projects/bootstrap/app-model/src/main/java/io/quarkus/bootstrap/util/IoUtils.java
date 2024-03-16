@@ -21,6 +21,8 @@ import java.util.EnumSet;
 import java.util.Objects;
 import java.util.UUID;
 
+import org.jboss.logging.Logger;
+
 /**
  *
  * @author Alexey Loubyansky
@@ -30,6 +32,8 @@ public class IoUtils {
     private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
 
     private static final Path TMP_DIR = Paths.get(PropertyUtils.getProperty("java.io.tmpdir"));
+
+    private static final Logger log = Logger.getLogger(IoUtils.class);
 
     private static void failedToMkDir(final Path dir) {
         throw new IllegalStateException("Failed to create directory " + dir);
@@ -57,6 +61,7 @@ public class IoUtils {
     }
 
     public static void recursiveDelete(Path root) {
+        log.debugf("Recursively delete directory %s", root);
         if (root == null || !Files.exists(root)) {
             return;
         }
@@ -68,6 +73,7 @@ public class IoUtils {
                     try {
                         Files.delete(file);
                     } catch (IOException ex) {
+                        log.debugf(ex, "Unable to delete file " + file);
                     }
                     return FileVisitResult.CONTINUE;
                 }
@@ -79,6 +85,7 @@ public class IoUtils {
                         try {
                             Files.delete(dir);
                         } catch (IOException ex) {
+                            log.debugf(ex, "Unable to delete directory " + dir);
                         }
                         return FileVisitResult.CONTINUE;
                     } else {
@@ -88,6 +95,7 @@ public class IoUtils {
                 }
             });
         } catch (IOException e) {
+            log.debugf(e, "Error recursively deleting directory");
         }
     }
 
@@ -98,19 +106,23 @@ public class IoUtils {
      * @throws IOException in case of a failure
      */
     public static void createOrEmptyDir(Path dir) throws IOException {
+        log.debugf("Create or empty directory %s", dir);
         Objects.requireNonNull(dir);
         if (!Files.exists(dir)) {
+            log.debugf("Directory %s does not exist, create directories", dir);
             Files.createDirectories(dir);
             return;
         }
         if (!Files.isDirectory(dir)) {
             throw new IllegalArgumentException(dir + " is not a directory");
         }
+        log.debugf("Iterate over contents of %s to delete its contents", dir);
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
             for (Path p : stream) {
                 if (Files.isDirectory(p)) {
                     recursiveDelete(p);
                 } else {
+                    log.debugf("Delete file %s", p);
                     Files.delete(p);
                 }
             }

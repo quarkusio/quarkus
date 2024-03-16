@@ -3,7 +3,7 @@ package io.quarkus.smallrye.reactivemessaging.kafka;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(name = "reactive-messaging.kafka")
+@ConfigRoot(name = "messaging.kafka")
 public class ReactiveMessagingKafkaConfig {
 
     /**

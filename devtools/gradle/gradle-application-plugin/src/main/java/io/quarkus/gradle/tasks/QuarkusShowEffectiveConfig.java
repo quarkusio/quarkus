@@ -8,7 +8,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -51,10 +53,15 @@ public abstract class QuarkusShowEffectiveConfig extends QuarkusBuildTask {
             List<String> sourceNames = new ArrayList<>();
             config.getConfigSources().forEach(configSource -> sourceNames.add(configSource.getName()));
 
-            String quarkusConfig = config.getValues("quarkus", String.class, String.class)
+            Map<String, String> values = new HashMap<>();
+            for (String key : config.getMapKeys("quarkus").values()) {
+                values.put(key, config.getConfigValue(key).getValue());
+            }
+
+            String quarkusConfig = values
                     .entrySet()
                     .stream()
-                    .map(e -> format("quarkus.%s=%s", e.getKey(), e.getValue())).sorted()
+                    .map(e -> format("%s=%s", e.getKey(), e.getValue())).sorted()
                     .collect(Collectors.joining("\n    ", "\n    ", "\n"));
             getLogger().lifecycle("Effective Quarkus configuration options: {}", quarkusConfig);
 

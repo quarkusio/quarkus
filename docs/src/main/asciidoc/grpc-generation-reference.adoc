@@ -288,3 +288,12 @@ plugins {
 
 IMPORTANT: It is recommended to package the `proto` files in a dependency instead of the generated classes, so Quarkus can generate optimized classes.
 Refer to the <<scan-for-proto, dedicated section>> for more information.
+
+== Argument files
+
+When the `protoc` command line exceeds the maximum command length, you can ask Quarkus to use an argument file to pass the arguments to the `protoc` command.
+
+To enable this feature, set the `quarkus.generate-code.grpc.use-arg-file` property in your `application.properties` file to `true`.
+
+If you are on Windows, and the command line exceeds 8190 characters, Quarkus automatically uses an argument file to pass the arguments to the `protoc` command.
+

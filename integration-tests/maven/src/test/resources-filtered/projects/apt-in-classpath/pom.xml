@@ -32,7 +32,7 @@
     <!-- insert test dependencies here -->
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy-reactive</artifactId>
+      <artifactId>quarkus-rest</artifactId>
     </dependency>
     <!-- Use this rather than quarkus-hibernate-orm which would force us to define a datasource we don't need -->
     <dependency>

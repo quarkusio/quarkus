@@ -193,6 +193,10 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
             return qualifiers;
         }
 
+        String getIdentifier() {
+            return identifier;
+        }
+
         Supplier<?> getSupplier() {
             return supplier;
         }

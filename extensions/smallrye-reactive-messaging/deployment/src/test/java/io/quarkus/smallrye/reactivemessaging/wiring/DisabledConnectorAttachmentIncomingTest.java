@@ -31,7 +31,7 @@ public class DisabledConnectorAttachmentIncomingTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(MyDummyConnector.class, MySink.class))
-            .overrideConfigKey("quarkus.reactive-messaging.auto-connector-attachment", "false");
+            .overrideConfigKey("quarkus.messaging.auto-connector-attachment", "false");
 
     @Inject
     MySink sink;

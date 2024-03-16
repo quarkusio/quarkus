@@ -6,6 +6,7 @@ import org.eclipse.microprofile.context.spi.ThreadContextController;
 import org.eclipse.microprofile.context.spi.ThreadContextProvider;
 import org.eclipse.microprofile.context.spi.ThreadContextSnapshot;
 
+import io.opentelemetry.api.trace.Span;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 
 public class OpenTelemetryMpContextPropagationProvider implements ThreadContextProvider {
@@ -26,7 +27,10 @@ public class OpenTelemetryMpContextPropagationProvider implements ThreadContextP
                     return new ThreadContextController() {
                         @Override
                         public void endContext() throws IllegalStateException {
-                            QuarkusContextStorage.INSTANCE.attach(currentContext);
+                            Span span = Span.fromContext(currentContext);
+                            if (span != null && span.isRecording()) {
+                                QuarkusContextStorage.INSTANCE.attach(currentContext);
+                            }
                         }
                     };
                 }

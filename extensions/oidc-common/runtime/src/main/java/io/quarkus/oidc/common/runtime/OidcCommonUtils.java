@@ -439,12 +439,15 @@ public class OidcCommonUtils {
     }
 
     public static Uni<JsonObject> discoverMetadata(WebClient client, Map<OidcEndpoint.Type, List<OidcRequestFilter>> filters,
-            String authServerUrl, long connectionDelayInMillisecs, Vertx vertx, boolean blockingDnsLookup) {
+            OidcRequestContextProperties contextProperties, String authServerUrl,
+            long connectionDelayInMillisecs, Vertx vertx, boolean blockingDnsLookup) {
         final String discoveryUrl = getDiscoveryUri(authServerUrl);
         HttpRequest<Buffer> request = client.getAbs(discoveryUrl);
         if (!filters.isEmpty()) {
-            OidcRequestContextProperties requestProps = new OidcRequestContextProperties(
-                    Map.of(OidcRequestContextProperties.DISCOVERY_ENDPOINT, discoveryUrl));
+            Map<String, Object> newProperties = contextProperties == null ? new HashMap<>()
+                    : new HashMap<>(contextProperties.getAll());
+            newProperties.put(OidcRequestContextProperties.DISCOVERY_ENDPOINT, discoveryUrl);
+            OidcRequestContextProperties requestProps = new OidcRequestContextProperties(newProperties);
             for (OidcRequestFilter filter : getMatchingOidcRequestFilters(filters, OidcEndpoint.Type.DISCOVERY)) {
                 filter.filter(request, null, requestProps);
             }

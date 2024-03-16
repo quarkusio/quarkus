@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
@@ -54,6 +55,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         server.stubFor(WireMock.post("/non-standard-tokens")
                 .withHeader("X-Custom", matching("XCustomHeaderValue"))
                 .withHeader("GrantType", matching("password"))
+                .withHeader("client-id", containing("non-standard-response"))
                 .withRequestBody(matching("grant_type=password&username=alice&password=alice&extra_param=extra_param_value"))
                 .willReturn(WireMock
                         .aResponse()

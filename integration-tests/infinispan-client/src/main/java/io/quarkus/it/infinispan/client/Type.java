@@ -1,10 +1,9 @@
 package io.quarkus.it.infinispan.client;
 
-import org.infinispan.protostream.annotations.ProtoEnumValue;
+import org.infinispan.protostream.annotations.Proto;
 
+@Proto
 public enum Type {
-    @ProtoEnumValue(number = 1)
     FANTASY,
-    @ProtoEnumValue(number = 2)
     PROGRAMMING
 }

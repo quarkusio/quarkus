@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.time.Duration;
 import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
@@ -37,6 +39,8 @@ import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.Router;
 
 public class WithSpanInterceptorTest {
@@ -137,6 +141,64 @@ public class WithSpanInterceptorTest {
                 ((ExceptionEventData) spanItems.get(0).getEvents().get(0)).getException().getMessage());
     }
 
+    @Test
+    void spanUni() {
+        assertEquals("hello Uni", spanBean.spanUni().await().atMost(Duration.ofSeconds(1)));
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
+
+        final SpanData parent = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
+        assertEquals("withSpanAndUni", parent.getName());
+        assertEquals(StatusCode.UNSET, parent.getStatus().getStatusCode());
+    }
+
+    @Test
+    void spanUniWithException() {
+        try {
+            spanBean.spanUniWithException().await().atMost(Duration.ofSeconds(1));
+            fail("Exception expected");
+        } catch (Exception e) {
+            assertThrows(RuntimeException.class, () -> {
+                throw e;
+            });
+        }
+        List<SpanData> spanItems = spanExporter.getFinishedSpanItems(1);
+        assertEquals("withSpanAndUni", spanItems.get(0).getName());
+        assertEquals(INTERNAL, spanItems.get(0).getKind());
+        assertEquals(ERROR, spanItems.get(0).getStatus().getStatusCode());
+        assertEquals(1, spanItems.get(0).getEvents().size());
+        assertEquals("hello Uni",
+                ((ExceptionEventData) spanItems.get(0).getEvents().get(0)).getException().getMessage());
+    }
+
+    @Test
+    void spanMulti() {
+        assertEquals("hello Multi 2", spanBean.spanMulti().collect().last().await().atMost(Duration.ofSeconds(1)));
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
+
+        final SpanData parent = getSpanByKindAndParentId(spans, INTERNAL, "0000000000000000");
+        assertEquals("withSpanAndMulti", parent.getName());
+        assertEquals(StatusCode.UNSET, parent.getStatus().getStatusCode());
+    }
+
+    @Test
+    void spanMultiWithException() {
+        try {
+            spanBean.spanMultiWithException().collect().last().await().atMost(Duration.ofSeconds(1));
+            fail("Exception expected");
+        } catch (Exception e) {
+            assertThrows(RuntimeException.class, () -> {
+                throw e;
+            });
+        }
+        List<SpanData> spanItems = spanExporter.getFinishedSpanItems(1);
+        assertEquals("withSpanAndMulti", spanItems.get(0).getName());
+        assertEquals(INTERNAL, spanItems.get(0).getKind());
+        assertEquals(ERROR, spanItems.get(0).getStatus().getStatusCode());
+        assertEquals(1, spanItems.get(0).getEvents().size());
+        assertEquals("hello Multi",
+                ((ExceptionEventData) spanItems.get(0).getEvents().get(0)).getException().getMessage());
+    }
+
     @ApplicationScoped
     public static class SpanBean {
         @WithSpan
@@ -178,6 +240,26 @@ public class WithSpanInterceptorTest {
         @WithSpan
         public void spanRestClient() {
             spanRestClient.spanRestClient();
+        }
+
+        @WithSpan(value = "withSpanAndUni")
+        public Uni<String> spanUni() {
+            return Uni.createFrom().item("hello Uni");
+        }
+
+        @WithSpan(value = "withSpanAndUni")
+        public Uni<String> spanUniWithException() {
+            return Uni.createFrom().failure(new RuntimeException("hello Uni"));
+        }
+
+        @WithSpan(value = "withSpanAndMulti")
+        public Multi<String> spanMulti() {
+            return Multi.createFrom().items("hello Multi 1", "hello Multi 2");
+        }
+
+        @WithSpan(value = "withSpanAndMulti")
+        public Multi<String> spanMultiWithException() {
+            return Multi.createFrom().failure(new RuntimeException("hello Multi"));
         }
     }
 

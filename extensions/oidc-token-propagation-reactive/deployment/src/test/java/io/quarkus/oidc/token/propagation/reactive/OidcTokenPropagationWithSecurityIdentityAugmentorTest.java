@@ -40,7 +40,7 @@ public class OidcTokenPropagationWithSecurityIdentityAugmentorTest {
                     .addClasses(testClasses)
                     .addAsResource("application.properties")
                     .addAsResource(
-                            new StringAsset("quarkus.oidc-token-propagation-reactive.enabled-during-authentication=true\n" +
+                            new StringAsset("quarkus.rest-client-oidc-token-propagation.enabled-during-authentication=true\n" +
                                     "quarkus.rest-client.\"roles\".uri=http://localhost:8081/roles\n"),
                             "META-INF/microprofile-config.properties"));
 

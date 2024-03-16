@@ -460,7 +460,8 @@ public class VertxHttpRecorder {
             } else {
                 receiver = new JBossLoggingAccessLogReceiver(accessLog.category);
             }
-            AccessLogHandler handler = new AccessLogHandler(receiver, accessLog.pattern, getClass().getClassLoader(),
+            AccessLogHandler handler = new AccessLogHandler(receiver, accessLog.pattern, accessLog.consolidateReroutedRequests,
+                    getClass().getClassLoader(),
                     accessLog.excludePattern);
             if (rootPath.equals("/") || nonRootPath.equals("/")) {
                 mainRouterRuntimeValue.orElse(httpRouterRuntimeValue).getValue().route()
@@ -1186,8 +1187,10 @@ public class VertxHttpRecorder {
 
                         if (https) {
                             actualHttpsPort = actualPort;
+                            validateHttpPorts(actualHttpPort, actualHttpsPort);
                         } else {
                             actualHttpPort = actualPort;
+                            validateHttpPorts(actualHttpPort, actualHttpsPort);
                         }
                         if (actualPort != options.getPort()) {
                             // Override quarkus.http(s)?.(test-)?port
@@ -1217,6 +1220,12 @@ public class VertxHttpRecorder {
                             startFuture.complete(null);
                         }
 
+                    }
+                }
+
+                private void validateHttpPorts(int httpPort, int httpsPort) {
+                    if (httpsPort == httpPort) {
+                        throw new IllegalArgumentException("Both http and https servers started on port " + httpPort);
                     }
                 }
             });

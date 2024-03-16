@@ -1,5 +1,7 @@
 package io.quarkus.azure.functions.resteasy.runtime;
 
+import static com.microsoft.azure.functions.HttpMethod.*;
+
 import java.util.Optional;
 
 import com.microsoft.azure.functions.ExecutionContext;
@@ -15,7 +17,9 @@ public class Function extends BaseFunction {
 
     @FunctionName(QUARKUS_HTTP)
     public HttpResponseMessage run(
-            @HttpTrigger(name = "req", dataType = "binary", route = "{*path}", authLevel = AuthorizationLevel.ANONYMOUS) HttpRequestMessage<Optional<String>> request,
+            @HttpTrigger(name = "req", dataType = "binary", route = "{*path}", authLevel = AuthorizationLevel.ANONYMOUS, methods = {
+                    GET, HEAD, POST, PUT, DELETE, CONNECT, OPTIONS, TRACE,
+                    PATCH }) HttpRequestMessage<Optional<String>> request,
             ExecutionContext context) {
 
         return dispatch(request);

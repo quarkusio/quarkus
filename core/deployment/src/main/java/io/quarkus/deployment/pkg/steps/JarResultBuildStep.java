@@ -926,9 +926,11 @@ public class JarResultBuildStep {
                     }
                 }
                 if (removedFromThisArchive.isEmpty()) {
-                    Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                    Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING,
+                            StandardCopyOption.COPY_ATTRIBUTES);
                 } else {
-                    //we have removed classes, we need to handle them correctly
+                    // we copy jars for which we remove entries to the same directory
+                    // which seems a bit odd to me
                     filterZipFile(resolvedDep, targetPath, removedFromThisArchive);
                 }
             }
@@ -1016,6 +1018,14 @@ public class JarResultBuildStep {
             removedArtifacts.add("org.graalvm.sdk:nativeimage");
             removedArtifacts.add("org.graalvm.sdk:word");
             removedArtifacts.add("org.graalvm.sdk:collections");
+
+            // complain if graal-sdk is present as a dependency as nativeimage should be preferred
+            if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream()
+                    .anyMatch(d -> d.getGroupId().equals("org.graalvm.sdk") && d.getArtifactId().equals("graal-sdk"))) {
+                log.warn("org.graalvm.sdk:graal-sdk is present in the classpath. "
+                        + "From Quarkus 3.8 and onwards, org.graalvm.sdk:nativeimage should be preferred. "
+                        + "Make sure you report the issue to the maintainers of the extensions that bring it.");
+            }
 
             doLegacyThinJarGeneration(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem, applicationInfo, packageConfig, generatedResources, libDir, allClasses,
@@ -1251,6 +1261,8 @@ public class JarResultBuildStep {
                         }
                     }
                 }
+                // let's make sure we keep the original timestamp
+                Files.setLastModifiedTime(targetPath, Files.getLastModifiedTime(resolvedDep));
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

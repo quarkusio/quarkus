@@ -191,6 +191,10 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         }
     }
 
+    public static String getManagementUrlPrefix() {
+        return getManagementUrlPrefix(null);
+    }
+
     /**
      * Best effort to deduce the URL prefix (scheme, host, port) of the management interface.
      *
@@ -201,7 +205,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         Config config = ConfigProvider.getConfig();
         var managementHost = config.getOptionalValue("quarkus.management.host", String.class).orElse("0.0.0.0");
         var managementPort = config.getOptionalValue("quarkus.management.port", Integer.class).orElse(9000);
-        if (mode.isTest()) {
+        if (mode != null && mode.isTest()) {
             managementPort = config.getOptionalValue("quarkus.management.test-port", Integer.class).orElse(9001);
         }
         var isHttps = isTLsConfigured(config);
@@ -396,7 +400,11 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
                 return null;
             }
             if (isManagement && buildItem.managementRootPath != null) {
-                return null; // Exposed on the management interface, so not exposed.
+                if (notFoundPagePath != null && absolutePath == null) {
+                    absolutePath = getManagementUrlPrefix() + notFoundPagePath;
+                } else {
+                    return null;
+                }
             }
             if (notFoundPagePath == null) {
                 throw new RuntimeException("Cannot display " + routeFunction

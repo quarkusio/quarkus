@@ -11,6 +11,11 @@ VERSION=$1
 
 ./mvnw -e -B -Dscan=false -Dgradle.cache.local.enabled=false versions:set -Dtcks -DnewVersion="${VERSION}" -DgenerateBackupPoms=false -DprocessAllModules -Prelocations -DupdateBuildOutputTimestampPolicy=always
 
+if [ -f independent-projects/enforcer-rules/src/it/smoketest/pom.xml ]; then
+    # update the parent version only using indentation
+    sed -i -r "s@        <version>[^<]+</version>@        <version>${VERSION}</version>@" independent-projects/enforcer-rules/src/it/smoketest/pom.xml
+fi
+
 if [ -f devtools/gradle/gradle.properties ]; then
     sed -i -r "s/^version( ?= ?).*$/version\1${VERSION}/" devtools/gradle/gradle.properties
 fi

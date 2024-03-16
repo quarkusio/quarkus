@@ -10,8 +10,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-oidc-token-propagation-reactive-parent</artifactId>
-    <name>Quarkus - OpenID Connect Token Propagation Reactive</name>
+    <artifactId>quarkus-rest-client-oidc-token-propagation-parent</artifactId>
+    <name>Quarkus - REST Client - OpenID Connect Token Propagation</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

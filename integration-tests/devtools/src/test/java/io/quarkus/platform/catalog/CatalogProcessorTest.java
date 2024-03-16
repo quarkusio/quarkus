@@ -38,6 +38,7 @@ public class CatalogProcessorTest extends PlatformAwareTestBase {
 
     @Test
     void testExtensionsOrder() {
+        // this test is using an older version of the catalog so resteasy-reactive is still a thing
         final ExtensionCatalog catalog = newFakeExtensionCatalog();
         assertThat(getProcessedCategoriesInOrder(catalog).get(0).getSortedExtensions())
                 .map(Extension::getArtifact)

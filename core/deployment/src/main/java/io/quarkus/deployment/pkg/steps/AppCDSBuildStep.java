@@ -49,7 +49,7 @@ public class AppCDSBuildStep {
         producer.produce(new AppCDSRequestedBuildItem(outputTarget.getOutputDirectory().resolve("appcds")));
     }
 
-    @BuildStep
+    @BuildStep(onlyIfNot = NativeOrNativeSourcesBuild.class)
     public void build(Optional<AppCDSRequestedBuildItem> appCDsRequested,
             JarBuildItem jarResult, OutputTargetBuildItem outputTarget, PackageConfig packageConfig,
             CompiledJavaVersionBuildItem compiledJavaVersion,

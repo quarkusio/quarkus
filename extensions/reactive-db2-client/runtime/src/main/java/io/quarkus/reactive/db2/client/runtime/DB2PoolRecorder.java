@@ -10,11 +10,13 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOpt
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
 
+import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
 
@@ -47,7 +49,7 @@ import io.vertx.sqlclient.impl.Utils;
 public class DB2PoolRecorder {
 
     private static final Logger log = Logger.getLogger(DB2PoolRecorder.class);
-    private static final TypeLiteral<Instance<DB2PoolCreator>> TYPE_LITERAL = new TypeLiteral<>() {
+    private static final TypeLiteral<Instance<DB2PoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
 
     public Function<SyntheticCreationalContext<DB2Pool>, DB2Pool> configureDB2Pool(RuntimeValue<Vertx> vertx,
@@ -75,14 +77,28 @@ public class DB2PoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<io.vertx.mutiny.db2client.DB2Pool>, io.vertx.mutiny.db2client.DB2Pool> mutinyDB2Pool(
-            Function<SyntheticCreationalContext<DB2Pool>, DB2Pool> function) {
+            String dataSourceName) {
         return new Function<>() {
             @SuppressWarnings("unchecked")
             @Override
             public io.vertx.mutiny.db2client.DB2Pool apply(SyntheticCreationalContext context) {
-                return io.vertx.mutiny.db2client.DB2Pool.newInstance(function.apply(context));
+                DataSourceSupport datasourceSupport = (DataSourceSupport) context.getInjectedReference(DataSourceSupport.class);
+                if (datasourceSupport.getInactiveNames().contains(dataSourceName)) {
+                    throw DataSourceUtil.dataSourceInactive(dataSourceName);
+                }
+                DB2Pool db2Pool = (DB2Pool) context.getInjectedReference(DB2Pool.class,
+                        getReactiveDataSourceQualifier(dataSourceName));
+                return io.vertx.mutiny.db2client.DB2Pool.newInstance(db2Pool);
             }
         };
+    }
+
+    private static Annotation getReactiveDataSourceQualifier(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return Default.Literal.INSTANCE;
+        }
+
+        return new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName);
     }
 
     private DB2Pool initialize(VertxInternal vertx,
@@ -217,9 +233,11 @@ public class DB2PoolRecorder {
 
         connectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval().toMillis());
 
-        if (dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().isPresent()) {
-            connectOptions.setHostnameVerificationAlgorithm(
-                    dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().get());
+        var algo = dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm();
+        if ("NONE".equalsIgnoreCase(algo)) {
+            connectOptions.setHostnameVerificationAlgorithm("");
+        } else {
+            connectOptions.setHostnameVerificationAlgorithm(algo);
         }
 
         dataSourceReactiveRuntimeConfig.additionalProperties().forEach(connectOptions::addProperty);
@@ -238,9 +256,9 @@ public class DB2PoolRecorder {
             SyntheticCreationalContext<DB2Pool> context) {
         Instance<DB2PoolCreator> instance;
         if (DataSourceUtil.isDefault(dataSourceName)) {
-            instance = context.getInjectedReference(TYPE_LITERAL);
+            instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL);
         } else {
-            instance = context.getInjectedReference(TYPE_LITERAL,
+            instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL,
                     new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
         }
         if (instance.isResolvable()) {

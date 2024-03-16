@@ -57,7 +57,7 @@ public class ListExtensionsCommandHandler implements QuarkusCommandHandler {
                 invocation.getQuarkusProject().getExtensionManager());
 
         final Collection<Extension> extensions = search == null ? invocation.getExtensionsCatalog().getExtensions()
-                : QuarkusCommandHandlers.select(search, invocation.getExtensionsCatalog().getExtensions(), true)
+                : QuarkusCommandHandlers.listExtensions(search, invocation.getExtensionsCatalog().getExtensions(), true)
                         .getExtensions();
 
         if (extensions.isEmpty()) {

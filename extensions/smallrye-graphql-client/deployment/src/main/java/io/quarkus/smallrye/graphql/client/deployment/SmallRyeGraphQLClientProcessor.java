@@ -3,16 +3,19 @@ package io.quarkus.smallrye.graphql.client.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -26,16 +29,22 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientBuildConfig;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientSupport;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientsConfig;
 import io.quarkus.smallrye.graphql.client.runtime.SmallRyeGraphQLClientRecorder;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.smallrye.graphql.client.model.ClientModelBuilder;
+import io.smallrye.graphql.client.model.ClientModels;
 
 public class SmallRyeGraphQLClientProcessor {
 
@@ -118,7 +127,8 @@ public class SmallRyeGraphQLClientProcessor {
             SyntheticBeanBuildItem bean = SyntheticBeanBuildItem.configure(apiClassInfo.name())
                     .addType(apiClassInfo.name())
                     .scope(ApplicationScoped.class)
-                    .supplier(recorder.typesafeClientSupplier(apiClass))
+                    .addInjectionPoint(ClassType.create(DotName.createSimple(ClientModels.class)))
+                    .createWith(recorder.typesafeClientSupplier(apiClass))
                     .unremovable()
                     .done();
             syntheticBeans.produce(bean);
@@ -188,6 +198,27 @@ public class SmallRyeGraphQLClientProcessor {
     }
 
     @BuildStep
+    @Record(RUNTIME_INIT)
+    void buildClientModel(CombinedIndexBuildItem index, SmallRyeGraphQLClientRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans, GraphQLClientBuildConfig quarkusConfig) {
+        if (!index.getIndex().getAnnotations(GRAPHQL_CLIENT_API).isEmpty()) {
+            ClientModels clientModels = (quarkusConfig.enableBuildTimeScanning) ? ClientModelBuilder.build(index.getIndex())
+                    : new ClientModels(); // empty Client Model(s)
+            RuntimeValue<ClientModels> modelRuntimeClientModel = recorder.getRuntimeClientModel(clientModels);
+            DotName supportClassName = DotName.createSimple(ClientModels.class.getName());
+            SyntheticBeanBuildItem bean = SyntheticBeanBuildItem
+                    .configure(supportClassName)
+                    .addType(supportClassName)
+                    .scope(Singleton.class)
+                    .runtimeValue(modelRuntimeClientModel)
+                    .setRuntimeInit()
+                    .unremovable()
+                    .done();
+            syntheticBeans.produce(bean);
+        }
+    }
+
+    @BuildStep
     ServiceProviderBuildItem overrideErrorMessageProvider() {
         return ServiceProviderBuildItem.allProvidersFromClassPath("io.smallrye.graphql.client.impl.ErrorMessageProvider");
     }
@@ -197,6 +228,15 @@ public class SmallRyeGraphQLClientProcessor {
     void setGlobalVertxInstance(CoreVertxBuildItem vertxBuildItem,
             SmallRyeGraphQLClientRecorder recorder) {
         recorder.setGlobalVertxInstance(vertxBuildItem.getVertx());
+    }
+
+    @BuildStep
+    void setAdditionalClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalClassesToIndex,
+            GraphQLClientBuildConfig quarkusConfig) {
+        if (quarkusConfig.enableBuildTimeScanning) {
+            additionalClassesToIndex.produce(new AdditionalIndexedClassesBuildItem(Closeable.class.getName()));
+            additionalClassesToIndex.produce(new AdditionalIndexedClassesBuildItem(AutoCloseable.class.getName()));
+        }
     }
 
 }

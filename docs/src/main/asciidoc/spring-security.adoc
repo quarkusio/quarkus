@@ -34,7 +34,7 @@ First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: spring-security-quickstart
 :create-app-group-id: org.acme.spring.security
-:create-app-extensions: spring-web,spring-security,quarkus-elytron-security-properties-file,resteasy-reactive-jackson
+:create-app-extensions: spring-web,spring-security,quarkus-elytron-security-properties-file,rest-jackson
 :create-app-code:
 include::{includes}/devtools/create-app.adoc[]
 
@@ -43,7 +43,7 @@ This command generates a project which imports the `spring-web`, `spring-securit
 If you already have your Quarkus project configured, you can add the `spring-web`, `spring-security` and `security-properties-file` extensions
 to your project by running the following command in your project base directory:
 
-:add-extension-extensions: spring-web,spring-security,quarkus-elytron-security-properties-file,resteasy-reactive-jackson
+:add-extension-extensions: spring-web,spring-security,quarkus-elytron-security-properties-file,rest-jackson
 include::{includes}/devtools/extension-add.adoc[]
 
 This will add the following to your build file:
@@ -65,7 +65,7 @@ This will add the following to your build file:
 </dependency>
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+    <artifactId>quarkus-rest-jackson</artifactId>
 </dependency>
 ----
 
@@ -75,7 +75,7 @@ This will add the following to your build file:
 implementation("io.quarkus:quarkus-spring-web")
 implementation("io.quarkus:quarkus-spring-security")
 implementation("io.quarkus:quarkus-elytron-security-properties-file")
-implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
+implementation("io.quarkus:quarkus-rest-jackson")
 ----
 
 For more information about `security-properties-file`, you can check out the guide of the xref:security-properties.adoc[quarkus-elytron-security-properties-file] extension.

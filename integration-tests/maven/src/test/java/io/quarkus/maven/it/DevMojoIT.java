@@ -70,7 +70,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
     public void testFlattenedPomInTargetDir() throws MavenInvocationException, IOException {
         testDir = initProject("projects/pom-in-target-dir");
         run(true);
-        assertThat(devModeClient.getHttpResponse("/hello")).isEqualTo("Hello from RESTEasy Reactive");
+        assertThat(devModeClient.getHttpResponse("/hello")).isEqualTo("Hello from Quarkus REST");
     }
 
     @Test
@@ -517,7 +517,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
                         "        </dependency>"));
 
         runAndCheck();
-        assertThat(devModeClient.getHttpResponse("/q/openapi", true)).contains("Resource not found");
+        assertThat(devModeClient.getHttpResponse("/q/openapi", true)).contains("Resource Not Found");
         shutdownTheApp();
 
         runAndCheck("-f", alternatePomName);

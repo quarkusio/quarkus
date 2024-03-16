@@ -41,10 +41,10 @@ The solution is located in the `mongodb-quickstart` link:{quickstarts-tree-url}/
 First, we need a new project. Create a new project with the following command:
 
 :create-app-artifact-id: mongodb-quickstart
-:create-app-extensions: resteasy-reactive-jackson,mongodb-client
+:create-app-extensions: rest-jackson,mongodb-client
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a Maven structure importing the RESTEasy Reactive Jackson and MongoDB Client extensions.
+This command generates a Maven structure importing the Quarkus REST (formerly RESTEasy Reactive) Jackson and MongoDB Client extensions.
 After this, the `quarkus-mongodb-client` extension has been added to your build file.
 
 If you already have your Quarkus project configured, you can add the `mongodb-client` extension

@@ -54,9 +54,11 @@ public class MainHttpServerTlsPKCS12CertificateReloadTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClasses(MyBean.class))
-            .overrideConfigKey("quarkus.http.ssl.insecure-requests", "redirect")
+            .overrideConfigKey("quarkus.http.insecure-requests", "redirect")
             .overrideConfigKey("quarkus.http.ssl.certificate.reload-period", "30s")
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-file", temp.getAbsolutePath() + "/tls.p12")
+            .overrideConfigKey("quarkus.http.ssl.certificate.key-store-password", "password")
+
             .overrideConfigKey("loc", temp.getAbsolutePath())
             .setBeforeAllCustomizer(() -> {
                 try {

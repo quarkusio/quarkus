@@ -3,6 +3,7 @@ package io.quarkus.devtools.testing;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.util.Map;
 
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -35,5 +36,18 @@ public final class FakeExtensionCatalog {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    public static String getDefaultCodestart() {
+        var map = FAKE_EXTENSION_CATALOG.getMetadata().get("project");
+        if (map != null) {
+            if (map instanceof Map) {
+                var defaultCodestart = ((Map<?, ?>) map).get("default-codestart");
+                if (defaultCodestart instanceof String) {
+                    return defaultCodestart.toString();
+                }
+            }
+        }
+        return null;
     }
 }

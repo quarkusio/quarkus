@@ -36,6 +36,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 public class OidcProviderClient implements Closeable {
     private static final Logger LOG = Logger.getLogger(OidcProviderClient.class);
 
+    private static final String TENANT_ID_ATTRIBUTE = "oidc-tenant-id";
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
     private static final String CONTENT_TYPE_HEADER = String.valueOf(HttpHeaders.CONTENT_TYPE);
     private static final String ACCEPT_HEADER = String.valueOf(HttpHeaders.ACCEPT);
@@ -265,6 +266,7 @@ public class OidcProviderClient implements Closeable {
         if (!filters.isEmpty()) {
             Map<String, Object> newProperties = contextProperties == null ? new HashMap<>()
                     : new HashMap<>(contextProperties.getAll());
+            newProperties.put(OidcUtils.TENANT_ID_ATTRIBUTE, oidcConfig.getTenantId().orElse(OidcUtils.DEFAULT_TENANT_ID));
             newProperties.put(OidcConfigurationMetadata.class.getName(), metadata);
             OidcRequestContextProperties newContextProperties = new OidcRequestContextProperties(newProperties);
             for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(filters, endpointType)) {

@@ -40,7 +40,7 @@ public class RuntimeDelegateImpl extends RuntimeDelegate {
         ResponseBuilderFactory result = new ResponseBuilderFactory() {
             @Override
             public Response.ResponseBuilder create() {
-                throw new RuntimeException("Resteasy Reactive server side components are not installed.");
+                throw new RuntimeException("Quarkus REST server side components are not installed.");
             }
 
             @Override
@@ -50,7 +50,7 @@ public class RuntimeDelegateImpl extends RuntimeDelegate {
 
             @Override
             public <T> ResponseBuilder<T> createRestResponse() {
-                throw new RuntimeException("Resteasy Reactive server side components are not installed.");
+                throw new RuntimeException("Quarkus REST server side components are not installed.");
             }
         };
         ServiceLoader<ResponseBuilderFactory> sl = ServiceLoader.load(ResponseBuilderFactory.class,

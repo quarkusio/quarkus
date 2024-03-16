@@ -123,6 +123,17 @@ public class DevConsoleManager {
      * Invokes a registered action
      *
      * @param name the name of the action
+     * @return the result of the invocation. An empty map is returned for action not returning any result.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T invoke(String name) {
+        return DevConsoleManager.invoke(name, Map.of());
+    }
+
+    /**
+     * Invokes a registered action
+     *
+     * @param name the name of the action
      * @param params the named parameters
      * @return the result of the invocation. An empty map is returned for action not returning any result.
      */

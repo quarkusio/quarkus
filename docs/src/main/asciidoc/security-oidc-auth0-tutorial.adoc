@@ -46,10 +46,10 @@ In the steps that follow, you will continue to configure and update the Auth0 ap
 
 == Create a Quarkus application
 
-Use the following Maven command to create a Quarkus RESTEasy Reactive application that can be secured with the Quarkus OIDC extension.
+Use the following Maven command to create a Quarkus REST (formerly RESTEasy Reactive) application that can be secured with the Quarkus OIDC extension.
 
 :create-app-artifact-id: quarkus-auth0
-:create-app-extensions: resteasy-reactive,oidc
+:create-app-extensions: rest,oidc
 include::{includes}/devtools/create-app.adoc[]
 
 Create the application workspace and import it into your favorite IDE.
@@ -622,7 +622,7 @@ Now that we have managed to use OIDC authorization code flow and used both ID to
 
 In fact, the last code example, showing the injected `UserInfo`, is a concrete example of the access token propagation, in this case, Quarkus propagates the Auth0 access token to the Auth0 `UserInfo` endpoint to acquire `UserInfo`. Quarkus does it without users having to do anything themselves.
 
-But what about propagating access tokens to some custom services ? It is very easy to achieve in Quarkus, both for the authorization code and bearer token flows. All you need to do is to create a Reactive REST Client interface for calling the service requiring a Bearer token access and annotate it with `@AccessToken` and the access token arriving to the front-end endpoint as the Auth0 Bearer access token or acquired by Quarkus after completing the Auth0 authorization code flow, will be propagated to the target microservice. This is as easy as it can get.
+But what about propagating access tokens to some custom services ? It is very easy to achieve in Quarkus, both for the authorization code and bearer token flows. All you need to do is to create a REST Client interface for calling the service requiring a Bearer token access and annotate it with `@AccessToken` and the access token arriving to the front-end endpoint as the Auth0 Bearer access token or acquired by Quarkus after completing the Auth0 authorization code flow, will be propagated to the target microservice. This is as easy as it can get.
 
 For examples of propagating access tokens, see the following sections in this tutorial.
 For more information about token propagation, see xref:security-openid-connect-client-reference.adoc#reactive-token-propagation[OIDC token propagation].
@@ -647,11 +647,11 @@ Add the following dependencies to the project to support OIDC token propagation 
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
+    <artifactId>quarkus-rest-client-jackson</artifactId>
 </dependency>
 <dependency>
    <groupId>io.quarkus</groupId>
-   <artifactId>quarkus-oidc-token-propagation-reactive</artifactId>
+   <artifactId>quarkus-rest-client-oidc-token-propagation</artifactId>
 </dependency>
 ----
 

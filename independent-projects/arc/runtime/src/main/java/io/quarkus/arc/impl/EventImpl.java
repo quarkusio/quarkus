@@ -179,7 +179,7 @@ class EventImpl<T> implements Event<T> {
         normalizedQualifiers.add(Any.Literal.INSTANCE);
         EventMetadata metadata = new EventMetadataImpl(normalizedQualifiers, eventType, injectionPoint);
         List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>(
-                container.resolveObservers(eventType, normalizedQualifiers));
+                container.resolveObserverMethods(eventType, normalizedQualifiers));
         return new Notifier<>(runtimeType, notifierObserverMethods, metadata, activateRequestContext);
     }
 

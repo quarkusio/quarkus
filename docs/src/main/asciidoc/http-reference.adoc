@@ -191,7 +191,7 @@ quarkus.http.ssl.certificate.key-store-file=/path/to/keystore
 ----
 
 As an optional hint, the type of keystore can be provided as one of the options listed.
-If the type is not provided, Quarkus will try to deduce it from the file extensions, defaulting to type JKS.
+If the type is not provided, Quarkus will try to deduce it from the file extensions.
 
 [source,properties]
 ----
@@ -440,6 +440,21 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-confi
 |Response header                                                              |          | `%{o,response_header_name}`
 |Vert.x Routing Context Internal Data                                         |          | `%{d,map_key}`
 |Vert.x MDC data (e.g. 'traceId' for OpenTelemetry)                           |          | `%{X,mdc-key}`
+|===
+
+Set `quarkus.http.access-log.consolidate-rerouted-requests=true` to enable support for the modifier `<`. This modifier can be used for requests that have been internally redirected to consult the original request.
+The following attributes support this modifier:
+
+
+[frame="topbot",options="header"]
+|===
+|Attribute                                                                    |Short Form|Long Form
+|First line of the request                                                    | `%<r`    | `%{<REQUEST_LINE}`
+|Request method                                                               | `%<m`    | `%{<METHOD}`
+|Request relative path                                                        | `%<R`    | `%{<REQUEST_PATH}`
+|Requested URL path                                                           | `%<U`    | `%{<REQUEST_URL}`
+|Query string (prepended with a '?' if it exists, otherwise an empty string)  | `%<q`    | `%{<QUERY_STRING}`
+|Query parameter                                                              |          | `%{<q,query_param_name}`
 |===
 
 [NOTE]

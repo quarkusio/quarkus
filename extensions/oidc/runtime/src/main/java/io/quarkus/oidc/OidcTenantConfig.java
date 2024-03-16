@@ -93,6 +93,17 @@ public class OidcTenantConfig extends OidcCommonConfig {
     public Optional<String> endSessionPath = Optional.empty();
 
     /**
+     * The paths which must be secured by this tenant. Tenant with the most specific path wins.
+     * Please see the xref:security-openid-connect-multitenancy.adoc#configuration-based-tenant-resolver[Resolve with
+     * configuration]
+     * section of the OIDC multitenancy guide for explanation of allowed path patterns.
+     *
+     * @asciidoclet
+     */
+    @ConfigItem
+    public Optional<List<String>> tenantPaths = Optional.empty();
+
+    /**
      * The public key for the local JWT token verification.
      * OIDC server connection is not created when this property is set.
      */
@@ -935,7 +946,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          *
          * Bearer access tokens are always verified.
          */
-        @ConfigItem(defaultValue = "false")
+        @ConfigItem(defaultValueDocumentation = "true when access token is injected as the JsonWebToken bean, false otherwise")
         public boolean verifyAccessToken;
 
         /**
@@ -1076,7 +1087,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * or `quarkus.oidc.authentication.id-token-required` is set to `false`,
          * you do not need to enable this property manually in these cases.
          */
-        @ConfigItem(defaultValueDocumentation = "false")
+        @ConfigItem(defaultValueDocumentation = "true when UserInfo bean is injected, false otherwise")
         public Optional<Boolean> userInfoRequired = Optional.empty();
 
         /**
@@ -1543,6 +1554,16 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<Duration> age = Optional.empty();
 
         /**
+         * Require that the token includes a `iat` (issued at) claim
+         *
+         * Set this property to `false` if your JWT token does not contain an `iat` (issued at) claim.
+         * Note that ID token is always required to have an `iat` claim and therefore this property has no impact on the ID
+         * token verification process.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean issuedAtRequired = true;
+
+        /**
          * Name of the claim which contains a principal name. By default, the `upn`, `preferred_username` and `sub`
          * claims are
          * checked.
@@ -1767,6 +1788,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setAge(Duration age) {
             this.age = Optional.of(age);
+        }
+
+        public boolean isIssuedAtRequired() {
+            return issuedAtRequired;
+        }
+
+        public void setIssuedAtRequired(boolean issuedAtRequired) {
+            this.issuedAtRequired = issuedAtRequired;
         }
 
         public Optional<String> getDecryptionKeyLocation() {

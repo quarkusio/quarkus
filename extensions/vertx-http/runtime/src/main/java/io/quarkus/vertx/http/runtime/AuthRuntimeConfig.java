@@ -1,9 +1,11 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -24,6 +26,17 @@ public class AuthRuntimeConfig {
      */
     @ConfigItem(name = "policy")
     public Map<String, PolicyConfig> rolePolicy;
+
+    /**
+     * Map the `SecurityIdentity` roles to deployment specific roles and add the matching roles to `SecurityIdentity`.
+     * <p>
+     * For example, if `SecurityIdentity` has a `user` role and the endpoint is secured with a 'UserRole' role,
+     * use this property to map the `user` role to the `UserRole` role, and have `SecurityIdentity` to have
+     * both `user` and `UserRole` roles.
+     */
+    @ConfigDocMapKey("role1")
+    @ConfigItem
+    public Map<String, List<String>> rolesMapping;
 
     /**
      * Properties file containing the client certificate common name (CN) to role mappings.

@@ -10,11 +10,13 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOpt
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
 
+import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
 
@@ -46,7 +48,7 @@ import io.vertx.sqlclient.impl.Utils;
 @Recorder
 public class MSSQLPoolRecorder {
 
-    private static final TypeLiteral<Instance<MSSQLPoolCreator>> TYPE_LITERAL = new TypeLiteral<>() {
+    private static final TypeLiteral<Instance<MSSQLPoolCreator>> POOL_CREATOR_TYPE_LITERAL = new TypeLiteral<>() {
     };
 
     private static final Logger log = Logger.getLogger(MSSQLPoolRecorder.class);
@@ -80,14 +82,29 @@ public class MSSQLPoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<io.vertx.mutiny.mssqlclient.MSSQLPool>, io.vertx.mutiny.mssqlclient.MSSQLPool> mutinyMSSQLPool(
-            Function<SyntheticCreationalContext<MSSQLPool>, MSSQLPool> function) {
+            String dataSourceName) {
         return new Function<SyntheticCreationalContext<io.vertx.mutiny.mssqlclient.MSSQLPool>, io.vertx.mutiny.mssqlclient.MSSQLPool>() {
             @Override
             @SuppressWarnings("unchecked")
             public io.vertx.mutiny.mssqlclient.MSSQLPool apply(SyntheticCreationalContext context) {
-                return io.vertx.mutiny.mssqlclient.MSSQLPool.newInstance(function.apply(context));
+                DataSourceSupport datasourceSupport = (DataSourceSupport) context.getInjectedReference(DataSourceSupport.class);
+                if (datasourceSupport.getInactiveNames().contains(dataSourceName)) {
+                    throw DataSourceUtil.dataSourceInactive(dataSourceName);
+                }
+
+                return io.vertx.mutiny.mssqlclient.MSSQLPool.newInstance(
+                        (MSSQLPool) context.getInjectedReference(MSSQLPool.class,
+                                getReactiveDataSourceQualifier(dataSourceName)));
             }
         };
+    }
+
+    private static Annotation getReactiveDataSourceQualifier(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return Default.Literal.INSTANCE;
+        }
+
+        return new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName);
     }
 
     private MSSQLPool initialize(VertxInternal vertx,
@@ -220,9 +237,11 @@ public class MSSQLPoolRecorder {
         configureJksKeyCertOptions(mssqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks());
         configurePfxKeyCertOptions(mssqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx());
 
-        if (dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().isPresent()) {
-            mssqlConnectOptions.setHostnameVerificationAlgorithm(
-                    dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().get());
+        var algo = dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm();
+        if ("NONE".equalsIgnoreCase(algo)) {
+            mssqlConnectOptions.setHostnameVerificationAlgorithm("");
+        } else {
+            mssqlConnectOptions.setHostnameVerificationAlgorithm(algo);
         }
 
         dataSourceReactiveRuntimeConfig.additionalProperties().forEach(mssqlConnectOptions::addProperty);
@@ -241,9 +260,9 @@ public class MSSQLPoolRecorder {
             SyntheticCreationalContext<MSSQLPool> context) {
         Instance<MSSQLPoolCreator> instance;
         if (DataSourceUtil.isDefault(dataSourceName)) {
-            instance = context.getInjectedReference(TYPE_LITERAL);
+            instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL);
         } else {
-            instance = context.getInjectedReference(TYPE_LITERAL,
+            instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL,
                     new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
         }
         if (instance.isResolvable()) {

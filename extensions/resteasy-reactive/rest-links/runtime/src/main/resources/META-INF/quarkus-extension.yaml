@@ -1,0 +1,22 @@
+name: "REST Links"
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+metadata:
+  short-name: "rest-links"
+  keywords:
+    - "rest"
+    - "jaxrs"
+    - "links"
+    - "jakarta-rest"
+  categories:
+    - "web"
+    - "reactive"
+  status: "stable"
+  guide: "https://quarkus.io/guides/resteasy-reactive#web-links-support"
+  codestart:
+    name: "resteasy-reactive"
+    kind: "core"
+    languages:
+      - "java"
+      - "kotlin"
+      - "scala"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

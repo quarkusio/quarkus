@@ -91,7 +91,12 @@ public class MojoLogger implements LoggerProvider {
             void doActualLog(final Log log, final Level level, final String message, final Throwable thrown) {
                 final MessageBuilder buffer = MessageUtils.buffer();
                 // style options are limited unless we crack into jansi ourselves
-                buffer.strong("[").project(name).strong("]").a(" ").a(message);
+                if (Level.DEBUG.compareTo(level) <= 0) {
+                    buffer.strong("[").project(name).strong("]").a(" ").a("(").a(Thread.currentThread().getName()).a(")").a(" ")
+                            .a(message);
+                } else {
+                    buffer.strong("[").project(name).strong("]").a(" ").a(message);
+                }
                 if (thrown != null) {
                     switch (level) {
                         case FATAL:

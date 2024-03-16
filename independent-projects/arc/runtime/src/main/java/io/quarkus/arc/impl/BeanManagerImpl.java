@@ -135,7 +135,7 @@ public class BeanManagerImpl implements BeanManager {
             throw new IllegalArgumentException("The runtime type of the event object contains a type variable: " + eventType);
         }
         Set<Annotation> eventQualifiers = new HashSet<>(Arrays.asList(qualifiers));
-        return new LinkedHashSet<>(ArcContainerImpl.instance().resolveObservers(eventType, eventQualifiers));
+        return new LinkedHashSet<>(ArcContainerImpl.instance().resolveObserverMethods(eventType, eventQualifiers));
     }
 
     @Override

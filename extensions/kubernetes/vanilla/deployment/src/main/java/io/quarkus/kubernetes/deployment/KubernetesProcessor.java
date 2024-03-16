@@ -79,9 +79,10 @@ class KubernetesProcessor {
         List<DeploymentTargetEntry> entries = new ArrayList<>(mergedDeploymentTargets.size());
         for (KubernetesDeploymentTargetBuildItem deploymentTarget : mergedDeploymentTargets) {
             if (deploymentTarget.isEnabled()) {
-                entries.add(new DeploymentTargetEntry(deploymentTarget.getName(),
-                        deploymentTarget.getKind(), deploymentTarget.getPriority(),
-                        deploymentTarget.getDeployStrategy()));
+                DeploymentResourceKind deploymentResourceKind = DeploymentResourceKind.find(deploymentTarget.getGroup(),
+                        deploymentTarget.getVersion(), deploymentTarget.getKind());
+                entries.add(new DeploymentTargetEntry(deploymentTarget.getName(), deploymentResourceKind,
+                        deploymentTarget.getPriority(), deploymentTarget.getDeployStrategy()));
             }
         }
         return new EnabledKubernetesDeploymentTargetsBuildItem(entries);

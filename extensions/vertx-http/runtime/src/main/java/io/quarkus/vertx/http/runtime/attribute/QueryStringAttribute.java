@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import io.quarkus.vertx.http.runtime.filters.OriginalRequestContext;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -11,19 +12,26 @@ public class QueryStringAttribute implements ExchangeAttribute {
     public static final String QUERY_STRING_SHORT = "%q";
     public static final String QUERY_STRING = "%{QUERY_STRING}";
     public static final String BARE_QUERY_STRING = "%{BARE_QUERY_STRING}";
+    public static final String ORIGINAL_QUERY_STRING_SHORT = "%<q";
+    public static final String ORIGINAL_QUERY_STRING = "%{<QUERY_STRING}";
+    public static final String ORIGINAL_BARE_QUERY_STRING = "%{<BARE_QUERY_STRING}";
 
-    public static final ExchangeAttribute INSTANCE = new QueryStringAttribute(true);
-    public static final ExchangeAttribute BARE_INSTANCE = new QueryStringAttribute(false);
+    public static final ExchangeAttribute INSTANCE = new QueryStringAttribute(true, false);
+    public static final ExchangeAttribute BARE_INSTANCE = new QueryStringAttribute(false, false);
+    public static final ExchangeAttribute INSTANCE_ORIGINAL_REQUEST = new QueryStringAttribute(true, true);
+    public static final ExchangeAttribute BARE_INSTANCE_ORIGINAL_REQUEST = new QueryStringAttribute(false, true);
 
     private final boolean includeQuestionMark;
+    private final boolean useOriginalRequest;
 
-    private QueryStringAttribute(boolean includeQuestionMark) {
+    private QueryStringAttribute(boolean includeQuestionMark, boolean useOriginalRequest) {
         this.includeQuestionMark = includeQuestionMark;
+        this.useOriginalRequest = useOriginalRequest;
     }
 
     @Override
     public String readAttribute(final RoutingContext exchange) {
-        String qs = exchange.request().query();
+        String qs = useOriginalRequest ? OriginalRequestContext.getQuery(exchange) : exchange.request().query();
         if (qs == null) {
             qs = "";
         }
@@ -51,6 +59,10 @@ public class QueryStringAttribute implements ExchangeAttribute {
                 return QueryStringAttribute.INSTANCE;
             } else if (token.equals(BARE_QUERY_STRING)) {
                 return QueryStringAttribute.BARE_INSTANCE;
+            } else if (token.equals(ORIGINAL_QUERY_STRING) || token.equals(ORIGINAL_QUERY_STRING_SHORT)) {
+                return QueryStringAttribute.INSTANCE_ORIGINAL_REQUEST;
+            } else if (token.equals(ORIGINAL_BARE_QUERY_STRING)) {
+                return QueryStringAttribute.BARE_INSTANCE_ORIGINAL_REQUEST;
             }
             return null;
         }

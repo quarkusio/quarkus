@@ -98,7 +98,9 @@ public class PanacheJpaUtil {
 
     public static String getEntityName(Class<?> entityClass) {
         // FIXME: not true?
-        return entityClass.getName();
+        // Escape the entity name just in case some keywords are used
+        // in package names that will prevent ORM from executing a query
+        return "`%s`".formatted(entityClass.getName());
     }
 
     public static String createFindQuery(Class<?> entityClass, String query, int paramCount) {

@@ -344,7 +344,7 @@ The `quarkus-oidc-client` extension provides `OidcClient` for acquiring and refr
 * `password`
 * `refresh_token`
 
-The `quarkus-oidc-client-filter` extension requires the `quarkus-oidc-client` extension.
+The `quarkus-resteasy-client-oidc-filter` extension requires the `quarkus-oidc-client` extension.
 It provides JAX-RS RESTful Web Services `OidcClientRequestFilter`, which sets the access token acquired by `OidcClient` as the `Bearer` scheme value of the HTTP `Authorization` header.
 This filter can be registered with MicroProfile REST client implementations injected into the current Quarkus endpoint, but it is not related to the authentication requirements of this service endpoint.
 For example, it can be a public endpoint or be protected with mTLS.
@@ -354,7 +354,7 @@ For example, it can be a public endpoint or be protected with mTLS.
 In this scenario, you do not need to protect your Quarkus endpoint by using the Quarkus OpenID Connect adapter.
 ====
 
-The `quarkus-oidc-token-propagation` extension requires the `quarkus-oidc` extension.
+The `quarkus-resteasy-client-oidc-token-propagation` extension requires the `quarkus-oidc` extension.
 It provides Jakarta REST `TokenCredentialRequestFilter`, which sets the OpenID Connect Bearer token or Authorization Code Flow access token as the `Bearer` scheme value of the HTTP `Authorization` header.
 This filter can be registered with MicroProfile REST client implementations injected into the current Quarkus endpoint, which must be protected by using the Quarkus OIDC adapter.
 This filter can propagate the access token to the downstream services.

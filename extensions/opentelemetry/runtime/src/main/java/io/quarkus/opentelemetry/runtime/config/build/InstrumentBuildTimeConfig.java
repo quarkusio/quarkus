@@ -13,28 +13,28 @@ public interface InstrumentBuildTimeConfig {
     boolean grpc();
 
     /**
-     * Enables instrumentation for SmallRye Reactive Messaging.
+     * Enables instrumentation for Messaging.
      */
     @WithDefault("true")
-    boolean reactiveMessaging();
+    boolean messaging();
 
     /**
-     * Enables instrumentation for JAX-RS Rest Client backed by RESTEasy Classic.
+     * Enables instrumentation for REST Client backed by RESTEasy Classic.
      */
     @WithDefault("true")
-    boolean restClientClassic();
+    boolean resteasyClient();
 
     /**
-     * Enables instrumentation for RESTEasy Reactive.
+     * Enables instrumentation for Quarkus REST.
      */
     @WithDefault("true")
-    boolean resteasyReactive();
+    boolean rest();
 
     /**
      * Enables instrumentation for RESTEasy Classic.
      */
     @WithDefault("true")
-    boolean resteasyClassic();
+    boolean resteasy();
 
     // NOTE: agroal, graphql and scheduler have their own config properties
 

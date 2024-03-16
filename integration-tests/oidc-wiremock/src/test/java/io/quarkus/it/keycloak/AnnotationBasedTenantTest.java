@@ -23,6 +23,7 @@ public class AnnotationBasedTenantTest {
     public static class NoProactiveAuthTestProfile implements QuarkusTestProfile {
         public Map<String, String> getConfigOverrides() {
             return Map.ofEntries(Map.entry("quarkus.http.auth.proactive", "false"),
+                    Map.entry("quarkus.oidc.hr.authentication.user-info-required", "false"),
                     Map.entry("quarkus.oidc.hr.auth-server-url", "http://localhost:8180/auth/realms/quarkus2/"),
                     Map.entry("quarkus.oidc.hr.client-id", "quarkus-app"),
                     Map.entry("quarkus.oidc.hr.credentials.secret", "secret"),
@@ -31,6 +32,7 @@ public class AnnotationBasedTenantTest {
                     Map.entry("quarkus.http.auth.policy.roles2.roles-allowed", "role2"),
                     Map.entry("quarkus.http.auth.policy.roles3.roles-allowed", "role3,role2"),
                     Map.entry("quarkus.http.auth.policy.roles3.permissions.role3", "get-tenant"),
+                    Map.entry("quarkus.http.auth.roles-mapping.role4", "role3"),
                     Map.entry("quarkus.http.auth.permission.jax-rs1.paths", "/api/tenant-echo2/hr-jax-rs-perm-check"),
                     Map.entry("quarkus.http.auth.permission.jax-rs1.policy", "roles1"),
                     Map.entry("quarkus.http.auth.permission.jax-rs1.applies-to", "JAXRS"),
@@ -297,6 +299,12 @@ public class AnnotationBasedTenantTest {
                     .then().statusCode(403);
 
             token = getTokenWithRole("role3");
+            RestAssured.given().auth().oauth2(token)
+                    .when().get("/api/tenant-echo/hr-identity-augmentation")
+                    .then().statusCode(200)
+                    .body(Matchers.equalTo(("tenant-id=hr, static.tenant.id=hr, name=alice")));
+
+            token = getTokenWithRole("role4");
             RestAssured.given().auth().oauth2(token)
                     .when().get("/api/tenant-echo/hr-identity-augmentation")
                     .then().statusCode(200)

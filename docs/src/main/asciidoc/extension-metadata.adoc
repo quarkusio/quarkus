@@ -22,10 +22,10 @@ in a template `META-INF/quarkus-extension.yaml` found in the extension runtime m
 
 [source,yaml,subs=attributes+]
 ----
-name: "RESTEasy Reactive" <1>
+name: "REST" <1>
 artifact: ${project.groupId}:${project.artifactId}:${project.version} <2>
 metadata:
-  short-name: "resteasy-reactive" <3>
+  short-name: "rest" <3>
   keywords: <4>
   - "jaxrs"
   - "web"
@@ -34,17 +34,17 @@ metadata:
   - "web"
   - "reactive"
   status: "stable" <6>
-  guide: "https://quarkus.io/guides/resteasy-reactive" <7>
+  guide: "https://quarkus.io/guides/rest" <7>
   icon-url: "https://quarkus.io/assets/images/about/icon-reactive.svg" <8>
   codestart: <9>
-    name: "resteasy-reactive"
+    name: "rest"
     languages:
       - "java"
       - "kotlin"
       - "scala"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   config: <10>
-  - "quarkus.resteasy-reactive."
+  - "quarkus.rest."
 ----
 
 <1> Extension name displayed to users
@@ -62,10 +62,10 @@ And here is the final version of the file included in the runtime JAR augmented 
 
 [source,yaml,subs=attributes+]
 ----
-name: "RESTEasy Reactive"
-artifact: "io.quarkus:quarkus-resteasy-reactive:999-SNAPSHOT"
+name: "Quarkus REST (formerly RESTEasy Reactive)"
+artifact: "io.quarkus:quarkus-rest:999-SNAPSHOT"
 metadata:
-  short-name: "resteasy-reactive"
+  short-name: "rest"
   keywords:
   - "jaxrs"
   - "web"
@@ -74,23 +74,23 @@ metadata:
   - "web"
   - "reactive"
   status: "stable"
-  guide: "https://quarkus.io/guides/resteasy-reactive"
+  guide: "https://quarkus.io/guides/rest"
   codestart:
-    name: "resteasy-reactive"
+    name: "rest"
     languages:
     - "java"
     - "kotlin"
     - "scala"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
   config:
-  - "quarkus.resteasy-reactive."
+  - "quarkus.rest."
   built-with-quarkus-core: "999-SNAPSHOT" <1>
   capabilities: <2>
     provides:
     - "io.quarkus.rest"
     - "io.quarkus.resteasy.reactive"
   extension-dependencies: <3>
-  - "io.quarkus:quarkus-resteasy-reactive-common"
+  - "io.quarkus:quarkus-rest-common"
   - "io.quarkus:quarkus-mutiny"
   - "io.quarkus:quarkus-smallrye-context-propagation"
   - "io.quarkus:quarkus-vertx"

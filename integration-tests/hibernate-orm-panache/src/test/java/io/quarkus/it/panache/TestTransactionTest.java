@@ -5,6 +5,7 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import io.quarkus.it.panache.fk.issue35812.SomeEntity;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 
@@ -37,6 +38,11 @@ public class TestTransactionTest {
     @Test
     public void test3() {
         Assertions.assertEquals(0, Beer.find("name", "Lager").count());
+    }
+
+    @Test
+    public void test4() {
+        Assertions.assertEquals(0, SomeEntity.findAll().count());
     }
 
     void intentionallyNonPrivateHelperMethod() {

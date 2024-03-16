@@ -39,7 +39,7 @@ public class RestDataProcessor {
 
         if (!isResteasyClassicAvailable && !isResteasyReactiveAvailable) {
             throw new IllegalStateException(
-                    "REST Data Panache can only work if 'quarkus-resteasy' or 'quarkus-resteasy-reactive' is present");
+                    "REST Data Panache can only work if 'quarkus-rest' or 'quarkus-resteasy' is present");
         }
 
         if (isResteasyClassicAvailable) {
@@ -68,7 +68,7 @@ public class RestDataProcessor {
 
         if (isReactivePanache && isResteasyClassic) {
             throw new IllegalStateException(
-                    "Reactive REST Data Panache does not work with 'quarkus-resteasy'. Only 'quarkus-resteasy-reactive' extensions are supported");
+                    "Reactive REST Data Panache does not work with 'quarkus-resteasy'. Only 'quarkus-rest' extensions are supported");
         }
 
         Set<String> excludedClasses = getExcludedClasses(buildTimeConditions);
@@ -88,7 +88,7 @@ public class RestDataProcessor {
                                 + "either 'quarkus-resteasy-jsonb' or 'quarkus-resteasy-jackson'");
                     } else if (!isResteasyClassic && !hasAnyJsonCapabilityForResteasyReactive(capabilities)) {
                         throw new IllegalStateException("Cannot generate HAL endpoints without "
-                                + "either 'quarkus-resteasy-reactive-jsonb' or 'quarkus-resteasy-reactive-jackson'");
+                                + "either 'quarkus-rest-jsonb' or 'quarkus-rest-jackson'");
                     }
 
                 }

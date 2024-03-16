@@ -20,7 +20,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.awaitility.core.ThrowingRunnable;
 import org.eclipse.microprofile.config.spi.ConfigSource;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
@@ -35,6 +38,7 @@ import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class CodeFlowDevModeTestCase {
 
@@ -54,6 +58,7 @@ public class CodeFlowDevModeTestCase {
                     .addAsResource("application-dev-mode.properties", "application.properties")
                     .addAsServiceProvider(ConfigSource.class, OidcConfigSource.class));
 
+    @Order(1)
     @Test
     public void testAccessAndRefreshTokenInjectionDevMode() throws IOException, InterruptedException {
         // Default tenant is disabled, check that having TenantConfigResolver is enough
@@ -121,6 +126,27 @@ public class CodeFlowDevModeTestCase {
         }
         checkPkceSecretGenerated();
 
+    }
+
+    @Order(2)
+    @Test
+    public void testAccessTokenVerified() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            test.modifyResourceFile("application.properties", s -> s.replace("tenant-enabled=false", "tenant-enabled=true")
+                    .replace("secret-from-vault-typo", "secret-from-vault"));
+            HtmlPage page = webClient.getPage("http://localhost:8080/protected/access-token-name");
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getInputByName("login").click();
+
+            assertEquals("alice", page.getBody().asNormalizedText());
+        }
     }
 
     private void useTenantConfigResolver() throws IOException, InterruptedException {

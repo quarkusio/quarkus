@@ -54,7 +54,7 @@ git clone {quickstarts-clone-url}
 To create a new project:
 
 :create-app-artifact-id: microprofile-metrics-quickstart
-:create-app-extensions: resteasy-reactive,smallrye-metrics
+:create-app-extensions: rest,smallrye-metrics
 include::{includes}/devtools/create-app.adoc[]
 
 This command generates a Quarkus project that uses the `smallrye-metrics` extension.

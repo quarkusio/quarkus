@@ -64,6 +64,8 @@ public class BearerTokenAuthorizationTest {
         String azureJwk = readFile("jwks.json");
         wireMockServer.stubFor(WireMock.get("/auth/azure/jwk")
                 .withHeader("Authorization", matching("Access token: " + azureToken))
+                .withHeader("Filter", matching("OK"))
+                .withHeader("tenant-id", matching("bearer-azure"))
                 .willReturn(WireMock.aResponse().withBody(azureJwk)));
         RestAssured.given().auth().oauth2(azureToken)
                 .when().get("/api/admin/bearer-azure")

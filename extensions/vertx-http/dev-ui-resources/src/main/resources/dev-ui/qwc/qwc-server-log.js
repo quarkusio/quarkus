@@ -1,4 +1,4 @@
-import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
+import { QwcAbstractLogElement, html, css} from 'qwc-abstract-log-element';
 import { repeat } from 'lit/directives/repeat.js';
 import { LogController } from 'log-controller';
 import { JsonRpc } from 'jsonrpc';
@@ -20,7 +20,7 @@ import { loggerLevels } from 'devui-data';
 /**
  * This component represent the Server Log
  */
-export class QwcServerLog extends QwcHotReloadElement {
+export class QwcServerLog extends QwcAbstractLogElement {
     
     logControl = new LogController(this);
     jsonRpc = new JsonRpc("devui-logstream", false);
@@ -80,7 +80,6 @@ export class QwcServerLog extends QwcHotReloadElement {
         .text-thread{
             color: var(--lumo-success-color-50pct);
         }
-    
     `;
 
     static properties = {
@@ -146,8 +145,8 @@ export class QwcServerLog extends QwcHotReloadElement {
     }
     
     disconnectedCallback() {
-        super.disconnectedCallback();
         this._toggleOnOff(false);
+        super.disconnectedCallback();
     }
 
     _loadAllLoggers(){
@@ -207,6 +206,28 @@ export class QwcServerLog extends QwcHotReloadElement {
     _renderLogEntry(message){
         if(message.type === "line"){
             return html`<hr class="line"/>`;
+        }else if(message.type === "blank"){
+            return html`<br/>`;
+        }else if(message.type === "help"){
+            return html`<br/>
+                            The following commands are available:<br/>
+                            <br/>
+                            == Continuous Testing<br/>
+                            <br/>
+                            [r] - Resume testing / Re-run all tests<br/>
+                            [f] - Re-run failed tests<br/>
+                            [b] - Toggle 'broken only' mode, where only failing tests are run<br/>
+                            [v] - Print failures from the last test run<br/>
+                            [p] - Pause tests<br/>
+                            [o] - Toggle test output<br/>
+                            <br/>
+                            == System<br/>
+                            <br/>
+                            [s] - Force restart<br/>
+                            [i] - Toggle instrumentation based reload <br/>
+                            [l] - Toggle live reload<br/>
+                            [h] - Show this help<br/>
+                            `;
         }else{
             var level = message.level.toUpperCase();
             if (level === "WARNING" || level === "WARN"){
@@ -577,12 +598,14 @@ export class QwcServerLog extends QwcHotReloadElement {
             });
         }else{
             this._observer.cancel();
+            this._observer = null;
         }
     }
     
     hotReload(){
-        this._toggleOnOffClicked(false);
-        this._toggleOnOffClicked(true);
+        // Stop then start / start then stop
+        this._stopStartLog();
+        this._stopStartLog();
         this._loadAllLoggers();
     }
     
@@ -642,6 +665,69 @@ export class QwcServerLog extends QwcHotReloadElement {
     _columns(){
         this._columnsDialogOpened = true;
     }
+    
+    _handleZoomIn(event){
+        this._zoomIn();
+    }
+    
+    _handleZoomOut(event){
+        this._zoomOut();
+    }
+    
+    _handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            this._keyPressEnter();
+        } else if (event.ctrlKey && event.key === 'c') {
+            this._stopStartLog();
+        } else if (event.key === 's') {
+            this.jsonRpc.forceRestart();
+        } else if (event.key === 'r') {
+            this.jsonRpc.rerunAllTests();
+        } else if (event.key === 'f') {
+            this.jsonRpc.rerunFailedTests();
+        } else if (event.key === 'b') {
+            this.jsonRpc.toggleBrokenOnly();
+        } else if (event.key === 'v') {
+            this.jsonRpc.printFailures();
+        } else if (event.key === 'o') {
+            this.jsonRpc.toggleTestOutput();
+        } else if (event.key === 'i') {
+            this.jsonRpc.toggleInstrumentationReload();
+        } else if (event.key === 'p') {
+            this.jsonRpc.pauseTests();
+        } else if (event.key === 'l') {
+            this.jsonRpc.toggleLiveReload();
+        } else if (event.key === 'h'){
+            this._printHelp();
+        }
+    }
+    
+    _keyPressEnter(){
+        // Create a blank line in the console.
+        var blankEntry = new Object();
+        blankEntry.id = Math.floor(Math.random() * 999999);
+        blankEntry.type = "blank";
+        this._addLogEntry(blankEntry);
+    }
+    
+    _printHelp(){
+        var helpEntry = new Object();
+        helpEntry.id = Math.floor(Math.random() * 999999);
+        helpEntry.type = "help";
+        this._addLogEntry(helpEntry);
+    }
+    
+    
+    _stopStartLog(){
+        if(this._observer){
+            // stop
+            this._toggleOnOffClicked(false);
+        }else{
+            // start
+            this._toggleOnOffClicked(true);
+        }
+    }
+    
 }
 
 customElements.define('qwc-server-log', QwcServerLog);

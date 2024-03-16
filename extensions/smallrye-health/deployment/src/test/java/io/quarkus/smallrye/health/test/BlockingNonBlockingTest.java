@@ -24,7 +24,7 @@ import io.smallrye.common.annotation.Blocking;
 import io.smallrye.health.SmallRyeHealthReporter;
 import io.smallrye.mutiny.Uni;
 
-public class BlockingNonBlockingTest {
+class BlockingNonBlockingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -33,7 +33,7 @@ public class BlockingNonBlockingTest {
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
-    public void testRegisterHealthOnBlockingThreadStep1() {
+    void testRegisterHealthOnBlockingThreadStep1() {
         // initial startup health blocking call on worker thread
         given()
                 .when().get("/start-health")

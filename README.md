@@ -13,7 +13,6 @@
 
 # Quarkus - Supersonic Subatomic Java
 
-
 Quarkus is a Cloud Native, (Linux) Container First framework for writing Java applications.
 
 * **Container First**:

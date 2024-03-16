@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractCollection;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,6 +26,7 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
+import org.flywaydb.core.extensibility.ConfigurationExtension;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
@@ -79,6 +81,20 @@ class FlywayProcessor {
     private static final DotName JAVA_MIGRATION = DotName.createSimple(JavaMigration.class.getName());
 
     private static final Logger LOGGER = Logger.getLogger(FlywayProcessor.class);
+
+    @BuildStep
+    void reflection(CombinedIndexBuildItem index, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+        List<String> configurationExtensions = new ArrayList<>();
+        configurationExtensions.add(ConfigurationExtension.class.getName());
+
+        for (ClassInfo configurationExtension : index.getIndex().getAllKnownImplementors(ConfigurationExtension.class)) {
+            configurationExtensions.add(configurationExtension.name().toString());
+        }
+
+        reflectiveClasses
+                .produce(ReflectiveClassBuildItem.builder(configurationExtensions.toArray(new String[0])).fields().methods()
+                        .build());
+    }
 
     @Record(STATIC_INIT)
     @BuildStep

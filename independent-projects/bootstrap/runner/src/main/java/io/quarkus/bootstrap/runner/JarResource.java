@@ -29,6 +29,7 @@ public class JarResource implements ClassLoadingResource {
 
     private final ManifestInfo manifestInfo;
     private final Path jarPath;
+    private final URI jarUri;
 
     private final Lock readLock;
     private final Lock writeLock;
@@ -46,6 +47,7 @@ public class JarResource implements ClassLoadingResource {
     public JarResource(ManifestInfo manifestInfo, Path jarPath) {
         this.manifestInfo = manifestInfo;
         this.jarPath = jarPath;
+        this.jarUri = jarPath.toUri();
         final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
         this.readLock = readWriteLock.readLock();
         this.writeLock = readWriteLock.writeLock();
@@ -55,13 +57,8 @@ public class JarResource implements ClassLoadingResource {
     public void init() {
         final URL url;
         try {
-            String path = jarPath.toAbsolutePath().toString();
-            if (!path.startsWith("/")) {
-                path = '/' + path;
-            }
-            URI uri = new URI("file", null, path, null);
-            url = uri.toURL();
-        } catch (URISyntaxException | MalformedURLException e) {
+            url = this.jarUri.toURL();
+        } catch (MalformedURLException e) {
             throw new RuntimeException("Unable to create protection domain for " + jarPath, e);
         }
         this.protectionDomain = new ProtectionDomain(new CodeSource(url, (Certificate[]) null), null);
@@ -110,7 +107,6 @@ public class JarResource implements ClassLoadingResource {
                 if (realName.endsWith("/")) {
                     realName = realName.substring(0, realName.length() - 1);
                 }
-                final URI jarUri = jarPath.toUri();
                 // first create a URI which includes both the jar file path and the relative resource name
                 // and then invoke a toURL on it. The URI reconstruction allows for any encoding to be done
                 // for the "path" which includes the "realName"

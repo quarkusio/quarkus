@@ -293,12 +293,13 @@ public class DevUIProcessor {
      * This goes through all jsonRPC methods and discover the methods using Jandex
      */
     @BuildStep(onlyIf = IsDevelopment.class)
-    void findAllJsonRPCMethods(BuildProducer<JsonRPCMethodsBuildItem> jsonRPCMethodsProvider,
+    void findAllJsonRPCMethods(BuildProducer<JsonRPCRuntimeMethodsBuildItem> jsonRPCMethodsProvider,
             BuildProducer<BuildTimeConstBuildItem> buildTimeConstProducer,
             LaunchModeBuildItem launchModeBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            List<JsonRPCProvidersBuildItem> jsonRPCProvidersBuildItems) {
+            List<JsonRPCProvidersBuildItem> jsonRPCProvidersBuildItems,
+            DeploymentMethodBuildItem deploymentMethodBuildItem) {
 
         if (launchModeBuildItem.isNotLocalDevModeType()) {
             return;
@@ -369,8 +370,12 @@ public class DevUIProcessor {
             }
         }
 
+        if (deploymentMethodBuildItem.hasMethods()) {
+            requestResponseMethods.addAll(deploymentMethodBuildItem.getMethods());
+        }
+
         if (!extensionMethodsMap.isEmpty()) {
-            jsonRPCMethodsProvider.produce(new JsonRPCMethodsBuildItem(extensionMethodsMap));
+            jsonRPCMethodsProvider.produce(new JsonRPCRuntimeMethodsBuildItem(extensionMethodsMap));
         }
 
         BuildTimeConstBuildItem methodInfo = new BuildTimeConstBuildItem("devui-jsonrpc");
@@ -390,7 +395,8 @@ public class DevUIProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void createJsonRpcRouter(DevUIRecorder recorder,
             BeanContainerBuildItem beanContainer,
-            JsonRPCMethodsBuildItem jsonRPCMethodsBuildItem) {
+            JsonRPCRuntimeMethodsBuildItem jsonRPCMethodsBuildItem,
+            DeploymentMethodBuildItem deploymentMethodBuildItem) {
 
         if (jsonRPCMethodsBuildItem != null) {
             Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap = jsonRPCMethodsBuildItem
@@ -398,7 +404,7 @@ public class DevUIProcessor {
 
             DevConsoleManager.setGlobal(DevUIRecorder.DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY,
                     JsonMapper.Factory.deploymentLinker().createLinkData(new DevUIDatabindCodec.Factory()));
-            recorder.createJsonRpcRouter(beanContainer.getValue(), extensionMethodsMap);
+            recorder.createJsonRpcRouter(beanContainer.getValue(), extensionMethodsMap, deploymentMethodBuildItem.getMethods());
         }
     }
 

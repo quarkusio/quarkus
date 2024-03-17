@@ -41,7 +41,7 @@ public class JsonRpcRequest {
         return this.getParams() != null;
     }
 
-    private Map<?, ?> getParams() {
+    public Map<?, ?> getParams() {
         JsonObject paramsObject = jsonObject.getJsonObject(PARAMS);
         if (paramsObject != null && paramsObject.getMap() != null && !paramsObject.getMap().isEmpty()) {
             return paramsObject.getMap();

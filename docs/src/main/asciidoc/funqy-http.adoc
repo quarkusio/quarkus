@@ -301,3 +301,16 @@ public class MyFunctions {
 ----
 curl "http://localhost:8080/greet?addresses.home.state=MA&addresses.home.city=Boston"
 ----
+
+== Customising HTTP Responses
+
+For HTTP requests, the Response can be customized using `HttpResponse` class.  Here's a simple example:
+
+[source, java]
+----
+@Funq
+public HttpResponse funqHttpResponse(String name) {
+    ...
+    return new HttpResponse(404, "User not found");
+}
+----

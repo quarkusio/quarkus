@@ -88,8 +88,8 @@ Resource:: Represents your domain object. This is what your API serves and modif
 Representation:: How your resource is represented on the wire, can vary depending on content types
 Content type:: Designates a particular representation (also called a media type), for example `text/plain` or `application/json`
 HTTP:: Underlying wire protocol for routing REST calls (see https://tools.ietf.org/html/rfc7230[HTTP specifications])
-HTTP request:: the request part of the HTTP call, consisting of an HTTP method, a target URI, headers and an optional message body
-HTTP response:: the response part of the HTTP call, consisting of an HTTP response status, headers and an optional message body
+HTTP request:: The request part of the HTTP call, consisting of an HTTP method, a target URI, headers and an optional message body
+HTTP response:: The response part of the HTTP call, consisting of an HTTP response status, headers and an optional message body
 
 === Declaring endpoints: URI mapping
 
@@ -2312,7 +2312,7 @@ quarkus.log.category."org.jboss.resteasy.reactive.common.core.AbstractResteasyRe
 
 You can declare functions which are invoked in the following phases of the request processing:
 
-- Before the endpoint method is identified: pre-routing request filter
+- Before the endpoint method is identified: pre-matching request filter
 - After routing, but before the endpoint method is called: normal request filter
 - After the endpoint method is called: response filter
 
@@ -2491,7 +2491,7 @@ A `ContainerResponseFilter` will also be called for <<exception-mapping, handled
 
 [[readers-writers]]
 
-Whenever your endpoint methods return an object (of when they return a
+Whenever your endpoint methods return an object (or when they return a
 link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestResponse.html[`RestResponse<?>`]
 or link:{jaxrsapi}/jakarta/ws/rs/core/Response.html[`Response`] with
 an entity), Quarkus REST will look for a way to map that into an HTTP response body.

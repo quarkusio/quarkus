@@ -109,6 +109,10 @@ public class TestRunTimeConfig {
 
     public Map<String, Map<String, String>> mapMap;
 
+    /** Do not record **/
+    @ConfigItem
+    public Optional<String> doNotRecord;
+
     @Override
     public String toString() {
         return "TestRunTimeConfig{" +

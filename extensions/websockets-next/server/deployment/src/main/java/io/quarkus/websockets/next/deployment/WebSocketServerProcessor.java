@@ -244,7 +244,7 @@ public class WebSocketServerProcessor {
             m.appendReplacement(sb, ":" + match.subSequence(1, match.length() - 1));
         }
         m.appendTail(sb);
-        return sb.toString();
+        return path.startsWith("/") ? sb.toString() : "/" + sb.toString();
     }
 
     private String callbackToString(MethodInfo callback) {

@@ -1,11 +1,13 @@
 package io.quarkus.websockets.next.deployment.devui;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -44,7 +46,8 @@ public class WebSocketServerDevUIProcessor {
     private List<Map<String, Object>> createEndpointsJson(List<WebSocketEndpointBuildItem> endpoints,
             List<GeneratedEndpointBuildItem> generatedEndpoints) {
         List<Map<String, Object>> json = new ArrayList<>();
-        for (WebSocketEndpointBuildItem endpoint : endpoints) {
+        for (WebSocketEndpointBuildItem endpoint : endpoints.stream().sorted(Comparator.comparing(e -> e.path))
+                .collect(Collectors.toList())) {
             Map<String, Object> endpointJson = new HashMap<>();
             String clazz = endpoint.bean.getImplClazz().name().toString();
             endpointJson.put("clazz", clazz);

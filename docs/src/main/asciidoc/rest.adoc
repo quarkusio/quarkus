@@ -2310,7 +2310,7 @@ quarkus.log.category."org.jboss.resteasy.reactive.common.core.AbstractResteasyRe
 
 ==== Via annotations
 
-You can declare functions which are invoked in the following phases of the request processing:
+You can declare functions that are invoked in the following phases of the request processing:
 
 - Before the endpoint method is identified: pre-matching request filter
 - After routing, but before the endpoint method is called: normal request filter

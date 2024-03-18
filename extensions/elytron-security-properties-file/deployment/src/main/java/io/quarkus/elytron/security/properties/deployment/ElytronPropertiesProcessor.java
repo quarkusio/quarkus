@@ -29,10 +29,6 @@ import io.quarkus.runtime.RuntimeValue;
  */
 class ElytronPropertiesProcessor {
     private static final Logger log = Logger.getLogger(ElytronPropertiesProcessor.class.getName());
-    /** Prefix for the user to password mapping properties */
-    private static final String USERS_PREFIX = "quarkus.security.embedded.users";
-    /** Prefix for the user to password mapping properties */
-    private static final String ROLES_PREFIX = "quarkus.security.embedded.roles";
 
     SecurityUsersConfig propertiesConfig;
 
@@ -57,31 +53,32 @@ class ElytronPropertiesProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void configureFileRealmAuthConfig(ElytronPropertiesFileRecorder recorder,
-            BuildProducer<NativeImageResourceBuildItem> resources,
             BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
-        if (propertiesConfig.file.enabled) {
-            PropertiesRealmConfig realmConfig = propertiesConfig.file;
-            log.debugf("Configuring from PropertiesRealmConfig, users=%s, roles=%s", realmConfig.users,
-                    realmConfig.roles);
+        if (propertiesConfig.file().enabled()) {
+            PropertiesRealmConfig realmConfig = propertiesConfig.file();
+            log.debugf("Configuring from PropertiesRealmConfig, users=%s, roles=%s", realmConfig.users(),
+                    realmConfig.roles());
             // Have the runtime recorder create the LegacyPropertiesSecurityRealm and create the build item
-            RuntimeValue<SecurityRealm> realm = recorder.createRealm(realmConfig);
+            RuntimeValue<SecurityRealm> realm = recorder.createRealm(propertiesConfig);
             securityRealm
-                    .produce(new SecurityRealmBuildItem(realm, realmConfig.realmName, recorder.loadRealm(realm, realmConfig)));
+                    .produce(
+                            new SecurityRealmBuildItem(realm, realmConfig.realmName(),
+                                    recorder.loadRealm(realm, propertiesConfig)));
             // Return the realm authentication mechanism build item
         }
     }
 
     @BuildStep
     void nativeResource(BuildProducer<NativeImageResourceBuildItem> resources) throws Exception {
-        if (propertiesConfig.file.enabled) {
-            PropertiesRealmConfig realmConfig = propertiesConfig.file;
-            resources.produce(new NativeImageResourceBuildItem(realmConfig.users, realmConfig.roles));
+        if (propertiesConfig.file().enabled()) {
+            PropertiesRealmConfig realmConfig = propertiesConfig.file();
+            resources.produce(new NativeImageResourceBuildItem(realmConfig.users(), realmConfig.roles()));
         }
     }
 
     @BuildStep
     ElytronPasswordMarkerBuildItem marker() {
-        if (propertiesConfig.file.enabled || propertiesConfig.embedded.enabled) {
+        if (propertiesConfig.file().enabled() || propertiesConfig.embedded().enabled()) {
             return new ElytronPasswordMarkerBuildItem();
         }
         return null;
@@ -103,14 +100,13 @@ class ElytronPropertiesProcessor {
     void configureMPRealmConfig(ElytronPropertiesFileRecorder recorder,
             BuildProducer<SecurityRealmBuildItem> securityRealm,
             MPRealmRuntimeConfig runtimeConfig) throws Exception {
-        if (propertiesConfig.embedded.enabled) {
-            MPRealmConfig realmConfig = propertiesConfig.embedded;
+        if (propertiesConfig.embedded().enabled()) {
             log.info("Configuring from MPRealmConfig");
 
-            RuntimeValue<SecurityRealm> realm = recorder.createRealm(realmConfig);
+            RuntimeValue<SecurityRealm> realm = recorder.createEmbeddedRealm(propertiesConfig);
             securityRealm
-                    .produce(new SecurityRealmBuildItem(realm, realmConfig.realmName,
-                            recorder.loadRealm(realm, realmConfig, runtimeConfig)));
+                    .produce(new SecurityRealmBuildItem(realm, propertiesConfig.embedded().realmName(),
+                            recorder.loadEmbeddedRealm(realm, propertiesConfig, runtimeConfig)));
         }
     }
 }

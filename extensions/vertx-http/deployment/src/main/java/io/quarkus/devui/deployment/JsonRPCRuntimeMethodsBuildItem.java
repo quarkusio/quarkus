@@ -9,11 +9,11 @@ import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethodName;
 /**
  * Simple holder for all discovered Json RPC Methods
  */
-public final class JsonRPCMethodsBuildItem extends SimpleBuildItem {
+public final class JsonRPCRuntimeMethodsBuildItem extends SimpleBuildItem {
 
     private final Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap;
 
-    public JsonRPCMethodsBuildItem(Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap) {
+    public JsonRPCRuntimeMethodsBuildItem(Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap) {
         this.extensionMethodsMap = extensionMethodsMap;
     }
 

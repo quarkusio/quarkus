@@ -82,6 +82,7 @@ public class WebSocketServerProcessor {
     static final String ENDPOINT_SUFFIX = "_WebSocketEndpoint";
     static final String NESTED_SEPARATOR = "$_";
 
+    // Parameter names consist of alphanumeric characters and underscore
     private static final Pattern PATH_PARAM_PATTERN = Pattern.compile("\\{[a-zA-Z0-9_]+\\}");
 
     @BuildStep
@@ -240,6 +241,14 @@ public class WebSocketServerProcessor {
         while (m.find()) {
             // Replace {foo} with :foo
             String match = m.group();
+            int end = m.end();
+            if (end < path.length()) {
+                char nextChar = path.charAt(end);
+                if (Character.isAlphabetic(nextChar) || Character.isDigit(nextChar) || nextChar == '_') {
+                    throw new WebSocketServerException("Path parameter " + match
+                            + " may not be followed by an alphanumeric character or underscore: " + path);
+                }
+            }
             m.appendReplacement(sb, ":" + match.subSequence(1, match.length() - 1));
         }
         m.appendTail(sb);

@@ -1,5 +1,8 @@
 package io.quarkus.oidc.client.filter.runtime;
 
+import java.util.function.Function;
+
+import io.quarkus.runtime.util.StringUtil;
 import io.smallrye.config.FallbackConfigSourceInterceptor;
 
 /**
@@ -10,16 +13,14 @@ public class OidcClientFilterConfigFallbackInterceptor extends FallbackConfigSou
 
     private static final String OLD_PREFIX = "quarkus.oidc-client-filter.";
     private static final String NEW_PREFIX = "quarkus.resteasy-client-oidc-filter.";
+    private static final Function<String, String> RENAME_FUNCTION = new Function<String, String>() {
+        @Override
+        public String apply(String s) {
+            return StringUtil.changePrefix(s, NEW_PREFIX, OLD_PREFIX);
+        }
+    };
 
     public OidcClientFilterConfigFallbackInterceptor() {
-        super(OidcClientFilterConfigFallbackInterceptor::rename);
-    }
-
-    private static String rename(String originalName) {
-        if (!originalName.startsWith(NEW_PREFIX)) {
-            return originalName;
-        }
-
-        return originalName.replaceFirst(NEW_PREFIX, OLD_PREFIX);
+        super(RENAME_FUNCTION);
     }
 }

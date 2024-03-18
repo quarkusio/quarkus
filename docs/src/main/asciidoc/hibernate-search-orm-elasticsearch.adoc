@@ -3,12 +3,12 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Hibernate Search guide
+= Use Hibernate Search with Hibernate ORM and Elasticsearch/OpenSearch
 include::_attributes.adoc[]
 :categories: data
-:summary: Hibernate Search allows you to index your entities in an Elasticsearch cluster and easily offer full text search in all your Hibernate ORM-based applications.
-:keywords: elasticsearch hibernate orm search
-:topics: data,hibernate-search,elasticsearch,search,nosql,hibernate-orm
+:summary: Hibernate Search with Hibernate ORM allows you to index your entities in an Elasticsearch/OpenSearch cluster and easily offer full text search in all your Hibernate ORM-based applications.
+:keywords: elasticsearch opensearch hibernate orm search
+:topics: data,hibernate-search,elasticsearch,opensearch,search,nosql,hibernate-orm
 :extensions: io.quarkus:quarkus-hibernate-search-orm-elasticsearch
 
 You have a Hibernate ORM-based application? You want to provide a full-featured full-text search to your users? You're at the right place.
@@ -378,71 +378,8 @@ This field is marked as sortable as our intention is to use it for sorting our a
 <3> The purpose of `@IndexedEmbedded` is to include the `Book` fields into the `Author` index.
 In this case, we just use the default configuration: all the fields of the associated `Book` entities are included in the index (i.e. the `title` field).
 The nice thing with `@IndexedEmbedded` is that it is able to automatically reindex an `Author` if one of its ``Book``s has been updated thanks to the bidirectional relation.
-`@IndexedEmbedded` also supports nested documents (using the `storage = NESTED` attribute), but we don't need it here.
-You can also specify the fields you want to include in your parent index using the `includePaths` attribute if you don't want them all.
-
-[programmatic-mapping]
-=== Programmatic mapping
-
-If, for some reason, adding Hibernate Search annotations to entities is not possible,
-mapping can be applied programmatically instead.
-Programmatic mapping is configured through the `ProgrammaticMappingConfigurationContext`
-that is exposed via a mapping configurer (`HibernateOrmSearchMappingConfigurer`).
-
-[NOTE]
-====
-A mapping configurer (`HibernateOrmSearchMappingConfigurer`) allows much more than just programmatic mapping capabilities.
-It also allows link:{hibernate-search-docs-url}#mapper-orm-mapping-configurer[configuring annotation mapping, bridges, and more].
-====
-
-Below is an example of a mapping configurer that applies programmatic mapping:
-
-[source,java]
-----
-package org.acme.hibernate.search.elasticsearch.config;
-
-import org.hibernate.search.mapper.orm.mapping.HibernateOrmMappingConfigurationContext;
-import org.hibernate.search.mapper.orm.mapping.HibernateOrmSearchMappingConfigurer;
-import org.hibernate.search.mapper.pojo.mapping.definition.programmatic.TypeMappingStep;
-
-import io.quarkus.hibernate.search.orm.elasticsearch.SearchExtension;
-
-@SearchExtension // <1>
-public class CustomMappingConfigurer implements HibernateOrmSearchMappingConfigurer {
-
-	@Override
-    public void configure(HibernateOrmMappingConfigurationContext context) {
-        TypeMappingStep type = context.programmaticMapping()    // <2>
-            .type(SomeIndexedEntity.class);                     // <3>
-        type.indexed()                                          // <4>
-            .index(SomeIndexedEntity.INDEX_NAME);               // <5>
-        type.property("id").documentId();                       // <6>
-        type.property("text").fullTextField();                  // <7>
-    }
-}
-----
-<1> Annotate the configurer implementation with the `@SearchExtension` qualifier
-to tell Quarkus it should be used by Hibernate Search in the default persistence unit.
-+
-The annotation can also target a specific persistence unit (`@SearchExtension(persistenceUnit = "nameOfYourPU")`).
-<2> Access the programmatic mapping context.
-<3> Create mapping step for the `SomeIndexedEntity` entity.
-<4> Define the `SomeIndexedEntity` entity as indexed.
-<5> Provide an index name to be used for the `SomeIndexedEntity` entity.
-<6> Define the document id property.
-<7> Define a full-text search field for the `text` property.
-
-[TIP]
-====
-Alternatively, if for some reason you can't or don't want to annotate your mapping configurer with `@SearchExtension`,
-you can simply annotate it with `@Dependent @Named("myMappingConfigurer")`
-and then reference it from configuration properties:
-
-[source,properties]
-----
-quarkus.hibernate-search-orm.mapping.configurer=bean:myMappingConfigurer
-----
-====
+`@IndexedEmbedded` also supports nested documents (using the `structure = NESTED` attribute), but we don't need it here.
+You can also specify the fields you want to embed in your parent index using the `includePaths`/`excludePaths` attributes if you don't want them all.
 
 == Analyzers and normalizers
 
@@ -549,6 +486,9 @@ quarkus.hibernate-search-orm.elasticsearch.analysis.configurer=bean:myAnalysisCo
 ----
 ====
 
+For more information about configuring analyzers,
+see link:{hibernate-search-docs-url}#backend-elasticsearch-analysis[this section of the reference documentation].
+
 == Adding full text capabilities to our REST service
 
 In our existing `LibraryResource`, we just need to inject the `SearchSession`:
@@ -563,48 +503,36 @@ Applications with multiple persistence units can use the CDI qualifier `@io.quar
 to select the right one:
 see <<multiple-persistence-units-attaching-cdi>>.
 
-And then we can add the following methods (and a few ``import``s):
+And then the magic begins.
+When we added annotations to our entities, we made them available for full text search;
+we can now query the index using the Hibernate Search DSL,
+simply by adding the following method (and a few ``import``s):
 
 [source,java]
 ----
-    @Transactional // <1>
-    void onStart(@Observes StartupEvent ev) throws InterruptedException { // <2>
-        // only reindex if we imported some content
-        if (Book.count() > 0) {
-            searchSession.massIndexer()
-                    .startAndWait();
-        }
-    }
-
     @GET
-    @Path("author/search") // <3>
-    @Transactional
-    public List<Author> searchAuthors(@RestQuery String pattern, // <4>
+    @Path("author/search")
+    @Transactional // <1>
+    public List<Author> searchAuthors(@RestQuery String pattern, // <2>
             @RestQuery Optional<Integer> size) {
-        return searchSession.search(Author.class) // <5>
+        return searchSession.search(Author.class) // <3>
                 .where(f ->
                     pattern == null || pattern.trim().isEmpty() ?
-                        f.matchAll() : // <6>
+                        f.matchAll() : // <4>
                         f.simpleQueryString()
-                                .fields("firstName", "lastName", "books.title").matching(pattern) // <7>
+                                .fields("firstName", "lastName", "books.title").matching(pattern) // <5>
                 )
-                .sort(f -> f.field("lastName_sort").then().field("firstName_sort")) // <8>
-                .fetchHits(size.orElse(20)); // <9>
+                .sort(f -> f.field("lastName_sort").then().field("firstName_sort")) // <6>
+                .fetchHits(size.orElse(20)); // <7>
     }
 ----
-<1> Important point: we need a transactional context for these methods.
-<2> As we will import data into the PostgreSQL database using an SQL script, we need to reindex the data at startup.
-For this, we use Hibernate Search's mass indexer, which allows to index a lot of data efficiently (you can fine tune it for better performances).
-All the upcoming updates coming through Hibernate ORM operations will be synchronized automatically to the full text index.
-If you don't import data manually in the database, you don't need that:
-the mass indexer should then only be used when you change your indexing configuration (adding a new field, changing an analyzer's configuration...) and you want the new configuration to be applied to your existing entities.
-<3> This is where the magic begins: just adding the annotations to our entities makes them available for full text search: we can now query the index using the Hibernate Search DSL.
-<4> Use the `org.jboss.resteasy.reactive.RestQuery` annotation type to avoid repeating the parameter name.
-<5> We indicate that we are searching for ``Author``s.
-<6> We create a predicate: if the pattern is empty, we use a `matchAll()` predicate.
-<7> If we have a valid pattern, we create a https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-simple-query-string-query.html[`simpleQueryString()`] predicate on the `firstName`, `lastName` and `books.title` fields matching our pattern.
-<8> We define the sort order of our results. Here we sort by last name, then by first name. Note that we use the specific fields we created for sorting.
-<9> Fetch the `size` top hits, `20` by default. Obviously, paging is also supported.
+<1> Important point: we need a transactional context for this method.
+<2> Use the `org.jboss.resteasy.reactive.RestQuery` annotation type to avoid repeating the parameter name.
+<3> We indicate that we are searching for ``Author``s.
+<4> We create a predicate: if the pattern is empty, we use a `matchAll()` predicate.
+<5> If we have a valid pattern, we create a https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-simple-query-string-query.html[`simpleQueryString()`] predicate on the `firstName`, `lastName` and `books.title` fields matching our pattern.
+<6> We define the sort order of our results. Here we sort by last name, then by first name. Note that we use the specific fields we created for sorting.
+<7> Fetch the `size` top hits, `20` by default. Obviously, paging is also supported.
 
 [NOTE]
 ====
@@ -615,97 +543,13 @@ When that's not enough, you can always fall back to
 link:{hibernate-search-docs-url}#search-dsl-predicate-extensions-elasticsearch-from-json[defining a predicate using JSON directly].
 ====
 
-== Configuring the application
-
-As usual, we can configure everything in the Quarkus configuration file, `application.properties`.
-
-Edit `src/main/resources/application.properties` and inject the following configuration:
-
-[source,properties]
-----
-quarkus.ssl.native=false <1>
-
-quarkus.datasource.db-kind=postgresql <2>
-
-quarkus.hibernate-orm.sql-load-script=import.sql <3>
-
-quarkus.hibernate-search-orm.elasticsearch.version=8 <4>
-quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy=sync <5>
-
-%prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost/quarkus_test <6>
-%prod.quarkus.datasource.username=quarkus_test
-%prod.quarkus.datasource.password=quarkus_test
-%prod.quarkus.hibernate-orm.database.generation=create
-%prod.hibernate-search-orm.elasticsearch.hosts=localhost:9200 <6>
-----
-<1> We won't use SSL, so we disable it to have a more compact native executable.
-<2> Let's create a PostgreSQL datasource.
-<3> We load some initial data on startup.
-<4> We need to tell Hibernate Search about the version of Elasticsearch we will use.
-It is important because there are significant differences between Elasticsearch mapping syntax depending on the version.
-Since the mapping is created at build time to reduce startup time, Hibernate Search cannot connect to the cluster to automatically detect the version.
-Note that, for OpenSearch, you need to prefix the version with `opensearch:`; see <<opensearch>>.
-<5> This means that we wait for the entities to be searchable before considering a write complete.
-On a production setup, the `write-sync` default will provide better performance.
-Using `sync` is especially important when testing as you need the entities to be searchable immediately.
-<6> For development and tests, we rely on <<dev-services,Dev Services>>,
-which means Quarkus will start a PostgreSQL database and Elasticsearch cluster automatically.
-In production mode, however,
-you will want to start a PostgreSQL database and Elasticsearch cluster manually,
-which is why we provide Quarkus with this connection info in the `prod` profile (`%prod.` prefix).
-
-[NOTE]
-====
-Because we rely on <<dev-services,Dev Services>>, the database and Elasticsearch schema
-will automatically be dropped and re-created on each application startup
-in tests and dev mode
-(unless <<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-schema-management-strategy,`quarkus.hibernate-search-orm.schema-management.strategy`>> is set explicitly).
-
-If for some reason you cannot use Dev Services,
-you will have to set the following properties to get similar behavior:
-
-[source,properties]
-----
-%dev.quarkus.hibernate-orm.database.generation=drop-and-create
-%test.quarkus.hibernate-orm.database.generation=drop-and-create
-%dev.quarkus.hibernate-search-orm.schema-management.strategy=drop-and-create
-%test.quarkus.hibernate-search-orm.schema-management.strategy=drop-and-create
-----
-
-See also <<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-schema-management-strategy,`quarkus.hibernate-search-orm.schema-management.strategy`>>.
-====
-
-
-[TIP]
-For more information about the Hibernate Search extension configuration please refer to the <<configuration-reference,Configuration Reference>>.
-
-[[dev-services]]
-=== Dev Services (Configuration Free Databases)
-Quarkus supports a feature called Dev Services that allows you to start various containers without any config.
-In the case of Elasticsearch this support extends to the default Elasticsearch connection.
-What that means practically, is that if you have not configured `quarkus.hibernate-search-orm.elasticsearch.hosts` Quarkus will automatically
-start an Elasticsearch container when running tests or in xref:dev-mode-differences.adoc[dev mode], and automatically configure the connection.
-
-When running the production version of the application, the Elasticsearch connection needs to be configured as normal,
-so if you want to include a production database config in your `application.properties` and continue to use Dev Services
-we recommend that you use the `%prod.` profile to define your Elasticsearch settings.
-
-NOTE: Dev Services for Elasticsearch is currently unable to start multiple clusters concurrently, so it only works with the default backend of the default persistence unit: named persistence units or named backends won't be able to take advantage of Dev Services for Elasticsearch.
-
-For more information you can read the xref:elasticsearch-dev-services.adoc[Dev Services for Elasticsearch guide].
-
-== Creating a frontend
-
-Now let's add a simple web page to interact with our `LibraryResource`.
-Quarkus automatically serves static resources located under the `META-INF/resources` directory.
-In the `src/main/resources/META-INF/resources` directory, overwrite the existing `index.html` file with the content from this
-{quickstarts-blob-url}/hibernate-search-orm-elasticsearch-quickstart/src/main/resources/META-INF/resources/index.html[index.html] file.
-
-== Automatic import script
+[[automatic-import-script]]
+== Automatic data initialization
 
 For the purpose of this demonstration, let's import an initial dataset.
 
-Let's create a `src/main/resources/import.sql` file with the following content:
+Let's create a `src/main/resources/import.sql` file with the following content
+(we'll reference it in configuration later):
 
 [source,sql]
 ----
@@ -729,6 +573,114 @@ INSERT INTO book(id, title, author_id) VALUES (13, '4 3 2 1', 2);
 ALTER SEQUENCE book_seq RESTART WITH 14;
 ----
 
+Because this data above will be inserted into the database without Hibernate Search's knowledge,
+it won't be indexed --
+unlike upcoming updates coming through Hibernate ORM operations,
+which will be synchronized automatically to the full text index.
+
+In our existing `LibraryResource`, let's add the following content (and a few ``import``s)
+to index that initial data:
+
+[NOTE]
+====
+If you don't import data manually in the database, you don't need this:
+the mass indexer should then only be used when you change your indexing configuration
+(adding a new field, changing an analyzer's configuration...)
+and you want the new configuration to be applied to your existing data.
+====
+
+[source,java]
+----
+    @Inject
+    SearchMapping searchMapping; // <1>
+
+    void onStart(@Observes StartupEvent ev) throws InterruptedException { // <2>
+        // only reindex if we imported some content
+        if (Book.count() > 0) {
+            searchMapping.scope(Object.class) // <3>
+                    .massIndexer() // <4>
+                    .startAndWait(); // <5>
+        }
+    }
+----
+<1> Inject a Hibernate Search `SearchMapping`,
+which relies on the `EntityManagerFactory` under the hood.
+Applications with multiple persistence units can use the CDI qualifier `@io.quarkus.hibernate.orm.PersistenceUnit`
+to select the right one:
+see <<multiple-persistence-units-attaching-cdi>>.
+<2> Add a method that will get executed on application startup.
+<3> Create a "search scope" targeting all indexed entity types that extend `Object` -- that is, every single indexed entity types (`Author` and `Book`).
+<4> Create an instance of Hibernate Search's mass indexer, which allows indexing a lot of data efficiently (you can fine tune it for better performance).
+<5> Start the mass indexer and wait for it to finish.
+
+== Configuring the application
+
+As usual, we can configure everything in the Quarkus configuration file, `application.properties`.
+
+Edit `src/main/resources/application.properties` and inject the following configuration:
+
+[source,properties]
+----
+quarkus.ssl.native=false <1>
+
+quarkus.datasource.db-kind=postgresql <2>
+
+quarkus.hibernate-orm.sql-load-script=import.sql <3>
+
+quarkus.hibernate-search-orm.elasticsearch.version=8 <4>
+quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy=sync <5>
+
+%prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost/quarkus_test <6>
+%prod.quarkus.datasource.username=quarkus_test
+%prod.quarkus.datasource.password=quarkus_test
+%prod.quarkus.hibernate-orm.database.generation=create
+%prod.quarkus.hibernate-search-orm.elasticsearch.hosts=localhost:9200 <6>
+----
+<1> We won't use SSL, so we disable it to have a more compact native executable.
+<2> Let's create a PostgreSQL datasource.
+<3> We load some initial data on startup (see <<automatic-import-script>>).
+<4> We need to tell Hibernate Search about the version of Elasticsearch we will use.
+It is important because there are significant differences between Elasticsearch mapping syntax depending on the version.
+Since the mapping is created at build time to reduce startup time, Hibernate Search cannot connect to the cluster to automatically detect the version.
+Note that, for OpenSearch, you need to prefix the version with `opensearch:`; see <<opensearch>>.
+<5> This means that we wait for the entities to be searchable before considering a write complete.
+On a production setup, the `write-sync` default will provide better performance.
+Using `sync` is especially important when testing as you need the entities to be searchable immediately.
+<6> For development and tests, we rely on <<dev-services,Dev Services>>,
+which means Quarkus will start a PostgreSQL database and Elasticsearch cluster automatically.
+In production mode, however,
+we will want to start a PostgreSQL database and Elasticsearch cluster manually,
+which is why we provide Quarkus with this connection info in the `prod` profile (`%prod.` prefix).
+
+[NOTE]
+====
+Because we rely on <<dev-services,Dev Services>>, the database and Elasticsearch schema
+will automatically be dropped and re-created on each application startup
+in tests and dev mode
+(unless <<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-schema-management-strategy,`quarkus.hibernate-search-orm.schema-management.strategy`>> is set explicitly).
+
+If for some reason you cannot use Dev Services,
+you will have to set the following properties to get similar behavior:
+
+[source,properties]
+----
+%dev,test.quarkus.hibernate-orm.database.generation=drop-and-create
+%dev,test.quarkus.hibernate-search-orm.schema-management.strategy=drop-and-create
+----
+
+See also <<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-schema-management-strategy,`quarkus.hibernate-search-orm.schema-management.strategy`>>.
+====
+
+[TIP]
+For more information about configuration of the Hibernate Search ORM extension, refer to the <<configuration-reference,Configuration Reference>>.
+
+== Creating a frontend
+
+Now let's add a simple web page to interact with our `LibraryResource`.
+Quarkus automatically serves static resources located under the `META-INF/resources` directory.
+In the `src/main/resources/META-INF/resources` directory, overwrite the existing `index.html` file with the content from this
+{quickstarts-blob-url}/hibernate-search-orm-elasticsearch-quickstart/src/main/resources/META-INF/resources/index.html[index.html] file.
+
 == Time to play with your application
 
 You can now interact with your REST service:
@@ -745,6 +697,112 @@ include::{includes}/devtools/dev.adoc[]
 :!devtools-wrapped:
 
 As you can see, all your updates are automatically synchronized to the Elasticsearch cluster.
+
+== Building a native executable
+
+You can build a native executable with the usual command:
+
+include::{includes}/devtools/build-native.adoc[]
+
+[NOTE]
+====
+As usual with native executable compilation, this operation consumes a lot of memory.
+
+It might be safer to stop the two containers while you are building the native executable and start them again once you are done.
+====
+
+Running the native executable is as simple as executing `./target/hibernate-search-orm-elasticsearch-quickstart-1.0.0-SNAPSHOT-runner`.
+
+You can then point your browser to `http://localhost:8080/` and use your application.
+
+[NOTE]
+====
+The startup is a bit slower than usual: it is mostly due to us dropping and recreating the database schema and the Elasticsearch mapping every time at startup.
+We also inject some data and execute the mass indexer.
+
+In a real life application, it is obviously something you won't do on every startup.
+====
+
+[[dev-services]]
+== Dev Services (Configuration Free Datastores)
+
+Quarkus supports a feature called xref:dev-services.adoc[Dev Services] that allows you to start various containers without any config.
+
+In the case of Elasticsearch this support extends to the default Elasticsearch connection.
+What that means practically, is that if you have not configured `quarkus.hibernate-search-orm.elasticsearch.hosts`,
+Quarkus will automatically start an Elasticsearch container when running tests or in xref:dev-mode-differences.adoc[dev mode],
+and automatically configure the connection.
+
+When running the production version of the application, the Elasticsearch connection needs to be configured as normal,
+so if you want to include a production database config in your `application.properties` and continue to use Dev Services
+we recommend that you use the `%prod.` profile to define your Elasticsearch settings.
+
+NOTE: Dev Services for Elasticsearch is currently unable to start multiple clusters concurrently, so it only works with the default backend of the default persistence unit: named persistence units or named backends won't be able to take advantage of Dev Services for Elasticsearch.
+
+For more information you can read the xref:elasticsearch-dev-services.adoc[Dev Services for Elasticsearch guide].
+
+[[programmatic-mapping]]
+== Programmatic mapping
+
+If, for some reason, adding Hibernate Search annotations to entities is not possible,
+mapping can be applied programmatically instead.
+Programmatic mapping is configured through the `ProgrammaticMappingConfigurationContext`
+that is exposed via a mapping configurer (`HibernateOrmSearchMappingConfigurer`).
+
+[NOTE]
+====
+A mapping configurer (`HibernateOrmSearchMappingConfigurer`) allows much more than just programmatic mapping capabilities.
+It also allows link:{hibernate-search-docs-url}#mapper-orm-mapping-configurer[configuring annotation mapping, bridges, and more].
+====
+
+Below is an example of a mapping configurer that applies programmatic mapping:
+
+[source,java]
+----
+package org.acme.hibernate.search.elasticsearch.config;
+
+import org.hibernate.search.mapper.orm.mapping.HibernateOrmMappingConfigurationContext;
+import org.hibernate.search.mapper.orm.mapping.HibernateOrmSearchMappingConfigurer;
+import org.hibernate.search.mapper.pojo.mapping.definition.programmatic.TypeMappingStep;
+
+import io.quarkus.hibernate.search.orm.elasticsearch.SearchExtension;
+
+@SearchExtension // <1>
+public class CustomMappingConfigurer implements HibernateOrmSearchMappingConfigurer {
+
+	@Override
+    public void configure(HibernateOrmMappingConfigurationContext context) {
+        TypeMappingStep type = context.programmaticMapping()    // <2>
+            .type(SomeIndexedEntity.class);                     // <3>
+        type.indexed()                                          // <4>
+            .index(SomeIndexedEntity.INDEX_NAME);               // <5>
+        type.property("id").documentId();                       // <6>
+        type.property("text").fullTextField();                  // <7>
+    }
+}
+----
+<1> Annotate the configurer implementation with the `@SearchExtension` qualifier
+to tell Quarkus it should be used by Hibernate Search in the default persistence unit.
++
+The annotation can also target a specific persistence unit (`@SearchExtension(persistenceUnit = "nameOfYourPU")`).
+<2> Access the programmatic mapping context.
+<3> Create mapping step for the `SomeIndexedEntity` entity.
+<4> Define the `SomeIndexedEntity` entity as indexed.
+<5> Provide an index name to be used for the `SomeIndexedEntity` entity.
+<6> Define the document id property.
+<7> Define a full-text search field for the `text` property.
+
+[TIP]
+====
+Alternatively, if for some reason you can't or don't want to annotate your mapping configurer with `@SearchExtension`,
+you can simply annotate it with `@Dependent @Named("myMappingConfigurer")`
+and then reference it from configuration properties:
+
+[source,properties]
+----
+quarkus.hibernate-search-orm.mapping.configurer=bean:myMappingConfigurer
+----
+====
 
 [[opensearch]]
 == OpenSearch compatibility
@@ -833,6 +891,9 @@ xref:hibernate-orm.adoc#multiple-persistence-units-attaching-model-classes[confi
 [[multiple-persistence-units-attaching-cdi]]
 == CDI integration
 
+[[injecting-entry-points]]
+=== Injecting entry points
+
 You can inject Hibernate Search's main entry points, `SearchSession` and `SearchMapping`, using CDI:
 
 [source,java]
@@ -863,30 +924,60 @@ You can inject the `SearchMapping` of a named persistence unit using the exact s
 SearchMapping searchMapping;
 ----
 
-== Building a native executable
+[[plugging-in-custom-components]]
+=== Plugging in custom components
 
-You can build a native executable with the usual command:
+The Quarkus extension for Hibernate Search with Hibernate ORM will automatically
+inject components annotated with `@SearchExtension` into Hibernate Search.
 
-include::{includes}/devtools/build-native.adoc[]
+The annotation can optionally target a specific persistence unit (`@SearchExtension(persistenceUnit = "nameOfYourPU")`),
+backend (`@SearchExtension(backend = "nameOfYourBackend")`), index (`@SearchExtension(index = "nameOfYourIndex")`),
+or a combination of those
+(`@SearchExtension(persistenceUnit = "nameOfYourPU", backend = "nameOfYourBackend", index = "nameOfYourIndex")`),
+when it makes sense for the type of the component being injected.
 
-[NOTE]
-====
-As usual with native executable compilation, this operation consumes a lot of memory.
+This feature is available for the following component types:
 
-It might be safer to stop the two containers while you are building the native executable and start them again once you are done.
-====
-
-Running it is as simple as executing `./target/hibernate-search-orm-elasticsearch-quickstart-1.0.0-SNAPSHOT-runner`.
-
-You can then point your browser to `http://localhost:8080/` and use your application.
-
-[NOTE]
-====
-The startup is a bit slower than usual: it is mostly due to us dropping and recreating the database schema and the Elasticsearch mapping every time at startup.
-We also inject some data and execute the mass indexer.
-
-In a real life application, it is obviously something you won't do at startup.
-====
+`org.hibernate.search.engine.reporting.FailureHandler`::
+A component that should be notified of any failure occurring in a background process
+(mainly index operations).
++
+Scope: one per persistence unit.
++
+See link:{hibernate-search-docs-url}#configuration-background-failure-handling[this section of the reference documentation]
+for more information.
+`org.hibernate.search.mapper.orm.mapping.HibernateOrmSearchMappingConfigurer`::
+A component used to configure the Hibernate Search mapping, in particular programmatically.
++
+Scope: one or more per persistence unit.
++
+See <<programmatic-mapping,this section of this guide>> for more information.
+`org.hibernate.search.mapper.pojo.work.IndexingPlanSynchronizationStrategy`::
+A component used to configure how to synchronize between application threads and indexing.
++
+Scope: one per persistence unit.
++
+Can also be set to built-in implementations through
+<<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-indexing-plan-synchronization-strategy,`quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy`>>.
++
+See link:{hibernate-search-docs-url}#indexing-plan-synchronization[this section of the reference documentation]
+for more information.
+`org.hibernate.search.backend.elasticsearch.analysis.ElasticsearchAnalysisConfigurer`::
+A component used to configure full text analysis (e.g. analyzers, normalizers).
++
+Scope: one or more per backend.
++
+See <<analysis-configurer,this section of this guide>> for more information.
+`org.hibernate.search.backend.elasticsearch.index.layout.IndexLayoutStrategy`::
+A component used to configure the Elasticsearch layout: index names, index aliases, ...
++
+Scope: one per backend.
++
+Can also be set to built-in implementations through
+<<quarkus-hibernate-search-orm-elasticsearch_quarkus-hibernate-search-orm-elasticsearch-layout-strategy,`quarkus.hibernate-search-orm.elasticsearch.layout.strategy`>>.
++
+See link:{hibernate-search-docs-url}#backend-elasticsearch-indexlayout[this section of the reference documentation]
+for more information.
 
 [[offline-startup]]
 == Offline startup
@@ -1141,7 +1232,7 @@ Thus, we focused our efforts on it.
 We don't have plans to support the Lucene backend in Quarkus for now.
 
 [[configuration-reference]]
-== Hibernate Search Configuration Reference
+== Configuration Reference for Hibernate Search with Hibernate ORM
 
 [[configuration-reference-main]]
 === Main Configuration
@@ -1152,9 +1243,12 @@ include::{generated-dir}/config/quarkus-hibernate-search-orm-elasticsearch.adoc[
 [[bean-reference-note-anchor]]
 .About bean references
 ====
-When referencing beans using a string value in configuration properties, that string is parsed.
+First, be aware that referencing beans in configuration properties is optional and, in fact, discouraged:
+you can achieve the same results by annotating your beans with `@SearchExtension`.
+See <<plugging-in-custom-components,this section>> for more information.
 
-Here are the most common formats:
+If you really do want to reference beans using a string value in configuration properties
+know that string is parsed; here are the most common formats:
 
 * `bean:` followed by the name of a `@Named` CDI bean.
 For example `bean:myBean`.

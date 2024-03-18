@@ -91,28 +91,46 @@ public final class ConfigDiagnostic {
      * @param properties the set of possible unused properties
      */
     public static void unknownProperties(Set<String> properties) {
+        if (properties.isEmpty()) {
+            return;
+        }
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         Set<String> usedProperties = new HashSet<>();
+        StringBuilder tmp = null;
         for (String property : config.getPropertyNames()) {
             if (properties.contains(property)) {
                 continue;
             }
-
-            usedProperties.add(StringUtil.replaceNonAlphanumericByUnderscores(property));
+            if (tmp == null) {
+                tmp = new StringBuilder(property.length());
+            } else {
+                tmp.setLength(0);
+            }
+            String usedProperty = StringUtil.replaceNonAlphanumericByUnderscores(property, tmp);
+            if (properties.contains(usedProperty)) {
+                continue;
+            }
+            usedProperties.add(usedProperty);
         }
-        usedProperties.removeAll(properties);
-
         for (String property : properties) {
             // Indexed properties not supported by @ConfigRoot, but they can show up due to the YAML source. Just ignore them.
-            if (property.contains("[") && property.contains("]")) {
+            if (property.indexOf('[') != -1 && property.indexOf(']') != -1) {
                 continue;
             }
 
             boolean found = false;
-            for (String usedProperty : usedProperties) {
-                if (usedProperty.equalsIgnoreCase(StringUtil.replaceNonAlphanumericByUnderscores(property))) {
-                    found = true;
-                    break;
+            if (!usedProperties.isEmpty()) {
+                if (tmp == null) {
+                    tmp = new StringBuilder(property.length());
+                } else {
+                    tmp.setLength(0);
+                }
+                String propertyWithUnderscores = StringUtil.replaceNonAlphanumericByUnderscores(property, tmp);
+                for (String usedProperty : usedProperties) {
+                    if (usedProperty.equalsIgnoreCase(propertyWithUnderscores)) {
+                        found = true;
+                        break;
+                    }
                 }
             }
             if (!found) {

@@ -946,7 +946,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          *
          * Bearer access tokens are always verified.
          */
-        @ConfigItem(defaultValue = "false")
+        @ConfigItem(defaultValueDocumentation = "true when access token is injected as the JsonWebToken bean, false otherwise")
         public boolean verifyAccessToken;
 
         /**
@@ -1087,7 +1087,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * or `quarkus.oidc.authentication.id-token-required` is set to `false`,
          * you do not need to enable this property manually in these cases.
          */
-        @ConfigItem(defaultValueDocumentation = "false")
+        @ConfigItem(defaultValueDocumentation = "true when UserInfo bean is injected, false otherwise")
         public Optional<Boolean> userInfoRequired = Optional.empty();
 
         /**

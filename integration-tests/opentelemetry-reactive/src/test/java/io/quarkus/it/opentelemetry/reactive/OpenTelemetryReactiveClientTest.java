@@ -57,7 +57,7 @@ public class OpenTelemetryReactiveClientTest {
         // First span is the client call. It does not have a parent span.
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
         assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
-        assertEquals("GET", client.get("name"));
+        assertEquals("GET /reactive", client.get("name"));
         assertEquals(HTTP_OK, ((Map<?, ?>) client.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
         assertEquals(HttpMethod.GET.name(), ((Map<?, ?>) client.get("attributes")).get(HTTP_METHOD.getKey()));
 
@@ -92,7 +92,7 @@ public class OpenTelemetryReactiveClientTest {
         // First span is the client call. It does not have a parent span.
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
         assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
-        assertEquals("POST", client.get("name"));
+        assertEquals("POST /reactive", client.get("name"));
         assertEquals(HTTP_OK, ((Map<?, ?>) client.get("attributes")).get(HTTP_STATUS_CODE.getKey()));
         assertEquals(HttpMethod.POST.name(), ((Map<?, ?>) client.get("attributes")).get(HTTP_METHOD.getKey()));
 

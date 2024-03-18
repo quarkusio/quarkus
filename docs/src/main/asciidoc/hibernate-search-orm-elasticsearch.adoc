@@ -1140,7 +1140,7 @@ quarkus.hibernate-search-orm.management.enabled=true <2>
 <1> Enable the xref:./management-interface-reference.adoc[management interface].
 <2> Enable Hibernate Search specific management endpoints.
 
-Once the management is enabled, data can be re-indexed via `/q/hibernate-search/reindex`, where `/q` is the default management root path
+Once the management endpoints are enabled, data can be re-indexed via `/q/hibernate-search/reindex`, where `/q` is the default management root path
 and `/hibernate-search` is the default Hibernate Search root management path.
 It (`/hibernate-search`) can be changed via configuration property as shown below.
 
@@ -1209,7 +1209,7 @@ The full list of possible filters and available mass indexer configurations is p
 <13> Specifies the fetch size to be used when loading primary keys if objects to be indexed.
 <14> Specifies the timeout of transactions for loading ids and entities to be re-indexed.
 +
-Note all the properties in the json are optional, and only those that are needed should be used.
+Note all the properties in the JSON are optional, and only those that are needed should be used.
 
 For more detailed information on mass indexer configuration see the
 link:{hibernate-search-docs-url}#indexing-massindexer-parameters[corresponding section of the Hibernate Search reference documentation].
@@ -1223,8 +1223,9 @@ When working with multiple persistence units, the name of the persistence unit t
 
 == Further reading
 
-If you are interested in learning more about Hibernate Search 6,
-the Hibernate team publishes link:{hibernate-search-docs-url}[an extensive reference documentation].
+If you are interested in learning more about Hibernate Search,
+the Hibernate team publishes link:{hibernate-search-docs-url}[an extensive reference documentation],
+as well as a page listing https://hibernate.org/search/more-resources/[other relevant resources].
 
 == FAQ
 
@@ -1232,10 +1233,12 @@ the Hibernate team publishes link:{hibernate-search-docs-url}[an extensive refer
 
 Hibernate Search supports both a Lucene backend and an Elasticsearch backend.
 
-In the context of Quarkus and to build microservices, we thought the latter would make more sense.
+In the context of Quarkus and to build scalable applications, we thought the latter would make more sense.
 Thus, we focused our efforts on it.
 
-We don't have plans to support the Lucene backend in Quarkus for now.
+We don't have plans to support the Lucene backend in Quarkus for now,
+though there is an issue tracking progress on such an implementation in the Quarkiverse:
+https://github.com/quarkiverse/quarkus-hibernate-search-extras/issues/179[quarkiverse/quarkus-hibernate-search-extras#179].
 
 [[configuration-reference]]
 == Configuration Reference for Hibernate Search with Hibernate ORM

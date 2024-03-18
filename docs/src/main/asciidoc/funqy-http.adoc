@@ -314,3 +314,23 @@ public HttpResponse funqHttpResponse(String name) {
     return new HttpResponse(404, "User not found");
 }
 ----
+
+If the response body is of complex type such as an object, it will be converted to json and sent as the response body.
+
+[source, java]
+----
+public class Family {
+    ...
+
+    Map<String, Address> addresses;
+}
+
+public class MyFunctions {
+    @Funq
+    public HttpResponse funqHttpResponse(String name) {
+        Family family = new Family();
+        ...
+        return new HttpResponse(201, family);
+    }
+}
+----

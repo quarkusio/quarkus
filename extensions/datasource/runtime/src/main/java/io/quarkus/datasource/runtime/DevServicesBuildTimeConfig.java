@@ -5,6 +5,8 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 
 @ConfigGroup
@@ -25,6 +27,7 @@ public interface DevServicesBuildTimeConfig {
      * <p>
      * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
+    @WithConverter(TrimmedStringConverter.class)
     Optional<String> imageName();
 
     /**
@@ -57,6 +60,7 @@ public interface DevServicesBuildTimeConfig {
      * <p>
      * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
+    @WithConverter(TrimmedStringConverter.class)
     Optional<String> command();
 
     /**

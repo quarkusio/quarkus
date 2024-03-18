@@ -33,7 +33,7 @@
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
         <!-- Jandex versions -->
-        <jandex.version>3.1.6</jandex.version>
+        <jandex.version>3.1.7</jandex.version>
         <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>2.5.12</asciidoctorj.version>
@@ -112,7 +112,7 @@
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
 
-        <unboundid-ldap.version>6.0.11</unboundid-ldap.version>
+        <unboundid-ldap.version>7.0.0</unboundid-ldap.version>
 
         <assertj.version>3.25.3</assertj.version>
 

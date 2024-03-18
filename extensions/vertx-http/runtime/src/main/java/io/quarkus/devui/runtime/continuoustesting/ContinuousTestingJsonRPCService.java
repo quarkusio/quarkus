@@ -1,13 +1,12 @@
 package io.quarkus.devui.runtime.continuoustesting;
 
-import java.util.Map;
 import java.util.function.Consumer;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.testing.ContinuousTestingSharedStateManager;
-import io.quarkus.vertx.http.runtime.devmode.*;
+import io.quarkus.vertx.http.runtime.devmode.Json;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
@@ -36,7 +35,7 @@ public class ContinuousTestingJsonRPCService implements Consumer<ContinuousTesti
         response.put("isLiveReload", state.isLiveReload);
         this.lastKnownState = response.build();
         stateBroadcaster.onNext(this.lastKnownState);
-        this.lastKnownResults = this.getResults();
+        this.lastKnownResults = DevConsoleManager.invoke("devui-continuous-testing.getResults");
         if (this.lastKnownResults != null) {
             resultBroadcaster.onNext(this.lastKnownResults);
         }
@@ -59,53 +58,4 @@ public class ContinuousTestingJsonRPCService implements Consumer<ContinuousTesti
     public Object lastKnownResults() {
         return this.lastKnownResults;
     }
-
-    public boolean start() {
-        return invokeAction("start");
-    }
-
-    @NonBlocking
-    public boolean stop() {
-        return invokeAction("stop");
-    }
-
-    @NonBlocking
-    public boolean runAll() {
-        return invokeAction("runAll");
-    }
-
-    @NonBlocking
-    public boolean runFailed() {
-        return invokeAction("runFailed");
-    }
-
-    @NonBlocking
-    public boolean toggleBrokenOnly() {
-        return invokeAction("toggleBrokenOnly");
-    }
-
-    @NonBlocking
-    public boolean toggleInstrumentation() {
-        return invokeAction("toggleInstrumentation");
-    }
-
-    public Object getResults() {
-        return invokeAction("getResults");
-    }
-
-    public Map<String, Long> getStatus() {
-        Map<String, Long> map = invokeAction("getStatus");
-        return map;
-    }
-
-    private <T> T invokeAction(String action) {
-        try {
-            return DevConsoleManager.invoke(NAMESPACE + DASH + action, Map.of());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static final String NAMESPACE = "devui-continuous-testing";
-    private static final String DASH = "-";
 }

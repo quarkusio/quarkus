@@ -85,7 +85,7 @@ public class InstrumentationProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             OTelBuildConfig config) {
         if (capabilities.isPresent(Capability.REST_CLIENT) && capabilities.isMissing(Capability.REST_CLIENT_REACTIVE)
-                && config.instrument().restClientClassic()) {
+                && config.instrument().resteasyClient()) {
             additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(OpenTelemetryClientFilter.class.getName()));
             additionalBeans.produce(new AdditionalBeanBuildItem(OpenTelemetryClientFilter.class));
         }
@@ -96,7 +96,7 @@ public class InstrumentationProcessor {
             Capabilities capabilities,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             OTelBuildConfig config) {
-        if (capabilities.isPresent(Capability.SMALLRYE_REACTIVE_MESSAGING) && config.instrument().reactiveMessaging()) {
+        if (capabilities.isPresent(Capability.MESSAGING) && config.instrument().messaging()) {
             additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingOutgoingDecorator.class));
             additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingIncomingDecorator.class));
         }
@@ -122,7 +122,7 @@ public class InstrumentationProcessor {
     void registerResteasyClassicAndOrResteasyReactiveProvider(OTelBuildConfig config,
             Capabilities capabilities,
             BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProviderBuildItemBuildProducer) {
-        if (capabilities.isPresent(Capability.RESTEASY) && config.instrument().resteasyClassic()) {
+        if (capabilities.isPresent(Capability.RESTEASY) && config.instrument().resteasy()) {
             resteasyJaxrsProviderBuildItemBuildProducer
                     .produce(new ResteasyJaxrsProviderBuildItem(OpenTelemetryClassicServerFilter.class.getName()));
         }
@@ -134,7 +134,7 @@ public class InstrumentationProcessor {
             BuildProducer<CustomContainerRequestFilterBuildItem> containerRequestFilterBuildItemBuildProducer,
             BuildProducer<PreExceptionMapperHandlerBuildItem> preExceptionMapperHandlerBuildItemBuildProducer,
             OTelBuildConfig config) {
-        if (capabilities.isPresent(Capability.RESTEASY_REACTIVE) && config.instrument().resteasyReactive()) {
+        if (capabilities.isPresent(Capability.RESTEASY_REACTIVE) && config.instrument().rest()) {
             containerRequestFilterBuildItemBuildProducer
                     .produce(new CustomContainerRequestFilterBuildItem(OpenTelemetryReactiveServerFilter.class.getName()));
             preExceptionMapperHandlerBuildItemBuildProducer

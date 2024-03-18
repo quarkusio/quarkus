@@ -19,6 +19,7 @@ import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
 import { observeState } from 'lit-element-state';
 import { connectionState } from 'connection-state';
+import { devuiState } from 'devui-state';
 import 'qui-badge';
 
 /**
@@ -468,6 +469,7 @@ export class QwcConfiguration extends observeState(LitElement) {
             'value': value
         }).then(e => {
             this._values[name] = value;
+            fetch(devuiState.applicationInfo.contextRoot);
             notifier.showInfoMessage("Property <code>" + name + "</code> updated");
             this._busy = null;
         });

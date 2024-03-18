@@ -26,6 +26,10 @@ public final class Json {
     private static final int CONTROL_CHAR_START = 0;
     private static final int CONTROL_CHAR_END = 0x1f;
     private static final char CHAR_QUOTATION_MARK = '"';
+    private static final String DEFAULT_INDENT = "  ";
+    private static final String EMPTY_STRING = "";
+    private static final String NEW_LINE = System.lineSeparator();
+    private static final String ENTRY_SEPARATOR_NEW_LINE = "," + NEW_LINE;
 
     private static final Map<Character, String> REPLACEMENTS;
 
@@ -76,9 +80,11 @@ public final class Json {
         return new JsonObjectBuilder(ignoreEmptyBuilders);
     }
 
-    abstract static class JsonBuilder<T> {
+    public abstract static class JsonBuilder<T> {
 
         protected boolean ignoreEmptyBuilders = false;
+        protected JsonTransform transform;
+        protected boolean skipEscape;
 
         /**
          * @param ignoreEmptyBuilders If set to true all empty builders added to this builder will be ignored during
@@ -97,9 +103,11 @@ public final class Json {
          * @return a string representation
          * @throws IOException
          */
-        abstract String build() throws IOException;
+        abstract String build(String indent, String currentIndent) throws IOException;
 
         abstract void appendTo(Appendable appendable) throws IOException;
+
+        abstract void appendTo(Appendable appendable, boolean indent) throws IOException;
 
         /**
          * @param value
@@ -130,6 +138,17 @@ public final class Json {
 
         protected abstract T self();
 
+        abstract void with(JsonReader.JsonValue element);
+
+        public void setTransform(JsonTransform transform) {
+            this.transform = transform;
+        }
+
+        @SuppressWarnings("unchecked")
+        public T skipEscape(boolean skipEscape) {
+            this.skipEscape = skipEscape;
+            return (T) this;
+        }
     }
 
     /**
@@ -191,15 +210,28 @@ public final class Json {
             return isValuesEmpty(values);
         }
 
-        String build() throws IOException {
+        String build(String indent, String currentIndent) throws IOException {
             StringBuilder builder = new StringBuilder();
-            appendTo(builder);
+            appendTo(builder, indent, currentIndent);
             return builder.toString();
         }
 
         @Override
         public void appendTo(Appendable appendable) throws IOException {
+            appendTo(appendable, null, EMPTY_STRING);
+        }
+
+        @Override
+        void appendTo(Appendable appendable, boolean indent) throws IOException {
+            appendTo(appendable, indent ? DEFAULT_INDENT : null, EMPTY_STRING);
+        }
+
+        private void appendTo(Appendable appendable, String indent, String currentIndent) throws IOException {
+            String newIndent = indent + currentIndent;
             appendable.append(ARRAY_START);
+            if (indent != null) {
+                appendable.append(NEW_LINE);
+            }
             int idx = 0;
             for (ListIterator<Object> iterator = values.listIterator(); iterator.hasNext();) {
                 Object value = iterator.next();
@@ -207,9 +239,20 @@ public final class Json {
                     continue;
                 }
                 if (++idx > 1) {
-                    appendable.append(ENTRY_SEPARATOR);
+                    if (indent != null) {
+                        appendable.append(ENTRY_SEPARATOR_NEW_LINE);
+                    } else {
+                        appendable.append(ENTRY_SEPARATOR);
+                    }
                 }
-                appendValue(appendable, value);
+                if (indent != null) {
+                    appendable.append(newIndent);
+                }
+                appendValue(appendable, value, skipEscape, indent, newIndent);
+            }
+            if (indent != null) {
+                appendable.append(NEW_LINE);
+                appendable.append(currentIndent);
             }
             appendable.append(ARRAY_END);
         }
@@ -219,6 +262,37 @@ public final class Json {
             return this;
         }
 
+        @Override
+        void with(JsonReader.JsonValue element) {
+            if (element instanceof JsonReader.JsonString) {
+                add(((JsonReader.JsonString) element).value());
+            } else if (element instanceof JsonReader.JsonInteger) {
+                final long longValue = ((JsonReader.JsonInteger) element).longValue();
+                final int intValue = (int) longValue;
+                if (longValue == intValue) {
+                    add(intValue);
+                } else {
+                    add(longValue);
+                }
+            } else if (element instanceof JsonReader.JsonBoolean) {
+                add(((JsonReader.JsonBoolean) element).value());
+            } else if (element instanceof JsonReader.JsonArray) {
+                final JsonArrayBuilder arrayBuilder = Json.array().skipEscape(skipEscape);
+                arrayBuilder.transform((JsonReader.JsonArray) element, transform);
+                add(arrayBuilder);
+            } else if (element instanceof JsonReader.JsonObject) {
+                final JsonObjectBuilder objectBuilder = Json.object().skipEscape(skipEscape);
+                objectBuilder.transform((JsonReader.JsonObject) element, transform);
+                if (!objectBuilder.isEmpty()) {
+                    add(objectBuilder);
+                }
+            }
+        }
+
+        public void transform(JsonReader.JsonArray value, JsonTransform transform) {
+            final ResolvedTransform resolved = new ResolvedTransform(this, transform);
+            value.forEach(resolved);
+        }
     }
 
     /**
@@ -281,15 +355,28 @@ public final class Json {
             return isValuesEmpty(properties.values());
         }
 
-        String build() throws IOException {
+        String build(String indent, String currentIndent) throws IOException {
             StringBuilder builder = new StringBuilder();
-            appendTo(builder);
+            appendTo(builder, indent, currentIndent);
             return builder.toString();
         }
 
         @Override
         public void appendTo(Appendable appendable) throws IOException {
+            appendTo(appendable, null, EMPTY_STRING);
+        }
+
+        @Override
+        public void appendTo(Appendable appendable, boolean indent) throws IOException {
+            appendTo(appendable, indent ? DEFAULT_INDENT : null, EMPTY_STRING);
+        }
+
+        private void appendTo(Appendable appendable, String indent, String currentIndent) throws IOException {
+            String newIndent = indent + currentIndent;
             appendable.append(OBJECT_START);
+            if (indent != null) {
+                appendable.append(NEW_LINE);
+            }
             int idx = 0;
             for (Iterator<Entry<String, Object>> iterator = properties.entrySet().iterator(); iterator.hasNext();) {
                 Entry<String, Object> entry = iterator.next();
@@ -297,11 +384,22 @@ public final class Json {
                     continue;
                 }
                 if (++idx > 1) {
-                    appendable.append(ENTRY_SEPARATOR);
+                    if (indent != null) {
+                        appendable.append(ENTRY_SEPARATOR_NEW_LINE);
+                    } else {
+                        appendable.append(ENTRY_SEPARATOR);
+                    }
                 }
-                appendStringValue(appendable, entry.getKey());
+                if (indent != null) {
+                    appendable.append(newIndent);
+                }
+                appendStringValue(appendable, entry.getKey(), skipEscape);
                 appendable.append(NAME_VAL_SEPARATOR);
-                appendValue(appendable, entry.getValue());
+                appendValue(appendable, entry.getValue(), skipEscape, indent, newIndent);
+            }
+            if (indent != null) {
+                appendable.append(NEW_LINE);
+                appendable.append(currentIndent);
             }
             appendable.append(OBJECT_END);
         }
@@ -311,15 +409,53 @@ public final class Json {
             return this;
         }
 
+        @Override
+        void with(JsonReader.JsonValue element) {
+            if (element instanceof JsonReader.JsonMember) {
+                final JsonReader.JsonMember member = (JsonReader.JsonMember) element;
+                final String attribute = member.attribute().value();
+                final JsonReader.JsonValue value = member.value();
+                if (value instanceof JsonReader.JsonString) {
+                    put(attribute, ((JsonReader.JsonString) value).value());
+                } else if (value instanceof JsonReader.JsonInteger) {
+                    final long longValue = ((JsonReader.JsonInteger) value).longValue();
+                    final int intValue = (int) longValue;
+                    if (longValue == intValue) {
+                        put(attribute, intValue);
+                    } else {
+                        put(attribute, longValue);
+                    }
+                } else if (value instanceof JsonReader.JsonBoolean) {
+                    final boolean booleanValue = ((JsonReader.JsonBoolean) value).value();
+                    put(attribute, booleanValue);
+                } else if (value instanceof JsonReader.JsonArray) {
+                    final JsonArrayBuilder arrayBuilder = Json.array().skipEscape(skipEscape);
+                    arrayBuilder.transform((JsonReader.JsonArray) value, transform);
+                    put(attribute, arrayBuilder);
+                } else if (value instanceof JsonReader.JsonObject) {
+                    final JsonObjectBuilder objectBuilder = Json.object().skipEscape(skipEscape);
+                    objectBuilder.transform((JsonReader.JsonObject) value, transform);
+                    if (!objectBuilder.isEmpty()) {
+                        put(attribute, objectBuilder);
+                    }
+                }
+            }
+        }
+
+        public void transform(JsonReader.JsonObject value, JsonTransform transform) {
+            final ResolvedTransform resolved = new ResolvedTransform(this, transform);
+            value.forEach(resolved);
+        }
     }
 
-    static void appendValue(Appendable appendable, Object value) throws IOException {
+    static void appendValue(Appendable appendable, Object value, boolean skipEscape, String indent, String currentIndent)
+            throws IOException {
         if (value instanceof JsonObjectBuilder) {
-            appendable.append(((JsonObjectBuilder) value).build());
+            appendable.append(((JsonObjectBuilder) value).build(indent, currentIndent));
         } else if (value instanceof JsonArrayBuilder) {
-            appendable.append(((JsonArrayBuilder) value).build());
+            appendable.append(((JsonArrayBuilder) value).build(indent, currentIndent));
         } else if (value instanceof String) {
-            appendStringValue(appendable, value.toString());
+            appendStringValue(appendable, value.toString(), skipEscape);
         } else if (value instanceof Boolean || value instanceof Integer || value instanceof Long) {
             appendable.append(value.toString());
         } else {
@@ -327,9 +463,13 @@ public final class Json {
         }
     }
 
-    static void appendStringValue(Appendable appendable, String value) throws IOException {
+    static void appendStringValue(Appendable appendable, String value, boolean skipEscape) throws IOException {
         appendable.append(CHAR_QUOTATION_MARK);
-        appendable.append(escape(value));
+        if (skipEscape) {
+            appendable.append(value);
+        } else {
+            appendable.append(escape(value));
+        }
         appendable.append(CHAR_QUOTATION_MARK);
     }
 
@@ -354,4 +494,21 @@ public final class Json {
         return builder.toString();
     }
 
+    private static final class ResolvedTransform implements JsonTransform {
+        private final Json.JsonBuilder<?> resolvedBuilder;
+        private final JsonTransform transform;
+
+        private ResolvedTransform(Json.JsonBuilder<?> resolvedBuilder, JsonTransform transform) {
+            this.resolvedBuilder = resolvedBuilder;
+            this.resolvedBuilder.setTransform(transform);
+            this.transform = transform;
+        }
+
+        @Override
+        public void accept(Json.JsonBuilder<?> builder, JsonReader.JsonValue element) {
+            if (builder == null) {
+                transform.accept(resolvedBuilder, element);
+            }
+        }
+    }
 }

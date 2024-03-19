@@ -33,7 +33,7 @@
         <failsafe-plugin.version>${version.surefire.plugin}</failsafe-plugin.version>
 
         <!-- Jandex versions -->
-        <jandex.version>3.1.6</jandex.version>
+        <jandex.version>3.1.7</jandex.version>
         <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>2.5.12</asciidoctorj.version>
@@ -44,7 +44,7 @@
 
         <!-- Dev tools -->
         <freemarker.version>2.3.32</freemarker.version>
-        <commonmark.version>0.21.0</commonmark.version>
+        <commonmark.version>0.22.0</commonmark.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.7.0.Final</arquillian.version>
@@ -112,11 +112,11 @@
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
 
-        <unboundid-ldap.version>6.0.11</unboundid-ldap.version>
+        <unboundid-ldap.version>7.0.0</unboundid-ldap.version>
 
         <assertj.version>3.25.3</assertj.version>
 
-        <wiremock.version>3.4.1</wiremock.version>
+        <wiremock.version>3.4.2</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
@@ -638,7 +638,7 @@
                         <dependency>
                             <groupId>org.apache.groovy</groupId>
                             <artifactId>groovy</artifactId>
-                            <version>4.0.19</version>
+                            <version>4.0.20</version>
                         </dependency>
                     </dependencies>
                 </plugin>

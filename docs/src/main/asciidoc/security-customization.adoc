@@ -680,6 +680,7 @@ The observers can be either synchronous or asynchronous.
 * `io.quarkus.security.spi.runtime.AuthorizationFailureEvent`
 * `io.quarkus.security.spi.runtime.AuthorizationSuccessEvent`
 * `io.quarkus.oidc.SecurityEvent`
+* `io.quarkus.vertx.http.runtime.security.FormAuthenticationEvent`
 
 [[TIP]]
 For more information about security events specific to the Quarkus OpenID Connect extension, please see

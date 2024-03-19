@@ -7,7 +7,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 /**
  * Disallow the use of Jandex so that relevant code can be DCEd
- * (otherwise compilation would fail as Jandex is not available at runtime).
+ * (otherwise native compilation would fail as Jandex is not available at runtime).
  */
 @TargetClass(className = "org.hibernate.search.util.common.jar.spi.JandexBehavior")
 final class Substitute_JandexBehavior {

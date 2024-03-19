@@ -48,6 +48,7 @@ import org.infinispan.protostream.GeneratedSchema;
 import org.infinispan.protostream.MessageMarshaller;
 import org.infinispan.protostream.SerializationContextInitializer;
 import org.infinispan.protostream.WrappedMessage;
+import org.infinispan.protostream.schema.Schema;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -447,7 +448,7 @@ class InfinispanClientProcessor {
     @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {
         return UnremovableBeanBuildItem.beanTypes(BaseMarshaller.class, EnumMarshaller.class, MessageMarshaller.class,
-                FileDescriptorSource.class);
+                FileDescriptorSource.class, Schema.class);
     }
 
     @BuildStep

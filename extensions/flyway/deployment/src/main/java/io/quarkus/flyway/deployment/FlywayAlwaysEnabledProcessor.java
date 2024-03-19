@@ -34,7 +34,8 @@ public class FlywayAlwaysEnabledProcessor {
 
     @BuildStep
     IndexDependencyBuildItem indexFlyway() {
-        return new IndexDependencyBuildItem("org.flywaydb", "flyway-core");
+        // we need to index all Flyway dependencies
+        return new IndexDependencyBuildItem("org.flywaydb", null);
     }
 
     @BuildStep

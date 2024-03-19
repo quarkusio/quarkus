@@ -30,44 +30,44 @@ public class LdapRecorder {
      */
     public RuntimeValue<SecurityRealm> createRealm(LdapSecurityRealmRuntimeConfig runtimeConfig) {
         LdapSecurityRealmBuilder.IdentityMappingBuilder identityMappingBuilder = LdapSecurityRealmBuilder.builder()
-                .setDirContextSupplier(createDirContextSupplier(runtimeConfig.dirContext))
+                .setDirContextSupplier(createDirContextSupplier(runtimeConfig.dirContext()))
                 .identityMapping();
 
-        if (runtimeConfig.identityMapping.searchRecursive) {
+        if (runtimeConfig.identityMapping().searchRecursive()) {
             identityMappingBuilder.searchRecursive();
         }
 
         LdapSecurityRealmBuilder ldapSecurityRealmBuilder = identityMappingBuilder
-                .map(createAttributeMappings(runtimeConfig.identityMapping))
-                .setRdnIdentifier(runtimeConfig.identityMapping.rdnIdentifier)
-                .setSearchDn(runtimeConfig.identityMapping.searchBaseDn)
+                .map(createAttributeMappings(runtimeConfig.identityMapping()))
+                .setRdnIdentifier(runtimeConfig.identityMapping().rdnIdentifier())
+                .setSearchDn(runtimeConfig.identityMapping().searchBaseDn())
                 .build();
 
-        if (runtimeConfig.directVerification) {
+        if (runtimeConfig.directVerification()) {
             ldapSecurityRealmBuilder.addDirectEvidenceVerification(false);
         }
 
         return new RuntimeValue<>(ldapSecurityRealmBuilder.build());
     }
 
-    private ExceptionSupplier<DirContext, NamingException> createDirContextSupplier(DirContextConfig dirContext) {
+    private static ExceptionSupplier<DirContext, NamingException> createDirContextSupplier(DirContextConfig dirContext) {
         DirContextFactory dirContextFactory = new QuarkusDirContextFactory(
-                dirContext.url,
-                dirContext.principal.orElse(null),
-                dirContext.password.orElse(null),
-                dirContext.connectTimeout,
-                dirContext.readTimeout);
-        return () -> dirContextFactory.obtainDirContext(dirContext.referralMode);
+                dirContext.url(),
+                dirContext.principal().orElse(null),
+                dirContext.password().orElse(null),
+                dirContext.connectTimeout(),
+                dirContext.readTimeout());
+        return () -> dirContextFactory.obtainDirContext(dirContext.referralMode());
     }
 
-    private AttributeMapping[] createAttributeMappings(IdentityMappingConfig identityMappingConfig) {
+    private static AttributeMapping[] createAttributeMappings(IdentityMappingConfig identityMappingConfig) {
         List<AttributeMapping> attributeMappings = new ArrayList<>();
 
-        for (AttributeMappingConfig attributeMappingConfig : identityMappingConfig.attributeMappings.values()) {
-            attributeMappings.add(AttributeMapping.fromFilter(attributeMappingConfig.filter)
-                    .from(attributeMappingConfig.from)
-                    .to(attributeMappingConfig.to)
-                    .searchDn(attributeMappingConfig.filterBaseDn)
+        for (AttributeMappingConfig attributeMappingConfig : identityMappingConfig.attributeMappings().values()) {
+            attributeMappings.add(AttributeMapping.fromFilter(attributeMappingConfig.filter())
+                    .from(attributeMappingConfig.from())
+                    .to(attributeMappingConfig.to())
+                    .searchDn(attributeMappingConfig.filterBaseDn())
                     .build());
         }
 

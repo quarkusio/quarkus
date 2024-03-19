@@ -34,7 +34,8 @@ public class UserInfoRequiredDetectionTest {
                                     """
                                             quarkus.oidc.tenant-paths=/user-info/default-tenant
                                             quarkus.oidc.user-info-path=http://${quarkus.http.host}:${quarkus.http.port}/user-info-endpoint
-                                            quarkus.oidc.named.authentication.user-info-required=true
+                                            quarkus.oidc.named.auth-server-url=${quarkus.oidc.auth-server-url}
+                                            quarkus.oidc.named.tenant-paths=/user-info/named-tenant
                                             quarkus.oidc.named.user-info-path=http://${quarkus.http.host}:${quarkus.http.port}/user-info-endpoint
                                             quarkus.http.auth.proactive=false
                                             """),

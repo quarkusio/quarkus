@@ -310,6 +310,18 @@ public class OidcUtilsTest {
         assertEquals("openid%2Ca%3A1%2Cb%3A2%2Cc%2Cd", OidcUtils.encodeScopes(config));
     }
 
+    @Test
+    public void testSessionCookieCheck() throws Exception {
+        assertTrue(OidcUtils.isSessionCookie(OidcUtils.SESSION_COOKIE_NAME));
+        assertTrue(OidcUtils.isSessionCookie(OidcUtils.SESSION_COOKIE_NAME + "_tenant1"));
+        assertFalse(OidcUtils.isSessionCookie(OidcUtils.SESSION_AT_COOKIE_NAME));
+        assertFalse(OidcUtils.isSessionCookie(OidcUtils.SESSION_AT_COOKIE_NAME + "_tenant1"));
+        assertFalse(OidcUtils.isSessionCookie(OidcUtils.SESSION_RT_COOKIE_NAME));
+        assertFalse(OidcUtils.isSessionCookie(OidcUtils.SESSION_RT_COOKIE_NAME + "_tenant1"));
+
+        assertFalse(OidcUtils.isSessionCookie(OidcUtils.SESSION_AT_COOKIE_NAME + "1"));
+    }
+
     public static JsonObject read(InputStream input) throws IOException {
         try (BufferedReader buffer = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
             return new JsonObject(buffer.lines().collect(Collectors.joining("\n")));

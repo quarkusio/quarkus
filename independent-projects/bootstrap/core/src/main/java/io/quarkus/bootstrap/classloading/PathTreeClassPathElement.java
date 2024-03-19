@@ -23,7 +23,7 @@ import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathTree;
 import io.quarkus.paths.PathVisit;
@@ -36,18 +36,18 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     private final ReadWriteLock lock;
     private final OpenPathTree pathTree;
     private final boolean runtime;
-    private final ArtifactKey dependencyKey;
+    private final ResolvedDependency resolvedDependency;
     private volatile Set<String> resources;
 
     public PathTreeClassPathElement(PathTree pathTree, boolean runtime) {
         this(pathTree, runtime, null);
     }
 
-    public PathTreeClassPathElement(PathTree pathTree, boolean runtime, ArtifactKey dependencyKey) {
+    public PathTreeClassPathElement(PathTree pathTree, boolean runtime, ResolvedDependency resolvedDependency) {
         this.pathTree = Objects.requireNonNull(pathTree, "Path tree is null").open();
         this.lock = new ReentrantReadWriteLock();
         this.runtime = runtime;
-        this.dependencyKey = dependencyKey;
+        this.resolvedDependency = resolvedDependency;
     }
 
     @Override
@@ -56,8 +56,8 @@ public class PathTreeClassPathElement extends AbstractClassPathElement {
     }
 
     @Override
-    public ArtifactKey getDependencyKey() {
-        return dependencyKey;
+    public ResolvedDependency getResolvedDependency() {
+        return resolvedDependency;
     }
 
     @Override

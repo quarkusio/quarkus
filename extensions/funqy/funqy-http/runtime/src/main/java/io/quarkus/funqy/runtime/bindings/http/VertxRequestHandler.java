@@ -9,8 +9,8 @@ import jakarta.enterprise.inject.spi.CDI;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.netty.buffer.ByteBufInputStream;
 import io.quarkus.arc.ManagedContext;
@@ -145,11 +145,27 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             funqyResponse.getOutput().emitOn(executor).subscribe().with(
                     o -> {
                         if (invoker.hasOutput()) {
-                            routingContext.response().setStatusCode(200);
-                            routingContext.response().putHeader("Content-Type", "application/json");
-                            ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
                             try {
-                                routingContext.response().end(writer.writeValueAsString(o));
+                                if (o instanceof HttpResponse) {
+                                    HttpResponse response = (HttpResponse) o;
+                                    routingContext.response().setStatusCode(response.getStatusCode());
+                                    routingContext.response().putHeader("Content-Type", "application/json");
+                                    if (response.hasHeaders()) {
+                                        response.getHeaders().forEach((hK, hV) -> {
+                                            routingContext.response().putHeader(hK, hV);
+                                        });
+                                    }
+                                    if (response.hasBody()) {
+                                        routingContext.response()
+                                                .end(new ObjectMapper().writeValueAsString(response.getBody()));
+                                    } else {
+                                        routingContext.response().end();
+                                    }
+                                } else {
+                                    routingContext.response().setStatusCode(200);
+                                    routingContext.response().putHeader("Content-Type", "application/json");
+                                    routingContext.response().end(new ObjectMapper().writeValueAsString(o));
+                                }
                             } catch (JsonProcessingException e) {
                                 log.error("Failed to marshal", e);
                                 routingContext.fail(400);

@@ -445,8 +445,8 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         }
 
         @Override
-        public ArtifactKey getDependencyKey() {
-            return delegate.getDependencyKey();
+        public ResolvedDependency getResolvedDependency() {
+            return delegate.getResolvedDependency();
         }
 
         @Override

@@ -79,6 +79,10 @@ public final class OidcUtils {
     public static final String DEFAULT_TENANT_ID = "Default";
     public static final String SESSION_COOKIE_NAME = "q_session";
     public static final String SESSION_COOKIE_CHUNK = "_chunk_";
+    public static final String ACCESS_TOKEN_COOKIE_SUFFIX = "_at";
+    public static final String REFRESH_TOKEN_COOKIE_SUFFIX = "_rt";
+    public static final String SESSION_AT_COOKIE_NAME = SESSION_COOKIE_NAME + ACCESS_TOKEN_COOKIE_SUFFIX;
+    public static final String SESSION_RT_COOKIE_NAME = SESSION_COOKIE_NAME + REFRESH_TOKEN_COOKIE_SUFFIX;
     public static final String STATE_COOKIE_NAME = "q_auth";
     public static final Integer MAX_COOKIE_VALUE_LENGTH = 4096;
     public static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
@@ -687,5 +691,11 @@ public final class OidcUtils {
         }
 
         return scopes;
+    }
+
+    public static boolean isSessionCookie(String cookieName) {
+        return cookieName.startsWith(SESSION_COOKIE_NAME)
+                && !cookieName.regionMatches(SESSION_COOKIE_NAME.length(), ACCESS_TOKEN_COOKIE_SUFFIX, 0, 3)
+                && !cookieName.regionMatches(SESSION_COOKIE_NAME.length(), REFRESH_TOKEN_COOKIE_SUFFIX, 0, 3);
     }
 }

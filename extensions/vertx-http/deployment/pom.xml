@@ -47,10 +47,6 @@
             <groupId>io.mvnpm</groupId>
             <artifactId>importmap</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-server-spi-deployment</artifactId>
-        </dependency>
         <!-- Used for the dev ui. Note that there is no corresponding runtime dependency -->
         <dependency>
             <groupId>io.quarkus.qute</groupId>

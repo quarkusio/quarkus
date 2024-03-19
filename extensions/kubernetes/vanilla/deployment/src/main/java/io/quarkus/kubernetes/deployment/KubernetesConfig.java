@@ -382,6 +382,12 @@ public class KubernetesConfig implements PlatformConfiguration {
     boolean idempotent;
 
     /**
+     * VCS URI annotation configuration.
+     */
+    @ConfigItem
+    VCSUriConfig vcsUri;
+
+    /**
      * Optionally set directory generated kubernetes resources will be written to. Default is `target/kubernetes`.
      */
     @ConfigItem
@@ -598,6 +604,11 @@ public class KubernetesConfig implements PlatformConfiguration {
     @Override
     public boolean isIdempotent() {
         return idempotent;
+    }
+
+    @Override
+    public VCSUriConfig getVCSUri() {
+        return vcsUri;
     }
 
     public DeployStrategy getDeployStrategy() {

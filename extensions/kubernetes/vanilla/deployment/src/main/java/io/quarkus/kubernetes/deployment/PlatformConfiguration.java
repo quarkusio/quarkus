@@ -95,4 +95,6 @@ public interface PlatformConfiguration extends EnvVarHolder {
     SecurityContextConfig getSecurityContext();
 
     boolean isIdempotent();
+
+    VCSUriConfig getVCSUri();
 }

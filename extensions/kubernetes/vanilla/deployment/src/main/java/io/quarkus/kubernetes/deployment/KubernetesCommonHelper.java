@@ -973,7 +973,7 @@ public class KubernetesCommonHelper {
 
         project.ifPresent(p -> {
             ScmInfo scm = p.getScmInfo();
-            String vcsUrl = scm != null ? scm.getRemote().get("origin") : null;
+            String vcsUri = parseVCSUri(config.getVCSUri(), scm);
             String commitId = scm != null ? scm.getCommit() : null;
 
             // Dekorate uses its own annotations. Let's replace them with the quarkus ones.
@@ -987,10 +987,10 @@ public class KubernetesCommonHelper {
                 result.add(new DecoratorBuildItem(target, new AddAnnotationDecorator(name,
                         new Annotation(QUARKUS_ANNOTATIONS_COMMIT_ID, commitId, new String[0]))));
             }
-            if (vcsUrl != null) {
+            if (vcsUri != null) {
                 result.add(new DecoratorBuildItem(target,
                         new AddAnnotationDecorator(name,
-                                new Annotation(QUARKUS_ANNOTATIONS_VCS_URL, Git.sanitizeRemoteUrl(vcsUrl), new String[0]))));
+                                new Annotation(QUARKUS_ANNOTATIONS_VCS_URL, vcsUri, new String[0]))));
             }
 
         });
@@ -1190,5 +1190,12 @@ public class KubernetesCommonHelper {
                         .withVerbs(it.verbs.orElse(null))
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    private static String parseVCSUri(VCSUriConfig config, ScmInfo scm) {
+        if (config.enabled) {
+            return config.override.orElseGet(() -> scm != null ? Git.sanitizeRemoteUrl(scm.getRemote().get("origin")) : null);
+        }
+        return null;
     }
 }

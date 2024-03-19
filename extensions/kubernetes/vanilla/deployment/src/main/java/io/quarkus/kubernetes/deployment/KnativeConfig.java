@@ -255,6 +255,12 @@ public class KnativeConfig implements PlatformConfiguration {
     @ConfigItem(defaultValue = "false")
     boolean idempotent;
 
+    /**
+     * VCS URI annotation configuration.
+     */
+    @ConfigItem
+    VCSUriConfig vcsUri;
+
     public Optional<String> getPartOf() {
         return partOf;
     }
@@ -540,6 +546,11 @@ public class KnativeConfig implements PlatformConfiguration {
     @Override
     public boolean isIdempotent() {
         return idempotent;
+    }
+
+    @Override
+    public VCSUriConfig getVCSUri() {
+        return vcsUri;
     }
 
     @Override

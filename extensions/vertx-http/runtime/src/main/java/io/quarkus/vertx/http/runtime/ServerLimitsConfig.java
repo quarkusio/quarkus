@@ -42,6 +42,14 @@ public class ServerLimitsConfig {
     public MemorySize maxFormAttributeSize;
 
     /**
+     * The maximum number of HTTP request parameters permitted for incoming requests.
+     * <p>
+     * If a client sends more than this number of parameters in a request, the connection is closed.
+     */
+    @ConfigItem(defaultValue = "1000")
+    public int maxParameters;
+
+    /**
      * The maximum number of connections that are allowed at any one time. If this is set
      * it is recommended to set a short idle timeout.
      */

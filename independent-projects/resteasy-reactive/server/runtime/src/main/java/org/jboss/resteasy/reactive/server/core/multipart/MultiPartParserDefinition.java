@@ -55,6 +55,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
     private long fileSizeThreshold;
 
     private long maxAttributeSize = 2048;
+    private int maxParameters = 1000;
     private long maxEntitySize = -1;
     private List<String> fileContentTypes;
 
@@ -80,7 +81,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 return null;
             }
             final MultiPartUploadHandler parser = new MultiPartUploadHandler(exchange, boundary, maxIndividualFileSize,
-                    fileSizeThreshold, defaultCharset, mimeType, maxAttributeSize, maxEntitySize, fileFormNames);
+                    fileSizeThreshold, defaultCharset, mimeType, maxAttributeSize, maxEntitySize, maxParameters, fileFormNames);
             exchange.registerCompletionCallback(new CompletionCallback() {
                 @Override
                 public void onComplete(Throwable throwable) {
@@ -156,6 +157,15 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         return this;
     }
 
+    public int getMaxParameters() {
+        return maxParameters;
+    }
+
+    public MultiPartParserDefinition setMaxParameters(int maxParameters) {
+        this.maxParameters = maxParameters;
+        return this;
+    }
+
     public List<String> getFileContentTypes() {
         return fileContentTypes;
     }
@@ -174,6 +184,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         private final long fileSizeThreshold;
         private final long maxAttributeSize;
         private final long maxEntitySize;
+        private final int maxParameters;
         private final Set<String> fileFormNames;
         private String defaultEncoding;
 
@@ -189,7 +200,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
 
         private MultiPartUploadHandler(final ResteasyReactiveRequestContext exchange, final String boundary,
                 final long maxIndividualFileSize, final long fileSizeThreshold, final String defaultEncoding,
-                String contentType, long maxAttributeSize, long maxEntitySize,
+                String contentType, long maxAttributeSize, long maxEntitySize, int maxParameters,
                 Set<String> fileFormNames) {
             this.exchange = exchange;
             this.maxIndividualFileSize = maxIndividualFileSize;
@@ -197,8 +208,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
             this.fileSizeThreshold = fileSizeThreshold;
             this.maxAttributeSize = maxAttributeSize;
             this.maxEntitySize = maxEntitySize;
+            this.maxParameters = maxParameters;
             this.fileFormNames = fileFormNames;
-            int maxParameters = 1000;
             this.data = new FormData(maxParameters);
             String charset = defaultEncoding;
             if (contentType != null) {

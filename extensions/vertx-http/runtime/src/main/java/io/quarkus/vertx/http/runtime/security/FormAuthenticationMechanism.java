@@ -1,5 +1,8 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import static io.quarkus.security.spi.runtime.SecurityEventHelper.fire;
+import static io.quarkus.vertx.http.runtime.security.FormAuthenticationEvent.createLoginEvent;
+
 import java.net.URI;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -9,8 +12,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -22,6 +28,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
+import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.FormAuthConfig;
 import io.quarkus.vertx.http.runtime.FormAuthRuntimeConfig;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -52,16 +59,19 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     private final boolean redirectToLoginPage;
     private final CookieSameSite cookieSameSite;
     private final String cookiePath;
-
+    private final boolean isFormAuthEventObserver;
     private final PersistentLoginManager loginManager;
+    private final Event<FormAuthenticationEvent> formAuthEvent;
 
     //the temp encryption key, persistent across dev mode restarts
     static volatile String encryptionKey;
 
     @Inject
-    FormAuthenticationMechanism(HttpConfiguration httpConfiguration, HttpBuildTimeConfig buildTimeConfig) {
+    FormAuthenticationMechanism(HttpConfiguration httpConfiguration, HttpBuildTimeConfig buildTimeConfig,
+            Event<FormAuthenticationEvent> formAuthEvent, BeanManager beanManager,
+            @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
         String key;
-        if (!httpConfiguration.encryptionKey.isPresent()) {
+        if (httpConfiguration.encryptionKey.isEmpty()) {
             if (encryptionKey != null) {
                 //persist across dev mode restarts
                 key = encryptionKey;
@@ -92,6 +102,9 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         this.redirectToLoginPage = loginPage != null;
         this.redirectToErrorPage = errorPage != null;
         this.cookieSameSite = CookieSameSite.valueOf(runtimeForm.cookieSameSite.name());
+        this.isFormAuthEventObserver = SecurityEventHelper.isEventObserved(createLoginEvent(null), beanManager,
+                securityEventsEnabled);
+        this.formAuthEvent = this.isFormAuthEventObserver ? formAuthEvent : null;
     }
 
     public FormAuthenticationMechanism(String loginPage, String postLocation,
@@ -111,6 +124,8 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         this.cookieSameSite = CookieSameSite.valueOf(cookieSameSite);
         this.cookiePath = cookiePath;
         this.loginManager = loginManager;
+        this.isFormAuthEventObserver = false;
+        this.formAuthEvent = null;
     }
 
     public Uni<SecurityIdentity> runFormAuth(final RoutingContext exchange,
@@ -141,6 +156,10 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                                     .subscribe().with(new Consumer<SecurityIdentity>() {
                                         @Override
                                         public void accept(SecurityIdentity identity) {
+                                            if (isFormAuthEventObserver) {
+                                                fire(formAuthEvent, createLoginEvent(identity));
+                                            }
+
                                             try {
                                                 loginManager.save(identity, exchange, null, exchange.request().isSSL());
                                                 if (redirectToLandingPage

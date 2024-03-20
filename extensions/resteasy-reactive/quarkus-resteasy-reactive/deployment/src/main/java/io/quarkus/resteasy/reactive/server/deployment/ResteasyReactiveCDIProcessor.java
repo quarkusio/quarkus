@@ -18,14 +18,19 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.server.injection.ContextProducers;
 import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.Annotations;
+import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -83,6 +88,39 @@ public class ResteasyReactiveCDIProcessor {
                 }
             }
         }
+    }
+
+    @BuildStep
+    void perClassExceptionMapperSupport(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            BuildProducer<AnnotationsTransformerBuildItem> producer) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
+            return;
+        }
+        List<MethodInfo> methodExceptionMapper = resourceScanningResultBuildItem.get().getResult()
+                .getClassLevelExceptionMappers();
+        if (methodExceptionMapper.isEmpty()) {
+            return;
+        }
+        producer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == AnnotationTarget.Kind.METHOD;
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                final Collection<AnnotationInstance> annotations = ctx.getAnnotations();
+                AnnotationInstance serverExceptionMapper = Annotations.find(annotations,
+                        ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER);
+                if (serverExceptionMapper == null) {
+                    return;
+                }
+                // we want to make sure that class level exception mappers do not run
+                // interceptors bound using class-level interceptor bindings (like security)
+                ctx.transform().add(DotNames.NO_CLASS_INTERCEPTORS).done();
+            }
+        }));
     }
 
     @BuildStep

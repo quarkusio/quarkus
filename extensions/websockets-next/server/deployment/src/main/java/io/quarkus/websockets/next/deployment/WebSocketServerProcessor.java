@@ -176,7 +176,8 @@ public class WebSocketServerProcessor {
             // and delegates callback invocations to the endpoint bean
             String generatedName = generateEndpoint(endpoint, classOutput);
             reflectiveClasses.produce(ReflectiveClassBuildItem.builder(generatedName).constructors().build());
-            generatedEndpoints.produce(new GeneratedEndpointBuildItem(generatedName, endpoint.path));
+            generatedEndpoints.produce(new GeneratedEndpointBuildItem(endpoint.bean.getImplClazz().name().toString(),
+                    generatedName, endpoint.path));
         }
     }
 
@@ -190,7 +191,7 @@ public class WebSocketServerProcessor {
             RouteBuildItem.Builder builder = RouteBuildItem.builder()
                     .route(httpRootPath.relativePath(endpoint.path))
                     .handlerType(HandlerType.NORMAL)
-                    .handler(recorder.createEndpointHandler(endpoint.className));
+                    .handler(recorder.createEndpointHandler(endpoint.generatedClassName));
             routes.produce(builder.build());
         }
     }
@@ -252,7 +253,7 @@ public class WebSocketServerProcessor {
             m.appendReplacement(sb, ":" + match.subSequence(1, match.length() - 1));
         }
         m.appendTail(sb);
-        return sb.toString();
+        return path.startsWith("/") ? sb.toString() : "/" + sb.toString();
     }
 
     private String callbackToString(MethodInfo callback) {

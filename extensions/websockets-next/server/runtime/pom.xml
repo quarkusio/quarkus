@@ -11,6 +11,7 @@
 
     <artifactId>quarkus-websockets-next</artifactId>
     <name>Quarkus - WebSockets Next - Runtime</name>
+    <description>Implementation of the WebSocket API with enhanced efficiency and usability</description>
 
     <dependencies>
         <dependency>
@@ -24,6 +25,12 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jackson</artifactId>
+        </dependency>
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

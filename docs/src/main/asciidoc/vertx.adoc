@@ -151,7 +151,7 @@ The one we are going to use in this section is the Vert.x File System.
 It provides a non-blocking API to access files.
 
 
-In the `src/main/resource` directory, create a `lorem.txt` file with the following content:
+In the `src/main/resources` directory, create a `lorem.txt` file with the following content:
 
 [source, text]
 ----

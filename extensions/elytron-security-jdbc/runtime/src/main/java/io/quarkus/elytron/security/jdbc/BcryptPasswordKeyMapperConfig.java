@@ -34,7 +34,7 @@ public class BcryptPasswordKeyMapperConfig implements PasswordKeyMapperConfig {
     public Encoding hashEncoding;
 
     /**
-     * The index (1 based numbering) of the column containing the Bcrypt salt
+     * The index (1 based numbering) of the column containing the Bcrypt salt. The default value of `-1` implies that the salt is stored in the password column using the Modular Crypt Format (MCF) standard.
      */
     @ConfigItem(defaultValue = "-1")
     public int saltIndex;

@@ -190,6 +190,7 @@ public class WebSocketServerProcessor {
         for (GeneratedEndpointBuildItem endpoint : generatedEndpoints) {
             RouteBuildItem.Builder builder = RouteBuildItem.builder()
                     .route(httpRootPath.relativePath(endpoint.path))
+                    .displayOnNotFoundPage("WebSocket Endpoint")
                     .handlerType(HandlerType.NORMAL)
                     .handler(recorder.createEndpointHandler(endpoint.generatedClassName));
             routes.produce(builder.build());

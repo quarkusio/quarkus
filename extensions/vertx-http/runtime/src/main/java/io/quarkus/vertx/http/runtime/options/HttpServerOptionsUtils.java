@@ -32,6 +32,21 @@ import io.vertx.core.net.*;
 public class HttpServerOptionsUtils {
 
     /**
+     * When the http port is set to 0, replace it by this value to let Vert.x choose a random port
+     */
+    public static final int RANDOM_PORT_MAIN_HTTP = -1;
+
+    /**
+     * When the https port is set to 0, replace it by this value to let Vert.x choose a random port
+     */
+    public static final int RANDOM_PORT_MAIN_TLS = -2;
+
+    /**
+     * When the management port is set to 0, replace it by this value to let Vert.x choose a random port
+     */
+    public static final int RANDOM_PORT_MANAGEMENT = -3;
+
+    /**
      * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled
      */
     public static HttpServerOptions createSslOptions(HttpBuildTimeConfig buildTimeConfig, HttpConfiguration httpConfiguration,
@@ -108,7 +123,7 @@ public class HttpServerOptionsUtils {
         serverOptions.setSni(sslConfig.sni);
         int sslPort = httpConfiguration.determineSslPort(launchMode);
         // -2 instead of -1 (see http) to have vert.x assign two different random ports if both http and https shall be random
-        serverOptions.setPort(sslPort == 0 ? -2 : sslPort);
+        serverOptions.setPort(sslPort == 0 ? RANDOM_PORT_MAIN_TLS : sslPort);
         serverOptions.setClientAuth(buildTimeConfig.tlsClientAuth);
 
         applyCommonOptions(serverOptions, buildTimeConfig, httpConfiguration, websocketSubProtocols);
@@ -194,8 +209,8 @@ public class HttpServerOptionsUtils {
         serverOptions.setSsl(true);
         serverOptions.setSni(sslConfig.sni);
         int sslPort = httpConfiguration.determinePort(launchMode);
-        // -2 instead of -1 (see http) to have vert.x assign two different random ports if both http and https shall be random
-        serverOptions.setPort(sslPort == 0 ? -2 : sslPort);
+
+        serverOptions.setPort(sslPort == 0 ? RANDOM_PORT_MANAGEMENT : sslPort);
         serverOptions.setClientAuth(buildTimeConfig.tlsClientAuth);
 
         applyCommonOptionsForManagementInterface(serverOptions, buildTimeConfig, httpConfiguration, websocketSubProtocols);

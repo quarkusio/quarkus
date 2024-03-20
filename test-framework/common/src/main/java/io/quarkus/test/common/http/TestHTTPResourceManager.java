@@ -25,8 +25,22 @@ public class TestHTTPResourceManager {
         }
     }
 
+    public static String getManagementUri() {
+        try {
+            return sanitizeUri(ConfigProvider.getConfig().getValue("test.management.url", String.class));
+        } catch (IllegalStateException e) {
+            //massive hack for dev mode tests, dev mode has not started yet
+            //so we don't have any way to load this correctly from config
+            return "http://localhost:9000";
+        }
+    }
+
     public static String getSslUri() {
         return sanitizeUri(ConfigProvider.getConfig().getValue("test.url.ssl", String.class));
+    }
+
+    public static String getManagementSslUri() {
+        return sanitizeUri(ConfigProvider.getConfig().getValue("test.management.url.ssl", String.class));
     }
 
     private static String sanitizeUri(String result) {
@@ -62,6 +76,7 @@ public class TestHTTPResourceManager {
                     }
                     String path = resource.value();
                     String endpointPath = null;
+                    boolean management = resource.management();
                     TestHTTPEndpoint endpointAnnotation = f.getAnnotation(TestHTTPEndpoint.class);
                     if (endpointAnnotation != null) {
                         for (Function<Class<?>, String> func : endpointProviders) {
@@ -86,17 +101,33 @@ public class TestHTTPResourceManager {
                         path = endpointPath;
                     }
                     String val;
-                    if (resource.ssl()) {
-                        if (path.startsWith("/")) {
-                            val = getSslUri() + path;
+                    if (resource.ssl() || resource.tls()) {
+                        if (management) {
+                            if (path.startsWith("/")) {
+                                val = getManagementSslUri() + path;
+                            } else {
+                                val = getManagementSslUri() + "/" + path;
+                            }
                         } else {
-                            val = getSslUri() + "/" + path;
+                            if (path.startsWith("/")) {
+                                val = getSslUri() + path;
+                            } else {
+                                val = getSslUri() + "/" + path;
+                            }
                         }
                     } else {
-                        if (path.startsWith("/")) {
-                            val = getUri() + path;
+                        if (management) {
+                            if (path.startsWith("/")) {
+                                val = getManagementUri() + path;
+                            } else {
+                                val = getManagementUri() + "/" + path;
+                            }
                         } else {
-                            val = getUri() + "/" + path;
+                            if (path.startsWith("/")) {
+                                val = getUri() + path;
+                            } else {
+                                val = getUri() + "/" + path;
+                            }
                         }
                     }
                     f.setAccessible(true);

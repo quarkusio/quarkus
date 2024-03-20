@@ -260,3 +260,24 @@ quarkus.management.auth.permission.metrics.policy=authenticated
 ----
 
 More details about Basic authentication in Quarkus can be found in the xref:security-basic-authentication-howto.adoc[Basic authentication guide].
+
+== Injecting management URL in tests
+
+When testing your application, you can inject the management URL using the `@TestHTTPResource` annotation:
+
+[source,java]
+----
+@TestHTTPResource(value="/management", management=true)
+URL management;
+----
+
+The `management` attribute is set to `true` to indicate that the injected URL is for the management interface.
+The `context-root` is automatically added.
+Thus, in the previous example, the injected URL is `http://localhost:9001/q/management`.
+
+`@TestHTTPResource` is particularly useful when setting the management `test-port` to 0, which indicates that the system will assign a random port to the management interface:
+
+[source, properties]
+----]
+quarkus.management.test-port=0
+----

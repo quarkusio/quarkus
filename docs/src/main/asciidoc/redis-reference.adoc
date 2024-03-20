@@ -191,14 +191,26 @@ When using Redis in cluster mode, you need to pass multiple _host urls_, configu
 ----
 quarkus.redis.hosts=redis://localhost:7000,redis://localhost:7001,redis://localhost:7002
 quarkus.redis.client-type=cluster
-quarkus.redis.replicas=share
+
+# Optional
+quarkus.redis.replicas=share # defaults to "never"
 ----
 
 The host URLs here must be some of the cluster members.
 Not all cluster members need to be configured, as the client will obtain a full cluster topology from one of the known servers.
 However, it is advisable to configure at least 2 or 3 nodes, not just 1.
 
-=== Use the replication Mode
+By default, all commands are sent to a master node (if the command has a key, it is the master node of the shard that owns the key, otherwise it is a random master node).
+It is possible to configure the Redis client to send read-only commands (queries) to replica nodes.
+Set the `quarkus.redis.replicas` configuration property to:
+
+* `never`: never use replica nodes, always send queries to master nodes (this is the default)
+* `always`: always use replica nodes (if there's more than one replica in the shard, it is selected randomly), never send queries to master nodes
+* `share`: use master and replica nodes to execute queries (the specific node for each query is selected randomly)
+
+Note that replication in Redis is asynchronous, so replica nodes may be lagging behind their master nodes.
+
+=== Use the Replication Mode
 
 When using the replication mode, you need to pass a single host url and configure the type to be `replication`:
 
@@ -206,7 +218,20 @@ When using the replication mode, you need to pass a single host url and configur
 ----
 quarkus.redis.hosts=redis://localhost:7000
 quarkus.redis.client-type=replication
+
+# Optional
+quarkus.redis.replicas=share # defaults to "never"
 ----
+
+By default, all commands are sent to the master node.
+It is possible to configure the Redis client to send read-only commands (queries) to replica nodes.
+Set the `quarkus.redis.replicas` configuration property to:
+
+* `never`: never use replica nodes, always send queries to the master node (this is the default)
+* `always`: always use replica nodes (if there's more than one replica, it is selected randomly), never send queries to the master node
+* `share`: use master and replica nodes to execute queries (the specific node for each query is selected randomly)
+
+Note that replication in Redis is asynchronous, so replica nodes may be lagging behind the master node.
 
 === Connect to Redis Cloud
 

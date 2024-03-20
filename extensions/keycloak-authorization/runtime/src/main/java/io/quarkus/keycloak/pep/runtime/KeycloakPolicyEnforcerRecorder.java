@@ -2,17 +2,24 @@ package io.quarkus.keycloak.pep.runtime;
 
 import java.net.URI;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.keycloak.adapters.authorization.PolicyEnforcer;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
 
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.KeycloakConfigPolicyEnforcer.ClaimInformationPointConfig;
+import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.KeycloakConfigPolicyEnforcer.MethodConfig;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.KeycloakConfigPolicyEnforcer.PathCacheConfig;
+import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.KeycloakConfigPolicyEnforcer.PathConfig;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
@@ -26,14 +33,26 @@ import io.quarkus.vertx.http.runtime.HttpConfiguration;
 
 @Recorder
 public class KeycloakPolicyEnforcerRecorder {
-    final HttpConfiguration httpConfiguration;
 
-    public KeycloakPolicyEnforcerRecorder(HttpConfiguration httpConfiguration) {
-        this.httpConfiguration = httpConfiguration;
+    public BooleanSupplier createBodyHandlerRequiredEvaluator(KeycloakPolicyEnforcerConfig config) {
+        return new BooleanSupplier() {
+            @Override
+            public boolean getAsBoolean() {
+                if (isBodyHandlerRequired(config.defaultTenant)) {
+                    return true;
+                }
+                for (KeycloakPolicyEnforcerTenantConfig tenantConfig : config.namedTenants.values()) {
+                    if (isBodyHandlerRequired(tenantConfig)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
     }
 
     public Supplier<PolicyEnforcerResolver> setup(OidcConfig oidcConfig, KeycloakPolicyEnforcerConfig config,
-            TlsConfig tlsConfig) {
+            TlsConfig tlsConfig, HttpConfiguration httpConfiguration) {
         PolicyEnforcer defaultPolicyEnforcer = createPolicyEnforcer(oidcConfig.defaultTenant, config.defaultTenant, tlsConfig);
         Map<String, PolicyEnforcer> policyEnforcerTenants = new HashMap<String, PolicyEnforcer>();
         for (Map.Entry<String, KeycloakPolicyEnforcerTenantConfig> tenant : config.namedTenants.entrySet()) {
@@ -97,8 +116,7 @@ public class KeycloakPolicyEnforcerRecorder {
             adapterConfig.setProxyUrl(host + ":" + oidcConfig.proxy.port);
         }
 
-        PolicyEnforcerConfig enforcerConfig = getPolicyEnforcerConfig(keycloakPolicyEnforcerConfig,
-                adapterConfig);
+        PolicyEnforcerConfig enforcerConfig = getPolicyEnforcerConfig(keycloakPolicyEnforcerConfig);
 
         adapterConfig.setPolicyEnforcerConfig(enforcerConfig);
 
@@ -138,8 +156,7 @@ public class KeycloakPolicyEnforcerRecorder {
         return cipConfig;
     }
 
-    private static PolicyEnforcerConfig getPolicyEnforcerConfig(KeycloakPolicyEnforcerTenantConfig config,
-            AdapterConfig adapterConfig) {
+    private static PolicyEnforcerConfig getPolicyEnforcerConfig(KeycloakPolicyEnforcerTenantConfig config) {
         PolicyEnforcerConfig enforcerConfig = new PolicyEnforcerConfig();
 
         enforcerConfig.setLazyLoadPaths(config.policyEnforcer.lazyLoadPaths);
@@ -155,29 +172,86 @@ public class KeycloakPolicyEnforcerRecorder {
 
         enforcerConfig.setClaimInformationPointConfig(
                 getClaimInformationPointConfig(config.policyEnforcer.claimInformationPoint));
-        enforcerConfig.setPaths(config.policyEnforcer.paths.values().stream().map(
-                pathConfig -> {
-                    PolicyEnforcerConfig.PathConfig config1 = new PolicyEnforcerConfig.PathConfig();
-
-                    config1.setName(pathConfig.name.orElse(null));
-                    config1.setPath(pathConfig.path.orElse(null));
-                    config1.setEnforcementMode(pathConfig.enforcementMode);
-                    config1.setMethods(pathConfig.methods.values().stream().map(
-                            methodConfig -> {
-                                PolicyEnforcerConfig.MethodConfig mConfig = new PolicyEnforcerConfig.MethodConfig();
-
-                                mConfig.setMethod(methodConfig.method);
-                                mConfig.setScopes(methodConfig.scopes);
-                                mConfig.setScopesEnforcementMode(methodConfig.scopesEnforcementMode);
-
-                                return mConfig;
-                            }).collect(Collectors.toList()));
-                    config1.setClaimInformationPointConfig(
-                            getClaimInformationPointConfig(pathConfig.claimInformationPoint));
-
-                    return config1;
+        enforcerConfig.setPaths(config.policyEnforcer.paths.values().stream().flatMap(
+                new Function<PathConfig, Stream<? extends PolicyEnforcerConfig.PathConfig>>() {
+                    @Override
+                    public Stream<? extends PolicyEnforcerConfig.PathConfig> apply(PathConfig pathConfig) {
+                        var paths = getPathConfigPaths(pathConfig);
+                        if (paths.isEmpty()) {
+                            return Stream.of(createKeycloakPathConfig(pathConfig, null));
+                        } else {
+                            return paths.stream().map(new Function<String, PolicyEnforcerConfig.PathConfig>() {
+                                @Override
+                                public PolicyEnforcerConfig.PathConfig apply(String path) {
+                                    return createKeycloakPathConfig(pathConfig, path);
+                                }
+                            });
+                        }
+                    }
                 }).collect(Collectors.toList()));
 
         return enforcerConfig;
+    }
+
+    private static Set<String> getPathConfigPaths(PathConfig pathConfig) {
+        Set<String> paths = new HashSet<>();
+        if (pathConfig.path.isPresent()) {
+            paths.add(pathConfig.path.get());
+        }
+        if (pathConfig.paths.isPresent()) {
+            paths.addAll(pathConfig.paths.get());
+        }
+        return paths;
+    }
+
+    private static PolicyEnforcerConfig.PathConfig createKeycloakPathConfig(PathConfig pathConfig, String path) {
+        PolicyEnforcerConfig.PathConfig config1 = new PolicyEnforcerConfig.PathConfig();
+
+        config1.setName(pathConfig.name.orElse(null));
+        config1.setPath(path);
+        config1.setEnforcementMode(pathConfig.enforcementMode);
+        config1.setMethods(pathConfig.methods.values().stream().map(
+                new Function<MethodConfig, PolicyEnforcerConfig.MethodConfig>() {
+                    @Override
+                    public PolicyEnforcerConfig.MethodConfig apply(MethodConfig methodConfig) {
+                        PolicyEnforcerConfig.MethodConfig mConfig = new PolicyEnforcerConfig.MethodConfig();
+
+                        mConfig.setMethod(methodConfig.method);
+                        mConfig.setScopes(methodConfig.scopes);
+                        mConfig.setScopesEnforcementMode(methodConfig.scopesEnforcementMode);
+
+                        return mConfig;
+                    }
+                }).collect(Collectors.toList()));
+        config1.setClaimInformationPointConfig(
+                getClaimInformationPointConfig(pathConfig.claimInformationPoint));
+        return config1;
+    }
+
+    private static boolean isBodyHandlerRequired(KeycloakPolicyEnforcerTenantConfig config) {
+        if (isBodyClaimInformationPointDefined(config.policyEnforcer.claimInformationPoint.simpleConfig)) {
+            return true;
+        }
+        for (PathConfig path : config.policyEnforcer.paths
+                .values()) {
+            if (isBodyClaimInformationPointDefined(path.claimInformationPoint.simpleConfig)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isBodyClaimInformationPointDefined(Map<String, Map<String, String>> claims) {
+        for (Map.Entry<String, Map<String, String>> entry : claims.entrySet()) {
+            Map<String, String> value = entry.getValue();
+
+            for (String nestedValue : value.values()) {
+                if (nestedValue.contains("request.body")) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

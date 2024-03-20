@@ -131,7 +131,7 @@ public class VirtualThreadExtension
         }
 
         if (notpin != null) {
-            if (!pinEvents.isEmpty()) {
+            if (!pinEvents.isEmpty() && pinEvents.size() > notpin.atMost()) {
                 throw new AssertionError(
                         "The test " + extensionContext.getDisplayName() + " was expected to NOT pin the carrier thread"
                                 + ", but we collected " + pinEvents.size() + " event(s)\n" + dump(pinEvents));

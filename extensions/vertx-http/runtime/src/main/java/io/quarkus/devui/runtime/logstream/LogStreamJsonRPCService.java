@@ -3,7 +3,6 @@ package io.quarkus.devui.runtime.logstream;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 
@@ -11,7 +10,6 @@ import org.jboss.logmanager.LogContext;
 import org.jboss.logmanager.Logger;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.dev.console.DevConsoleManager;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.json.JsonObject;
@@ -25,51 +23,6 @@ public class LogStreamJsonRPCService {
     @NonBlocking
     public String ping() {
         return "pong";
-    }
-
-    @NonBlocking
-    public Map forceRestart() {
-        return DevConsoleManager.invoke("logstream-force-restart");
-    }
-
-    @NonBlocking
-    public Map rerunAllTests() {
-        return DevConsoleManager.invoke("logstream-rerun-all-tests");
-    }
-
-    @NonBlocking
-    public Map rerunFailedTests() {
-        return DevConsoleManager.invoke("logstream-rerun-failed-tests");
-    }
-
-    @NonBlocking
-    public Map toggleBrokenOnly() {
-        return DevConsoleManager.invoke("logstream-toggle-broken-only");
-    }
-
-    @NonBlocking
-    public Map printFailures() {
-        return DevConsoleManager.invoke("logstream-print-failures");
-    }
-
-    @NonBlocking
-    public Map toggleTestOutput() {
-        return DevConsoleManager.invoke("logstream-toggle-test-output");
-    }
-
-    @NonBlocking
-    public Map toggleInstrumentationReload() {
-        return DevConsoleManager.invoke("logstream-toggle-instrumentation-reload");
-    }
-
-    @NonBlocking
-    public Map pauseTests() {
-        return DevConsoleManager.invoke("logstream-pause-tests");
-    }
-
-    @NonBlocking
-    public Map toggleLiveReload() {
-        return DevConsoleManager.invoke("logstream-toggle-live-reload");
     }
 
     @NonBlocking

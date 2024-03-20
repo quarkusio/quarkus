@@ -1,9 +1,9 @@
 package io.quarkus.bootstrap.resolver.maven.workspace;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -16,10 +16,9 @@ import java.util.regex.Pattern;
 
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
+import io.fabric8.maven.Maven;
+import io.fabric8.maven.XMLFormat;
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -28,7 +27,6 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 
 /**
- *
  * @author Alexey Loubyansky
  */
 public class ModelUtils {
@@ -182,7 +180,7 @@ public class ModelUtils {
         putAll(props, System.getProperties());
 
         Matcher matcher = getUnresolvedVersionPattern().matcher(rawVersion);
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         while (matcher.find()) {
             final String resolved = props.get(matcher.group(1));
             if (resolved == null) {
@@ -233,21 +231,30 @@ public class ModelUtils {
     }
 
     public static Model readModel(final Path pomXml) throws IOException {
-        return readModel(Files.newInputStream(pomXml));
+        try {
+            return Maven.readModel(pomXml);
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        } catch (RuntimeException e) {
+            throw new IOException("Failed to read model", e.getCause());
+        }
     }
 
     public static Model readModel(InputStream stream) throws IOException {
         try (InputStream is = stream) {
-            return new MavenXpp3Reader().read(stream);
-        } catch (XmlPullParserException e) {
-            throw new IOException("Failed to parse POM", e);
+            return Maven.readModel(is);
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
+        } catch (RuntimeException e) {
+            throw new IOException("Failed to read model", e.getCause());
         }
     }
 
     public static void persistModel(Path pomFile, Model model) throws IOException {
-        final MavenXpp3Writer xpp3Writer = new MavenXpp3Writer();
-        try (BufferedWriter pomFileWriter = Files.newBufferedWriter(pomFile)) {
-            xpp3Writer.write(pomFileWriter, model);
+        try {
+            Maven.writeModel(model, pomFile, XMLFormat.builder().indent("    ").insertLineBreakBetweenMajorSections().build());
+        } catch (UncheckedIOException e) {
+            throw e.getCause();
         }
     }
 }

@@ -131,6 +131,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
     private Charset defaultCharset = StandardCharsets.UTF_8;;
     private int maxFormAttributeSize = 2048;
 
+    private int maxParameters = 1000;
+
     public static Vertx getVertx() {
         return vertx;
     }
@@ -397,7 +399,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
         DefaultRuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(Duration.ofMinutes(1),
                 deleteUploadedFilesOnEnd,
                 uploadPath != null ? uploadPath.toAbsolutePath().toString() : System.getProperty("java.io.tmpdir"),
-                fileContentTypes, defaultCharset, Optional.empty(), maxFormAttributeSize);
+                fileContentTypes, defaultCharset, Optional.empty(), maxFormAttributeSize, maxParameters);
         ResteasyReactiveDeploymentManager.RunnableApplication application = prepared.createApplication(runtimeConfiguration,
                 new VertxRequestContextFactory(), executor);
         fieldInjectionSupport.runtimeInit(testClassLoader, application.getDeployment());

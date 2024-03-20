@@ -13,19 +13,21 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.StreamingLogHandlerBuildItem;
 import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.deployment.dev.testing.TestSupport;
-import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devui.runtime.logstream.LogStreamBroadcaster;
 import io.quarkus.devui.runtime.logstream.LogStreamJsonRPCService;
 import io.quarkus.devui.runtime.logstream.LogStreamRecorder;
 import io.quarkus.devui.runtime.logstream.MutinyLogHandler;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
  * Processor for Log stream in Dev UI
  */
 public class LogStreamProcessor {
+
+    private final String namespace = "devui-logstream";
 
     @BuildStep(onlyIf = IsDevelopment.class)
     void additionalBean(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
@@ -44,15 +46,20 @@ public class LogStreamProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    JsonRPCProvidersBuildItem createJsonRPCService(LaunchModeBuildItem launchModeBuildItem) {
+    void createJsonRPCService(BuildProducer<JsonRPCProvidersBuildItem> jsonRPCProvidersProducer,
+            BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
+            LaunchModeBuildItem launchModeBuildItem) {
+
         Optional<TestSupport> ts = TestSupport.instance();
 
-        DevConsoleManager.register("logstream-force-restart", ignored -> {
+        BuildTimeActionBuildItem keyStrokeActions = new BuildTimeActionBuildItem(namespace);
+
+        keyStrokeActions.addAction("forceRestart", ignored -> {
             RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
             return Map.of();
         });
 
-        DevConsoleManager.register("logstream-rerun-all-tests", ignored -> {
+        keyStrokeActions.addAction("rerunAllTests", ignored -> {
             if (testsDisabled(launchModeBuildItem, ts)) {
                 return Map.of();
             }
@@ -65,7 +72,7 @@ public class LogStreamProcessor {
             }
         });
 
-        DevConsoleManager.register("logstream-rerun-failed-tests", ignored -> {
+        keyStrokeActions.addAction("rerunFailedTests", ignored -> {
             if (testsDisabled(launchModeBuildItem, ts)) {
                 return Map.of();
             }
@@ -73,7 +80,7 @@ public class LogStreamProcessor {
             return Map.of();
         });
 
-        DevConsoleManager.register("logstream-toggle-broken-only", ignored -> {
+        keyStrokeActions.addAction("toggleBrokenOnly", ignored -> {
             if (testsDisabled(launchModeBuildItem, ts)) {
                 return Map.of();
             }
@@ -81,7 +88,7 @@ public class LogStreamProcessor {
             return Map.of("brokenOnlyMode", brokenOnlyMode);
         });
 
-        DevConsoleManager.register("logstream-print-failures", ignored -> {
+        keyStrokeActions.addAction("printFailures", ignored -> {
             if (testsDisabled(launchModeBuildItem, ts)) {
                 return Map.of();
             }
@@ -89,7 +96,7 @@ public class LogStreamProcessor {
             return Map.of();
         });
 
-        DevConsoleManager.register("logstream-toggle-test-output", ignored -> {
+        keyStrokeActions.addAction("toggleTestOutput", ignored -> {
             if (testsDisabled(launchModeBuildItem, ts)) {
                 return Map.of();
             }
@@ -97,12 +104,12 @@ public class LogStreamProcessor {
             return Map.of("isTestOutput", isTestOutput);
         });
 
-        DevConsoleManager.register("logstream-toggle-instrumentation-reload", ignored -> {
+        keyStrokeActions.addAction("toggleInstrumentationReload", ignored -> {
             boolean instrumentationEnabled = RuntimeUpdatesProcessor.INSTANCE.toggleInstrumentation();
             return Map.of("instrumentationEnabled", instrumentationEnabled);
         });
 
-        DevConsoleManager.register("logstream-pause-tests", ignored -> {
+        keyStrokeActions.addAction("pauseTests", ignored -> {
             if (testsDisabled(launchModeBuildItem, ts)) {
                 return Map.of();
             }
@@ -113,7 +120,7 @@ public class LogStreamProcessor {
             return Map.of();
         });
 
-        DevConsoleManager.register("logstream-toggle-live-reload", ignored -> {
+        keyStrokeActions.addAction("toggleLiveReload", ignored -> {
             if (testsDisabled(launchModeBuildItem, ts)) {
                 return Map.of();
             }
@@ -121,16 +128,8 @@ public class LogStreamProcessor {
             return Map.of("liveReloadEnabled", liveReloadEnabled);
         });
 
-        DevConsoleManager.register("logstream-toggle-live-reload", ignored -> {
-
-            if (testsDisabled(launchModeBuildItem, ts)) {
-                return Map.of();
-            }
-            boolean liveReloadEnabled = ts.get().toggleLiveReloadEnabled();
-            return Map.of("liveReloadEnabled", liveReloadEnabled);
-        });
-
-        return new JsonRPCProvidersBuildItem("devui-logstream", LogStreamJsonRPCService.class);
+        buildTimeActionProducer.produce(keyStrokeActions);
+        jsonRPCProvidersProducer.produce(new JsonRPCProvidersBuildItem(namespace, LogStreamJsonRPCService.class));
     }
 
     private boolean testsDisabled(LaunchModeBuildItem launchModeBuildItem, Optional<TestSupport> ts) {

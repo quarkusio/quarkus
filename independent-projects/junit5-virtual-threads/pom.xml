@@ -46,6 +46,7 @@
         <impsort-maven-plugin.version>1.9.0</impsort-maven-plugin.version>
 
         <junit.jupiter.version>5.10.2</junit.jupiter.version>
+        <assertj.version>3.25.3</assertj.version>
     </properties>
 
 
@@ -55,6 +56,12 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>compile</scope>
             <version>${junit.jupiter.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>${assertj.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

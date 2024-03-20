@@ -3,15 +3,17 @@ package io.quarkus.websockets.next.deployment;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * A generated {@link io.quarkus.websockets.next.runtime.WebSocketEndpoint}.
+ * A generated representation of a {@link io.quarkus.websockets.next.runtime.WebSocketEndpoint}.
  */
-final class GeneratedEndpointBuildItem extends MultiBuildItem {
+public final class GeneratedEndpointBuildItem extends MultiBuildItem {
 
-    final String className;
-    final String path;
+    public final String endpointClassName;
+    public final String generatedClassName;
+    public final String path;
 
-    GeneratedEndpointBuildItem(String className, String path) {
-        this.className = className;
+    GeneratedEndpointBuildItem(String endpointClassName, String generatedClassName, String path) {
+        this.endpointClassName = endpointClassName;
+        this.generatedClassName = generatedClassName;
         this.path = path;
     }
 

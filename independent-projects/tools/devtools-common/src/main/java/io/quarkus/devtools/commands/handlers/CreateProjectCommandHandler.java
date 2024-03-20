@@ -252,6 +252,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
     }
 
     private static String getDefaultCodestart(ExtensionCatalog catalog) {
+        // Recent versions of the catalog have a default-codestart in the project metadata (2.10+)
         var map = catalog.getMetadata();
         if (map != null && !map.isEmpty()) {
             var projectMetadata = map.get("project");
@@ -264,6 +265,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                 }
             }
         }
-        return null;
+        // Let's use resteasy-reactive for older versions
+        return "resteasy-reactive";
     }
 }

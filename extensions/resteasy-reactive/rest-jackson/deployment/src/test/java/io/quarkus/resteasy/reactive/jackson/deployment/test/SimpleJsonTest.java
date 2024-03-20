@@ -31,7 +31,10 @@ public class SimpleJsonTest {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(Person.class, SimpleJsonResource.class, User.class, Views.class, SuperClass.class,
                                     OtherPersonResource.class, AbstractPersonResource.class, DataItem.class, Item.class,
-                                    NoopReaderInterceptor.class, TestIdentityProvider.class, TestIdentityController.class)
+                                    NoopReaderInterceptor.class, TestIdentityProvider.class, TestIdentityController.class,
+                                    AbstractPet.class, Dog.class, Cat.class, Veterinarian.class, AbstractNamedPet.class,
+                                    AbstractUnsecuredPet.class, UnsecuredPet.class, SecuredPersonInterface.class, Frog.class,
+                                    Pond.class, FrogBodyParts.class, FrogBodyParts.BodyPart.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n"), "application.properties");
@@ -501,5 +504,141 @@ public class SimpleJsonTest {
                 .statusCode(200)
                 .contentType("text/plain")
                 .body(is("foo"));
+    }
+
+    @Test
+    public void testSecureFieldOnAbstractClass() {
+        // implementor with / without @SecureField returned
+        testSecuredFieldOnAbstractClass("cat", "dog");
+        // abstract class with @SecureField returned
+        testSecuredFieldOnAbstractClass("abstract-named-cat", "abstract-named-dog");
+        // abstract class without @SecureField directly, but with secured field's field returned
+        testSecuredFieldOnAbstractClass("abstract-cat", "abstract-dog");
+        // interface with implementors that have @SecureField
+        testSecuredFieldOnAbstractClass("interface-cat", "interface-dog");
+    }
+
+    @Test
+    public void testSecureFieldOnlyOnFieldOfReturnTypeField() {
+        // returns class with @SecureField is only on field's field
+        testSecuredFieldOnReturnTypeField("unsecured-pet");
+        // returns abstract class and only @SecureField is on implementor's field's field
+        testSecuredFieldOnReturnTypeField("abstract-unsecured-pet");
+    }
+
+    @Test
+    public void testSecureFieldOnCollectionTypeField() {
+        TestIdentityController.resetRoles().add("max", "max", "user");
+        RestAssured
+                .with()
+                .auth().preemptive().basic("max", "max")
+                .get("/simple/frog")
+                .then()
+                .statusCode(200)
+                .body("partner", Matchers.notNullValue())
+                .body("ponds[0].name", Matchers.is("Atlantic Ocean"))
+                .body("ponds[0].waterQuality", Matchers.nullValue());
+        TestIdentityController.resetRoles().add("rolfe", "rolfe", "admin");
+        RestAssured
+                .with()
+                .auth().preemptive().basic("rolfe", "rolfe")
+                .get("/simple/frog")
+                .then()
+                .statusCode(200)
+                .body("partner", Matchers.notNullValue())
+                .body("ponds[0].name", Matchers.is("Atlantic Ocean"))
+                .body("ponds[0].waterQuality", Matchers.is("CLEAR"));
+    }
+
+    @Test
+    public void testSecureFieldOnArrayTypeField() {
+        TestIdentityController.resetRoles().add("max", "max", "user");
+        RestAssured
+                .with()
+                .auth().preemptive().basic("max", "max")
+                .get("/simple/frog-body-parts")
+                .then()
+                .statusCode(200)
+                .body("parts[0].name", Matchers.nullValue());
+        TestIdentityController.resetRoles().add("rolfe", "rolfe", "admin");
+        RestAssured
+                .with()
+                .auth().preemptive().basic("rolfe", "rolfe")
+                .get("/simple/frog-body-parts")
+                .then()
+                .statusCode(200)
+                .body("parts[0].name", Matchers.is("protruding eyes"));
+    }
+
+    private static void testSecuredFieldOnReturnTypeField(String subPath) {
+        TestIdentityController.resetRoles().add("max", "max", "user");
+        RestAssured
+                .with()
+                .auth().preemptive().basic("max", "max")
+                .get("/simple/" + subPath)
+                .then()
+                .statusCode(200)
+                .body("publicName", Matchers.is("Unknown"))
+                .body("veterinarian.name", Matchers.is("Dolittle"))
+                .body("veterinarian.title", Matchers.nullValue());
+        TestIdentityController.resetRoles().add("rolfe", "rolfe", "admin");
+        RestAssured
+                .with()
+                .auth().preemptive().basic("rolfe", "rolfe")
+                .get("/simple/" + subPath)
+                .then()
+                .statusCode(200)
+                .body("publicName", Matchers.is("Unknown"))
+                .body("veterinarian.name", Matchers.is("Dolittle"))
+                .body("veterinarian.title", Matchers.is("VMD"));
+    }
+
+    private static void testSecuredFieldOnAbstractClass(String catPath, String dogPath) {
+        TestIdentityController.resetRoles().add("max", "max", "user");
+        RestAssured
+                .with()
+                .auth().preemptive().basic("max", "max")
+                .get("/simple/" + catPath)
+                .then()
+                .statusCode(200)
+                .body("publicName", Matchers.is("Garfield"))
+                .body("privateName", Matchers.nullValue())
+                .body("veterinarian.name", Matchers.is("Dolittle"))
+                .body("veterinarian.title", Matchers.nullValue())
+                .body("privateAge", Matchers.nullValue());
+        RestAssured
+                .with()
+                .auth().preemptive().basic("max", "max")
+                .get("/simple/" + dogPath)
+                .then()
+                .statusCode(200)
+                .body("publicName", Matchers.is("Leo"))
+                .body("privateName", Matchers.nullValue())
+                .body("publicAge", Matchers.is(5))
+                .body("veterinarian.name", Matchers.is("Dolittle"))
+                .body("veterinarian.title", Matchers.nullValue());
+        TestIdentityController.resetRoles().add("rolfe", "rolfe", "admin");
+        RestAssured
+                .with()
+                .auth().preemptive().basic("rolfe", "rolfe")
+                .get("/simple/" + catPath)
+                .then()
+                .statusCode(200)
+                .body("publicName", Matchers.is("Garfield"))
+                .body("privateName", Matchers.is("Monday"))
+                .body("privateAge", Matchers.is(4))
+                .body("veterinarian.name", Matchers.is("Dolittle"))
+                .body("veterinarian.title", Matchers.is("VMD"));
+        RestAssured
+                .with()
+                .auth().preemptive().basic("rolfe", "rolfe")
+                .get("/simple/" + dogPath)
+                .then()
+                .statusCode(200)
+                .body("publicName", Matchers.is("Leo"))
+                .body("privateName", Matchers.is("Jack"))
+                .body("publicAge", Matchers.is(5))
+                .body("veterinarian.name", Matchers.is("Dolittle"))
+                .body("veterinarian.title", Matchers.is("VMD"));
     }
 }

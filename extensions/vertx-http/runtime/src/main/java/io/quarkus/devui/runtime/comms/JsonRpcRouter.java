@@ -16,6 +16,7 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcCodec;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethodName;
@@ -36,8 +37,11 @@ public class JsonRpcRouter {
 
     private final Map<Integer, Cancellable> subscriptions = new ConcurrentHashMap<>();
 
-    // Map json-rpc method to java
-    private final Map<String, ReflectionInfo> jsonRpcToJava = new HashMap<>();
+    // Map json-rpc method to java in runtime classpath
+    private final Map<String, ReflectionInfo> jsonRpcToRuntimeClassPathJava = new HashMap<>();
+
+    // Map json-rpc method to java in deployment classpath
+    private final List<String> jsonRpcToDeploymentClassPathJava = new ArrayList<>();
 
     private static final List<ServerWebSocket> SESSIONS = Collections.synchronizedList(new ArrayList<>());
     private JsonRpcCodec codec;
@@ -47,7 +51,7 @@ public class JsonRpcRouter {
      *
      * @param extensionMethodsMap
      */
-    public void populateJsonRPCMethods(Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap) {
+    public void populateJsonRPCRuntimeMethods(Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap) {
         for (Map.Entry<String, Map<JsonRpcMethodName, JsonRpcMethod>> extension : extensionMethodsMap.entrySet()) {
             String extensionName = extension.getKey();
             Map<JsonRpcMethodName, JsonRpcMethod> jsonRpcMethods = extension.getValue();
@@ -71,12 +75,17 @@ public class JsonRpcRouter {
                     ReflectionInfo reflectionInfo = new ReflectionInfo(jsonRpcMethod.getClazz(), providerInstance, javaMethod,
                             params, jsonRpcMethod.getExplicitlyBlocking(), jsonRpcMethod.getExplicitlyNonBlocking());
                     String jsonRpcMethodName = extensionName + DOT + methodName;
-                    jsonRpcToJava.put(jsonRpcMethodName, reflectionInfo);
+                    jsonRpcToRuntimeClassPathJava.put(jsonRpcMethodName, reflectionInfo);
                 } catch (NoSuchMethodException | SecurityException ex) {
                     throw new RuntimeException(ex);
                 }
             }
         }
+    }
+
+    public void setJsonRPCDeploymentMethods(List<String> methodNames) {
+        this.jsonRpcToDeploymentClassPathJava.clear();
+        this.jsonRpcToDeploymentClassPathJava.addAll(methodNames);
     }
 
     public void initializeCodec(JsonMapper jsonMapper) {
@@ -147,8 +156,8 @@ public class JsonRpcRouter {
                 cancellable.cancel();
             }
             codec.writeResponse(s, jsonRpcRequest.getId(), null, MessageType.Void);
-        } else if (this.jsonRpcToJava.containsKey(jsonRpcMethodName)) { // Route to extension
-            ReflectionInfo reflectionInfo = this.jsonRpcToJava.get(jsonRpcMethodName);
+        } else if (this.jsonRpcToRuntimeClassPathJava.containsKey(jsonRpcMethodName)) { // Route to extension (runtime)
+            ReflectionInfo reflectionInfo = this.jsonRpcToRuntimeClassPathJava.get(jsonRpcMethodName);
             Object target = Arc.container().select(reflectionInfo.bean).get();
 
             if (reflectionInfo.isReturningMulti()) {
@@ -222,6 +231,10 @@ public class JsonRpcRouter {
                             codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, actualFailure);
                         });
             }
+        } else if (this.jsonRpcToDeploymentClassPathJava.contains(jsonRpcMethodName)) { // Route to extension (deployment)
+            Object item = DevConsoleManager.invoke(jsonRpcMethodName, getArgsAsMap(jsonRpcRequest));
+            codec.writeResponse(s, jsonRpcRequest.getId(), item,
+                    MessageType.Response);
         } else {
             // Method not found
             codec.writeMethodNotFoundResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName);
@@ -237,6 +250,13 @@ public class JsonRpcRouter {
             objects.add(param);
         }
         return objects.toArray(Object[]::new);
+    }
+
+    private Map<String, String> getArgsAsMap(JsonRpcRequest jsonRpcRequest) {
+        if (jsonRpcRequest.hasParams()) {
+            return (Map<String, String>) jsonRpcRequest.getParams();
+        }
+        return Map.of();
     }
 
     private static final String DOT = ".";

@@ -11,6 +11,7 @@ import java.util.Objects;
 import org.apache.maven.model.Model;
 
 import io.fabric8.maven.Maven;
+import io.fabric8.maven.XMLFormat;
 import io.fabric8.maven.merge.SmartModelMerger;
 import io.quarkus.devtools.codestarts.CodestartException;
 import io.quarkus.devtools.codestarts.core.CodestartData;
@@ -41,6 +42,7 @@ final class SmartPomMergeCodestartFileStrategyHandler implements CodestartFileSt
         while (iterator.hasNext()) {
             merger.merge(targetModel, Maven.readModel(new StringReader(iterator.next().getContent())), true, null);
         }
-        Maven.writeModel(targetModel, targetPath);
+        Maven.writeModel(targetModel, targetPath,
+                XMLFormat.builder().indent("    ").insertLineBreakBetweenMajorSections().build());
     }
 }

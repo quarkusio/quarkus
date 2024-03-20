@@ -1,5 +1,6 @@
 package io.quarkus.websockets.next;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -89,6 +90,12 @@ public interface WebSocketConnection extends Sender, BlockingSender {
      * @return the handshake request
      */
     HandshakeRequest handshakeRequest();
+
+    /**
+     *
+     * @return the time when this connection was created
+     */
+    Instant creationTime();
 
     /**
      * Makes it possible to send messages to all clients connected to the same WebSocket endpoint.

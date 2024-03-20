@@ -3,6 +3,7 @@ package io.quarkus.datasource.runtime;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 
@@ -44,6 +45,7 @@ public interface DataSourceBuildTimeConfig {
      *
      * @asciidoclet
      */
+    @WithConverter(TrimmedStringConverter.class)
     Optional<String> dbVersion();
 
     /**

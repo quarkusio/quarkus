@@ -1,0 +1,20 @@
+# We need this for compat with older CLI versions
+name: resteasy-reactive-codestart
+ref: resteasy-reactive
+type: code
+tags: extension-codestart
+metadata:
+  title: REST
+  description: Easily start your REST Web Services
+  related-guide-section: https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources
+language:
+  base:
+    data:
+      resource:
+        class-name: GreetingResource
+        path: "/hello"
+        response: "Hello from Quarkus REST"
+    dependencies:
+      - io.quarkus:quarkus-rest
+    test-dependencies:
+      - io.rest-assured:rest-assured

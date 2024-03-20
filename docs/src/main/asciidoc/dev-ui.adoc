@@ -740,7 +740,7 @@ Some https://github.com/quarkusio/quarkus/tree/main/extensions/vertx-http/dev-ui
 - Storage
 - Log
 - Router
-- JsonRPC
+- <<JsonRPC>>
 
 ====== Notifier
 
@@ -842,9 +842,11 @@ The router is mostly used internally. This uses https://github.com/vaadin/router
 See the https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/controller/router-controller.js[controller] for some methods that might be useful.
 
 [[JsonRPC]]
-====== JsonRPC
+== Communicating to the backend 
 
-This controller allows you to fetch or stream runtime data (rather than <<Build time data>> discussed earlier). There are two parts to getting data during runtime. The Java side in the runtime module, and then the usage in the web component.
+=== JsonRPC against the Runtime classpath
+
+You can fetch or stream runtime data (rather than <<Build time data>> discussed earlier) or execute methods against the runtime classpath (as opposed to deployment classpath). There are two parts to getting data during runtime. The Java side in the runtime module, and then the usage in the web component.
 
 *Java part*
 
@@ -965,7 +967,7 @@ _clear(name) {
 ----
 <1> The `name` parameter is passed in.
 
-====== Streaming data
+==== Streaming data
 
 You can keep a UI screen updated with the latest data by continuously streaming data to the screen. This can be done with `Multi` (Java side) and `Observer` (Javascript side)
 
@@ -1013,7 +1015,38 @@ this._observer.cancel(); //<2>
 
 https://github.com/phillip-kruger/quarkus-jokes/blob/main/deployment/src/main/resources/dev-ui/qwc-jokes-web-components.js[Example code]
 
-====== Dev UI Log
+==== JsonRpc against the deployment classpath
+
+In certain cases you might need to execute methods and/or get data against the deployment classpath. This also happens over JsonRPC communication, but in this case you do not create a JsonRPC Service in the runtime module,
+you can just supply the code to be run in a supplier in the deployment module. To do this you will produce a `BuildTimeActionBuildItem`, example:
+
+[source,java]
+----
+    @BuildStep(onlyIf = IsDevelopment.class)
+    BuildTimeActionBuildItem createBuildTimeActions() { //<1>
+        BuildTimeActionBuildItem generateManifestActions = new BuildTimeActionBuildItem();//<2>
+        generateManifestActions.addAction("generateManifests", ignored -> { //<3>
+            try {
+                List<Manifest> manifests = holder.getManifests();
+                // Avoid relying on databind.
+                Map<String, String> map = new LinkedHashMap<>();
+                for (Manifest manifest : manifests) {
+                    map.put(manifest.getName(), manifest.getContent());
+                }
+                return map;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        return generateManifestActions;
+    }
+----
+<1> Return or use a BuildProducer to create a `BuildTimeActionBuildItem`
+<2> `BuildTimeActionBuildItem` is automatically scoped with your extension namespace
+<3> The method name (that can be called from js in the same way as any json-rpc service) is `generateManifests`
+
+===== Dev UI Log
 
 When running a local application using the `999-SNAPSHOT` version, the Dev UI will show a `Dev UI` Log in the footer. This is useful for debugging all JSON RPC messages flowing between the browser and the Quarkus app.
 

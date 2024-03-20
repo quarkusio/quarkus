@@ -1,9 +1,6 @@
 package io.quarkus.flyway.runtime.graal;
 
-import java.nio.charset.Charset;
-import java.util.Collection;
-
-import org.flywaydb.core.api.Location;
+import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.internal.scanner.LocationScannerCache;
 import org.flywaydb.core.internal.scanner.ResourceNameCache;
 import org.flywaydb.core.internal.scanner.Scanner;
@@ -15,15 +12,15 @@ import com.oracle.svm.core.annotate.TargetClass;
  * Needed to get rid of some Android related classes
  */
 @TargetClass(Scanner.class)
-public final class ScannerSubstitutions {
+public final class ScannerSubstitutions<I> {
 
     @Substitute
-    public ScannerSubstitutions(Class<?> implementedInterface, Collection<Location> locations, ClassLoader classLoader,
-            Charset encoding,
-            boolean detectEncoding,
+    public ScannerSubstitutions(
+            Class<I> implementedInterface,
             boolean stream,
-            ResourceNameCache resourceNameCache, LocationScannerCache locationScannerCache,
-            boolean throwOnMissingLocations) {
+            ResourceNameCache resourceNameCache,
+            LocationScannerCache locationScannerCache,
+            Configuration configuration) {
         throw new IllegalStateException("'org.flywaydb.core.internal.scanner.Scanner' is never used in Quarkus");
     }
 }

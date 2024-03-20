@@ -60,6 +60,8 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devui.deployment.extension.Extension;
 import io.quarkus.devui.spi.AbstractDevUIBuildItem;
 import io.quarkus.devui.spi.DevUIContent;
+import io.quarkus.devui.spi.buildtime.BuildTimeAction;
+import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.buildtime.QuteTemplateBuildItem;
 import io.quarkus.devui.spi.buildtime.StaticContentBuildItem;
 import io.quarkus.devui.spi.page.AbstractPageBuildItem;
@@ -179,6 +181,24 @@ public class BuildTimeContentProcessor {
                         new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
             }
         }
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    DeploymentMethodBuildItem mapDeploymentMethods(
+            List<BuildTimeActionBuildItem> buildTimeActions,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+
+        List<String> methodNames = new ArrayList<>();
+        for (BuildTimeActionBuildItem actions : buildTimeActions) {
+            String extensionPathName = actions.getExtensionPathName(curateOutcomeBuildItem);
+            for (BuildTimeAction bta : actions.getActions()) {
+                String fullName = extensionPathName + "." + bta.getMethodName();
+                DevConsoleManager.register(fullName, bta.getAction());
+                methodNames.add(fullName);
+            }
+        }
+
+        return new DeploymentMethodBuildItem(methodNames);
     }
 
     private Map<String, Object> getBuildTimeDataForPage(AbstractPageBuildItem pageBuildItem) {

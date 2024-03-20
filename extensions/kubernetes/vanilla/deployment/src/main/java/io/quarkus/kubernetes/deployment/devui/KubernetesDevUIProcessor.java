@@ -16,11 +16,10 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.dev.console.DevConsoleManager;
-import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.kubernetes.deployment.SelectedKubernetesDeploymentTargetBuildItem;
-import io.quarkus.kubernetes.runtime.devui.KubernetesManifestService;
 import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;
 
 public class KubernetesDevUIProcessor {
@@ -39,8 +38,9 @@ public class KubernetesDevUIProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {
-        DevConsoleManager.register("kubernetes-generate-manifest", ignored -> {
+    BuildTimeActionBuildItem createBuildTimeActions() {
+        BuildTimeActionBuildItem generateManifestActions = new BuildTimeActionBuildItem();
+        generateManifestActions.addAction("generateManifests", ignored -> {
             try {
                 List<Manifest> manifests = holder.getManifests();
                 // Avoid relying on databind.
@@ -53,7 +53,8 @@ public class KubernetesDevUIProcessor {
                 throw new RuntimeException(e);
             }
         });
-        return new JsonRPCProvidersBuildItem(KubernetesManifestService.class);
+
+        return generateManifestActions;
     }
 
     public static final class Holder {

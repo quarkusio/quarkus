@@ -9,6 +9,7 @@ import org.jboss.jandex.IndexView;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathCollection;
 
@@ -82,6 +83,12 @@ public interface ApplicationArchive {
      * @return the artifact key or null if not available
      */
     ArtifactKey getKey();
+
+    /**
+     *
+     * @return the resolved artifact or {@code null} if not available
+     */
+    ResolvedDependency getResolvedDependency();
 
     /**
      * Applies a function to the content tree of the archive.

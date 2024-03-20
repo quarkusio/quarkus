@@ -61,6 +61,128 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return person;
     }
 
+    @EnableSecureSerialization
+    @GET
+    @Path("/frog")
+    public Frog getFrog() {
+        var frog = new Frog();
+        frog.setPartner(new Frog());
+        var pond = new Pond();
+        pond.setName("Atlantic Ocean");
+        pond.setWaterQuality(Pond.WaterQuality.CLEAR);
+        frog.setPonds(List.of(pond));
+        return frog;
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("/frog-body-parts")
+    public FrogBodyParts getFrogBodyParts() {
+        return new FrogBodyParts("protruding eyes");
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("/interface-dog")
+    public SecuredPersonInterface getInterfaceDog() {
+        return createDog();
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("/abstract-dog")
+    public AbstractPet getAbstractDog() {
+        return createDog();
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("/abstract-named-dog")
+    public AbstractNamedPet getAbstractNamedDog() {
+        return createDog();
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("/dog")
+    public Dog getDog() {
+        return createDog();
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("/abstract-cat")
+    public AbstractPet getAbstractCat() {
+        return createCat();
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("/interface-cat")
+    public SecuredPersonInterface getInterfaceCat() {
+        return createCat();
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("/abstract-named-cat")
+    public AbstractNamedPet getAbstractNamedCat() {
+        return createCat();
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("/cat")
+    public Cat getCat() {
+        return createCat();
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("/unsecured-pet")
+    public UnsecuredPet getUnsecuredPet() {
+        return createUnsecuredPet();
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("/abstract-unsecured-pet")
+    public AbstractUnsecuredPet getAbstractUnsecuredPet() {
+        return createUnsecuredPet();
+    }
+
+    private static UnsecuredPet createUnsecuredPet() {
+        var pet = new UnsecuredPet();
+        pet.setPublicName("Unknown");
+        pet.setVeterinarian(createVeterinarian());
+        return pet;
+    }
+
+    private static Dog createDog() {
+        var dog = new Dog();
+        dog.setPublicAge(5);
+        dog.setPrivateName("Jack");
+        dog.setPublicName("Leo");
+        dog.setVeterinarian(createVeterinarian());
+        return dog;
+    }
+
+    private static Cat createCat() {
+        var cat = new Cat();
+        cat.setPublicName("Garfield");
+        cat.setPrivateName("Monday");
+        cat.setPrivateAge(4);
+        cat.setVeterinarian(createVeterinarian());
+        return cat;
+    }
+
+    private static Veterinarian createVeterinarian() {
+        var vet = new Veterinarian();
+        vet.setName("Dolittle");
+        vet.setTitle("VMD");
+        return vet;
+    }
+
     @CustomSerialization(UnquotedFieldsPersonSerialization.class)
     @GET
     @Path("custom-serialized-person")

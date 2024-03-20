@@ -32,5 +32,7 @@ public interface RuntimeConfiguration {
         Optional<Long> maxBodySize();
 
         long maxFormAttributeSize();
+
+        int maxParameters();
     }
 }

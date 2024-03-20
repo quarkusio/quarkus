@@ -11,10 +11,9 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.console.TempSystemProperties;
-import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
-import io.quarkus.openshift.runtime.devui.OpenshiftDeploymentJsonRpcService;
 import io.vertx.core.json.JsonArray;
 
 public class OpenshiftDevUIProcessor {
@@ -35,9 +34,10 @@ public class OpenshiftDevUIProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    JsonRPCProvidersBuildItem createJsonRPCServiceForContainerBuild() {
-        DevConsoleManager.register("openshift-deployment-action", build());
-        return new JsonRPCProvidersBuildItem(OpenshiftDeploymentJsonRpcService.class);
+    BuildTimeActionBuildItem createBuildTimeActionsForContainerBuild() {
+        BuildTimeActionBuildItem deployActions = new BuildTimeActionBuildItem();
+        deployActions.addAction("build", build());
+        return deployActions;
     }
 
     private Function<Map<String, String>, String> build() {

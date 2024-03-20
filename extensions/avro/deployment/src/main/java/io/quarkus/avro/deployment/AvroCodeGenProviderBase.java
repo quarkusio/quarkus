@@ -26,8 +26,6 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
 
     private static final Logger log = Logger.getLogger(AvroCodeGenProviderBase.class);
 
-    public static final String[] EMPTY = new String[0];
-
     /**
      * The directory (within the java classpath) that contains the velocity
      * templates to use for code generation.

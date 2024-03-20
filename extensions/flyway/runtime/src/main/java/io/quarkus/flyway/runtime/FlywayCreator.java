@@ -1,5 +1,6 @@
 package io.quarkus.flyway.runtime;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -140,9 +141,14 @@ class FlywayCreator {
          * (see Flyway#createResourceAndClassProviders)
          */
 
+        // this configuration is important for the scanner
+        configure.encoding(StandardCharsets.UTF_8);
+        configure.detectEncoding(false);
+        configure.failOnMissingLocations(false);
+
         // the static fields of this class have already been set at static-init
         QuarkusPathLocationScanner quarkusPathLocationScanner = new QuarkusPathLocationScanner(
-                Arrays.asList(configure.getLocations()));
+                configure, Arrays.asList(configure.getLocations()));
         configure.javaMigrationClassProvider(new QuarkusFlywayClassProvider<>(quarkusPathLocationScanner.scanForClasses()));
         configure.resourceProvider(new QuarkusFlywayResourceProvider(quarkusPathLocationScanner.scanForResources()));
 

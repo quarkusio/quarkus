@@ -170,14 +170,20 @@ The native executable for our application will contain the application code, req
 
 image:native-executable-process.png[Creating a native executable]
 
-If you have generated the application from the previous tutorial, you can find in the `pom.xml` the following _profile_:
+If you have generated the application from the previous tutorial, you can find in the `pom.xml` the following Maven profile section:
 
 [source,xml]
 ----
 <profiles>
     <profile>
         <id>native</id>
+        <activation>
+            <property>
+                <name>native</name>
+            </property>
+        </activation>
         <properties>
+            <skipITs>false</skipITs>
             <quarkus.package.type>native</quarkus.package.type>
         </properties>
     </profile>

@@ -17,9 +17,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.ide.Ide;
-import io.quarkus.dev.console.DevConsoleManager;
-import io.quarkus.devui.runtime.ide.IdeJsonRPCService;
-import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.utilities.OS;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
@@ -32,20 +30,28 @@ public class IdeProcessor {
     private static final Map<String, String> LANG_TO_EXT = Map.of("java", "java", "kotlin", "kt");
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    void createJsonRPCService(BuildProducer<JsonRPCProvidersBuildItem> JsonRPCProvidersProducer,
+    void createJsonRPCService(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
             Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem) {
 
         if (effectiveIdeBuildItem.isPresent()) {
             Ide ide = effectiveIdeBuildItem.get().getIde();
             if (ide != null) {
-                DevConsoleManager.register("dev-ui-ide-open", map -> {
+                BuildTimeActionBuildItem ideActions = new BuildTimeActionBuildItem(NAMESPACE);
+
+                ideActions.addAction("open", map -> {
                     String fileName = map.get("fileName");
                     String lang = map.get("lang");
                     String lineNumber = map.get("lineNumber");
+
+                    if (isNullOrEmpty(fileName) || isNullOrEmpty(lang)) {
+                        return false;
+                    }
+
                     return typicalProcessLaunch(fileName, lang, lineNumber, ide);
                 });
+
+                buildTimeActionProducer.produce(ideActions);
             }
-            JsonRPCProvidersProducer.produce(new JsonRPCProvidersBuildItem("devui-ide-interaction", IdeJsonRPCService.class));
         }
     }
 
@@ -145,4 +151,6 @@ public class IdeProcessor {
     private boolean isNullOrEmpty(String arg) {
         return arg == null || arg.isBlank();
     }
+
+    private static final String NAMESPACE = "devui-ide-interaction";
 }

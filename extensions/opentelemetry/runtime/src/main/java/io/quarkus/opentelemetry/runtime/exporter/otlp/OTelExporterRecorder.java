@@ -8,6 +8,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -35,6 +36,7 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
+import io.vertx.core.net.ProxyOptions;
 
 @SuppressWarnings("deprecation")
 @Recorder
@@ -201,6 +203,7 @@ public class OTelExporterRecorder {
         @Override
         public void accept(HttpClientOptions options) {
             configureTLS(options);
+            configureProxyOptions(options);
         }
 
         private void configureTLS(HttpClientOptions options) {
@@ -215,6 +218,54 @@ public class OTelExporterRecorder {
             if (tlsConfig.trustAll) {
                 options.setTrustAll(true);
                 options.setVerifyHost(false);
+            }
+        }
+
+        private void configureProxyOptions(HttpClientOptions options) {
+            var proxyConfig = tracesConfig.proxyOptions();
+            Optional<String> proxyHost = proxyConfig.host();
+            if (proxyHost.isPresent()) {
+                ProxyOptions proxyOptions = new ProxyOptions()
+                        .setHost(proxyHost.get());
+                if (proxyConfig.port().isPresent()) {
+                    proxyOptions.setPort(proxyConfig.port().getAsInt());
+                }
+                if (proxyConfig.username().isPresent()) {
+                    proxyOptions.setUsername(proxyConfig.username().get());
+                }
+                if (proxyConfig.password().isPresent()) {
+                    proxyOptions.setPassword(proxyConfig.password().get());
+                }
+                options.setProxyOptions(proxyOptions);
+            } else {
+                configureProxyOptionsFromJDKSysProps(options);
+            }
+        }
+
+        private void configureProxyOptionsFromJDKSysProps(HttpClientOptions options) {
+            String proxyHost = options.isSsl()
+                    ? System.getProperty("https.proxyHost", "none")
+                    : System.getProperty("http.proxyHost", "none");
+            String proxyPortAsString = options.isSsl()
+                    ? System.getProperty("https.proxyPort", "443")
+                    : System.getProperty("http.proxyPort", "80");
+            int proxyPort = Integer.parseInt(proxyPortAsString);
+
+            if (!"none".equals(proxyHost)) {
+                ProxyOptions proxyOptions = new ProxyOptions().setHost(proxyHost).setPort(proxyPort);
+                String proxyUser = options.isSsl()
+                        ? System.getProperty("https.proxyUser")
+                        : System.getProperty("http.proxyUser");
+                if (proxyUser != null && !proxyUser.isBlank()) {
+                    proxyOptions.setUsername(proxyUser);
+                }
+                String proxyPassword = options.isSsl()
+                        ? System.getProperty("https.proxyPassword")
+                        : System.getProperty("http.proxyPassword");
+                if (proxyPassword != null && !proxyPassword.isBlank()) {
+                    proxyOptions.setPassword(proxyPassword);
+                }
+                options.setProxyOptions(proxyOptions);
             }
         }
 

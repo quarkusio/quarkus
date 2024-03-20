@@ -34,6 +34,7 @@ import org.infinispan.protostream.BaseMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
 import org.infinispan.protostream.SerializationContextInitializer;
+import org.infinispan.protostream.schema.Schema;
 import org.infinispan.query.remote.client.ProtobufMetadataManagerConstants;
 
 import io.quarkus.arc.Arc;
@@ -394,6 +395,19 @@ public class InfinispanClientProducer {
 
         if (fileDescriptorSource != null) {
             serializationContext.registerProtoFiles(fileDescriptorSource);
+        }
+
+        Set<Bean<Schema>> schemaBeans = (Set) beanManager.getBeans(Schema.class);
+        for (Bean<Schema> schemaBean : schemaBeans) {
+            CreationalContext<Schema> ctx = beanManager.createCreationalContext(schemaBean);
+            Schema schema = (Schema) beanManager.getReference(schemaBean, Schema.class,
+                    ctx);
+            FileDescriptorSource fds = FileDescriptorSource.fromString(schema.getName(), schema.toString());
+            serializationContext.registerProtoFiles(fds);
+            // Register all the fds so they can be queried
+            for (Map.Entry<String, char[]> fdEntry : fds.getFileDescriptors().entrySet()) {
+                properties.put(PROTOBUF_FILE_PREFIX + fdEntry.getKey(), new String(fdEntry.getValue()));
+            }
         }
 
         Set<Bean<FileDescriptorSource>> protoFileBeans = (Set) beanManager.getBeans(FileDescriptorSource.class);

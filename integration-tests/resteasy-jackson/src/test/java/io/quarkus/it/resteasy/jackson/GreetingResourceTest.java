@@ -6,7 +6,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 
 import java.sql.Date;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
@@ -24,7 +23,7 @@ class GreetingResourceTest {
     void testEndpoint() throws DatatypeConfigurationException {
 
         final LocalDate localDate = LocalDate.of(2019, 01, 01);
-        final Date sqlDate = new Date(localDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli());
+        final Date sqlDate = new Date(119, 0, 1);
         final XMLGregorianCalendar xmlGregorianCalendar = DatatypeFactory.newInstance()
                 .newXMLGregorianCalendar("2019-01-01T00:00:00.000+00:00");
         final Greeting greeting = new Greeting("hello", localDate, sqlDate, xmlGregorianCalendar);

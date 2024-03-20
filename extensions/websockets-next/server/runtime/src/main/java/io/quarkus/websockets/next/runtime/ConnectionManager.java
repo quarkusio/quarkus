@@ -1,8 +1,10 @@
 package io.quarkus.websockets.next.runtime;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.inject.Singleton;
@@ -18,16 +20,30 @@ public class ConnectionManager {
 
     private final ConcurrentMap<String, Set<WebSocketConnection>> endpointToConnections = new ConcurrentHashMap<>();
 
+    private final List<ConnectionListener> listeners = new CopyOnWriteArrayList<>();
+
     void add(String endpoint, WebSocketConnection connection) {
         LOG.debugf("Add connection: %s", connection);
-        endpointToConnections.computeIfAbsent(endpoint, e -> ConcurrentHashMap.newKeySet()).add(connection);
+        if (endpointToConnections.computeIfAbsent(endpoint, e -> ConcurrentHashMap.newKeySet()).add(connection)) {
+            if (!listeners.isEmpty()) {
+                for (ConnectionListener listener : listeners) {
+                    listener.connectionAdded(endpoint, connection);
+                }
+            }
+        }
     }
 
     void remove(String endpoint, WebSocketConnection connection) {
         LOG.debugf("Remove connection: %s", connection);
         Set<WebSocketConnection> connections = endpointToConnections.get(endpoint);
         if (connections != null) {
-            connections.remove(connection);
+            if (connections.remove(connection)) {
+                if (!listeners.isEmpty()) {
+                    for (ConnectionListener listener : listeners) {
+                        listener.connectionRemoved(endpoint, connection.id());
+                    }
+                }
+            }
         }
     }
 
@@ -36,7 +52,7 @@ public class ConnectionManager {
      * @param endpoint
      * @return the connections for the given endpoint, never {@code null}
      */
-    Set<WebSocketConnection> getConnections(String endpoint) {
+    public Set<WebSocketConnection> getConnections(String endpoint) {
         Set<WebSocketConnection> ret = endpointToConnections.get(endpoint);
         if (ret == null) {
             return Set.of();
@@ -44,9 +60,20 @@ public class ConnectionManager {
         return ret;
     }
 
+    public void addListener(ConnectionListener listener) {
+        this.listeners.add(listener);
+    }
+
     @PreDestroy
     void destroy() {
         endpointToConnections.clear();
+    }
+
+    public interface ConnectionListener {
+
+        void connectionAdded(String endpoint, WebSocketConnection connection);
+
+        void connectionRemoved(String endpoint, String connectionId);
     }
 
 }

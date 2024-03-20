@@ -331,8 +331,8 @@ public class CreateProjectMojo extends AbstractMojo {
                 parent.setArtifactId(parentPomModel.getArtifactId());
                 parent.setVersion(parentPomModel.getVersion());
                 subModulePomModel.setParent(parent);
-                MojoUtils.write(parentPomModel, pom);
-                MojoUtils.write(subModulePomModel, subModulePomFile);
+                MojoUtils.writeFormatted(parentPomModel, pom);
+                MojoUtils.writeFormatted(subModulePomModel, subModulePomFile);
             }
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to generate Quarkus project", e);

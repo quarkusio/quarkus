@@ -113,7 +113,7 @@ public final class SecurityEventUtil {
 
     private static void addEvent(String eventName, Attributes attributes) {
         Span span = Arc.container().select(Span.class).get();
-        if (span.getSpanContext().isValid()) {
+        if (span.getSpanContext().isValid() && span.isRecording()) {
             span.addEvent(eventName, attributes, Instant.now());
         }
     }

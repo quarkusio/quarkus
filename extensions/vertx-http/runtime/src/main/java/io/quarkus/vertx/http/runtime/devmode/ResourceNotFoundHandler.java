@@ -193,7 +193,9 @@ public class ResourceNotFoundHandler implements Handler<RoutingContext> {
                     String file = resource.relativize(p).toString();
                     // Windows has a backslash
                     file = file.replace('\\', '/');
-                    knownPaths.add(file);
+                    if (!file.startsWith("_static/") && !file.startsWith("webjars/")) {
+                        knownPaths.add(file);
+                    }
                     return FileVisitResult.CONTINUE;
                 }
             });

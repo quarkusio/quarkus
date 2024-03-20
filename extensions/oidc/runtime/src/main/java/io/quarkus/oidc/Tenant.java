@@ -8,7 +8,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation which can be used to associate tenant configurations with Jakarta REST resources and resource methods.
+ * Annotation which can be used to associate OIDC tenant configurations with Jakarta REST resources and resource methods.
  */
 @Target({ TYPE, METHOD })
 @Retention(RetentionPolicy.RUNTIME)

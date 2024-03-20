@@ -603,6 +603,9 @@ public class OidcRecorder {
         return new Consumer<RoutingContext>() {
             @Override
             public void accept(RoutingContext routingContext) {
+                LOG.debugf("@Tenant annotation set a '%s' tenant id on the %s request path", tenantId,
+                        routingContext.request().path());
+                routingContext.put(OidcUtils.TENANT_ID_SET_BY_ANNOTATION, tenantId);
                 routingContext.put(OidcUtils.TENANT_ID_ATTRIBUTE, tenantId);
             }
         };

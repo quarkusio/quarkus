@@ -345,7 +345,7 @@ public class VertxHttpRecorder {
             RuntimeValue<Router> httpRouterRuntimeValue, RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter,
             RuntimeValue<Router> frameworkRouter, RuntimeValue<Router> managementRouter,
             String rootPath, String nonRootPath,
-            LaunchMode launchMode, boolean requireBodyHandler,
+            LaunchMode launchMode, BooleanSupplier[] requireBodyHandlerConditions,
             Handler<RoutingContext> bodyHandler,
             GracefulShutdownFilter gracefulShutdownFilter, ShutdownConfig shutdownConfig,
             Executor executor) {
@@ -387,16 +387,19 @@ public class VertxHttpRecorder {
         httpRouteRouter.route().last().failureHandler(
                 new QuarkusErrorHandler(launchMode.isDevOrTest(), httpConfiguration.unhandledErrorContentTypeDefault));
 
-        if (requireBodyHandler) {
-            //if this is set then everything needs the body handler installed
-            //TODO: config etc
-            httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_BODY_HANDLER).handler(new Handler<RoutingContext>() {
-                @Override
-                public void handle(RoutingContext routingContext) {
-                    routingContext.request().resume();
-                    bodyHandler.handle(routingContext);
-                }
-            });
+        for (BooleanSupplier requireBodyHandlerCondition : requireBodyHandlerConditions) {
+            if (requireBodyHandlerCondition.getAsBoolean()) {
+                //if this is set then everything needs the body handler installed
+                //TODO: config etc
+                httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_BODY_HANDLER).handler(new Handler<RoutingContext>() {
+                    @Override
+                    public void handle(RoutingContext routingContext) {
+                        routingContext.request().resume();
+                        bodyHandler.handle(routingContext);
+                    }
+                });
+                break;
+            }
         }
 
         HttpServerCommonHandlers.enforceMaxBodySize(httpConfiguration.limits, httpRouteRouter);
@@ -1489,5 +1492,13 @@ public class VertxHttpRecorder {
                 }
             }
         };
+    }
+
+    public static class AlwaysCreateBodyHandlerSupplier implements BooleanSupplier {
+
+        @Override
+        public boolean getAsBoolean() {
+            return true;
+        }
     }
 }

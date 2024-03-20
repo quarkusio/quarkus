@@ -413,7 +413,7 @@ There's no need to deactivate policy checks for a Keycloak Authorization Policy 
 
 [source,properties]
 ----
-quarkus.keycloak.policy-enforcer.paths.1.path=/api/public
+quarkus.keycloak.policy-enforcer.paths.1.paths=/api/public
 quarkus.keycloak.policy-enforcer.paths.1.enforcement-mode=DISABLED
 ----
 
@@ -421,7 +421,7 @@ To block access to the public resource to anonymous users, you can create an enf
 
 [source,properties]
 ----
-quarkus.keycloak.policy-enforcer.paths.1.path=/api/public-enforcing
+quarkus.keycloak.policy-enforcer.paths.1.paths=/api/public-enforcing
 quarkus.keycloak.policy-enforcer.paths.1.enforcement-mode=ENFORCING
 ----
 
@@ -438,15 +438,13 @@ For example:
 ----
 # path policy with enforced scope 'read' for method 'GET'
 quarkus.keycloak.policy-enforcer.paths.1.name=Scope Permission Resource
-quarkus.keycloak.policy-enforcer.paths.1.path=/api/protected/standard-way
+quarkus.keycloak.policy-enforcer.paths.1.paths=/api/protected/standard-way
 quarkus.keycloak.policy-enforcer.paths.1.methods.get.method=GET
 quarkus.keycloak.policy-enforcer.paths.1.methods.get.scopes=read <1>
 
 # path policies without scope
 quarkus.keycloak.policy-enforcer.paths.2.name=Scope Permission Resource
-quarkus.keycloak.policy-enforcer.paths.2.path=/api/protected/programmatic-way
-quarkus.keycloak.policy-enforcer.paths.3.name=Scope Permission Resource
-quarkus.keycloak.policy-enforcer.paths.3.path=/api/protected/annotation-way
+quarkus.keycloak.policy-enforcer.paths.2.paths=/api/protected/programmatic-way,/api/protected/annotation-way
 ----
 <1> User must have resource permission 'Scope Permission Resource' and scope 'read'
 
@@ -532,7 +530,7 @@ quarkus.oidc.credentials.secret=secret
 
 quarkus.keycloak.policy-enforcer.enforcement-mode=PERMISSIVE
 quarkus.keycloak.policy-enforcer.paths.1.name=Permission Resource
-quarkus.keycloak.policy-enforcer.paths.1.path=/api/permission
+quarkus.keycloak.policy-enforcer.paths.1.paths=/api/permission
 quarkus.keycloak.policy-enforcer.paths.1.claim-information-point.claims.static-claim=static-claim
 
 # Service Tenant
@@ -543,7 +541,7 @@ quarkus.oidc.service-tenant.credentials.secret=secret
 
 quarkus.keycloak.service-tenant.policy-enforcer.enforcement-mode=PERMISSIVE
 quarkus.keycloak.service-tenant.policy-enforcer.paths.1.name=Permission Resource Service
-quarkus.keycloak.service-tenant.policy-enforcer.paths.1.path=/api/permission
+quarkus.keycloak.service-tenant.policy-enforcer.paths.1.paths=/api/permission
 quarkus.keycloak.service-tenant.policy-enforcer.paths.1.claim-information-point.claims.static-claim=static-claim
 
 
@@ -557,7 +555,7 @@ quarkus.oidc.webapp-tenant.roles.source=accesstoken
 
 quarkus.keycloak.webapp-tenant.policy-enforcer.enforcement-mode=PERMISSIVE
 quarkus.keycloak.webapp-tenant.policy-enforcer.paths.1.name=Permission Resource WebApp
-quarkus.keycloak.webapp-tenant.policy-enforcer.paths.1.path=/api/permission
+quarkus.keycloak.webapp-tenant.policy-enforcer.paths.1.paths=/api/permission
 quarkus.keycloak.webapp-tenant.policy-enforcer.paths.1.claim-information-point.claims.static-claim=static-claim
 ----
 

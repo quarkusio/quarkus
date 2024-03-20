@@ -199,6 +199,19 @@ public class StreamResource {
                 Wrapper::getStatus);
     }
 
+    @Path("restmulti/empty")
+    @GET
+    @Produces(RestMediaType.APPLICATION_JSON)
+    public Multi<Message> restMultiEmptyJson() {
+        return RestMulti.fromUniResponse(
+                Uni.createFrom().item(
+                        () -> new Wrapper(Multi.createFrom().empty(),
+                                new AbstractMap.SimpleEntry<>("foo", "bar"), 222)),
+                Wrapper::getData,
+                Wrapper::getHeaders,
+                Wrapper::getStatus);
+    }
+
     @Path("stream-json/multi")
     @GET
     @Produces(RestMediaType.APPLICATION_STREAM_JSON)

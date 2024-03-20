@@ -151,7 +151,7 @@ public class PublisherResponseHandler implements ServerRestHandler {
         @Override
         public void onComplete() {
             if (!hadItem) {
-                StreamingUtil.setHeaders(requestContext, requestContext.serverResponse(), staticCustomizers);
+                StreamingUtil.setHeaders(requestContext, requestContext.serverResponse(), this.determineCustomizers(true));
             }
             if (json) {
                 String postfix = onCompleteText();

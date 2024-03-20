@@ -480,11 +480,6 @@ public class QuarkusPlugin implements Plugin<Project> {
         project.getGradle().getTaskGraph().whenReady(taskGraph -> {
             if (taskGraph.hasTask(project.getPath() + BUILD_NATIVE_TASK_NAME)
                     || taskGraph.hasTask(project.getPath() + TEST_NATIVE_TASK_NAME)) {
-                // Nag user
-                project.getLogger().warn("The Quarkus tasks {} and {} are deprecated and subject to removal. " +
-                        "Please migrate your build to use 'test -Dquarkus.package.type=native' and " +
-                        "'quarkusBuild -Dquarkus.package.type=native'.",
-                        TEST_NATIVE_TASK_NAME, BUILD_NATIVE_TASK_NAME);
                 project.getExtensions().getExtraProperties()
                         .set(QUARKUS_PACKAGE_TYPE, "native");
             }

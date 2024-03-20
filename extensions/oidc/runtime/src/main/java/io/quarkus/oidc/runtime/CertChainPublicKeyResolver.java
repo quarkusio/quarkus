@@ -22,12 +22,12 @@ public class CertChainPublicKeyResolver implements RefreshableVerificationKeyRes
     final Optional<String> expectedLeafCertificateName;
 
     public CertChainPublicKeyResolver(CertificateChain chain) {
-        if (chain.trustStorePassword.isEmpty()) {
+        if (chain.getTrustStorePassword().isEmpty()) {
             throw new ConfigurationException(
                     "Truststore with configured password which keeps thumbprints of the trusted certificates must be present");
         }
         this.thumbprints = TrustStoreUtils.getTrustedCertificateThumbprints(chain.trustStoreFile.get(),
-                chain.trustStorePassword.get(), chain.trustStoreCertAlias, chain.getTrustStoreFileType());
+                chain.getTrustStorePassword().get(), chain.trustStoreCertAlias, chain.getTrustStoreFileType());
         this.expectedLeafCertificateName = chain.leafCertificateName;
     }
 

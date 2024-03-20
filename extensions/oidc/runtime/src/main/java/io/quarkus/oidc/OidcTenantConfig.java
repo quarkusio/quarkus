@@ -270,6 +270,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public void setLeafCertificateName(String leafCertificateName) {
             this.leafCertificateName = Optional.of(leafCertificateName);
         }
+
+        public Optional<String> getTrustStorePassword() {
+            return trustStorePassword;
+        }
+
+        public void setTrustStorePassword(String trustStorePassword) {
+            this.trustStorePassword = Optional.ofNullable(trustStorePassword);
+        }
     }
 
     /**

@@ -130,7 +130,7 @@ If you are not familiar with Mutiny, check xref:mutiny-primer.adoc[Mutiny - an i
 === JSON Binding
 
 We will expose `Fruit` instances over HTTP in the JSON format.
-Consequently, you also need to add the `quarkus-rest-jackson` extension:
+Consequently, you must also add the `quarkus-rest-jackson` extension:
 
 :add-extension-extensions: rest-jackson
 include::{includes}/devtools/extension-add.adoc[]
@@ -202,7 +202,7 @@ public class FruitResource {
 
 == Database schema and seed data
 
-Before we implement the REST endpoint and data management code, we need to set up the database schema.
+Before we implement the REST endpoint and data management code, we must set up the database schema.
 It would also be convenient to have some data inserted up front.
 
 For production, we would recommend to use something like the xref:flyway.adoc[Flyway database migration tool].
@@ -262,7 +262,7 @@ client.query("DROP TABLE IF EXISTS fruits").execute()
 
 [NOTE]
 ====
-Wondering why we need to block until the latest query is completed?
+Wondering why we must block until the latest query is completed?
 This code is part of a method that `@Observes` the `StartupEvent` and Quarkus invokes it synchronously.
 As a consequence, returning prematurely could lead to serving requests while the database is not ready yet.
 ====
@@ -786,7 +786,7 @@ quarkus.datasource.reactive.max-lifetime=PT60M
 
 Sometimes, the database connection pool cannot be configured only by declaration.
 
-You might need to read a specific file only present in production, or retrieve configuration data from a proprietary configuration server.
+For example, you might have to read a specific file only present in production, or retrieve configuration data from a proprietary configuration server.
 
 In this case, you can customize pool creation by creating a class implementing an interface which depends on the target database:
 

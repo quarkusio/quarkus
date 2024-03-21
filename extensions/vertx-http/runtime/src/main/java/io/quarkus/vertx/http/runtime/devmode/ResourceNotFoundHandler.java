@@ -24,6 +24,9 @@ import org.jboss.logging.Logger;
 import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.vertx.core.Handler;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -56,23 +59,6 @@ public class ResourceNotFoundHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext routingContext) {
-        String header = routingContext.request().getHeader("Accept");
-        if (header != null && header.startsWith("application/json")) {
-            handleJson(routingContext);
-        } else {
-            handleHTML(routingContext);
-        }
-    }
-
-    private void handleJson(RoutingContext routingContext) {
-        routingContext.response()
-                .setStatusCode(404)
-                .putHeader("content-type", "application/json; charset=utf-8")
-                .end();
-    }
-
-    private void handleHTML(RoutingContext routingContext) {
-        TemplateHtmlBuilder builder = new TemplateHtmlBuilder(baseUrl, "404 - Resource Not Found", "", "Resources overview");
 
         // Endpoints
         List<RouteDescription> combinedRoutes = new ArrayList<>();
@@ -83,63 +69,26 @@ public class ResourceNotFoundHandler implements Handler<RoutingContext> {
             combinedRoutes.addAll(routes);
         }
 
-        builder.resourcesStart("Resource Endpoints");
-
-        for (RouteDescription resource : combinedRoutes) {
-            builder.resourcePath(adjustRoot(httpRoot, resource.getBasePath()));
-            for (RouteMethodDescription method : resource.getCalls()) {
-                builder.method(method.getHttpMethod(), method.getFullPath());
-                if (method.getJavaMethod() != null) {
-                    builder.listItem(method.getJavaMethod());
-                }
-                if (method.getConsumes() != null) {
-                    builder.consumes(method.getConsumes());
-                }
-                if (method.getProduces() != null) {
-                    builder.produces(method.getProduces());
-                }
-                builder.methodEnd();
-            }
-            builder.resourceEnd();
+        String header = routingContext.request().getHeader("Accept");
+        if (header != null && header.startsWith("application/json")) {
+            handleJson(routingContext, combinedRoutes);
+        } else {
+            handleHTML(routingContext, combinedRoutes);
         }
-        if (combinedRoutes.isEmpty()) {
-            builder.noResourcesFound();
-        }
-        builder.resourcesEnd();
+    }
 
-        if (!servletMappings.isEmpty()) {
-            builder.resourcesStart("Servlet mappings");
-            for (String servletMapping : servletMappings) {
-                builder.servletMapping(adjustRoot(httpRoot, servletMapping));
-            }
-            builder.resourcesEnd();
-        }
+    private void handleJson(RoutingContext routingContext, List<RouteDescription> combinedRoutes) {
+        routingContext.response()
+                .setStatusCode(404)
+                .putHeader("content-type", "application/json; charset=utf-8")
+                .end(Json.encodePrettily(getJsonContent(combinedRoutes)));
+    }
 
-        // Static Resources
-        if (!staticResourceRoots.isEmpty()) {
-            List<String> resources = findRealResources();
-            if (!resources.isEmpty()) {
-                builder.resourcesStart("Static resources");
-                for (String staticResource : resources) {
-                    builder.staticResourcePath(adjustRoot(httpRoot, staticResource));
-                }
-                builder.resourcesEnd();
-            }
-        }
-
-        // Additional Endpoints
-        if (!additionalEndpoints.isEmpty()) {
-            builder.resourcesStart("Additional endpoints");
-            for (AdditionalRouteDescription additionalEndpoint : additionalEndpoints) {
-                builder.staticResourcePath(additionalEndpoint.getUri(), additionalEndpoint.getDescription());
-            }
-            builder.resourcesEnd();
-        }
-
+    private void handleHTML(RoutingContext routingContext, List<RouteDescription> combinedRoutes) {
         routingContext.response()
                 .setStatusCode(404)
                 .putHeader("content-type", "text/html; charset=utf-8")
-                .end(builder.toString());
+                .end(getHTMLContent(combinedRoutes));
     }
 
     private List<String> findRealResources() {
@@ -161,7 +110,7 @@ public class ResourceNotFoundHandler implements Handler<RoutingContext> {
                                 }
                                 java.nio.file.Path rel = resource.relativize(path);
                                 if (!Files.isDirectory(path)) {
-                                    knownFiles.add(rel.toString());
+                                    knownFiles.add("/" + rel.toString());
                                 }
                             }
                         });
@@ -194,7 +143,7 @@ public class ResourceNotFoundHandler implements Handler<RoutingContext> {
                     // Windows has a backslash
                     file = file.replace('\\', '/');
                     if (!file.startsWith("_static/") && !file.startsWith("webjars/")) {
-                        knownPaths.add(file);
+                        knownPaths.add("/" + file);
                     }
                     return FileVisitResult.CONTINUE;
                 }
@@ -211,4 +160,132 @@ public class ResourceNotFoundHandler implements Handler<RoutingContext> {
     public static void addServlet(String mapping) {
         servletMappings.add(mapping);
     }
+
+    private String getHTMLContent(List<RouteDescription> combinedRoutes) {
+        TemplateHtmlBuilder builder = new TemplateHtmlBuilder(baseUrl, "404 - Resource Not Found", "", "Resources overview");
+
+        builder.resourcesStart(RESOURCE_ENDPOINTS);
+
+        for (RouteDescription resource : combinedRoutes) {
+            builder.resourcePath(adjustRoot(httpRoot, resource.getBasePath()));
+            for (RouteMethodDescription method : resource.getCalls()) {
+                builder.method(method.getHttpMethod(), adjustRoot(httpRoot, method.getFullPath()));
+                if (method.getJavaMethod() != null) {
+                    builder.listItem(method.getJavaMethod());
+                }
+                if (method.getConsumes() != null) {
+                    builder.consumes(method.getConsumes());
+                }
+                if (method.getProduces() != null) {
+                    builder.produces(method.getProduces());
+                }
+                builder.methodEnd();
+            }
+            builder.resourceEnd();
+        }
+        if (combinedRoutes.isEmpty()) {
+            builder.noResourcesFound();
+        }
+        builder.resourcesEnd();
+
+        if (!servletMappings.isEmpty()) {
+            builder.resourcesStart(SERVLET_MAPPINGS);
+            for (String servletMapping : servletMappings) {
+                builder.servletMapping(adjustRoot(httpRoot, servletMapping));
+            }
+            builder.resourcesEnd();
+        }
+
+        // Static Resources
+        if (!staticResourceRoots.isEmpty()) {
+            List<String> resources = findRealResources();
+            if (!resources.isEmpty()) {
+                builder.resourcesStart(STATIC_RESOURCES);
+                for (String staticResource : resources) {
+                    builder.staticResourcePath(adjustRoot(httpRoot, staticResource));
+                }
+                builder.resourcesEnd();
+            }
+        }
+
+        // Additional Endpoints
+        if (!additionalEndpoints.isEmpty()) {
+            builder.resourcesStart(ADDITIONAL_ENDPOINTS);
+            for (AdditionalRouteDescription additionalEndpoint : additionalEndpoints) {
+                builder.staticResourcePath(additionalEndpoint.getUri(), additionalEndpoint.getDescription());
+            }
+            builder.resourcesEnd();
+        }
+
+        return builder.toString();
+    }
+
+    private JsonObject getJsonContent(List<RouteDescription> combinedRoutes) {
+
+        JsonObject infoMap = new JsonObject();
+
+        // REST Endpoints
+        if (!combinedRoutes.isEmpty()) {
+            JsonArray r = new JsonArray();
+            for (RouteDescription resource : combinedRoutes) {
+                String path = adjustRoot(httpRoot, resource.getBasePath());
+
+                for (RouteMethodDescription method : resource.getCalls()) {
+                    String description = method.getHttpMethod();
+                    if (method.getConsumes() != null) {
+                        description = description + " (consumes: " + method.getConsumes() + ")";
+                    }
+                    if (method.getProduces() != null) {
+                        description = description + " (produces:" + method.getProduces() + ")";
+                    }
+                    if (method.getJavaMethod() != null) {
+                        description = description + " (java:" + method.getJavaMethod() + ")";
+                    }
+                    r.add(JsonObject.of(URI, adjustRoot(httpRoot, method.getFullPath()), DESCRIPTION, description));
+                }
+            }
+            infoMap.put(RESOURCE_ENDPOINTS, r);
+        }
+
+        // Servlets
+        if (!servletMappings.isEmpty()) {
+            JsonArray sm = new JsonArray();
+            for (String servletMapping : servletMappings) {
+                sm.add(JsonObject.of(URI, adjustRoot(httpRoot, servletMapping), DESCRIPTION, EMPTY));
+            }
+            infoMap.put(SERVLET_MAPPINGS, sm);
+        }
+
+        // Static Resources
+        if (!staticResourceRoots.isEmpty()) {
+            List<String> resources = findRealResources();
+            if (!resources.isEmpty()) {
+                JsonArray sr = new JsonArray();
+                for (String staticResource : resources) {
+                    sr.add(JsonObject.of(URI, adjustRoot(httpRoot, staticResource), DESCRIPTION, EMPTY));
+                }
+                infoMap.put(STATIC_RESOURCES, sr);
+            }
+        }
+
+        // Additional Endpoints
+        if (!additionalEndpoints.isEmpty()) {
+            JsonArray ae = new JsonArray();
+            for (AdditionalRouteDescription additionalEndpoint : additionalEndpoints) {
+                ae.add(JsonObject.of(URI, additionalEndpoint.getUri(), DESCRIPTION, additionalEndpoint.getDescription()));
+            }
+            infoMap.put(ADDITIONAL_ENDPOINTS, ae);
+        }
+
+        return infoMap;
+
+    }
+
+    private static final String RESOURCE_ENDPOINTS = "Resource Endpoints";
+    private static final String SERVLET_MAPPINGS = "Servlet mappings";
+    private static final String STATIC_RESOURCES = "Static resources";
+    private static final String ADDITIONAL_ENDPOINTS = "Additional endpoints";
+    private static final String URI = "uri";
+    private static final String DESCRIPTION = "description";
+    private static final String EMPTY = "";
 }

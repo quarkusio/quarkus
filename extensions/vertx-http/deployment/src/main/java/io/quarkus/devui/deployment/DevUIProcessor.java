@@ -171,7 +171,7 @@ public class DevUIProcessor {
                     .handler(uihandler);
 
             if (route.endsWith(DEVUI + SLASH)) {
-                builder = builder.displayOnNotFoundPage("Dev UI (v2)");
+                builder = builder.displayOnNotFoundPage("Dev UI");
                 routeProducer.produce(builder.build());
             }
 

@@ -93,10 +93,6 @@ public class DevUIRecorder {
         return new EndpointInfoHandler(basePath);
     }
 
-    public void setEndpoints(List<EndpointInfo> endpointInfos) {
-        EndpointInfoHandler.setEndpoints(endpointInfos);
-    }
-
     public Handler<RoutingContext> vaadinRouterHandler(String basePath) {
         return new VaadinRouterHandler(basePath);
     }

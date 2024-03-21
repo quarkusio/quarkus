@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractCollection;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -59,6 +58,7 @@ import io.quarkus.deployment.builditem.InitTaskCompletedBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.FlywayDataSource;
@@ -73,6 +73,7 @@ import io.quarkus.runtime.util.ClassPathUtils;
 @BuildSteps(onlyIf = FlywayEnabled.class)
 class FlywayProcessor {
 
+    private static final String MODEL_CLASS_SUFFIX = "Model";
     private static final String CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL = "classpath";
 
     private static final String FLYWAY_CONTAINER_BEAN_NAME_PREFIX = "flyway_container_";
@@ -83,17 +84,23 @@ class FlywayProcessor {
     private static final Logger LOGGER = Logger.getLogger(FlywayProcessor.class);
 
     @BuildStep
-    void reflection(CombinedIndexBuildItem index, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
-        List<String> configurationExtensions = new ArrayList<>();
-        configurationExtensions.add(ConfigurationExtension.class.getName());
+    void reflection(CombinedIndexBuildItem index, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyProducer) {
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(ConfigurationExtension.class).fields().methods().build());
 
         for (ClassInfo configurationExtension : index.getIndex().getAllKnownImplementors(ConfigurationExtension.class)) {
-            configurationExtensions.add(configurationExtension.name().toString());
+            var extensionName = configurationExtension.name();
+            // we also register Model from the extension fields so that 'ConfigurationExtension#copy' works
+            var reflectiveHierarchyItem = ReflectiveHierarchyBuildItem
+                    .builder(extensionName)
+                    .ignoreTypePredicate(
+                            type -> !extensionName.equals(type) && !type.toString().endsWith(MODEL_CLASS_SUFFIX))
+                    .ignoreMethodPredicate(m -> !extensionName.equals(m.declaringClass().name()))
+                    .ignoreFieldPredicate(f -> !extensionName.equals(f.declaringClass().name())
+                            && !f.type().name().toString().endsWith(MODEL_CLASS_SUFFIX))
+                    .build();
+            reflectiveHierarchyProducer.produce(reflectiveHierarchyItem);
         }
-
-        reflectiveClasses
-                .produce(ReflectiveClassBuildItem.builder(configurationExtensions.toArray(new String[0])).fields().methods()
-                        .build());
     }
 
     @Record(STATIC_INIT)

@@ -23,7 +23,8 @@ public class OpenTelemetryDestroyer implements BeanDestroyer<OpenTelemetry> {
             var waitTime = getShutdownWaitTime().dividedBy(2);
             var openTelemetrySdk = ((OpenTelemetrySdk) openTelemetry);
             openTelemetrySdk.getSdkTracerProvider().forceFlush().join(waitTime.toMillis(), MILLISECONDS);
-            openTelemetrySdk.getSdkTracerProvider().shutdown().join(waitTime.toMillis(), MILLISECONDS);
+            openTelemetrySdk.getSdkMeterProvider().forceFlush().join(waitTime.toMillis(), MILLISECONDS);
+            openTelemetrySdk.shutdown().join(waitTime.toMillis(), MILLISECONDS);
         }
     }
 

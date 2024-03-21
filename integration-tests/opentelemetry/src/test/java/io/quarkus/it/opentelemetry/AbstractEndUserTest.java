@@ -22,7 +22,7 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.it.opentelemetry.util.EndUserResource;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.EndUserSpanProcessor;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.EndUserSpanProcessor;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.security.TestSecurity;
 

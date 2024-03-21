@@ -2,6 +2,7 @@ package io.quarkus.opentelemetry.runtime.config.build;
 
 import java.util.Optional;
 
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.EndUserSpanProcessor;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
@@ -12,9 +13,9 @@ import io.smallrye.config.WithDefault;
 public interface EndUserSpanProcessorConfig {
 
     /**
-     * Enable the {@link io.quarkus.opentelemetry.runtime.exporter.otlp.EndUserSpanProcessor}.
+     * Enable the {@link EndUserSpanProcessor}.
      * <p>
-     * The {@link io.quarkus.opentelemetry.runtime.exporter.otlp.EndUserSpanProcessor} adds
+     * The {@link EndUserSpanProcessor} adds
      * the {@link io.opentelemetry.semconv.SemanticAttributes.ENDUSER_ID}
      * and {@link io.opentelemetry.semconv.SemanticAttributes.ENDUSER_ROLE} to the Span.
      */

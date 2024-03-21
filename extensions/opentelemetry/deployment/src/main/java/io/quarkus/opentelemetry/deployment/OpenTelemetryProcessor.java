@@ -105,6 +105,7 @@ public class OpenTelemetryProcessor {
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.ResourceCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.SamplerCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TracerProviderCustomizer.class,
+                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.MetricProviderCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TextMapPropagatorCustomizers.class)
                 .build();
     }

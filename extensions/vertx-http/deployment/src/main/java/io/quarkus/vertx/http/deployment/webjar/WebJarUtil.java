@@ -31,7 +31,8 @@ public class WebJarUtil {
 
     private static final Logger LOG = Logger.getLogger(WebJarUtil.class);
 
-    private static final String CUSTOM_MEDIA_FOLDER = "META-INF/branding/";
+    private static final String CUSTOM_MEDIA_FOLDER_MVN = "META-INF/branding/";
+    private static final String CUSTOM_MEDIA_FOLDER_GRADLE = "META-INF/resources/branding/";
     private static final List<String> OVERRIDABLE_RESOURCES = Arrays.asList("logo.png", "favicon.ico", "style.css");
 
     private WebJarUtil() {
@@ -122,12 +123,24 @@ public class WebJarUtil {
 
     private static InputStream getCustomOverride(ResolvedDependency userApplication, String filename, String moduleName) {
         // Check if the developer supplied the files
-        byte[] content = readFromPathTree(userApplication.getContentTree(), CUSTOM_MEDIA_FOLDER + moduleName);
+        InputStream content = getCustomOverride(userApplication, CUSTOM_MEDIA_FOLDER_MVN, filename, moduleName);
+
+        if (content != null) {
+            return content;
+        }
+
+        return getCustomOverride(userApplication, CUSTOM_MEDIA_FOLDER_GRADLE, filename, moduleName);
+    }
+
+    private static InputStream getCustomOverride(ResolvedDependency userApplication, String customRoot, String filename,
+            String moduleName) {
+        // Check if the developer supplied the files
+        byte[] content = readFromPathTree(userApplication.getContentTree(), customRoot + moduleName);
         if (content != null) {
             return new ByteArrayInputStream(content);
         }
 
-        content = readFromPathTree(userApplication.getContentTree(), CUSTOM_MEDIA_FOLDER + filename);
+        content = readFromPathTree(userApplication.getContentTree(), customRoot + filename);
         if (content != null) {
             return new ByteArrayInputStream(content);
         }
@@ -152,12 +165,12 @@ public class WebJarUtil {
 
     private static InputStream getQuarkusOverride(ClassLoader classLoader, String filename, String moduleName) {
         // Allow quarkus per module override
-        InputStream stream = classLoader.getResourceAsStream(CUSTOM_MEDIA_FOLDER + moduleName);
+        InputStream stream = classLoader.getResourceAsStream(CUSTOM_MEDIA_FOLDER_MVN + moduleName);
         if (stream != null) {
             return stream;
         }
 
-        return classLoader.getResourceAsStream(CUSTOM_MEDIA_FOLDER + filename);
+        return classLoader.getResourceAsStream(CUSTOM_MEDIA_FOLDER_MVN + filename);
     }
 
     private static class ResourcesFileVisitor extends SimpleFileVisitor<Path> {

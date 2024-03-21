@@ -587,6 +587,12 @@ public class OpenshiftConfig implements PlatformConfiguration {
     @ConfigItem(defaultValue = "false")
     boolean idempotent;
 
+    /**
+     * VCS URI annotation configuration.
+     */
+    @ConfigItem
+    VCSUriConfig vcsUri;
+
     public Optional<String> getAppSecret() {
         return this.appSecret;
     }
@@ -603,6 +609,11 @@ public class OpenshiftConfig implements PlatformConfiguration {
     @Override
     public boolean isIdempotent() {
         return idempotent;
+    }
+
+    @Override
+    public VCSUriConfig getVCSUri() {
+        return vcsUri;
     }
 
     public DeployStrategy getDeployStrategy() {

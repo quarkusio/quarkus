@@ -121,7 +121,6 @@ public class TemplateHtmlBuilder {
 
     private static final String RESOURCES_START = "<div class=\"intro\">%1$s</div><div class=\"resources\">";
 
-    private static final String ANCHOR_TEMPLATE = "<a href=\"/%1$s\">/%2$s</a>";
     private static final String ANCHOR_TEMPLATE_ABSOLUTE = "<a href=\"%1$s\">%2$s</a>";
 
     private static final String DESCRIPTION_TEMPLATE = "%1$s — %2$s";
@@ -247,10 +246,10 @@ public class TemplateHtmlBuilder {
     private TemplateHtmlBuilder resourcePath(String title, boolean withListStart, boolean withAnchor, String description) {
         String content;
         if (withAnchor) {
+            String text = title;
             if (title.startsWith("/")) {
                 title = title.substring(1);
             }
-            String text = title;
 
             if (!title.startsWith("http") && baseUrl != null) {
                 title = baseUrl + title;

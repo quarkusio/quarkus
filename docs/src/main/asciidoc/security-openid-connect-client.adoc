@@ -12,9 +12,7 @@ include::_attributes.adoc[]
 
 Learn how to use OpenID Connect (OIDC) and OAuth2 clients with filters to get, refresh, and propagate access tokens in your applications.
 
-This approach uses an OIDC token propagation Reactive filter to propagate the incoming bearer access tokens.
-
-For more information about `Oidc Client` and `Token Propagation` support in Quarkus, see the xref:security-openid-connect-client-reference.adoc[OpenID Connect (OIDC) and OAuth2 client and filters reference guide].
+For more information about `OIDC Client` and `Token Propagation` support in Quarkus, see the xref:security-openid-connect-client-reference.adoc[OpenID Connect (OIDC) and OAuth2 client and filters reference guide].
 
 To protect your applications by using Bearer Token Authorization, see the xref:security-oidc-bearer-token-authentication.adoc[OpenID Connect (OIDC) Bearer token authentication] guide.
 
@@ -27,20 +25,26 @@ include::{includes}/prerequisites.adoc[]
 == Architecture
 
 In this example, an application is built with two Jakarta REST resources, `FrontendResource` and `ProtectedResource`.
-Here, `FrontendResource` uses one of two methods to propagate access tokens to `ProtectedResource`:
+Here, `FrontendResource` uses one of three methods to propagate access tokens to `ProtectedResource`:
 
-* It can get a token by using an OIDC token propagation Reactive filter before propagating it.
-* It can use an OIDC token propagation Reactive filter to propagate the incoming access token.
+* It can get a token by using an OIDC client filter before propagating it.
+* It can get a token by using a programmatically created OIDC client and propagate it by passing it to a REST client method as an HTTP `Authorization` header value.
+* It can use an OIDC token propagation filter to propagate the incoming access token.
 
-`FrontendResource` has four endpoints:
+`FrontendResource` has eight endpoints:
 
 * `/frontend/user-name-with-oidc-client-token`
 * `/frontend/admin-name-with-oidc-client-token`
+* `/frontend/user-name-with-oidc-client-token-header-param`
+* `/frontend/admin-name-with-oidc-client-token-header-param`
+* `/frontend/user-name-with-oidc-client-token-header-param-blocking`
+* `/frontend/admin-name-with-oidc-client-token-header-param-blocking`
 * `/frontend/user-name-with-propagated-token`
 * `/frontend/admin-name-with-propagated-token`
 
-`FrontendResource` uses a REST Client with an OIDC token propagation Reactive filter to get and propagate an access token to `ProtectedResource` when either `/frontend/user-name-with-oidc-client-token` or `/frontend/admin-name-with-oidc-client-token` is called.
-Also, `FrontendResource` uses a REST Client with `OpenID Connect Token Propagation Reactive Filter` to propagate the current incoming access token to `ProtectedResource` when either `/frontend/user-name-with-propagated-token` or `/frontend/admin-name-with-propagated-token` is called.
+When either `/frontend/user-name-with-oidc-client-token` or `/frontend/admin-name-with-oidc-client-token` endpoint is called, `FrontendResource` uses a REST client with an OIDC client filter to get and propagate an access token to `ProtectedResource` .
+When either `/frontend/user-name-with-oidc-client-token-header-param` or `/frontend/admin-name-with-oidc-client-token-header-param` endpoint is called, `FrontendResource` uses a programmatically created OIDC client to get and propagate an access token to `ProtectedResource` by passing it to a REST client method as an HTTP `Authorization` header value.
+When either `/frontend/user-name-with-propagated-token` or `/frontend/admin-name-with-propagated-token` endpoint is called, `FrontendResource` uses a REST client with `OIDC Token Propagation Filter` to propagate the current incoming access token to `ProtectedResource`.
 
 `ProtectedResource` has two endpoints:
 
@@ -68,14 +72,14 @@ Create a new project with the following command:
 :create-app-extensions: oidc,rest-client-oidc-filter,rest-client-oidc-token-propagation,rest
 include::{includes}/devtools/create-app.adoc[]
 
-This command generates a Maven project, importing the `oidc`, `rest-client-oidc-filter`, `rest-client-oidc-token-propagation`, and `rest` extensions.
+It generates a Maven project, importing the `oidc`, `rest-client-oidc-filter`, `rest-client-oidc-token-propagation`, and `rest` extensions.
 
 If you already have your Quarkus project configured, you can add these extensions to your project by running the following command in your project base directory:
 
 :add-extension-extensions: oidc,rest-client-oidc-filter,rest-client-oidc-token-propagation,rest
 include::{includes}/devtools/extension-add.adoc[]
 
-This command adds the following extensions to your build file:
+It adds the following extensions to your build file:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -151,9 +155,13 @@ public class ProtectedResource {
 `ProtectedResource` returns a name from both `userName()` and `adminName()` methods.
 The name is extracted from the current `JsonWebToken`.
 
-Next, add two REST clients, `OidcClientRequestReactiveFilter` and `AccessTokenRequestReactiveFilter`, which `FrontendResource` uses to call `ProtectedResource`.
+Next, add three REST clients:
 
-Add the `OidcClientRequestReactiveFilter` REST Client:
+1. `RestClientWithOidcClientFilter`, which uses an OIDC client filter provided by the `quarkus-rest-client-oidc-filter` extension to get and propagate an access token.
+2. `RestClientWithTokenHeaderParam`, which accepts a token already acquired by the programmatically created OidcClient as an HTTP `Authorization` header value.
+3. `RestClientWithTokenPropagationFilter`, which uses an OIDC token propagation filter provided by the `quarkus-rest-client-oidc-token-propagation` extension to get and propagate an access token.
+
+Add the `RestClientWithOidcClientFilter` REST client:
 
 [source,java]
 ----
@@ -166,11 +174,11 @@ import jakarta.ws.rs.Produces;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-import io.quarkus.oidc.client.reactive.filter.OidcClientRequestReactiveFilter;
+import io.quarkus.oidc.client.filter.OidcClientFilter;
 import io.smallrye.mutiny.Uni;
 
 @RegisterRestClient
-@RegisterProvider(OidcClientRequestReactiveFilter.class)
+@OidcClientFilter <1>
 @Path("/")
 public interface RestClientWithOidcClientFilter {
 
@@ -185,10 +193,40 @@ public interface RestClientWithOidcClientFilter {
     Uni<String> getAdminName();
 }
 ----
+<1> Register an OIDC client filter with the REST client to get and propagate the tokens.
 
-The `RestClientWithOidcClientFilter` interface depends on `OidcClientRequestReactiveFilter` to get and propagate the tokens.
+Add the `RestClientWithTokenHeaderParam` REST client:
 
-Add the `AccessTokenRequestReactiveFilter` REST Client:
+[source,java]
+----
+package org.acme.security.openid.connect.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import io.smallrye.mutiny.Uni;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+
+@RegisterRestClient
+@Path("/")
+public interface RestClientWithTokenHeaderParam {
+
+    @GET
+    @Produces("text/plain")
+    @Path("userName")
+    Uni<String> getUserName(@HeaderParam("Authorization") String authorization); <1>
+    
+    @GET
+    @Produces("text/plain")
+    @Path("adminName")
+    Uni<String> getAdminName(@HeaderParam("Authorization") String authorization); <1>
+}
+----
+<1> `RestClientWithTokenHeaderParam` REST client expects that the tokens will be passed to it as HTTP `Authorization` header values.
+
+Add the `RestClientWithTokenPropagationFilter` REST client:
 
 [source,java]
 ----
@@ -201,11 +239,12 @@ import jakarta.ws.rs.Produces;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-import io.quarkus.oidc.token.propagation.reactive.AccessTokenRequestReactiveFilter;
+import io.quarkus.oidc.token.propagation.AccessToken;
+
 import io.smallrye.mutiny.Uni;
 
 @RegisterRestClient
-@RegisterProvider(AccessTokenRequestReactiveFilter.class)
+@AccessToken <1>
 @Path("/")
 public interface RestClientWithTokenPropagationFilter {
 
@@ -220,12 +259,63 @@ public interface RestClientWithTokenPropagationFilter {
     Uni<String> getAdminName();
 }
 ----
+<1> Register an OIDC token propagation filter with the REST client to propagate the incoming already-existing tokens.
 
-The `RestClientWithTokenPropagationFilter` interface depends on `AccessTokenRequestReactiveFilter` to propagate the incoming already-existing tokens.
+IMPORTANT: Do not use the `RestClientWithOidcClientFilter` and `RestClientWithTokenPropagationFilter` interfaces in the same REST client because they can conflict, leading to issues.
+For example, the OIDC client filter can override the token from the OIDC token propagation filter, or the propagation filter might not work correctly if it attempts to propagate a token when none is available, expecting the OIDC client filter to obtain a new token instead.
 
-Note that both `RestClientWithOidcClientFilter` and `RestClientWithTokenPropagationFilter` interfaces are the same.
-This is because combining `OidcClientRequestReactiveFilter` and `AccessTokenRequestReactiveFilter` on the same REST Client causes side effects because both filters can interfere with each other.
-For example, `OidcClientRequestReactiveFilter` can override the token propagated by `AccessTokenRequestReactiveFilter`, or `AccessTokenRequestReactiveFilter` can fail if it is called when no token is available to propagate and `OidcClientRequestReactiveFilter` is expected to get a new token instead.
+Also, add `OidcClientCreator` to create an OIDC client programmatically at startup. `OidcClientCreator` supports `RestClientWithTokenHeaderParam` REST client calls:
+
+[source,java]
+----
+package org.acme.security.openid.connect.client;
+
+import java.util.Map;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import io.quarkus.oidc.client.OidcClient;
+import io.quarkus.oidc.client.OidcClientConfig;
+import io.quarkus.oidc.client.OidcClientConfig.Grant.Type;
+import io.quarkus.oidc.client.OidcClients;
+import io.quarkus.runtime.StartupEvent;
+import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+
+@ApplicationScoped
+public class OidcClientCreator {
+
+    @Inject
+    OidcClients oidcClients; <1>
+    @ConfigProperty(name = "quarkus.oidc.auth-server-url")
+    String oidcProviderAddress;
+
+    private volatile OidcClient oidcClient;
+
+    public void startup(@Observes StartupEvent event) {
+    	createOidcClient().subscribe().with(client -> {oidcClient = client;});
+    }
+
+    public OidcClient getOidcClient() {
+        return oidcClient;
+    }
+
+    private Uni<OidcClient> createOidcClient() {
+        OidcClientConfig cfg = new OidcClientConfig();
+        cfg.setId("myclient");
+        cfg.setAuthServerUrl(oidcProviderAddress);
+        cfg.setClientId("backend-service");
+        cfg.getCredentials().setSecret("secret");
+        cfg.getGrant().setType(Type.PASSWORD);
+        cfg.setGrantOptions(Map.of("password",
+        		Map.of("username", "alice", "password", "alice")));
+        return oidcClients.newClient(cfg);
+    }
+}
+----
+<1> `OidcClients` can be used to retrieve the already initialized, named OIDC clients and create new OIDC clients on demand.
 
 Now, finish creating the application by adding `FrontendResource`:
 
@@ -238,6 +328,9 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 
+import io.quarkus.oidc.client.Tokens;
+import io.quarkus.oidc.client.runtime.TokensHelper;
+
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import io.smallrye.mutiny.Uni;
@@ -246,44 +339,86 @@ import io.smallrye.mutiny.Uni;
 public class FrontendResource {
     @Inject
     @RestClient
-    RestClientWithOidcClientFilter restClientWithOidcClientFilter;
-
+    RestClientWithOidcClientFilter restClientWithOidcClientFilter; <1>
+    
     @Inject
     @RestClient
-    RestClientWithTokenPropagationFilter restClientWithTokenPropagationFilter;
+    RestClientWithTokenPropagationFilter restClientWithTokenPropagationFilter; <2>
+
+    @Inject 
+    OidcClientCreator oidcClientCreator;
+    TokensHelper tokenHelper = new TokensHelper(); <5>
+    @Inject
+    @RestClient
+    RestClientWithHeaderTokenParam restClientWithHeaderTokenParam; <3>
 
     @GET
     @Path("user-name-with-oidc-client-token")
     @Produces("text/plain")
-    public Uni<String> getUserNameWithOidcClientToken() {
+    public Uni<String> getUserNameWithOidcClientToken() { <1>
         return restClientWithOidcClientFilter.getUserName();
     }
 
     @GET
     @Path("admin-name-with-oidc-client-token")
     @Produces("text/plain")
-    public Uni<String> getAdminNameWithOidcClientToken() {
-	    return restClientWithOidcClientFilter.getAdminName();
+    public Uni<String> getAdminNameWithOidcClientToken() { <1>
+	return restClientWithOidcClientFilter.getAdminName();
     }
 
     @GET
     @Path("user-name-with-propagated-token")
     @Produces("text/plain")
-    public Uni<String> getUserNameWithPropagatedToken() {
+    public Uni<String> getUserNameWithPropagatedToken() { <2>
         return restClientWithTokenPropagationFilter.getUserName();
     }
 
     @GET
     @Path("admin-name-with-propagated-token")
     @Produces("text/plain")
-    public Uni<String> getAdminNameWithPropagatedToken() {
+    public Uni<String> getAdminNameWithPropagatedToken() { <2>
         return restClientWithTokenPropagationFilter.getAdminName();
     }
+
+    @GET
+    @Path("user-name-with-oidc-client-token-header-param")
+    @Produces("text/plain")
+    public Uni<String> getUserNameWithOidcClientTokenHeaderParam() { <3>
+    	return tokenHelper.getTokens(oidcClientCreator.getOidcClient()).onItem()
+        		.transformToUni(tokens -> restClientWithTokenHeaderParam.getUserName("Bearer " + tokens.getAccessToken()));
+    }
+    
+    @GET
+    @Path("admin-name-with-oidc-client-token-header-param")
+    @Produces("text/plain")
+    public Uni<String> getAdminNameWithOidcClientTokenHeaderParam() { <3>
+    	return tokenHelper.getTokens(oidcClientCreator.getOidcClient()).onItem()
+        		.transformToUni(tokens -> restClientWithTokenHeaderParam.getAdminName("Bearer " + tokens.getAccessToken()));
+    }
+
+    @GET
+    @Path("user-name-with-oidc-client-token-header-param-blocking")
+    @Produces("text/plain")
+    public String getUserNameWithOidcClientTokenHeaderParamBlocking() { <4>
+    	Tokens tokens = tokenHelper.getTokens(oidcClientCreator.getOidcClient()).await().indefinitely();
+        return restClientWithTokenHeaderParam.getUserName("Bearer " + tokens.getAccessToken()).await().indefinitely();
+    }
+    
+    @GET
+    @Path("admin-name-with-oidc-client-token-header-param-blocking")
+    @Produces("text/plain")
+    public String getAdminNameWithOidcClientTokenHeaderParamBlocking() { <4>
+    	Tokens tokens = tokenHelper.getTokens(oidcClientCreator.getOidcClient()).await().indefinitely();
+        return restClientWithTokenHeaderParam.getAdminName("Bearer " + tokens.getAccessToken()).await().indefinitely();
+    }
+  
 }
 ----
-
-`FrontendResource` uses REST Client with an OIDC token propagation Reactive filter to get and propagate an access token to `ProtectedResource` when either `/frontend/user-name-with-oidc-client-token` or `/frontend/admin-name-with-oidc-client-token` is called.
-Also, `FrontendResource` uses REST Client with `OpenID Connect Token Propagation Reactive Filter` to propagate the current incoming access token to `ProtectedResource` when either `/frontend/user-name-with-propagated-token` or `/frontend/admin-name-with-propagated-token` is called.
+<1> `FrontendResource` uses the injected `RestClientWithOidcClientFilter` REST client with the OIDC client filter to get and propagate an access token to `ProtectedResource` when either `/frontend/user-name-with-oidc-client-token` or `/frontend/admin-name-with-oidc-client-token` is called.
+<2> `FrontendResource` uses the injected `RestClientWithTokenPropagationFilter` REST client with the OIDC token propagation filter to propagate the current incoming access token to `ProtectedResource` when either `/frontend/user-name-with-propagated-token` or `/frontend/admin-name-with-propagated-token` is called.
+<3> `FrontendResource` uses the programmatically created OIDC client to get and propagate an access token to `ProtectedResource` by passing it directly to the injected `RestClientWithHeaderTokenParam` REST client's method as an HTTP `Authorization` header value, when either `/frontend/user-name-with-oidc-client-token-header-param` or `/frontend/admin-name-with-oidc-client-token-header-param` is called.
+<4> Sometimes, one may have to acquire tokens in a blocking manner before propagating them with the REST client. This example shows how to acquire the tokens in such cases.
+<5> `io.quarkus.oidc.client.runtime.TokensHelper` is a useful tool when OIDC client is used directly, without the OIDC client filter. To use `TokensHelper`, pass OIDC Client to it to get the tokens and `TokensHelper` acquires the tokens and refreshes them if necessary in a thread-safe way.
 
 Finally, add a Jakarta REST `ExceptionMapper`:
 
@@ -309,7 +444,7 @@ public class FrontendExceptionMapper implements ExceptionMapper<ClientWebApplica
 ----
 
 This exception mapper is only added to verify during the tests that `ProtectedResource` returns `403` when the token has no expected role.
-Without this mapper, `Quarkus REST (formerly RESTEasy Reactive)` would correctly convert the exceptions that escape from REST Client calls to `500` to avoid leaking the information from the downstream resources such as `ProtectedResource`.
+Without this mapper, `Quarkus REST (formerly RESTEasy Reactive)` would correctly convert the exceptions that escape from REST client calls to `500` to avoid leaking the information from the downstream resources such as `ProtectedResource`.
 However, in the tests, it would not be possible to assert that `500` is caused by an authorization exception instead of some internal error.
 
 == Configuring the application
@@ -345,10 +480,11 @@ quarkus.oidc-client.grant-options.password.password=alice
 %test.port=8081
 
 org.acme.security.openid.connect.client.RestClientWithOidcClientFilter/mp-rest/url=http://localhost:${port}/protected
+org.acme.security.openid.connect.client.RestClientWithTokenHeaderParam/mp-rest/url=http://localhost:${port}/protected
 org.acme.security.openid.connect.client.RestClientWithTokenPropagationFilter/mp-rest/url=http://localhost:${port}/protected
 ----
 
-This configuration references Keycloak, which is used by `ProtectedResource` to verify the incoming access tokens and by `OidcClient` to get the tokens for a user `alice` by using a `password` grant.
+The preceding configuration references Keycloak, which is used by `ProtectedResource` to verify the incoming access tokens and by `OidcClient` to get the tokens for a user `alice` by using a `password` grant.
 Both REST clients point to `ProtectedResource`'s HTTP address.
 
 NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures that `Dev Services for Keycloak` launches a container for you when the application is run in dev or test modes.
@@ -405,7 +541,7 @@ This user has both `admin` and `user` roles.
  ** Access `/frontend/user-name-with-propagated-token`, which returns `200`.
  ** Access `/frontend/admin-name-with-propagated-token`, which returns `200`.
 
-In this case, you are testing that `FrontendResource` can propagate the access tokens from the OpenID Connect Dev UI.
+You have tested that `FrontendResource` can propagate the access tokens from the OpenID Connect Dev UI.
 
 == Running the application in JVM mode
 
@@ -460,7 +596,7 @@ export access_token=$(\
  )
 ----
 
-Now, use this token to call `/frontend/user-name-with-propagated-token` and `/frontend/admin-name-with-propagated-token`:
+Use this token to call `/frontend/user-name-with-propagated-token`. This command returns the `200` status code and the name `alice`:
 
 [source,bash]
 ----
@@ -469,7 +605,7 @@ curl -i -X GET \
   -H "Authorization: Bearer "$access_token
 ----
 
-This command returns the `200` status code and the name `alice`.
+Use the same token to call `/frontend/admin-name-with-propagated-token`. In contrast to the preceding command, this command returns `403` because `alice` has only a `user` role:
 
 [source,bash]
 ----
@@ -477,9 +613,6 @@ curl -i -X GET \
   http://localhost:8080/frontend/admin-name-with-propagated-token \
   -H "Authorization: Bearer "$access_token
 ----
-
-In contrast, this command returns `403`.
-Recall that `alice` only has a `user` role.
 
 Next, obtain an access token for `admin`:
 
@@ -493,7 +626,7 @@ export access_token=$(\
  )
 ----
 
-Use this token to call `/frontend/user-name-with-propagated-token`:
+Use this token to call `/frontend/user-name-with-propagated-token`. This command returns a `200` status code and the name `admin`:
 
 [source,bash]
 ----
@@ -502,9 +635,7 @@ curl -i -X GET \
   -H "Authorization: Bearer "$access_token
 ----
 
-This command returns a `200` status code and the name `admin`.
-
-Now, use this token to call `/frontend/admin-name-with-propagated-token`:
+Use the same token to call `/frontend/admin-name-with-propagated-token`. This command also returns the `200` status code and the name `admin` because `admin` has both `user` and `admin` roles:
 
 [source,bash]
 ----
@@ -513,11 +644,8 @@ curl -i -X GET \
   -H "Authorization: Bearer "$access_token
 ----
 
-This command also returns the `200` status code and the name `admin` because `admin` has both `user` and `admin` roles.
-
-
-Now, check the `FrontendResource` methods, which do not propagate the existing tokens but use `OidcClient` to get and propagate the tokens.
-As already shown, `OidcClient` is configured to get the tokens for the `alice` user, so:
+Next, check the `FrontendResource` methods, which do not propagate the existing tokens but use `OidcClient` to get and propagate the tokens.
+As already shown, `OidcClient` is configured to get the tokens for the `alice` user.
 
 [source,bash]
 ----
@@ -534,6 +662,42 @@ curl -i -X GET \
 ----
 
 In contrast with the preceding command, this command returns a `403` status code.
+
+Next, test that the programmatically created OIDC client correctly acquires and propagates the token with `RestClientWithTokenHeaderParam` both in reactive and imperative (blocking) modes. 
+
+Call the `/user-name-with-oidc-client-token-header-param`. This command returns the `200` status code and the name `alice`:
+
+[source,bash]
+----
+curl -i -X GET \
+  http://localhost:8080/frontend/user-name-with-oidc-client-token-header-param
+----
+
+Call the `/admin-name-with-oidc-client-token-header-param`. In contrast with the preceding command, this command returns a `403` status code:
+
+[source,bash]
+----
+curl -i -X GET \
+  http://localhost:8080/frontend/admin-name-with-oidc-client-token-param
+----
+
+Next, test the endpoints which use OIDC client in in the blocking mode.
+
+Call the `/user-name-with-oidc-client-token-header-param-blocking`. This command returns the `200` status code and the name `alice`:
+
+[source,bash]
+----
+curl -i -X GET \
+  http://localhost:8080/frontend/user-name-with-oidc-client-token-header-param-blocking
+----
+
+Call the `/admin-name-with-oidc-client-token-header-param-blocking`. In contrast with the preceding command, this command returns a `403` status code:
+
+[source,bash]
+----
+curl -i -X GET \
+  http://localhost:8080/frontend/admin-name-with-oidc-client-token-param-blocking
+----
 
 == References
 

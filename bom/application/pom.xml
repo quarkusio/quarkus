@@ -166,7 +166,7 @@
         <kotlin-serialization.version>1.6.2</kotlin-serialization.version>
         <dekorate.version>4.1.2</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
-        <awaitility.version>4.2.0</awaitility.version>
+        <awaitility.version>4.2.1</awaitility.version>
         <jboss-logmanager.version>3.0.4.Final</jboss-logmanager.version>
         <flyway.version>10.10.0</flyway.version>
         <yasson.version>3.0.3</yasson.version>

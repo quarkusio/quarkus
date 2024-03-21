@@ -56,7 +56,7 @@ public class OpenTelemetryTextMapPropagatorCustomizerTest {
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
         SpanData clientSpan = getSpanByKindAndParentId(spans, SpanKind.CLIENT, "0000000000000000");
-        assertEquals("GET", clientSpan.getName());
+        assertEquals("GET /hello", clientSpan.getName());
 
         // There is a parent id, therefore propagation is working.
         SpanData serverSpan = getSpanByKindAndParentId(spans, SpanKind.SERVER, clientSpan.getSpanId());

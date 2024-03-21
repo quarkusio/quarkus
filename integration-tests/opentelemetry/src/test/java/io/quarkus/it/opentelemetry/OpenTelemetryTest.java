@@ -140,7 +140,7 @@ public class OpenTelemetryTest {
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
         assertEquals(CLIENT.toString(), client.get("kind"));
         verifyResource(client);
-        assertEquals("GET", client.get("name"));
+        assertEquals("GET /", client.get("name"));
         assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
         assertTrue((Boolean) client.get("ended"));
         assertTrue((Boolean) client.get("parent_valid"));
@@ -206,7 +206,7 @@ public class OpenTelemetryTest {
 
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
         assertEquals(CLIENT.toString(), client.get("kind"));
-        assertEquals("GET", client.get("name"));
+        assertEquals("GET /", client.get("name"));
         assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
         assertTrue((Boolean) client.get("ended"));
         assertTrue((Boolean) client.get("parent_valid"));
@@ -261,7 +261,7 @@ public class OpenTelemetryTest {
 
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
         assertEquals(CLIENT.toString(), client.get("kind"));
-        assertEquals("GET", client.get("name"));
+        assertEquals("GET /from-baggage", client.get("name"));
         assertEquals("http://localhost:8081/from-baggage", client.get("attr_http.url"));
         assertEquals("200", client.get("attr_http.status_code"));
         assertEquals(client.get("parentSpanId"), server.get("spanId"));
@@ -467,7 +467,7 @@ public class OpenTelemetryTest {
         assertNotNull(server.get("attr_user_agent.original"));
 
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
-        assertEquals("GET", client.get("name"));
+        assertEquals("GET /client/pong/{message}", client.get("name"));
         assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
         assertTrue((Boolean) client.get("ended"));
         assertTrue((Boolean) client.get("parent_valid"));
@@ -530,7 +530,7 @@ public class OpenTelemetryTest {
         assertNotNull(server.get("attr_user_agent.original"));
 
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
-        assertEquals("GET", client.get("name"));
+        assertEquals("GET /client/pong/{message}", client.get("name"));
         assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
         assertTrue((Boolean) client.get("ended"));
         assertTrue((Boolean) client.get("parent_valid"));
@@ -602,7 +602,7 @@ public class OpenTelemetryTest {
         assertEquals("one", fromInterceptor.get("attr_message"));
 
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, fromInterceptor.get("spanId"));
-        assertEquals("GET", client.get("name"));
+        assertEquals("GET /client/pong/{message}", client.get("name"));
         assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
         assertTrue((Boolean) client.get("ended"));
         assertTrue((Boolean) client.get("parent_valid"));

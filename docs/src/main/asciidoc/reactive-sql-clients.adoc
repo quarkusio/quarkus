@@ -76,7 +76,7 @@ public class Fruit {
 ====
 If you start the application in dev mode, Quarkus provides you with a https://quarkus.io/guides/databases-dev-services[zero-config database] out of the box.
 
-You may also start a database up front:
+You might also start a database up front:
 
 [source,bash]
 ----
@@ -167,7 +167,7 @@ quarkus.datasource.password=quarkus_test
 quarkus.datasource.reactive.url=postgresql://localhost:5432/quarkus_test
 ----
 
-With that you may create your `FruitResource` skeleton and inject a `io.vertx.mutiny.pgclient.PgPool` instance:
+With that you can create your `FruitResource` skeleton and inject a `io.vertx.mutiny.pgclient.PgPool` instance:
 
 [source,java]
 .src/main/java/org/acme/vertx/FruitResource.java
@@ -243,7 +243,7 @@ public class DBInit {
 }
 ----
 
-TIP: You may override the default value of the `myapp.schema.create` property in the `application.properties` file.
+TIP: You might override the default value of the `myapp.schema.create` property in the `application.properties` file.
 
 Almost ready!
 To initialize the DB in development mode, we will use the client simple `query` method.
@@ -421,7 +421,7 @@ public Uni<Response> delete(Long id) {
 }
 ----
 
-With `GET`, `POST` and `DELETE` methods implemented, we may now create a minimal web page to try the RESTful application out.
+With `GET`, `POST` and `DELETE` methods implemented, we can now create a minimal web page to try the RESTful application out.
 We will use https://jquery.com/[jQuery] to simplify interactions with the backend:
 
 [source,html]
@@ -786,7 +786,7 @@ quarkus.datasource.reactive.max-lifetime=PT60M
 
 Sometimes, the database connection pool cannot be configured only by declaration.
 
-You may need to read a specific file only present in production, or retrieve configuration data from a proprietary configuration server.
+You might need to read a specific file only present in production, or retrieve configuration data from a proprietary configuration server.
 
 In this case, you can customize pool creation by creating a class implementing an interface which depends on the target database:
 

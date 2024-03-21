@@ -93,6 +93,12 @@ public interface WebSocketConnection extends Sender, BlockingSender {
 
     /**
      *
+     * @return the subprotocol selected by the handshake
+     */
+    String subprotocol();
+
+    /**
+     *
      * @return the time when this connection was created
      */
     Instant creationTime();
@@ -171,6 +177,31 @@ public interface WebSocketConnection extends Sender, BlockingSender {
          * @return the query string
          */
         String query();
+
+        /**
+         * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#page-57">The WebSocket Protocol</a>.
+         */
+        public static final String SEC_WEBSOCKET_KEY = "Sec-WebSocket-Key";
+
+        /**
+         * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#page-58">The WebSocket Protocol</a>.
+         */
+        public static final String SEC_WEBSOCKET_EXTENSIONS = "Sec-WebSocket-Extensions";
+
+        /**
+         * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#page-58">The WebSocket Protocol</a>.
+         */
+        public static final String SEC_WEBSOCKET_ACCEPT = "Sec-WebSocket-Accept";
+
+        /**
+         * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#page-59">The WebSocket Protocol</a>.
+         */
+        public static final String SEC_WEBSOCKET_PROTOCOL = "Sec-WebSocket-Protocol";
+
+        /**
+         * See <a href="https://datatracker.ietf.org/doc/html/rfc6455#page-60">The WebSocket Protocol</a>.
+         */
+        public static final String SEC_WEBSOCKET_VERSION = "Sec-WebSocket-Version";
 
     }
 

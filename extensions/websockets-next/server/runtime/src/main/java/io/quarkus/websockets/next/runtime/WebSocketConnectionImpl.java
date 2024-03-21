@@ -120,6 +120,11 @@ class WebSocketConnectionImpl implements WebSocketConnection {
     }
 
     @Override
+    public String subprotocol() {
+        return webSocket.subProtocol();
+    }
+
+    @Override
     public Instant creationTime() {
         return creationTime;
     }

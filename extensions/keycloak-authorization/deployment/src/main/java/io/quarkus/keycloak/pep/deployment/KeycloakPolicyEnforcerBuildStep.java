@@ -71,7 +71,7 @@ public class KeycloakPolicyEnforcerBuildStep {
         KeycloakPolicyEnforcerBuildTimeConfig config;
 
         public boolean getAsBoolean() {
-            return config.policyEnforcer.enable;
+            return config.policyEnforcer().enable();
         }
     }
 }
